@@ -1,16 +1,17 @@
-# NAVER 포탈 사이트
+# Faith Portal - 믿음의 포탈 사이트
 
 ## 프로젝트 개요
-- **프로젝트명**: NAVER 스타일 포탈 사이트
-- **목표**: 네이버와 같은 포탈 사이트 구현 (검색, 회원가입, 로그인 기능)
+- **프로젝트명**: Faith Portal (믿음의 포탈)
+- **목표**: 포탈 사이트 구현 (검색, 회원가입, 로그인 기능)
+- **브랜드 컬러**: 파란색 (#1E40AF)
 - **기술 스택**: Hono + TypeScript + Cloudflare D1 + TailwindCSS
 
 ## 주요 기능
 
 ### ✅ 완료된 기능
 1. **메인 페이지**
-   - 네이버 스타일 검색 UI
-   - 네이버 그린 컬러 테마
+   - Faith Portal 브랜드 검색 UI
+   - 파란색 컬러 테마 (#1E40AF)
    - 바로가기 링크 (메일, 카페, 블로그, 쇼핑)
    - 실시간 뉴스 섹션
    - 로그인 상태 표시
@@ -224,6 +225,18 @@ webapp/
 └── seed.sql              # 테스트 데이터
 ```
 
+## 디자인 시스템
+
+### 브랜드 컬러
+- **Primary Blue**: #1E40AF (faith-blue)
+- **Dark Blue**: #1E3A8A (hover state)
+- **Text Colors**: TailwindCSS blue-600, blue-700
+
+### 타이포그래피
+- **로고**: 3xl ~ 6xl, font-bold
+- **제목**: 2xl, font-bold
+- **본문**: base ~ lg
+
 ## 기술 스택 상세
 
 ### 백엔드
@@ -245,6 +258,7 @@ webapp/
 ## 배포 상태
 - **플랫폼**: Cloudflare Pages
 - **상태**: ✅ 로컬 개발 완료 / ⏳ 프로덕션 배포 대기
+- **브랜드**: Faith Portal (파란색 테마)
 - **마지막 업데이트**: 2025-10-28
 
 ## 라이선스
