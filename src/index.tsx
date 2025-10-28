@@ -18,12 +18,12 @@ app.get('/', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NAVER - 네이버 포탈</title>
+        <title>Faith Portal - 믿음의 포탈</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .naver-green { background-color: #03C75A; }
-            .naver-green-hover:hover { background-color: #02b350; }
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
             .search-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         </style>
     </head>
@@ -32,19 +32,19 @@ app.get('/', (c) => {
         <header class="bg-white border-b">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center space-x-6">
-                    <h1 class="text-3xl font-bold naver-green text-white px-4 py-1 rounded">NAVER</h1>
+                    <h1 class="text-3xl font-bold faith-blue text-white px-4 py-1 rounded">Faith Portal</h1>
                     <nav class="hidden md:flex space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-green-600">메일</a>
-                        <a href="/" class="text-gray-700 hover:text-green-600">카페</a>
-                        <a href="/" class="text-gray-700 hover:text-green-600">블로그</a>
-                        <a href="/" class="text-gray-700 hover:text-green-600">뉴스</a>
-                        <a href="/" class="text-gray-700 hover:text-green-600">쇼핑</a>
+                        <a href="/" class="text-gray-700 hover:text-blue-600">메일</a>
+                        <a href="/" class="text-gray-700 hover:text-blue-600">카페</a>
+                        <a href="/" class="text-gray-700 hover:text-blue-600">블로그</a>
+                        <a href="/" class="text-gray-700 hover:text-blue-600">뉴스</a>
+                        <a href="/" class="text-gray-700 hover:text-blue-600">쇼핑</a>
                     </nav>
                 </div>
                 <div id="user-menu" class="flex items-center space-x-3">
                     <!-- 로그인 전 -->
-                    <a href="/login" class="text-sm text-gray-700 hover:text-green-600">로그인</a>
-                    <a href="/signup" class="text-sm naver-green text-white px-4 py-2 rounded naver-green-hover">회원가입</a>
+                    <a href="/login" class="text-sm text-gray-700 hover:text-blue-600">로그인</a>
+                    <a href="/signup" class="text-sm faith-blue text-white px-4 py-2 rounded faith-blue-hover">회원가입</a>
                 </div>
             </div>
         </header>
@@ -53,7 +53,7 @@ app.get('/', (c) => {
         <main class="max-w-4xl mx-auto px-4 py-16">
             <div class="text-center mb-8">
                 <div class="flex justify-center items-center mb-8">
-                    <h2 class="text-6xl font-bold naver-green text-white px-8 py-3 rounded-lg">NAVER</h2>
+                    <h2 class="text-6xl font-bold faith-blue text-white px-8 py-3 rounded-lg">Faith Portal</h2>
                 </div>
             </div>
 
@@ -68,7 +68,7 @@ app.get('/', (c) => {
                     />
                     <button 
                         id="search-btn"
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 naver-green text-white px-6 py-2 rounded naver-green-hover"
+                        class="absolute right-3 top-1/2 transform -translate-y-1/2 faith-blue text-white px-6 py-2 rounded faith-blue-hover"
                     >
                         <i class="fas fa-search"></i> 검색
                     </button>
@@ -78,19 +78,19 @@ app.get('/', (c) => {
             <!-- 바로가기 링크 -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-envelope text-3xl text-green-600 mb-2"></i>
-                    <p class="text-gray-700 font-medium">네이버 메일</p>
+                    <i class="fas fa-envelope text-3xl text-blue-600 mb-2"></i>
+                    <p class="text-gray-700 font-medium">메일</p>
                 </a>
                 <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-coffee text-3xl text-green-600 mb-2"></i>
+                    <i class="fas fa-coffee text-3xl text-blue-600 mb-2"></i>
                     <p class="text-gray-700 font-medium">카페</p>
                 </a>
                 <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-blog text-3xl text-green-600 mb-2"></i>
+                    <i class="fas fa-blog text-3xl text-blue-600 mb-2"></i>
                     <p class="text-gray-700 font-medium">블로그</p>
                 </a>
                 <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-shopping-cart text-3xl text-green-600 mb-2"></i>
+                    <i class="fas fa-shopping-cart text-3xl text-blue-600 mb-2"></i>
                     <p class="text-gray-700 font-medium">쇼핑</p>
                 </a>
             </div>
@@ -98,17 +98,17 @@ app.get('/', (c) => {
             <!-- 뉴스 섹션 -->
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                    <i class="fas fa-newspaper text-green-600 mr-2"></i>
+                    <i class="fas fa-newspaper text-blue-600 mr-2"></i>
                     실시간 뉴스
                 </h3>
                 <div class="space-y-3">
-                    <a href="#" class="block text-gray-700 hover:text-green-600">
+                    <a href="#" class="block text-gray-700 hover:text-blue-600">
                         1. 최신 뉴스 헤드라인입니다
                     </a>
-                    <a href="#" class="block text-gray-700 hover:text-green-600">
+                    <a href="#" class="block text-gray-700 hover:text-blue-600">
                         2. 오늘의 주요 뉴스입니다
                     </a>
-                    <a href="#" class="block text-gray-700 hover:text-green-600">
+                    <a href="#" class="block text-gray-700 hover:text-blue-600">
                         3. 속보 뉴스가 업데이트됩니다
                     </a>
                 </div>
@@ -118,12 +118,12 @@ app.get('/', (c) => {
         <!-- 푸터 -->
         <footer class="bg-gray-100 border-t mt-16 py-8">
             <div class="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
-                <p>&copy; 2025 NAVER Corp. All rights reserved.</p>
+                <p>&copy; 2025 Faith Portal. All rights reserved.</p>
                 <div class="mt-2 space-x-4">
-                    <a href="#" class="hover:text-green-600">회사소개</a>
-                    <a href="#" class="hover:text-green-600">이용약관</a>
-                    <a href="#" class="hover:text-green-600">개인정보처리방침</a>
-                    <a href="#" class="hover:text-green-600">고객센터</a>
+                    <a href="#" class="hover:text-blue-600">회사소개</a>
+                    <a href="#" class="hover:text-blue-600">이용약관</a>
+                    <a href="#" class="hover:text-blue-600">개인정보처리방침</a>
+                    <a href="#" class="hover:text-blue-600">고객센터</a>
                 </div>
             </div>
         </footer>
@@ -133,7 +133,6 @@ app.get('/', (c) => {
             document.getElementById('search-btn').addEventListener('click', function() {
                 const query = document.getElementById('search-input').value;
                 if (query.trim()) {
-                    // 실제로는 네이버 검색으로 이동하거나 자체 검색 구현
                     alert('검색어: ' + query + '\\n(실제 검색 기능은 추가 구현이 필요합니다)');
                 }
             });
@@ -153,7 +152,7 @@ app.get('/', (c) => {
                 // 로그인된 상태
                 document.getElementById('user-menu').innerHTML = \`
                     <span class="text-sm text-gray-700">\${userEmail}님</span>
-                    <button id="logout-btn" class="text-sm naver-green text-white px-4 py-2 rounded naver-green-hover">
+                    <button id="logout-btn" class="text-sm faith-blue text-white px-4 py-2 rounded faith-blue-hover">
                         로그아웃
                     </button>
                 \`;
@@ -179,12 +178,12 @@ app.get('/login', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NAVER 로그인</title>
+        <title>Faith Portal 로그인</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .naver-green { background-color: #03C75A; }
-            .naver-green-hover:hover { background-color: #02b350; }
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
         </style>
     </head>
     <body class="bg-gray-50">
@@ -193,7 +192,7 @@ app.get('/login', (c) => {
                 <!-- 로고 -->
                 <div class="text-center mb-8">
                     <a href="/">
-                        <h1 class="text-5xl font-bold naver-green text-white inline-block px-8 py-3 rounded-lg">NAVER</h1>
+                        <h1 class="text-5xl font-bold faith-blue text-white inline-block px-8 py-3 rounded-lg">Faith Portal</h1>
                     </a>
                 </div>
 
@@ -208,7 +207,7 @@ app.get('/login', (c) => {
                                 type="email" 
                                 id="email"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="이메일을 입력하세요"
                             />
                         </div>
@@ -219,7 +218,7 @@ app.get('/login', (c) => {
                                 type="password" 
                                 id="password"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="비밀번호를 입력하세요"
                             />
                         </div>
@@ -228,7 +227,7 @@ app.get('/login', (c) => {
 
                         <button 
                             type="submit"
-                            class="w-full naver-green text-white py-3 rounded-lg font-medium naver-green-hover transition"
+                            class="w-full faith-blue text-white py-3 rounded-lg font-medium faith-blue-hover transition"
                         >
                             <i class="fas fa-sign-in-alt mr-2"></i>
                             로그인
@@ -238,7 +237,7 @@ app.get('/login', (c) => {
                     <div class="mt-6 text-center">
                         <p class="text-sm text-gray-600">
                             아직 회원이 아니신가요?
-                            <a href="/signup" class="text-green-600 hover:text-green-700 font-medium">회원가입</a>
+                            <a href="/signup" class="text-blue-600 hover:text-blue-700 font-medium">회원가입</a>
                         </p>
                     </div>
 
@@ -299,12 +298,12 @@ app.get('/signup', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>NAVER 회원가입</title>
+        <title>Faith Portal 회원가입</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .naver-green { background-color: #03C75A; }
-            .naver-green-hover:hover { background-color: #02b350; }
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
         </style>
     </head>
     <body class="bg-gray-50">
@@ -313,7 +312,7 @@ app.get('/signup', (c) => {
                 <!-- 로고 -->
                 <div class="text-center mb-8">
                     <a href="/">
-                        <h1 class="text-5xl font-bold naver-green text-white inline-block px-8 py-3 rounded-lg">NAVER</h1>
+                        <h1 class="text-5xl font-bold faith-blue text-white inline-block px-8 py-3 rounded-lg">Faith Portal</h1>
                     </a>
                 </div>
 
@@ -330,7 +329,7 @@ app.get('/signup', (c) => {
                                 type="email" 
                                 id="email"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="example@email.com"
                             />
                         </div>
@@ -344,7 +343,7 @@ app.get('/signup', (c) => {
                                 id="password"
                                 required
                                 minlength="6"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="6자 이상 입력하세요"
                             />
                         </div>
@@ -357,7 +356,7 @@ app.get('/signup', (c) => {
                                 type="password" 
                                 id="password-confirm"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="비밀번호를 다시 입력하세요"
                             />
                         </div>
@@ -370,7 +369,7 @@ app.get('/signup', (c) => {
                                 type="text" 
                                 id="name"
                                 required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="홍길동"
                             />
                         </div>
@@ -382,17 +381,17 @@ app.get('/signup', (c) => {
                             <input 
                                 type="tel" 
                                 id="phone"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="010-1234-5678"
                             />
                         </div>
 
                         <div id="error-message" class="hidden text-red-500 text-sm"></div>
-                        <div id="success-message" class="hidden text-green-500 text-sm"></div>
+                        <div id="success-message" class="hidden text-blue-500 text-sm"></div>
 
                         <button 
                             type="submit"
-                            class="w-full naver-green text-white py-3 rounded-lg font-medium naver-green-hover transition"
+                            class="w-full faith-blue text-white py-3 rounded-lg font-medium faith-blue-hover transition"
                         >
                             <i class="fas fa-user-plus mr-2"></i>
                             회원가입
@@ -402,7 +401,7 @@ app.get('/signup', (c) => {
                     <div class="mt-6 text-center">
                         <p class="text-sm text-gray-600">
                             이미 회원이신가요?
-                            <a href="/login" class="text-green-600 hover:text-green-700 font-medium">로그인</a>
+                            <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">로그인</a>
                         </p>
                     </div>
                 </div>
