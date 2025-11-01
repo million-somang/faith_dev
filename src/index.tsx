@@ -91,17 +91,17 @@ app.get('/', (c) => {
     <body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <!-- 헤더 -->
         <header class="bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold faith-blue text-white px-4 py-2 rounded-lg shadow-lg shine floating">
-                    <i class="fas fa-infinity mr-2"></i>Faith Portal
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
+                <h1 class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg shine floating">
+                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
                 </h1>
-                <div id="user-menu" class="flex items-center space-x-3">
+                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
                     <!-- 로그인 전 -->
-                    <a href="/login" class="text-sm text-gray-700 hover:text-purple-600 font-medium transition-all">
-                        <i class="fas fa-sign-in-alt mr-1"></i>로그인
+                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-purple-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                     </a>
-                    <a href="/signup" class="text-sm faith-blue text-white px-5 py-2.5 rounded-lg shadow-lg faith-blue-hover shine font-medium">
-                        <i class="fas fa-user-plus mr-1"></i>회원가입
+                    <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover shine font-medium">
+                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
                     </a>
                 </div>
             </div>
@@ -110,29 +110,29 @@ app.get('/', (c) => {
         <!-- 메인 검색 영역 -->
         <main class="max-w-6xl mx-auto px-4 py-12">
             <!-- 히어로 섹션 -->
-            <div class="text-center mb-12">
-                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-4 floating">
+            <div class="text-center mb-8 sm:mb-10 md:mb-12">
+                <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold gradient-text mb-3 sm:mb-4 floating px-4">
                     무엇이든 찾아보세요
                 </h2>
-                <p class="text-gray-600 text-lg mb-8">
+                <p class="text-gray-600 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 px-4">
                     Faith Portal과 함께 더 넓은 세상을 경험하세요
                 </p>
             </div>
 
             <!-- 검색창 -->
-            <div class="mb-8 max-w-3xl mx-auto">
-                <div class="relative search-shadow rounded-2xl overflow-hidden bg-white">
-                    <div class="flex items-center px-6">
-                        <i class="fas fa-search text-purple-400 text-xl"></i>
+            <div class="mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
+                <div class="relative search-shadow rounded-xl sm:rounded-2xl overflow-hidden bg-white">
+                    <div class="flex items-center px-3 sm:px-4 md:px-6">
+                        <i class="fas fa-search text-purple-400 text-base sm:text-lg md:text-xl"></i>
                         <input 
                             type="text" 
                             id="search-input"
                             placeholder="검색어를 입력하세요" 
-                            class="flex-1 px-4 py-6 text-lg border-none outline-none"
+                            class="flex-1 px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 text-sm sm:text-base md:text-lg border-none outline-none"
                         />
                         <button 
                             id="search-btn"
-                            class="faith-blue text-white px-8 py-3 rounded-xl faith-blue-hover shine font-medium"
+                            class="faith-blue text-white px-4 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded-lg sm:rounded-xl faith-blue-hover shine font-medium text-sm sm:text-base"
                         >
                             검색
                         </button>
@@ -141,49 +141,49 @@ app.get('/', (c) => {
             </div>
 
             <!-- 메뉴 네비게이션 -->
-            <nav class="mb-16 max-w-3xl mx-auto">
-                <div class="flex justify-center items-center space-x-8">
+            <nav class="mb-8 sm:mb-12 md:mb-16 max-w-3xl mx-auto px-4">
+                <div class="flex justify-center items-center space-x-3 sm:space-x-4 md:space-x-6 lg:space-x-8">
                     <a href="/" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-envelope text-2xl text-white"></i>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-envelope text-lg sm:text-xl md:text-2xl text-white"></i>
                         </div>
-                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">메일</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">메일</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-coffee text-2xl text-white"></i>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-coffee text-lg sm:text-xl md:text-2xl text-white"></i>
                         </div>
-                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">카페</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">카페</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-blog text-2xl text-white"></i>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-blog text-lg sm:text-xl md:text-2xl text-white"></i>
                         </div>
-                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">블로그</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">블로그</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-newspaper text-2xl text-white"></i>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-newspaper text-lg sm:text-xl md:text-2xl text-white"></i>
                         </div>
-                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-shopping-bag text-2xl text-white"></i>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-shopping-bag text-lg sm:text-xl md:text-2xl text-white"></i>
                         </div>
-                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">쇼핑</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">쇼핑</p>
                     </a>
                 </div>
             </nav>
 
             <!-- 인기 서비스 -->
-            <div class="mb-12">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-                    <i class="fas fa-fire text-orange-500 mr-3"></i>
+            <div class="mb-8 sm:mb-10 md:mb-12 px-4">
+                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
+                    <i class="fas fa-fire text-orange-500 mr-2 sm:mr-3"></i>
                     인기 서비스
                 </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <a href="/" class="card-hover bg-gradient-to-br from-blue-500 to-blue-600 p-8 rounded-2xl shadow-lg text-center shine">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                    <a href="/" class="card-hover bg-gradient-to-br from-blue-500 to-blue-600 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl shadow-lg text-center shine">
                         <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-envelope text-3xl text-white"></i>
                         </div>
@@ -292,64 +292,64 @@ app.get('/', (c) => {
             </div>
 
             <!-- 추천 콘텐츠 -->
-            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-2xl p-8 text-center text-white shine">
-                <i class="fas fa-star text-yellow-300 text-4xl mb-4"></i>
-                <h3 class="text-2xl font-bold mb-2">Faith Portal과 함께하세요</h3>
-                <p class="text-white/90 mb-6">지금 가입하고 더 많은 혜택을 누리세요</p>
-                <a href="/signup" class="inline-block bg-white text-purple-600 px-8 py-3 rounded-xl font-bold hover:bg-gray-100 transition shadow-lg">
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 text-center text-white shine mx-4">
+                <i class="fas fa-star text-yellow-300 text-3xl sm:text-4xl mb-3 sm:mb-4"></i>
+                <h3 class="text-xl sm:text-2xl font-bold mb-2">Faith Portal과 함께하세요</h3>
+                <p class="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base">지금 가입하고 더 많은 혜택을 누리세요</p>
+                <a href="/signup" class="inline-block bg-white text-purple-600 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold hover:bg-gray-100 transition shadow-lg text-sm sm:text-base">
                     무료로 시작하기 <i class="fas fa-arrow-right ml-2"></i>
                 </a>
             </div>
         </main>
 
         <!-- 푸터 -->
-        <footer class="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-16 py-12">
+        <footer class="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-8 sm:mt-12 md:mt-16 py-8 sm:py-10 md:py-12">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="grid md:grid-cols-4 gap-8 mb-8">
-                    <div>
-                        <h4 class="text-white font-bold text-lg mb-4 flex items-center">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
+                    <div class="col-span-2 md:col-span-1">
+                        <h4 class="text-white font-bold text-base sm:text-lg mb-3 sm:mb-4 flex items-center">
                             <i class="fas fa-infinity mr-2 text-purple-400"></i>
                             Faith Portal
                         </h4>
-                        <p class="text-gray-400 text-sm">
+                        <p class="text-gray-400 text-xs sm:text-sm">
                             믿음의 포탈에서<br/>더 넓은 세상을 만나보세요
                         </p>
                     </div>
                     <div>
-                        <h5 class="text-white font-semibold mb-4">서비스</h5>
-                        <div class="space-y-2">
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">메일</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">카페</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">블로그</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">쇼핑</a>
+                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">서비스</h5>
+                        <div class="space-y-1.5 sm:space-y-2">
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">메일</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">카페</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">블로그</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">쇼핑</a>
                         </div>
                     </div>
                     <div>
-                        <h5 class="text-white font-semibold mb-4">회사</h5>
-                        <div class="space-y-2">
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">회사소개</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">이용약관</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">개인정보처리방침</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">고객센터</a>
+                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">회사</h5>
+                        <div class="space-y-1.5 sm:space-y-2">
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">회사소개</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">이용약관</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">개인정보처리방침</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">고객센터</a>
                         </div>
                     </div>
-                    <div>
-                        <h5 class="text-white font-semibold mb-4">소셜 미디어</h5>
-                        <div class="flex space-x-4">
-                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-facebook-f"></i>
+                    <div class="col-span-2 md:col-span-1">
+                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">소셜 미디어</h5>
+                        <div class="flex space-x-3 sm:space-x-4">
+                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-facebook-f text-sm"></i>
                             </a>
-                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-twitter"></i>
+                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-twitter text-sm"></i>
                             </a>
-                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-instagram"></i>
+                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-instagram text-sm"></i>
                             </a>
                         </div>
                     </div>
                 </div>
-                <div class="border-t border-gray-700 pt-6 text-center">
-                    <p class="text-gray-400 text-sm">
+                <div class="border-t border-gray-700 pt-4 sm:pt-6 text-center">
+                    <p class="text-gray-400 text-xs sm:text-sm px-4">
                         &copy; 2025 Faith Portal. All rights reserved. Made with 
                         <i class="fas fa-heart text-red-500"></i> 
                         by Faith Team
