@@ -32,7 +32,7 @@ app.get('/', (c) => {
         <header class="bg-white border-b">
             <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
                 <div class="flex items-center space-x-6">
-                    <h1 class="text-3xl font-bold faith-blue text-white px-4 py-1 rounded">Faith Portal</h1>
+                    <h1 class="text-2xl font-bold faith-blue text-white px-3 py-1 rounded">Faith Portal</h1>
                     <nav class="hidden md:flex space-x-4">
                         <a href="/" class="text-gray-700 hover:text-blue-600">메일</a>
                         <a href="/" class="text-gray-700 hover:text-blue-600">카페</a>
@@ -51,12 +51,6 @@ app.get('/', (c) => {
 
         <!-- 메인 검색 영역 -->
         <main class="max-w-4xl mx-auto px-4 py-16">
-            <div class="text-center mb-8">
-                <div class="flex justify-center items-center mb-8">
-                    <h2 class="text-6xl font-bold faith-blue text-white px-8 py-3 rounded-lg">Faith Portal</h2>
-                </div>
-            </div>
-
             <!-- 검색창 -->
             <div class="mb-12">
                 <div class="relative search-shadow rounded-lg overflow-hidden bg-white">
