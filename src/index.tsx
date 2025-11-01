@@ -10,6 +10,64 @@ const app = new Hono<{ Bindings: Bindings }>()
 // CORS 설정 (API 요청용)
 app.use('/api/*', cors())
 
+// ==================== 관리자 네비게이션 헬퍼 함수 ====================
+function getAdminNavigation(currentPage: string): string {
+  const menuItems = [
+    { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt' },
+    { path: '/admin/users', label: '회원 관리', icon: 'fa-users' },
+    { path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', hasDropdown: true, dropdownItems: [
+      { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
+    ]},
+    { path: '/admin/stats', label: '통계', icon: 'fa-chart-line' },
+    { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list' },
+    { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell' },
+  ]
+
+  let navHtml = '<div class="flex space-x-8">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path || (item.dropdownItems && item.dropdownItems.some(sub => sub.path === currentPage))
+    const activeClass = isActive ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'
+    
+    if (item.hasDropdown) {
+      navHtml += `
+        <div class="relative group">
+          <button class="px-4 py-4 ${activeClass} flex items-center">
+            <i class="fas ${item.icon} mr-2"></i>
+            ${item.label}
+            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+          </button>
+          <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
+      `
+      
+      for (const subItem of item.dropdownItems || []) {
+        const subActive = currentPage === subItem.path
+        navHtml += `
+            <a href="${subItem.path}" class="block px-4 py-3 ${subActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'}">
+              <i class="fas ${subItem.icon} mr-2"></i>
+              ${subItem.label}
+            </a>
+        `
+      }
+      
+      navHtml += `
+          </div>
+        </div>
+      `
+    } else {
+      navHtml += `
+        <a href="${item.path}" class="px-4 py-4 ${activeClass}">
+          <i class="fas ${item.icon} mr-2"></i>
+          ${item.label}
+        </a>
+      `
+    }
+  }
+  
+  navHtml += '</div>'
+  return navHtml
+}
+
 // ==================== 메인 페이지 ====================
 app.get('/', (c) => {
   return c.html(`
@@ -1194,41 +1252,7 @@ app.get('/admin', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <div class="relative group">
-                        <button class="px-4 py-4 text-gray-700 hover:text-blue-600 flex items-center">
-                            <i class="fas fa-folder mr-2"></i>
-                            컨텐츠관리
-                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                        </button>
-                        <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
-                            <a href="/admin/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-blue-600">
-                                <i class="fas fa-newspaper mr-2"></i>
-                                뉴스관리
-                            </a>
-                        </div>
-                    </div>
-                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-clipboard-list mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin')}
             </div>
         </nav>
 
@@ -1468,28 +1492,7 @@ app.get('/admin/users', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-clipboard-list mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin/users')}
             </div>
         </nav>
 
@@ -2767,28 +2770,7 @@ app.get('/admin/stats', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <a href="/admin/stats" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        고급 통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-history mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin/stats')}
             </div>
         </nav>
 
@@ -3049,28 +3031,7 @@ app.get('/admin/logs', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        고급 통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                        <i class="fas fa-history mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin/logs')}
             </div>
         </nav>
 
@@ -3269,29 +3230,7 @@ app.get('/admin/notifications', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        고급 통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-history mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                        <span id="unread-badge" class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full"></span>
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin/notifications')}
             </div>
         </nav>
 
@@ -3659,41 +3598,7 @@ app.get('/admin/news', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8">
-                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-tachometer-alt mr-2"></i>
-                        대시보드
-                    </a>
-                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>
-                        회원 관리
-                    </a>
-                    <div class="relative group">
-                        <button class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium flex items-center">
-                            <i class="fas fa-folder mr-2"></i>
-                            컨텐츠관리
-                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
-                        </button>
-                        <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
-                            <a href="/admin/news" class="block px-4 py-3 bg-blue-50 text-blue-600 font-medium">
-                                <i class="fas fa-newspaper mr-2"></i>
-                                뉴스관리
-                            </a>
-                        </div>
-                    </div>
-                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        통계
-                    </a>
-                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-clipboard-list mr-2"></i>
-                        활동 로그
-                    </a>
-                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
-                        <i class="fas fa-bell mr-2"></i>
-                        알림 센터
-                    </a>
-                </div>
+                ${getAdminNavigation('/admin/news')}
             </div>
         </nav>
 
