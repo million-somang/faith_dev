@@ -92,28 +92,9 @@ app.get('/', (c) => {
         <!-- 헤더 -->
         <header class="bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                <div class="flex items-center space-x-8">
-                    <h1 class="text-2xl font-bold faith-blue text-white px-4 py-2 rounded-lg shadow-lg shine floating">
-                        <i class="fas fa-infinity mr-2"></i>Faith Portal
-                    </h1>
-                    <nav class="hidden md:flex space-x-6">
-                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
-                            <i class="fas fa-envelope mr-1"></i>메일
-                        </a>
-                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
-                            <i class="fas fa-coffee mr-1"></i>카페
-                        </a>
-                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
-                            <i class="fas fa-blog mr-1"></i>블로그
-                        </a>
-                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
-                            <i class="fas fa-newspaper mr-1"></i>뉴스
-                        </a>
-                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
-                            <i class="fas fa-shopping-bag mr-1"></i>쇼핑
-                        </a>
-                    </nav>
-                </div>
+                <h1 class="text-2xl font-bold faith-blue text-white px-4 py-2 rounded-lg shadow-lg shine floating">
+                    <i class="fas fa-infinity mr-2"></i>Faith Portal
+                </h1>
                 <div id="user-menu" class="flex items-center space-x-3">
                     <!-- 로그인 전 -->
                     <a href="/login" class="text-sm text-gray-700 hover:text-purple-600 font-medium transition-all">
@@ -139,7 +120,7 @@ app.get('/', (c) => {
             </div>
 
             <!-- 검색창 -->
-            <div class="mb-16 max-w-3xl mx-auto">
+            <div class="mb-8 max-w-3xl mx-auto">
                 <div class="relative search-shadow rounded-2xl overflow-hidden bg-white">
                     <div class="flex items-center px-6">
                         <i class="fas fa-search text-purple-400 text-xl"></i>
@@ -158,6 +139,42 @@ app.get('/', (c) => {
                     </div>
                 </div>
             </div>
+
+            <!-- 메뉴 네비게이션 -->
+            <nav class="mb-16 max-w-3xl mx-auto">
+                <div class="flex justify-center items-center space-x-8">
+                    <a href="/" class="group text-center">
+                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-envelope text-2xl text-white"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">메일</p>
+                    </a>
+                    <a href="/" class="group text-center">
+                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-coffee text-2xl text-white"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">카페</p>
+                    </a>
+                    <a href="/" class="group text-center">
+                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-blog text-2xl text-white"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">블로그</p>
+                    </a>
+                    <a href="/" class="group text-center">
+                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-newspaper text-2xl text-white"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
+                    </a>
+                    <a href="/" class="group text-center">
+                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-shopping-bag text-2xl text-white"></i>
+                        </div>
+                        <p class="text-gray-700 font-medium group-hover:text-purple-600 transition-all">쇼핑</p>
+                    </a>
+                </div>
+            </nav>
 
             <!-- 인기 서비스 -->
             <div class="mb-12">
