@@ -698,6 +698,18 @@ app.get('/admin', async (c) => {
                         <i class="fas fa-users mr-2"></i>
                         회원 관리
                     </a>
+                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                    </a>
                 </div>
             </div>
         </nav>
@@ -947,6 +959,18 @@ app.get('/admin/users', async (c) => {
                         <i class="fas fa-users mr-2"></i>
                         회원 관리
                     </a>
+                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                    </a>
                 </div>
             </div>
         </nav>
@@ -992,15 +1016,46 @@ app.get('/admin/users', async (c) => {
             <div id="list-view">
                 <div class="bg-white rounded-lg shadow">
                     <div class="px-6 py-4 border-b">
-                        <h3 class="text-lg font-bold text-gray-800">
-                            <i class="fas fa-list text-blue-600 mr-2"></i>
-                            회원 목록
-                        </h3>
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-bold text-gray-800">
+                                <i class="fas fa-list text-blue-600 mr-2"></i>
+                                회원 목록
+                            </h3>
+                            <div class="text-sm text-gray-600">
+                                <span id="selected-count">0</span>명 선택됨
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- 배치 작업 툴바 -->
+                    <div class="px-6 py-3 bg-gray-50 border-b flex items-center space-x-4">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-2 text-sm text-gray-700">전체 선택</span>
+                        </label>
+                        
+                        <div class="flex-1"></div>
+                        
+                        <select id="batch-action" class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="executeBatchAction()">
+                            <option value="">일괄 작업 선택...</option>
+                            <option value="change-level">등급 변경</option>
+                            <option value="change-status">상태 변경</option>
+                            <option value="delete">삭제</option>
+                        </select>
+                        
+                        <button onclick="exportToCSV()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                            <i class="fas fa-file-csv mr-2"></i>
+                            CSV 내보내기
+                        </button>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase w-12">
+                                        <input type="checkbox" id="header-checkbox" onchange="toggleSelectAll()" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    </th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
@@ -1175,28 +1230,89 @@ app.get('/admin/users', async (c) => {
                 }
             }
 
+            // 선택된 사용자 ID 저장
+            let selectedUserIds = new Set();
+
             // 회원 목록 표시
             function displayUsers(users) {
                 const tbody = document.getElementById('users-table');
                 tbody.innerHTML = users.map(user => \`
-                    <tr class="cursor-pointer hover:bg-blue-50" onclick="showUserDetail(\${user.id})">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.id}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.email}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${user.phone || '-'}</td>
+                    <tr class="hover:bg-blue-50">
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <input type="checkbox" 
+                                   class="user-checkbox w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+                                   value="\${user.id}" 
+                                   onchange="updateSelection()"
+                                   onclick="event.stopPropagation()">
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer" onclick="showUserDetail(\${user.id})">\${user.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer" onclick="showUserDetail(\${user.id})">\${user.email}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 cursor-pointer" onclick="showUserDetail(\${user.id})">\${user.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer" onclick="showUserDetail(\${user.id})">\${user.phone || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm cursor-pointer" onclick="showUserDetail(\${user.id})">
                             <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                 Lv.\${user.level} \${getLevelName(user.level)}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm cursor-pointer" onclick="showUserDetail(\${user.id})">
                             \${getStatusBadge(user.status)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 cursor-pointer" onclick="showUserDetail(\${user.id})">
                             \${new Date(user.created_at).toLocaleDateString('ko-KR')}
                         </td>
                     </tr>
                 \`).join('');
+                
+                // 선택 상태 초기화
+                selectedUserIds.clear();
+                updateSelectionUI();
+            }
+
+            // 전체 선택/해제
+            function toggleSelectAll() {
+                const checkboxes = document.querySelectorAll('.user-checkbox');
+                const selectAllCheckbox = document.getElementById('select-all-checkbox') || document.getElementById('header-checkbox');
+                const isChecked = selectAllCheckbox.checked;
+                
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+                
+                // 두 체크박스 동기화
+                const otherCheckbox = selectAllCheckbox.id === 'select-all-checkbox' 
+                    ? document.getElementById('header-checkbox') 
+                    : document.getElementById('select-all-checkbox');
+                if (otherCheckbox) otherCheckbox.checked = isChecked;
+                
+                updateSelection();
+            }
+
+            // 선택 상태 업데이트
+            function updateSelection() {
+                const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+                selectedUserIds.clear();
+                checkboxes.forEach(cb => selectedUserIds.add(parseInt(cb.value)));
+                updateSelectionUI();
+            }
+
+            // 선택 UI 업데이트
+            function updateSelectionUI() {
+                const count = selectedUserIds.size;
+                document.getElementById('selected-count').textContent = count;
+                
+                // 전체 선택 체크박스 상태 업데이트
+                const allCheckboxes = document.querySelectorAll('.user-checkbox');
+                const checkedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
+                const selectAllCheckbox = document.getElementById('select-all-checkbox');
+                const headerCheckbox = document.getElementById('header-checkbox');
+                
+                if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
+                    if (selectAllCheckbox) selectAllCheckbox.checked = true;
+                    if (headerCheckbox) headerCheckbox.checked = true;
+                } else {
+                    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+                    if (headerCheckbox) headerCheckbox.checked = false;
+                }
             }
 
             // 검색
@@ -1254,6 +1370,110 @@ app.get('/admin/users', async (c) => {
                 document.getElementById('list-view').classList.remove('hidden');
                 currentUserId = null;
                 searchUsers(); // 목록 새로고침
+            }
+
+            // 배치 작업 실행
+            async function executeBatchAction() {
+                const action = document.getElementById('batch-action').value;
+                
+                if (!action) return;
+                
+                if (selectedUserIds.size === 0) {
+                    alert('선택된 회원이 없습니다.');
+                    document.getElementById('batch-action').value = '';
+                    return;
+                }
+                
+                const userIds = Array.from(selectedUserIds);
+                
+                try {
+                    if (action === 'change-level') {
+                        const level = prompt('변경할 등급을 입력하세요 (1-10):');
+                        if (!level || level < 1 || level > 10) {
+                            alert('올바른 등급을 입력하세요.');
+                            document.getElementById('batch-action').value = '';
+                            return;
+                        }
+                        
+                        if (!confirm(\`선택한 \${userIds.length}명의 회원 등급을 Lv.\${level}로 변경하시겠습니까?\`)) {
+                            document.getElementById('batch-action').value = '';
+                            return;
+                        }
+                        
+                        await axios.post('/api/admin/users/batch', 
+                            { userIds, action: 'level', value: parseInt(level) },
+                            { headers: { 'Authorization': 'Bearer ' + token } }
+                        );
+                        
+                        alert('등급이 변경되었습니다.');
+                    } 
+                    else if (action === 'change-status') {
+                        const status = prompt('변경할 상태를 입력하세요 (active/suspended/deleted):');
+                        if (!['active', 'suspended', 'deleted'].includes(status)) {
+                            alert('올바른 상태를 입력하세요.');
+                            document.getElementById('batch-action').value = '';
+                            return;
+                        }
+                        
+                        const statusName = { active: '활성', suspended: '정지', deleted: '삭제' }[status];
+                        if (!confirm(\`선택한 \${userIds.length}명의 회원 상태를 '\${statusName}'으로 변경하시겠습니까?\`)) {
+                            document.getElementById('batch-action').value = '';
+                            return;
+                        }
+                        
+                        await axios.post('/api/admin/users/batch', 
+                            { userIds, action: 'status', value: status },
+                            { headers: { 'Authorization': 'Bearer ' + token } }
+                        );
+                        
+                        alert('상태가 변경되었습니다.');
+                    } 
+                    else if (action === 'delete') {
+                        if (!confirm(\`정말 선택한 \${userIds.length}명의 회원을 삭제하시겠습니까?\\n\\n이 작업은 되돌릴 수 없습니다!\`)) {
+                            document.getElementById('batch-action').value = '';
+                            return;
+                        }
+                        
+                        await axios.post('/api/admin/users/batch', 
+                            { userIds, action: 'delete' },
+                            { headers: { 'Authorization': 'Bearer ' + token } }
+                        );
+                        
+                        alert('회원이 삭제되었습니다.');
+                    }
+                    
+                    // 작업 완료 후 목록 새로고침
+                    document.getElementById('batch-action').value = '';
+                    searchUsers();
+                } catch (error) {
+                    console.error('Batch operation error:', error);
+                    alert('일괄 작업에 실패했습니다.');
+                    document.getElementById('batch-action').value = '';
+                }
+            }
+
+            // CSV 내보내기
+            async function exportToCSV() {
+                try {
+                    const response = await axios.get('/api/admin/users/export', {
+                        headers: { 'Authorization': 'Bearer ' + token },
+                        responseType: 'blob'
+                    });
+                    
+                    // CSV 파일 다운로드
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', \`users_\${new Date().toISOString().slice(0, 10)}.csv\`);
+                    document.body.appendChild(link);
+                    link.click();
+                    link.remove();
+                    
+                    alert('CSV 파일이 다운로드되었습니다.');
+                } catch (error) {
+                    console.error('CSV export error:', error);
+                    alert('CSV 내보내기에 실패했습니다.');
+                }
             }
 
             // 변경사항 저장
@@ -1985,5 +2205,733 @@ async function createNotification(db: any, type: string, title: string, message:
     console.error('Create notification error:', error)
   }
 }
+
+// ==================== 통계 대시보드 페이지 (고급) ====================
+app.get('/admin/stats', async (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>고급 통계 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                    <a href="/admin/stats" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        고급 통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-history mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                고급 통계 분석
+            </h2>
+
+            <!-- 일별 가입자 추세 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-chart-area text-blue-600 mr-2"></i>
+                    최근 30일 일별 가입자 추세
+                </h3>
+                <canvas id="dailySignupsChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- 월별 가입자 추세 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+                    최근 12개월 월별 가입자 추세
+                </h3>
+                <canvas id="monthlySignupsChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- 로그인 활동 추세 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-sign-in-alt text-blue-600 mr-2"></i>
+                    최근 30일 일별 로그인 활동
+                </h3>
+                <canvas id="dailyLoginsChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- 등급별 활동 통계 -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-users-cog text-blue-600 mr-2"></i>
+                    등급별 활동 통계 (최근 30일)
+                </h3>
+                <canvas id="levelActivityChart" style="max-height: 300px;"></canvas>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 인증 체크
+            const token = localStorage.getItem('auth_token');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/login';
+            }
+
+            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+
+            // 등급명 반환
+            function getLevelName(level) {
+                const levels = {
+                    1: '일반 회원', 2: '정회원', 3: '우수회원', 4: 'VIP', 5: 'VVIP',
+                    6: '실버 관리자', 7: '골드 관리자', 8: '플래티넘 관리자',
+                    9: '마스터 관리자', 10: '슈퍼바이저'
+                };
+                return levels[level] || '알 수 없음';
+            }
+
+            // 통계 데이터 로드
+            async function loadTrends() {
+                try {
+                    const response = await axios.get('/api/admin/stats/trends', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    const data = response.data;
+                    
+                    // 일별 가입자 차트
+                    createDailySignupsChart(data.dailySignups);
+                    
+                    // 월별 가입자 차트
+                    createMonthlySignupsChart(data.monthlySignups);
+                    
+                    // 일별 로그인 차트
+                    createDailyLoginsChart(data.dailyLogins);
+                    
+                    // 등급별 활동 차트
+                    createLevelActivityChart(data.levelActivity);
+                } catch (error) {
+                    console.error('통계 로드 실패:', error);
+                    alert('통계 데이터를 불러오는데 실패했습니다.');
+                }
+            }
+
+            // 일별 가입자 차트
+            function createDailySignupsChart(data) {
+                const ctx = document.getElementById('dailySignupsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.date),
+                        datasets: [{
+                            label: '가입자 수',
+                            data: data.map(d => d.count),
+                            borderColor: 'rgba(30, 64, 175, 1)',
+                            backgroundColor: 'rgba(30, 64, 175, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 월별 가입자 차트
+            function createMonthlySignupsChart(data) {
+                const ctx = document.getElementById('monthlySignupsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.month),
+                        datasets: [{
+                            label: '월별 가입자',
+                            data: data.map(d => d.count),
+                            backgroundColor: 'rgba(30, 64, 175, 0.7)',
+                            borderColor: 'rgba(30, 64, 175, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 일별 로그인 차트
+            function createDailyLoginsChart(data) {
+                const ctx = document.getElementById('dailyLoginsChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.map(d => d.date),
+                        datasets: [{
+                            label: '로그인 수',
+                            data: data.map(d => d.count),
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 등급별 활동 차트
+            function createLevelActivityChart(data) {
+                const ctx = document.getElementById('levelActivityChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => 'Lv.' + d.level + ' ' + getLevelName(d.level)),
+                        datasets: [{
+                            label: '활동 수',
+                            data: data.map(d => d.activity_count),
+                            backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                            borderColor: 'rgba(245, 158, 11, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 페이지 로드 시 통계 로드
+            loadTrends();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 활동 로그 페이지 ====================
+app.get('/admin/logs', async (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>활동 로그 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        고급 통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-history mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-history text-blue-600 mr-2"></i>
+                활동 로그
+            </h2>
+
+            <!-- 필터 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <select id="action-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">전체 타입</option>
+                        <option value="login">로그인</option>
+                        <option value="signup">회원가입</option>
+                        <option value="admin_action">관리자 작업</option>
+                    </select>
+                    <select id="limit-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="50">50개</option>
+                        <option value="100">100개</option>
+                        <option value="200">200개</option>
+                    </select>
+                    <button onclick="loadLogs()" class="faith-blue text-white px-6 py-2 rounded-lg faith-blue-hover">
+                        <i class="fas fa-sync mr-2"></i>
+                        새로고침
+                    </button>
+                    <button onclick="toggleAutoRefresh()" id="auto-refresh-btn" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                        <i class="fas fa-play mr-2"></i>
+                        자동 새로고침
+                    </button>
+                </div>
+            </div>
+
+            <!-- 로그 목록 -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-list text-blue-600 mr-2"></i>
+                        로그 목록
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">타입</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">사용자</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">설명</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP 주소</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">시간</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table" class="bg-white divide-y divide-gray-200">
+                            <!-- 동적으로 채워짐 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 인증 체크
+            const token = localStorage.getItem('auth_token');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/login';
+            }
+
+            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+
+            let autoRefreshInterval = null;
+
+            // 로그 타입 배지
+            function getActionBadge(action) {
+                const badges = {
+                    login: 'bg-green-100 text-green-800',
+                    signup: 'bg-blue-100 text-blue-800',
+                    admin_action: 'bg-purple-100 text-purple-800'
+                };
+                const names = {
+                    login: '로그인',
+                    signup: '회원가입',
+                    admin_action: '관리자'
+                };
+                return \`<span class="px-2 py-1 text-xs rounded-full \${badges[action] || 'bg-gray-100 text-gray-800'}">\${names[action] || action}</span>\`;
+            }
+
+            // 로그 로드
+            async function loadLogs() {
+                try {
+                    const action = document.getElementById('action-filter').value;
+                    const limit = document.getElementById('limit-filter').value;
+                    
+                    let url = \`/api/admin/activity-logs?limit=\${limit}\`;
+                    if (action) url += \`&action=\${action}\`;
+                    
+                    const response = await axios.get(url, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    displayLogs(response.data.logs);
+                } catch (error) {
+                    console.error('로그 로드 실패:', error);
+                }
+            }
+
+            // 로그 표시
+            function displayLogs(logs) {
+                const tbody = document.getElementById('logs-table');
+                tbody.innerHTML = logs.map(log => \`
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${log.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            \${getActionBadge(log.action)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            \${log.email || '시스템'}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">\${log.description || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${log.ip_address || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            \${new Date(log.created_at).toLocaleString('ko-KR')}
+                        </td>
+                    </tr>
+                \`).join('');
+            }
+
+            // 자동 새로고침 토글
+            function toggleAutoRefresh() {
+                const btn = document.getElementById('auto-refresh-btn');
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                    btn.innerHTML = '<i class="fas fa-play mr-2"></i>자동 새로고침';
+                    btn.className = 'bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600';
+                } else {
+                    autoRefreshInterval = setInterval(loadLogs, 5000); // 5초마다
+                    btn.innerHTML = '<i class="fas fa-pause mr-2"></i>자동 새로고침 중';
+                    btn.className = 'bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600';
+                }
+            }
+
+            // 초기 로드
+            loadLogs();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 알림 센터 페이지 ====================
+app.get('/admin/notifications', async (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>알림 센터 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        고급 통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-history mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                        <span id="unread-badge" class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full"></span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-bell text-blue-600 mr-2"></i>
+                    알림 센터
+                </h2>
+                <div class="space-x-2">
+                    <button onclick="filterNotifications('all')" id="filter-all" class="px-4 py-2 rounded-lg bg-blue-600 text-white">
+                        전체
+                    </button>
+                    <button onclick="filterNotifications('unread')" id="filter-unread" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700">
+                        읽지 않음
+                    </button>
+                    <button onclick="filterNotifications('read')" id="filter-read" class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700">
+                        읽음
+                    </button>
+                    <button onclick="loadNotifications()" class="px-4 py-2 rounded-lg bg-green-500 text-white">
+                        <i class="fas fa-sync mr-2"></i>
+                        새로고침
+                    </button>
+                </div>
+            </div>
+
+            <!-- 알림 목록 -->
+            <div id="notifications-list" class="space-y-4">
+                <!-- 동적으로 채워짐 -->
+            </div>
+
+            <!-- 빈 상태 -->
+            <div id="empty-state" class="hidden bg-white rounded-lg shadow p-12 text-center">
+                <i class="fas fa-bell-slash text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg">알림이 없습니다</p>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 인증 체크
+            const token = localStorage.getItem('auth_token');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/login';
+            }
+
+            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+
+            let allNotifications = [];
+            let currentFilter = 'all';
+
+            // 알림 로드
+            async function loadNotifications() {
+                try {
+                    const response = await axios.get('/api/admin/notifications', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    allNotifications = response.data.notifications;
+                    
+                    // 읽지 않은 알림 수 표시
+                    const unreadCount = response.data.unreadCount;
+                    const badge = document.getElementById('unread-badge');
+                    if (unreadCount > 0) {
+                        badge.textContent = unreadCount;
+                        badge.classList.remove('hidden');
+                    } else {
+                        badge.classList.add('hidden');
+                    }
+                    
+                    displayNotifications();
+                } catch (error) {
+                    console.error('알림 로드 실패:', error);
+                }
+            }
+
+            // 알림 필터링
+            function filterNotifications(filter) {
+                currentFilter = filter;
+                
+                // 버튼 스타일 변경
+                document.getElementById('filter-all').className = 'px-4 py-2 rounded-lg ' + (filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700');
+                document.getElementById('filter-unread').className = 'px-4 py-2 rounded-lg ' + (filter === 'unread' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700');
+                document.getElementById('filter-read').className = 'px-4 py-2 rounded-lg ' + (filter === 'read' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700');
+                
+                displayNotifications();
+            }
+
+            // 알림 표시
+            function displayNotifications() {
+                let filtered = allNotifications;
+                
+                if (currentFilter === 'unread') {
+                    filtered = allNotifications.filter(n => n.is_read === 0);
+                } else if (currentFilter === 'read') {
+                    filtered = allNotifications.filter(n => n.is_read === 1);
+                }
+                
+                const container = document.getElementById('notifications-list');
+                const emptyState = document.getElementById('empty-state');
+                
+                if (filtered.length === 0) {
+                    container.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    return;
+                }
+                
+                emptyState.classList.add('hidden');
+                
+                container.innerHTML = filtered.map(notif => \`
+                    <div class="bg-white rounded-lg shadow p-6 \${notif.is_read === 0 ? 'border-l-4 border-blue-600' : ''}" onclick="markAsRead(\${notif.id})">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center mb-2">
+                                    <span class="px-2 py-1 text-xs rounded-full \${notif.priority === 'high' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}">
+                                        \${notif.priority === 'high' ? '높음' : '일반'}
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">
+                                        \${new Date(notif.created_at).toLocaleString('ko-KR')}
+                                    </span>
+                                    \${notif.is_read === 0 ? '<span class="ml-2 px-2 py-1 text-xs rounded-full bg-blue-500 text-white">새 알림</span>' : ''}
+                                </div>
+                                <h4 class="text-lg font-bold text-gray-800 mb-2">\${notif.title}</h4>
+                                <p class="text-gray-600">\${notif.message}</p>
+                            </div>
+                            \${notif.is_read === 0 ? '<i class="fas fa-circle text-blue-600 ml-4"></i>' : ''}
+                        </div>
+                    </div>
+                \`).join('');
+            }
+
+            // 읽음 처리
+            async function markAsRead(notificationId) {
+                try {
+                    await axios.patch(\`/api/admin/notifications/\${notificationId}/read\`, {}, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    // 알림 목록 새로고침
+                    loadNotifications();
+                } catch (error) {
+                    console.error('읽음 처리 실패:', error);
+                }
+            }
+
+            // 5초마다 자동 새로고침
+            setInterval(loadNotifications, 5000);
+
+            // 초기 로드
+            loadNotifications();
+        </script>
+    </body>
+    </html>
+  `)
+})
 
 export default app
