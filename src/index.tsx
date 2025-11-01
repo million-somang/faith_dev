@@ -988,81 +988,135 @@ app.get('/admin/users', async (c) => {
                 </div>
             </div>
 
-            <!-- 회원 목록 -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b">
-                    <h3 class="text-lg font-bold text-gray-800">
-                        <i class="fas fa-list text-blue-600 mr-2"></i>
-                        회원 목록
-                    </h3>
+            <!-- 회원 목록 뷰 -->
+            <div id="list-view">
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            <i class="fas fa-list text-blue-600 mr-2"></i>
+                            회원 목록
+                        </h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">휴대전화</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등급</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table" class="bg-white divide-y divide-gray-200">
+                                <!-- 동적으로 채워짐 -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">휴대전화</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등급</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-table" class="bg-white divide-y divide-gray-200">
-                            <!-- 동적으로 채워짐 -->
-                        </tbody>
-                    </table>
+            </div>
+
+            <!-- 회원 상세보기 뷰 -->
+            <div id="detail-view" class="hidden">
+                <div class="bg-white rounded-lg shadow">
+                    <!-- 상세보기 헤더 -->
+                    <div class="px-6 py-4 border-b flex justify-between items-center">
+                        <h3 class="text-lg font-bold text-gray-800">
+                            <i class="fas fa-user text-blue-600 mr-2"></i>
+                            회원 상세 정보
+                        </h3>
+                        <button onclick="backToList()" class="text-gray-600 hover:text-gray-800">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            목록으로
+                        </button>
+                    </div>
+
+                    <!-- 상세보기 내용 -->
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- 기본 정보 -->
+                            <div class="space-y-4">
+                                <h4 class="text-md font-bold text-gray-700 mb-3">기본 정보</h4>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">회원 ID</label>
+                                    <p id="detail-id" class="text-lg font-semibold text-gray-900">-</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">이메일</label>
+                                    <p id="detail-email" class="text-lg text-gray-900">-</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">이름</label>
+                                    <input type="text" id="detail-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">휴대전화</label>
+                                    <input type="tel" id="detail-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                            </div>
+
+                            <!-- 등급 및 상태 -->
+                            <div class="space-y-4">
+                                <h4 class="text-md font-bold text-gray-700 mb-3">등급 및 상태</h4>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">회원 등급</label>
+                                    <select id="detail-level" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="1">Lv.1 일반 회원</option>
+                                        <option value="2">Lv.2 정회원</option>
+                                        <option value="3">Lv.3 우수회원</option>
+                                        <option value="4">Lv.4 VIP</option>
+                                        <option value="5">Lv.5 VVIP</option>
+                                        <option value="6">Lv.6 실버 관리자</option>
+                                        <option value="7">Lv.7 골드 관리자</option>
+                                        <option value="8">Lv.8 플래티넘 관리자</option>
+                                        <option value="9">Lv.9 마스터 관리자</option>
+                                        <option value="10">Lv.10 슈퍼바이저</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">계정 상태</label>
+                                    <div id="detail-status" class="text-lg">-</div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">가입일</label>
+                                    <p id="detail-created" class="text-gray-900">-</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-500 mb-1">최근 로그인</label>
+                                    <p id="detail-last-login" class="text-gray-900">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 액션 버튼 -->
+                        <div class="mt-8 pt-6 border-t flex space-x-3">
+                            <button onclick="saveUserChanges()" class="flex-1 faith-blue text-white px-6 py-3 rounded-lg faith-blue-hover">
+                                <i class="fas fa-save mr-2"></i>
+                                변경사항 저장
+                            </button>
+                            <button id="toggle-status-btn" onclick="toggleUserStatus()" class="flex-1 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600">
+                                <i class="fas fa-ban mr-2"></i>
+                                <span id="toggle-status-text">정지</span>
+                            </button>
+                            <button onclick="deleteUserDetail()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600">
+                                <i class="fas fa-trash mr-2"></i>
+                                삭제
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
-
-        <!-- 수정 모달 -->
-        <div id="edit-modal" class="modal">
-            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">회원 정보 수정</h3>
-                <form id="edit-form" class="space-y-4">
-                    <input type="hidden" id="edit-user-id">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
-                        <input type="email" id="edit-email" disabled class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">이름</label>
-                        <input type="text" id="edit-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">휴대전화</label>
-                        <input type="tel" id="edit-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">등급</label>
-                        <select id="edit-level" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="1">일반 회원</option>
-                            <option value="2">정회원</option>
-                            <option value="3">우수회원</option>
-                            <option value="4">VIP</option>
-                            <option value="5">VVIP</option>
-                            <option value="6">실버 관리자</option>
-                            <option value="7">골드 관리자</option>
-                            <option value="8">플래티넘 관리자</option>
-                            <option value="9">마스터 관리자</option>
-                            <option value="10">슈퍼바이저</option>
-                        </select>
-                    </div>
-                    <div class="flex space-x-3 pt-4">
-                        <button type="submit" class="flex-1 faith-blue text-white px-4 py-2 rounded-lg faith-blue-hover">
-                            <i class="fas fa-save mr-2"></i>
-                            저장
-                        </button>
-                        <button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
-                            취소
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
@@ -1125,7 +1179,7 @@ app.get('/admin/users', async (c) => {
             function displayUsers(users) {
                 const tbody = document.getElementById('users-table');
                 tbody.innerHTML = users.map(user => \`
-                    <tr>
+                    <tr class="cursor-pointer hover:bg-blue-50" onclick="showUserDetail(\${user.id})">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.id}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.email}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.name}</td>
@@ -1141,17 +1195,6 @@ app.get('/admin/users', async (c) => {
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             \${new Date(user.created_at).toLocaleDateString('ko-KR')}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                            <button onclick="editUser(\${user.id})" class="text-blue-600 hover:text-blue-800" title="수정">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="toggleSuspend(\${user.id}, '\${user.status}')" class="text-orange-600 hover:text-orange-800" title="정지/해제">
-                                <i class="fas fa-ban"></i>
-                            </button>
-                            <button onclick="deleteUser(\${user.id})" class="text-red-600 hover:text-red-800" title="삭제">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
                     </tr>
                 \`).join('');
             }
@@ -1164,86 +1207,119 @@ app.get('/admin/users', async (c) => {
                 loadUsers(search, level, status);
             }
 
-            // 회원 수정
-            async function editUser(userId) {
+            // 현재 선택된 사용자 ID 저장
+            let currentUserId = null;
+
+            // 회원 상세보기 표시
+            async function showUserDetail(userId) {
                 try {
                     const response = await axios.get(\`/api/admin/users/\${userId}\`, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
                     
                     const user = response.data.user;
-                    document.getElementById('edit-user-id').value = user.id;
-                    document.getElementById('edit-email').value = user.email;
-                    document.getElementById('edit-name').value = user.name;
-                    document.getElementById('edit-phone').value = user.phone || '';
-                    document.getElementById('edit-level').value = user.level;
+                    currentUserId = user.id;
                     
-                    document.getElementById('edit-modal').classList.add('active');
+                    // 상세 정보 채우기
+                    document.getElementById('detail-id').textContent = user.id;
+                    document.getElementById('detail-email').textContent = user.email;
+                    document.getElementById('detail-name').value = user.name;
+                    document.getElementById('detail-phone').value = user.phone || '';
+                    document.getElementById('detail-level').value = user.level;
+                    document.getElementById('detail-status').innerHTML = getStatusBadge(user.status);
+                    document.getElementById('detail-created').textContent = new Date(user.created_at).toLocaleString('ko-KR');
+                    document.getElementById('detail-last-login').textContent = user.last_login ? new Date(user.last_login).toLocaleString('ko-KR') : '없음';
+                    
+                    // 정지/해제 버튼 텍스트 변경
+                    const statusBtn = document.getElementById('toggle-status-text');
+                    if (user.status === 'suspended') {
+                        statusBtn.textContent = '해제';
+                        document.getElementById('toggle-status-btn').className = 'flex-1 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600';
+                    } else {
+                        statusBtn.textContent = '정지';
+                        document.getElementById('toggle-status-btn').className = 'flex-1 bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600';
+                    }
+                    
+                    // 뷰 전환
+                    document.getElementById('list-view').classList.add('hidden');
+                    document.getElementById('detail-view').classList.remove('hidden');
                 } catch (error) {
                     alert('회원 정보를 불러오는데 실패했습니다.');
                 }
             }
 
-            // 수정 모달 닫기
-            function closeEditModal() {
-                document.getElementById('edit-modal').classList.remove('active');
+            // 목록으로 돌아가기
+            function backToList() {
+                document.getElementById('detail-view').classList.add('hidden');
+                document.getElementById('list-view').classList.remove('hidden');
+                currentUserId = null;
+                searchUsers(); // 목록 새로고침
             }
 
-            // 수정 폼 제출
-            document.getElementById('edit-form').addEventListener('submit', async function(e) {
-                e.preventDefault();
+            // 변경사항 저장
+            async function saveUserChanges() {
+                if (!currentUserId) return;
                 
-                const userId = document.getElementById('edit-user-id').value;
-                const data = {
-                    name: document.getElementById('edit-name').value,
-                    phone: document.getElementById('edit-phone').value,
-                    level: parseInt(document.getElementById('edit-level').value)
-                };
+                const name = document.getElementById('detail-name').value;
+                const phone = document.getElementById('detail-phone').value;
+                const level = parseInt(document.getElementById('detail-level').value);
+                
+                if (!confirm('회원 정보를 수정하시겠습니까?')) return;
                 
                 try {
-                    await axios.put(\`/api/admin/users/\${userId}\`, data, {
-                        headers: { 'Authorization': 'Bearer ' + token }
-                    });
+                    await axios.put(\`/api/admin/users/\${currentUserId}\`, 
+                        { name, phone, level },
+                        { headers: { 'Authorization': 'Bearer ' + token } }
+                    );
                     
                     alert('회원 정보가 수정되었습니다.');
-                    closeEditModal();
-                    searchUsers();
+                    showUserDetail(currentUserId); // 상세 정보 새로고침
                 } catch (error) {
                     alert('회원 정보 수정에 실패했습니다.');
                 }
-            });
+            }
 
-            // 정지/해제
-            async function toggleSuspend(userId, currentStatus) {
-                const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
-                const message = newStatus === 'suspended' ? '정지' : '활성화';
-                
-                if (!confirm(\`정말 이 회원을 \${message}하시겠습니까?\`)) return;
+            // 회원 상태 변경 (정지/해제)
+            async function toggleUserStatus() {
+                if (!currentUserId) return;
                 
                 try {
-                    await axios.patch(\`/api/admin/users/\${userId}/status\`, 
+                    // 현재 상태 확인
+                    const response = await axios.get(\`/api/admin/users/\${currentUserId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    const currentStatus = response.data.user.status;
+                    const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+                    const message = newStatus === 'suspended' ? '정지' : '활성화';
+                    
+                    if (!confirm(\`정말 이 회원을 \${message}하시겠습니까?\`)) return;
+                    
+                    await axios.patch(\`/api/admin/users/\${currentUserId}/status\`, 
                         { status: newStatus },
                         { headers: { 'Authorization': 'Bearer ' + token } }
                     );
                     
                     alert(\`회원이 \${message}되었습니다.\`);
-                    searchUsers();
+                    showUserDetail(currentUserId); // 상세 정보 새로고침
                 } catch (error) {
-                    alert(\`회원 \${message}에 실패했습니다.\`);
+                    alert('회원 상태 변경에 실패했습니다.');
                 }
             }
 
-            // 삭제
-            async function deleteUser(userId) {
+            // 회원 삭제
+            async function deleteUserDetail() {
+                if (!currentUserId) return;
+                
                 if (!confirm('정말 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
                 
                 try {
-                    await axios.delete(\`/api/admin/users/\${userId}\`, {
+                    await axios.delete(\`/api/admin/users/\${currentUserId}\`, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     });
                     
                     alert('회원이 삭제되었습니다.');
-                    searchUsers();
+                    backToList();
                 } catch (error) {
                     alert('회원 삭제에 실패했습니다.');
                 }
