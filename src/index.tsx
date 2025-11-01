@@ -22,102 +22,321 @@ app.get('/', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background-color: #1E40AF; }
-            .faith-blue-hover:hover { background-color: #1E3A8A; }
-            .search-shadow { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .search-shadow { 
+                box-shadow: 0 10px 40px rgba(30, 64, 175, 0.15);
+                transition: all 0.3s ease;
+            }
+            .search-shadow:hover {
+                box-shadow: 0 15px 50px rgba(30, 64, 175, 0.25);
+                transform: translateY(-2px);
+            }
+            .hero-gradient {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            }
+            .pulse-animation {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: .7; }
+            }
+            .gradient-text {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            .service-icon {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                transition: all 0.3s ease;
+            }
+            .service-icon:hover {
+                transform: scale(1.1) rotate(5deg);
+            }
+            .floating {
+                animation: floating 3s ease-in-out infinite;
+            }
+            @keyframes floating {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+            .shine {
+                position: relative;
+                overflow: hidden;
+            }
+            .shine::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.5s;
+            }
+            .shine:hover::before {
+                left: 100%;
+            }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <!-- 헤더 -->
-        <header class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-                <div class="flex items-center space-x-6">
-                    <h1 class="text-2xl font-bold faith-blue text-white px-3 py-1 rounded">Faith Portal</h1>
-                    <nav class="hidden md:flex space-x-4">
-                        <a href="/" class="text-gray-700 hover:text-blue-600">메일</a>
-                        <a href="/" class="text-gray-700 hover:text-blue-600">카페</a>
-                        <a href="/" class="text-gray-700 hover:text-blue-600">블로그</a>
-                        <a href="/" class="text-gray-700 hover:text-blue-600">뉴스</a>
-                        <a href="/" class="text-gray-700 hover:text-blue-600">쇼핑</a>
+        <header class="bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-lg sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-8">
+                    <h1 class="text-2xl font-bold faith-blue text-white px-4 py-2 rounded-lg shadow-lg shine floating">
+                        <i class="fas fa-infinity mr-2"></i>Faith Portal
+                    </h1>
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
+                            <i class="fas fa-envelope mr-1"></i>메일
+                        </a>
+                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
+                            <i class="fas fa-coffee mr-1"></i>카페
+                        </a>
+                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
+                            <i class="fas fa-blog mr-1"></i>블로그
+                        </a>
+                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
+                            <i class="fas fa-newspaper mr-1"></i>뉴스
+                        </a>
+                        <a href="/" class="text-gray-700 hover:text-purple-600 font-medium transition-all hover:scale-110">
+                            <i class="fas fa-shopping-bag mr-1"></i>쇼핑
+                        </a>
                     </nav>
                 </div>
                 <div id="user-menu" class="flex items-center space-x-3">
                     <!-- 로그인 전 -->
-                    <a href="/login" class="text-sm text-gray-700 hover:text-blue-600">로그인</a>
-                    <a href="/signup" class="text-sm faith-blue text-white px-4 py-2 rounded faith-blue-hover">회원가입</a>
+                    <a href="/login" class="text-sm text-gray-700 hover:text-purple-600 font-medium transition-all">
+                        <i class="fas fa-sign-in-alt mr-1"></i>로그인
+                    </a>
+                    <a href="/signup" class="text-sm faith-blue text-white px-5 py-2.5 rounded-lg shadow-lg faith-blue-hover shine font-medium">
+                        <i class="fas fa-user-plus mr-1"></i>회원가입
+                    </a>
                 </div>
             </div>
         </header>
 
         <!-- 메인 검색 영역 -->
-        <main class="max-w-4xl mx-auto px-4 py-16">
+        <main class="max-w-6xl mx-auto px-4 py-12">
+            <!-- 히어로 섹션 -->
+            <div class="text-center mb-12">
+                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-4 floating">
+                    무엇이든 찾아보세요
+                </h2>
+                <p class="text-gray-600 text-lg mb-8">
+                    Faith Portal과 함께 더 넓은 세상을 경험하세요
+                </p>
+            </div>
+
             <!-- 검색창 -->
+            <div class="mb-16 max-w-3xl mx-auto">
+                <div class="relative search-shadow rounded-2xl overflow-hidden bg-white">
+                    <div class="flex items-center px-6">
+                        <i class="fas fa-search text-purple-400 text-xl"></i>
+                        <input 
+                            type="text" 
+                            id="search-input"
+                            placeholder="검색어를 입력하세요" 
+                            class="flex-1 px-4 py-6 text-lg border-none outline-none"
+                        />
+                        <button 
+                            id="search-btn"
+                            class="faith-blue text-white px-8 py-3 rounded-xl faith-blue-hover shine font-medium"
+                        >
+                            검색
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 인기 서비스 -->
             <div class="mb-12">
-                <div class="relative search-shadow rounded-lg overflow-hidden bg-white">
-                    <input 
-                        type="text" 
-                        id="search-input"
-                        placeholder="검색어를 입력하세요" 
-                        class="w-full px-6 py-5 text-lg border-none outline-none"
-                    />
-                    <button 
-                        id="search-btn"
-                        class="absolute right-3 top-1/2 transform -translate-y-1/2 faith-blue text-white px-6 py-2 rounded faith-blue-hover"
-                    >
-                        <i class="fas fa-search"></i> 검색
-                    </button>
-                </div>
-            </div>
-
-            <!-- 바로가기 링크 -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-envelope text-3xl text-blue-600 mb-2"></i>
-                    <p class="text-gray-700 font-medium">메일</p>
-                </a>
-                <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-coffee text-3xl text-blue-600 mb-2"></i>
-                    <p class="text-gray-700 font-medium">카페</p>
-                </a>
-                <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-blog text-3xl text-blue-600 mb-2"></i>
-                    <p class="text-gray-700 font-medium">블로그</p>
-                </a>
-                <a href="/" class="bg-white p-6 rounded-lg shadow hover:shadow-md transition text-center">
-                    <i class="fas fa-shopping-cart text-3xl text-blue-600 mb-2"></i>
-                    <p class="text-gray-700 font-medium">쇼핑</p>
-                </a>
-            </div>
-
-            <!-- 뉴스 섹션 -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                    <i class="fas fa-newspaper text-blue-600 mr-2"></i>
-                    실시간 뉴스
+                <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                    <i class="fas fa-fire text-orange-500 mr-3"></i>
+                    인기 서비스
                 </h3>
-                <div class="space-y-3">
-                    <a href="#" class="block text-gray-700 hover:text-blue-600">
-                        1. 최신 뉴스 헤드라인입니다
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    <a href="/" class="card-hover bg-gradient-to-br from-blue-500 to-blue-600 p-8 rounded-2xl shadow-lg text-center shine">
+                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-envelope text-3xl text-white"></i>
+                        </div>
+                        <p class="text-white font-bold text-lg">메일</p>
+                        <p class="text-white/80 text-sm mt-1">이메일 서비스</p>
                     </a>
-                    <a href="#" class="block text-gray-700 hover:text-blue-600">
-                        2. 오늘의 주요 뉴스입니다
+                    <a href="/" class="card-hover bg-gradient-to-br from-amber-500 to-orange-600 p-8 rounded-2xl shadow-lg text-center shine">
+                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-coffee text-3xl text-white"></i>
+                        </div>
+                        <p class="text-white font-bold text-lg">카페</p>
+                        <p class="text-white/80 text-sm mt-1">커뮤니티</p>
                     </a>
-                    <a href="#" class="block text-gray-700 hover:text-blue-600">
-                        3. 속보 뉴스가 업데이트됩니다
+                    <a href="/" class="card-hover bg-gradient-to-br from-purple-500 to-pink-600 p-8 rounded-2xl shadow-lg text-center shine">
+                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-blog text-3xl text-white"></i>
+                        </div>
+                        <p class="text-white font-bold text-lg">블로그</p>
+                        <p class="text-white/80 text-sm mt-1">개인 공간</p>
+                    </a>
+                    <a href="/" class="card-hover bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-2xl shadow-lg text-center shine">
+                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-shopping-bag text-3xl text-white"></i>
+                        </div>
+                        <p class="text-white font-bold text-lg">쇼핑</p>
+                        <p class="text-white/80 text-sm mt-1">온라인 쇼핑</p>
                     </a>
                 </div>
+            </div>
+
+            <!-- 뉴스 & 트렌드 섹션 -->
+            <div class="grid md:grid-cols-2 gap-6 mb-12">
+                <!-- 실시간 뉴스 -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 card-hover">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-newspaper text-white"></i>
+                        </div>
+                        실시간 뉴스
+                        <span class="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full pulse-animation">LIVE</span>
+                    </h3>
+                    <div class="space-y-4">
+                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
+                            <span class="text-purple-600 font-bold mr-3 text-lg">1</span>
+                            <div class="flex-1">
+                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">최신 뉴스 헤드라인입니다</p>
+                                <p class="text-gray-500 text-sm mt-1">5분 전</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
+                            <span class="text-purple-600 font-bold mr-3 text-lg">2</span>
+                            <div class="flex-1">
+                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">오늘의 주요 뉴스입니다</p>
+                                <p class="text-gray-500 text-sm mt-1">15분 전</p>
+                            </div>
+                        </a>
+                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
+                            <span class="text-purple-600 font-bold mr-3 text-lg">3</span>
+                            <div class="flex-1">
+                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">속보 뉴스가 업데이트됩니다</p>
+                                <p class="text-gray-500 text-sm mt-1">30분 전</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 트렌드 토픽 -->
+                <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 card-hover">
+                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                        실시간 트렌드
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 font-bold mr-3 text-sm">#1</span>
+                                <span class="text-gray-800 font-medium">인공지능 기술</span>
+                            </div>
+                            <i class="fas fa-arrow-up text-green-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 font-bold mr-3 text-sm">#2</span>
+                                <span class="text-gray-800 font-medium">날씨 정보</span>
+                            </div>
+                            <i class="fas fa-arrow-up text-green-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 font-bold mr-3 text-sm">#3</span>
+                                <span class="text-gray-800 font-medium">맛집 추천</span>
+                            </div>
+                            <i class="fas fa-minus text-gray-400"></i>
+                        </div>
+                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                            <div class="flex items-center">
+                                <span class="text-blue-600 font-bold mr-3 text-sm">#4</span>
+                                <span class="text-gray-800 font-medium">여행 정보</span>
+                            </div>
+                            <i class="fas fa-arrow-down text-red-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 추천 콘텐츠 -->
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl shadow-2xl p-8 text-center text-white shine">
+                <i class="fas fa-star text-yellow-300 text-4xl mb-4"></i>
+                <h3 class="text-2xl font-bold mb-2">Faith Portal과 함께하세요</h3>
+                <p class="text-white/90 mb-6">지금 가입하고 더 많은 혜택을 누리세요</p>
+                <a href="/signup" class="inline-block bg-white text-purple-600 px-8 py-3 rounded-xl font-bold hover:bg-gray-100 transition shadow-lg">
+                    무료로 시작하기 <i class="fas fa-arrow-right ml-2"></i>
+                </a>
             </div>
         </main>
 
         <!-- 푸터 -->
-        <footer class="bg-gray-100 border-t mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-4 text-center text-gray-600 text-sm">
-                <p>&copy; 2025 Faith Portal. All rights reserved.</p>
-                <div class="mt-2 space-x-4">
-                    <a href="#" class="hover:text-blue-600">회사소개</a>
-                    <a href="#" class="hover:text-blue-600">이용약관</a>
-                    <a href="#" class="hover:text-blue-600">개인정보처리방침</a>
-                    <a href="#" class="hover:text-blue-600">고객센터</a>
+        <footer class="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-16 py-12">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="grid md:grid-cols-4 gap-8 mb-8">
+                    <div>
+                        <h4 class="text-white font-bold text-lg mb-4 flex items-center">
+                            <i class="fas fa-infinity mr-2 text-purple-400"></i>
+                            Faith Portal
+                        </h4>
+                        <p class="text-gray-400 text-sm">
+                            믿음의 포탈에서<br/>더 넓은 세상을 만나보세요
+                        </p>
+                    </div>
+                    <div>
+                        <h5 class="text-white font-semibold mb-4">서비스</h5>
+                        <div class="space-y-2">
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">메일</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">카페</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">블로그</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">쇼핑</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h5 class="text-white font-semibold mb-4">회사</h5>
+                        <div class="space-y-2">
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">회사소개</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">이용약관</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">개인정보처리방침</a>
+                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-sm transition">고객센터</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h5 class="text-white font-semibold mb-4">소셜 미디어</h5>
+                        <div class="flex space-x-4">
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-gray-700 pt-6 text-center">
+                    <p class="text-gray-400 text-sm">
+                        &copy; 2025 Faith Portal. All rights reserved. Made with 
+                        <i class="fas fa-heart text-red-500"></i> 
+                        by Faith Team
+                    </p>
                 </div>
             </div>
         </footer>
