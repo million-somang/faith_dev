@@ -505,10 +505,22 @@ app.post('/api/signup', async (c) => {
       'INSERT INTO users (email, password, name, phone, level, status) VALUES (?, ?, ?, ?, 1, "active")'
     ).bind(email, password, name, phone || null).run()
     
+    const newUserId = result.meta.last_row_id
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(newUserId, 'signup', `신규 회원 가입: ${email}`).run()
+    
+    // 관리자 알림 생성
+    await c.env.DB.prepare(
+      'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+    ).bind('new_signup', '신규 회원 가입', `${name}(${email})님이 가입했습니다.`, 'normal').run()
+    
     return c.json({
       success: true,
       message: '회원가입이 완료되었습니다.',
-      userId: result.meta.last_row_id
+      userId: newUserId
     })
   } catch (error) {
     console.error('Signup error:', error)
@@ -547,6 +559,11 @@ app.post('/api/login', async (c) => {
     await c.env.DB.prepare(
       'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(user.id).run()
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(user.id, 'login', `로그인: ${user.email}`).run()
     
     // 간단한 토큰 생성 (실제로는 JWT 등을 사용해야 함)
     const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
@@ -1426,9 +1443,19 @@ app.put('/api/admin/users/:id', async (c) => {
     const targetUserId = c.req.param('id')
     const { name, phone, level } = await c.req.json()
     
+    // 대상 회원 정보 조회
+    const targetUser = await c.env.DB.prepare(
+      'SELECT email, name FROM users WHERE id = ?'
+    ).bind(targetUserId).first()
+    
     await c.env.DB.prepare(
       'UPDATE users SET name = ?, phone = ?, level = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(name, phone, level, targetUserId).run()
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(userId, 'admin_action', `회원 정보 수정: ${targetUser?.email}`).run()
     
     return c.json({
       success: true,
@@ -1467,9 +1494,26 @@ app.patch('/api/admin/users/:id/status', async (c) => {
       return c.json({ success: false, message: '올바르지 않은 상태입니다.' }, 400)
     }
     
+    // 대상 회원 정보 조회
+    const targetUser = await c.env.DB.prepare(
+      'SELECT email, name FROM users WHERE id = ?'
+    ).bind(targetUserId).first()
+    
     await c.env.DB.prepare(
       'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(status, targetUserId).run()
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(userId, 'admin_action', `회원 상태 변경: ${targetUser?.email} → ${status}`).run()
+    
+    // 정지 알림 생성
+    if (status === 'suspended') {
+      await c.env.DB.prepare(
+        'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+      ).bind('user_suspended', '회원 정지', `${targetUser?.name}(${targetUser?.email})님의 계정이 정지되었습니다.`, 'high').run()
+    }
     
     return c.json({
       success: true,
@@ -1503,10 +1547,25 @@ app.delete('/api/admin/users/:id', async (c) => {
     
     const targetUserId = c.req.param('id')
     
+    // 대상 회원 정보 조회
+    const targetUser = await c.env.DB.prepare(
+      'SELECT email, name FROM users WHERE id = ?'
+    ).bind(targetUserId).first()
+    
     // 소프트 삭제
     await c.env.DB.prepare(
       'UPDATE users SET status = "deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(targetUserId).run()
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(userId, 'admin_action', `회원 삭제: ${targetUser?.email}`).run()
+    
+    // 삭제 알림 생성
+    await c.env.DB.prepare(
+      'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+    ).bind('user_deleted', '회원 삭제', `${targetUser?.name}(${targetUser?.email})님의 계정이 삭제되었습니다.`, 'high').run()
     
     return c.json({
       success: true,
@@ -1517,5 +1576,338 @@ app.delete('/api/admin/users/:id', async (c) => {
     return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
   }
 })
+
+// ==================== API: 고급 통계 (일별/월별 추세) ====================
+app.get('/api/admin/stats/trends', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    // 최근 30일 일별 가입자 수
+    const dailySignups = await c.env.DB.prepare(`
+      SELECT DATE(created_at) as date, COUNT(*) as count 
+      FROM users 
+      WHERE created_at >= DATE('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all()
+    
+    // 최근 12개월 월별 가입자 수
+    const monthlySignups = await c.env.DB.prepare(`
+      SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count 
+      FROM users 
+      WHERE created_at >= DATE('now', '-12 months')
+      GROUP BY strftime('%Y-%m', created_at)
+      ORDER BY month
+    `).all()
+    
+    // 최근 30일 일별 로그인 활동
+    const dailyLogins = await c.env.DB.prepare(`
+      SELECT DATE(created_at) as date, COUNT(*) as count 
+      FROM activity_logs 
+      WHERE action = 'login' AND created_at >= DATE('now', '-30 days')
+      GROUP BY DATE(created_at)
+      ORDER BY date
+    `).all()
+    
+    // 등급별 활동 통계 (최근 30일)
+    const levelActivity = await c.env.DB.prepare(`
+      SELECT u.level, COUNT(al.id) as activity_count
+      FROM users u
+      LEFT JOIN activity_logs al ON u.id = al.user_id AND al.created_at >= DATE('now', '-30 days')
+      WHERE u.status = 'active'
+      GROUP BY u.level
+      ORDER BY u.level
+    `).all()
+    
+    return c.json({
+      success: true,
+      dailySignups: dailySignups.results,
+      monthlySignups: monthlySignups.results,
+      dailyLogins: dailyLogins.results,
+      levelActivity: levelActivity.results
+    })
+  } catch (error) {
+    console.error('Admin trends error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 활동 로그 조회 ====================
+app.get('/api/admin/activity-logs', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const limit = parseInt(c.req.query('limit') || '50')
+    const action = c.req.query('action') || ''
+    
+    let query = `
+      SELECT al.*, u.email, u.name 
+      FROM activity_logs al
+      LEFT JOIN users u ON al.user_id = u.id
+      WHERE 1=1
+    `
+    const bindings = []
+    
+    if (action) {
+      query += ' AND al.action = ?'
+      bindings.push(action)
+    }
+    
+    query += ' ORDER BY al.created_at DESC LIMIT ?'
+    bindings.push(limit)
+    
+    const logs = await c.env.DB.prepare(query).bind(...bindings).all()
+    
+    return c.json({
+      success: true,
+      logs: logs.results
+    })
+  } catch (error) {
+    console.error('Admin activity logs error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 알림 목록 조회 ====================
+app.get('/api/admin/notifications', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    // 관리자용 알림 (target_user_id가 NULL이거나 현재 관리자)
+    const notifications = await c.env.DB.prepare(`
+      SELECT * FROM notifications
+      WHERE (target_user_id IS NULL OR target_user_id = ?)
+      ORDER BY created_at DESC
+      LIMIT 50
+    `).bind(userId).all()
+    
+    // 읽지 않은 알림 수
+    const unreadCount = await c.env.DB.prepare(`
+      SELECT COUNT(*) as count FROM notifications
+      WHERE (target_user_id IS NULL OR target_user_id = ?) AND is_read = 0
+    `).bind(userId).first()
+    
+    return c.json({
+      success: true,
+      notifications: notifications.results,
+      unreadCount: unreadCount.count
+    })
+  } catch (error) {
+    console.error('Admin notifications error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 알림 읽음 처리 ====================
+app.patch('/api/admin/notifications/:id/read', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const notificationId = c.req.param('id')
+    
+    await c.env.DB.prepare(
+      'UPDATE notifications SET is_read = 1 WHERE id = ?'
+    ).bind(notificationId).run()
+    
+    return c.json({
+      success: true,
+      message: '알림이 읽음 처리되었습니다.'
+    })
+  } catch (error) {
+    console.error('Admin notification read error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 일괄 처리 ====================
+app.post('/api/admin/users/batch', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    // 일괄 처리는 레벨 8 이상만 가능
+    if (!admin || admin.level < 8 || admin.status !== 'active') {
+      return c.json({ success: false, message: '플래티넘 관리자 이상의 권한이 필요합니다.' }, 403)
+    }
+    
+    const { action, userIds, value } = await c.req.json()
+    
+    if (!action || !userIds || !Array.isArray(userIds)) {
+      return c.json({ success: false, message: '올바르지 않은 요청입니다.' }, 400)
+    }
+    
+    let query = ''
+    let bindings = []
+    
+    switch (action) {
+      case 'change_level':
+        query = `UPDATE users SET level = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+        bindings = [value, ...userIds]
+        break
+      case 'change_status':
+        query = `UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+        bindings = [value, ...userIds]
+        break
+      case 'delete':
+        query = `UPDATE users SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+        bindings = userIds
+        break
+      default:
+        return c.json({ success: false, message: '올바르지 않은 작업입니다.' }, 400)
+    }
+    
+    await c.env.DB.prepare(query).bind(...bindings).run()
+    
+    // 활동 로그 기록
+    await c.env.DB.prepare(
+      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+    ).bind(userId, 'admin_action', `일괄 처리: ${action} (${userIds.length}명)`).run()
+    
+    return c.json({
+      success: true,
+      message: `${userIds.length}명의 회원이 일괄 처리되었습니다.`
+    })
+  } catch (error) {
+    console.error('Admin batch action error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: CSV 내보내기 ====================
+app.get('/api/admin/users/export', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const users = await c.env.DB.prepare(`
+      SELECT id, email, name, phone, level, status, created_at, last_login
+      FROM users
+      WHERE status != 'deleted'
+      ORDER BY created_at DESC
+    `).all()
+    
+    // CSV 생성
+    let csv = 'ID,이메일,이름,휴대전화,등급,상태,가입일,최근로그인\n'
+    for (const user of users.results) {
+      csv += `${user.id},"${user.email}","${user.name}","${user.phone || ''}",${user.level},"${user.status}","${user.created_at}","${user.last_login || ''}"\n`
+    }
+    
+    return new Response(csv, {
+      headers: {
+        'Content-Type': 'text/csv; charset=utf-8',
+        'Content-Disposition': `attachment; filename="users_${new Date().toISOString().split('T')[0]}.csv"`
+      }
+    })
+  } catch (error) {
+    console.error('Admin export error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== 활동 로그 기록 헬퍼 함수 ====================
+async function logActivity(db: any, userId: number | null, action: string, description: string, ip?: string) {
+  try {
+    await db.prepare(
+      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, ?, ?, ?)'
+    ).bind(userId, action, description, ip || null).run()
+  } catch (error) {
+    console.error('Log activity error:', error)
+  }
+}
+
+// ==================== 알림 생성 헬퍼 함수 ====================
+async function createNotification(db: any, type: string, title: string, message: string, targetUserId?: number, priority: string = 'normal') {
+  try {
+    await db.prepare(
+      'INSERT INTO notifications (type, title, message, target_user_id, priority) VALUES (?, ?, ?, ?, ?)'
+    ).bind(type, title, message, targetUserId || null, priority).run()
+  } catch (error) {
+    console.error('Create notification error:', error)
+  }
+}
 
 export default app
