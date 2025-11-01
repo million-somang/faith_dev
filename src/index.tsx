@@ -147,20 +147,35 @@ app.get('/', (c) => {
             // 로그인 상태 확인
             const token = localStorage.getItem('auth_token');
             const userEmail = localStorage.getItem('user_email');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
             if (token && userEmail) {
                 // 로그인된 상태
-                document.getElementById('user-menu').innerHTML = \`
-                    <span class="text-sm text-gray-700">\${userEmail}님</span>
+                let menuHTML = '<span class="text-sm text-gray-700">' + userEmail + '님</span>';
+                
+                // 관리자 메뉴 추가
+                if (userLevel >= 6) {
+                    menuHTML += \`
+                        <a href="/admin" class="text-sm bg-yellow-500 text-gray-900 px-4 py-2 rounded hover:bg-yellow-600 font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </a>
+                    \`;
+                }
+                
+                menuHTML += \`
                     <button id="logout-btn" class="text-sm faith-blue text-white px-4 py-2 rounded faith-blue-hover">
                         로그아웃
                     </button>
                 \`;
+                
+                document.getElementById('user-menu').innerHTML = menuHTML;
 
                 // 로그아웃 기능
                 document.getElementById('logout-btn').addEventListener('click', function() {
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_level');
                     location.reload();
                 });
             }
@@ -275,9 +290,16 @@ app.get('/login', (c) => {
                         // 로그인 성공
                         localStorage.setItem('auth_token', response.data.token);
                         localStorage.setItem('user_email', response.data.user.email);
+                        localStorage.setItem('user_level', response.data.user.level);
                         
                         alert('로그인 성공!');
-                        window.location.href = '/';
+                        
+                        // 관리자는 관리자 페이지로
+                        if (response.data.user.level >= 6) {
+                            window.location.href = '/admin';
+                        } else {
+                            window.location.href = '/';
+                        }
                     }
                 } catch (error) {
                     errorDiv.classList.remove('hidden');
@@ -480,7 +502,7 @@ app.post('/api/signup', async (c) => {
     
     // 회원 정보 저장 (실제로는 비밀번호를 해시화해야 함)
     const result = await c.env.DB.prepare(
-      'INSERT INTO users (email, password, name, phone) VALUES (?, ?, ?, ?)'
+      'INSERT INTO users (email, password, name, phone, level, status) VALUES (?, ?, ?, ?, 1, "active")'
     ).bind(email, password, name, phone || null).run()
     
     return c.json({
@@ -503,13 +525,22 @@ app.post('/api/login', async (c) => {
       return c.json({ success: false, message: '이메일과 비밀번호를 입력해주세요.' }, 400)
     }
     
-    // 사용자 조회
+    // 사용자 조회 (level, status 포함)
     const user = await c.env.DB.prepare(
-      'SELECT id, email, name, phone FROM users WHERE email = ? AND password = ?'
+      'SELECT id, email, name, phone, level, status FROM users WHERE email = ? AND password = ?'
     ).bind(email, password).first()
     
     if (!user) {
       return c.json({ success: false, message: '이메일 또는 비밀번호가 일치하지 않습니다.' }, 401)
+    }
+    
+    // 계정 정지 체크
+    if (user.status === 'suspended') {
+      return c.json({ success: false, message: '정지된 계정입니다. 관리자에게 문의하세요.' }, 403)
+    }
+    
+    if (user.status === 'deleted') {
+      return c.json({ success: false, message: '삭제된 계정입니다.' }, 403)
     }
     
     // 마지막 로그인 시간 업데이트
@@ -528,7 +559,9 @@ app.post('/api/login', async (c) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        phone: user.phone
+        phone: user.phone,
+        level: user.level,
+        status: user.status
       }
     })
   } catch (error) {
@@ -565,6 +598,922 @@ app.get('/api/user', async (c) => {
     })
   } catch (error) {
     console.error('User info error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== 관리자 권한 체크 함수 ====================
+async function checkAdminAuth(c: any) {
+  const token = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1]
+  
+  if (!token) {
+    return null
+  }
+  
+  try {
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, name, level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    // 관리자 등급 체크 (6 이상)
+    if (user && user.level >= 6 && user.status === 'active') {
+      return user
+    }
+  } catch (error) {
+    console.error('Admin auth error:', error)
+  }
+  
+  return null
+}
+
+// ==================== 관리자 대시보드 페이지 ====================
+app.get('/admin', async (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>관리자 대시보드 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div id="admin-info" class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-gray-500 text-sm">전체 회원</p>
+                            <p id="total-users" class="text-3xl font-bold text-gray-800">0</p>
+                        </div>
+                        <div class="bg-blue-100 text-blue-600 rounded-full p-4">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-gray-500 text-sm">활성 회원</p>
+                            <p id="active-users" class="text-3xl font-bold text-green-600">0</p>
+                        </div>
+                        <div class="bg-green-100 text-green-600 rounded-full p-4">
+                            <i class="fas fa-user-check text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-gray-500 text-sm">정지 회원</p>
+                            <p id="suspended-users" class="text-3xl font-bold text-orange-600">0</p>
+                        </div>
+                        <div class="bg-orange-100 text-orange-600 rounded-full p-4">
+                            <i class="fas fa-user-lock text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-gray-500 text-sm">오늘 가입</p>
+                            <p id="today-signups" class="text-3xl font-bold text-purple-600">0</p>
+                        </div>
+                        <div class="bg-purple-100 text-purple-600 rounded-full p-4">
+                            <i class="fas fa-user-plus text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 등급별 회원 분포 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+                    회원 등급별 분포
+                </h3>
+                <canvas id="levelChart" style="max-height: 300px;"></canvas>
+            </div>
+
+            <!-- 최근 가입 회원 -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-clock text-blue-600 mr-2"></i>
+                    최근 가입 회원 (10명)
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등급</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-users" class="bg-white divide-y divide-gray-200">
+                            <!-- 동적으로 채워짐 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 인증 체크
+            const token = localStorage.getItem('auth_token');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/login';
+            }
+
+            // 관리자 정보 표시
+            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+
+            // 등급명 반환 함수
+            function getLevelName(level) {
+                const levels = {
+                    1: '일반 회원', 2: '정회원', 3: '우수회원', 4: 'VIP', 5: 'VVIP',
+                    6: '실버 관리자', 7: '골드 관리자', 8: '플래티넘 관리자',
+                    9: '마스터 관리자', 10: '슈퍼바이저'
+                };
+                return levels[level] || '알 수 없음';
+            }
+
+            // 통계 데이터 로드
+            async function loadStats() {
+                try {
+                    const response = await axios.get('/api/admin/stats', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    const data = response.data;
+                    document.getElementById('total-users').textContent = data.totalUsers;
+                    document.getElementById('active-users').textContent = data.activeUsers;
+                    document.getElementById('suspended-users').textContent = data.suspendedUsers;
+                    document.getElementById('today-signups').textContent = data.todaySignups;
+                    
+                    // 등급별 차트
+                    createLevelChart(data.levelDistribution);
+                    
+                    // 최근 가입 회원
+                    displayRecentUsers(data.recentUsers);
+                } catch (error) {
+                    console.error('통계 로드 실패:', error);
+                }
+            }
+
+            // 등급별 차트 생성
+            function createLevelChart(distribution) {
+                const ctx = document.getElementById('levelChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: distribution.map(d => getLevelName(d.level)),
+                        datasets: [{
+                            label: '회원 수',
+                            data: distribution.map(d => d.count),
+                            backgroundColor: 'rgba(30, 64, 175, 0.7)',
+                            borderColor: 'rgba(30, 64, 175, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 최근 가입 회원 표시
+            function displayRecentUsers(users) {
+                const tbody = document.getElementById('recent-users');
+                tbody.innerHTML = users.map(user => \`
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.email}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                \${getLevelName(user.level)}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            \${new Date(user.created_at).toLocaleDateString('ko-KR')}
+                        </td>
+                    </tr>
+                \`).join('');
+            }
+
+            // 페이지 로드 시 통계 로드
+            loadStats();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 회원 관리 페이지 ====================
+app.get('/admin/users', async (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>회원 관리 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+            .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+            .modal.active { display: flex; align-items: center; justify-content: center; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- 검색 및 필터 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input 
+                        type="text" 
+                        id="search-input"
+                        placeholder="이메일 또는 이름 검색"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <select id="level-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">전체 등급</option>
+                        <option value="1">일반 회원</option>
+                        <option value="2">정회원</option>
+                        <option value="3">우수회원</option>
+                        <option value="4">VIP</option>
+                        <option value="5">VVIP</option>
+                        <option value="6">실버 관리자</option>
+                        <option value="7">골드 관리자</option>
+                        <option value="8">플래티넘 관리자</option>
+                        <option value="9">마스터 관리자</option>
+                        <option value="10">슈퍼바이저</option>
+                    </select>
+                    <select id="status-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">전체 상태</option>
+                        <option value="active">활성</option>
+                        <option value="suspended">정지</option>
+                        <option value="deleted">삭제</option>
+                    </select>
+                    <button onclick="searchUsers()" class="faith-blue text-white px-6 py-2 rounded-lg faith-blue-hover">
+                        <i class="fas fa-search mr-2"></i>
+                        검색
+                    </button>
+                </div>
+            </div>
+
+            <!-- 회원 목록 -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-list text-blue-600 mr-2"></i>
+                        회원 목록
+                    </h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이메일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">이름</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">휴대전화</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">등급</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">가입일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table" class="bg-white divide-y divide-gray-200">
+                            <!-- 동적으로 채워짐 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+
+        <!-- 수정 모달 -->
+        <div id="edit-modal" class="modal">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">회원 정보 수정</h3>
+                <form id="edit-form" class="space-y-4">
+                    <input type="hidden" id="edit-user-id">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                        <input type="email" id="edit-email" disabled class="w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">이름</label>
+                        <input type="text" id="edit-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">휴대전화</label>
+                        <input type="tel" id="edit-phone" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">등급</label>
+                        <select id="edit-level" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">일반 회원</option>
+                            <option value="2">정회원</option>
+                            <option value="3">우수회원</option>
+                            <option value="4">VIP</option>
+                            <option value="5">VVIP</option>
+                            <option value="6">실버 관리자</option>
+                            <option value="7">골드 관리자</option>
+                            <option value="8">플래티넘 관리자</option>
+                            <option value="9">마스터 관리자</option>
+                            <option value="10">슈퍼바이저</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-3 pt-4">
+                        <button type="submit" class="flex-1 faith-blue text-white px-4 py-2 rounded-lg faith-blue-hover">
+                            <i class="fas fa-save mr-2"></i>
+                            저장
+                        </button>
+                        <button type="button" onclick="closeEditModal()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                            취소
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            // 인증 체크
+            const token = localStorage.getItem('auth_token');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/login';
+            }
+
+            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+
+            // 등급명 반환
+            function getLevelName(level) {
+                const levels = {
+                    1: '일반 회원', 2: '정회원', 3: '우수회원', 4: 'VIP', 5: 'VVIP',
+                    6: '실버 관리자', 7: '골드 관리자', 8: '플래티넘 관리자',
+                    9: '마스터 관리자', 10: '슈퍼바이저'
+                };
+                return levels[level] || '알 수 없음';
+            }
+
+            // 상태 배지 색상
+            function getStatusBadge(status) {
+                const badges = {
+                    active: 'bg-green-100 text-green-800',
+                    suspended: 'bg-orange-100 text-orange-800',
+                    deleted: 'bg-red-100 text-red-800'
+                };
+                const names = {
+                    active: '활성',
+                    suspended: '정지',
+                    deleted: '삭제'
+                };
+                return \`<span class="px-2 py-1 text-xs rounded-full \${badges[status] || ''}">\${names[status] || status}</span>\`;
+            }
+
+            // 회원 목록 로드
+            async function loadUsers(search = '', level = '', status = '') {
+                try {
+                    let url = '/api/admin/users?';
+                    if (search) url += \`search=\${encodeURIComponent(search)}&\`;
+                    if (level) url += \`level=\${level}&\`;
+                    if (status) url += \`status=\${status}&\`;
+                    
+                    const response = await axios.get(url, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    displayUsers(response.data.users);
+                } catch (error) {
+                    console.error('회원 목록 로드 실패:', error);
+                    alert('회원 목록을 불러오는데 실패했습니다.');
+                }
+            }
+
+            // 회원 목록 표시
+            function displayUsers(users) {
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = users.map(user => \`
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.email}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${user.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${user.phone || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                                Lv.\${user.level} \${getLevelName(user.level)}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            \${getStatusBadge(user.status)}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            \${new Date(user.created_at).toLocaleDateString('ko-KR')}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            <button onclick="editUser(\${user.id})" class="text-blue-600 hover:text-blue-800" title="수정">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="toggleSuspend(\${user.id}, '\${user.status}')" class="text-orange-600 hover:text-orange-800" title="정지/해제">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                            <button onclick="deleteUser(\${user.id})" class="text-red-600 hover:text-red-800" title="삭제">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                \`).join('');
+            }
+
+            // 검색
+            function searchUsers() {
+                const search = document.getElementById('search-input').value;
+                const level = document.getElementById('level-filter').value;
+                const status = document.getElementById('status-filter').value;
+                loadUsers(search, level, status);
+            }
+
+            // 회원 수정
+            async function editUser(userId) {
+                try {
+                    const response = await axios.get(\`/api/admin/users/\${userId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    const user = response.data.user;
+                    document.getElementById('edit-user-id').value = user.id;
+                    document.getElementById('edit-email').value = user.email;
+                    document.getElementById('edit-name').value = user.name;
+                    document.getElementById('edit-phone').value = user.phone || '';
+                    document.getElementById('edit-level').value = user.level;
+                    
+                    document.getElementById('edit-modal').classList.add('active');
+                } catch (error) {
+                    alert('회원 정보를 불러오는데 실패했습니다.');
+                }
+            }
+
+            // 수정 모달 닫기
+            function closeEditModal() {
+                document.getElementById('edit-modal').classList.remove('active');
+            }
+
+            // 수정 폼 제출
+            document.getElementById('edit-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const userId = document.getElementById('edit-user-id').value;
+                const data = {
+                    name: document.getElementById('edit-name').value,
+                    phone: document.getElementById('edit-phone').value,
+                    level: parseInt(document.getElementById('edit-level').value)
+                };
+                
+                try {
+                    await axios.put(\`/api/admin/users/\${userId}\`, data, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    alert('회원 정보가 수정되었습니다.');
+                    closeEditModal();
+                    searchUsers();
+                } catch (error) {
+                    alert('회원 정보 수정에 실패했습니다.');
+                }
+            });
+
+            // 정지/해제
+            async function toggleSuspend(userId, currentStatus) {
+                const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
+                const message = newStatus === 'suspended' ? '정지' : '활성화';
+                
+                if (!confirm(\`정말 이 회원을 \${message}하시겠습니까?\`)) return;
+                
+                try {
+                    await axios.patch(\`/api/admin/users/\${userId}/status\`, 
+                        { status: newStatus },
+                        { headers: { 'Authorization': 'Bearer ' + token } }
+                    );
+                    
+                    alert(\`회원이 \${message}되었습니다.\`);
+                    searchUsers();
+                } catch (error) {
+                    alert(\`회원 \${message}에 실패했습니다.\`);
+                }
+            }
+
+            // 삭제
+            async function deleteUser(userId) {
+                if (!confirm('정말 이 회원을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+                
+                try {
+                    await axios.delete(\`/api/admin/users/\${userId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    
+                    alert('회원이 삭제되었습니다.');
+                    searchUsers();
+                } catch (error) {
+                    alert('회원 삭제에 실패했습니다.');
+                }
+            }
+
+            // 초기 로드
+            loadUsers();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== API: 관리자 통계 ====================
+app.get('/api/admin/stats', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    // 전체 회원 수
+    const totalUsers = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM users WHERE status != "deleted"'
+    ).first()
+    
+    // 활성 회원 수
+    const activeUsers = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM users WHERE status = "active"'
+    ).first()
+    
+    // 정지 회원 수
+    const suspendedUsers = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM users WHERE status = "suspended"'
+    ).first()
+    
+    // 오늘 가입 회원
+    const todaySignups = await c.env.DB.prepare(
+      'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = DATE("now")'
+    ).first()
+    
+    // 등급별 분포
+    const levelDistribution = await c.env.DB.prepare(
+      'SELECT level, COUNT(*) as count FROM users WHERE status != "deleted" GROUP BY level ORDER BY level'
+    ).all()
+    
+    // 최근 가입 회원 10명
+    const recentUsers = await c.env.DB.prepare(
+      'SELECT id, email, name, level, created_at FROM users WHERE status != "deleted" ORDER BY created_at DESC LIMIT 10'
+    ).all()
+    
+    return c.json({
+      success: true,
+      totalUsers: totalUsers.count,
+      activeUsers: activeUsers.count,
+      suspendedUsers: suspendedUsers.count,
+      todaySignups: todaySignups.count,
+      levelDistribution: levelDistribution.results,
+      recentUsers: recentUsers.results
+    })
+  } catch (error) {
+    console.error('Admin stats error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 목록 조회 ====================
+app.get('/api/admin/users', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    // 검색 파라미터
+    const search = c.req.query('search') || ''
+    const level = c.req.query('level') || ''
+    const status = c.req.query('status') || ''
+    
+    let query = 'SELECT id, email, name, phone, level, status, created_at FROM users WHERE 1=1'
+    const bindings = []
+    
+    if (search) {
+      query += ' AND (email LIKE ? OR name LIKE ?)'
+      bindings.push(`%${search}%`, `%${search}%`)
+    }
+    
+    if (level) {
+      query += ' AND level = ?'
+      bindings.push(parseInt(level))
+    }
+    
+    if (status) {
+      query += ' AND status = ?'
+      bindings.push(status)
+    } else {
+      query += ' AND status != "deleted"'
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT 100'
+    
+    const users = await c.env.DB.prepare(query).bind(...bindings).all()
+    
+    return c.json({
+      success: true,
+      users: users.results
+    })
+  } catch (error) {
+    console.error('Admin users list error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 상세 조회 ====================
+app.get('/api/admin/users/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const targetUserId = c.req.param('id')
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, name, phone, level, status, created_at, last_login FROM users WHERE id = ?'
+    ).bind(targetUserId).first()
+    
+    if (!user) {
+      return c.json({ success: false, message: '회원을 찾을 수 없습니다.' }, 404)
+    }
+    
+    return c.json({
+      success: true,
+      user: user
+    })
+  } catch (error) {
+    console.error('Admin user detail error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 정보 수정 ====================
+app.put('/api/admin/users/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const targetUserId = c.req.param('id')
+    const { name, phone, level } = await c.req.json()
+    
+    await c.env.DB.prepare(
+      'UPDATE users SET name = ?, phone = ?, level = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(name, phone, level, targetUserId).run()
+    
+    return c.json({
+      success: true,
+      message: '회원 정보가 수정되었습니다.'
+    })
+  } catch (error) {
+    console.error('Admin user update error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 상태 변경 (정지/해제) ====================
+app.patch('/api/admin/users/:id/status', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const targetUserId = c.req.param('id')
+    const { status } = await c.req.json()
+    
+    if (!['active', 'suspended'].includes(status)) {
+      return c.json({ success: false, message: '올바르지 않은 상태입니다.' }, 400)
+    }
+    
+    await c.env.DB.prepare(
+      'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(status, targetUserId).run()
+    
+    return c.json({
+      success: true,
+      message: '회원 상태가 변경되었습니다.'
+    })
+  } catch (error) {
+    console.error('Admin user status error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 회원 삭제 ====================
+app.delete('/api/admin/users/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const admin = await c.env.DB.prepare(
+      'SELECT level, status FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!admin || admin.level < 6 || admin.status !== 'active') {
+      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+    }
+    
+    const targetUserId = c.req.param('id')
+    
+    // 소프트 삭제
+    await c.env.DB.prepare(
+      'UPDATE users SET status = "deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+    ).bind(targetUserId).run()
+    
+    return c.json({
+      success: true,
+      message: '회원이 삭제되었습니다.'
+    })
+  } catch (error) {
+    console.error('Admin user delete error:', error)
     return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
   }
 })
