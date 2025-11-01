@@ -140,36 +140,36 @@ app.get('/', (c) => {
                 </div>
             </div>
 
-            <!-- 메뉴 네비게이션 -->
+            <!-- 중간 메뉴 네비게이션 -->
             <nav class="mb-8 sm:mb-12 md:mb-16 max-w-3xl mx-auto px-4">
                 <div class="flex justify-center items-center space-x-3 sm:space-x-4 md:space-x-6 lg:space-x-8">
                     <a href="/news" class="group text-center">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-newspaper text-lg sm:text-xl md:text-2xl text-white"></i>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-newspaper text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-envelope text-lg sm:text-xl md:text-2xl text-white"></i>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-envelope text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">메일</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-coffee text-lg sm:text-xl md:text-2xl text-white"></i>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-coffee text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">카페</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-blog text-lg sm:text-xl md:text-2xl text-white"></i>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-blog text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">블로그</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-shopping-bag text-lg sm:text-xl md:text-2xl text-white"></i>
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-shopping-bag text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">쇼핑</p>
                     </a>
@@ -416,90 +416,50 @@ app.get('/', (c) => {
 })
 
 // ==================== 뉴스 페이지 ====================
-app.get('/news', (c) => {
-  // 목업 뉴스 데이터
-  const mockNews = [
-    {
-      id: 1,
-      category: '정치',
-      title: '국회, 2025년 예산안 본회의 통과... 총 677조원 규모',
-      summary: '국회가 2025년도 예산안을 통과시켰습니다. 총 677조원 규모로 전년 대비 8.2% 증가했습니다.',
-      image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=Politics',
-      publisher: 'Faith 뉴스',
-      time: '10분 전',
-      views: 1523
-    },
-    {
-      id: 2,
-      category: '경제',
-      title: '코스피, 3거래일 연속 상승... 2,650선 회복',
-      summary: '국내 증시가 3거래일 연속 상승세를 보이며 2,650선을 회복했습니다.',
-      image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Economy',
-      publisher: '경제 데일리',
-      time: '25분 전',
-      views: 2341
-    },
-    {
-      id: 3,
-      category: '사회',
-      title: '수도권 폭설 예보... 출퇴근길 교통 혼잡 예상',
-      summary: '기상청이 수도권에 폭설 예보를 발령했습니다. 내일 출퇴근길 교통 혼잡이 예상됩니다.',
-      image: 'https://via.placeholder.com/400x250/EF4444/FFFFFF?text=Society',
-      publisher: '날씨 뉴스',
-      time: '1시간 전',
-      views: 3456
-    },
-    {
-      id: 4,
-      category: 'IT/과학',
-      title: 'AI 반도체 시장, 2025년 500억 달러 돌파 전망',
-      summary: '글로벌 AI 반도체 시장이 급성장하며 올해 500억 달러를 돌파할 것으로 전망됩니다.',
-      image: 'https://via.placeholder.com/400x250/8B5CF6/FFFFFF?text=Tech',
-      publisher: '테크 타임즈',
-      time: '2시간 전',
-      views: 4521
-    },
-    {
-      id: 5,
-      category: '세계',
-      title: '미국-중국, 무역 협상 재개... 관세 완화 논의',
-      summary: '미국과 중국이 무역 협상을 재개하며 상호 관세 완화 방안을 논의하고 있습니다.',
-      image: 'https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=World',
-      publisher: '글로벌 뉴스',
-      time: '3시간 전',
-      views: 5234
-    },
-    {
-      id: 6,
-      category: '생활/문화',
-      title: '\'겨울왕국 3\' 3월 개봉 확정... 전 세계 동시 상영',
-      summary: '디즈니 애니메이션 \'겨울왕국 3\'가 오는 3월 전 세계 동시 개봉합니다.',
-      image: 'https://via.placeholder.com/400x250/EC4899/FFFFFF?text=Culture',
-      publisher: '엔터 뉴스',
-      time: '4시간 전',
-      views: 6782
-    },
-    {
-      id: 7,
-      category: '정치',
-      title: '여야, 민생법안 처리 합의... 주거안정법 우선 처리',
-      summary: '여야가 민생법안 처리에 합의하며 주거안정법을 우선 처리하기로 했습니다.',
-      image: 'https://via.placeholder.com/400x250/4F46E5/FFFFFF?text=Politics',
-      publisher: 'Faith 뉴스',
-      time: '5시간 전',
-      views: 2134
-    },
-    {
-      id: 8,
-      category: '경제',
-      title: '환율 1,300원 돌파... 수출 기업 희비 엇갈려',
-      summary: '원-달러 환율이 1,300원을 돌파하며 수출 기업과 수입 기업의 희비가 엇갈리고 있습니다.',
-      image: 'https://via.placeholder.com/400x250/10B981/FFFFFF?text=Economy',
-      publisher: '경제 데일리',
-      time: '6시간 전',
-      views: 3421
+app.get('/news', async (c) => {
+  const { DB } = c.env
+  
+  // DB에서 뉴스 가져오기
+  let newsFromDB: any[] = []
+  try {
+    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
+    newsFromDB = results || []
+  } catch (error) {
+    console.error('뉴스 조회 오류:', error)
+  }
+  
+  // DB에 뉴스가 없으면 RSS에서 자동으로 가져오기
+  if (newsFromDB.length === 0) {
+    try {
+      const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment']
+      for (const category of categories) {
+        const newsItems = await parseGoogleNewsRSS(category)
+        for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
+          try {
+            await DB.prepare(`
+              INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+              VALUES (?, ?, ?, ?, ?, ?, ?)
+            `).bind(
+              item.category,
+              item.title,
+              item.summary,
+              item.link,
+              item.image_url,
+              item.publisher,
+              item.pub_date
+            ).run()
+          } catch (err) {
+            console.error('뉴스 저장 오류:', err)
+          }
+        }
+      }
+      // 다시 조회
+      const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
+      newsFromDB = results || []
+    } catch (error) {
+      console.error('RSS 뉴스 가져오기 오류:', error)
     }
-  ];
+  }
 
   return c.html(`
     <!DOCTYPE html>
@@ -582,43 +542,42 @@ app.get('/news', (c) => {
             </div>
 
             <!-- 뉴스 그리드 -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                \${mockNews.map(news => \`
-                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300">
+            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                ${newsFromDB.length > 0 ? newsFromDB.map(news => `
+                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300" onclick="window.open('${news.link}', '_blank')">
                         <div class="relative">
-                            <img src="\${news.image}" alt="\${news.title}" class="w-full h-48 object-cover">
+                            <img src="${news.image_url || 'https://via.placeholder.com/400x250/667eea/FFFFFF?text=News'}" alt="${news.title}" class="w-full h-48 object-cover">
                             <span class="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm text-xs sm:text-sm font-bold rounded-full text-gray-800">
-                                \${news.category}
+                                ${news.category}
                             </span>
                         </div>
                         <div class="p-4">
                             <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition">
-                                \${news.title}
+                                ${news.title}
                             </h3>
                             <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                                \${news.summary}
+                                ${news.summary || ''}
                             </p>
                             <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
                                 <div class="flex items-center space-x-2">
-                                    <span class="font-medium">\${news.publisher}</span>
+                                    <span class="font-medium">${news.publisher || '구글 뉴스'}</span>
                                     <span>•</span>
-                                    <span>\${news.time}</span>
+                                    <span>${new Date(news.created_at).toLocaleDateString('ko-KR')}</span>
                                 </div>
                                 <div class="flex items-center space-x-1">
-                                    <i class="fas fa-eye text-gray-400"></i>
-                                    <span>\${news.views.toLocaleString()}</span>
+                                    <i class="fas fa-external-link-alt text-gray-400"></i>
                                 </div>
                             </div>
                         </div>
                     </article>
-                \`).join('')}
+                `).join('') : '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스를 불러오는 중입니다...</p></div>'}
             </div>
 
-            <!-- 더보기 버튼 -->
+            <!-- 새로고침 버튼 -->
             <div class="mt-8 sm:mt-12 text-center">
-                <button class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">
-                    <i class="fas fa-plus-circle mr-2"></i>
-                    더 많은 뉴스 보기
+                <button onclick="fetchNewsAndReload()" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold hover:shadow-lg transition-all">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    최신 뉴스 가져오기
                 </button>
             </div>
         </main>
@@ -703,6 +662,27 @@ app.get('/news', (c) => {
                     localStorage.removeItem('user_level');
                     location.reload();
                 });
+            }
+            
+            // 최신 뉴스 가져오기
+            async function fetchNewsAndReload() {
+                const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment'];
+                let totalFetched = 0;
+                
+                for (const category of categories) {
+                    try {
+                        const response = await fetch('/api/news/fetch?category=' + category);
+                        const data = await response.json();
+                        if (data.success) {
+                            totalFetched += data.saved;
+                        }
+                    } catch (error) {
+                        console.error('뉴스 가져오기 오류:', error);
+                    }
+                }
+                
+                alert(totalFetched + '개의 새 뉴스를 가져왔습니다.');
+                location.reload();
             }
         </script>
     </body>
@@ -1223,6 +1203,19 @@ app.get('/admin', async (c) => {
                         <i class="fas fa-users mr-2"></i>
                         회원 관리
                     </a>
+                    <div class="relative group">
+                        <button class="px-4 py-4 text-gray-700 hover:text-blue-600 flex items-center">
+                            <i class="fas fa-folder mr-2"></i>
+                            컨텐츠관리
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
+                            <a href="/admin/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-blue-600">
+                                <i class="fas fa-newspaper mr-2"></i>
+                                뉴스관리
+                            </a>
+                        </div>
+                    </div>
                     <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
                         <i class="fas fa-chart-line mr-2"></i>
                         통계
@@ -3453,6 +3446,465 @@ app.get('/admin/notifications', async (c) => {
 
             // 초기 로드
             loadNotifications();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== RSS 피드 파싱 유틸리티 ====================
+async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> {
+  const rssUrls: Record<string, string> = {
+    'general': 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko',
+    'politics': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFZ4ZERBU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+    'economy': 'https://news.google.com/rss/topics/CAAqIggKIhxDQkFTRHdvSkwyMHZNR2RtY0hNekVnSnJieWdBUAE?hl=ko&gl=KR&ceid=KR:ko',
+    'tech': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRGRqTVhZU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+    'sports': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp1ZEdvU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+    'entertainment': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNREpxYW5RU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+  }
+
+  const url = rssUrls[category] || rssUrls['general']
+  
+  try {
+    const response = await fetch(url)
+    const text = await response.text()
+    
+    // XML 파싱 (간단한 정규식 기반)
+    const items: any[] = []
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g
+    let match
+    
+    while ((match = itemRegex.exec(text)) !== null) {
+      const itemContent = match[1]
+      
+      const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || 
+                    itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
+      const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
+      const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
+      const description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
+                         itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
+      
+      // 이미지 URL 추출 (없으면 기본 이미지)
+      const imgMatch = description.match(/<img[^>]+src="([^"]+)"/)
+      const imageUrl = imgMatch?.[1] || 'https://via.placeholder.com/400x300?text=News'
+      
+      // HTML 태그 제거하여 요약문 생성
+      const summary = description.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
+      
+      items.push({
+        category,
+        title: title.trim(),
+        summary,
+        link: link.trim(),
+        image_url: imageUrl,
+        publisher: '구글 뉴스',
+        pub_date: pubDate,
+      })
+      
+      if (items.length >= 20) break // 최대 20개
+    }
+    
+    return items
+  } catch (error) {
+    console.error('RSS 파싱 오류:', error)
+    return []
+  }
+}
+
+// ==================== 뉴스 API ====================
+
+// 뉴스 가져오기 및 DB 저장
+app.get('/api/news/fetch', async (c) => {
+  const { DB } = c.env
+  const category = c.req.query('category') || 'general'
+  
+  try {
+    // RSS에서 뉴스 가져오기
+    const newsItems = await parseGoogleNewsRSS(category)
+    
+    if (newsItems.length === 0) {
+      return c.json({ error: '뉴스를 가져올 수 없습니다.' }, 500)
+    }
+    
+    // DB에 저장 (중복 방지)
+    let savedCount = 0
+    for (const item of newsItems) {
+      try {
+        await DB.prepare(`
+          INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `).bind(
+          item.category,
+          item.title,
+          item.summary,
+          item.link,
+          item.image_url,
+          item.publisher,
+          item.pub_date
+        ).run()
+        savedCount++
+      } catch (err) {
+        console.error('뉴스 저장 오류:', err)
+      }
+    }
+    
+    return c.json({ 
+      success: true, 
+      fetched: newsItems.length,
+      saved: savedCount,
+      message: `${savedCount}개의 새 뉴스를 저장했습니다.`
+    })
+  } catch (error) {
+    console.error('뉴스 가져오기 오류:', error)
+    return c.json({ error: '뉴스 가져오기 실패' }, 500)
+  }
+})
+
+// 저장된 뉴스 목록 조회
+app.get('/api/news', async (c) => {
+  const { DB } = c.env
+  const category = c.req.query('category')
+  const limit = parseInt(c.req.query('limit') || '20')
+  const offset = parseInt(c.req.query('offset') || '0')
+  
+  try {
+    let query = 'SELECT * FROM news'
+    const params: any[] = []
+    
+    if (category && category !== 'all') {
+      query += ' WHERE category = ?'
+      params.push(category)
+    }
+    
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+    params.push(limit, offset)
+    
+    const { results } = await DB.prepare(query).bind(...params).all()
+    
+    return c.json({ 
+      success: true, 
+      news: results,
+      count: results.length 
+    })
+  } catch (error) {
+    console.error('뉴스 조회 오류:', error)
+    return c.json({ error: '뉴스 조회 실패' }, 500)
+  }
+})
+
+// 뉴스 삭제 (관리자용)
+app.delete('/api/news/:id', async (c) => {
+  const { DB } = c.env
+  const id = c.req.param('id')
+  
+  try {
+    await DB.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
+    return c.json({ success: true, message: '뉴스가 삭제되었습니다.' })
+  } catch (error) {
+    console.error('뉴스 삭제 오류:', error)
+    return c.json({ error: '뉴스 삭제 실패' }, 500)
+  }
+})
+
+// ==================== 관리자 뉴스관리 페이지 ====================
+app.get('/admin/news', async (c) => {
+  const { DB } = c.env
+  
+  // DB에서 모든 뉴스 가져오기
+  let newsFromDB: any[] = []
+  try {
+    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC').all()
+    newsFromDB = results || []
+  } catch (error) {
+    console.error('뉴스 조회 오류:', error)
+  }
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>뉴스관리 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 관리자 헤더 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            관리자
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            메인으로
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- 네비게이션 -->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8">
+                    <a href="/admin" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-tachometer-alt mr-2"></i>
+                        대시보드
+                    </a>
+                    <a href="/admin/users" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        회원 관리
+                    </a>
+                    <div class="relative group">
+                        <button class="px-4 py-4 text-blue-600 border-b-2 border-blue-600 font-medium flex items-center">
+                            <i class="fas fa-folder mr-2"></i>
+                            컨텐츠관리
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
+                            <a href="/admin/news" class="block px-4 py-3 bg-blue-50 text-blue-600 font-medium">
+                                <i class="fas fa-newspaper mr-2"></i>
+                                뉴스관리
+                            </a>
+                        </div>
+                    </div>
+                    <a href="/admin/stats" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        통계
+                    </a>
+                    <a href="/admin/logs" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-clipboard-list mr-2"></i>
+                        활동 로그
+                    </a>
+                    <a href="/admin/notifications" class="px-4 py-4 text-gray-700 hover:text-blue-600">
+                        <i class="fas fa-bell mr-2"></i>
+                        알림 센터
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- 페이지 타이틀 및 액션 -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-newspaper text-blue-600 mr-2"></i>
+                        뉴스관리
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-1">저장된 뉴스를 관리하고 새 뉴스를 가져올 수 있습니다.</p>
+                </div>
+                <button onclick="fetchAllNews()" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    전체 카테고리 뉴스 가져오기
+                </button>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">전체 뉴스</p>
+                            <p class="text-2xl font-bold text-gray-800">${newsFromDB.length}</p>
+                        </div>
+                        <i class="fas fa-newspaper text-3xl text-blue-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">정치</p>
+                            <p class="text-2xl font-bold text-purple-600">${newsFromDB.filter(n => n.category === 'politics').length}</p>
+                        </div>
+                        <i class="fas fa-landmark text-3xl text-purple-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">경제</p>
+                            <p class="text-2xl font-bold text-green-600">${newsFromDB.filter(n => n.category === 'economy').length}</p>
+                        </div>
+                        <i class="fas fa-chart-line text-3xl text-green-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">기술</p>
+                            <p class="text-2xl font-bold text-indigo-600">${newsFromDB.filter(n => n.category === 'tech').length}</p>
+                        </div>
+                        <i class="fas fa-microchip text-3xl text-indigo-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 뉴스 목록 테이블 -->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-800">뉴스 목록</h3>
+                        <div class="flex items-center space-x-2">
+                            <select id="category-filter" onchange="filterNews()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="all">전체 카테고리</option>
+                                <option value="general">일반</option>
+                                <option value="politics">정치</option>
+                                <option value="economy">경제</option>
+                                <option value="tech">기술</option>
+                                <option value="sports">스포츠</option>
+                                <option value="entertainment">연예</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">발행사</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">발행일</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="news-table" class="bg-white divide-y divide-gray-200">
+                            ${newsFromDB.map(news => `
+                                <tr data-category="${news.category}" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${news.id}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            ${news.category}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <a href="${news.link}" target="_blank" class="hover:text-blue-600">
+                                            ${news.title}
+                                        </a>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${news.publisher || '구글 뉴스'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(news.created_at).toLocaleDateString('ko-KR')}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="${news.link}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            보기
+                                        </a>
+                                        <button onclick="deleteNews(${news.id})" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            삭제
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    ${newsFromDB.length === 0 ? `
+                    <div class="text-center py-12">
+                        <i class="fas fa-newspaper text-5xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500">저장된 뉴스가 없습니다.</p>
+                        <button onclick="fetchAllNews()" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            뉴스 가져오기
+                        </button>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // 로그인 확인 및 권한 검증
+            const token = localStorage.getItem('auth_token');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('관리자 권한이 필요합니다.');
+                location.href = '/';
+            }
+            
+            if (userEmail) {
+                document.getElementById('admin-name').textContent = userEmail + ' (레벨 ' + userLevel + ')';
+            }
+            
+            // 전체 뉴스 가져오기
+            async function fetchAllNews() {
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>가져오는 중...';
+                
+                const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment'];
+                let totalFetched = 0;
+                
+                for (const category of categories) {
+                    try {
+                        const response = await fetch('/api/news/fetch?category=' + category);
+                        const data = await response.json();
+                        if (data.success) {
+                            totalFetched += data.saved;
+                        }
+                    } catch (error) {
+                        console.error('뉴스 가져오기 오류:', error);
+                    }
+                }
+                
+                alert(totalFetched + '개의 새 뉴스를 가져왔습니다.');
+                location.reload();
+            }
+            
+            // 뉴스 삭제
+            async function deleteNews(id) {
+                if (!confirm('이 뉴스를 삭제하시겠습니까?')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/news/' + id, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('뉴스가 삭제되었습니다.');
+                        location.reload();
+                    } else {
+                        alert('삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                } catch (error) {
+                    console.error('뉴스 삭제 오류:', error);
+                    alert('삭제 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 카테고리 필터
+            function filterNews() {
+                const category = document.getElementById('category-filter').value;
+                const rows = document.querySelectorAll('#news-table tr');
+                
+                rows.forEach(row => {
+                    if (category === 'all' || row.dataset.category === category) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
         </script>
     </body>
     </html>
