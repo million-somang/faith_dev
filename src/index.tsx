@@ -234,44 +234,6 @@ app.get('/', (c) => {
                 </div>
             </nav>
 
-            <!-- 인기 서비스 -->
-            <div class="mb-8 sm:mb-10 md:mb-12 px-4">
-                <h3 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-6 flex items-center">
-                    <i class="fas fa-fire text-orange-500 mr-2 sm:mr-3"></i>
-                    인기 서비스
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                    <a href="/" class="card-hover bg-gradient-to-br from-blue-500 to-blue-600 p-4 sm:p-6 md:p-8 rounded-xl sm:rounded-2xl shadow-lg text-center shine">
-                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-envelope text-3xl text-white"></i>
-                        </div>
-                        <p class="text-white font-bold text-lg">메일</p>
-                        <p class="text-white/80 text-sm mt-1">이메일 서비스</p>
-                    </a>
-                    <a href="/" class="card-hover bg-gradient-to-br from-amber-500 to-orange-600 p-8 rounded-2xl shadow-lg text-center shine">
-                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-coffee text-3xl text-white"></i>
-                        </div>
-                        <p class="text-white font-bold text-lg">카페</p>
-                        <p class="text-white/80 text-sm mt-1">커뮤니티</p>
-                    </a>
-                    <a href="/" class="card-hover bg-gradient-to-br from-purple-500 to-pink-600 p-8 rounded-2xl shadow-lg text-center shine">
-                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-blog text-3xl text-white"></i>
-                        </div>
-                        <p class="text-white font-bold text-lg">블로그</p>
-                        <p class="text-white/80 text-sm mt-1">개인 공간</p>
-                    </a>
-                    <a href="/" class="card-hover bg-gradient-to-br from-green-500 to-emerald-600 p-8 rounded-2xl shadow-lg text-center shine">
-                        <div class="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-shopping-bag text-3xl text-white"></i>
-                        </div>
-                        <p class="text-white font-bold text-lg">쇼핑</p>
-                        <p class="text-white/80 text-sm mt-1">온라인 쇼핑</p>
-                    </a>
-                </div>
-            </div>
-
             <!-- 뉴스 & 트렌드 섹션 -->
             <div class="grid md:grid-cols-2 gap-6 mb-12">
                 <!-- 실시간 뉴스 -->
