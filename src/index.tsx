@@ -537,26 +537,26 @@ app.get('/news', async (c) => {
             <!-- 카테고리 탭 -->
             <div class="mb-6 sm:mb-8 overflow-x-auto">
                 <div class="flex space-x-2 sm:space-x-3 pb-2 min-w-max">
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium text-sm sm:text-base shadow-lg">
+                    <button onclick="filterNewsByCategory('all')" data-category="all" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium text-sm sm:text-base shadow-lg">
                         전체
                     </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                    <button onclick="filterNewsByCategory('general')" data-category="general" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                        일반
+                    </button>
+                    <button onclick="filterNewsByCategory('politics')" data-category="politics" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
                         정치
                     </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                    <button onclick="filterNewsByCategory('economy')" data-category="economy" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
                         경제
                     </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
-                        사회
-                    </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                    <button onclick="filterNewsByCategory('tech')" data-category="tech" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
                         IT/과학
                     </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
-                        세계
+                    <button onclick="filterNewsByCategory('sports')" data-category="sports" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                        스포츠
                     </button>
-                    <button class="category-badge px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
-                        생활/문화
+                    <button onclick="filterNewsByCategory('entertainment')" data-category="entertainment" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow">
+                        엔터테인먼트
                     </button>
                 </div>
             </div>
@@ -703,6 +703,64 @@ app.get('/news', async (c) => {
                 
                 alert(totalFetched + '개의 새 뉴스를 가져왔습니다.');
                 location.reload();
+            }
+            
+            // 카테고리별 뉴스 필터링
+            async function filterNewsByCategory(category) {
+                // 버튼 스타일 업데이트
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    if (btn.dataset.category === category) {
+                        btn.className = 'category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium text-sm sm:text-base shadow-lg';
+                    } else {
+                        btn.className = 'category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow';
+                    }
+                });
+                
+                // API에서 뉴스 가져오기
+                const newsGrid = document.getElementById('news-grid');
+                newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스를 불러오는 중입니다...</p></div>';
+                
+                try {
+                    const categoryParam = category === 'all' ? '' : '?category=' + category;
+                    const response = await fetch('/api/news' + categoryParam + (categoryParam ? '&' : '?') + 'limit=50');
+                    const data = await response.json();
+                    
+                    if (data.success && data.news.length > 0) {
+                        newsGrid.innerHTML = data.news.map(news => \`
+                            <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300" onclick="window.open('\${news.link}', '_blank')">
+                                <div class="relative">
+                                    <img src="\${news.image_url || 'https://via.placeholder.com/400x250/667eea/FFFFFF?text=News'}" alt="\${news.title}" class="w-full h-48 object-cover">
+                                    <span class="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm text-xs sm:text-sm font-bold rounded-full text-gray-800">
+                                        \${news.category}
+                                    </span>
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition">
+                                        \${news.title}
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+                                        \${news.summary || ''}
+                                    </p>
+                                    <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
+                                        <div class="flex items-center space-x-2">
+                                            <span class="font-medium">\${news.publisher || '구글 뉴스'}</span>
+                                            <span>•</span>
+                                            <span>\${new Date(news.created_at).toLocaleDateString('ko-KR')}</span>
+                                        </div>
+                                        <div class="flex items-center space-x-1">
+                                            <i class="fas fa-external-link-alt text-gray-400"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        \`).join('');
+                    } else {
+                        newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">해당 카테고리의 뉴스가 없습니다.</p></div>';
+                    }
+                } catch (error) {
+                    console.error('뉴스 로드 오류:', error);
+                    newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다.</p></div>';
+                }
             }
         </script>
     </body>
