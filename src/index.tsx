@@ -564,29 +564,25 @@ app.get('/news', async (c) => {
             <!-- 뉴스 그리드 -->
             <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                 ${newsFromDB.length > 0 ? newsFromDB.map(news => `
-                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300" onclick="window.open('${news.link}', '_blank')">
-                        <div class="relative">
-                            <img src="${news.image_url || 'https://via.placeholder.com/400x250/667eea/FFFFFF?text=News'}" alt="${news.title}" class="w-full h-48 object-cover">
-                            <span class="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm text-xs sm:text-sm font-bold rounded-full text-gray-800">
-                                ${news.category}
-                            </span>
-                        </div>
+                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg" onclick="window.open('${news.link}', '_blank')">
                         <div class="p-4">
-                            <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition">
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-full">
+                                    ${news.category}
+                                </span>
+                                <span class="text-xs text-gray-400">
+                                    ${new Date(news.created_at).toLocaleDateString('ko-KR')}
+                                </span>
+                            </div>
+                            <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-3 hover:text-purple-600 transition">
                                 ${news.title}
                             </h3>
-                            <p class="text-sm text-gray-600 mb-3 line-clamp-2">
+                            <p class="text-sm text-gray-600 mb-3 line-clamp-3">
                                 ${news.summary || ''}
                             </p>
-                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                                <div class="flex items-center space-x-2">
-                                    <span class="font-medium">${news.publisher || '구글 뉴스'}</span>
-                                    <span>•</span>
-                                    <span>${new Date(news.created_at).toLocaleDateString('ko-KR')}</span>
-                                </div>
-                                <div class="flex items-center space-x-1">
-                                    <i class="fas fa-external-link-alt text-gray-400"></i>
-                                </div>
+                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-3 border-t border-gray-100">
+                                <span class="font-medium">${news.publisher || '구글 뉴스'}</span>
+                                <i class="fas fa-external-link-alt text-gray-400"></i>
                             </div>
                         </div>
                     </article>
@@ -705,6 +701,13 @@ app.get('/news', async (c) => {
                 location.reload();
             }
             
+            // HTML 이스케이프 함수
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
             // 카테고리별 뉴스 필터링
             async function filterNewsByCategory(category) {
                 // 버튼 스타일 업데이트
@@ -727,29 +730,25 @@ app.get('/news', async (c) => {
                     
                     if (data.success && data.news.length > 0) {
                         newsGrid.innerHTML = data.news.map(news => \`
-                            <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300" onclick="window.open('\${news.link}', '_blank')">
-                                <div class="relative">
-                                    <img src="\${news.image_url || 'https://via.placeholder.com/400x250/667eea/FFFFFF?text=News'}" alt="\${news.title}" class="w-full h-48 object-cover">
-                                    <span class="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm text-xs sm:text-sm font-bold rounded-full text-gray-800">
-                                        \${news.category}
-                                    </span>
-                                </div>
+                            <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg" onclick="window.open('\${escapeHtml(news.link)}', '_blank')">
                                 <div class="p-4">
-                                    <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-2 hover:text-purple-600 transition">
-                                        \${news.title}
+                                    <div class="flex items-center justify-between mb-3">
+                                        <span class="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-full">
+                                            \${escapeHtml(news.category)}
+                                        </span>
+                                        <span class="text-xs text-gray-400">
+                                            \${new Date(news.created_at).toLocaleDateString('ko-KR')}
+                                        </span>
+                                    </div>
+                                    <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-3 hover:text-purple-600 transition">
+                                        \${escapeHtml(news.title)}
                                     </h3>
-                                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                                        \${news.summary || ''}
+                                    <p class="text-sm text-gray-600 mb-3 line-clamp-3">
+                                        \${escapeHtml(news.summary || '')}
                                     </p>
-                                    <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500">
-                                        <div class="flex items-center space-x-2">
-                                            <span class="font-medium">\${news.publisher || '구글 뉴스'}</span>
-                                            <span>•</span>
-                                            <span>\${new Date(news.created_at).toLocaleDateString('ko-KR')}</span>
-                                        </div>
-                                        <div class="flex items-center space-x-1">
-                                            <i class="fas fa-external-link-alt text-gray-400"></i>
-                                        </div>
+                                    <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-3 border-t border-gray-100">
+                                        <span class="font-medium">\${escapeHtml(news.publisher || '구글 뉴스')}</span>
+                                        <i class="fas fa-external-link-alt text-gray-400"></i>
                                     </div>
                                 </div>
                             </article>
