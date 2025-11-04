@@ -3366,6 +3366,32 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
 
   const url = rssUrls[category] || rssUrls['general']
   
+  // HTML 엔티티 디코딩 함수
+  function decodeHtmlEntities(text: string): string {
+    const entities: Record<string, string> = {
+      '&lt;': '<',
+      '&gt;': '>',
+      '&amp;': '&',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&apos;': "'",
+      '&nbsp;': ' ',
+      '&copy;': '©',
+      '&reg;': '®',
+      '&trade;': '™',
+      '&hellip;': '...',
+      '&mdash;': '—',
+      '&ndash;': '–',
+      '&bull;': '•',
+      '&middot;': '·',
+      '&lsquo;': '\u2018',
+      '&rsquo;': '\u2019',
+      '&ldquo;': '\u201C',
+      '&rdquo;': '\u201D',
+    }
+    return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || '')
+  }
+  
   try {
     const response = await fetch(url)
     const text = await response.text()
@@ -3382,20 +3408,58 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
                     itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
       const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
       const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
-      const description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
-                         itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
+      let description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
+                        itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
       
-      // 이미지 URL 추출 (없으면 기본 이미지)
-      const imgMatch = description.match(/<img[^>]+src="([^"]+)"/)
-      const imageUrl = imgMatch?.[1] || 'https://via.placeholder.com/400x300?text=News'
+      // HTML 엔티티 디코딩
+      description = decodeHtmlEntities(description)
       
-      // HTML 태그 제거하여 요약문 생성
-      const summary = description.replace(/<[^>]*>/g, '').substring(0, 150) + '...'
+      // 이미지 URL 추출 (여러 패턴 시도)
+      const categoryImages: Record<string, string> = {
+        'general': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=300&fit=crop',
+        'politics': 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=300&fit=crop',
+        'economy': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
+        'tech': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop',
+        'sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
+        'entertainment': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=300&fit=crop',
+      }
+      
+      let imageUrl = categoryImages[category] || categoryImages['general']
+      
+      // 패턴 1: <img src="...">
+      let imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/)
+      if (imgMatch && imgMatch[1]) {
+        imageUrl = imgMatch[1]
+      } else {
+        // 패턴 2: url(...) in style
+        imgMatch = description.match(/url\(["']?([^"')]+)["']?\)/)
+        if (imgMatch && imgMatch[1]) {
+          imageUrl = imgMatch[1]
+        }
+      }
+      
+      // HTML 태그 완전 제거하여 요약문 생성
+      let summary = description
+        .replace(/<[^>]*>/g, '')  // HTML 태그 제거
+        .replace(/&nbsp;/g, ' ')  // &nbsp; 제거
+        .replace(/&[#\w]+;/g, '') // 남은 HTML 엔티티 제거
+        .replace(/\s+/g, ' ')      // 공백 정리
+        .trim()
+        .substring(0, 150)
+      
+      // 요약문이 너무 짧으면 제목 사용
+      if (summary.length < 20) {
+        summary = title.substring(0, 150)
+      }
+      
+      if (summary.length > 0 && summary.length < 150) {
+        summary += '...'
+      }
       
       items.push({
         category,
         title: title.trim(),
-        summary,
+        summary: summary || '뉴스 요약이 없습니다.',
         link: link.trim(),
         image_url: imageUrl,
         publisher: '구글 뉴스',
