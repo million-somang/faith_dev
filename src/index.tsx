@@ -3628,6 +3628,144 @@ app.delete('/api/news/:id', async (c) => {
   }
 })
 
+// ==================== 뉴스 스케줄 설정 API ====================
+// 스케줄 설정 조회
+app.get('/api/news/schedule', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
+    const schedule = results?.[0] || {
+      enabled: 1,
+      schedule_type: 'hourly',
+      schedule_time: null,
+      interval_hours: 1,
+      last_run: null,
+      next_run: null
+    }
+    
+    return c.json({ 
+      success: true, 
+      schedule 
+    })
+  } catch (error) {
+    console.error('스케줄 설정 조회 오류:', error)
+    return c.json({ error: '스케줄 설정 조회 실패' }, 500)
+  }
+})
+
+// 스케줄 설정 업데이트
+app.post('/api/news/schedule', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const body = await c.req.json()
+    const { enabled, schedule_type, schedule_time, interval_hours } = body
+    
+    // 다음 실행 시간 계산
+    let next_run = null
+    const now = new Date()
+    
+    if (enabled) {
+      if (schedule_type === 'hourly') {
+        const hours = interval_hours || 1
+        next_run = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
+      } else if (schedule_type === 'daily' && schedule_time) {
+        // schedule_time 형식: "HH:mm"
+        const [hours, minutes] = schedule_time.split(':').map(Number)
+        const nextRun = new Date(now)
+        nextRun.setHours(hours, minutes, 0, 0)
+        
+        // 오늘 시간이 지났으면 내일로 설정
+        if (nextRun <= now) {
+          nextRun.setDate(nextRun.getDate() + 1)
+        }
+        next_run = nextRun.toISOString()
+      }
+    }
+    
+    await DB.prepare(`
+      UPDATE news_schedule 
+      SET enabled = ?, 
+          schedule_type = ?, 
+          schedule_time = ?, 
+          interval_hours = ?,
+          next_run = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).bind(
+      enabled ? 1 : 0,
+      schedule_type,
+      schedule_time,
+      interval_hours,
+      next_run
+    ).run()
+    
+    return c.json({ 
+      success: true, 
+      message: '스케줄 설정이 업데이트되었습니다.',
+      next_run 
+    })
+  } catch (error) {
+    console.error('스케줄 설정 업데이트 오류:', error)
+    return c.json({ error: '스케줄 설정 업데이트 실패' }, 500)
+  }
+})
+
+// 스케줄 실행 기록 업데이트 (자동 실행 시 호출)
+app.post('/api/news/schedule/update-run', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const now = new Date().toISOString()
+    
+    // last_run 업데이트
+    await DB.prepare(`
+      UPDATE news_schedule 
+      SET last_run = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = 1
+    `).bind(now).run()
+    
+    // 현재 설정 가져와서 next_run 재계산
+    const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
+    const schedule = results?.[0]
+    
+    if (schedule && schedule.enabled) {
+      let next_run = null
+      const currentTime = new Date()
+      
+      if (schedule.schedule_type === 'hourly') {
+        const hours = schedule.interval_hours || 1
+        next_run = new Date(currentTime.getTime() + hours * 60 * 60 * 1000).toISOString()
+      } else if (schedule.schedule_type === 'daily' && schedule.schedule_time) {
+        const [hours, minutes] = schedule.schedule_time.split(':').map(Number)
+        const nextRun = new Date(currentTime)
+        nextRun.setDate(nextRun.getDate() + 1) // 다음 날
+        nextRun.setHours(hours, minutes, 0, 0)
+        next_run = nextRun.toISOString()
+      }
+      
+      if (next_run) {
+        await DB.prepare(`
+          UPDATE news_schedule 
+          SET next_run = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = 1
+        `).bind(next_run).run()
+      }
+    }
+    
+    return c.json({ 
+      success: true, 
+      message: '실행 기록이 업데이트되었습니다.' 
+    })
+  } catch (error) {
+    console.error('실행 기록 업데이트 오류:', error)
+    return c.json({ error: '실행 기록 업데이트 실패' }, 500)
+  }
+})
+
 // ==================== 관리자 뉴스관리 페이지 ====================
 app.get('/admin/news', async (c) => {
   const { DB } = c.env
@@ -3738,6 +3876,88 @@ app.get('/admin/news', async (c) => {
                             <p class="text-2xl font-bold text-indigo-600">${newsFromDB.filter(n => n.category === 'tech').length}</p>
                         </div>
                         <i class="fas fa-microchip text-3xl text-indigo-500"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 자동 뉴스 가져오기 스케줄 설정 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-clock text-blue-600 mr-2"></i>
+                        자동 뉴스 가져오기 설정
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-enabled" class="sr-only peer" onchange="toggleSchedule()">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700">활성화</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="schedule-settings" class="space-y-4">
+                    <!-- 스케줄 타입 선택 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            스케줄 타입
+                        </label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="schedule-type" value="hourly" checked onchange="updateScheduleType()" class="mr-2">
+                                <span class="text-sm text-gray-700">시간 간격</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="schedule-type" value="daily" onchange="updateScheduleType()" class="mr-2">
+                                <span class="text-sm text-gray-700">매일 지정 시간</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 시간 간격 설정 (hourly) -->
+                    <div id="hourly-settings">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-hourglass-half mr-1"></i>
+                            가져오기 간격 (시간)
+                        </label>
+                        <select id="interval-hours" class="px-4 py-2 border border-gray-300 rounded-lg w-full md:w-64">
+                            <option value="1">1시간마다</option>
+                            <option value="2">2시간마다</option>
+                            <option value="3">3시간마다</option>
+                            <option value="6">6시간마다</option>
+                            <option value="12">12시간마다</option>
+                            <option value="24">24시간마다</option>
+                        </select>
+                    </div>
+
+                    <!-- 지정 시간 설정 (daily) -->
+                    <div id="daily-settings" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            매일 가져올 시간
+                        </label>
+                        <input type="time" id="schedule-time" class="px-4 py-2 border border-gray-300 rounded-lg w-full md:w-64" value="09:00">
+                    </div>
+
+                    <!-- 실행 정보 -->
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">마지막 실행:</span>
+                            <span id="last-run" class="text-sm font-medium text-gray-800">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">다음 실행 예정:</span>
+                            <span id="next-run" class="text-sm font-medium text-blue-600">-</span>
+                        </div>
+                    </div>
+
+                    <!-- 저장 버튼 -->
+                    <div class="flex justify-end">
+                        <button onclick="saveSchedule()" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>
+                            설정 저장
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3893,6 +4113,197 @@ app.get('/admin/news', async (c) => {
                     }
                 });
             }
+            
+            // ==================== 스케줄 설정 관련 함수 ====================
+            let autoFetchInterval = null;
+            
+            // 스케줄 설정 로드
+            async function loadSchedule() {
+                try {
+                    const response = await fetch('/api/news/schedule');
+                    const data = await response.json();
+                    
+                    if (data.success && data.schedule) {
+                        const schedule = data.schedule;
+                        
+                        // 활성화 상태
+                        document.getElementById('schedule-enabled').checked = schedule.enabled === 1;
+                        
+                        // 스케줄 타입
+                        const scheduleType = schedule.schedule_type || 'hourly';
+                        document.querySelector('input[name="schedule-type"][value="' + scheduleType + '"]').checked = true;
+                        
+                        // 간격 (hourly)
+                        if (schedule.interval_hours) {
+                            document.getElementById('interval-hours').value = schedule.interval_hours;
+                        }
+                        
+                        // 시간 (daily)
+                        if (schedule.schedule_time) {
+                            document.getElementById('schedule-time').value = schedule.schedule_time;
+                        }
+                        
+                        // 실행 정보
+                        if (schedule.last_run) {
+                            document.getElementById('last-run').textContent = new Date(schedule.last_run).toLocaleString('ko-KR');
+                        }
+                        if (schedule.next_run) {
+                            document.getElementById('next-run').textContent = new Date(schedule.next_run).toLocaleString('ko-KR');
+                        }
+                        
+                        // UI 업데이트
+                        updateScheduleType();
+                        
+                        // 자동 실행 시작
+                        if (schedule.enabled === 1) {
+                            startAutoFetch();
+                        }
+                    }
+                } catch (error) {
+                    console.error('스케줄 로드 오류:', error);
+                }
+            }
+            
+            // 스케줄 활성화/비활성화
+            function toggleSchedule() {
+                const enabled = document.getElementById('schedule-enabled').checked;
+                const settings = document.getElementById('schedule-settings');
+                
+                if (enabled) {
+                    settings.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    settings.classList.add('opacity-50', 'pointer-events-none');
+                    stopAutoFetch();
+                }
+            }
+            
+            // 스케줄 타입 변경
+            function updateScheduleType() {
+                const scheduleType = document.querySelector('input[name="schedule-type"]:checked').value;
+                const hourlySettings = document.getElementById('hourly-settings');
+                const dailySettings = document.getElementById('daily-settings');
+                
+                if (scheduleType === 'hourly') {
+                    hourlySettings.classList.remove('hidden');
+                    dailySettings.classList.add('hidden');
+                } else {
+                    hourlySettings.classList.add('hidden');
+                    dailySettings.classList.remove('hidden');
+                }
+            }
+            
+            // 스케줄 저장
+            async function saveSchedule() {
+                const enabled = document.getElementById('schedule-enabled').checked;
+                const scheduleType = document.querySelector('input[name="schedule-type"]:checked').value;
+                const intervalHours = parseInt(document.getElementById('interval-hours').value);
+                const scheduleTime = document.getElementById('schedule-time').value;
+                
+                const data = {
+                    enabled: enabled ? 1 : 0,
+                    schedule_type: scheduleType,
+                    interval_hours: intervalHours,
+                    schedule_time: scheduleTime
+                };
+                
+                try {
+                    const response = await fetch('/api/news/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('스케줄 설정이 저장되었습니다.');
+                        
+                        // 다음 실행 시간 표시
+                        if (result.next_run) {
+                            document.getElementById('next-run').textContent = new Date(result.next_run).toLocaleString('ko-KR');
+                        }
+                        
+                        // 자동 실행 재시작
+                        stopAutoFetch();
+                        if (enabled) {
+                            startAutoFetch();
+                        }
+                    } else {
+                        alert('저장 실패: ' + (result.error || '알 수 없는 오류'));
+                    }
+                } catch (error) {
+                    console.error('스케줄 저장 오류:', error);
+                    alert('저장 중 오류가 발생했습니다.');
+                }
+            }
+            
+            // 자동 뉴스 가져오기 시작
+            function startAutoFetch() {
+                // 기존 interval 정리
+                stopAutoFetch();
+                
+                // 1분마다 스케줄 체크
+                autoFetchInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch('/api/news/schedule');
+                        const data = await response.json();
+                        
+                        if (data.success && data.schedule && data.schedule.enabled === 1) {
+                            const schedule = data.schedule;
+                            const now = new Date();
+                            const nextRun = schedule.next_run ? new Date(schedule.next_run) : null;
+                            
+                            // 다음 실행 시간이 되었는지 확인
+                            if (nextRun && now >= nextRun) {
+                                console.log('자동 뉴스 가져오기 실행...');
+                                
+                                // 뉴스 가져오기
+                                const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment'];
+                                let totalFetched = 0;
+                                
+                                for (const category of categories) {
+                                    try {
+                                        const fetchResponse = await fetch('/api/news/fetch?category=' + category);
+                                        const fetchData = await fetchResponse.json();
+                                        if (fetchData.success) {
+                                            totalFetched += fetchData.saved || 0;
+                                        }
+                                    } catch (error) {
+                                        console.error('뉴스 가져오기 오류:', error);
+                                    }
+                                }
+                                
+                                console.log('자동 뉴스 가져오기 완료:', totalFetched + '개');
+                                
+                                // 실행 기록 업데이트
+                                await fetch('/api/news/schedule/update-run', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                
+                                // UI 새로고침
+                                location.reload();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('자동 실행 체크 오류:', error);
+                    }
+                }, 60000); // 1분마다 체크
+                
+                console.log('자동 뉴스 가져오기가 시작되었습니다.');
+            }
+            
+            // 자동 뉴스 가져오기 중지
+            function stopAutoFetch() {
+                if (autoFetchInterval) {
+                    clearInterval(autoFetchInterval);
+                    autoFetchInterval = null;
+                    console.log('자동 뉴스 가져오기가 중지되었습니다.');
+                }
+            }
+            
+            // 페이지 로드 시 스케줄 설정 로드
+            loadSchedule();
         </script>
     </body>
     </html>
