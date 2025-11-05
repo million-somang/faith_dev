@@ -317,13 +317,13 @@ app.get('/', async (c) => {
                           const categoryColor = getCategoryColor(news.category)
                           return `
                             <a href="${news.link}" target="_blank" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
-                                <span class="text-purple-600 font-bold mr-3 text-lg">${index + 1}</span>
-                                <div class="flex-1">
-                                    <div class="flex items-center mb-1">
-                                        <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full mr-2">${getCategoryName(news.category)}</span>
+                                <span class="text-purple-600 font-bold mr-3 text-lg flex-shrink-0">${index + 1}</span>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-col md:flex-row md:items-center md:gap-2">
+                                        <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full mr-2 mb-1 md:mb-0 inline-block w-fit flex-shrink-0">${getCategoryName(news.category)}</span>
+                                        <p class="text-gray-800 group-hover:text-purple-600 font-medium line-clamp-2 md:line-clamp-1 md:truncate flex-1">${escapeHtml(news.title)}</p>
+                                        <span class="text-gray-500 text-sm mt-1 md:mt-0 flex-shrink-0">${timeAgo}</span>
                                     </div>
-                                    <p class="text-gray-800 group-hover:text-purple-600 font-medium line-clamp-2">${escapeHtml(news.title)}</p>
-                                    <p class="text-gray-500 text-sm mt-1">${timeAgo}</p>
                                 </div>
                             </a>
                           `
