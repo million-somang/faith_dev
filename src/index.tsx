@@ -635,12 +635,7 @@ app.get('/lifestyle', (c) => {
             </div>
         </main>
 
-        <!-- 푸터 -->
-        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-4 text-center">
-                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
-            </div>
-        </footer>
+
 
         <script>
             // 로그인 상태 확인
@@ -1178,12 +1173,7 @@ app.get('/lifestyle/calculator', (c) => {
             </main>
         </div>
 
-        <!-- 푸터 -->
-        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-4 text-center">
-                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
-            </div>
-        </footer>
+
 
         <script>
             // 계산기 전환
@@ -1850,12 +1840,7 @@ app.get('/lifestyle/youtube-download', (c) => {
             </div>
         </div>
 
-        <!-- 푸터 -->
-        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-4 text-center">
-                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
-            </div>
-        </footer>
+
 
         <script>
             // 로그인 상태 확인
