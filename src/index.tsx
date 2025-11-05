@@ -263,7 +263,7 @@ app.get('/', async (c) => {
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
                     </a>
-                    <a href="/" class="group text-center">
+                    <a href="/lifestyle" class="group text-center">
                         <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-home text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
@@ -509,6 +509,137 @@ app.get('/', async (c) => {
                     localStorage.removeItem('user_level');
                     location.reload();
                 });
+            }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 생활 페이지 ====================
+app.get('/lifestyle', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>생활 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- 헤더 -->
+        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
+                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
+                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
+                </a>
+                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
+                    </a>
+                    <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
+                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 서브 메뉴 -->
+        <nav class="bg-white border-b border-gray-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-8 overflow-x-auto">
+                    <a href="/lifestyle/youtube-download" class="px-4 py-4 text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600 whitespace-nowrap transition-all">
+                        <i class="fab fa-youtube mr-2 text-red-500"></i>
+                        유튜브 다운로드
+                    </a>
+                    <!-- 추가 메뉴는 여기에 -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-home text-4xl text-white"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                    <span class="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">생활</span> 페이지
+                </h1>
+                <p class="text-gray-600 text-lg mb-8">
+                    일상생활에 필요한 다양한 정보와 기능을 제공합니다
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="/lifestyle/youtube-download" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fab fa-youtube mr-2"></i>
+                        유튜브 다운로드
+                    </a>
+                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-cyan-500 hover:text-cyan-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>
+                        메인으로
+                    </a>
+                </div>
+            </div>
+
+            <!-- 서비스 카드 그리드 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fab fa-youtube text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">유튜브 다운로드</h3>
+                    <p class="text-gray-600 mb-4">유튜브 영상을 간편하게 다운로드하세요</p>
+                    <a href="/lifestyle/youtube-download" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- 추가 서비스 카드는 여기에 -->
+                <div class="bg-white rounded-xl shadow-lg p-6 opacity-50">
+                    <div class="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-plus text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">서비스 준비중</h3>
+                    <p class="text-gray-600 mb-4">곧 더 많은 서비스를 제공할 예정입니다</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <script>
+            // 로그인 상태 확인
+            const token = localStorage.getItem('auth_token');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (token && userEmail) {
+                const userMenu = document.getElementById('user-menu');
+                userMenu.innerHTML = \`
+                    <span class="text-xs sm:text-sm text-gray-700 px-2 sm:px-3">\${userEmail}</span>
+                    \${userLevel >= 6 ? '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-2 sm:px-3 py-1.5 rounded font-medium hover:bg-yellow-600 transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>' : ''}
+                    <button onclick="logout()" class="text-xs sm:text-sm text-gray-700 hover:text-red-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-sign-out-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그아웃</span>
+                    </button>
+                \`;
+            }
+            
+            function logout() {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_level');
+                location.href = '/';
             }
         </script>
     </body>
