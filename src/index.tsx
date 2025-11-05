@@ -10,6 +10,61 @@ const app = new Hono<{ Bindings: Bindings }>()
 // CORS 설정 (API 요청용)
 app.use('/api/*', cors())
 
+// ==================== 헬퍼 함수 ====================
+// HTML 이스케이프 함수
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char])
+}
+
+// 카테고리 이름 변환
+function getCategoryName(category: string): string {
+  const names: Record<string, string> = {
+    'general': '일반',
+    'politics': '정치',
+    'economy': '경제',
+    'tech': 'IT/과학',
+    'sports': '스포츠',
+    'entertainment': '엔터'
+  }
+  return names[category] || category
+}
+
+// 카테고리 색상
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'general': 'bg-gray-100 text-gray-700',
+    'politics': 'bg-purple-100 text-purple-700',
+    'economy': 'bg-green-100 text-green-700',
+    'tech': 'bg-blue-100 text-blue-700',
+    'sports': 'bg-orange-100 text-orange-700',
+    'entertainment': 'bg-pink-100 text-pink-700'
+  }
+  return colors[category] || 'bg-gray-100 text-gray-700'
+}
+
+// 시간 전 표시
+function getTimeAgo(dateString: string): string {
+  const now = new Date()
+  const past = new Date(dateString)
+  const diffMs = now.getTime() - past.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+  
+  if (diffMins < 1) return '방금 전'
+  if (diffMins < 60) return `${diffMins}분 전`
+  if (diffHours < 24) return `${diffHours}시간 전`
+  if (diffDays < 7) return `${diffDays}일 전`
+  return past.toLocaleDateString('ko-KR')
+}
+
 // ==================== 관리자 네비게이션 헬퍼 함수 ====================
 function getAdminNavigation(currentPage: string): string {
   const menuItems = [
@@ -69,7 +124,18 @@ function getAdminNavigation(currentPage: string): string {
 }
 
 // ==================== 메인 페이지 ====================
-app.get('/', (c) => {
+app.get('/', async (c) => {
+  const { DB } = c.env
+  
+  // 최신 뉴스 5개 가져오기
+  let latestNews: any[] = []
+  try {
+    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 5').all()
+    latestNews = results || []
+  } catch (error) {
+    console.error('뉴스 조회 오류:', error)
+  }
+  
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
@@ -245,29 +311,40 @@ app.get('/', (c) => {
                         실시간 뉴스
                         <span class="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full pulse-animation">LIVE</span>
                     </h3>
-                    <div class="space-y-4">
-                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
-                            <span class="text-purple-600 font-bold mr-3 text-lg">1</span>
-                            <div class="flex-1">
-                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">최신 뉴스 헤드라인입니다</p>
-                                <p class="text-gray-500 text-sm mt-1">5분 전</p>
+                    <div class="space-y-4" id="latest-news">
+                        ${latestNews.length > 0 ? latestNews.map((news, index) => {
+                          const timeAgo = getTimeAgo(news.created_at)
+                          const categoryColor = getCategoryColor(news.category)
+                          return `
+                            <a href="${news.link}" target="_blank" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
+                                <span class="text-purple-600 font-bold mr-3 text-lg">${index + 1}</span>
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-1">
+                                        <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full mr-2">${getCategoryName(news.category)}</span>
+                                    </div>
+                                    <p class="text-gray-800 group-hover:text-purple-600 font-medium line-clamp-2">${escapeHtml(news.title)}</p>
+                                    <p class="text-gray-500 text-sm mt-1">${timeAgo}</p>
+                                </div>
+                            </a>
+                          `
+                        }).join('') : `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-newspaper text-4xl mb-3 text-gray-300"></i>
+                                <p>뉴스를 불러오는 중입니다...</p>
+                                <a href="/news" class="mt-3 inline-block text-blue-600 hover:text-blue-700 font-medium">
+                                    뉴스 페이지로 이동 →
+                                </a>
                             </div>
-                        </a>
-                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
-                            <span class="text-purple-600 font-bold mr-3 text-lg">2</span>
-                            <div class="flex-1">
-                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">오늘의 주요 뉴스입니다</p>
-                                <p class="text-gray-500 text-sm mt-1">15분 전</p>
-                            </div>
-                        </a>
-                        <a href="#" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
-                            <span class="text-purple-600 font-bold mr-3 text-lg">3</span>
-                            <div class="flex-1">
-                                <p class="text-gray-800 group-hover:text-purple-600 font-medium">속보 뉴스가 업데이트됩니다</p>
-                                <p class="text-gray-500 text-sm mt-1">30분 전</p>
-                            </div>
-                        </a>
+                        `}
                     </div>
+                    ${latestNews.length > 0 ? `
+                        <div class="mt-6 text-center">
+                            <a href="/news" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all">
+                                <span>더 많은 뉴스 보기</span>
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </a>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <!-- 트렌드 토픽 -->
