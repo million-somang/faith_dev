@@ -429,62 +429,6 @@ app.get('/', async (c) => {
             </div>
         </main>
 
-        <!-- 푸터 -->
-        <footer class="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-gray-700 mt-8 sm:mt-12 md:mt-16 py-8 sm:py-10 md:py-12">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 mb-6 sm:mb-8">
-                    <div class="col-span-2 md:col-span-1">
-                        <h4 class="text-white font-bold text-base sm:text-lg mb-3 sm:mb-4 flex items-center">
-                            <i class="fas fa-infinity mr-2 text-purple-400"></i>
-                            Faith Portal
-                        </h4>
-                        <p class="text-gray-400 text-xs sm:text-sm">
-                            믿음의 포탈에서<br/>더 넓은 세상을 만나보세요
-                        </p>
-                    </div>
-                    <div>
-                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">서비스</h5>
-                        <div class="space-y-1.5 sm:space-y-2">
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">메일</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">카페</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">블로그</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">쇼핑</a>
-                        </div>
-                    </div>
-                    <div>
-                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">회사</h5>
-                        <div class="space-y-1.5 sm:space-y-2">
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">회사소개</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">이용약관</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">개인정보처리방침</a>
-                            <a href="#" class="block text-gray-400 hover:text-purple-400 text-xs sm:text-sm transition">고객센터</a>
-                        </div>
-                    </div>
-                    <div class="col-span-2 md:col-span-1">
-                        <h5 class="text-white font-semibold mb-3 sm:mb-4 text-sm sm:text-base">소셜 미디어</h5>
-                        <div class="flex space-x-3 sm:space-x-4">
-                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-facebook-f text-sm"></i>
-                            </a>
-                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-twitter text-sm"></i>
-                            </a>
-                            <a href="#" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gray-700 flex items-center justify-center text-gray-400 hover:bg-purple-600 hover:text-white transition">
-                                <i class="fab fa-instagram text-sm"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="border-t border-gray-700 pt-4 sm:pt-6 text-center">
-                    <p class="text-gray-400 text-xs sm:text-sm px-4">
-                        &copy; 2025 Faith Portal. All rights reserved. Made with 
-                        <i class="fas fa-heart text-red-500"></i> 
-                        by Faith Team
-                    </p>
-                </div>
-            </div>
-        </footer>
-
         <script>
             // 검색 기능
             document.getElementById('search-btn').addEventListener('click', function() {
