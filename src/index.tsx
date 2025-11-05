@@ -2402,8 +2402,6 @@ app.get('/news', async (c) => {
             }
         </script>
 
-        ${getCommonFooter()}
-
     </body>
     </html>
   `)
