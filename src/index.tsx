@@ -313,18 +313,20 @@ app.get('/', async (c) => {
                         실시간 뉴스
                         <span class="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full pulse-animation">LIVE</span>
                     </h3>
-                    <div class="space-y-4" id="latest-news">
+                    <div class="space-y-1" id="latest-news">
                         ${latestNews.length > 0 ? latestNews.map((news, index) => {
                           const timeAgo = getTimeAgo(news.created_at)
                           const categoryColor = getCategoryColor(news.category)
                           return `
-                            <a href="${news.link}" target="_blank" class="flex items-start hover:bg-purple-50 p-3 rounded-lg transition group">
-                                <span class="text-purple-600 font-bold mr-3 text-lg flex-shrink-0">${index + 1}</span>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex flex-col md:flex-row md:items-center md:gap-2">
-                                        <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full mr-2 mb-1 md:mb-0 inline-block w-fit flex-shrink-0">${getCategoryName(news.category)}</span>
-                                        <p class="text-gray-800 group-hover:text-purple-600 font-medium line-clamp-2 md:line-clamp-1 md:truncate flex-1">${escapeHtml(news.title)}</p>
-                                        <span class="text-gray-500 text-sm mt-1 md:mt-0 flex-shrink-0">${timeAgo}</span>
+                            <a href="${news.link}" target="_blank" class="block hover:bg-purple-50 py-2 px-2 rounded transition group border-b border-gray-100 last:border-b-0">
+                                <div class="flex items-start">
+                                    <span class="text-purple-600 font-bold mr-2 text-sm flex-shrink-0">${index + 1}</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full flex-shrink-0">${getCategoryName(news.category)}</span>
+                                            <span class="text-gray-400 text-xs flex-shrink-0">${timeAgo}</span>
+                                        </div>
+                                        <p class="text-gray-800 group-hover:text-purple-600 font-medium text-sm line-clamp-1">${escapeHtml(news.title)}</p>
                                     </div>
                                 </div>
                             </a>
