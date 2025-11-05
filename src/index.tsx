@@ -2277,27 +2277,27 @@ app.get('/news', async (c) => {
             </div>
 
             <!-- 뉴스 그리드 -->
-            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-7">
+            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 ${newsFromDB.length > 0 ? newsFromDB.map(news => `
-                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg" onclick="window.open('${news.link}', '_blank')">
-                        <div class="p-5 sm:p-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <span class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-full shadow-sm">
+                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl" onclick="window.open('${news.link}', '_blank')">
+                        <div class="p-6 sm:p-7">
+                            <div class="flex items-center justify-between mb-5">
+                                <span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">
                                     ${news.category}
                                 </span>
                                 <span class="text-xs text-gray-500 font-medium">
                                     ${new Date(news.created_at).toLocaleDateString('ko-KR')}
                                 </span>
                             </div>
-                            <h3 class="font-bold text-lg sm:text-xl text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">
+                            <h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">
                                 ${news.title}
                             </h3>
-                            <p class="text-sm sm:text-base text-gray-700 mb-4 line-clamp-3 leading-relaxed">
-                                ${news.summary || ''}
-                            </p>
-                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600 pt-4 border-t border-gray-200">
-                                <span class="font-semibold">${news.publisher || '구글 뉴스'}</span>
-                                <i class="fas fa-external-link-alt text-gray-500"></i>
+                            <div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">
+                                <span class="font-semibold flex items-center">
+                                    <i class="fas fa-newspaper text-gray-400 mr-2"></i>
+                                    ${news.publisher || '구글 뉴스'}
+                                </span>
+                                <i class="fas fa-external-link-alt text-gray-400"></i>
                             </div>
                         </div>
                     </article>
