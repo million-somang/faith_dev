@@ -233,16 +233,6 @@ app.get('/', async (c) => {
 
         <!-- 메인 검색 영역 -->
         <main class="max-w-6xl mx-auto px-4 py-12">
-            <!-- 히어로 섹션 -->
-            <div class="text-center mb-8 sm:mb-10 md:mb-12">
-                <h2 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold gradient-text mb-3 sm:mb-4 floating px-4">
-                    무엇이든 찾아보세요
-                </h2>
-                <p class="text-gray-600 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 px-4">
-                    Faith Portal과 함께 더 넓은 세상을 경험하세요
-                </p>
-            </div>
-
             <!-- 검색창 -->
             <div class="mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
                 <div class="relative search-shadow rounded-xl sm:rounded-2xl overflow-hidden bg-white">
