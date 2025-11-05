@@ -2187,6 +2187,9 @@ app.get('/news', async (c) => {
         <style>
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            .news-card {
+                transition: all 0.3s ease;
+            }
             .news-card:hover {
                 transform: translateY(-4px);
                 box-shadow: 0 12px 24px rgba(0,0,0,0.15);
@@ -2196,6 +2199,24 @@ app.get('/news', async (c) => {
             }
             .category-badge:hover {
                 transform: scale(1.05);
+            }
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .line-clamp-3 {
+                display: -webkit-box;
+                -webkit-line-clamp: 3;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+            }
+            .leading-snug {
+                line-height: 1.4;
+            }
+            .leading-relaxed {
+                line-height: 1.7;
             }
         </style>
     </head>
@@ -2256,31 +2277,31 @@ app.get('/news', async (c) => {
             </div>
 
             <!-- 뉴스 그리드 -->
-            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 sm:gap-7">
                 ${newsFromDB.length > 0 ? newsFromDB.map(news => `
                     <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg" onclick="window.open('${news.link}', '_blank')">
-                        <div class="p-4">
-                            <div class="flex items-center justify-between mb-3">
-                                <span class="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-full">
+                        <div class="p-5 sm:p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-bold rounded-full shadow-sm">
                                     ${news.category}
                                 </span>
-                                <span class="text-xs text-gray-400">
+                                <span class="text-xs text-gray-500 font-medium">
                                     ${new Date(news.created_at).toLocaleDateString('ko-KR')}
                                 </span>
                             </div>
-                            <h3 class="font-bold text-base sm:text-lg text-gray-900 mb-2 line-clamp-3 hover:text-purple-600 transition">
+                            <h3 class="font-bold text-lg sm:text-xl text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">
                                 ${news.title}
                             </h3>
-                            <p class="text-sm text-gray-600 mb-3 line-clamp-3">
+                            <p class="text-sm sm:text-base text-gray-700 mb-4 line-clamp-3 leading-relaxed">
                                 ${news.summary || ''}
                             </p>
-                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500 pt-3 border-t border-gray-100">
-                                <span class="font-medium">${news.publisher || '구글 뉴스'}</span>
-                                <i class="fas fa-external-link-alt text-gray-400"></i>
+                            <div class="flex items-center justify-between text-xs sm:text-sm text-gray-600 pt-4 border-t border-gray-200">
+                                <span class="font-semibold">${news.publisher || '구글 뉴스'}</span>
+                                <i class="fas fa-external-link-alt text-gray-500"></i>
                             </div>
                         </div>
                     </article>
-                `).join('') : '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스를 불러오는 중입니다...</p></div>'}
+                `).join('') : '<div class="col-span-full text-center py-12"><p class="text-gray-500 text-lg">뉴스를 불러오는 중입니다...</p></div>'}
             </div>
 
             <!-- 새로고침 버튼 -->
