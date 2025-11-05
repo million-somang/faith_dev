@@ -915,6 +915,9 @@ app.get('/lifestyle/youtube-download', (c) => {
                 updateProgress(0);
                 
                 try {
+                    // 진행률 시뮬레이션 시작
+                    updateProgress(10);
+                    
                     // API 호출
                     const response = await fetch('/api/youtube/download', {
                         method: 'POST',
@@ -924,15 +927,14 @@ app.get('/lifestyle/youtube-download', (c) => {
                         body: JSON.stringify({ url, quality })
                     });
                     
-                    if (!response.ok) {
-                        throw new Error('다운로드 요청 실패');
-                    }
+                    updateProgress(30);
                     
                     const data = await response.json();
+                    console.log('API 응답:', data);
                     
                     if (data.success && data.downloadUrl) {
                         // 진행률 시뮬레이션
-                        for (let i = 10; i <= 90; i += 10) {
+                        for (let i = 40; i <= 90; i += 10) {
                             updateProgress(i);
                             await sleep(200);
                         }
@@ -952,12 +954,76 @@ app.get('/lifestyle/youtube-download', (c) => {
                         showMessage('success', '다운로드가 완료되었습니다!');
                         urlInput.value = '';
                     } else {
-                        throw new Error(data.error || '다운로드 실패');
+                        // 에러 처리
+                        progressContainer.classList.add('hidden');
+                        
+                        let errorMessage = '';
+                        
+                        if (data.errorType === 'NOT_IMPLEMENTED') {
+                            // 구현되지 않은 기능
+                            errorMessage = '<div class="space-y-3">';
+                            errorMessage += '<div class="font-bold text-lg">' + (data.error || '기능 구현 필요') + '</div>';
+                            
+                            if (data.details) {
+                                errorMessage += '<div class="text-sm"><strong>상태:</strong> ' + data.details.title + '</div>';
+                                errorMessage += '<div class="text-sm"><strong>원인:</strong> ' + data.details.reason + '</div>';
+                                
+                                if (data.details.limitations && data.details.limitations.length > 0) {
+                                    errorMessage += '<div class="mt-2"><strong>제약 사항:</strong><ul class="list-disc list-inside mt-1">';
+                                    data.details.limitations.forEach(limitation => {
+                                        errorMessage += '<li>' + limitation + '</li>';
+                                    });
+                                    errorMessage += '</ul></div>';
+                                }
+                                
+                                if (data.details.solutions && data.details.solutions.length > 0) {
+                                    errorMessage += '<div class="mt-3"><strong>구현 방법:</strong>';
+                                    data.details.solutions.forEach(solution => {
+                                        errorMessage += '<div class="mt-2 pl-4 border-l-2 border-blue-400">';
+                                        errorMessage += '<div class="font-medium">' + solution.method + '</div>';
+                                        errorMessage += '<div class="text-xs mt-1">' + solution.description + '</div>';
+                                        errorMessage += '<div class="text-xs mt-1">✅ ' + solution.pros + ' / ⚠️ ' + solution.cons + '</div>';
+                                        errorMessage += '</div>';
+                                    });
+                                    errorMessage += '</div>';
+                                }
+                            }
+                            
+                            if (data.recommendations && data.recommendations.length > 0) {
+                                errorMessage += '<div class="mt-3"><strong>권장 사항:</strong><ul class="list-disc list-inside mt-1">';
+                                data.recommendations.forEach(rec => {
+                                    errorMessage += '<li class="text-xs">' + rec + '</li>';
+                                });
+                                errorMessage += '</ul></div>';
+                            }
+                            
+                            errorMessage += '</div>';
+                        } else {
+                            // 일반 에러
+                            errorMessage = '<div>';
+                            errorMessage += '<div class="font-bold mb-2">' + (data.error || '다운로드 실패') + '</div>';
+                            if (data.message) {
+                                errorMessage += '<div class="text-sm whitespace-pre-line">' + data.message + '</div>';
+                            }
+                            if (data.details) {
+                                errorMessage += '<div class="text-xs mt-2 text-gray-600">상세: ' + JSON.stringify(data.details, null, 2) + '</div>';
+                            }
+                            errorMessage += '</div>';
+                        }
+                        
+                        showMessage('error', errorMessage);
                     }
                 } catch (error) {
                     console.error('다운로드 오류:', error);
                     progressContainer.classList.add('hidden');
-                    showMessage('error', error.message || '다운로드 중 오류가 발생했습니다');
+                    
+                    let errorMessage = '<div>';
+                    errorMessage += '<div class="font-bold mb-2">요청 처리 중 오류 발생</div>';
+                    errorMessage += '<div class="text-sm">오류 메시지: ' + (error.message || '알 수 없는 오류') + '</div>';
+                    errorMessage += '<div class="text-xs mt-2 text-gray-600">네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.</div>';
+                    errorMessage += '</div>';
+                    
+                    showMessage('error', errorMessage);
                 }
             }
             
@@ -4120,19 +4186,50 @@ app.post('/api/youtube/download', async (c) => {
     
     // 주의: Cloudflare Workers에서는 실제 유튜브 다운로드 기능을 직접 구현할 수 없습니다
     // 외부 API 서비스를 사용하거나, 프록시 서버를 통해 구현해야 합니다
-    // 여기서는 시연용 응답을 반환합니다
     
-    // 실제 구현 시에는 다음과 같은 방법을 사용할 수 있습니다:
-    // 1. 외부 유튜브 다운로드 API 서비스 사용 (예: youtube-dl API)
-    // 2. 별도의 백엔드 서버 구축
-    // 3. Cloudflare Workers에서 ytdl-core 대안 사용
-    
-    // 시연용 응답 (실제로는 작동하지 않음)
+    // 비디오 정보 반환 (시연용)
     return c.json({
       success: false,
-      error: '유튜브 다운로드 기능은 현재 준비 중입니다. Cloudflare Workers 환경에서는 직접 구현이 제한됩니다. 외부 API 서비스나 별도 백엔드 서버가 필요합니다.',
-      message: '이 기능을 사용하려면 다음 중 하나를 선택해주세요:\\n1. 외부 유튜브 다운로드 API 서비스 통합\\n2. 별도의 Node.js 백엔드 서버 구축\\n3. 브라우저 확장 프로그램 사용'
-    }, 501)
+      error: '유튜브 다운로드 기능 구현 안내',
+      errorType: 'NOT_IMPLEMENTED',
+      videoId: videoId,
+      requestedQuality: quality,
+      details: {
+        title: '이 기능은 현재 구현되지 않았습니다',
+        reason: 'Cloudflare Workers 환경 제약',
+        limitations: [
+          'Node.js 파일 시스템 API 사용 불가',
+          'ytdl-core, youtube-dl 등 라이브러리 사용 제한',
+          '대용량 파일 스트리밍 제약',
+          'CPU 시간 제한 (10-50ms)'
+        ],
+        solutions: [
+          {
+            method: '1. 외부 API 서비스 사용',
+            description: 'RapidAPI, Y2Mate API 등의 서드파티 서비스 통합',
+            pros: '빠른 구현, 서버 관리 불필요',
+            cons: '유료, API 제약 존재'
+          },
+          {
+            method: '2. 별도 백엔드 서버',
+            description: 'Node.js + ytdl-core 또는 Python + yt-dlp 서버 구축',
+            pros: '완전한 제어, 무료',
+            cons: '서버 구축/관리 필요, 비용 발생'
+          },
+          {
+            method: '3. 클라이언트 측 솔루션',
+            description: '브라우저 확장 프로그램 또는 별도 앱 사용',
+            pros: '서버 불필요',
+            cons: '사용자가 별도 설치 필요'
+          }
+        ]
+      },
+      recommendations: [
+        '개발 환경: 로컬에서 Node.js 서버로 테스트',
+        '프로덕션: 외부 API 또는 별도 백엔드 서버 사용',
+        '대안: youtube-dl 웹 인터페이스 링크 제공'
+      ]
+    }, 200)
     
   } catch (error) {
     console.error('유튜브 다운로드 오류:', error)
