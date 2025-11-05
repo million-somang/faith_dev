@@ -68,6 +68,7 @@ function getTimeAgo(dateString: string): string {
 // ==================== 생활 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
   const menuItems = [
+    { path: '/lifestyle/calculator', label: '계산기', icon: 'fas fa-calculator' },
     { path: '/lifestyle/youtube-download', label: '유튜브 다운로드', icon: 'fab fa-youtube' },
     // 추가 메뉴는 여기에
   ]
@@ -605,6 +606,17 @@ app.get('/lifestyle', (c) => {
             <!-- 서비스 카드 그리드 -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                 <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-calculator text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">다기능 계산기</h3>
+                    <p class="text-gray-600 mb-4">기본 계산부터 대출, BMI, 날짜까지 다양한 계산기</p>
+                    <a href="/lifestyle/calculator" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
                     <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
                         <i class="fab fa-youtube text-2xl text-white"></i>
                     </div>
@@ -656,6 +668,939 @@ app.get('/lifestyle', (c) => {
                 localStorage.removeItem('user_level');
                 location.href = '/';
             }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 계산기 페이지 ====================
+app.get('/lifestyle/calculator', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>다기능 계산기 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .calculator-btn {
+                @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold py-4 px-4 border border-gray-300 rounded-lg shadow transition-all active:scale-95;
+            }
+            .calculator-btn-operator {
+                @apply bg-blue-500 hover:bg-blue-600 text-white;
+            }
+            .calculator-btn-equal {
+                @apply bg-green-500 hover:bg-green-600 text-white;
+            }
+            .calculator-btn-clear {
+                @apply bg-red-500 hover:bg-red-600 text-white;
+            }
+            .tab-active {
+                @apply bg-blue-500 text-white;
+            }
+            .calculator-display {
+                @apply bg-gray-100 p-4 rounded-lg text-right text-2xl font-mono border-2 border-gray-300 mb-4 min-h-[60px] break-all;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- 헤더 -->
+        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
+                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
+                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
+                </a>
+                <div class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                    <a href="/lifestyle" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-arrow-left mr-1"></i><span class="hidden sm:inline">생활 홈</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 서브 메뉴 -->
+        ${getLifestyleMenu('/lifestyle/calculator')}
+
+        <!-- 광고 배너 영역 -->
+        <div class="bg-gradient-to-r from-yellow-400 via-red-400 to-pink-400 py-4">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-white font-bold text-lg">
+                    <i class="fas fa-ad mr-2"></i>광고 배너 영역
+                </p>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="max-w-7xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-6">
+            <!-- 좌측 네비게이션 (데스크톱) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-list mr-2 text-blue-500"></i>
+                        페이지 목록
+                    </h3>
+                    <nav class="space-y-1">
+                        <a href="/lifestyle" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            <i class="fas fa-home mr-2"></i>생활 홈
+                        </a>
+                        <a href="/lifestyle/calculator" class="block px-4 py-2 bg-cyan-50 text-cyan-700 rounded-lg font-medium">
+                            <i class="fas fa-calculator mr-2"></i>계산기
+                        </a>
+                        <a href="/lifestyle/youtube-download" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            <i class="fab fa-youtube mr-2"></i>유튜브 다운로드
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 영역 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                            <i class="fas fa-calculator mr-2 text-blue-500"></i>
+                            다기능 계산기
+                        </h1>
+                    </div>
+
+                    <!-- 계산기 탭 -->
+                    <div class="flex flex-wrap gap-2 mb-6 border-b pb-4">
+                        <button onclick="showCalculator('basic')" class="tab-btn tab-active px-4 py-2 rounded-lg font-medium transition" data-tab="basic">
+                            <i class="fas fa-calculator mr-1"></i>기본
+                        </button>
+                        <button onclick="showCalculator('scientific')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="scientific">
+                            <i class="fas fa-square-root-alt mr-1"></i>공학
+                        </button>
+                        <button onclick="showCalculator('loan')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="loan">
+                            <i class="fas fa-money-bill-wave mr-1"></i>대출
+                        </button>
+                        <button onclick="showCalculator('bmi')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="bmi">
+                            <i class="fas fa-weight mr-1"></i>BMI
+                        </button>
+                        <button onclick="showCalculator('age')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="age">
+                            <i class="fas fa-birthday-cake mr-1"></i>나이
+                        </button>
+                        <button onclick="showCalculator('date')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="date">
+                            <i class="fas fa-calendar mr-1"></i>날짜
+                        </button>
+                        <button onclick="showCalculator('unit')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="unit">
+                            <i class="fas fa-exchange-alt mr-1"></i>단위
+                        </button>
+                        <button onclick="showCalculator('percentage')" class="tab-btn px-4 py-2 rounded-lg font-medium transition bg-gray-100 hover:bg-gray-200" data-tab="percentage">
+                            <i class="fas fa-percent mr-1"></i>백분율
+                        </button>
+                    </div>
+
+                    <!-- 기본 계산기 -->
+                    <div id="calc-basic" class="calculator-container">
+                        <div class="max-w-md mx-auto">
+                            <div id="basic-display" class="calculator-display">0</div>
+                            <div class="grid grid-cols-4 gap-2">
+                                <button onclick="clearBasic()" class="calculator-btn calculator-btn-clear">C</button>
+                                <button onclick="backspaceBasic()" class="calculator-btn"><i class="fas fa-backspace"></i></button>
+                                <button onclick="appendToBasic('%')" class="calculator-btn calculator-btn-operator">%</button>
+                                <button onclick="appendToBasic('/')" class="calculator-btn calculator-btn-operator">÷</button>
+                                
+                                <button onclick="appendToBasic('7')" class="calculator-btn">7</button>
+                                <button onclick="appendToBasic('8')" class="calculator-btn">8</button>
+                                <button onclick="appendToBasic('9')" class="calculator-btn">9</button>
+                                <button onclick="appendToBasic('*')" class="calculator-btn calculator-btn-operator">×</button>
+                                
+                                <button onclick="appendToBasic('4')" class="calculator-btn">4</button>
+                                <button onclick="appendToBasic('5')" class="calculator-btn">5</button>
+                                <button onclick="appendToBasic('6')" class="calculator-btn">6</button>
+                                <button onclick="appendToBasic('-')" class="calculator-btn calculator-btn-operator">-</button>
+                                
+                                <button onclick="appendToBasic('1')" class="calculator-btn">1</button>
+                                <button onclick="appendToBasic('2')" class="calculator-btn">2</button>
+                                <button onclick="appendToBasic('3')" class="calculator-btn">3</button>
+                                <button onclick="appendToBasic('+')" class="calculator-btn calculator-btn-operator">+</button>
+                                
+                                <button onclick="appendToBasic('0')" class="calculator-btn col-span-2">0</button>
+                                <button onclick="appendToBasic('.')" class="calculator-btn">.</button>
+                                <button onclick="calculateBasic()" class="calculator-btn calculator-btn-equal">=</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 공학 계산기 -->
+                    <div id="calc-scientific" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <div id="scientific-display" class="calculator-display">0</div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <button onclick="clearScientific()" class="calculator-btn calculator-btn-clear">C</button>
+                                <button onclick="scientificOperation('sin')" class="calculator-btn">sin</button>
+                                <button onclick="scientificOperation('cos')" class="calculator-btn">cos</button>
+                                <button onclick="scientificOperation('tan')" class="calculator-btn">tan</button>
+                                <button onclick="backspaceScientific()" class="calculator-btn"><i class="fas fa-backspace"></i></button>
+                                
+                                <button onclick="scientificOperation('sqrt')" class="calculator-btn">√</button>
+                                <button onclick="scientificOperation('pow2')" class="calculator-btn">x²</button>
+                                <button onclick="scientificOperation('pow')" class="calculator-btn">xʸ</button>
+                                <button onclick="scientificOperation('log')" class="calculator-btn">log</button>
+                                <button onclick="scientificOperation('ln')" class="calculator-btn">ln</button>
+                                
+                                <button onclick="appendToScientific('7')" class="calculator-btn">7</button>
+                                <button onclick="appendToScientific('8')" class="calculator-btn">8</button>
+                                <button onclick="appendToScientific('9')" class="calculator-btn">9</button>
+                                <button onclick="appendToScientific('/')" class="calculator-btn calculator-btn-operator">÷</button>
+                                <button onclick="appendToScientific('(')" class="calculator-btn">(</button>
+                                
+                                <button onclick="appendToScientific('4')" class="calculator-btn">4</button>
+                                <button onclick="appendToScientific('5')" class="calculator-btn">5</button>
+                                <button onclick="appendToScientific('6')" class="calculator-btn">6</button>
+                                <button onclick="appendToScientific('*')" class="calculator-btn calculator-btn-operator">×</button>
+                                <button onclick="appendToScientific(')')" class="calculator-btn">)</button>
+                                
+                                <button onclick="appendToScientific('1')" class="calculator-btn">1</button>
+                                <button onclick="appendToScientific('2')" class="calculator-btn">2</button>
+                                <button onclick="appendToScientific('3')" class="calculator-btn">3</button>
+                                <button onclick="appendToScientific('-')" class="calculator-btn calculator-btn-operator">-</button>
+                                <button onclick="scientificConstant('pi')" class="calculator-btn">π</button>
+                                
+                                <button onclick="appendToScientific('0')" class="calculator-btn col-span-2">0</button>
+                                <button onclick="appendToScientific('.')" class="calculator-btn">.</button>
+                                <button onclick="appendToScientific('+')" class="calculator-btn calculator-btn-operator">+</button>
+                                <button onclick="calculateScientific()" class="calculator-btn calculator-btn-equal">=</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 대출 계산기 -->
+                    <div id="calc-loan" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">대출 상환 계산기</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">대출 금액 (원)</label>
+                                    <input type="number" id="loan-amount" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 100000000" value="100000000">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">연 이자율 (%)</label>
+                                    <input type="number" id="loan-rate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 3.5" value="3.5" step="0.1">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">대출 기간 (년)</label>
+                                    <input type="number" id="loan-years" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 20" value="20">
+                                </div>
+                                <button onclick="calculateLoan()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>계산하기
+                                </button>
+                                <div id="loan-result" class="hidden">
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">월 상환액:</span>
+                                                <span id="monthly-payment" class="font-bold text-blue-600"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">총 상환액:</span>
+                                                <span id="total-payment" class="font-bold text-gray-800"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">총 이자:</span>
+                                                <span id="total-interest" class="font-bold text-red-600"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BMI 계산기 -->
+                    <div id="calc-bmi" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">BMI (체질량지수) 계산기</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">키 (cm)</label>
+                                    <input type="number" id="bmi-height" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 170" value="170">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">몸무게 (kg)</label>
+                                    <input type="number" id="bmi-weight" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="예: 70" value="70" step="0.1">
+                                </div>
+                                <button onclick="calculateBMI()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>계산하기
+                                </button>
+                                <div id="bmi-result" class="hidden">
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
+                                        <div class="space-y-2">
+                                            <div class="text-center">
+                                                <div class="text-3xl font-bold text-blue-600" id="bmi-value"></div>
+                                                <div class="text-lg font-medium mt-2" id="bmi-category"></div>
+                                            </div>
+                                            <div class="mt-4 text-sm text-gray-600">
+                                                <p class="font-medium mb-2">BMI 기준:</p>
+                                                <ul class="space-y-1">
+                                                    <li>• 저체중: 18.5 미만</li>
+                                                    <li>• 정상: 18.5 ~ 22.9</li>
+                                                    <li>• 과체중: 23.0 ~ 24.9</li>
+                                                    <li>• 비만: 25.0 이상</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 나이 계산기 -->
+                    <div id="calc-age" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">나이 계산기</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">생년월일</label>
+                                    <input type="date" id="age-birthdate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="1990-01-01">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">기준 날짜 (선택사항)</label>
+                                    <input type="date" id="age-target-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <button onclick="calculateAge()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>계산하기
+                                </button>
+                                <div id="age-result" class="hidden">
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">만 나이:</span>
+                                                <span id="age-full" class="font-bold text-blue-600"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">총 일수:</span>
+                                                <span id="age-days" class="font-bold text-gray-800"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">다음 생일까지:</span>
+                                                <span id="next-birthday" class="font-bold text-green-600"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 날짜 계산기 -->
+                    <div id="calc-date" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">날짜 계산기</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">시작 날짜</label>
+                                    <input type="date" id="date-start" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">종료 날짜</label>
+                                    <input type="date" id="date-end" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <button onclick="calculateDateDiff()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>날짜 차이 계산
+                                </button>
+                                <div id="date-result" class="hidden">
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">총 일수:</span>
+                                                <span id="date-days" class="font-bold text-blue-600"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">주 단위:</span>
+                                                <span id="date-weeks" class="font-bold text-gray-800"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">월 단위:</span>
+                                                <span id="date-months" class="font-bold text-gray-800"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-600">년 단위:</span>
+                                                <span id="date-years" class="font-bold text-gray-800"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <hr class="my-6">
+                                
+                                <h4 class="font-bold text-gray-800 mb-3">날짜 더하기/빼기</h4>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">기준 날짜</label>
+                                    <input type="date" id="date-base" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">일수</label>
+                                        <input type="number" id="date-add-days" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">연산</label>
+                                        <select id="date-operation" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="add">더하기 (+)</option>
+                                            <option value="subtract">빼기 (-)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <button onclick="calculateDateAdd()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>날짜 계산하기
+                                </button>
+                                <div id="date-add-result" class="hidden">
+                                    <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-2 text-gray-800">결과 날짜</h4>
+                                        <div class="text-2xl font-bold text-green-600" id="date-result-value"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 단위 변환 계산기 -->
+                    <div id="calc-unit" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">단위 변환 계산기</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">변환 종류</label>
+                                    <select id="unit-type" onchange="updateUnitOptions()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="length">길이</option>
+                                        <option value="weight">무게</option>
+                                        <option value="temperature">온도</option>
+                                        <option value="area">넓이</option>
+                                        <option value="volume">부피</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">변환할 값</label>
+                                    <input type="number" id="unit-value" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="숫자 입력" value="1" step="0.01">
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">원래 단위</label>
+                                        <select id="unit-from" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">변환할 단위</label>
+                                        <select id="unit-to" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        </select>
+                                    </div>
+                                </div>
+                                <button onclick="calculateUnit()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
+                                    <i class="fas fa-calculator mr-2"></i>변환하기
+                                </button>
+                                <div id="unit-result" class="hidden">
+                                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                                        <h4 class="font-bold text-lg mb-2 text-gray-800">변환 결과</h4>
+                                        <div class="text-2xl font-bold text-blue-600" id="unit-result-value"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 백분율 계산기 -->
+                    <div id="calc-percentage" class="calculator-container hidden">
+                        <div class="max-w-2xl mx-auto">
+                            <h3 class="text-xl font-bold mb-4 text-gray-800">백분율 계산기</h3>
+                            
+                            <!-- 백분율 구하기 -->
+                            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                                <h4 class="font-bold text-gray-800 mb-3">A는 B의 몇 %?</h4>
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <input type="number" id="pct-value-a" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="A 값" value="25">
+                                    <input type="number" id="pct-value-b" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="B 값" value="100">
+                                </div>
+                                <button onclick="calculatePercentage1()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">
+                                    계산하기
+                                </button>
+                                <div id="pct-result-1" class="mt-3 hidden">
+                                    <div class="bg-blue-100 p-3 rounded text-center">
+                                        <span class="text-2xl font-bold text-blue-600" id="pct-result-1-value"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- A의 B% 구하기 -->
+                            <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                                <h4 class="font-bold text-gray-800 mb-3">A의 B%는?</h4>
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <input type="number" id="pct-base" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="A 값" value="100">
+                                    <input type="number" id="pct-percent" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="B %" value="25">
+                                </div>
+                                <button onclick="calculatePercentage2()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">
+                                    계산하기
+                                </button>
+                                <div id="pct-result-2" class="mt-3 hidden">
+                                    <div class="bg-blue-100 p-3 rounded text-center">
+                                        <span class="text-2xl font-bold text-blue-600" id="pct-result-2-value"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 증가/감소율 구하기 -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-bold text-gray-800 mb-3">증가/감소율 구하기</h4>
+                                <div class="grid grid-cols-2 gap-4 mb-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">원래 값</label>
+                                        <input type="number" id="pct-original" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="원래 값" value="100">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-600 mb-1">바뀐 값</label>
+                                        <input type="number" id="pct-new" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="바뀐 값" value="150">
+                                    </div>
+                                </div>
+                                <button onclick="calculatePercentage3()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">
+                                    계산하기
+                                </button>
+                                <div id="pct-result-3" class="mt-3 hidden">
+                                    <div class="bg-blue-100 p-3 rounded">
+                                        <div class="text-center">
+                                            <span class="text-2xl font-bold text-blue-600" id="pct-result-3-value"></span>
+                                        </div>
+                                        <div class="text-sm text-gray-600 text-center mt-2" id="pct-result-3-desc"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </main>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <script>
+            // 계산기 전환
+            function showCalculator(type) {
+                // 모든 계산기 숨기기
+                document.querySelectorAll('.calculator-container').forEach(el => el.classList.add('hidden'));
+                // 선택된 계산기 표시
+                document.getElementById('calc-' + type).classList.remove('hidden');
+                
+                // 탭 스타일 업데이트
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('tab-active', 'bg-blue-500', 'text-white');
+                    btn.classList.add('bg-gray-100', 'hover:bg-gray-200');
+                });
+                const activeTab = document.querySelector('[data-tab="' + type + '"]');
+                activeTab.classList.add('tab-active', 'bg-blue-500', 'text-white');
+                activeTab.classList.remove('bg-gray-100', 'hover:bg-gray-200');
+            }
+
+            // ========== 기본 계산기 ==========
+            let basicExpression = '';
+            
+            function updateBasicDisplay() {
+                const display = document.getElementById('basic-display');
+                display.textContent = basicExpression || '0';
+            }
+            
+            function appendToBasic(value) {
+                basicExpression += value;
+                updateBasicDisplay();
+            }
+            
+            function clearBasic() {
+                basicExpression = '';
+                updateBasicDisplay();
+            }
+            
+            function backspaceBasic() {
+                basicExpression = basicExpression.slice(0, -1);
+                updateBasicDisplay();
+            }
+            
+            function calculateBasic() {
+                try {
+                    const result = eval(basicExpression.replace(/×/g, '*').replace(/÷/g, '/'));
+                    basicExpression = result.toString();
+                    updateBasicDisplay();
+                } catch (error) {
+                    alert('올바른 수식을 입력해주세요');
+                }
+            }
+
+            // ========== 공학 계산기 ==========
+            let scientificExpression = '';
+            
+            function updateScientificDisplay() {
+                const display = document.getElementById('scientific-display');
+                display.textContent = scientificExpression || '0';
+            }
+            
+            function appendToScientific(value) {
+                scientificExpression += value;
+                updateScientificDisplay();
+            }
+            
+            function clearScientific() {
+                scientificExpression = '';
+                updateScientificDisplay();
+            }
+            
+            function backspaceScientific() {
+                scientificExpression = scientificExpression.slice(0, -1);
+                updateScientificDisplay();
+            }
+            
+            function scientificOperation(op) {
+                const current = parseFloat(scientificExpression) || 0;
+                let result;
+                
+                switch(op) {
+                    case 'sin': result = Math.sin(current * Math.PI / 180); break;
+                    case 'cos': result = Math.cos(current * Math.PI / 180); break;
+                    case 'tan': result = Math.tan(current * Math.PI / 180); break;
+                    case 'sqrt': result = Math.sqrt(current); break;
+                    case 'pow2': result = Math.pow(current, 2); break;
+                    case 'log': result = Math.log10(current); break;
+                    case 'ln': result = Math.log(current); break;
+                    case 'pow': scientificExpression += '^'; updateScientificDisplay(); return;
+                }
+                
+                scientificExpression = result.toString();
+                updateScientificDisplay();
+            }
+            
+            function scientificConstant(constant) {
+                if (constant === 'pi') {
+                    scientificExpression += Math.PI.toString();
+                } else if (constant === 'e') {
+                    scientificExpression += Math.E.toString();
+                }
+                updateScientificDisplay();
+            }
+            
+            function calculateScientific() {
+                try {
+                    let expr = scientificExpression
+                        .replace(/×/g, '*')
+                        .replace(/÷/g, '/')
+                        .replace(/\^/g, '**');
+                    const result = eval(expr);
+                    scientificExpression = result.toString();
+                    updateScientificDisplay();
+                } catch (error) {
+                    alert('올바른 수식을 입력해주세요');
+                }
+            }
+
+            // ========== 대출 계산기 ==========
+            function calculateLoan() {
+                const amount = parseFloat(document.getElementById('loan-amount').value);
+                const rate = parseFloat(document.getElementById('loan-rate').value) / 100 / 12;
+                const years = parseFloat(document.getElementById('loan-years').value);
+                const months = years * 12;
+                
+                if (!amount || !rate || !years) {
+                    alert('모든 값을 입력해주세요');
+                    return;
+                }
+                
+                const monthlyPayment = amount * (rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+                const totalPayment = monthlyPayment * months;
+                const totalInterest = totalPayment - amount;
+                
+                document.getElementById('monthly-payment').textContent = monthlyPayment.toLocaleString('ko-KR') + '원';
+                document.getElementById('total-payment').textContent = totalPayment.toLocaleString('ko-KR') + '원';
+                document.getElementById('total-interest').textContent = totalInterest.toLocaleString('ko-KR') + '원';
+                document.getElementById('loan-result').classList.remove('hidden');
+            }
+
+            // ========== BMI 계산기 ==========
+            function calculateBMI() {
+                const height = parseFloat(document.getElementById('bmi-height').value) / 100;
+                const weight = parseFloat(document.getElementById('bmi-weight').value);
+                
+                if (!height || !weight) {
+                    alert('키와 몸무게를 입력해주세요');
+                    return;
+                }
+                
+                const bmi = weight / (height * height);
+                let category, color;
+                
+                if (bmi < 18.5) {
+                    category = '저체중';
+                    color = 'text-blue-600';
+                } else if (bmi < 23) {
+                    category = '정상';
+                    color = 'text-green-600';
+                } else if (bmi < 25) {
+                    category = '과체중';
+                    color = 'text-yellow-600';
+                } else {
+                    category = '비만';
+                    color = 'text-red-600';
+                }
+                
+                document.getElementById('bmi-value').textContent = bmi.toFixed(1);
+                const categoryEl = document.getElementById('bmi-category');
+                categoryEl.textContent = category;
+                categoryEl.className = 'text-lg font-medium mt-2 ' + color;
+                document.getElementById('bmi-result').classList.remove('hidden');
+            }
+
+            // ========== 나이 계산기 ==========
+            function calculateAge() {
+                const birthdate = new Date(document.getElementById('age-birthdate').value);
+                const targetInput = document.getElementById('age-target-date').value;
+                const targetDate = targetInput ? new Date(targetInput) : new Date();
+                
+                if (!birthdate || isNaN(birthdate.getTime())) {
+                    alert('생년월일을 입력해주세요');
+                    return;
+                }
+                
+                let years = targetDate.getFullYear() - birthdate.getFullYear();
+                let months = targetDate.getMonth() - birthdate.getMonth();
+                let days = targetDate.getDate() - birthdate.getDate();
+                
+                if (days < 0) {
+                    months--;
+                    days += new Date(targetDate.getFullYear(), targetDate.getMonth(), 0).getDate();
+                }
+                if (months < 0) {
+                    years--;
+                    months += 12;
+                }
+                
+                const totalDays = Math.floor((targetDate - birthdate) / (1000 * 60 * 60 * 24));
+                
+                // 다음 생일 계산
+                const nextBirthday = new Date(targetDate.getFullYear(), birthdate.getMonth(), birthdate.getDate());
+                if (nextBirthday < targetDate) {
+                    nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
+                }
+                const daysToNextBirthday = Math.ceil((nextBirthday - targetDate) / (1000 * 60 * 60 * 24));
+                
+                document.getElementById('age-full').textContent = years + '년 ' + months + '개월 ' + days + '일';
+                document.getElementById('age-days').textContent = totalDays.toLocaleString('ko-KR') + '일';
+                document.getElementById('next-birthday').textContent = daysToNextBirthday + '일 후';
+                document.getElementById('age-result').classList.remove('hidden');
+            }
+
+            // ========== 날짜 계산기 ==========
+            function calculateDateDiff() {
+                const start = new Date(document.getElementById('date-start').value);
+                const end = new Date(document.getElementById('date-end').value);
+                
+                if (!start || !end || isNaN(start.getTime()) || isNaN(end.getTime())) {
+                    alert('날짜를 입력해주세요');
+                    return;
+                }
+                
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const diffWeeks = Math.floor(diffDays / 7);
+                const diffMonths = Math.floor(diffDays / 30.44);
+                const diffYears = Math.floor(diffDays / 365.25);
+                
+                document.getElementById('date-days').textContent = diffDays.toLocaleString('ko-KR') + '일';
+                document.getElementById('date-weeks').textContent = diffWeeks.toLocaleString('ko-KR') + '주';
+                document.getElementById('date-months').textContent = diffMonths.toLocaleString('ko-KR') + '개월';
+                document.getElementById('date-years').textContent = diffYears.toLocaleString('ko-KR') + '년';
+                document.getElementById('date-result').classList.remove('hidden');
+            }
+            
+            function calculateDateAdd() {
+                const base = new Date(document.getElementById('date-base').value);
+                const days = parseInt(document.getElementById('date-add-days').value) || 0;
+                const operation = document.getElementById('date-operation').value;
+                
+                if (!base || isNaN(base.getTime())) {
+                    alert('기준 날짜를 입력해주세요');
+                    return;
+                }
+                
+                const result = new Date(base);
+                if (operation === 'add') {
+                    result.setDate(result.getDate() + days);
+                } else {
+                    result.setDate(result.getDate() - days);
+                }
+                
+                const year = result.getFullYear();
+                const month = String(result.getMonth() + 1).padStart(2, '0');
+                const day = String(result.getDate()).padStart(2, '0');
+                
+                document.getElementById('date-result-value').textContent = year + '년 ' + month + '월 ' + day + '일';
+                document.getElementById('date-add-result').classList.remove('hidden');
+            }
+
+            // ========== 단위 변환 계산기 ==========
+            const unitData = {
+                length: {
+                    '밀리미터 (mm)': 1,
+                    '센티미터 (cm)': 10,
+                    '미터 (m)': 1000,
+                    '킬로미터 (km)': 1000000,
+                    '인치 (in)': 25.4,
+                    '피트 (ft)': 304.8,
+                    '야드 (yd)': 914.4,
+                    '마일 (mi)': 1609344
+                },
+                weight: {
+                    '밀리그램 (mg)': 1,
+                    '그램 (g)': 1000,
+                    '킬로그램 (kg)': 1000000,
+                    '톤 (t)': 1000000000,
+                    '온스 (oz)': 28349.5,
+                    '파운드 (lb)': 453592
+                },
+                temperature: {
+                    '섭씨 (°C)': 'celsius',
+                    '화씨 (°F)': 'fahrenheit',
+                    '켈빈 (K)': 'kelvin'
+                },
+                area: {
+                    '제곱밀리미터 (mm²)': 1,
+                    '제곱센티미터 (cm²)': 100,
+                    '제곱미터 (m²)': 1000000,
+                    '헥타르 (ha)': 10000000000,
+                    '제곱킬로미터 (km²)': 1000000000000,
+                    '평': 3305785,
+                    '에이커 (acre)': 4046856422.4
+                },
+                volume: {
+                    '밀리리터 (mL)': 1,
+                    '리터 (L)': 1000,
+                    '세제곱미터 (m³)': 1000000,
+                    '갤런 (gal)': 3785.41,
+                    '온스 (fl oz)': 29.5735
+                }
+            };
+            
+            function updateUnitOptions() {
+                const type = document.getElementById('unit-type').value;
+                const units = unitData[type];
+                const fromSelect = document.getElementById('unit-from');
+                const toSelect = document.getElementById('unit-to');
+                
+                fromSelect.innerHTML = '';
+                toSelect.innerHTML = '';
+                
+                for (const unit in units) {
+                    fromSelect.innerHTML += '<option value="' + unit + '">' + unit + '</option>';
+                    toSelect.innerHTML += '<option value="' + unit + '">' + unit + '</option>';
+                }
+            }
+            
+            function calculateUnit() {
+                const type = document.getElementById('unit-type').value;
+                const value = parseFloat(document.getElementById('unit-value').value);
+                const fromUnit = document.getElementById('unit-from').value;
+                const toUnit = document.getElementById('unit-to').value;
+                
+                if (!value && value !== 0) {
+                    alert('변환할 값을 입력해주세요');
+                    return;
+                }
+                
+                let result;
+                
+                if (type === 'temperature') {
+                    result = convertTemperature(value, unitData.temperature[fromUnit], unitData.temperature[toUnit]);
+                } else {
+                    const units = unitData[type];
+                    const baseValue = value * units[fromUnit];
+                    result = baseValue / units[toUnit];
+                }
+                
+                document.getElementById('unit-result-value').textContent = 
+                    result.toLocaleString('ko-KR', {maximumFractionDigits: 6}) + ' ' + toUnit;
+                document.getElementById('unit-result').classList.remove('hidden');
+            }
+            
+            function convertTemperature(value, from, to) {
+                let celsius;
+                
+                if (from === 'celsius') celsius = value;
+                else if (from === 'fahrenheit') celsius = (value - 32) * 5/9;
+                else if (from === 'kelvin') celsius = value - 273.15;
+                
+                if (to === 'celsius') return celsius;
+                else if (to === 'fahrenheit') return celsius * 9/5 + 32;
+                else if (to === 'kelvin') return celsius + 273.15;
+            }
+
+            // ========== 백분율 계산기 ==========
+            function calculatePercentage1() {
+                const a = parseFloat(document.getElementById('pct-value-a').value);
+                const b = parseFloat(document.getElementById('pct-value-b').value);
+                
+                if (!a && a !== 0 || !b && b !== 0) {
+                    alert('값을 입력해주세요');
+                    return;
+                }
+                
+                const result = (a / b) * 100;
+                document.getElementById('pct-result-1-value').textContent = result.toFixed(2) + '%';
+                document.getElementById('pct-result-1').classList.remove('hidden');
+            }
+            
+            function calculatePercentage2() {
+                const base = parseFloat(document.getElementById('pct-base').value);
+                const percent = parseFloat(document.getElementById('pct-percent').value);
+                
+                if (!base && base !== 0 || !percent && percent !== 0) {
+                    alert('값을 입력해주세요');
+                    return;
+                }
+                
+                const result = (base * percent) / 100;
+                document.getElementById('pct-result-2-value').textContent = result.toLocaleString('ko-KR');
+                document.getElementById('pct-result-2').classList.remove('hidden');
+            }
+            
+            function calculatePercentage3() {
+                const original = parseFloat(document.getElementById('pct-original').value);
+                const newValue = parseFloat(document.getElementById('pct-new').value);
+                
+                if (!original && original !== 0 || !newValue && newValue !== 0) {
+                    alert('값을 입력해주세요');
+                    return;
+                }
+                
+                const change = ((newValue - original) / original) * 100;
+                const isIncrease = change > 0;
+                
+                document.getElementById('pct-result-3-value').textContent = 
+                    (isIncrease ? '+' : '') + change.toFixed(2) + '%';
+                document.getElementById('pct-result-3-desc').textContent = 
+                    Math.abs(change).toFixed(2) + '% ' + (isIncrease ? '증가' : '감소');
+                document.getElementById('pct-result-3').classList.remove('hidden');
+            }
+
+            // 페이지 로드 시 초기화
+            document.addEventListener('DOMContentLoaded', function() {
+                updateUnitOptions();
+                
+                // 오늘 날짜 설정
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('date-start').value = today;
+                document.getElementById('date-end').value = today;
+                document.getElementById('date-base').value = today;
+            });
         </script>
     </body>
     </html>
