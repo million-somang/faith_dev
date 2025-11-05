@@ -40,11 +40,11 @@ function getCategoryName(category: string): string {
 function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
     'general': 'bg-gray-100 text-gray-700',
-    'politics': 'bg-purple-100 text-purple-700',
-    'economy': 'bg-green-100 text-green-700',
-    'tech': 'bg-blue-100 text-blue-700',
-    'sports': 'bg-orange-100 text-orange-700',
-    'entertainment': 'bg-pink-100 text-pink-700'
+    'politics': 'bg-sky-100 text-sky-700',
+    'economy': 'bg-cyan-100 text-cyan-700',
+    'tech': 'bg-sky-100 text-sky-700',
+    'sports': 'bg-teal-100 text-teal-700',
+    'entertainment': 'bg-cyan-100 text-cyan-700'
   }
   return colors[category] || 'bg-gray-100 text-gray-700'
 }
@@ -172,18 +172,18 @@ app.get('/', async (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             .search-shadow { 
-                box-shadow: 0 10px 40px rgba(30, 64, 175, 0.15);
+                box-shadow: 0 10px 40px rgba(14, 165, 233, 0.15);
                 transition: all 0.3s ease;
             }
             .search-shadow:hover {
-                box-shadow: 0 15px 50px rgba(30, 64, 175, 0.25);
+                box-shadow: 0 15px 50px rgba(14, 165, 233, 0.25);
                 transform: translateY(-2px);
             }
             .hero-gradient {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
             }
             .card-hover {
                 transition: all 0.3s ease;
@@ -200,13 +200,13 @@ app.get('/', async (c) => {
                 50% { opacity: .7; }
             }
             .gradient-text {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
             }
             .service-icon {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
                 transition: all 0.3s ease;
             }
             .service-icon:hover {
@@ -238,16 +238,16 @@ app.get('/', async (c) => {
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <!-- 헤더 -->
-        <header class="bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
                 <h1 class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg shine floating">
                     <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
                 </h1>
                 <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
                     <!-- 로그인 전 -->
-                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-purple-600 font-medium transition-all px-2 sm:px-3">
+                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
                         <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                     </a>
                     <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover shine font-medium">
@@ -263,7 +263,7 @@ app.get('/', async (c) => {
             <div class="mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
                 <div class="relative search-shadow rounded-xl sm:rounded-2xl overflow-hidden bg-white">
                     <div class="flex items-center px-3 sm:px-4 md:px-6">
-                        <i class="fas fa-search text-purple-400 text-base sm:text-lg md:text-xl"></i>
+                        <i class="fas fa-search text-sky-400 text-base sm:text-lg md:text-xl"></i>
                         <input 
                             type="text" 
                             id="search-input"
@@ -284,46 +284,46 @@ app.get('/', async (c) => {
             <nav class="mb-8 sm:mb-12 md:mb-16 max-w-3xl mx-auto px-4">
                 <div class="flex justify-center items-center space-x-3 sm:space-x-4 md:space-x-6 lg:space-x-8">
                     <a href="/news" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-newspaper text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">뉴스</p>
                     </a>
                     <a href="/lifestyle" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-home text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">생활</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">생활</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-gamepad text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">게임</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">게임</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-envelope text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">메일</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">메일</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-coffee text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">카페</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">카페</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-blog text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">블로그</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">블로그</p>
                     </a>
                     <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-shopping-bag text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">쇼핑</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">쇼핑</p>
                     </a>
                 </div>
             </nav>
@@ -333,7 +333,7 @@ app.get('/', async (c) => {
                 <!-- 실시간 뉴스 -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 card-hover">
                     <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-pink-600 flex items-center justify-center mr-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-sky-500 to-cyan-600 flex items-center justify-center mr-3">
                             <i class="fas fa-newspaper text-white"></i>
                         </div>
                         실시간 뉴스
@@ -344,15 +344,15 @@ app.get('/', async (c) => {
                           const timeAgo = getTimeAgo(news.created_at)
                           const categoryColor = getCategoryColor(news.category)
                           return `
-                            <a href="${news.link}" target="_blank" class="block hover:bg-purple-50 py-2 px-2 rounded transition group border-b border-gray-100 last:border-b-0">
+                            <a href="${news.link}" target="_blank" class="block hover:bg-sky-50 py-2 px-2 rounded transition group border-b border-gray-100 last:border-b-0">
                                 <div class="flex items-start">
-                                    <span class="text-purple-600 font-bold mr-2 text-sm flex-shrink-0">${index + 1}</span>
+                                    <span class="text-sky-600 font-bold mr-2 text-sm flex-shrink-0">${index + 1}</span>
                                     <div class="flex-1 min-w-0">
                                         <div class="flex items-center gap-2 mb-1">
                                             <span class="text-xs ${categoryColor} px-2 py-0.5 rounded-full flex-shrink-0">${getCategoryName(news.category)}</span>
                                             <span class="text-gray-400 text-xs flex-shrink-0">${timeAgo}</span>
                                         </div>
-                                        <p class="text-gray-800 group-hover:text-purple-600 font-medium text-sm line-clamp-1">${escapeHtml(news.title)}</p>
+                                        <p class="text-gray-800 group-hover:text-sky-600 font-medium text-sm line-clamp-1">${escapeHtml(news.title)}</p>
                                     </div>
                                 </div>
                             </a>
@@ -361,7 +361,7 @@ app.get('/', async (c) => {
                             <div class="text-center py-8 text-gray-500">
                                 <i class="fas fa-newspaper text-4xl mb-3 text-gray-300"></i>
                                 <p>뉴스를 불러오는 중입니다...</p>
-                                <a href="/news" class="mt-3 inline-block text-blue-600 hover:text-blue-700 font-medium">
+                                <a href="/news" class="mt-3 inline-block text-sky-600 hover:text-sky-700 font-medium">
                                     뉴스 페이지로 이동 →
                                 </a>
                             </div>
@@ -369,7 +369,7 @@ app.get('/', async (c) => {
                     </div>
                     ${latestNews.length > 0 ? `
                         <div class="mt-6 text-center">
-                            <a href="/news" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all">
+                            <a href="/news" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-sky-500 to-cyan-600 text-white rounded-lg hover:shadow-lg transition-all">
                                 <span>더 많은 뉴스 보기</span>
                                 <i class="fas fa-arrow-right ml-2"></i>
                             </a>
@@ -380,34 +380,34 @@ app.get('/', async (c) => {
                 <!-- 트렌드 토픽 -->
                 <div class="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg p-8 card-hover">
                     <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center mr-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 flex items-center justify-center mr-3">
                             <i class="fas fa-chart-line text-white"></i>
                         </div>
                         실시간 트렌드
                     </h3>
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                        <div class="flex items-center justify-between p-3 hover:bg-sky-50 rounded-lg transition">
                             <div class="flex items-center">
-                                <span class="text-blue-600 font-bold mr-3 text-sm">#1</span>
+                                <span class="text-sky-600 font-bold mr-3 text-sm">#1</span>
                                 <span class="text-gray-800 font-medium">인공지능 기술</span>
                             </div>
                             <i class="fas fa-arrow-up text-green-500"></i>
                         </div>
-                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                        <div class="flex items-center justify-between p-3 hover:bg-sky-50 rounded-lg transition">
                             <div class="flex items-center">
-                                <span class="text-blue-600 font-bold mr-3 text-sm">#2</span>
+                                <span class="text-sky-600 font-bold mr-3 text-sm">#2</span>
                                 <span class="text-gray-800 font-medium">날씨 정보</span>
                             </div>
                             <i class="fas fa-arrow-up text-green-500"></i>
                         </div>
-                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                        <div class="flex items-center justify-between p-3 hover:bg-sky-50 rounded-lg transition">
                             <div class="flex items-center">
-                                <span class="text-blue-600 font-bold mr-3 text-sm">#3</span>
+                                <span class="text-sky-600 font-bold mr-3 text-sm">#3</span>
                                 <span class="text-gray-800 font-medium">맛집 추천</span>
                             </div>
                             <i class="fas fa-minus text-gray-400"></i>
                         </div>
-                        <div class="flex items-center justify-between p-3 hover:bg-blue-50 rounded-lg transition">
+                        <div class="flex items-center justify-between p-3 hover:bg-sky-50 rounded-lg transition">
                             <div class="flex items-center">
                                 <span class="text-blue-600 font-bold mr-3 text-sm">#4</span>
                                 <span class="text-gray-800 font-medium">여행 정보</span>
@@ -537,6 +537,59 @@ app.get('/', async (c) => {
                 });
             }
         </script>
+
+        <!-- 푸터 -->
+        <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 회사 정보 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Faith Portal</h3>
+                        <p class="text-sky-100 text-sm leading-relaxed">
+                            믿음의 포탈, Faith Portal은<br>
+                            여러분의 디지털 라이프를 풍요롭게 만들어드립니다.
+                        </p>
+                    </div>
+                    
+                    <!-- 빠른 링크 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
+                        <ul class="space-y-2">
+                            <li><a href="/news" class="text-sky-100 hover:text-white text-sm transition">뉴스</a></li>
+                            <li><a href="/lifestyle" class="text-sky-100 hover:text-white text-sm transition">생활</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">쇼핑</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 연락처 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">고객 지원</h3>
+                        <ul class="space-y-2">
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-envelope mr-2"></i>
+                                support@faithportal.com
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-phone mr-2"></i>
+                                1577-1577
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-clock mr-2"></i>
+                                평일 09:00 - 18:00
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-sky-400 mt-8 pt-6 text-center">
+                    <p class="text-sky-100 text-sm">
+                        © 2024 Faith Portal. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
     </body>
     </html>
   `)
@@ -554,19 +607,19 @@ app.get('/lifestyle', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <!-- 헤더 -->
-        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
                 <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
                     <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
                 </a>
                 <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
+                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
                         <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                     </a>
                     <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
@@ -686,8 +739,8 @@ app.get('/lifestyle/calculator', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             .calculator-btn {
                 @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold py-4 px-4 border border-gray-300 rounded-lg shadow transition-all active:scale-95;
             }
@@ -708,9 +761,9 @@ app.get('/lifestyle/calculator', (c) => {
             }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <!-- 헤더 -->
-        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
                 <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
                     <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
@@ -1602,6 +1655,59 @@ app.get('/lifestyle/calculator', (c) => {
                 document.getElementById('date-base').value = today;
             });
         </script>
+
+        <!-- 푸터 -->
+        <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 회사 정보 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Faith Portal</h3>
+                        <p class="text-sky-100 text-sm leading-relaxed">
+                            믿음의 포탈, Faith Portal은<br>
+                            여러분의 디지털 라이프를 풍요롭게 만들어드립니다.
+                        </p>
+                    </div>
+                    
+                    <!-- 빠른 링크 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
+                        <ul class="space-y-2">
+                            <li><a href="/news" class="text-sky-100 hover:text-white text-sm transition">뉴스</a></li>
+                            <li><a href="/lifestyle" class="text-sky-100 hover:text-white text-sm transition">생활</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">쇼핑</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 연락처 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">고객 지원</h3>
+                        <ul class="space-y-2">
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-envelope mr-2"></i>
+                                support@faithportal.com
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-phone mr-2"></i>
+                                1577-1577
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-clock mr-2"></i>
+                                평일 09:00 - 18:00
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-sky-400 mt-8 pt-6 text-center">
+                    <p class="text-sky-100 text-sm">
+                        © 2024 Faith Portal. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
     </body>
     </html>
   `)
@@ -1619,19 +1725,19 @@ app.get('/lifestyle/youtube-download', (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <!-- 헤더 -->
-        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
                 <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
                     <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
                 </a>
                 <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
+                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
                         <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                     </a>
                     <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
@@ -2137,8 +2243,8 @@ app.get('/news', async (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             .news-card:hover {
                 transform: translateY(-4px);
                 box-shadow: 0 12px 24px rgba(0,0,0,0.15);
@@ -2151,15 +2257,15 @@ app.get('/news', async (c) => {
             }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <!-- 헤더 -->
-        <header class="bg-white/90 backdrop-blur-md border-b border-purple-100 shadow-lg sticky top-0 z-50">
+        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
                 <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
                     <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
                 </a>
                 <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-purple-600 font-medium transition-all px-2 sm:px-3">
+                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
                         <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                     </a>
                     <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover font-medium">
@@ -2408,6 +2514,59 @@ app.get('/news', async (c) => {
                 }
             }
         </script>
+
+        <!-- 푸터 -->
+        <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 회사 정보 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">Faith Portal</h3>
+                        <p class="text-sky-100 text-sm leading-relaxed">
+                            믿음의 포탈, Faith Portal은<br>
+                            여러분의 디지털 라이프를 풍요롭게 만듨어드립니다.
+                        </p>
+                    </div>
+                    
+                    <!-- 빠른 링크 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
+                        <ul class="space-y-2">
+                            <li><a href="/news" class="text-sky-100 hover:text-white text-sm transition">뉴스</a></li>
+                            <li><a href="/lifestyle" class="text-sky-100 hover:text-white text-sm transition">생활</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
+                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">쇼핑</a></li>
+                        </ul>
+                    </div>
+                    
+                    <!-- 연락처 -->
+                    <div>
+                        <h3 class="text-lg font-bold mb-4">고객 지원</h3>
+                        <ul class="space-y-2">
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-envelope mr-2"></i>
+                                support@faithportal.com
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-phone mr-2"></i>
+                                1577-1577
+                            </li>
+                            <li class="text-sky-100 text-sm">
+                                <i class="fas fa-clock mr-2"></i>
+                                평일 09:00 - 18:00
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="border-t border-sky-400 mt-8 pt-6 text-center">
+                    <p class="text-sky-100 text-sm">
+                        © 2024 Faith Portal. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
     </body>
     </html>
   `)
@@ -2429,7 +2588,7 @@ app.get('/login', (c) => {
             .faith-blue-hover:hover { background-color: #1E3A8A; }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <div class="min-h-screen flex items-center justify-center px-4">
             <div class="max-w-md w-full">
                 <!-- 로고 -->
@@ -2556,7 +2715,7 @@ app.get('/signup', (c) => {
             .faith-blue-hover:hover { background-color: #1E3A8A; }
         </style>
     </head>
-    <body class="bg-gray-50">
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-md w-full">
                 <!-- 로고 -->
