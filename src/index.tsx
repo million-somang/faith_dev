@@ -264,6 +264,18 @@ app.get('/', async (c) => {
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">뉴스</p>
                     </a>
                     <a href="/" class="group text-center">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-home text-sm sm:text-base md:text-lg text-white"></i>
+                        </div>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">생활</p>
+                    </a>
+                    <a href="/" class="group text-center">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-gamepad text-sm sm:text-base md:text-lg text-white"></i>
+                        </div>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-purple-600 transition-all">게임</p>
+                    </a>
+                    <a href="/" class="group text-center">
                         <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-envelope text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
