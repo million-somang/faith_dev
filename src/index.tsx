@@ -934,24 +934,53 @@ app.get('/lifestyle/youtube-download', (c) => {
                     
                     if (data.success && data.downloadUrl) {
                         // 진행률 시뮬레이션
-                        for (let i = 40; i <= 90; i += 10) {
-                            updateProgress(i);
-                            await sleep(200);
+                        updateProgress(50);
+                        await sleep(300);
+                        updateProgress(70);
+                        
+                        // 비디오 정보 표시
+                        let successMessage = '<div class="space-y-2">';
+                        successMessage += '<div class="font-bold text-lg">✅ 다운로드 준비 완료!</div>';
+                        if (data.videoInfo) {
+                            successMessage += '<div class="text-sm mt-2">';
+                            successMessage += '<div><strong>제목:</strong> ' + (data.videoInfo.title || '알 수 없음') + '</div>';
+                            successMessage += '<div><strong>채널:</strong> ' + (data.videoInfo.author || '알 수 없음') + '</div>';
+                            successMessage += '<div><strong>화질:</strong> ' + (data.quality || '기본') + '</div>';
+                            successMessage += '</div>';
+                            
+                            if (data.videoInfo.thumbnail) {
+                                successMessage += '<img src="' + data.videoInfo.thumbnail + '" class="w-full max-w-xs rounded-lg mt-2" alt="썸네일">';
+                            }
                         }
+                        successMessage += '<div class="text-sm mt-3 text-blue-600">다운로드가 시작됩니다...</div>';
+                        successMessage += '</div>';
+                        
+                        progressContainer.classList.add('hidden');
+                        showMessage('success', successMessage);
+                        
+                        // 잠시 후 파일 다운로드 시작
+                        await sleep(1000);
+                        updateProgress(90);
                         
                         // 파일 다운로드
                         const link = document.createElement('a');
                         link.href = data.downloadUrl;
-                        link.download = data.filename || 'video.mp4';
+                        link.download = data.videoInfo?.title ? data.videoInfo.title.replace(/[^a-zA-Z0-9가-힣\\s]/g, '_') + '.mp4' : 'video.mp4';
+                        link.target = '_blank'; // 새 탭에서 열기
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
                         
                         updateProgress(100);
-                        await sleep(500);
                         
-                        progressContainer.classList.add('hidden');
-                        showMessage('success', '다운로드가 완료되었습니다!');
+                        // 성공 메시지 업데이트
+                        await sleep(500);
+                        successMessage = '<div class="space-y-2">';
+                        successMessage += '<div class="font-bold text-lg">✅ 다운로드 완료!</div>';
+                        successMessage += '<div class="text-sm">파일이 다운로드되었습니다. 브라우저의 다운로드 폴더를 확인해주세요.</div>';
+                        successMessage += '</div>';
+                        showMessage('success', successMessage);
+                        
                         urlInput.value = '';
                     } else {
                         // 에러 처리
@@ -959,7 +988,51 @@ app.get('/lifestyle/youtube-download', (c) => {
                         
                         let errorMessage = '';
                         
-                        if (data.errorType === 'NOT_IMPLEMENTED') {
+                        if (data.errorType === 'REDIRECT_REQUIRED') {
+                            // 외부 다운로드 서비스 안내
+                            errorMessage = '<div class="space-y-4">';
+                            errorMessage += '<div class="font-bold text-lg text-blue-600">' + (data.error || '다운로드 서비스 안내') + '</div>';
+                            
+                            if (data.videoInfo) {
+                                errorMessage += '<div class="bg-gray-50 p-3 rounded-lg">';
+                                if (data.videoInfo.thumbnail) {
+                                    errorMessage += '<img src="' + data.videoInfo.thumbnail + '" class="w-full rounded mb-2" alt="썸네일">';
+                                }
+                                errorMessage += '<div class="text-sm"><strong>제목:</strong> ' + data.videoInfo.title + '</div>';
+                                errorMessage += '<div class="text-sm"><strong>채널:</strong> ' + data.videoInfo.author + '</div>';
+                                errorMessage += '</div>';
+                            }
+                            
+                            if (data.message) {
+                                errorMessage += '<div class="text-sm text-gray-700">' + data.message + '</div>';
+                            }
+                            
+                            if (data.downloadServices && data.downloadServices.length > 0) {
+                                errorMessage += '<div class="mt-3">';
+                                errorMessage += '<div class="font-semibold mb-2">💡 추천 다운로드 서비스:</div>';
+                                errorMessage += '<div class="space-y-2">';
+                                data.downloadServices.forEach(service => {
+                                    errorMessage += '<a href="' + service.url + '" target="_blank" class="block p-3 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition">';
+                                    errorMessage += '<div class="font-medium text-blue-700">🔗 ' + service.name + '</div>';
+                                    errorMessage += '<div class="text-xs text-gray-600">' + service.description + '</div>';
+                                    errorMessage += '</a>';
+                                });
+                                errorMessage += '</div></div>';
+                            }
+                            
+                            if (data.alternativeMethod) {
+                                errorMessage += '<div class="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">';
+                                errorMessage += '<div class="font-semibold text-purple-700 mb-2">🔌 ' + data.alternativeMethod.title + '</div>';
+                                errorMessage += '<div class="text-xs text-gray-600 mb-2">' + data.alternativeMethod.description + '</div>';
+                                errorMessage += '<div class="flex gap-2 text-xs">';
+                                errorMessage += '<a href="' + data.alternativeMethod.chromeExtension + '" target="_blank" class="text-blue-600 hover:underline">Chrome 확장</a>';
+                                errorMessage += '<span class="text-gray-400">|</span>';
+                                errorMessage += '<a href="' + data.alternativeMethod.firefoxExtension + '" target="_blank" class="text-blue-600 hover:underline">Firefox 확장</a>';
+                                errorMessage += '</div></div>';
+                            }
+                            
+                            errorMessage += '</div>';
+                        } else if (data.errorType === 'NOT_IMPLEMENTED') {
                             // 구현되지 않은 기능
                             errorMessage = '<div class="space-y-3">';
                             errorMessage += '<div class="font-bold text-lg">' + (data.error || '기능 구현 필요') + '</div>';
@@ -4184,56 +4257,156 @@ app.post('/api/youtube/download', async (c) => {
       return c.json({ success: false, error: '비디오 ID를 찾을 수 없습니다' }, 400)
     }
     
-    // 주의: Cloudflare Workers에서는 실제 유튜브 다운로드 기능을 직접 구현할 수 없습니다
-    // 외부 API 서비스를 사용하거나, 프록시 서버를 통해 구현해야 합니다
+    // 1단계: YouTube oEmbed API로 비디오 정보 가져오기
+    let videoInfo: any = null
+    try {
+      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+      const oembedResponse = await fetch(oembedUrl)
+      
+      if (oembedResponse.ok) {
+        videoInfo = await oembedResponse.json()
+      }
+    } catch (error) {
+      console.error('비디오 정보 조회 실패:', error)
+    }
     
-    // 비디오 정보 반환 (시연용)
-    return c.json({
-      success: false,
-      error: '유튜브 다운로드 기능 구현 안내',
-      errorType: 'NOT_IMPLEMENTED',
-      videoId: videoId,
-      requestedQuality: quality,
-      details: {
-        title: '이 기능은 현재 구현되지 않았습니다',
-        reason: 'Cloudflare Workers 환경 제약',
-        limitations: [
-          'Node.js 파일 시스템 API 사용 불가',
-          'ytdl-core, youtube-dl 등 라이브러리 사용 제한',
-          '대용량 파일 스트리밍 제약',
-          'CPU 시간 제한 (10-50ms)'
-        ],
-        solutions: [
-          {
-            method: '1. 외부 API 서비스 사용',
-            description: 'RapidAPI, Y2Mate API 등의 서드파티 서비스 통합',
-            pros: '빠른 구현, 서버 관리 불필요',
-            cons: '유료, API 제약 존재'
+    // 2단계: 여러 다운로드 API 시도
+    // 방법 1: YouTube 내부 API로 스트림 정보 추출
+    try {
+      // YouTube의 내부 API를 사용하여 스트림 정보 가져오기
+      const ytApiUrl = `https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`
+      const ytApiResponse = await fetch(ytApiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        body: JSON.stringify({
+          context: {
+            client: {
+              clientName: 'WEB',
+              clientVersion: '2.20240101.00.00'
+            }
           },
-          {
-            method: '2. 별도 백엔드 서버',
-            description: 'Node.js + ytdl-core 또는 Python + yt-dlp 서버 구축',
-            pros: '완전한 제어, 무료',
-            cons: '서버 구축/관리 필요, 비용 발생'
-          },
-          {
-            method: '3. 클라이언트 측 솔루션',
-            description: '브라우저 확장 프로그램 또는 별도 앱 사용',
-            pros: '서버 불필요',
-            cons: '사용자가 별도 설치 필요'
+          videoId: videoId
+        })
+      })
+      
+      if (ytApiResponse.ok) {
+        const ytData = await ytApiResponse.json()
+        
+        // 스트리밍 데이터 추출
+        const streamingData = ytData?.streamingData
+        if (streamingData && streamingData.formats) {
+          // 요청된 화질에 맞는 포맷 찾기
+          const qualityMap: Record<string, number> = {
+            '4K': 2160,
+            '1440p': 1440,
+            '1080p': 1080,
+            '720p': 720,
+            '480p': 480,
+            '360p': 360
           }
-        ]
-      },
-      recommendations: [
-        '개발 환경: 로컬에서 Node.js 서버로 테스트',
-        '프로덕션: 외부 API 또는 별도 백엔드 서버 사용',
-        '대안: youtube-dl 웹 인터페이스 링크 제공'
+          
+          const targetHeight = qualityMap[quality] || 720
+          
+          // 가장 가까운 화질의 포맷 찾기
+          let bestFormat = streamingData.formats[0]
+          let minDiff = Math.abs((bestFormat.height || 0) - targetHeight)
+          
+          for (const format of streamingData.formats) {
+            if (format.mimeType?.includes('video/mp4') && format.url) {
+              const diff = Math.abs((format.height || 0) - targetHeight)
+              if (diff < minDiff) {
+                minDiff = diff
+                bestFormat = format
+              }
+            }
+          }
+          
+          if (bestFormat && bestFormat.url) {
+            // 성공 응답
+            return c.json({
+              success: true,
+              downloadUrl: bestFormat.url,
+              videoInfo: {
+                title: videoInfo?.title || ytData?.videoDetails?.title || '제목 없음',
+                author: videoInfo?.author_name || ytData?.videoDetails?.author || '알 수 없음',
+                thumbnail: videoInfo?.thumbnail_url || ytData?.videoDetails?.thumbnail?.thumbnails?.[0]?.url || '',
+                videoId: videoId,
+                duration: ytData?.videoDetails?.lengthSeconds || '0'
+              },
+              quality: bestFormat.qualityLabel || quality,
+              actualHeight: bestFormat.height,
+              message: '다운로드 준비 완료'
+            })
+          }
+        }
+      }
+      
+      // 방법 2: 실패 시 외부 다운로드 서비스로 리다이렉트
+      // 여러 무료 다운로드 서비스 제공
+      const downloadServices = [
+        {
+          name: 'Y2Mate',
+          url: `https://www.y2mate.com/youtube/${videoId}`,
+          description: '인기 있는 YouTube 다운로더'
+        },
+        {
+          name: 'SaveFrom.net',
+          url: `https://en.savefrom.net/#url=${encodeURIComponent(url)}`,
+          description: '빠르고 간단한 다운로드'
+        },
+        {
+          name: '9Convert',
+          url: `https://9convert.com/en60/youtube-downloader?url=${encodeURIComponent(url)}`,
+          description: 'HD 품질 다운로드 지원'
+        },
+        {
+          name: 'YTmp3',
+          url: `https://ytmp3.nu/youtube-to-mp4/?url=${encodeURIComponent(url)}`,
+          description: 'MP4/MP3 변환 지원'
+        }
       ]
-    }, 200)
+      
+      return c.json({
+        success: false,
+        errorType: 'REDIRECT_REQUIRED',
+        error: '직접 다운로드가 현재 제한되어 있습니다',
+        message: '아래 서비스 중 하나를 사용하여 다운로드해주세요',
+        videoInfo: {
+          title: videoInfo?.title || '제목 없음',
+          author: videoInfo?.author_name || '알 수 없음',
+          thumbnail: videoInfo?.thumbnail_url || '',
+          videoId: videoId
+        },
+        downloadServices: downloadServices,
+        alternativeMethod: {
+          title: '브라우저 확장 프로그램 사용',
+          description: 'Video DownloadHelper, SaveFrom.net Helper 등의 브라우저 확장 프로그램을 설치하면 더 편리하게 다운로드할 수 있습니다.',
+          chromeExtension: 'https://chrome.google.com/webstore/search/youtube%20downloader',
+          firefoxExtension: 'https://addons.mozilla.org/ko/firefox/search/?q=youtube+downloader'
+        }
+      })
+      
+    } catch (error) {
+      console.error('다운로드 처리 오류:', error)
+      
+      return c.json({
+        success: false,
+        error: '다운로드 처리 중 오류가 발생했습니다',
+        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        videoInfo: videoInfo
+      }, 500)
+    }
     
   } catch (error) {
-    console.error('유튜브 다운로드 오류:', error)
-    return c.json({ success: false, error: '서버 오류가 발생했습니다' }, 500)
+    console.error('YouTube 다운로드 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: '서버 오류가 발생했습니다',
+      message: error instanceof Error ? error.message : '알 수 없는 오류'
+    }, 500)
   }
 })
 
