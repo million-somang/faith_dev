@@ -65,6 +65,31 @@ function getTimeAgo(dateString: string): string {
   return past.toLocaleDateString('ko-KR')
 }
 
+// ==================== 생활 메뉴 헬퍼 함수 ====================
+function getLifestyleMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/lifestyle/youtube-download', label: '유튜브 다운로드', icon: 'fab fa-youtube' },
+    // 추가 메뉴는 여기에
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-4"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-cyan-600 border-b-2 border-cyan-600' : 'text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2 ${item.icon.includes('youtube') ? 'text-red-500' : ''}"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
 // ==================== 관리자 네비게이션 헬퍼 함수 ====================
 function getAdminNavigation(currentPage: string): string {
   const menuItems = [
@@ -551,17 +576,7 @@ app.get('/lifestyle', (c) => {
         </header>
 
         <!-- 서브 메뉴 -->
-        <nav class="bg-white border-b border-gray-200 shadow-sm">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8 overflow-x-auto">
-                    <a href="/lifestyle/youtube-download" class="px-4 py-4 text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600 whitespace-nowrap transition-all">
-                        <i class="fab fa-youtube mr-2 text-red-500"></i>
-                        유튜브 다운로드
-                    </a>
-                    <!-- 추가 메뉴는 여기에 -->
-                </div>
-            </div>
-        </nav>
+        ${getLifestyleMenu('/lifestyle')}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-4 py-8">
@@ -641,6 +656,341 @@ app.get('/lifestyle', (c) => {
                 localStorage.removeItem('user_level');
                 location.href = '/';
             }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 유튜브 다운로드 페이지 ====================
+app.get('/lifestyle/youtube-download', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>유튜브 다운로드 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- 헤더 -->
+        <header class="bg-white/90 backdrop-blur-md border-b border-cyan-100 shadow-lg sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
+                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
+                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
+                </a>
+                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                    <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
+                    </a>
+                    <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
+                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span>
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- 서브 메뉴 -->
+        ${getLifestyleMenu('/lifestyle/youtube-download')}
+
+        <!-- 광고 배너 -->
+        <div class="bg-gradient-to-r from-yellow-400 via-red-400 to-pink-400 py-4">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex items-center justify-center space-x-4">
+                    <i class="fas fa-ad text-white text-2xl"></i>
+                    <p class="text-white font-bold text-lg">광고 배너 영역 - 여기에 광고가 표시됩니다</p>
+                    <i class="fas fa-ad text-white text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 메인 컨텐츠 -->
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- 왼쪽 사이드바 (페이지 네비게이션) -->
+                <aside class="lg:w-64 flex-shrink-0">
+                    <div class="bg-white rounded-lg shadow-lg p-4 sticky top-24">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-list mr-2 text-cyan-600"></i>
+                            페이지 메뉴
+                        </h3>
+                        <nav class="space-y-2">
+                            <a href="/lifestyle" class="flex items-center px-4 py-2 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 rounded-lg transition-all">
+                                <i class="fas fa-home mr-3"></i>
+                                생활 홈
+                            </a>
+                            <a href="/lifestyle/youtube-download" class="flex items-center px-4 py-2 bg-cyan-50 text-cyan-600 font-medium rounded-lg">
+                                <i class="fab fa-youtube mr-3"></i>
+                                유튜브 다운로드
+                            </a>
+                            <!-- 추가 메뉴 -->
+                            <div class="pt-2 border-t border-gray-200">
+                                <p class="px-4 py-2 text-xs text-gray-500 font-medium">준비 중인 서비스</p>
+                                <a href="#" class="flex items-center px-4 py-2 text-gray-400 cursor-not-allowed">
+                                    <i class="fas fa-calculator mr-3"></i>
+                                    계산기
+                                </a>
+                                <a href="#" class="flex items-center px-4 py-2 text-gray-400 cursor-not-allowed">
+                                    <i class="fas fa-cloud-sun mr-3"></i>
+                                    날씨
+                                </a>
+                            </div>
+                        </nav>
+                    </div>
+                </aside>
+
+                <!-- 메인 컨텐츠 영역 -->
+                <main class="flex-1">
+                    <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
+                        <!-- 페이지 타이틀 -->
+                        <div class="mb-8">
+                            <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 flex items-center">
+                                <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fab fa-youtube text-2xl text-white"></i>
+                                </div>
+                                유튜브 다운로드
+                            </h1>
+                            <p class="text-gray-600">유튜브 영상 URL을 입력하고 다운로드 버튼을 눌러주세요</p>
+                        </div>
+
+                        <!-- 다운로드 폼 -->
+                        <div class="space-y-6">
+                            <!-- URL 입력란 -->
+                            <div>
+                                <label for="youtube-url" class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-link mr-1"></i>
+                                    유튜브 URL
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="youtube-url" 
+                                    placeholder="예: https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent outline-none transition-all"
+                                />
+                                <p class="mt-2 text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    유튜브 영상 URL을 입력해주세요 (예: youtube.com/watch?v=...)
+                                </p>
+                            </div>
+
+                            <!-- 품질 선택 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-sliders-h mr-1"></i>
+                                    품질 선택
+                                </label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <label class="flex items-center justify-center px-4 py-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 transition-all">
+                                        <input type="radio" name="quality" value="highest" checked class="mr-2">
+                                        <span class="text-sm font-medium">최고 품질</span>
+                                    </label>
+                                    <label class="flex items-center justify-center px-4 py-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 transition-all">
+                                        <input type="radio" name="quality" value="1080p" class="mr-2">
+                                        <span class="text-sm font-medium">1080p</span>
+                                    </label>
+                                    <label class="flex items-center justify-center px-4 py-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 transition-all">
+                                        <input type="radio" name="quality" value="720p" class="mr-2">
+                                        <span class="text-sm font-medium">720p</span>
+                                    </label>
+                                    <label class="flex items-center justify-center px-4 py-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-cyan-500 transition-all">
+                                        <input type="radio" name="quality" value="480p" class="mr-2">
+                                        <span class="text-sm font-medium">480p</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 다운로드 버튼 -->
+                            <button 
+                                onclick="downloadVideo()" 
+                                class="w-full py-4 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg font-bold text-lg hover:shadow-xl transition-all transform hover:scale-105"
+                            >
+                                <i class="fas fa-download mr-2"></i>
+                                다운로드
+                            </button>
+
+                            <!-- 상태 메시지 -->
+                            <div id="status-message" class="hidden p-4 rounded-lg"></div>
+
+                            <!-- 진행 상황 -->
+                            <div id="progress-container" class="hidden">
+                                <div class="mb-2 flex justify-between text-sm">
+                                    <span class="text-gray-600">다운로드 진행 중...</span>
+                                    <span id="progress-text" class="text-cyan-600 font-medium">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                    <div id="progress-bar" class="h-3 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 안내 사항 -->
+                        <div class="mt-8 p-6 bg-blue-50 rounded-lg border border-blue-200">
+                            <h3 class="text-lg font-bold text-blue-800 mb-3 flex items-center">
+                                <i class="fas fa-exclamation-circle mr-2"></i>
+                                사용 안내
+                            </h3>
+                            <ul class="space-y-2 text-sm text-blue-700">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mr-2 mt-0.5"></i>
+                                    <span>개인적인 용도로만 사용해주세요</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mr-2 mt-0.5"></i>
+                                    <span>저작권이 있는 콘텐츠의 무단 다운로드는 법적 문제가 될 수 있습니다</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check-circle mr-2 mt-0.5"></i>
+                                    <span>다운로드 속도는 영상 크기와 네트워크 상태에 따라 달라질 수 있습니다</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 푸터 -->
+        <footer class="bg-gray-800 text-gray-300 mt-16 py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-sm">&copy; 2025 Faith Portal. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <script>
+            // 로그인 상태 확인
+            const token = localStorage.getItem('auth_token');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (token && userEmail) {
+                const userMenu = document.getElementById('user-menu');
+                userMenu.innerHTML = \`
+                    <span class="text-xs sm:text-sm text-gray-700 px-2 sm:px-3">\${userEmail}</span>
+                    \${userLevel >= 6 ? '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-2 sm:px-3 py-1.5 rounded font-medium hover:bg-yellow-600 transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>' : ''}
+                    <button onclick="logout()" class="text-xs sm:text-sm text-gray-700 hover:text-red-600 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-sign-out-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그아웃</span>
+                    </button>
+                \`;
+            }
+            
+            function logout() {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_level');
+                location.href = '/';
+            }
+
+            // 유튜브 다운로드 함수
+            async function downloadVideo() {
+                const urlInput = document.getElementById('youtube-url');
+                const url = urlInput.value.trim();
+                const statusMessage = document.getElementById('status-message');
+                const progressContainer = document.getElementById('progress-container');
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                
+                // 입력 검증
+                if (!url) {
+                    showMessage('error', '유튜브 URL을 입력해주세요');
+                    return;
+                }
+                
+                if (!url.includes('youtube.com') && !url.includes('youtu.be')) {
+                    showMessage('error', '올바른 유튜브 URL을 입력해주세요');
+                    return;
+                }
+                
+                // 품질 선택
+                const quality = document.querySelector('input[name="quality"]:checked').value;
+                
+                // 진행 상태 표시
+                statusMessage.classList.add('hidden');
+                progressContainer.classList.remove('hidden');
+                updateProgress(0);
+                
+                try {
+                    // API 호출
+                    const response = await fetch('/api/youtube/download', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url, quality })
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('다운로드 요청 실패');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.success && data.downloadUrl) {
+                        // 진행률 시뮬레이션
+                        for (let i = 10; i <= 90; i += 10) {
+                            updateProgress(i);
+                            await sleep(200);
+                        }
+                        
+                        // 파일 다운로드
+                        const link = document.createElement('a');
+                        link.href = data.downloadUrl;
+                        link.download = data.filename || 'video.mp4';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        updateProgress(100);
+                        await sleep(500);
+                        
+                        progressContainer.classList.add('hidden');
+                        showMessage('success', '다운로드가 완료되었습니다!');
+                        urlInput.value = '';
+                    } else {
+                        throw new Error(data.error || '다운로드 실패');
+                    }
+                } catch (error) {
+                    console.error('다운로드 오류:', error);
+                    progressContainer.classList.add('hidden');
+                    showMessage('error', error.message || '다운로드 중 오류가 발생했습니다');
+                }
+            }
+            
+            function updateProgress(percent) {
+                const progressBar = document.getElementById('progress-bar');
+                const progressText = document.getElementById('progress-text');
+                progressBar.style.width = percent + '%';
+                progressText.textContent = percent + '%';
+            }
+            
+            function showMessage(type, message) {
+                const statusMessage = document.getElementById('status-message');
+                statusMessage.classList.remove('hidden', 'bg-green-50', 'text-green-700', 'border-green-200', 'bg-red-50', 'text-red-700', 'border-red-200');
+                
+                if (type === 'success') {
+                    statusMessage.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-200');
+                    statusMessage.innerHTML = '<i class="fas fa-check-circle mr-2"></i>' + message;
+                } else {
+                    statusMessage.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+                    statusMessage.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i>' + message;
+                }
+            }
+            
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Enter 키로 다운로드
+            document.getElementById('youtube-url').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    downloadVideo();
+                }
+            });
         </script>
     </body>
     </html>
@@ -3744,6 +4094,51 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
     return []
   }
 }
+
+// ==================== 유튜브 다운로드 API ====================
+app.post('/api/youtube/download', async (c) => {
+  try {
+    const body = await c.req.json()
+    const { url, quality } = body
+    
+    // URL 검증
+    if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+      return c.json({ success: false, error: '올바른 유튜브 URL을 입력해주세요' }, 400)
+    }
+    
+    // 비디오 ID 추출
+    let videoId = ''
+    if (url.includes('youtube.com/watch?v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0]
+    } else if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0]
+    }
+    
+    if (!videoId) {
+      return c.json({ success: false, error: '비디오 ID를 찾을 수 없습니다' }, 400)
+    }
+    
+    // 주의: Cloudflare Workers에서는 실제 유튜브 다운로드 기능을 직접 구현할 수 없습니다
+    // 외부 API 서비스를 사용하거나, 프록시 서버를 통해 구현해야 합니다
+    // 여기서는 시연용 응답을 반환합니다
+    
+    // 실제 구현 시에는 다음과 같은 방법을 사용할 수 있습니다:
+    // 1. 외부 유튜브 다운로드 API 서비스 사용 (예: youtube-dl API)
+    // 2. 별도의 백엔드 서버 구축
+    // 3. Cloudflare Workers에서 ytdl-core 대안 사용
+    
+    // 시연용 응답 (실제로는 작동하지 않음)
+    return c.json({
+      success: false,
+      error: '유튜브 다운로드 기능은 현재 준비 중입니다. Cloudflare Workers 환경에서는 직접 구현이 제한됩니다. 외부 API 서비스나 별도 백엔드 서버가 필요합니다.',
+      message: '이 기능을 사용하려면 다음 중 하나를 선택해주세요:\\n1. 외부 유튜브 다운로드 API 서비스 통합\\n2. 별도의 Node.js 백엔드 서버 구축\\n3. 브라우저 확장 프로그램 사용'
+    }, 501)
+    
+  } catch (error) {
+    console.error('유튜브 다운로드 오류:', error)
+    return c.json({ success: false, error: '서버 오류가 발생했습니다' }, 500)
+  }
+})
 
 // ==================== 뉴스 API ====================
 
