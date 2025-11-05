@@ -3671,16 +3671,23 @@ app.post('/api/news/schedule', async (c) => {
         const hours = interval_hours || 1
         next_run = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
       } else if (schedule_type === 'daily' && schedule_time) {
-        // schedule_time 형식: "HH:mm"
+        // schedule_time 형식: "HH:mm" (한국 시간 기준)
         const [hours, minutes] = schedule_time.split(':').map(Number)
-        const nextRun = new Date(now)
+        
+        // 현재 한국 시간 구하기 (UTC+9)
+        const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
+        
+        // 오늘 날짜의 지정된 시간 (한국 시간)
+        const nextRun = new Date(koreaTime)
         nextRun.setHours(hours, minutes, 0, 0)
         
         // 오늘 시간이 지났으면 내일로 설정
-        if (nextRun <= now) {
+        if (nextRun <= koreaTime) {
           nextRun.setDate(nextRun.getDate() + 1)
         }
-        next_run = nextRun.toISOString()
+        
+        // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
+        next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
       }
     }
     
@@ -3740,10 +3747,17 @@ app.post('/api/news/schedule/update-run', async (c) => {
         next_run = new Date(currentTime.getTime() + hours * 60 * 60 * 1000).toISOString()
       } else if (schedule.schedule_type === 'daily' && schedule.schedule_time) {
         const [hours, minutes] = schedule.schedule_time.split(':').map(Number)
-        const nextRun = new Date(currentTime)
+        
+        // 현재 한국 시간 구하기 (UTC+9)
+        const koreaTime = new Date(currentTime.getTime() + (9 * 60 * 60 * 1000))
+        
+        // 다음날 지정된 시간 (한국 시간)
+        const nextRun = new Date(koreaTime)
         nextRun.setDate(nextRun.getDate() + 1) // 다음 날
         nextRun.setHours(hours, minutes, 0, 0)
-        next_run = nextRun.toISOString()
+        
+        // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
+        next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
       }
       
       if (next_run) {
