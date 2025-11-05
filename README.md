@@ -14,10 +14,18 @@
 - **메인 페이지**
   - Faith Portal 브랜드 검색 UI
   - 파란색 컬러 테마
-  - 바로가기 링크 (메일, 카페, 블로그, 쇼핑)
+  - 바로가기 링크 (메일, 카페, 블로그, 쇼핑, 뉴스)
   - 실시간 뉴스 섹션
   - 로그인 상태 표시
   - 관리자 메뉴 표시 (Lv.6 이상)
+
+- **뉴스 페이지** ✨NEW
+  - Google RSS 뉴스 통합
+  - 카테고리별 필터링 (전체, 일반, 정치, 경제, IT/과학, 스포츠, 엔터테인먼트)
+  - 반응형 그리드 레이아웃 (1열~4열)
+  - 실시간 뉴스 업데이트
+  - HTML 이스케이프 처리로 안전한 컨텐츠 표시
+  - 외부 링크로 뉴스 원문 연결
 
 - **회원가입 기능**
   - 이메일 중복 체크
@@ -123,14 +131,35 @@
   - ID, 이메일, 이름, 휴대전화, 등급, 상태, 가입일, 최근로그인 포함
   - 파일명: `users_YYYY-MM-DD.csv`
 
+##### 뉴스 관리 페이지 (`/admin/news`) ✨NEW
+- **뉴스 통계 카드**
+  - 전체 뉴스 수
+  - 카테고리별 뉴스 수 (정치, 경제, 기술)
+- **자동 뉴스 가져오기 스케줄 설정** ✨NEW
+  - 활성화/비활성화 토글
+  - 스케줄 타입 선택:
+    - **시간 간격**: 1/2/3/6/12/24시간마다 자동 수집
+    - **매일 지정 시간**: 특정 시간에 자동 수집 (한국 시간 기준)
+  - 실행 정보 표시 (마지막 실행, 다음 실행 예정)
+  - 설정 저장 및 자동 실행
+- **뉴스 목록 관리**
+  - 카테고리별 필터링
+  - 뉴스 상세 정보 표시 (ID, 카테고리, 제목, 발행사, 발행일)
+  - 개별 뉴스 삭제
+  - 외부 링크로 원문 보기
+- **수동 뉴스 가져오기**
+  - 전체 카테고리 뉴스 한번에 가져오기
+
 ## 현재 기능 URI
 
 ### 웹 페이지
 - **메인 페이지**: `GET /`
 - **로그인 페이지**: `GET /login`
 - **회원가입 페이지**: `GET /signup`
+- **뉴스 페이지**: `GET /news` ✨NEW
 - **관리자 대시보드**: `GET /admin` (Lv.6 이상)
 - **회원 관리**: `GET /admin/users` (Lv.6 이상)
+- **뉴스 관리**: `GET /admin/news` (Lv.6 이상) ✨NEW
 - **통계 대시보드**: `GET /admin/stats` (Lv.6 이상) ✨NEW
 - **활동 로그**: `GET /admin/logs` (Lv.6 이상) ✨NEW
 - **알림 센터**: `GET /admin/notifications` (Lv.6 이상) ✨NEW
@@ -171,6 +200,22 @@
 - **일괄 처리** (Lv.8 이상): `POST /api/admin/users/batch`
   - Body: `{ action: 'change_level'|'change_status'|'delete', userIds: [], value? }`
 - **CSV 내보내기**: `GET /api/admin/users/export`
+
+#### 뉴스 API ✨NEW
+- **뉴스 목록 조회**: `GET /api/news?category=&limit=20`
+  - Query: `category` (all/general/politics/economy/tech/sports/entertainment), `limit` (기본 20)
+  - Response: `{ success, news, count }`
+- **뉴스 가져오기**: `GET /api/news/fetch?category=general`
+  - Query: `category` (RSS에서 뉴스 가져와 DB에 저장)
+  - Response: `{ success, fetched, saved, message }`
+- **뉴스 삭제**: `DELETE /api/news/:id` (관리자 전용)
+- **스케줄 설정 조회**: `GET /api/news/schedule`
+  - Response: `{ success, schedule }`
+- **스케줄 설정 업데이트**: `POST /api/news/schedule`
+  - Body: `{ enabled, schedule_type, schedule_time, interval_hours }`
+  - Response: `{ success, message, next_run }`
+- **스케줄 실행 기록 업데이트**: `POST /api/news/schedule/update-run`
+  - 자동 실행 시 호출되어 last_run 및 next_run 업데이트
 
 ## 배포 URL
 - **로컬 개발**: https://3000-ipz6c4a8pwyoci65e6lba-cc2fbc16.sandbox.novita.ai
@@ -223,9 +268,41 @@ CREATE TABLE notifications (
 );
 ```
 
+### News 테이블 ✨NEW
+```sql
+CREATE TABLE news (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,           -- 'general', 'politics', 'economy', 'tech', 'sports', 'entertainment'
+  title TEXT NOT NULL,
+  summary TEXT,
+  link TEXT NOT NULL UNIQUE,        -- 뉴스 원문 링크 (중복 방지)
+  image_url TEXT,
+  publisher TEXT,
+  pub_date TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### News Schedule 테이블 ✨NEW
+```sql
+CREATE TABLE news_schedule (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  enabled INTEGER DEFAULT 1,        -- 1: 활성화, 0: 비활성화
+  schedule_type TEXT DEFAULT 'hourly', -- 'hourly', 'daily', 'custom'
+  schedule_time TEXT,               -- HH:mm 형식 (daily용, 한국 시간 기준)
+  interval_hours INTEGER DEFAULT 1, -- hourly용 간격 (시간 단위)
+  last_run DATETIME,                -- 마지막 실행 시간
+  next_run DATETIME,                -- 다음 실행 예정 시간 (UTC로 저장)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
 ## 스토리지 서비스
-- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림 저장
+- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정 저장
 - **로컬 개발**: `.wrangler/state/v3/d1` (자동 생성)
+- **외부 API**: Google News RSS (뉴스 데이터 소스)
 
 ## 테스트 계정
 - **슈퍼바이저 계정**
@@ -311,6 +388,25 @@ CREATE TABLE notifications (
    - **읽음**: 읽은 알림만
 3. 알림 클릭하여 읽음 처리
 4. 자동 새로고침 (5초 간격)으로 실시간 알림 확인
+
+#### 8. 뉴스 관리 ✨NEW
+1. 네비게이션에서 "컨텐츠관리 > 뉴스관리" 클릭
+2. 자동 뉴스 가져오기 설정:
+   - **활성화 토글**: 자동 실행 켜기/끄기
+   - **스케줄 타입 선택**:
+     - 시간 간격: 1/2/3/6/12/24시간마다
+     - 매일 지정 시간: 매일 특정 시간 (예: 오전 9시)
+   - **설정 저장**: 다음 실행 시간 자동 계산
+3. 실행 정보 확인:
+   - 마지막 실행 시간
+   - 다음 실행 예정 시간 (한국 시간으로 표시)
+4. 수동 뉴스 가져오기:
+   - "전체 카테고리 뉴스 가져오기" 버튼 클릭
+   - 6개 카테고리 뉴스 일괄 수집
+5. 뉴스 목록 관리:
+   - 카테고리별 필터링
+   - 개별 뉴스 삭제
+   - 원문 링크로 확인
 
 ## 권한 체계
 
@@ -400,7 +496,9 @@ webapp/
 ├── migrations/            # D1 데이터베이스 마이그레이션
 │   ├── 0001_create_users_table.sql
 │   ├── 0002_add_user_level_and_status.sql
-│   └── 0003_add_activity_logs_and_notifications.sql
+│   ├── 0003_add_activity_logs_and_notifications.sql
+│   ├── 0001_create_news_table.sql
+│   └── 0002_create_news_schedule_table.sql
 ├── public/
 │   └── static/
 │       └── style.css      # 커스텀 CSS
@@ -494,6 +592,15 @@ webapp/
   - 활동 로그 페이지 (필터링, 실시간 스트리밍)
   - 알림 센터 (읽음/읽지않음 토글, 실시간 푸시)
   - 배치 작업 UI (회원 선택, 일괄 처리, CSV 내보내기)
+- **2025-11-05**: 뉴스 서비스 구현 ✨NEW
+  - Google RSS 뉴스 통합 (6개 카테고리)
+  - 뉴스 페이지 (카테고리별 필터링, 반응형 디자인)
+  - 관리자 뉴스 관리 페이지
+  - 자동 뉴스 가져오기 스케줄 시스템
+    - 시간 간격 모드 (1~24시간)
+    - 매일 지정 시간 모드 (한국 시간 기준)
+    - 시간대 자동 변환 (KST ↔ UTC)
+    - 클라이언트 측 자동 실행 (1분마다 체크)
 
 ## 라이선스
 MIT License
