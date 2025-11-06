@@ -772,7 +772,13 @@ app.get('/lifestyle/calculator', (c) => {
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             .calculator-btn {
-                @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold py-4 px-4 border border-gray-300 rounded-lg shadow transition-all active:scale-95;
+                @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold border border-gray-300 rounded-lg shadow transition-all active:scale-95;
+                aspect-ratio: 1 / 1;
+                min-height: 70px;
+                font-size: 1.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             .calculator-btn-operator {
                 @apply bg-blue-500 hover:bg-blue-600 text-white;
@@ -787,7 +793,7 @@ app.get('/lifestyle/calculator', (c) => {
                 @apply bg-blue-500 text-white;
             }
             .calculator-display {
-                @apply bg-gray-100 p-4 rounded-lg text-right text-2xl font-mono border-2 border-gray-300 mb-4 min-h-[60px] break-all;
+                @apply bg-gray-100 p-6 rounded-lg text-right text-3xl font-mono border-2 border-gray-300 mb-6 min-h-[80px] break-all;
             }
         </style>
     </head>
@@ -881,9 +887,9 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 기본 계산기 -->
                     <div id="calc-basic" class="calculator-container">
-                        <div class="max-w-md mx-auto">
+                        <div class="max-w-lg mx-auto">
                             <div id="basic-display" class="calculator-display">0</div>
-                            <div class="grid grid-cols-4 gap-2">
+                            <div class="grid grid-cols-4 gap-3">
                                 <button onclick="clearBasic()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="backspaceBasic()" class="calculator-btn"><i class="fas fa-backspace"></i></button>
                                 <button onclick="appendToBasic('%')" class="calculator-btn calculator-btn-operator">%</button>
@@ -913,9 +919,9 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 공학 계산기 -->
                     <div id="calc-scientific" class="calculator-container hidden">
-                        <div class="max-w-2xl mx-auto">
+                        <div class="max-w-3xl mx-auto">
                             <div id="scientific-display" class="calculator-display">0</div>
-                            <div class="grid grid-cols-5 gap-2">
+                            <div class="grid grid-cols-5 gap-3">
                                 <button onclick="clearScientific()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="scientificOperation('sin')" class="calculator-btn">sin</button>
                                 <button onclick="scientificOperation('cos')" class="calculator-btn">cos</button>
