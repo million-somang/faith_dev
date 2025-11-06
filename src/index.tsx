@@ -5921,27 +5921,56 @@ app.get('/admin/news', async (c) => {
             
             // 무한 스크롤 설정
             const newsContainer = document.getElementById('news-container');
-            newsContainer.addEventListener('scroll', function() {
-                if (isLoading || !hasMore) return;
-                
-                // 스크롤이 끝에서 200px 이내로 가까워지면 로드
-                if (newsContainer.scrollHeight - newsContainer.scrollTop <= newsContainer.clientHeight + 200) {
-                    loadMoreNews();
-                }
-            });
+            if (newsContainer) {
+                console.log('무한 스크롤 이벤트 리스너 등록됨');
+                newsContainer.addEventListener('scroll', function() {
+                    const scrollHeight = newsContainer.scrollHeight;
+                    const scrollTop = newsContainer.scrollTop;
+                    const clientHeight = newsContainer.clientHeight;
+                    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+                    
+                    console.log('스크롤 이벤트:', {
+                        scrollHeight,
+                        scrollTop,
+                        clientHeight,
+                        distanceFromBottom,
+                        isLoading,
+                        hasMore
+                    });
+                    
+                    if (isLoading || !hasMore) {
+                        console.log('로딩 중이거나 더 이상 없음');
+                        return;
+                    }
+                    
+                    // 스크롤이 끝에서 200px 이내로 가까워지면 로드
+                    if (distanceFromBottom <= 200) {
+                        console.log('추가 로드 시작!');
+                        loadMoreNews();
+                    }
+                });
+            } else {
+                console.error('news-container를 찾을 수 없습니다!');
+            }
             
             // 더 많은 뉴스 로드
             async function loadMoreNews() {
-                if (isLoading || !hasMore) return;
+                if (isLoading || !hasMore) {
+                    console.log('loadMoreNews 중단:', { isLoading, hasMore });
+                    return;
+                }
                 
+                console.log('loadMoreNews 시작:', { currentOffset, currentCategory });
                 isLoading = true;
                 document.getElementById('loading-indicator').classList.remove('hidden');
                 document.getElementById('loading-status').textContent = '로딩중';
                 
                 try {
                     const url = '/api/news?category=' + currentCategory + '&limit=' + loadLimit + '&offset=' + currentOffset;
+                    console.log('API 요청:', url);
                     const response = await fetch(url);
                     const data = await response.json();
+                    console.log('API 응답:', data);
                     
                     if (data.success && data.news && data.news.length > 0) {
                         const newsTable = document.getElementById('news-table');
@@ -5950,31 +5979,29 @@ app.get('/admin/news', async (c) => {
                             const row = document.createElement('tr');
                             row.setAttribute('data-category', news.category);
                             row.className = 'hover:bg-gray-50';
-                            row.innerHTML = \`
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${news.id}</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                        \${news.category}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
-                                    <a href="\${news.link}" target="_blank" class="hover:text-blue-600">
-                                        \${news.title}
-                                    </a>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${news.publisher || '구글 뉴스'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${new Date(news.created_at).toLocaleDateString('ko-KR')}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="\${news.link}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">
-                                        <i class="fas fa-external-link-alt mr-1"></i>
-                                        보기
-                                    </a>
-                                    <button onclick="deleteNews(\${news.id})" class="text-red-600 hover:text-red-900">
-                                        <i class="fas fa-trash mr-1"></i>
-                                        삭제
-                                    </button>
-                                </td>
-                            \`;
+                            row.innerHTML = '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + news.id + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap">' +
+                                    '<span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">' +
+                                        news.category +
+                                    '</span>' +
+                                '</td>' +
+                                '<td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">' +
+                                    '<a href="' + news.link + '" target="_blank" class="hover:text-blue-600">' +
+                                        news.title +
+                                    '</a>' +
+                                '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + (news.publisher || '구글 뉴스') + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
+                                    '<a href="' + news.link + '" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">' +
+                                        '<i class="fas fa-external-link-alt mr-1"></i>' +
+                                        '보기' +
+                                    '</a>' +
+                                    '<button onclick="deleteNews(' + news.id + ')" class="text-red-600 hover:text-red-900">' +
+                                        '<i class="fas fa-trash mr-1"></i>' +
+                                        '삭제' +
+                                    '</button>' +
+                                '</td>';
                             newsTable.appendChild(row);
                         });
                         
