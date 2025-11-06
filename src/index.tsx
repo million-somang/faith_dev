@@ -91,6 +91,36 @@ function getLifestyleMenu(currentPage: string): string {
   return menuHtml
 }
 
+// ==================== 공통 헤더 헬퍼 함수 ====================
+function getCommonHeader(): string {
+  return `
+    <!-- 헤더 -->
+    <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
+            <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
+                <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
+            </a>
+            <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                <!-- 다크모드 토글 -->
+                <button id="dark-mode-toggle" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600">
+                    <i class="fas fa-moon" id="dark-mode-icon"></i>
+                </button>
+                <!-- 북마크 페이지 링크 -->
+                <a href="/bookmarks" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600" title="북마크">
+                    <i class="fas fa-bookmark"></i>
+                </a>
+                <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
+                    <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
+                </a>
+                <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover font-medium">
+                    <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
+                </a>
+            </div>
+        </div>
+    </header>
+  `
+}
+
 // ==================== 공통 푸터 헬퍼 함수 ====================
 function getCommonFooter(): string {
   return `
@@ -223,7 +253,7 @@ app.get('/', async (c) => {
   
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ko">
+    <html lang="ko" id="html-root">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -233,6 +263,37 @@ app.get('/', async (c) => {
         <style>
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            /* 다크모드 스타일 */
+            .dark {
+                color-scheme: dark;
+            }
+            .dark body {
+                background: linear-gradient(to bottom right, #1e293b, #0f172a, #020617);
+            }
+            .dark .bg-white {
+                background-color: #1e293b !important;
+            }
+            .dark .text-gray-900 {
+                color: #f1f5f9 !important;
+            }
+            .dark .text-gray-800 {
+                color: #e2e8f0 !important;
+            }
+            .dark .text-gray-700 {
+                color: #cbd5e1 !important;
+            }
+            .dark .text-gray-600 {
+                color: #94a3b8 !important;
+            }
+            .dark .text-gray-500 {
+                color: #64748b !important;
+            }
+            .dark .border-gray-200 {
+                border-color: #334155 !important;
+            }
+            .dark .bg-gray-50 {
+                background-color: #0f172a !important;
+            }
             .search-shadow { 
                 box-shadow: 0 10px 40px rgba(14, 165, 233, 0.15);
                 transition: all 0.3s ease;
@@ -297,24 +358,8 @@ app.get('/', async (c) => {
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <h1 class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg shine floating">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </h1>
-                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <!-- 로그인 전 -->
-                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
-                    </a>
-                    <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover shine font-medium">
-                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
+        ${getCommonHeader()}
 
         <!-- 메인 검색 영역 -->
         <main class="max-w-6xl mx-auto px-4 py-12">
@@ -504,94 +549,74 @@ app.get('/', async (c) => {
                 }
             });
 
-            // 로그인 상태 확인
+            // ==================== 다크모드 ====================
+            function initDarkMode() {
+                const darkMode = localStorage.getItem('darkMode') === 'true';
+                if (darkMode) {
+                    document.getElementById('html-root').classList.add('dark');
+                    document.getElementById('dark-mode-icon').className = 'fas fa-sun';
+                } else {
+                    document.getElementById('html-root').classList.remove('dark');
+                    document.getElementById('dark-mode-icon').className = 'fas fa-moon';
+                }
+            }
+            
+            // 다크모드 초기화
+            initDarkMode();
+            
+            document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+                const htmlRoot = document.getElementById('html-root');
+                const icon = document.getElementById('dark-mode-icon');
+                const isDark = htmlRoot.classList.toggle('dark');
+                
+                localStorage.setItem('darkMode', isDark);
+                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+            });
+            
+            // ==================== 로그인 상태 확인 ====================
             const token = localStorage.getItem('auth_token');
             const userEmail = localStorage.getItem('user_email');
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
             if (token && userEmail) {
                 // 로그인된 상태
-                let menuHTML = '<span class="text-sm text-gray-700">' + userEmail + '님</span>';
+                const darkModeBtn = document.getElementById('dark-mode-toggle').outerHTML;
+                const bookmarkBtn = document.querySelector('a[href="/bookmarks"]').outerHTML;
+                let menuHTML = darkModeBtn + bookmarkBtn;
+                menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
                 
                 // 관리자 메뉴 추가
                 if (userLevel >= 6) {
-                    menuHTML += \`
-                        <a href="/admin" class="text-sm bg-yellow-500 text-gray-900 px-4 py-2 rounded hover:bg-yellow-600 font-medium">
-                            <i class="fas fa-crown mr-1"></i>
-                            관리자
-                        </a>
-                    \`;
+                    menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-yellow-600 font-medium"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
                 }
                 
-                menuHTML += \`
-                    <button id="logout-btn" class="text-sm faith-blue text-white px-4 py-2 rounded faith-blue-hover">
-                        로그아웃
-                    </button>
-                \`;
+                menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded faith-blue-hover"><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
                 
                 document.getElementById('user-menu').innerHTML = menuHTML;
+                
+                // 다크모드 다시 초기화
+                initDarkMode();
+                document.getElementById('dark-mode-toggle').addEventListener('click', function() {
+                    const htmlRoot = document.getElementById('html-root');
+                    const icon = document.getElementById('dark-mode-icon');
+                    const isDark = htmlRoot.classList.toggle('dark');
+                    
+                    localStorage.setItem('darkMode', isDark);
+                    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                });
 
                 // 로그아웃 기능
                 document.getElementById('logout-btn').addEventListener('click', function() {
                     localStorage.removeItem('auth_token');
                     localStorage.removeItem('user_email');
                     localStorage.removeItem('user_level');
+                    localStorage.removeItem('user_id');
                     location.reload();
                 });
             }
         </script>
 
-        <!-- 푸터 -->
-        <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- 회사 정보 -->
-                    <div>
-                        <h3 class="text-lg font-bold mb-4">Faith Portal</h3>
-                        <p class="text-sky-100 text-sm leading-relaxed">
-                            믿음의 포탈, Faith Portal은<br>
-                            여러분의 디지털 라이프를 풍요롭게 만들어드립니다.
-                        </p>
-                    </div>
-                    
-                    <!-- 빠른 링크 -->
-                    <div>
-                        <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
-                        <ul class="space-y-2">
-                            <li><a href="/news" class="text-sky-100 hover:text-white text-sm transition">뉴스</a></li>
-                            <li><a href="/lifestyle" class="text-sky-100 hover:text-white text-sm transition">생활</a></li>
-                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
-                            <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">쇼핑</a></li>
-                        </ul>
-                    </div>
-                    
-                    <!-- 연락처 -->
-                    <div>
-                        <h3 class="text-lg font-bold mb-4">고객 지원</h3>
-                        <ul class="space-y-2">
-                            <li class="text-sky-100 text-sm">
-                                <i class="fas fa-envelope mr-2"></i>
-                                support@faithportal.com
-                            </li>
-                            <li class="text-sky-100 text-sm">
-                                <i class="fas fa-phone mr-2"></i>
-                                1577-1577
-                            </li>
-                            <li class="text-sky-100 text-sm">
-                                <i class="fas fa-clock mr-2"></i>
-                                평일 09:00 - 18:00
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="border-t border-sky-400 mt-8 pt-6 text-center">
-                    <p class="text-sky-100 text-sm">
-                        © 2024 Faith Portal. All rights reserved.
-                    </p>
-                </div>
-            </div>
-        </footer>
+        ${getCommonFooter()}
 
     </body>
     </html>
