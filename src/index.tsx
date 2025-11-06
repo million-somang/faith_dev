@@ -403,7 +403,7 @@ app.get('/', async (c) => {
                           const timeAgo = getTimeAgo(news.created_at)
                           const categoryColor = getCategoryColor(news.category)
                           return `
-                            <a href="${news.link}" target="_blank" class="block hover:bg-sky-50 py-3 px-3 rounded-lg transition group border-b border-gray-200 last:border-b-0">
+                            <a href="${news.link}" target="_blank" rel="noopener noreferrer" class="block hover:bg-sky-50 py-3 px-3 rounded-lg transition group border-b border-gray-200 last:border-b-0">
                                 <div class="flex items-start gap-3">
                                     <span class="text-sky-600 font-bold text-base flex-shrink-0 mt-0.5">${index + 1}</span>
                                     <div class="flex-1 min-w-0">
@@ -2281,7 +2281,7 @@ app.get('/news', async (c) => {
             <!-- 뉴스 그리드 -->
             <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 ${newsFromDB.length > 0 ? newsFromDB.map(news => `
-                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl" onclick="window.open('${news.link}', '_blank')">
+                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl" onclick="openNewsLink('${news.link.replace(/'/g, "\\'")}')">
                         <div class="p-6 sm:p-7">
                             <div class="flex items-center justify-between mb-5">
                                 <span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">
@@ -2318,6 +2318,15 @@ app.get('/news', async (c) => {
         ${getCommonFooter()}
 
         <script>
+            // 뉴스 링크 안전하게 열기
+            function openNewsLink(url) {
+                // 새 창 열기 (noopener noreferrer 포함)
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                if (newWindow) {
+                    newWindow.opener = null;
+                }
+            }
+            
             // 로그인 상태 확인
             const token = localStorage.getItem('auth_token');
             const userEmail = localStorage.getItem('user_email');
@@ -5128,10 +5137,16 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
       
       const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || 
                     itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
-      const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
+      let link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
       const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
       let description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
                         itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
+      
+      // source 태그에서 원본 URL 추출 시도
+      const sourceUrl = itemContent.match(/<source[^>]+url=["']([^"']+)["']/)?.[1]
+      if (sourceUrl) {
+        link = sourceUrl // 원본 URL이 있으면 사용
+      }
       
       // HTML 엔티티 디코딩
       description = decodeHtmlEntities(description)
