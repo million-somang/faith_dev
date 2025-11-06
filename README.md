@@ -6,6 +6,7 @@
 - **브랜드 컬러**: 하늘색 (#0ea5e9) ✨UPDATE
 - **디자인 테마**: 하늘색 중심의 깔끔한 디자인 (Sky-500 ~ Cyan-500)
 - **기술 스택**: Hono + TypeScript + Cloudflare D1 + TailwindCSS + Chart.js
+- **반응형 디자인**: ✅ 모든 페이지 모바일/태블릿/데스크톱 지원 ✨NEW
 
 ## 주요 기능
 
@@ -511,9 +512,9 @@ npx wrangler pages deploy dist --project-name webapp
 ```
 webapp/
 ├── src/
-│   ├── index.tsx          # 메인 애플리케이션 (약 2900줄)
-│   │                      # - 사용자 페이지 (메인, 로그인, 회원가입)
-│   │                      # - 관리자 페이지 (대시보드, 회원관리, 통계, 로그, 알림)
+│   ├── index.tsx          # 메인 애플리케이션 (약 3200줄)
+│   │                      # - 사용자 페이지 (메인, 로그인, 회원가입, 뉴스)
+│   │                      # - 관리자 페이지 (대시보드, 회원관리, 뉴스관리, 통계, 로그, 알림)
 │   │                      # - 모든 API 엔드포인트
 │   │                      # - 배치 작업 UI 및 CSV 내보내기
 │   └── renderer.tsx       # JSX 렌더러
@@ -525,14 +526,16 @@ webapp/
 │   └── 0002_create_news_schedule_table.sql
 ├── public/
 │   └── static/
-│       └── style.css      # 커스텀 CSS
+│       └── style.css      # 커스텀 반응형 CSS
 ├── dist/                  # 빌드 출력 (자동 생성)
 ├── .wrangler/             # Wrangler 로컬 상태 (자동 생성)
 │   └── state/v3/d1/       # 로컬 SQLite 데이터베이스
 ├── ecosystem.config.cjs   # PM2 설정
 ├── wrangler.jsonc         # Cloudflare 설정
 ├── package.json           # 프로젝트 의존성
-└── seed.sql               # 테스트 데이터
+├── seed.sql               # 테스트 데이터
+├── README.md              # 프로젝트 문서
+└── RESPONSIVE_GUIDE.md    # 반응형 디자인 가이드
 ```
 
 ## 디자인 시스템
@@ -560,16 +563,23 @@ webapp/
 - **Cloudflare D1**: SQLite 기반 데이터베이스
 
 ### 프론트엔드
-- **TailwindCSS**: 유틸리티 CSS 프레임워크
+- **TailwindCSS**: 유틸리티 CSS 프레임워크 (반응형 디자인)
 - **Font Awesome**: 아이콘
 - **Axios**: HTTP 클라이언트
 - **Chart.js**: 데이터 시각화
+- **커스텀 CSS**: 추가 반응형 스타일 (`public/static/style.css`)
 
 ### 개발 도구
 - **TypeScript**: 타입 안전성
 - **Vite**: 빌드 도구
 - **Wrangler**: Cloudflare 개발 CLI
 - **PM2**: 프로세스 관리
+
+### 반응형 디자인
+- **모바일 우선**: Mobile-first 접근 방식
+- **브레이크포인트**: sm(640px), md(768px), lg(1024px), xl(1280px)
+- **터치 최적화**: 최소 44x44px 터치 영역
+- **자세한 내용**: `RESPONSIVE_GUIDE.md` 참고
 
 ## 보안 고려사항
 
@@ -638,6 +648,13 @@ webapp/
     - 스크롤 시 자동 50개씩 추가 로드
     - 카테고리 필터별 무한 스크롤 지원
     - 실시간 통계 및 로딩 상태 표시
+- **2025-11-06**: 반응형 디자인 전체 적용 ✨NEW
+  - 공통 반응형 스타일시트 작성
+  - 반응형 디자인 가이드 문서 (RESPONSIVE_GUIDE.md)
+  - 모든 페이지 모바일/태블릿/데스크톱 지원
+  - 모바일 우선 접근 방식
+  - 터치 친화적 UI (최소 44x44px)
+  - Tailwind CSS 반응형 유틸리티 활용
 
 ## 라이선스
 MIT License
