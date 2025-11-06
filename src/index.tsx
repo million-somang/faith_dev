@@ -1707,6 +1707,87 @@ app.get('/lifestyle/calculator', (c) => {
                 document.getElementById('pct-result-3').classList.remove('hidden');
             }
 
+            // ========== 키보드 입력 지원 ==========
+            document.addEventListener('keydown', function(event) {
+                // 현재 활성화된 계산기 확인
+                const activeCalc = document.querySelector('.calculator-container:not(.hidden)');
+                if (!activeCalc) return;
+                
+                const isBasic = activeCalc.id === 'calc-basic';
+                const isScientific = activeCalc.id === 'calc-scientific';
+                
+                // 입력 필드에 포커스가 있으면 키보드 입력 무시
+                if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+                    return;
+                }
+                
+                const key = event.key;
+                
+                // 숫자 키 (0-9)
+                if (/^[0-9]$/.test(key)) {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic(key);
+                    if (isScientific) appendToScientific(key);
+                }
+                // 연산자
+                else if (key === '+') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('+');
+                    if (isScientific) appendToScientific('+');
+                }
+                else if (key === '-') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('-');
+                    if (isScientific) appendToScientific('-');
+                }
+                else if (key === '*') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('*');
+                    if (isScientific) appendToScientific('*');
+                }
+                else if (key === '/') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('/');
+                    if (isScientific) appendToScientific('/');
+                }
+                else if (key === '%') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('%');
+                }
+                else if (key === '.') {
+                    event.preventDefault();
+                    if (isBasic) appendToBasic('.');
+                    if (isScientific) appendToScientific('.');
+                }
+                // 괄호 (공학 계산기)
+                else if (key === '(') {
+                    event.preventDefault();
+                    if (isScientific) appendToScientific('(');
+                }
+                else if (key === ')') {
+                    event.preventDefault();
+                    if (isScientific) appendToScientific(')');
+                }
+                // Enter = 계산 실행
+                else if (key === 'Enter') {
+                    event.preventDefault();
+                    if (isBasic) calculateBasic();
+                    if (isScientific) calculateScientific();
+                }
+                // Escape 또는 c = 클리어
+                else if (key === 'Escape' || key === 'c' || key === 'C') {
+                    event.preventDefault();
+                    if (isBasic) clearBasic();
+                    if (isScientific) clearScientific();
+                }
+                // Backspace = 한 글자 삭제
+                else if (key === 'Backspace') {
+                    event.preventDefault();
+                    if (isBasic) backspaceBasic();
+                    if (isScientific) backspaceScientific();
+                }
+            });
+            
             // 페이지 로드 시 초기화
             document.addEventListener('DOMContentLoaded', function() {
                 updateUnitOptions();
