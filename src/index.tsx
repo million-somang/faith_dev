@@ -3247,6 +3247,7 @@ app.get('/login', (c) => {
                     if (response.data.success) {
                         // 로그인 성공
                         localStorage.setItem('auth_token', response.data.token);
+                        localStorage.setItem('user_id', response.data.user.id);
                         localStorage.setItem('user_email', response.data.user.email);
                         localStorage.setItem('user_level', response.data.user.level);
                         
