@@ -96,9 +96,9 @@ function getCommonHeader(): string {
   return `
     <!-- 헤더 -->
     <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-            <a href="/" class="flex items-center">
-                <img src="/logo_fl.png" alt="Faith Portal" class="h-8 sm:h-10 md:h-12 w-auto" />
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 sm:py-3 flex justify-between items-center">
+            <a href="/" class="flex items-center py-1">
+                <img src="/logo_fl.png" alt="Faith Portal" class="h-10 sm:h-12 md:h-14 w-auto object-contain" />
             </a>
             <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
                 <!-- 다크모드 토글 -->
