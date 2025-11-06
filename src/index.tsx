@@ -631,7 +631,7 @@ app.get('/', async (c) => {
 app.get('/lifestyle', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ko">
+    <html lang="ko" id="html-root">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -643,23 +643,8 @@ app.get('/lifestyle', (c) => {
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </a>
-                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
-                    </a>
-                    <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
-                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle')}
@@ -751,6 +736,7 @@ app.get('/lifestyle', (c) => {
         </script>
 
         ${getCommonFooter()}
+        ${getCommonAuthScript()}
 
     </body>
     </html>
@@ -2513,30 +2499,7 @@ app.get('/news', async (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </a>
-                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <!-- 다크모드 토글 -->
-                    <button id="dark-mode-toggle" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600">
-                        <i class="fas fa-moon" id="dark-mode-icon"></i>
-                    </button>
-                    <!-- 북마크 페이지 링크 -->
-                    <a href="/bookmarks" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600" title="북마크">
-                        <i class="fas fa-bookmark"></i>
-                    </a>
-                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
-                    </a>
-                    <a href="/signup" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg faith-blue-hover font-medium">
-                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+        ${getCommonHeader()}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
