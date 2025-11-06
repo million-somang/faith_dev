@@ -101,14 +101,6 @@ function getCommonHeader(): string {
                 <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
             </a>
             <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                <!-- 다크모드 토글 -->
-                <button id="dark-mode-toggle" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600">
-                    <i class="fas fa-moon" id="dark-mode-icon"></i>
-                </button>
-                <!-- 북마크 페이지 링크 -->
-                <a href="/bookmarks" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600" title="북마크">
-                    <i class="fas fa-bookmark"></i>
-                </a>
                 <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
                     <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                 </a>
@@ -129,31 +121,13 @@ function getCommonAuthScript(): string {
       function initDarkMode() {
         const darkMode = localStorage.getItem('darkMode') === 'true';
         const htmlRoot = document.getElementById('html-root');
-        const icon = document.getElementById('dark-mode-icon');
         
-        if (htmlRoot && icon) {
+        if (htmlRoot) {
           if (darkMode) {
             htmlRoot.classList.add('dark');
-            icon.className = 'fas fa-sun';
           } else {
             htmlRoot.classList.remove('dark');
-            icon.className = 'fas fa-moon';
           }
-        }
-      }
-      
-      // ==================== 다크모드 토글 ====================
-      function setupDarkModeToggle() {
-        const toggleBtn = document.getElementById('dark-mode-toggle');
-        if (toggleBtn) {
-          toggleBtn.addEventListener('click', function() {
-            const htmlRoot = document.getElementById('html-root');
-            const icon = document.getElementById('dark-mode-icon');
-            const isDark = htmlRoot.classList.toggle('dark');
-            
-            localStorage.setItem('darkMode', isDark);
-            icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-          });
         }
       }
       
@@ -164,24 +138,13 @@ function getCommonAuthScript(): string {
         const userLevel = parseInt(localStorage.getItem('user_level') || '0');
         
         if (token && userEmail) {
-          // 현재 버튼들 저장
-          const darkModeBtn = document.getElementById('dark-mode-toggle');
-          const bookmarkLink = document.querySelector('a[href="/bookmarks"]');
-          
           let menuHTML = '';
-          
-          // 다크모드 버튼 추가
-          if (darkModeBtn) {
-            menuHTML += darkModeBtn.outerHTML;
-          }
-          
-          // 북마크 링크 추가
-          if (bookmarkLink) {
-            menuHTML += bookmarkLink.outerHTML;
-          }
           
           // 사용자 이메일 표시
           menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
+          
+          // 마이페이지 버튼
+          menuHTML += '<a href="/mypage" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3"><i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span></a>';
           
           // 관리자 메뉴 추가 (Lv.6 이상)
           if (userLevel >= 6) {
@@ -197,10 +160,6 @@ function getCommonAuthScript(): string {
             userMenu.innerHTML = menuHTML;
           }
           
-          // 다크모드 다시 설정
-          initDarkMode();
-          setupDarkModeToggle();
-          
           // 로그아웃 이벤트 리스너 추가
           const logoutBtn = document.getElementById('logout-btn');
           if (logoutBtn) {
@@ -212,11 +171,10 @@ function getCommonAuthScript(): string {
               window.location.href = '/';
             });
           }
-        } else {
-          // 로그인하지 않은 상태에서도 다크모드 초기화
-          initDarkMode();
-          setupDarkModeToggle();
         }
+        
+        // 다크모드 초기화 (로그인 여부 관계없이)
+        initDarkMode();
       }
       
       // ==================== 페이지 로드 시 실행 ====================
@@ -3564,6 +3522,13 @@ app.post('/api/login', async (c) => {
     await c.env.DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(user.id, 'login', `로그인: ${user.email}`).run()
+    
+    // 로그인 기록 저장
+    const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+    const userAgent = c.req.header('user-agent') || 'unknown'
+    await c.env.DB.prepare(
+      'INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
+    ).bind(user.id, ipAddress, userAgent).run()
     
     // 간단한 토큰 생성 (실제로는 JWT 등을 사용해야 함)
     const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
@@ -7203,6 +7168,312 @@ app.get('/api/news/search', async (c) => {
     console.error('뉴스 검색 오류:', error)
     return c.json({ success: false, error: '뉴스 검색 실패' }, 500)
   }
+})
+
+// ==================== 마이페이지 API ====================
+
+// 로그인 기록 조회
+app.get('/api/mypage/login-history', async (c) => {
+  try {
+    const userId = c.req.query('userId')
+    
+    if (!userId) {
+      return c.json({ success: false, message: '사용자 ID가 필요합니다.' }, 400)
+    }
+    
+    const result = await c.env.DB.prepare(`
+      SELECT id, login_time, ip_address, user_agent
+      FROM login_history
+      WHERE user_id = ?
+      ORDER BY login_time DESC
+      LIMIT 50
+    `).bind(userId).all()
+    
+    return c.json({ success: true, history: result.results || [] })
+  } catch (error) {
+    console.error('로그인 기록 조회 오류:', error)
+    return c.json({ success: false, error: '로그인 기록 조회 실패' }, 500)
+  }
+})
+
+// ==================== 마이페이지 ====================
+app.get('/mypage', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>마이페이지 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            
+            /* 다크모드 스타일 */
+            .dark {
+                color-scheme: dark;
+            }
+            .dark body {
+                background: linear-gradient(to bottom right, #1e293b, #0f172a, #020617);
+            }
+            .dark .bg-white {
+                background-color: #1e293b !important;
+            }
+            .dark .text-gray-900 {
+                color: #f1f5f9 !important;
+            }
+            .dark .text-gray-800 {
+                color: #e2e8f0 !important;
+            }
+            .dark .text-gray-700 {
+                color: #cbd5e1 !important;
+            }
+            .dark .text-gray-600 {
+                color: #94a3b8 !important;
+            }
+            .dark .border-gray-200 {
+                border-color: #334155 !important;
+            }
+            .dark .bg-gray-50 {
+                background-color: #0f172a !important;
+            }
+            .dark .bg-gray-100 {
+                background-color: #1e293b !important;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen">
+        ${getCommonHeader()}
+        
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+            <div class="mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                    <i class="fas fa-user mr-2"></i>마이페이지
+                </h1>
+                <p class="text-gray-600 mt-2">내 정보 및 설정을 관리합니다</p>
+            </div>
+            
+            <!-- 탭 메뉴 -->
+            <div class="bg-white rounded-lg shadow-lg mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-4 sm:space-x-8 px-4 sm:px-6" aria-label="Tabs">
+                        <button id="tab-info" class="tab-button border-b-2 border-sky-500 text-sky-600 py-4 px-1 text-sm font-medium">
+                            <i class="fas fa-user mr-2"></i>내 정보
+                        </button>
+                        <button id="tab-history" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium">
+                            <i class="fas fa-history mr-2"></i>로그인 기록
+                        </button>
+                        <button id="tab-settings" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium">
+                            <i class="fas fa-cog mr-2"></i>설정
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- 탭 콘텐츠 -->
+                <div class="p-4 sm:p-6">
+                    <!-- 내 정보 탭 -->
+                    <div id="content-info" class="tab-content">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">이메일</p>
+                                    <p id="user-email" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-envelope text-2xl text-gray-400"></i>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">회원 레벨</p>
+                                    <p id="user-level" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-star text-2xl text-gray-400"></i>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">가입일</p>
+                                    <p id="user-created" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-calendar text-2xl text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 로그인 기록 탭 -->
+                    <div id="content-history" class="tab-content hidden">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">최근 로그인 기록</h3>
+                            <p class="text-sm text-gray-600">최근 50개의 로그인 기록을 표시합니다</p>
+                        </div>
+                        <div id="login-history-list" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>로그인 기록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 설정 탭 -->
+                    <div id="content-settings" class="tab-content hidden">
+                        <div class="space-y-6">
+                            <!-- 다크모드 설정 -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">
+                                            <i class="fas fa-moon mr-2"></i>다크모드
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mt-1">어두운 테마를 사용합니다</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-sky-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- 북마크 바로가기 -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">
+                                            <i class="fas fa-bookmark mr-2"></i>북마크
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mt-1">저장한 뉴스를 확인합니다</p>
+                                    </div>
+                                    <a href="/bookmarks" class="faith-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all">
+                                        바로가기 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+        
+        <script>
+            // 로그인 체크
+            const token = localStorage.getItem('auth_token');
+            const userId = localStorage.getItem('user_id');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = localStorage.getItem('user_level');
+            
+            if (!token || !userId) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/login';
+            }
+            
+            // 사용자 정보 표시
+            document.getElementById('user-email').textContent = userEmail || '-';
+            document.getElementById('user-level').textContent = 'Lv.' + (userLevel || '0');
+            
+            // 탭 전환
+            const tabs = document.querySelectorAll('.tab-button');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 모든 탭 비활성화
+                    tabs.forEach(t => {
+                        t.classList.remove('border-sky-500', 'text-sky-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // 클릭된 탭 활성화
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    this.classList.add('border-sky-500', 'text-sky-600');
+                    
+                    // 모든 콘텐츠 숨기기
+                    contents.forEach(c => c.classList.add('hidden'));
+                    
+                    // 해당 콘텐츠 표시
+                    const tabId = this.id.replace('tab-', '');
+                    document.getElementById('content-' + tabId).classList.remove('hidden');
+                    
+                    // 로그인 기록 탭이면 데이터 로드
+                    if (tabId === 'history') {
+                        loadLoginHistory();
+                    }
+                });
+            });
+            
+            // 로그인 기록 로드
+            async function loadLoginHistory() {
+                try {
+                    const response = await axios.get('/api/mypage/login-history?userId=' + userId);
+                    
+                    if (response.data.success) {
+                        const history = response.data.history;
+                        const listEl = document.getElementById('login-history-list');
+                        
+                        if (history.length === 0) {
+                            listEl.innerHTML = '<div class="text-center py-8 text-gray-500"><p>로그인 기록이 없습니다.</p></div>';
+                            return;
+                        }
+                        
+                        listEl.innerHTML = history.map(item => {
+                            const date = new Date(item.login_time);
+                            const dateStr = date.toLocaleString('ko-KR');
+                            const ua = item.user_agent || 'unknown';
+                            const browser = getBrowserInfo(ua);
+                            
+                            return \`
+                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-\${browser.icon} text-2xl text-gray-400"></i>
+                                    </div>
+                                    <div class="ml-4 flex-1">
+                                        <p class="text-sm font-medium text-gray-900">\${dateStr}</p>
+                                        <p class="text-xs text-gray-600 mt-1">IP: \${item.ip_address}</p>
+                                        <p class="text-xs text-gray-600">기기: \${browser.name}</p>
+                                    </div>
+                                </div>
+                            \`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('로그인 기록 로드 오류:', error);
+                    document.getElementById('login-history-list').innerHTML = 
+                        '<div class="text-center py-8 text-red-500"><p>로그인 기록을 불러오는데 실패했습니다.</p></div>';
+                }
+            }
+            
+            // 브라우저 정보 파싱
+            function getBrowserInfo(ua) {
+                if (ua.includes('Chrome')) return { name: 'Chrome', icon: 'chrome' };
+                if (ua.includes('Firefox')) return { name: 'Firefox', icon: 'firefox' };
+                if (ua.includes('Safari')) return { name: 'Safari', icon: 'safari' };
+                if (ua.includes('Edge')) return { name: 'Edge', icon: 'edge' };
+                return { name: 'Unknown', icon: 'globe' };
+            }
+            
+            // 다크모드 토글
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            darkModeToggle.checked = isDark;
+            
+            darkModeToggle.addEventListener('change', function() {
+                const htmlRoot = document.getElementById('html-root');
+                const isDarkMode = this.checked;
+                
+                if (isDarkMode) {
+                    htmlRoot.classList.add('dark');
+                } else {
+                    htmlRoot.classList.remove('dark');
+                }
+                
+                localStorage.setItem('darkMode', isDarkMode);
+            });
+        </script>
+    </body>
+    </html>
+  `)
 })
 
 export default app
