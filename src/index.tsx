@@ -772,12 +772,21 @@ app.get('/lifestyle/calculator', (c) => {
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             .calculator-btn {
-                @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold rounded-lg shadow-md transition-all active:scale-95;
+                @apply text-gray-800 font-bold transition-all active:scale-95;
                 aspect-ratio: 1 / 1;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border: 2px solid #374151;
+                background: linear-gradient(145deg, #ffffff, #e5e7eb);
+                border-radius: 12px;
+                box-shadow: 3px 3px 6px #bebebe, -3px -3px 6px #ffffff;
+                border: none;
+            }
+            .calculator-btn:hover {
+                background: linear-gradient(145deg, #f3f4f6, #d1d5db);
+            }
+            .calculator-btn:active {
+                box-shadow: inset 2px 2px 4px #bebebe, inset -2px -2px 4px #ffffff;
             }
             /* 반응형 버튼 크기 */
             @media (max-width: 640px) {
@@ -814,22 +823,50 @@ app.get('/lifestyle/calculator', (c) => {
                 }
             }
             .calculator-btn-operator {
-                @apply bg-blue-500 hover:bg-blue-600 text-white;
-                border-color: #1e40af !important;
+                background: linear-gradient(145deg, #3b82f6, #2563eb) !important;
+                color: white !important;
+                box-shadow: 3px 3px 6px #1e40af, -3px -3px 6px #60a5fa !important;
+            }
+            .calculator-btn-operator:hover {
+                background: linear-gradient(145deg, #2563eb, #1d4ed8) !important;
+            }
+            .calculator-btn-operator:active {
+                box-shadow: inset 2px 2px 4px #1e40af, inset -2px -2px 4px #60a5fa !important;
             }
             .calculator-btn-equal {
-                @apply bg-green-500 hover:bg-green-600 text-white;
-                border-color: #15803d !important;
+                background: linear-gradient(145deg, #10b981, #059669) !important;
+                color: white !important;
+                box-shadow: 3px 3px 6px #047857, -3px -3px 6px #34d399 !important;
+            }
+            .calculator-btn-equal:hover {
+                background: linear-gradient(145deg, #059669, #047857) !important;
+            }
+            .calculator-btn-equal:active {
+                box-shadow: inset 2px 2px 4px #047857, inset -2px -2px 4px #34d399 !important;
             }
             .calculator-btn-clear {
-                @apply bg-red-500 hover:bg-red-600 text-white;
-                border-color: #b91c1c !important;
+                background: linear-gradient(145deg, #ef4444, #dc2626) !important;
+                color: white !important;
+                box-shadow: 3px 3px 6px #b91c1c, -3px -3px 6px #f87171 !important;
+            }
+            .calculator-btn-clear:hover {
+                background: linear-gradient(145deg, #dc2626, #b91c1c) !important;
+            }
+            .calculator-btn-clear:active {
+                box-shadow: inset 2px 2px 4px #b91c1c, inset -2px -2px 4px #f87171 !important;
             }
             .tab-active {
                 @apply bg-blue-500 text-white;
             }
             .calculator-display {
-                @apply bg-gray-100 rounded-lg text-right font-mono border-2 border-gray-300 mb-4 break-all;
+                @apply text-right font-mono mb-4 break-all;
+                background: linear-gradient(145deg, #1f2937, #374151);
+                color: #10b981;
+                border-radius: 12px;
+                box-shadow: inset 3px 3px 6px #0f1419, inset -3px -3px 6px #4b5563;
+                border: 2px solid #4b5563;
+                font-weight: 600;
+                letter-spacing: 0.05em;
             }
         </style>
     </head>
@@ -923,7 +960,7 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 기본 계산기 -->
                     <div id="calc-basic" class="calculator-container">
-                        <div class="max-w-sm sm:max-w-md mx-auto">
+                        <div class="max-w-sm sm:max-w-md mx-auto bg-gray-200 p-4 sm:p-6 rounded-2xl shadow-2xl" style="background: linear-gradient(145deg, #e5e7eb, #d1d5db);">
                             <div id="basic-display" class="calculator-display">0</div>
                             <div class="grid grid-cols-4 gap-3">
                                 <button onclick="clearBasic()" class="calculator-btn calculator-btn-clear">C</button>
@@ -946,7 +983,8 @@ app.get('/lifestyle/calculator', (c) => {
                                 <button onclick="appendToBasic('3')" class="calculator-btn">3</button>
                                 <button onclick="appendToBasic('+')" class="calculator-btn calculator-btn-operator">+</button>
                                 
-                                <button onclick="appendToBasic('0')" class="calculator-btn col-span-2">0</button>
+                                <button onclick="appendToBasic('0')" class="calculator-btn">0</button>
+                                <button onclick="appendToBasic('00')" class="calculator-btn">00</button>
                                 <button onclick="appendToBasic('.')" class="calculator-btn">.</button>
                                 <button onclick="calculateBasic()" class="calculator-btn calculator-btn-equal">=</button>
                             </div>
@@ -955,7 +993,7 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 공학 계산기 -->
                     <div id="calc-scientific" class="calculator-container hidden">
-                        <div class="max-w-md sm:max-w-lg lg:max-w-xl mx-auto">
+                        <div class="max-w-md sm:max-w-lg lg:max-w-xl mx-auto bg-gray-200 p-4 sm:p-6 rounded-2xl shadow-2xl" style="background: linear-gradient(145deg, #e5e7eb, #d1d5db);">
                             <div id="scientific-display" class="calculator-display">0</div>
                             <div class="grid grid-cols-5 gap-3">
                                 <button onclick="clearScientific()" class="calculator-btn calculator-btn-clear">C</button>
@@ -988,7 +1026,8 @@ app.get('/lifestyle/calculator', (c) => {
                                 <button onclick="appendToScientific('-')" class="calculator-btn calculator-btn-operator">-</button>
                                 <button onclick="scientificConstant('pi')" class="calculator-btn">π</button>
                                 
-                                <button onclick="appendToScientific('0')" class="calculator-btn col-span-2">0</button>
+                                <button onclick="appendToScientific('0')" class="calculator-btn">0</button>
+                                <button onclick="appendToScientific('00')" class="calculator-btn">00</button>
                                 <button onclick="appendToScientific('.')" class="calculator-btn">.</button>
                                 <button onclick="appendToScientific('+')" class="calculator-btn calculator-btn-operator">+</button>
                                 <button onclick="calculateScientific()" class="calculator-btn calculator-btn-equal">=</button>
