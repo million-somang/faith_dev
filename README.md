@@ -43,6 +43,37 @@
     - 3열 그리드로 더 큰 카드
     - 넉넉한 여백과 간격
     - 통일된 카드 높이
+  - **검색 기능** ✨NEW
+    - 실시간 검색 (디바운스 적용)
+    - 제목 및 요약 전체 검색
+    - 카테고리 필터와 조합 가능
+  - **다중 카테고리 필터링** ✨NEW
+    - 여러 카테고리 동시 선택 가능
+    - 필터 상태 시각적 표시
+    - 필터 초기화 버튼
+  - **북마크 기능** ✨NEW
+    - 뉴스 북마크 저장/삭제
+    - 사용자별 북마크 관리
+    - 북마크 상태 실시간 표시
+  - **공유 기능** ✨NEW
+    - SNS 공유 (카카오톡, 페이스북, 트위터)
+    - 링크 복사 (클립보드)
+    - 공유 모달 UI
+  - **다크 모드** ✨NEW
+    - 라이트/다크 테마 토글
+    - localStorage 저장
+    - 부드러운 전환 애니메이션
+  - **UI/UX 개선** ✨NEW
+    - 로딩 스피너
+    - 토스트 알림 (성공/오류/정보/경고)
+    - 애니메이션 효과
+
+- **북마크 페이지** ✨NEW
+  - 사용자별 북마크 목록
+  - 카테고리별 필터링
+  - 북마크 삭제 기능
+  - 뉴스 원문 링크
+  - 다크 모드 지원
 
 - **회원가입 기능**
   - 이메일 중복 체크
@@ -179,6 +210,7 @@
 - **로그인 페이지**: `GET /login`
 - **회원가입 페이지**: `GET /signup`
 - **뉴스 페이지**: `GET /news` ✨NEW
+- **북마크 페이지**: `GET /bookmarks` ✨NEW
 - **관리자 대시보드**: `GET /admin` (Lv.6 이상)
 - **회원 관리**: `GET /admin/users` (Lv.6 이상)
 - **뉴스 관리**: `GET /admin/news` (Lv.6 이상) ✨NEW
@@ -227,6 +259,9 @@
 - **뉴스 목록 조회**: `GET /api/news?category=&limit=20`
   - Query: `category` (all/general/politics/economy/tech/sports/entertainment), `limit` (기본 20)
   - Response: `{ success, news, count }`
+- **뉴스 검색**: `GET /api/news/search?q=검색어&category=` ✨NEW
+  - Query: `q` (검색어), `category` (선택), `limit`, `offset`
+  - Response: `{ success, news, count, query }`
 - **뉴스 가져오기**: `GET /api/news/fetch?category=general`
   - Query: `category` (RSS에서 뉴스 가져와 DB에 저장)
   - Response: `{ success, fetched, saved, message }`
@@ -238,6 +273,20 @@
   - Response: `{ success, message, next_run }`
 - **스케줄 실행 기록 업데이트**: `POST /api/news/schedule/update-run`
   - 자동 실행 시 호출되어 last_run 및 next_run 업데이트
+
+#### 북마크 API ✨NEW
+- **북마크 추가**: `POST /api/bookmarks`
+  - Body: `{ userId, title, link, category, source, pubDate }`
+  - Response: `{ success, message }`
+- **북마크 목록**: `GET /api/bookmarks?userId=&category=&limit=50&offset=0`
+  - Query: `userId` (필수), `category` (선택), `limit`, `offset`
+  - Response: `{ success, bookmarks, count }`
+- **북마크 삭제**: `DELETE /api/bookmarks/:id?userId=`
+  - Query: `userId` (필수)
+  - Response: `{ success, message }`
+- **북마크 확인**: `GET /api/bookmarks/check?userId=&link=`
+  - Query: `userId`, `link` (필수)
+  - Response: `{ success, bookmarked, bookmarkId }`
 
 ## 배포 URL
 - **로컬 개발**: https://3000-ipz6c4a8pwyoci65e6lba-cc2fbc16.sandbox.novita.ai
@@ -321,8 +370,23 @@ CREATE TABLE news_schedule (
 );
 ```
 
+### Bookmarks 테이블 ✨NEW
+```sql
+CREATE TABLE bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_title TEXT NOT NULL,
+  news_link TEXT NOT NULL,
+  news_category TEXT NOT NULL,
+  news_source TEXT,
+  news_pub_date TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_link)
+);
+```
+
 ## 스토리지 서비스
-- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정 저장
+- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정, 북마크 저장
 - **로컬 개발**: `.wrangler/state/v3/d1` (자동 생성)
 - **외부 API**: Google News RSS (뉴스 데이터 소스)
 
@@ -655,6 +719,14 @@ webapp/
   - 모바일 우선 접근 방식
   - 터치 친화적 UI (최소 44x44px)
   - Tailwind CSS 반응형 유틸리티 활용
+- **2025-11-06**: 뉴스 고급 기능 전체 적용 ✨NEW
+  - **검색 기능**: 실시간 검색 (디바운스), 제목/요약 검색, 카테고리 조합
+  - **다중 카테고리 필터**: 여러 카테고리 동시 선택, 시각적 상태 표시
+  - **북마크 시스템**: 사용자별 북마크 저장/삭제, 북마크 페이지, 북마크 상태 표시
+  - **공유 기능**: SNS 공유 (카카오톡/페이스북/트위터), 링크 복사, 공유 모달
+  - **다크 모드**: 라이트/다크 테마 토글, localStorage 저장, 부드러운 전환
+  - **UI/UX 개선**: 로딩 스피너, 토스트 알림 (4가지 타입), 애니메이션
+  - **데이터베이스**: 북마크 테이블 추가, 마이그레이션 완료
 
 ## 라이선스
 MIT License
