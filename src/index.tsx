@@ -5621,10 +5621,16 @@ app.post('/api/news/schedule/update-run', async (c) => {
 app.get('/admin/news', async (c) => {
   const { DB } = c.env
   
-  // DB에서 모든 뉴스 가져오기
+  // DB에서 뉴스 통계만 가져오기 (전체 개수)
   let newsFromDB: any[] = []
+  let totalCount = 0
   try {
-    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC').all()
+    // 전체 개수 조회
+    const countResult = await DB.prepare('SELECT COUNT(*) as total FROM news').first()
+    totalCount = countResult?.total || 0
+    
+    // 초기 50개만 가져오기
+    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 50').all()
     newsFromDB = results || []
   } catch (error) {
     console.error('뉴스 조회 오류:', error)
@@ -5697,7 +5703,7 @@ app.get('/admin/news', async (c) => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-500 text-sm">전체 뉴스</p>
-                            <p class="text-2xl font-bold text-gray-800">${newsFromDB.length}</p>
+                            <p class="text-2xl font-bold text-gray-800" id="total-count">${totalCount}</p>
                         </div>
                         <i class="fas fa-newspaper text-3xl text-blue-500"></i>
                     </div>
@@ -5705,28 +5711,28 @@ app.get('/admin/news', async (c) => {
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-500 text-sm">정치</p>
-                            <p class="text-2xl font-bold text-purple-600">${newsFromDB.filter(n => n.category === 'politics').length}</p>
+                            <p class="text-gray-500 text-sm">표시된 뉴스</p>
+                            <p class="text-2xl font-bold text-purple-600" id="loaded-count">${newsFromDB.length}</p>
                         </div>
-                        <i class="fas fa-landmark text-3xl text-purple-500"></i>
+                        <i class="fas fa-list text-3xl text-purple-500"></i>
                     </div>
                 </div>
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-500 text-sm">경제</p>
-                            <p class="text-2xl font-bold text-green-600">${newsFromDB.filter(n => n.category === 'economy').length}</p>
+                            <p class="text-gray-500 text-sm">현재 필터</p>
+                            <p class="text-2xl font-bold text-green-600" id="filter-status">전체</p>
                         </div>
-                        <i class="fas fa-chart-line text-3xl text-green-500"></i>
+                        <i class="fas fa-filter text-3xl text-green-500"></i>
                     </div>
                 </div>
                 <div class="bg-white rounded-lg shadow p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-gray-500 text-sm">기술</p>
-                            <p class="text-2xl font-bold text-indigo-600">${newsFromDB.filter(n => n.category === 'tech').length}</p>
+                            <p class="text-gray-500 text-sm">로딩 상태</p>
+                            <p class="text-2xl font-bold text-indigo-600" id="loading-status">대기</p>
                         </div>
-                        <i class="fas fa-microchip text-3xl text-indigo-500"></i>
+                        <i class="fas fa-spinner text-3xl text-indigo-500" id="loading-icon"></i>
                     </div>
                 </div>
             </div>
@@ -5817,7 +5823,7 @@ app.get('/admin/news', async (c) => {
             <div class="bg-white rounded-lg shadow overflow-hidden">
                 <div class="p-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-bold text-gray-800">뉴스 목록</h3>
+                        <h3 class="text-lg font-bold text-gray-800">뉴스 목록 (무한 스크롤)</h3>
                         <div class="flex items-center space-x-2">
                             <select id="category-filter" onchange="filterNews()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
                                 <option value="all">전체 카테고리</option>
@@ -5831,9 +5837,9 @@ app.get('/admin/news', async (c) => {
                         </div>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto" id="news-container" style="max-height: 600px; overflow-y: auto;">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
+                        <thead class="bg-gray-50 sticky top-0 z-10">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">카테고리</th>
@@ -5882,6 +5888,11 @@ app.get('/admin/news', async (c) => {
                         </button>
                     </div>
                     ` : ''}
+                    <!-- 로딩 인디케이터 -->
+                    <div id="loading-indicator" class="hidden text-center py-4">
+                        <i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i>
+                        <p class="text-sm text-gray-600 mt-2">더 많은 뉴스를 불러오는 중...</p>
+                    </div>
                 </div>
             </div>
         </main>
@@ -5899,6 +5910,95 @@ app.get('/admin/news', async (c) => {
             
             if (userEmail) {
                 document.getElementById('admin-name').textContent = userEmail + ' (레벨 ' + userLevel + ')';
+            }
+            
+            // ==================== 무한 스크롤 관련 변수 ====================
+            let currentOffset = 50; // 이미 50개 로드됨
+            let isLoading = false;
+            let hasMore = true;
+            let currentCategory = 'all';
+            const loadLimit = 50; // 한 번에 50개씩 로드
+            
+            // 무한 스크롤 설정
+            const newsContainer = document.getElementById('news-container');
+            newsContainer.addEventListener('scroll', function() {
+                if (isLoading || !hasMore) return;
+                
+                // 스크롤이 끝에서 200px 이내로 가까워지면 로드
+                if (newsContainer.scrollHeight - newsContainer.scrollTop <= newsContainer.clientHeight + 200) {
+                    loadMoreNews();
+                }
+            });
+            
+            // 더 많은 뉴스 로드
+            async function loadMoreNews() {
+                if (isLoading || !hasMore) return;
+                
+                isLoading = true;
+                document.getElementById('loading-indicator').classList.remove('hidden');
+                document.getElementById('loading-status').textContent = '로딩중';
+                
+                try {
+                    const url = '/api/news?category=' + currentCategory + '&limit=' + loadLimit + '&offset=' + currentOffset;
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.success && data.news && data.news.length > 0) {
+                        const newsTable = document.getElementById('news-table');
+                        
+                        data.news.forEach(news => {
+                            const row = document.createElement('tr');
+                            row.setAttribute('data-category', news.category);
+                            row.className = 'hover:bg-gray-50';
+                            row.innerHTML = \`
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">\${news.id}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                        \${news.category}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                    <a href="\${news.link}" target="_blank" class="hover:text-blue-600">
+                                        \${news.title}
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${news.publisher || '구글 뉴스'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${new Date(news.created_at).toLocaleDateString('ko-KR')}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="\${news.link}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">
+                                        <i class="fas fa-external-link-alt mr-1"></i>
+                                        보기
+                                    </a>
+                                    <button onclick="deleteNews(\${news.id})" class="text-red-600 hover:text-red-900">
+                                        <i class="fas fa-trash mr-1"></i>
+                                        삭제
+                                    </button>
+                                </td>
+                            \`;
+                            newsTable.appendChild(row);
+                        });
+                        
+                        currentOffset += data.news.length;
+                        document.getElementById('loaded-count').textContent = document.querySelectorAll('#news-table tr').length;
+                        
+                        // 50개보다 적게 로드되면 더 이상 없음
+                        if (data.news.length < loadLimit) {
+                            hasMore = false;
+                            document.getElementById('loading-status').textContent = '완료';
+                        } else {
+                            document.getElementById('loading-status').textContent = '대기';
+                        }
+                    } else {
+                        hasMore = false;
+                        document.getElementById('loading-status').textContent = '완료';
+                    }
+                } catch (error) {
+                    console.error('뉴스 로드 오류:', error);
+                    document.getElementById('loading-status').textContent = '오류';
+                } finally {
+                    isLoading = false;
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                }
             }
             
             // 전체 뉴스 가져오기
@@ -5951,18 +6051,20 @@ app.get('/admin/news', async (c) => {
                 }
             }
             
-            // 카테고리 필터
-            function filterNews() {
+            // 카테고리 필터 (무한 스크롤 재설정)
+            async function filterNews() {
                 const category = document.getElementById('category-filter').value;
-                const rows = document.querySelectorAll('#news-table tr');
+                currentCategory = category;
+                currentOffset = 0;
+                hasMore = true;
                 
-                rows.forEach(row => {
-                    if (category === 'all' || row.dataset.category === category) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                // 테이블 초기화
+                document.getElementById('news-table').innerHTML = '';
+                document.getElementById('loaded-count').textContent = '0';
+                document.getElementById('filter-status').textContent = category === 'all' ? '전체' : category;
+                
+                // 첫 50개 로드
+                await loadMoreNews();
             }
             
             // ==================== 스케줄 설정 관련 함수 ====================
