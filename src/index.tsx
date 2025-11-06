@@ -774,11 +774,43 @@ app.get('/lifestyle/calculator', (c) => {
             .calculator-btn {
                 @apply bg-white hover:bg-gray-100 text-gray-800 font-semibold border border-gray-300 rounded-lg shadow transition-all active:scale-95;
                 aspect-ratio: 1 / 1;
-                min-height: 70px;
-                font-size: 1.25rem;
                 display: flex;
                 align-items: center;
                 justify-content: center;
+            }
+            /* 반응형 버튼 크기 */
+            @media (max-width: 640px) {
+                .calculator-btn {
+                    font-size: 1rem;
+                    min-height: 50px;
+                }
+                .calculator-display {
+                    font-size: 1.5rem !important;
+                    padding: 0.75rem !important;
+                    min-height: 50px !important;
+                }
+            }
+            @media (min-width: 641px) and (max-width: 1024px) {
+                .calculator-btn {
+                    font-size: 1.1rem;
+                    min-height: 55px;
+                }
+                .calculator-display {
+                    font-size: 1.75rem !important;
+                    padding: 1rem !important;
+                    min-height: 60px !important;
+                }
+            }
+            @media (min-width: 1025px) {
+                .calculator-btn {
+                    font-size: 1.25rem;
+                    min-height: 60px;
+                }
+                .calculator-display {
+                    font-size: 2rem !important;
+                    padding: 1.25rem !important;
+                    min-height: 70px !important;
+                }
             }
             .calculator-btn-operator {
                 @apply bg-blue-500 hover:bg-blue-600 text-white;
@@ -793,7 +825,7 @@ app.get('/lifestyle/calculator', (c) => {
                 @apply bg-blue-500 text-white;
             }
             .calculator-display {
-                @apply bg-gray-100 p-6 rounded-lg text-right text-3xl font-mono border-2 border-gray-300 mb-6 min-h-[80px] break-all;
+                @apply bg-gray-100 rounded-lg text-right font-mono border-2 border-gray-300 mb-4 break-all;
             }
         </style>
     </head>
@@ -825,7 +857,7 @@ app.get('/lifestyle/calculator', (c) => {
         </div>
 
         <!-- 메인 컨텐츠 -->
-        <div class="max-w-7xl mx-auto px-4 py-8 flex flex-col lg:flex-row gap-6">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
             <!-- 좌측 네비게이션 (데스크톱) -->
             <aside class="lg:w-64 flex-shrink-0">
                 <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
@@ -849,16 +881,16 @@ app.get('/lifestyle/calculator', (c) => {
 
             <!-- 메인 컨텐츠 영역 -->
             <main class="flex-1">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800">
+                <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6">
+                    <div class="flex items-center justify-between mb-3 sm:mb-4">
+                        <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
                             <i class="fas fa-calculator mr-2 text-blue-500"></i>
-                            다기능 계산기
+                            <span class="hidden sm:inline">다기능 </span>계산기
                         </h1>
                     </div>
 
                     <!-- 계산기 탭 -->
-                    <div class="flex flex-wrap gap-2 mb-6 border-b pb-4">
+                    <div class="flex flex-wrap gap-2 mb-4 border-b pb-3">
                         <button onclick="showCalculator('basic')" class="tab-btn tab-active px-4 py-2 rounded-lg font-medium transition" data-tab="basic">
                             <i class="fas fa-calculator mr-1"></i>기본
                         </button>
@@ -887,9 +919,9 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 기본 계산기 -->
                     <div id="calc-basic" class="calculator-container">
-                        <div class="max-w-lg mx-auto">
+                        <div class="max-w-sm sm:max-w-md mx-auto">
                             <div id="basic-display" class="calculator-display">0</div>
-                            <div class="grid grid-cols-4 gap-3">
+                            <div class="grid grid-cols-4 gap-2">
                                 <button onclick="clearBasic()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="backspaceBasic()" class="calculator-btn"><i class="fas fa-backspace"></i></button>
                                 <button onclick="appendToBasic('%')" class="calculator-btn calculator-btn-operator">%</button>
@@ -919,9 +951,9 @@ app.get('/lifestyle/calculator', (c) => {
 
                     <!-- 공학 계산기 -->
                     <div id="calc-scientific" class="calculator-container hidden">
-                        <div class="max-w-3xl mx-auto">
+                        <div class="max-w-md sm:max-w-lg lg:max-w-xl mx-auto">
                             <div id="scientific-display" class="calculator-display">0</div>
-                            <div class="grid grid-cols-5 gap-3">
+                            <div class="grid grid-cols-5 gap-2">
                                 <button onclick="clearScientific()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="scientificOperation('sin')" class="calculator-btn">sin</button>
                                 <button onclick="scientificOperation('cos')" class="calculator-btn">cos</button>
