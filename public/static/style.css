@@ -259,6 +259,16 @@ body {
     background: #555;
 }
 
+/* ==================== 스크롤바 숨김 ==================== */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
 /* ==================== 프린트 스타일 ==================== */
 @media print {
     .no-print {

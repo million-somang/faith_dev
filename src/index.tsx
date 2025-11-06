@@ -73,7 +73,7 @@ function getLifestyleMenu(currentPage: string): string {
     // 추가 메뉴는 여기에
   ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-4"><div class="flex space-x-8 overflow-x-auto">'
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
   
   for (const item of menuItems) {
     const isActive = currentPage === item.path
@@ -96,7 +96,7 @@ function getCommonFooter(): string {
   return `
     <!-- 푸터 -->
     <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
-        <div class="max-w-7xl mx-auto px-4">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <!-- 회사 정보 -->
                 <div>
@@ -151,17 +151,17 @@ function getCommonFooter(): string {
 // ==================== 관리자 네비게이션 헬퍼 함수 ====================
 function getAdminNavigation(currentPage: string): string {
   const menuItems = [
-    { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt' },
-    { path: '/admin/users', label: '회원 관리', icon: 'fa-users' },
-    { path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', hasDropdown: true, dropdownItems: [
+    { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt', shortLabel: '대시보드' },
+    { path: '/admin/users', label: '회원 관리', icon: 'fa-users', shortLabel: '회원' },
+    { path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', shortLabel: '컨텐츠', hasDropdown: true, dropdownItems: [
       { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
     ]},
-    { path: '/admin/stats', label: '통계', icon: 'fa-chart-line' },
-    { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list' },
-    { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell' },
+    { path: '/admin/stats', label: '통계', icon: 'fa-chart-line', shortLabel: '통계' },
+    { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
+    { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
   ]
 
-  let navHtml = '<div class="flex space-x-8">'
+  let navHtml = '<div class="flex overflow-x-auto space-x-2 sm:space-x-4 lg:space-x-8 py-2 scrollbar-hide">'
   
   for (const item of menuItems) {
     const isActive = currentPage === item.path || (item.dropdownItems && item.dropdownItems.some(sub => sub.path === currentPage))
@@ -169,10 +169,11 @@ function getAdminNavigation(currentPage: string): string {
     
     if (item.hasDropdown) {
       navHtml += `
-        <div class="relative group">
-          <button class="px-4 py-4 ${activeClass} flex items-center">
-            <i class="fas ${item.icon} mr-2"></i>
-            ${item.label}
+        <div class="relative group flex-shrink-0">
+          <button class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center text-sm sm:text-base whitespace-nowrap">
+            <i class="fas ${item.icon} sm:mr-2"></i>
+            <span class="hidden sm:inline ml-1">${item.label}</span>
+            <span class="sm:hidden ml-1">${item.shortLabel}</span>
             <i class="fas fa-chevron-down ml-1 text-xs"></i>
           </button>
           <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
@@ -181,7 +182,7 @@ function getAdminNavigation(currentPage: string): string {
       for (const subItem of item.dropdownItems || []) {
         const subActive = currentPage === subItem.path
         navHtml += `
-            <a href="${subItem.path}" class="block px-4 py-3 ${subActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'}">
+            <a href="${subItem.path}" class="block px-4 py-3 ${subActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'} text-sm sm:text-base">
               <i class="fas ${subItem.icon} mr-2"></i>
               ${subItem.label}
             </a>
@@ -194,9 +195,10 @@ function getAdminNavigation(currentPage: string): string {
       `
     } else {
       navHtml += `
-        <a href="${item.path}" class="px-4 py-4 ${activeClass}">
-          <i class="fas ${item.icon} mr-2"></i>
-          ${item.label}
+        <a href="${item.path}" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas ${item.icon} sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">${item.label}</span>
+          <span class="sm:hidden ml-1">${item.shortLabel}</span>
         </a>
       `
     }
@@ -541,7 +543,7 @@ app.get('/', async (c) => {
 
         <!-- 푸터 -->
         <footer class="bg-gradient-to-r from-sky-500 to-cyan-500 text-white mt-16 py-8">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- 회사 정보 -->
                     <div>
@@ -634,7 +636,7 @@ app.get('/lifestyle', (c) => {
         ${getLifestyleMenu('/lifestyle')}
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <div class="text-center py-16">
                 <div class="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
                     <i class="fas fa-home text-4xl text-white"></i>
@@ -1696,7 +1698,7 @@ app.get('/lifestyle/youtube-download', (c) => {
 
         <!-- 광고 배너 -->
         <div class="bg-gradient-to-r from-yellow-400 via-red-400 to-pink-400 py-4">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 <div class="flex items-center justify-center space-x-4">
                     <i class="fas fa-ad text-white text-2xl"></i>
                     <p class="text-white font-bold text-lg">광고 배너 영역 - 여기에 광고가 표시됩니다</p>
@@ -2909,20 +2911,20 @@ app.get('/admin', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
-                    <div class="flex items-center space-x-4">
-                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
-                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
-                            <i class="fas fa-crown mr-1"></i>
-                            관리자
+                    <div class="flex items-center space-x-2 sm:space-x-4">
+                        <a href="/" class="text-lg sm:text-xl lg:text-2xl font-bold">Faith Portal</a>
+                        <span class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-2 sm:px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-0 sm:mr-1"></i>
+                            <span class="hidden xs:inline">관리자</span>
                         </span>
                     </div>
-                    <div id="admin-info" class="flex items-center space-x-4">
-                        <span id="admin-name" class="text-sm"></span>
-                        <a href="/" class="text-sm hover:text-blue-200">
-                            <i class="fas fa-home mr-1"></i>
-                            메인으로
+                    <div id="admin-info" class="flex items-center space-x-2 sm:space-x-4">
+                        <span id="admin-name" class="text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none"></span>
+                        <a href="/" class="text-xs sm:text-sm hover:text-blue-200 whitespace-nowrap">
+                            <i class="fas fa-home mr-0 sm:mr-1"></i>
+                            <span class="hidden sm:inline">메인으로</span>
                         </a>
                     </div>
                 </div>
@@ -2931,80 +2933,82 @@ app.get('/admin', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 통계 카드 -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-sm">전체 회원</p>
-                            <p id="total-users" class="text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm">전체 회원</p>
+                            <p id="total-users" class="text-2xl sm:text-3xl font-bold text-gray-800">0</p>
                         </div>
-                        <div class="bg-blue-100 text-blue-600 rounded-full p-4">
-                            <i class="fas fa-users text-2xl"></i>
+                        <div class="bg-blue-100 text-blue-600 rounded-full p-3 sm:p-4">
+                            <i class="fas fa-users text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-sm">활성 회원</p>
-                            <p id="active-users" class="text-3xl font-bold text-green-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm">활성 회원</p>
+                            <p id="active-users" class="text-2xl sm:text-3xl font-bold text-green-600">0</p>
                         </div>
-                        <div class="bg-green-100 text-green-600 rounded-full p-4">
-                            <i class="fas fa-user-check text-2xl"></i>
+                        <div class="bg-green-100 text-green-600 rounded-full p-3 sm:p-4">
+                            <i class="fas fa-user-check text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-sm">정지 회원</p>
-                            <p id="suspended-users" class="text-3xl font-bold text-orange-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm">정지 회원</p>
+                            <p id="suspended-users" class="text-2xl sm:text-3xl font-bold text-orange-600">0</p>
                         </div>
-                        <div class="bg-orange-100 text-orange-600 rounded-full p-4">
-                            <i class="fas fa-user-lock text-2xl"></i>
+                        <div class="bg-orange-100 text-orange-600 rounded-full p-3 sm:p-4">
+                            <i class="fas fa-user-lock text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-sm">오늘 가입</p>
-                            <p id="today-signups" class="text-3xl font-bold text-purple-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm">오늘 가입</p>
+                            <p id="today-signups" class="text-2xl sm:text-3xl font-bold text-purple-600">0</p>
                         </div>
-                        <div class="bg-purple-100 text-purple-600 rounded-full p-4">
-                            <i class="fas fa-user-plus text-2xl"></i>
+                        <div class="bg-purple-100 text-purple-600 rounded-full p-3 sm:p-4">
+                            <i class="fas fa-user-plus text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- 등급별 회원 분포 -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6 mb-6 sm:mb-8">
+                <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-4">
                     <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
                     회원 등급별 분포
                 </h3>
-                <canvas id="levelChart" style="max-height: 300px;"></canvas>
+                <div class="w-full overflow-hidden">
+                    <canvas id="levelChart" class="w-full" style="max-height: 250px; height: 250px;"></canvas>
+                </div>
             </div>
 
             <!-- 최근 가입 회원 -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">
+            <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                <h3 class="text-base sm:text-lg font-bold text-gray-800 mb-4">
                     <i class="fas fa-clock text-blue-600 mr-2"></i>
                     최근 가입 회원 (10명)
                 </h3>
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto -mx-4 sm:mx-0">
                     <table class="min-w-full">
                         <thead class="bg-gray-50">
                             <tr>
@@ -3149,7 +3153,7 @@ app.get('/admin/users', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-4">
                         <a href="/" class="text-2xl font-bold">Faith Portal</a>
@@ -3171,13 +3175,13 @@ app.get('/admin/users', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin/users')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 검색 및 필터 -->
             <div class="bg-white rounded-lg shadow p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -4427,7 +4431,7 @@ app.get('/admin/stats', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-4">
                         <a href="/" class="text-2xl font-bold">Faith Portal</a>
@@ -4449,13 +4453,13 @@ app.get('/admin/stats', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin/stats')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">
                 <i class="fas fa-chart-line text-blue-600 mr-2"></i>
                 고급 통계 분석
@@ -4688,7 +4692,7 @@ app.get('/admin/logs', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-4">
                         <a href="/" class="text-2xl font-bold">Faith Portal</a>
@@ -4710,13 +4714,13 @@ app.get('/admin/logs', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin/logs')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">
                 <i class="fas fa-history text-blue-600 mr-2"></i>
                 활동 로그
@@ -4887,7 +4891,7 @@ app.get('/admin/notifications', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-4">
                         <a href="/" class="text-2xl font-bold">Faith Portal</a>
@@ -4909,13 +4913,13 @@ app.get('/admin/notifications', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin/notifications')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-bold text-gray-800">
                     <i class="fas fa-bell text-blue-600 mr-2"></i>
@@ -5653,7 +5657,7 @@ app.get('/admin/news', async (c) => {
     <body class="bg-gray-100">
         <!-- 관리자 헤더 -->
         <header class="faith-blue text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
                 <div class="flex justify-between items-center">
                     <div class="flex items-center space-x-4">
                         <a href="/" class="text-2xl font-bold">Faith Portal</a>
@@ -5675,13 +5679,13 @@ app.get('/admin/news', async (c) => {
 
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
                 ${getAdminNavigation('/admin/news')}
             </div>
         </nav>
 
         <!-- 메인 컨텐츠 -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 페이지 타이틀 및 액션 -->
             <div class="flex justify-between items-center mb-6">
                 <div>
