@@ -121,6 +121,114 @@ function getCommonHeader(): string {
   `
 }
 
+// ==================== 공통 인증 스크립트 헬퍼 함수 ====================
+function getCommonAuthScript(): string {
+  return `
+    <script>
+      // ==================== 다크모드 초기화 ====================
+      function initDarkMode() {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        const htmlRoot = document.getElementById('html-root');
+        const icon = document.getElementById('dark-mode-icon');
+        
+        if (htmlRoot && icon) {
+          if (darkMode) {
+            htmlRoot.classList.add('dark');
+            icon.className = 'fas fa-sun';
+          } else {
+            htmlRoot.classList.remove('dark');
+            icon.className = 'fas fa-moon';
+          }
+        }
+      }
+      
+      // ==================== 다크모드 토글 ====================
+      function setupDarkModeToggle() {
+        const toggleBtn = document.getElementById('dark-mode-toggle');
+        if (toggleBtn) {
+          toggleBtn.addEventListener('click', function() {
+            const htmlRoot = document.getElementById('html-root');
+            const icon = document.getElementById('dark-mode-icon');
+            const isDark = htmlRoot.classList.toggle('dark');
+            
+            localStorage.setItem('darkMode', isDark);
+            icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+          });
+        }
+      }
+      
+      // ==================== 로그인 상태 확인 및 메뉴 업데이트 ====================
+      function updateUserMenu() {
+        const token = localStorage.getItem('auth_token');
+        const userEmail = localStorage.getItem('user_email');
+        const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+        
+        if (token && userEmail) {
+          // 현재 버튼들 저장
+          const darkModeBtn = document.getElementById('dark-mode-toggle');
+          const bookmarkLink = document.querySelector('a[href="/bookmarks"]');
+          
+          let menuHTML = '';
+          
+          // 다크모드 버튼 추가
+          if (darkModeBtn) {
+            menuHTML += darkModeBtn.outerHTML;
+          }
+          
+          // 북마크 링크 추가
+          if (bookmarkLink) {
+            menuHTML += bookmarkLink.outerHTML;
+          }
+          
+          // 사용자 이메일 표시
+          menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
+          
+          // 관리자 메뉴 추가 (Lv.6 이상)
+          if (userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-yellow-600 font-medium"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
+          }
+          
+          // 로그아웃 버튼 추가
+          menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded faith-blue-hover"><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
+          
+          // 메뉴 업데이트
+          const userMenu = document.getElementById('user-menu');
+          if (userMenu) {
+            userMenu.innerHTML = menuHTML;
+          }
+          
+          // 다크모드 다시 설정
+          initDarkMode();
+          setupDarkModeToggle();
+          
+          // 로그아웃 이벤트 리스너 추가
+          const logoutBtn = document.getElementById('logout-btn');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+              localStorage.removeItem('auth_token');
+              localStorage.removeItem('user_email');
+              localStorage.removeItem('user_level');
+              localStorage.removeItem('user_id');
+              window.location.href = '/';
+            });
+          }
+        } else {
+          // 로그인하지 않은 상태에서도 다크모드 초기화
+          initDarkMode();
+          setupDarkModeToggle();
+        }
+      }
+      
+      // ==================== 페이지 로드 시 실행 ====================
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateUserMenu);
+      } else {
+        updateUserMenu();
+      }
+    </script>
+  `
+}
+
 // ==================== 공통 푸터 헬퍼 함수 ====================
 function getCommonFooter(): string {
   return `
@@ -549,72 +657,10 @@ app.get('/', async (c) => {
                 }
             });
 
-            // ==================== 다크모드 ====================
-            function initDarkMode() {
-                const darkMode = localStorage.getItem('darkMode') === 'true';
-                if (darkMode) {
-                    document.getElementById('html-root').classList.add('dark');
-                    document.getElementById('dark-mode-icon').className = 'fas fa-sun';
-                } else {
-                    document.getElementById('html-root').classList.remove('dark');
-                    document.getElementById('dark-mode-icon').className = 'fas fa-moon';
-                }
-            }
-            
-            // 다크모드 초기화
-            initDarkMode();
-            
-            document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                const htmlRoot = document.getElementById('html-root');
-                const icon = document.getElementById('dark-mode-icon');
-                const isDark = htmlRoot.classList.toggle('dark');
-                
-                localStorage.setItem('darkMode', isDark);
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            });
-            
-            // ==================== 로그인 상태 확인 ====================
-            const token = localStorage.getItem('auth_token');
-            const userEmail = localStorage.getItem('user_email');
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            if (token && userEmail) {
-                // 로그인된 상태
-                const darkModeBtn = document.getElementById('dark-mode-toggle').outerHTML;
-                const bookmarkBtn = document.querySelector('a[href="/bookmarks"]').outerHTML;
-                let menuHTML = darkModeBtn + bookmarkBtn;
-                menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
-                
-                // 관리자 메뉴 추가
-                if (userLevel >= 6) {
-                    menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-yellow-600 font-medium"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
-                }
-                
-                menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded faith-blue-hover"><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
-                
-                document.getElementById('user-menu').innerHTML = menuHTML;
-                
-                // 다크모드 다시 초기화
-                initDarkMode();
-                document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                    const htmlRoot = document.getElementById('html-root');
-                    const icon = document.getElementById('dark-mode-icon');
-                    const isDark = htmlRoot.classList.toggle('dark');
-                    
-                    localStorage.setItem('darkMode', isDark);
-                    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                });
-
-                // 로그아웃 기능
-                document.getElementById('logout-btn').addEventListener('click', function() {
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_level');
-                    localStorage.removeItem('user_id');
-                    location.reload();
-                });
-            }
+            // 로그인 상태 확인과 다크모드는 공통 스크립트에서 처리
         </script>
+
+        ${getCommonAuthScript()}
 
         ${getCommonFooter()}
 
@@ -2525,37 +2571,10 @@ app.get('/news', async (c) => {
 
         <script>
             // ==================== 전역 변수 ====================
-            const token = localStorage.getItem('auth_token');
-            const userEmail = localStorage.getItem('user_email');
             const userId = localStorage.getItem('user_id') || '1'; // 임시 사용자 ID
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
             let currentCategories = ['all']; // 선택된 카테고리들
             let shareNewsData = {}; // 공유할 뉴스 데이터
             let searchTimeout = null;
-            
-            // ==================== 다크모드 ====================
-            function initDarkMode() {
-                const darkMode = localStorage.getItem('darkMode') === 'true';
-                if (darkMode) {
-                    document.getElementById('html-root').classList.add('dark');
-                    document.getElementById('dark-mode-icon').className = 'fas fa-sun';
-                } else {
-                    document.getElementById('html-root').classList.remove('dark');
-                    document.getElementById('dark-mode-icon').className = 'fas fa-moon';
-                }
-            }
-            
-            document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                const htmlRoot = document.getElementById('html-root');
-                const icon = document.getElementById('dark-mode-icon');
-                const isDark = htmlRoot.classList.toggle('dark');
-                
-                localStorage.setItem('darkMode', isDark);
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                
-                showToast(isDark ? '다크 모드 활성화' : '라이트 모드 활성화', 'success');
-            });
             
             // ==================== 토스트 알림 ====================
             function showToast(message, type = 'info') {
@@ -2577,45 +2596,6 @@ app.get('/news', async (c) => {
                     toast.classList.add('hiding');
                     setTimeout(() => toast.remove(), 300);
                 }, 3000);
-            }
-            
-            // ==================== 로그인 상태 확인 ====================
-            if (token && userEmail) {
-                const darkModeBtn = document.getElementById('dark-mode-toggle').outerHTML;
-                const bookmarkBtn = document.querySelector('a[href="/bookmarks"]').outerHTML;
-                let menuHTML = darkModeBtn + bookmarkBtn;
-                menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
-                
-                if (userLevel >= 6) {
-                    menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-yellow-600 font-medium"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
-                }
-                
-                menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded faith-blue-hover"><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
-                
-                document.getElementById('user-menu').innerHTML = menuHTML;
-                
-                // 다크모드 다시 초기화
-                initDarkMode();
-                document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                    const htmlRoot = document.getElementById('html-root');
-                    const icon = document.getElementById('dark-mode-icon');
-                    const isDark = htmlRoot.classList.toggle('dark');
-                    
-                    localStorage.setItem('darkMode', isDark);
-                    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                    
-                    showToast(isDark ? '다크 모드 활성화' : '라이트 모드 활성화', 'success');
-                });
-
-                document.getElementById('logout-btn').addEventListener('click', function() {
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_level');
-                    localStorage.removeItem('user_id');
-                    location.reload();
-                });
-            } else {
-                initDarkMode();
             }
             
             // ==================== 검색 기능 ====================
@@ -2941,6 +2921,8 @@ app.get('/news', async (c) => {
             });
         </script>
 
+        ${getCommonAuthScript()}
+
     </body>
     </html>
   `)
@@ -3093,65 +3075,7 @@ app.get('/bookmarks', (c) => {
         <script>
             // ==================== 전역 변수 ====================
             const userId = localStorage.getItem('user_id') || '1';
-            const token = localStorage.getItem('auth_token');
-            const userEmail = localStorage.getItem('user_email');
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
             let currentCategory = 'all';
-            
-            // ==================== 다크모드 ====================
-            function initDarkMode() {
-                const darkMode = localStorage.getItem('darkMode') === 'true';
-                if (darkMode) {
-                    document.getElementById('html-root').classList.add('dark');
-                    document.getElementById('dark-mode-icon').className = 'fas fa-sun';
-                }
-            }
-            
-            document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                const htmlRoot = document.getElementById('html-root');
-                const icon = document.getElementById('dark-mode-icon');
-                const isDark = htmlRoot.classList.toggle('dark');
-                
-                localStorage.setItem('darkMode', isDark);
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-            });
-            
-            // ==================== 로그인 상태 확인 ====================
-            if (token && userEmail) {
-                const darkModeBtn = document.getElementById('dark-mode-toggle').outerHTML;
-                const newsBtn = document.querySelector('a[href="/news"]').outerHTML;
-                let menuHTML = darkModeBtn + newsBtn;
-                menuHTML += '<span class="text-xs sm:text-sm text-white px-2">' + userEmail + '님</span>';
-                
-                if (userLevel >= 6) {
-                    menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded hover:bg-yellow-600 font-medium"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
-                }
-                
-                menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm faith-blue text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded faith-blue-hover"><span class="hidden sm:inline">로그아웃</span></button>';
-                
-                document.getElementById('user-menu').innerHTML = menuHTML;
-                
-                initDarkMode();
-                document.getElementById('dark-mode-toggle').addEventListener('click', function() {
-                    const htmlRoot = document.getElementById('html-root');
-                    const icon = document.getElementById('dark-mode-icon');
-                    const isDark = htmlRoot.classList.toggle('dark');
-                    
-                    localStorage.setItem('darkMode', isDark);
-                    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                });
-
-                document.getElementById('logout-btn').addEventListener('click', function() {
-                    localStorage.removeItem('auth_token');
-                    localStorage.removeItem('user_email');
-                    localStorage.removeItem('user_level');
-                    localStorage.removeItem('user_id');
-                    window.location.href = '/';
-                });
-            } else {
-                initDarkMode();
-            }
             
             // ==================== 북마크 로드 ====================
             async function loadBookmarks(category = 'all') {
@@ -3253,6 +3177,9 @@ app.get('/bookmarks', (c) => {
                 }
             });
         </script>
+
+        ${getCommonAuthScript()}
+
     </body>
     </html>
   `)
