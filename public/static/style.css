@@ -1,1 +1,275 @@
-h1 { font-family: Arial, Helvetica, sans-serif; }
+/* Faith Portal - 반응형 스타일 가이드 */
+
+/* ==================== 기본 설정 ==================== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+}
+
+/* ==================== 반응형 컨테이너 ==================== */
+.responsive-container {
+    width: 100%;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+    .responsive-container {
+        padding: 0 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-container {
+        padding: 0 2rem;
+    }
+}
+
+/* ==================== 반응형 그리드 ==================== */
+.responsive-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+    .responsive-grid {
+        gap: 1.5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .responsive-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .responsive-grid-4 {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ==================== 반응형 텍스트 ==================== */
+.responsive-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+@media (min-width: 640px) {
+    .responsive-title {
+        font-size: 1.875rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-title {
+        font-size: 2.25rem;
+    }
+}
+
+.responsive-subtitle {
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+@media (min-width: 640px) {
+    .responsive-subtitle {
+        font-size: 1.25rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-subtitle {
+        font-size: 1.5rem;
+    }
+}
+
+/* ==================== 반응형 테이블 ==================== */
+.responsive-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table {
+    width: 100%;
+    min-width: 640px;
+}
+
+@media (max-width: 640px) {
+    .responsive-table th,
+    .responsive-table td {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* ==================== 반응형 카드 ==================== */
+.responsive-card {
+    background: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (min-width: 640px) {
+    .responsive-card {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-card {
+        padding: 2rem;
+    }
+}
+
+/* ==================== 반응형 버튼 ==================== */
+.responsive-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+    .responsive-btn {
+        padding: 0.625rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+/* ==================== 반응형 네비게이션 ==================== */
+.responsive-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+    .responsive-nav {
+        flex-direction: row;
+        gap: 1rem;
+    }
+}
+
+/* ==================== 모바일 전용 ==================== */
+.mobile-only {
+    display: block;
+}
+
+@media (min-width: 768px) {
+    .mobile-only {
+        display: none;
+    }
+}
+
+/* ==================== 데스크톱 전용 ==================== */
+.desktop-only {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .desktop-only {
+        display: block;
+    }
+}
+
+/* ==================== 반응형 사이드바 ==================== */
+.responsive-sidebar {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 1024px) {
+    .responsive-sidebar {
+        width: 16rem;
+        margin-bottom: 0;
+    }
+}
+
+/* ==================== 반응형 간격 ==================== */
+.responsive-spacing {
+    padding: 1rem;
+}
+
+@media (min-width: 640px) {
+    .responsive-spacing {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-spacing {
+        padding: 2rem;
+    }
+}
+
+/* ==================== 반응형 차트 ==================== */
+.responsive-chart {
+    width: 100%;
+    height: 300px;
+}
+
+@media (min-width: 768px) {
+    .responsive-chart {
+        height: 350px;
+    }
+}
+
+@media (min-width: 1024px) {
+    .responsive-chart {
+        height: 400px;
+    }
+}
+
+/* ==================== 터치 친화적 요소 ==================== */
+@media (max-width: 768px) {
+    button, a, input[type="submit"] {
+        min-height: 44px; /* iOS 권장 터치 영역 */
+        min-width: 44px;
+    }
+}
+
+/* ==================== 스크롤바 스타일 (웹킷 브라우저) ==================== */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* ==================== 프린트 스타일 ==================== */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    body {
+        font-size: 12pt;
+    }
+    
+    .responsive-container {
+        max-width: 100%;
+    }
+}
