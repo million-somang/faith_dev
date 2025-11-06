@@ -761,7 +761,7 @@ app.get('/lifestyle', (c) => {
 app.get('/lifestyle/calculator', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ko">
+    <html lang="ko" id="html-root">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -889,20 +889,8 @@ app.get('/lifestyle/calculator', (c) => {
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </a>
-                <div class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/lifestyle" class="text-xs sm:text-sm text-gray-700 hover:text-cyan-600 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-arrow-left mr-1"></i><span class="hidden sm:inline">생활 홈</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle/calculator')}
@@ -1863,6 +1851,7 @@ app.get('/lifestyle/calculator', (c) => {
         </script>
 
         ${getCommonFooter()}
+        ${getCommonAuthScript()}
 
     </body>
     </html>
