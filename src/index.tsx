@@ -732,7 +732,7 @@ app.get('/game/simple', (c) => {
                         게임 목록
                     </h3>
                     <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                        <a href="/game/simple/tetris" target="_blank" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th mr-2"></i>테트리스
                         </a>
                         <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
@@ -758,7 +758,7 @@ app.get('/game/simple', (c) => {
                         
                         <!-- 게임 카드 그리드 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                            <a href="/game/simple/tetris" class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
+                            <a href="/game/simple/tetris" target="_blank" class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
                                 <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
                                     <i class="fas fa-th text-3xl text-white"></i>
                                 </div>
@@ -844,65 +844,490 @@ app.get('/game/web', (c) => {
 app.get('/game/simple/tetris', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ko" id="html-root">
+    <html lang="ko">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>테트리스 - Faith Portal</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: 'Arial', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .game-container {
+                display: flex;
+                gap: 30px;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 20px;
+                box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            }
+            .main-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+            }
+            canvas {
+                border: 3px solid #333;
+                background: #000;
+                display: block;
+            }
+            .side-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                min-width: 200px;
+            }
+            .info-box {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 20px;
+                border-radius: 10px;
+                color: white;
+            }
+            .info-box h3 {
+                margin-bottom: 10px;
+                font-size: 18px;
+                border-bottom: 2px solid rgba(255,255,255,0.3);
+                padding-bottom: 5px;
+            }
+            .info-box p {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 10px 0;
+            }
+            .next-piece {
+                width: 100px;
+                height: 100px;
+                margin: 10px auto;
+                background: rgba(0,0,0,0.3);
+                border: 2px solid rgba(255,255,255,0.3);
+                border-radius: 5px;
+            }
+            .controls {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 10px;
+                font-size: 14px;
+            }
+            .controls h3 {
+                margin-bottom: 10px;
+                color: #333;
+            }
+            .controls p {
+                margin: 5px 0;
+                color: #666;
+            }
+            button {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+                font-weight: bold;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .start-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .start-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+            .start-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            #gameOver {
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+                text-align: center;
+                z-index: 1000;
+            }
+            #gameOver h2 {
+                color: #e74c3c;
+                font-size: 32px;
+                margin-bottom: 20px;
+            }
+            #gameOver p {
+                font-size: 20px;
+                margin: 10px 0;
+                color: #333;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                z-index: 999;
+            }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+    <body>
+        <div class="overlay" id="overlay"></div>
         
-        ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임', href: '/game/simple'},
-          {label: '테트리스'}
-        ])}
-
-        ${getGameMenu('/game/simple')}
-
-        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 (게임 메뉴) -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
-                        게임 목록
-                    </h3>
-                    <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
-                            <i class="fas fa-th mr-2"></i>테트리스
-                        </a>
-                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-table mr-2"></i>스도쿠
-                        </a>
-                    </nav>
+        <div class="game-container">
+            <div class="main-panel">
+                <canvas id="tetris" width="300" height="600"></canvas>
+            </div>
+            
+            <div class="side-panel">
+                <div class="info-box">
+                    <h3>점수</h3>
+                    <p id="score">0</p>
                 </div>
-            </aside>
-
-            <!-- 메인 컨텐츠 -->
-            <main class="flex-1">
-                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
-                        <i class="fas fa-th text-blue-500 mr-2"></i>테트리스
-                    </h1>
-                    <div class="bg-gray-100 rounded-lg p-8 text-center">
-                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-gray-500">테트리스 게임은 준비 중입니다...</p>
-                    </div>
+                
+                <div class="info-box">
+                    <h3>최고 점수</h3>
+                    <p id="highScore">0</p>
                 </div>
-            </main>
+                
+                <div class="info-box">
+                    <h3>다음 블록</h3>
+                    <canvas id="nextPiece" width="100" height="100" class="next-piece"></canvas>
+                </div>
+                
+                <div class="info-box">
+                    <h3>레벨</h3>
+                    <p id="level">1</p>
+                </div>
+                
+                <button class="start-btn" id="startBtn" onclick="startGame()">게임 시작</button>
+                
+                <div class="controls">
+                    <h3>조작법</h3>
+                    <p>← → : 좌우 이동</p>
+                    <p>↑ : 회전</p>
+                    <p>↓ : 빠르게 내리기</p>
+                    <p>Space : 즉시 내리기</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameOver">
+            <h2>게임 오버!</h2>
+            <p>최종 점수: <span id="finalScore">0</span></p>
+            <p id="newHighScore" style="color: #27ae60; display: none;">🎉 신기록 달성!</p>
+            <button class="start-btn" onclick="restartGame()" style="margin-top: 20px;">다시 시작</button>
         </div>
 
-        ${getCommonFooter()}
-        ${getCommonAuthScript()}
+        <script>
+            const canvas = document.getElementById('tetris');
+            const ctx = canvas.getContext('2d');
+            const nextCanvas = document.getElementById('nextPiece');
+            const nextCtx = nextCanvas.getContext('2d');
+            
+            const BLOCK_SIZE = 30;
+            const COLS = 10;
+            const ROWS = 20;
+            
+            let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+            let score = 0;
+            let highScore = 0;
+            let level = 1;
+            let dropSpeed = 1000;
+            let gameRunning = false;
+            let gameInterval;
+            let currentPiece;
+            let nextPiece;
+            
+            const SHAPES = [
+                [[1,1,1,1]], // I
+                [[1,1],[1,1]], // O
+                [[1,1,1],[0,1,0]], // T
+                [[1,1,1],[1,0,0]], // L
+                [[1,1,1],[0,0,1]], // J
+                [[1,1,0],[0,1,1]], // S
+                [[0,1,1],[1,1,0]]  // Z
+            ];
+            
+            const COLORS = ['#00f0f0', '#f0f000', '#a000f0', '#f0a000', '#0000f0', '#00f000', '#f00000'];
+            
+            // Load high score
+            loadHighScore();
+            
+            function loadHighScore() {
+                const userId = localStorage.getItem('user_id');
+                if (userId) {
+                    fetch(\`/api/tetris/highscore/\${userId}\`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                highScore = data.highScore || 0;
+                                document.getElementById('highScore').textContent = highScore;
+                            }
+                        });
+                }
+            }
+            
+            function saveHighScore() {
+                const userId = localStorage.getItem('user_id');
+                if (userId && score > highScore) {
+                    fetch('/api/tetris/score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, score: score })
+                    }).then(() => {
+                        highScore = score;
+                        document.getElementById('highScore').textContent = highScore;
+                    });
+                }
+            }
+            
+            function createPiece() {
+                const shapeIndex = Math.floor(Math.random() * SHAPES.length);
+                return {
+                    shape: SHAPES[shapeIndex],
+                    color: COLORS[shapeIndex],
+                    x: Math.floor(COLS / 2) - 1,
+                    y: 0
+                };
+            }
+            
+            function drawBlock(ctx, x, y, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            }
+            
+            function drawBoard() {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        if (board[y][x]) {
+                            drawBlock(ctx, x, y, board[y][x]);
+                        }
+                    }
+                }
+            }
+            
+            function drawPiece(piece, context, offsetX = 0, offsetY = 0) {
+                piece.shape.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell) {
+                            if (context === ctx) {
+                                drawBlock(context, piece.x + x, piece.y + y, piece.color);
+                            } else {
+                                // Draw on next piece canvas
+                                context.fillStyle = piece.color;
+                                context.fillRect(
+                                    (x + offsetX) * 20 + 10,
+                                    (y + offsetY) * 20 + 10,
+                                    20, 20
+                                );
+                                context.strokeStyle = '#000';
+                                context.strokeRect(
+                                    (x + offsetX) * 20 + 10,
+                                    (y + offsetY) * 20 + 10,
+                                    20, 20
+                                );
+                            }
+                        }
+                    });
+                });
+            }
+            
+            function collision(piece) {
+                for (let y = 0; y < piece.shape.length; y++) {
+                    for (let x = 0; x < piece.shape[y].length; x++) {
+                        if (piece.shape[y][x]) {
+                            const newX = piece.x + x;
+                            const newY = piece.y + y;
+                            if (newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX])) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            function merge() {
+                currentPiece.shape.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell) {
+                            board[currentPiece.y + y][currentPiece.x + x] = currentPiece.color;
+                        }
+                    });
+                });
+            }
+            
+            function clearLines() {
+                let linesCleared = 0;
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    if (board[y].every(cell => cell !== 0)) {
+                        board.splice(y, 1);
+                        board.unshift(Array(COLS).fill(0));
+                        linesCleared++;
+                        y++;
+                    }
+                }
+                if (linesCleared > 0) {
+                    score += linesCleared * 10;
+                    document.getElementById('score').textContent = score;
+                    
+                    // Speed up every 200 points
+                    const newLevel = Math.floor(score / 200) + 1;
+                    if (newLevel > level) {
+                        level = newLevel;
+                        dropSpeed = Math.max(100, dropSpeed / 1.2);
+                        document.getElementById('level').textContent = level;
+                        clearInterval(gameInterval);
+                        gameInterval = setInterval(drop, dropSpeed);
+                    }
+                }
+            }
+            
+            function rotate() {
+                const rotated = currentPiece.shape[0].map((_, i) =>
+                    currentPiece.shape.map(row => row[i]).reverse()
+                );
+                const previousShape = currentPiece.shape;
+                currentPiece.shape = rotated;
+                if (collision(currentPiece)) {
+                    currentPiece.shape = previousShape;
+                }
+            }
+            
+            function moveDown() {
+                currentPiece.y++;
+                if (collision(currentPiece)) {
+                    currentPiece.y--;
+                    merge();
+                    clearLines();
+                    currentPiece = nextPiece;
+                    nextPiece = createPiece();
+                    if (collision(currentPiece)) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            function moveLeft() {
+                currentPiece.x--;
+                if (collision(currentPiece)) {
+                    currentPiece.x++;
+                }
+            }
+            
+            function moveRight() {
+                currentPiece.x++;
+                if (collision(currentPiece)) {
+                    currentPiece.x--;
+                }
+            }
+            
+            function hardDrop() {
+                while (!collision(currentPiece)) {
+                    currentPiece.y++;
+                }
+                currentPiece.y--;
+                merge();
+                clearLines();
+                currentPiece = nextPiece;
+                nextPiece = createPiece();
+                if (collision(currentPiece)) {
+                    gameOver();
+                }
+            }
+            
+            function drop() {
+                moveDown();
+                draw();
+            }
+            
+            function draw() {
+                drawBoard();
+                drawPiece(currentPiece, ctx);
+                
+                // Draw next piece
+                nextCtx.fillStyle = 'rgba(0,0,0,0.3)';
+                nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+                drawPiece(nextPiece, nextCtx, 0, 0);
+            }
+            
+            function startGame() {
+                board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+                score = 0;
+                level = 1;
+                dropSpeed = 1000;
+                document.getElementById('score').textContent = 0;
+                document.getElementById('level').textContent = 1;
+                currentPiece = createPiece();
+                nextPiece = createPiece();
+                gameRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                gameInterval = setInterval(drop, dropSpeed);
+                draw();
+            }
+            
+            function gameOver() {
+                gameRunning = false;
+                clearInterval(gameInterval);
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('finalScore').textContent = score;
+                
+                if (score > highScore) {
+                    document.getElementById('newHighScore').style.display = 'block';
+                    saveHighScore();
+                } else {
+                    document.getElementById('newHighScore').style.display = 'none';
+                }
+                
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('gameOver').style.display = 'block';
+            }
+            
+            function restartGame() {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('gameOver').style.display = 'none';
+                startGame();
+            }
+            
+            document.addEventListener('keydown', (e) => {
+                if (!gameRunning) return;
+                
+                if (e.key === 'ArrowLeft') {
+                    moveLeft();
+                    draw();
+                } else if (e.key === 'ArrowRight') {
+                    moveRight();
+                    draw();
+                } else if (e.key === 'ArrowDown') {
+                    moveDown();
+                    draw();
+                } else if (e.key === 'ArrowUp') {
+                    rotate();
+                    draw();
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    hardDrop();
+                    draw();
+                }
+            });
+            
+            // Initial draw
+            drawBoard();
+        </script>
     </body>
     </html>
   `)
@@ -945,7 +1370,7 @@ app.get('/game/simple/sudoku', (c) => {
                         게임 목록
                     </h3>
                     <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                        <a href="/game/simple/tetris" target="_blank" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th mr-2"></i>테트리스
                         </a>
                         <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
@@ -3905,6 +4330,46 @@ app.get('/signup', (c) => {
     </body>
     </html>
   `)
+})
+
+// ==================== API: 테트리스 최고 점수 저장 ====================
+app.post('/api/tetris/score', async (c) => {
+  try {
+    const { user_id, score } = await c.req.json()
+    
+    if (!user_id || score === undefined) {
+      return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
+    }
+    
+    // 점수 저장
+    await c.env.DB.prepare(
+      'INSERT INTO tetris_scores (user_id, score) VALUES (?, ?)'
+    ).bind(user_id, score).run()
+    
+    return c.json({ success: true, message: '점수가 저장되었습니다.' })
+  } catch (error) {
+    console.error('테트리스 점수 저장 오류:', error)
+    return c.json({ success: false, message: '점수 저장 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 테트리스 최고 점수 조회 ====================
+app.get('/api/tetris/highscore/:userId', async (c) => {
+  try {
+    const userId = c.req.param('userId')
+    
+    const highScore = await c.env.DB.prepare(
+      'SELECT MAX(score) as high_score FROM tetris_scores WHERE user_id = ?'
+    ).bind(userId).first()
+    
+    return c.json({ 
+      success: true, 
+      highScore: highScore?.high_score || 0 
+    })
+  } catch (error) {
+    console.error('테트리스 최고 점수 조회 오류:', error)
+    return c.json({ success: false, message: '최고 점수 조회 중 오류가 발생했습니다.' }, 500)
+  }
 })
 
 // ==================== API: 회원가입 ====================
