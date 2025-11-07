@@ -732,9 +732,9 @@ app.get('/game/simple', (c) => {
                         게임 목록
                     </h3>
                     <nav class="space-y-2">
-                        <button onclick="openTetrisModal()" class="w-full text-left block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th mr-2"></i>테트리스
-                        </button>
+                        </a>
                         <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-table mr-2"></i>스도쿠
                         </a>
@@ -758,13 +758,13 @@ app.get('/game/simple', (c) => {
                         
                         <!-- 게임 카드 그리드 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                            <button onclick="openTetrisModal()" class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2 cursor-pointer w-full">
+                            <a href="/game/simple/tetris" class="block bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
                                 <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
                                     <i class="fas fa-th text-3xl text-white"></i>
                                 </div>
                                 <h3 class="text-xl font-bold text-white mb-2">테트리스</h3>
                                 <p class="text-blue-100 text-sm">블록을 쌓아 라인을 완성하세요</p>
-                            </button>
+                            </a>
                             
                             <a href="/game/simple/sudoku" class="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
                                 <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
@@ -779,57 +779,8 @@ app.get('/game/simple', (c) => {
             </main>
         </div>
 
-        <!-- 테트리스 모달 -->
-        <div id="tetrisModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" style="display: none;">
-            <div class="relative bg-gray-900 rounded-2xl shadow-2xl" style="width: 95vw; max-width: 900px; height: 90vh;">
-                <button onclick="closeTetrisModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold z-10">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-                <iframe id="tetrisFrame" src="" style="width: 100%; height: 100%; border: none; border-radius: 1rem;"></iframe>
-            </div>
-        </div>
-
         ${getCommonFooter()}
         ${getCommonAuthScript()}
-        
-        <script>
-            function openTetrisModal() {
-                const modal = document.getElementById('tetrisModal');
-                const iframe = document.getElementById('tetrisFrame');
-                
-                // Load tetris game in iframe
-                iframe.src = '/game/simple/tetris';
-                modal.style.display = 'flex';
-                
-                // Focus iframe for keyboard input
-                setTimeout(() => {
-                    iframe.focus();
-                }, 100);
-            }
-            
-            function closeTetrisModal() {
-                const modal = document.getElementById('tetrisModal');
-                const iframe = document.getElementById('tetrisFrame');
-                modal.style.display = 'none';
-                
-                // Clear iframe src to stop the game
-                iframe.src = '';
-            }
-            
-            // Close modal on background click
-            document.getElementById('tetrisModal')?.addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeTetrisModal();
-                }
-            });
-            
-            // Close modal on ESC key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && document.getElementById('tetrisModal').style.display === 'flex') {
-                    closeTetrisModal();
-                }
-            });
-        </script>
     </body>
     </html>
   `)
@@ -1685,9 +1636,9 @@ app.get('/game/simple/sudoku', (c) => {
                         게임 목록
                     </h3>
                     <nav class="space-y-2">
-                        <button onclick="openTetrisModal()" class="w-full text-left block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th mr-2"></i>테트리스
-                        </button>
+                        </a>
                         <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
                             <i class="fas fa-table mr-2"></i>스도쿠
                         </a>
