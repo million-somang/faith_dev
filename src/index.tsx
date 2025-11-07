@@ -103,6 +103,31 @@ function getBreadcrumb(items: Array<{label: string, href?: string}>): string {
   return breadcrumbHtml
 }
 
+// ==================== 게임 메뉴 헬퍼 함수 ====================
+function getGameMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/game/simple', label: '심플 게임', icon: 'fas fa-gamepad' },
+    { path: '/game/web', label: '웹게임', icon: 'fas fa-globe' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage.startsWith(item.path)
+    const activeClass = isActive ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-700 hover:text-purple-600 hover:border-b-2 hover:border-purple-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
 // ==================== 생활 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
   const menuItems = [
@@ -247,7 +272,7 @@ function getCommonFooter(): string {
                     <ul class="space-y-2">
                         <li><a href="/news" class="text-sky-100 hover:text-white text-sm transition">뉴스</a></li>
                         <li><a href="/lifestyle" class="text-sky-100 hover:text-white text-sm transition">생활</a></li>
-                        <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
+                        <li><a href="/game" class="text-sky-100 hover:text-white text-sm transition">게임</a></li>
                         <li><a href="/" class="text-sky-100 hover:text-white text-sm transition">쇼핑</a></li>
                     </ul>
                 </div>
@@ -503,7 +528,7 @@ app.get('/', async (c) => {
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">생활</p>
                     </a>
-                    <a href="/" class="group text-center">
+                    <a href="/game" class="group text-center">
                         <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-sky-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-gamepad text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
@@ -660,6 +685,292 @@ app.get('/', async (c) => {
 
         ${getCommonFooter()}
 
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 게임 페이지 ====================
+// 게임 메인 페이지 (심플 게임으로 리다이렉트)
+app.get('/game', (c) => {
+  return c.redirect('/game/simple')
+})
+
+// 심플 게임 페이지
+app.get('/game/simple', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>심플 게임 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <i class="fas fa-gamepad text-4xl text-white"></i>
+                        </div>
+                        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                            <span class="bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">심플 게임</span>
+                        </h1>
+                        <p class="text-gray-600 text-lg mb-8">
+                            간단하게 즐길 수 있는 브라우저 게임
+                        </p>
+                        
+                        <!-- 게임 카드 그리드 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+                            <a href="/game/simple/tetris" class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                                    <i class="fas fa-th text-3xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white mb-2">테트리스</h3>
+                                <p class="text-blue-100 text-sm">블록을 쌓아 라인을 완성하세요</p>
+                            </a>
+                            
+                            <a href="/game/simple/sudoku" class="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                                    <i class="fas fa-table text-3xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white mb-2">스도쿠</h3>
+                                <p class="text-green-100 text-sm">숫자 퍼즐을 풀어보세요</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 웹게임 페이지
+app.get('/game/web', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>웹게임 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '웹게임'}
+        ])}
+
+        ${getGameMenu('/game/web')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+            <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fas fa-globe text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                        <span class="bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">웹게임</span>
+                    </h1>
+                    <p class="text-gray-600 text-lg mb-8">
+                        다양한 온라인 웹 게임을 즐겨보세요
+                    </p>
+                    <div class="bg-gray-100 rounded-lg p-8 mt-8">
+                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">준비 중입니다...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 테트리스 게임 페이지
+app.get('/game/simple/tetris', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>테트리스 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '테트리스'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-th text-blue-500 mr-2"></i>테트리스
+                    </h1>
+                    <div class="bg-gray-100 rounded-lg p-8 text-center">
+                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">테트리스 게임은 준비 중입니다...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 스도쿠 게임 페이지
+app.get('/game/simple/sudoku', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>스도쿠 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '스도쿠'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
+                        <i class="fas fa-table text-green-500 mr-2"></i>스도쿠
+                    </h1>
+                    <div class="bg-gray-100 rounded-lg p-8 text-center">
+                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">스도쿠 게임은 준비 중입니다...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
     </body>
     </html>
   `)
