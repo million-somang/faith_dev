@@ -996,7 +996,7 @@ app.get('/lifestyle/calculator', (c) => {
                     <!-- 기본 계산기 -->
                     <div id="calc-basic" class="calculator-container">
                         <div class="max-w-sm sm:max-w-md mx-auto bg-gray-200 p-4 sm:p-6 rounded-2xl shadow-2xl" style="background: linear-gradient(145deg, #e5e7eb, #d1d5db);">
-                            <div id="basic-display" class="calculator-display">0</div>
+                            <div id="basic-display" class="calculator-display" style="margin-bottom: 2rem;">0</div>
                             <div class="grid grid-cols-4 gap-3">
                                 <button onclick="clearBasic()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="backspaceBasic()" class="calculator-btn"><i class="fas fa-backspace"></i></button>
@@ -1029,7 +1029,7 @@ app.get('/lifestyle/calculator', (c) => {
                     <!-- 공학 계산기 -->
                     <div id="calc-scientific" class="calculator-container hidden">
                         <div class="max-w-md sm:max-w-lg lg:max-w-xl mx-auto bg-gray-200 p-4 sm:p-6 rounded-2xl shadow-2xl" style="background: linear-gradient(145deg, #e5e7eb, #d1d5db);">
-                            <div id="scientific-display" class="calculator-display">0</div>
+                            <div id="scientific-display" class="calculator-display" style="margin-bottom: 2rem;">0</div>
                             <div class="grid grid-cols-5 gap-3">
                                 <button onclick="clearScientific()" class="calculator-btn calculator-btn-clear">C</button>
                                 <button onclick="scientificOperation('sin')" class="calculator-btn">sin</button>
