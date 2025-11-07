@@ -889,8 +889,274 @@ app.get('/game/web', (c) => {
   `)
 })
 
-// 테트리스 게임 페이지
+// 테트리스 정보 페이지
 app.get('/game/simple/tetris', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>테트리스 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '테트리스'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1 space-y-6">
+                <!-- 게임 헤더 -->
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg p-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl sm:text-4xl font-bold mb-2">
+                                <i class="fas fa-th mr-3"></i>테트리스
+                            </h1>
+                            <p class="text-blue-100">클래식 블록 퍼즐 게임</p>
+                        </div>
+                        <button onclick="openGameModal()" class="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-all shadow-lg">
+                            <i class="fas fa-play mr-2"></i>게임 시작
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 사용법 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-keyboard mr-2 text-blue-500"></i>
+                            조작법
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ←
+                                </div>
+                                <span class="text-gray-700">왼쪽으로 이동</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    →
+                                </div>
+                                <span class="text-gray-700">오른쪽으로 이동</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ↑
+                                </div>
+                                <span class="text-gray-700">블록 회전</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ↓
+                                </div>
+                                <span class="text-gray-700">빠르게 내리기</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs mr-4">
+                                    SPACE
+                                </div>
+                                <span class="text-gray-700">즉시 바닥까지 내리기</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 게임 규칙 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-info-circle mr-2 text-green-500"></i>
+                            게임 규칙
+                        </h2>
+                        <div class="space-y-3 text-gray-700">
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>떨어지는 블록을 회전하고 이동하여 가로줄을 완성하세요</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>한 줄을 완성하면 <strong>10점</strong>을 획득합니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span><strong>200점</strong>마다 레벨이 올라가고 속도가 빨라집니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>다음에 나올 블록을 미리 확인할 수 있습니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>블록이 화면 위까지 쌓이면 게임 오버입니다</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 최고 점수 리스트 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                        최고 점수 랭킹
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200">
+                                    <th class="text-left py-3 px-4 text-gray-600 font-semibold">순위</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-semibold">ID</th>
+                                    <th class="text-right py-3 px-4 text-gray-600 font-semibold">점수</th>
+                                    <th class="text-right py-3 px-4 text-gray-600 font-semibold">달성 날짜</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard">
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <p>로딩 중...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 게임 모달 -->
+        <div id="gameModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" style="display: none;">
+            <div class="relative bg-gray-900 rounded-2xl shadow-2xl" style="width: 95vw; max-width: 900px; height: 90vh;">
+                <button onclick="closeGameModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold z-10">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+                <iframe id="gameFrame" src="" style="width: 100%; height: 100%; border: none; border-radius: 1rem;"></iframe>
+            </div>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+        
+        <script>
+            // Load leaderboard
+            function loadLeaderboard() {
+                fetch('/api/tetris/leaderboard')
+                    .then(res => res.json())
+                    .then(data => {
+                        const tbody = document.getElementById('leaderboard');
+                        if (data.success && data.leaderboard.length > 0) {
+                            tbody.innerHTML = data.leaderboard.map((item, index) => {
+                                const rank = index + 1;
+                                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                                const date = new Date(item.created_at).toLocaleDateString('ko-KR');
+                                const email = item.email.split('@')[0]; // Only show username part
+                                
+                                return \`
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4 font-bold text-lg">\${medal}</td>
+                                        <td class="py-3 px-4 text-gray-700">\${email}</td>
+                                        <td class="py-3 px-4 text-right font-bold text-blue-600">\${item.score.toLocaleString()}</td>
+                                        <td class="py-3 px-4 text-right text-gray-500 text-sm">\${date}</td>
+                                    </tr>
+                                \`;
+                            }).join('');
+                        } else {
+                            tbody.innerHTML = \`
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">
+                                        아직 기록이 없습니다. 첫 번째 기록을 남겨보세요!
+                                    </td>
+                                </tr>
+                            \`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Leaderboard load error:', err);
+                        document.getElementById('leaderboard').innerHTML = \`
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-red-500">
+                                    리더보드를 불러오는 중 오류가 발생했습니다.
+                                </td>
+                            </tr>
+                        \`;
+                    });
+            }
+            
+            function openGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                
+                iframe.src = '/game/simple/tetris/play';
+                modal.style.display = 'flex';
+                
+                setTimeout(() => iframe.focus(), 100);
+            }
+            
+            function closeGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                modal.style.display = 'none';
+                iframe.src = '';
+                
+                // Reload leaderboard in case of new high score
+                loadLeaderboard();
+            }
+            
+            // Close modal on background click
+            document.getElementById('gameModal')?.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeGameModal();
+                }
+            });
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('gameModal').style.display === 'flex') {
+                    closeGameModal();
+                }
+            });
+            
+            // Load leaderboard on page load
+            loadLeaderboard();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// 테트리스 게임 실행 페이지
+app.get('/game/simple/tetris/play', (c) => {
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
@@ -4418,6 +4684,31 @@ app.get('/api/tetris/highscore/:userId', async (c) => {
   } catch (error) {
     console.error('테트리스 최고 점수 조회 오류:', error)
     return c.json({ success: false, message: '최고 점수 조회 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 테트리스 최고 점수 리스트 ====================
+app.get('/api/tetris/leaderboard', async (c) => {
+  try {
+    const { results } = await c.env.DB.prepare(`
+      SELECT 
+        t.id,
+        t.score,
+        t.created_at,
+        u.email
+      FROM tetris_scores t
+      JOIN users u ON t.user_id = u.id
+      ORDER BY t.score DESC
+      LIMIT 10
+    `).all()
+    
+    return c.json({ 
+      success: true, 
+      leaderboard: results || [] 
+    })
+  } catch (error) {
+    console.error('테트리스 리더보드 조회 오류:', error)
+    return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
   }
 })
 
