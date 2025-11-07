@@ -775,7 +775,7 @@ app.get('/lifestyle/calculator', (c) => {
                 justify-content: center;
                 background: linear-gradient(145deg, #ffffff, #e8e8e8);
                 border-radius: 15px;
-                box-shadow: 4px 4px 8px #c5c5c5, -4px -4px 8px #ffffff;
+                box-shadow: 4px 4px 0px #c5c5c5, -4px -4px 0px #ffffff;
                 border: none;
                 cursor: pointer;
             }
@@ -784,7 +784,7 @@ app.get('/lifestyle/calculator', (c) => {
                 transform: translateY(-1px);
             }
             .calculator-btn:active {
-                box-shadow: inset 3px 3px 6px #c5c5c5, inset -3px -3px 6px #ffffff;
+                box-shadow: inset 3px 3px 0px #c5c5c5, inset -3px -3px 0px #ffffff;
                 transform: translateY(0);
             }
             /* 반응형 버튼 크기 */
@@ -824,40 +824,40 @@ app.get('/lifestyle/calculator', (c) => {
             .calculator-btn-operator {
                 background: linear-gradient(145deg, #60a5fa, #3b82f6) !important;
                 color: white !important;
-                box-shadow: 4px 4px 8px #2563eb, -4px -4px 8px #93c5fd !important;
+                box-shadow: 4px 4px 0px #2563eb, -4px -4px 0px #93c5fd !important;
             }
             .calculator-btn-operator:hover {
                 background: linear-gradient(145deg, #3b82f6, #2563eb) !important;
                 transform: translateY(-1px);
             }
             .calculator-btn-operator:active {
-                box-shadow: inset 3px 3px 6px #2563eb, inset -3px -3px 6px #93c5fd !important;
+                box-shadow: inset 3px 3px 0px #2563eb, inset -3px -3px 0px #93c5fd !important;
                 transform: translateY(0);
             }
             .calculator-btn-equal {
                 background: linear-gradient(145deg, #34d399, #10b981) !important;
                 color: white !important;
-                box-shadow: 4px 4px 8px #059669, -4px -4px 8px #6ee7b7 !important;
+                box-shadow: 4px 4px 0px #059669, -4px -4px 0px #6ee7b7 !important;
             }
             .calculator-btn-equal:hover {
                 background: linear-gradient(145deg, #10b981, #059669) !important;
                 transform: translateY(-1px);
             }
             .calculator-btn-equal:active {
-                box-shadow: inset 3px 3px 6px #059669, inset -3px -3px 6px #6ee7b7 !important;
+                box-shadow: inset 3px 3px 0px #059669, inset -3px -3px 0px #6ee7b7 !important;
                 transform: translateY(0);
             }
             .calculator-btn-clear {
                 background: linear-gradient(145deg, #f87171, #ef4444) !important;
                 color: white !important;
-                box-shadow: 4px 4px 8px #dc2626, -4px -4px 8px #fca5a5 !important;
+                box-shadow: 4px 4px 0px #dc2626, -4px -4px 0px #fca5a5 !important;
             }
             .calculator-btn-clear:hover {
                 background: linear-gradient(145deg, #ef4444, #dc2626) !important;
                 transform: translateY(-1px);
             }
             .calculator-btn-clear:active {
-                box-shadow: inset 3px 3px 6px #dc2626, inset -3px -3px 6px #fca5a5 !important;
+                box-shadow: inset 3px 3px 0px #dc2626, inset -3px -3px 0px #fca5a5 !important;
                 transform: translateY(0);
             }
             .tab-active {
@@ -868,7 +868,7 @@ app.get('/lifestyle/calculator', (c) => {
                 background: linear-gradient(145deg, #1f2937, #374151);
                 color: #10b981;
                 border-radius: 12px;
-                box-shadow: inset 3px 3px 6px #0f1419, inset -3px -3px 6px #4b5563;
+                box-shadow: inset 3px 3px 0px #0f1419, inset -3px -3px 0px #4b5563;
                 border: 2px solid #4b5563;
                 font-weight: 600;
                 letter-spacing: 0.05em;
