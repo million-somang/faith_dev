@@ -781,11 +781,11 @@ app.get('/game/simple', (c) => {
 
         <!-- 테트리스 모달 -->
         <div id="tetrisModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" style="display: none;">
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-4" style="max-height: 90vh; overflow-y: auto;">
-                <button onclick="closeTetrisModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-3xl font-bold z-10">
-                    <i class="fas fa-times"></i>
+            <div class="relative bg-gray-900 rounded-2xl shadow-2xl" style="width: 95vw; max-width: 900px; height: 90vh;">
+                <button onclick="closeTetrisModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold z-10">
+                    <i class="fas fa-times-circle"></i>
                 </button>
-                <div id="tetrisContainer"></div>
+                <iframe id="tetrisFrame" src="" style="width: 100%; height: 100%; border: none; border-radius: 1rem;"></iframe>
             </div>
         </div>
 
@@ -795,44 +795,25 @@ app.get('/game/simple', (c) => {
         <script>
             function openTetrisModal() {
                 const modal = document.getElementById('tetrisModal');
-                const container = document.getElementById('tetrisContainer');
+                const iframe = document.getElementById('tetrisFrame');
                 
-                // Fetch tetris game content
-                fetch('/game/simple/tetris')
-                    .then(response => response.text())
-                    .then(html => {
-                        // Extract body content
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const bodyContent = doc.body.innerHTML;
-                        
-                        container.innerHTML = bodyContent;
-                        modal.style.display = 'flex';
-                        
-                        // Execute scripts in the loaded content
-                        const scripts = container.querySelectorAll('script');
-                        scripts.forEach(script => {
-                            const newScript = document.createElement('script');
-                            if (script.src) {
-                                newScript.src = script.src;
-                            } else {
-                                newScript.textContent = script.textContent;
-                            }
-                            document.body.appendChild(newScript);
-                        });
-                    });
+                // Load tetris game in iframe
+                iframe.src = '/game/simple/tetris';
+                modal.style.display = 'flex';
+                
+                // Focus iframe for keyboard input
+                setTimeout(() => {
+                    iframe.focus();
+                }, 100);
             }
             
             function closeTetrisModal() {
                 const modal = document.getElementById('tetrisModal');
-                const container = document.getElementById('tetrisContainer');
+                const iframe = document.getElementById('tetrisFrame');
                 modal.style.display = 'none';
-                container.innerHTML = '';
                 
-                // Stop any running game intervals
-                if (window.gameInterval) {
-                    clearInterval(window.gameInterval);
-                }
+                // Clear iframe src to stop the game
+                iframe.src = '';
             }
             
             // Close modal on background click
@@ -844,7 +825,7 @@ app.get('/game/simple', (c) => {
             
             // Close modal on ESC key
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
+                if (e.key === 'Escape' && document.getElementById('tetrisModal').style.display === 'flex') {
                     closeTetrisModal();
                 }
             });
