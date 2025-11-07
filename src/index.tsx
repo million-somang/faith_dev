@@ -901,7 +901,7 @@ app.get('/lifestyle/calculator', (c) => {
                 @apply bg-blue-500 text-white;
             }
             .calculator-display {
-                @apply text-right font-mono mb-4 break-all;
+                @apply text-right font-mono mb-8 break-all;
                 background: linear-gradient(145deg, #1f2937, #374151);
                 color: #10b981;
                 border-radius: 12px;
