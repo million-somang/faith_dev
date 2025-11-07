@@ -65,6 +65,44 @@ function getTimeAgo(dateString: string): string {
   return past.toLocaleDateString('ko-KR')
 }
 
+// ==================== Breadcrumb 네비게이션 헬퍼 함수 ====================
+function getBreadcrumb(items: Array<{label: string, href?: string}>): string {
+  let breadcrumbHtml = `
+    <nav class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+        <ol class="flex items-center space-x-2 text-sm">
+  `
+  
+  items.forEach((item, index) => {
+    const isLast = index === items.length - 1
+    
+    if (isLast) {
+      // 마지막 항목 (현재 페이지)
+      breadcrumbHtml += `
+        <li class="flex items-center">
+          <span class="text-gray-900 font-semibold">${item.label}</span>
+        </li>
+      `
+    } else {
+      // 링크 항목
+      breadcrumbHtml += `
+        <li class="flex items-center">
+          <a href="${item.href}" class="text-gray-500 hover:text-cyan-600 transition-colors">${item.label}</a>
+          <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+        </li>
+      `
+    }
+  })
+  
+  breadcrumbHtml += `
+        </ol>
+      </div>
+    </nav>
+  `
+  
+  return breadcrumbHtml
+}
+
 // ==================== 생활 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
   const menuItems = [
@@ -645,6 +683,11 @@ app.get('/lifestyle', (c) => {
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
         ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '생활'}
+        ])}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle')}
@@ -870,6 +913,12 @@ app.get('/lifestyle/calculator', (c) => {
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
         ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '생활', href: '/lifestyle'},
+          {label: '계산기'}
+        ])}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle/calculator')}
@@ -1853,23 +1902,14 @@ app.get('/lifestyle/youtube-download', (c) => {
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </a>
-                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
-                    </a>
-                    <a href="/signup" class="faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium faith-blue-hover transition-all">
-                        <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '생활', href: '/lifestyle'},
+          {label: '유튜브 다운로드'}
+        ])}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle/youtube-download')}
@@ -2493,6 +2533,11 @@ app.get('/news', async (c) => {
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
         ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '뉴스'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
@@ -3084,28 +3129,13 @@ app.get('/bookmarks', (c) => {
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
-        <!-- 헤더 -->
-        <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
-            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex justify-between items-center">
-                <a href="/" class="text-lg sm:text-xl md:text-2xl font-bold faith-blue text-white px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg shadow-lg">
-                    <i class="fas fa-infinity mr-1 sm:mr-2"></i><span class="hidden xs:inline">Faith Portal</span><span class="xs:hidden">Faith</span>
-                </a>
-                <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
-                    <!-- 다크모드 토글 -->
-                    <button id="dark-mode-toggle" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600">
-                        <i class="fas fa-moon" id="dark-mode-icon"></i>
-                    </button>
-                    <!-- 뉴스 페이지 링크 -->
-                    <a href="/news" class="text-white hover:text-sky-100 transition-all p-2 rounded-lg hover:bg-sky-600" title="뉴스">
-                        <i class="fas fa-newspaper"></i>
-                    </a>
-                    <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '북마크'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
@@ -3784,6 +3814,11 @@ app.get('/admin', async (c) => {
                 ${getAdminNavigation('/admin')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -4026,6 +4061,12 @@ app.get('/admin/users', async (c) => {
                 ${getAdminNavigation('/admin/users')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자', href: '/admin'},
+          {label: '회원 관리'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -5304,6 +5345,12 @@ app.get('/admin/stats', async (c) => {
                 ${getAdminNavigation('/admin/stats')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자', href: '/admin'},
+          {label: '통계'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -5565,6 +5612,12 @@ app.get('/admin/logs', async (c) => {
                 ${getAdminNavigation('/admin/logs')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자', href: '/admin'},
+          {label: '활동 로그'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -5764,6 +5817,12 @@ app.get('/admin/notifications', async (c) => {
                 ${getAdminNavigation('/admin/notifications')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자', href: '/admin'},
+          {label: '알림 센터'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -6536,6 +6595,12 @@ app.get('/admin/news', async (c) => {
                 ${getAdminNavigation('/admin/news')}
             </div>
         </nav>
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '관리자', href: '/admin'},
+          {label: '뉴스 관리'}
+        ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -7372,8 +7437,13 @@ app.get('/mypage', (c) => {
             }
         </style>
     </head>
-    <body class="bg-gray-50 min-h-screen">
+    <body class="bg-gray-50 min-h-screen" id="html-root">
         ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '마이페이지'}
+        ])}
         
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
             <div class="mb-6">
