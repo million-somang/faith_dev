@@ -8502,17 +8502,9 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
       let description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
                         itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
       
-      // source 태그에서 원본 URL 추출 시도
-      // 패턴 1: url="..." 또는 url='...' (따옴표 있음)
-      let sourceUrl = itemContent.match(/<source[^>]+url=["']([^"']+)["']/)?.[1]
-      // 패턴 2: url=... (따옴표 없음 - 드물지만 가능)
-      if (!sourceUrl) {
-        sourceUrl = itemContent.match(/<source[^>]+url=([^\s>]+)/)?.[1]
-      }
-      
-      if (sourceUrl) {
-        link = sourceUrl // 원본 URL이 있으면 사용
-      }
+      // Google News RSS의 link는 리다이렉트 URL이지만 실제 기사로 자동 리디렉션됨
+      // source 태그의 url 속성에는 도메인만 있으므로 사용하지 않음
+      // link를 그대로 사용 (Google News 리다이렉트 → 실제 기사)
       
       // HTML 엔티티 디코딩
       description = decodeHtmlEntities(description)
