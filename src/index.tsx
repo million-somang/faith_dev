@@ -5133,11 +5133,19 @@ app.get('/news', async (c) => {
             
             // ==================== 뉴스 로드 (무한 스크롤 지원) ====================
             async function loadNews(reset = true) {
-                if (isLoading) return;
-                if (!reset && !hasMore) return;
+                console.log('[loadNews] 시작 - reset:', reset);
+                if (isLoading) {
+                    console.log('[loadNews] 이미 로딩 중');
+                    return;
+                }
+                if (!reset && !hasMore) {
+                    console.log('[loadNews] 더 이상 뉴스 없음');
+                    return;
+                }
                 
                 isLoading = true;
                 const newsGrid = document.getElementById('news-grid');
+                console.log('[loadNews] newsGrid:', newsGrid ? '찾음' : '못찾음');
                 
                 if (reset) {
                     currentPage = 0;
@@ -5159,8 +5167,11 @@ app.get('/news', async (c) => {
                         url += '&category=' + currentCategories[0];
                     }
                     
+                    console.log('[loadNews] API 호출:', url);
                     const response = await fetch(url);
+                    console.log('[loadNews] 응답 받음:', response.status);
                     const data = await response.json();
+                    console.log('[loadNews] 데이터 파싱:', data.success, '뉴스 수:', data.news ? data.news.length : 0);
                     
                     if (data.success) {
                         if (data.news.length > 0) {
@@ -5194,6 +5205,7 @@ app.get('/news', async (c) => {
             
             // ==================== 뉴스 카드 렌더링 (append 모드 지원) ====================
             function renderNewsCards(newsList, append = false) {
+                console.log('[renderNewsCards] 시작 - 뉴스 수:', newsList.length, 'append:', append);
                 const newsGrid = document.getElementById('news-grid');
                 const newsHTML = newsList.map(news => {
                     const title = escapeHtml(news.title);
