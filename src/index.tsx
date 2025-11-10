@@ -5034,6 +5034,10 @@ app.get('/news', async (c) => {
             let currentCategories = ['all']; // 선택된 카테고리들
             let shareNewsData = {}; // 공유할 뉴스 데이터
             let searchTimeout = null;
+            let currentPage = 0; // 현재 페이지 (무한 스크롤용)
+            let isLoading = false; // 로딩 중 플래그
+            let hasMore = true; // 더 불러올 뉴스가 있는지
+            const ITEMS_PER_PAGE = 12; // 페이지당 아이템 수
             
             // ==================== 토스트 알림 ====================
             function showToast(message, type = 'info') {
@@ -5106,7 +5110,9 @@ app.get('/news', async (c) => {
             function clearSearch() {
                 searchInput.value = '';
                 clearSearchBtn.classList.add('hidden');
-                loadNews();
+                currentPage = 0;
+                hasMore = true;
+                loadNews(true);
             }
             
             // ==================== 카테고리 필터 (다중 선택) ====================
@@ -5134,14 +5140,18 @@ app.get('/news', async (c) => {
                 // 버튼 스타일 업데이트
                 updateCategoryButtons();
                 
-                // 뉴스 로드
-                loadNews();
+                // 뉴스 로드 (리셋)
+                currentPage = 0;
+                hasMore = true;
+                loadNews(true);
             }
             
             function clearCategoryFilter() {
                 currentCategories = ['all'];
                 updateCategoryButtons();
-                loadNews();
+                currentPage = 0;
+                hasMore = true;
+                loadNews(true);
                 showToast('필터가 초기화되었습니다', 'info');
             }
             
@@ -5156,13 +5166,30 @@ app.get('/news', async (c) => {
                 });
             }
             
-            // ==================== 뉴스 로드 ====================
-            async function loadNews() {
+            // ==================== 뉴스 로드 (무한 스크롤 지원) ====================
+            async function loadNews(reset = true) {
+                if (isLoading) return;
+                if (!reset && !hasMore) return;
+                
+                isLoading = true;
                 const newsGrid = document.getElementById('news-grid');
-                newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
+                
+                if (reset) {
+                    currentPage = 0;
+                    hasMore = true;
+                    newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
+                } else {
+                    // 로딩 인디케이터 추가
+                    const loadingDiv = document.createElement('div');
+                    loadingDiv.id = 'loading-more';
+                    loadingDiv.className = 'col-span-full text-center py-6';
+                    loadingDiv.innerHTML = '<div class="spinner mx-auto"></div><p class="text-gray-500 mt-2">더 많은 뉴스를 불러오는 중...</p>';
+                    newsGrid.appendChild(loadingDiv);
+                }
                 
                 try {
-                    let url = '/api/news?limit=50';
+                    const offset = currentPage * ITEMS_PER_PAGE;
+                    let url = \`/api/news?limit=\${ITEMS_PER_PAGE}&offset=\${offset}\`;
                     if (!currentCategories.includes('all')) {
                         url += '&category=' + currentCategories[0];
                     }
@@ -5170,21 +5197,40 @@ app.get('/news', async (c) => {
                     const response = await fetch(url);
                     const data = await response.json();
                     
-                    if (data.success && data.news.length > 0) {
-                        renderNewsCards(data.news);
+                    if (data.success) {
+                        if (data.news.length > 0) {
+                            renderNewsCards(data.news, !reset);
+                            currentPage++;
+                            
+                            // 더 불러올 뉴스가 있는지 확인
+                            if (data.news.length < ITEMS_PER_PAGE) {
+                                hasMore = false;
+                            }
+                        } else {
+                            hasMore = false;
+                            if (reset) {
+                                newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스가 없습니다</p></div>';
+                            }
+                        }
                     } else {
-                        newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스가 없습니다</p></div>';
+                        throw new Error('API 응답 실패');
                     }
                 } catch (error) {
                     console.error('뉴스 로드 오류:', error);
-                    newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다</p></div>';
+                    if (reset) {
+                        newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다</p></div>';
+                    }
+                } finally {
+                    isLoading = false;
+                    const loadingMore = document.getElementById('loading-more');
+                    if (loadingMore) loadingMore.remove();
                 }
             }
             
-            // ==================== 뉴스 카드 렌더링 ====================
-            function renderNewsCards(newsList) {
+            // ==================== 뉴스 카드 렌더링 (append 모드 지원) ====================
+            function renderNewsCards(newsList, append = false) {
                 const newsGrid = document.getElementById('news-grid');
-                newsGrid.innerHTML = newsList.map(news => {
+                const newsHTML = newsList.map(news => {
                     const title = escapeHtml(news.title);
                     const link = news.link.replace(/'/g, "\\\\'");
                     const category = escapeHtml(news.category);
@@ -5192,26 +5238,32 @@ app.get('/news', async (c) => {
                     const pubDate = news.pub_date || news.created_at;
                     
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
-                        '<div class="p-6 sm:p-7">' +
+                        '<a href="' + news.link + '" target="_blank" rel="noopener noreferrer" class="block p-6 sm:p-7">' +
                             '<div class="flex items-center justify-between mb-5">' +
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + category + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem] cursor-pointer" onclick="openNewsLink(\'' + link + '\')">' + title + '</h3>' +
+                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">' + title + '</h3>' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisher + '</span>' +
                                 '<div class="flex items-center space-x-3">' +
-                                    '<button onclick="event.stopPropagation(); toggleBookmark(\'' + news.id + '\', \'' + title + '\', \'' + link + '\', \'' + category + '\', \'' + publisher + '\', \'' + pubDate + '\')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
+                                    '<button onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark(\'' + news.id + '\', \'' + title + '\', \'' + link + '\', \'' + category + '\', \'' + publisher + '\', \'' + pubDate + '\')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
                                         '<i class="fas fa-bookmark"></i>' +
                                     '</button>' +
-                                    '<button onclick="event.stopPropagation(); shareNews(\'' + title + '\', \'' + link + '\', \'' + news.id + '\')" class="text-gray-400 hover:text-blue-500" title="공유">' +
+                                    '<button onclick="event.preventDefault(); event.stopPropagation(); shareNews(\'' + title + '\', \'' + link + '\', \'' + news.id + '\')" class="text-gray-400 hover:text-blue-500" title="공유">' +
                                         '<i class="fas fa-share-alt"></i>' +
                                     '</button>' +
                                 '</div>' +
                             '</div>' +
-                        '</div>' +
+                        '</a>' +
                     '</article>';
                 }).join('');
+                
+                if (append) {
+                    newsGrid.insertAdjacentHTML('beforeend', newsHTML);
+                } else {
+                    newsGrid.innerHTML = newsHTML;
+                }
                 
                 // 북마크 상태 확인
                 checkBookmarkStatus();
@@ -5374,9 +5426,32 @@ app.get('/news', async (c) => {
                 setTimeout(() => location.reload(), 1000);
             }
             
+            // ==================== 무한 스크롤 ====================
+            let scrollTimeout = null;
+            window.addEventListener('scroll', function() {
+                // 디바운싱: 스크롤 이벤트가 너무 자주 발생하지 않도록
+                if (scrollTimeout) return;
+                
+                scrollTimeout = setTimeout(() => {
+                    scrollTimeout = null;
+                    
+                    // 페이지 하단에 도달했는지 확인
+                    const scrollHeight = document.documentElement.scrollHeight;
+                    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+                    const clientHeight = document.documentElement.clientHeight;
+                    
+                    // 하단에서 200px 이내에 도달하면 다음 페이지 로드
+                    if (scrollHeight - scrollTop - clientHeight < 200) {
+                        if (!isLoading && hasMore) {
+                            loadNews(false); // append 모드로 로드
+                        }
+                    }
+                }, 200);
+            });
+            
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', function() {
-                loadNews();
+                loadNews(true); // 초기 로드
             });
         </script>
 
