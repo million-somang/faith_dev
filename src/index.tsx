@@ -5154,7 +5154,7 @@ app.get('/news', async (c) => {
                 
                 try {
                     const offset = currentPage * ITEMS_PER_PAGE;
-                    let url = \`/api/news?limit=\${ITEMS_PER_PAGE}&offset=\${offset}\`;
+                    let url = '/api/news?limit=' + ITEMS_PER_PAGE + '&offset=' + offset;
                     if (!currentCategories.includes('all')) {
                         url += '&category=' + currentCategories[0];
                     }
