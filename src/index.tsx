@@ -154,14 +154,122 @@ function getLifestyleMenu(currentPage: string): string {
   return menuHtml
 }
 
+// ==================== 금융 메뉴 헬퍼 함수 ====================
+function getFinanceMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/finance/stock', label: '주식', icon: 'fas fa-chart-line' },
+    { path: '/finance/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
+    { path: '/finance/banking', label: '은행', icon: 'fas fa-university' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-700 hover:text-green-600 hover:border-b-2 hover:border-green-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 엔터 메뉴 헬퍼 함수 ====================
+function getEntertainmentMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/entertainment/music', label: '음악', icon: 'fas fa-music' },
+    { path: '/entertainment/movie', label: '영화', icon: 'fas fa-film' },
+    { path: '/entertainment/celebrity', label: '연예인', icon: 'fas fa-star' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-700 hover:text-pink-600 hover:border-b-2 hover:border-pink-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 교육 메뉴 헬퍼 함수 ====================
+function getEducationMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/education/online', label: '온라인 강의', icon: 'fas fa-laptop' },
+    { path: '/education/language', label: '언어', icon: 'fas fa-language' },
+    { path: '/education/certificate', label: '자격증', icon: 'fas fa-certificate' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:border-b-2 hover:border-indigo-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 쇼핑 메뉴 헬퍼 함수 ====================
+function getShoppingMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/shopping/fashion', label: '패션', icon: 'fas fa-tshirt' },
+    { path: '/shopping/electronics', label: '전자제품', icon: 'fas fa-laptop' },
+    { path: '/shopping/food', label: '식품', icon: 'fas fa-utensils' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-700 hover:text-teal-600 hover:border-b-2 hover:border-teal-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
 // ==================== 공통 헤더 헬퍼 함수 ====================
-function getCommonHeader(): string {
+function getCommonHeader(sectionName: string = ''): string {
+  // 섹션명 표시 (메인 페이지가 아닐 때만)
+  const sectionLabel = sectionName ? `<span class="hidden sm:inline text-white text-lg md:text-xl font-bold ml-2 md:ml-3 opacity-90">| ${sectionName}</span>` : ''
+  
   return `
     <!-- 헤더 -->
     <header class="bg-gradient-to-r from-sky-500 to-cyan-500 backdrop-blur-md shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-2 flex justify-between items-center">
             <a href="/" class="flex items-center">
                 <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
+                ${sectionLabel}
             </a>
             <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
                 <a href="/login" class="text-xs sm:text-sm text-white hover:text-sky-100 font-medium transition-all px-2 sm:px-3">
@@ -371,6 +479,56 @@ function getAdminNavigation(currentPage: string): string {
 app.get('/', async (c) => {
   const { DB } = c.env
   
+  // 자동 뉴스 가져오기 로직
+  try {
+    // 마지막 뉴스 가져온 시간 확인
+    const lastFetch = await DB.prepare('SELECT MAX(created_at) as last_time FROM news').first()
+    const lastFetchTime = lastFetch?.last_time
+    
+    // 마지막 뉴스가 없거나 1시간 이상 지났으면 뉴스 가져오기
+    const shouldFetch = !lastFetchTime || 
+      (new Date().getTime() - new Date(lastFetchTime).getTime()) > (60 * 60 * 1000)
+    
+    if (shouldFetch) {
+      console.log('자동으로 뉴스를 가져옵니다...')
+      
+      // 모든 카테고리에서 뉴스 가져오기
+      const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment']
+      
+      for (const category of categories) {
+        try {
+          const newsItems = await parseGoogleNewsRSS(category)
+          
+          // DB에 저장
+          for (const item of newsItems) {
+            try {
+              await DB.prepare(`
+                INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+              `).bind(
+                item.category,
+                item.title,
+                item.summary,
+                item.link,
+                item.image_url,
+                item.publisher,
+                item.pub_date
+              ).run()
+            } catch (err) {
+              // 중복 뉴스는 무시
+            }
+          }
+        } catch (err) {
+          console.error(category + ' 카테고리 뉴스 가져오기 실패:', err)
+        }
+      }
+      
+      console.log('뉴스 가져오기 완료')
+    }
+  } catch (error) {
+    console.error('자동 뉴스 가져오기 오류:', error)
+  }
+  
   // 최신 뉴스 5개 가져오기
   let latestNews: any[] = []
   try {
@@ -534,25 +692,25 @@ app.get('/', async (c) => {
                         </div>
                         <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">게임</p>
                     </a>
-                    <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-sky-400 to-cyan-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-envelope text-sm sm:text-base md:text-lg text-white"></i>
+                    <a href="/finance" class="group text-center">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-won-sign text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">메일</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">금융</p>
                     </a>
-                    <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-coffee text-sm sm:text-base md:text-lg text-white"></i>
+                    <a href="/entertainment" class="group text-center">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-pink-400 to-rose-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-star text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">카페</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">엔터</p>
                     </a>
-                    <a href="/" class="group text-center">
-                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-cyan-500 to-sky-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
-                            <i class="fas fa-blog text-sm sm:text-base md:text-lg text-white"></i>
+                    <a href="/education" class="group text-center">
+                        <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
+                            <i class="fas fa-graduation-cap text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
-                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">블로그</p>
+                        <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium group-hover:text-sky-600 transition-all">교육</p>
                     </a>
-                    <a href="/" class="group text-center">
+                    <a href="/shopping" class="group text-center">
                         <div class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 mx-auto mb-1 sm:mb-2 rounded-full bg-gradient-to-br from-teal-400 to-cyan-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-all">
                             <i class="fas fa-shopping-bag text-sm sm:text-base md:text-lg text-white"></i>
                         </div>
@@ -713,7 +871,7 @@ app.get('/game/simple', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -803,7 +961,7 @@ app.get('/game/web', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -857,7 +1015,7 @@ app.get('/game/simple/tetris', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -1006,13 +1164,13 @@ app.get('/game/simple/tetris', (c) => {
             </main>
         </div>
 
-        <!-- 게임 모달 -->
-        <div id="gameModal" class="fixed inset-0 bg-black bg-opacity-75 hidden items-center justify-center z-50" style="display: none;">
-            <div class="relative bg-gray-900 rounded-2xl shadow-2xl" style="width: 95vw; max-width: 900px; height: 90vh;">
-                <button onclick="closeGameModal()" class="absolute -top-10 right-0 text-white hover:text-gray-300 text-3xl font-bold z-10">
-                    <i class="fas fa-times-circle"></i>
+        <!-- 게임 모달 (전체화면) -->
+        <div id="gameModal" class="fixed inset-0 bg-black hidden z-50" style="display: none;">
+            <div class="relative w-full h-full flex flex-col">
+                <button onclick="closeGameModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 w-12 h-12 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
                 </button>
-                <iframe id="gameFrame" src="" style="width: 100%; height: 100%; border: none; border-radius: 1rem;"></iframe>
+                <iframe id="gameFrame" src="" class="w-full h-full border-0"></iframe>
             </div>
         </div>
 
@@ -1124,51 +1282,60 @@ app.get('/game/simple/tetris/play', (c) => {
                 align-items: center;
                 min-height: 100vh;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                overflow: hidden;
+                padding: 10px;
             }
             .game-container {
                 display: flex;
-                gap: 30px;
+                flex-direction: row;
+                gap: 20px;
                 padding: 20px;
                 background: rgba(255, 255, 255, 0.95);
                 border-radius: 20px;
                 box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+                max-width: 100%;
+                max-height: 95vh;
             }
             .main-panel {
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
+                gap: 10px;
+                align-items: center;
             }
-            canvas {
+            #tetris {
                 border: 3px solid #333;
                 background: #000;
                 display: block;
+                max-width: 100%;
+                height: auto;
             }
             .side-panel {
                 display: flex;
                 flex-direction: column;
-                gap: 20px;
-                min-width: 200px;
+                gap: 15px;
+                min-width: 180px;
+                max-width: 220px;
             }
             .info-box {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                padding: 20px;
+                padding: 15px;
                 border-radius: 10px;
                 color: white;
             }
             .info-box h3 {
-                margin-bottom: 10px;
-                font-size: 18px;
+                margin-bottom: 8px;
+                font-size: 16px;
                 border-bottom: 2px solid rgba(255,255,255,0.3);
                 padding-bottom: 5px;
             }
             .info-box p {
-                font-size: 24px;
+                font-size: 20px;
                 font-weight: bold;
-                margin: 10px 0;
+                margin: 5px 0;
             }
             .next-piece {
-                width: 100px;
-                height: 100px;
+                width: 80px;
+                height: 80px;
                 margin: 10px auto;
                 background: rgba(0,0,0,0.3);
                 border: 2px solid rgba(255,255,255,0.3);
@@ -1176,22 +1343,23 @@ app.get('/game/simple/tetris/play', (c) => {
             }
             .controls {
                 background: #f8f9fa;
-                padding: 15px;
+                padding: 12px;
                 border-radius: 10px;
-                font-size: 14px;
+                font-size: 12px;
             }
             .controls h3 {
-                margin-bottom: 10px;
+                margin-bottom: 8px;
                 color: #333;
+                font-size: 14px;
             }
             .controls p {
-                margin: 5px 0;
+                margin: 3px 0;
                 color: #666;
             }
             button {
                 width: 100%;
-                padding: 15px;
-                font-size: 16px;
+                padding: 12px;
+                font-size: 14px;
                 font-weight: bold;
                 border: none;
                 border-radius: 10px;
@@ -1242,6 +1410,75 @@ app.get('/game/simple/tetris/play', (c) => {
                 height: 100%;
                 background: rgba(0,0,0,0.7);
                 z-index: 999;
+            }
+            
+            /* 반응형 스타일 */
+            @media (max-width: 768px) {
+                body {
+                    padding: 5px;
+                }
+                .game-container {
+                    flex-direction: column;
+                    gap: 15px;
+                    padding: 15px;
+                    max-height: 100vh;
+                    overflow-y: auto;
+                }
+                #tetris {
+                    width: 240px !important;
+                    height: 480px !important;
+                }
+                .side-panel {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    min-width: 100%;
+                    max-width: 100%;
+                    gap: 10px;
+                }
+                .info-box {
+                    flex: 1;
+                    min-width: calc(50% - 5px);
+                    padding: 10px;
+                }
+                .info-box h3 {
+                    font-size: 14px;
+                }
+                .info-box p {
+                    font-size: 16px;
+                }
+                .controls {
+                    flex: 1 1 100%;
+                    order: 10;
+                }
+                button {
+                    padding: 10px;
+                    font-size: 14px;
+                }
+                .next-piece {
+                    width: 60px;
+                    height: 60px;
+                }
+                #gameOver {
+                    padding: 20px;
+                    width: 90%;
+                    max-width: 300px;
+                }
+                #gameOver h2 {
+                    font-size: 24px;
+                }
+                #gameOver p {
+                    font-size: 16px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                #tetris {
+                    width: 200px !important;
+                    height: 400px !important;
+                }
+                .info-box {
+                    min-width: 100%;
+                }
             }
         </style>
     </head>
@@ -1599,7 +1836,7 @@ app.get('/game/simple/tetris/play', (c) => {
   `)
 })
 
-// 스도쿠 게임 페이지
+// 스도쿠 정보 페이지
 app.get('/game/simple/sudoku', (c) => {
   return c.html(`
     <!DOCTYPE html>
@@ -1613,10 +1850,12 @@ app.get('/game/simple/sudoku', (c) => {
         <style>
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
             .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            .difficulty-tab { cursor: pointer; transition: all 0.3s; }
+            .difficulty-tab.active { background-color: #10b981; color: white; }
         </style>
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -1628,7 +1867,7 @@ app.get('/game/simple/sudoku', (c) => {
         ${getGameMenu('/game/simple')}
 
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <!-- 좌측 사이드바 -->
             <aside class="lg:w-64 flex-shrink-0">
                 <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
                     <h3 class="font-bold text-gray-800 mb-3 flex items-center">
@@ -1647,21 +1886,742 @@ app.get('/game/simple/sudoku', (c) => {
             </aside>
 
             <!-- 메인 컨텐츠 -->
-            <main class="flex-1">
-                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">
-                        <i class="fas fa-table text-green-500 mr-2"></i>스도쿠
-                    </h1>
-                    <div class="bg-gray-100 rounded-lg p-8 text-center">
-                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
-                        <p class="text-gray-500">스도쿠 게임은 준비 중입니다...</p>
+            <main class="flex-1 space-y-6">
+                <!-- 게임 헤더 -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg p-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl sm:text-4xl font-bold mb-2">
+                                <i class="fas fa-table mr-3"></i>스도쿠
+                            </h1>
+                            <p class="text-green-100">클래식 숫자 퍼즐 게임</p>
+                        </div>
+                        <button onclick="openGameModal()" class="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-green-50 transition-all shadow-lg">
+                            <i class="fas fa-play mr-2"></i>게임 시작
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 난이도 탭 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex space-x-2 mb-6">
+                        <button onclick="changeDifficulty('easy')" class="difficulty-tab active px-6 py-3 rounded-lg font-bold" id="tab-easy">
+                            <i class="fas fa-star mr-2"></i>쉬움
+                        </button>
+                        <button onclick="changeDifficulty('medium')" class="difficulty-tab px-6 py-3 rounded-lg font-bold bg-gray-100" id="tab-medium">
+                            <i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i>보통
+                        </button>
+                        <button onclick="changeDifficulty('hard')" class="difficulty-tab px-6 py-3 rounded-lg font-bold bg-gray-100" id="tab-hard">
+                            <i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i>어려움
+                        </button>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                        최고 기록 (<span id="difficulty-label">쉬움</span>)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순위</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">플레이어</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">완료 시간</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 게임 규칙 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-book mr-2 text-green-500"></i>
+                            게임 규칙
+                        </h2>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>9×9 칸에 1부터 9까지 숫자를 채워야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 행에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 열에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 3×3 박스에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-clock text-blue-500 mr-3 mt-1"></i>
+                                <span>가능한 한 빨리 완성하세요!</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 조작법 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-keyboard mr-2 text-green-500"></i>
+                            조작법
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    클릭
+                                </div>
+                                <span class="text-gray-700">빈 칸 선택</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    1-9
+                                </div>
+                                <span class="text-gray-700">숫자 입력 (키보드 또는 버튼)</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold text-xs mr-4">
+                                    DEL
+                                </div>
+                                <span class="text-gray-700">숫자 지우기</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-xs mr-4">
+                                    HINT
+                                </div>
+                                <span class="text-gray-700">힌트 받기 (랜덤 1칸 채워짐)</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
 
+        <!-- 게임 모달 (전체화면) -->
+        <div id="gameModal" class="hidden fixed inset-0 bg-black z-50">
+            <div class="relative w-full h-full flex flex-col">
+                <button onclick="closeGameModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 w-12 h-12 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+                <iframe id="gameFrame" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+
         ${getCommonFooter()}
         ${getCommonAuthScript()}
+
+        <script>
+            let currentDifficulty = 'easy';
+
+            // 페이지 로드 시 리더보드 로드
+            window.addEventListener('DOMContentLoaded', () => {
+                loadLeaderboard();
+            });
+
+            // 난이도 변경
+            function changeDifficulty(difficulty) {
+                currentDifficulty = difficulty;
+                
+                // 탭 활성화 상태 변경
+                document.querySelectorAll('.difficulty-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    tab.classList.add('bg-gray-100');
+                });
+                const activeTab = document.getElementById(\`tab-\${difficulty}\`);
+                activeTab.classList.add('active');
+                activeTab.classList.remove('bg-gray-100');
+
+                // 난이도 라벨 변경
+                const labels = { easy: '쉬움', medium: '보통', hard: '어려움' };
+                document.getElementById('difficulty-label').textContent = labels[difficulty];
+
+                // 리더보드 로드
+                loadLeaderboard();
+            }
+
+            // 리더보드 로드
+            async function loadLeaderboard() {
+                const leaderboardBody = document.getElementById('leaderboard-body');
+                leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>';
+
+                try {
+                    const response = await fetch(\`/api/sudoku/leaderboard/\${currentDifficulty}\`);
+                    const data = await response.json();
+
+                    if (data.success && data.leaderboard && data.leaderboard.length > 0) {
+                        leaderboardBody.innerHTML = data.leaderboard.map((entry, index) => {
+                            const date = new Date(entry.created_at).toLocaleDateString('ko-KR');
+                            const minutes = Math.floor(entry.time / 60);
+                            const seconds = entry.time % 60;
+                            const timeStr = \`\${minutes}분 \${seconds}초\`;
+                            
+                            const rankIcon = index === 0 ? '<i class="fas fa-crown text-yellow-500 mr-1"></i>' :
+                                           index === 1 ? '<i class="fas fa-medal text-gray-400 mr-1"></i>' :
+                                           index === 2 ? '<i class="fas fa-medal text-orange-600 mr-1"></i>' : '';
+                            
+                            return \`
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        \${rankIcon}\${index + 1}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">\${entry.email}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-green-600">\${timeStr}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">\${date}</td>
+                                </tr>
+                            \`;
+                        }).join('');
+                    } else {
+                        leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">아직 기록이 없습니다</td></tr>';
+                    }
+                } catch (error) {
+                    console.error('리더보드 로드 실패:', error);
+                    leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-red-500">리더보드를 불러오는데 실패했습니다</td></tr>';
+                }
+            }
+
+            // 게임 모달 열기
+            function openGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                iframe.src = \`/game/simple/sudoku/play?difficulty=\${currentDifficulty}\`;
+                modal.classList.remove('hidden');
+            }
+
+            // 게임 모달 닫기
+            function closeGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                modal.classList.add('hidden');
+                iframe.src = '';
+                // 리더보드 새로고침 (새로운 기록이 있을 수 있음)
+                loadLeaderboard();
+            }
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeGameModal();
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// 스도쿠 게임 플레이 페이지
+app.get('/game/simple/sudoku/play', (c) => {
+  const difficulty = c.req.query('difficulty') || 'easy';
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>스도쿠 게임</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            body { 
+                margin: 0; 
+                padding: 0; 
+                overflow: auto;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+                min-height: 100vh;
+            }
+            .sudoku-cell {
+                width: 50px;
+                height: 50px;
+                border: 1px solid #cbd5e0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .sudoku-cell:hover:not(.fixed) {
+                background-color: #edf2f7;
+            }
+            .sudoku-cell.selected {
+                background-color: #bee3f8 !important;
+                border: 2px solid #3182ce;
+            }
+            .sudoku-cell.fixed {
+                background-color: #e2e8f0;
+                color: #2d3748;
+                cursor: not-allowed;
+            }
+            .sudoku-cell.user-input {
+                color: #2b6cb0;
+            }
+            .sudoku-cell.error {
+                background-color: #fed7d7 !important;
+                color: #c53030;
+            }
+            .thick-border-right {
+                border-right: 3px solid #2d3748;
+            }
+            .thick-border-bottom {
+                border-bottom: 3px solid #2d3748;
+            }
+            #sudoku-grid {
+                border: 3px solid #2d3748;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+                display: inline-grid;
+                grid-template-columns: repeat(9, 50px);
+                background: white;
+            }
+            .number-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                font-weight: bold;
+                transition: all 0.2s;
+            }
+            .number-btn:hover {
+                transform: scale(1.1);
+            }
+            
+            /* 반응형 스타일 */
+            @media (max-width: 768px) {
+                .sudoku-cell {
+                    width: 38px;
+                    height: 38px;
+                    font-size: 18px;
+                }
+                #sudoku-grid {
+                    grid-template-columns: repeat(9, 38px);
+                }
+                .number-btn {
+                    width: 40px;
+                    height: 40px;
+                    font-size: 16px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                body {
+                    padding: 5px;
+                }
+                .sudoku-cell {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
+                }
+                #sudoku-grid {
+                    grid-template-columns: repeat(9, 32px);
+                    border-width: 2px;
+                }
+                .thick-border-right {
+                    border-right-width: 2px;
+                }
+                .thick-border-bottom {
+                    border-bottom-width: 2px;
+                }
+                .number-btn {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
+                }
+            }
+            
+            @media (max-width: 380px) {
+                .sudoku-cell {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 12px;
+                }
+                #sudoku-grid {
+                    grid-template-columns: repeat(9, 28px);
+                }
+                .number-btn {
+                    width: 28px;
+                    height: 28px;
+                    font-size: 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="flex flex-col items-center justify-center min-h-screen p-4">
+            <!-- 게임 정보 -->
+            <div class="bg-white rounded-xl shadow-lg p-4 mb-4 w-full max-w-2xl">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <div class="text-2xl font-bold text-green-600">
+                            <i class="fas fa-clock mr-2"></i>
+                            <span id="timer">0:00</span>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            난이도: <span id="difficulty-display" class="font-bold">${difficulty === 'easy' ? '쉬움' : difficulty === 'medium' ? '보통' : '어려움'}</span>
+                        </div>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="useHint()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all">
+                            <i class="fas fa-lightbulb mr-1"></i>힌트
+                        </button>
+                        <button onclick="resetGame()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all">
+                            <i class="fas fa-redo mr-1"></i>새 게임
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 스도쿠 그리드 -->
+            <div id="sudoku-grid" class="bg-white rounded-xl inline-block mb-4"></div>
+
+            <!-- 숫자 입력 버튼 -->
+            <div class="bg-white rounded-xl shadow-lg p-4 w-full max-w-2xl">
+                <div class="flex justify-center space-x-2">
+                    <button onclick="inputNumber(1)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">1</button>
+                    <button onclick="inputNumber(2)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">2</button>
+                    <button onclick="inputNumber(3)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">3</button>
+                    <button onclick="inputNumber(4)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">4</button>
+                    <button onclick="inputNumber(5)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">5</button>
+                    <button onclick="inputNumber(6)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">6</button>
+                    <button onclick="inputNumber(7)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">7</button>
+                    <button onclick="inputNumber(8)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">8</button>
+                    <button onclick="inputNumber(9)" class="number-btn bg-green-500 text-white rounded-lg hover:bg-green-600">9</button>
+                    <button onclick="deleteNumber()" class="number-btn bg-red-500 text-white rounded-lg hover:bg-red-600">
+                        <i class="fas fa-backspace"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const DIFFICULTY = '${difficulty}';
+            const GRID_SIZE = 9;
+            const BOX_SIZE = 3;
+            
+            let grid = [];
+            let solution = [];
+            let selectedCell = null;
+            let startTime = null;
+            let timerInterval = null;
+            let isGameComplete = false;
+
+            // 스도쿠 생성 (백트래킹 알고리즘)
+            function generateSudoku() {
+                // 빈 그리드 생성
+                grid = Array(GRID_SIZE).fill(0).map(() => Array(GRID_SIZE).fill(0));
+                
+                // 솔루션 생성
+                fillGrid(grid);
+                solution = grid.map(row => [...row]);
+                
+                // 난이도에 따라 칸 제거
+                const cellsToRemove = DIFFICULTY === 'easy' ? 40 : DIFFICULTY === 'medium' ? 50 : 60;
+                removeCells(cellsToRemove);
+            }
+
+            function fillGrid(grid) {
+                const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+                
+                for (let row = 0; row < GRID_SIZE; row++) {
+                    for (let col = 0; col < GRID_SIZE; col++) {
+                        if (grid[row][col] === 0) {
+                            // 숫자 무작위 섞기
+                            const shuffled = numbers.sort(() => Math.random() - 0.5);
+                            
+                            for (const num of shuffled) {
+                                if (isValid(grid, row, col, num)) {
+                                    grid[row][col] = num;
+                                    
+                                    if (fillGrid(grid)) {
+                                        return true;
+                                    }
+                                    
+                                    grid[row][col] = 0;
+                                }
+                            }
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+
+            function isValid(grid, row, col, num) {
+                // 행 검사
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (grid[row][x] === num) return false;
+                }
+                
+                // 열 검사
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    if (grid[x][col] === num) return false;
+                }
+                
+                // 3x3 박스 검사
+                const boxRow = Math.floor(row / BOX_SIZE) * BOX_SIZE;
+                const boxCol = Math.floor(col / BOX_SIZE) * BOX_SIZE;
+                for (let i = 0; i < BOX_SIZE; i++) {
+                    for (let j = 0; j < BOX_SIZE; j++) {
+                        if (grid[boxRow + i][boxCol + j] === num) return false;
+                    }
+                }
+                
+                return true;
+            }
+
+            function removeCells(count) {
+                let removed = 0;
+                while (removed < count) {
+                    const row = Math.floor(Math.random() * GRID_SIZE);
+                    const col = Math.floor(Math.random() * GRID_SIZE);
+                    if (grid[row][col] !== 0) {
+                        grid[row][col] = 0;
+                        removed++;
+                    }
+                }
+            }
+
+            // 그리드 렌더링
+            function renderGrid() {
+                const gridElement = document.getElementById('sudoku-grid');
+                gridElement.innerHTML = '';
+                
+                for (let row = 0; row < GRID_SIZE; row++) {
+                    for (let col = 0; col < GRID_SIZE; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'sudoku-cell';
+                        
+                        // 두꺼운 테두리 (3x3 박스 구분)
+                        if ((col + 1) % 3 === 0 && col < 8) {
+                            cell.classList.add('thick-border-right');
+                        }
+                        if ((row + 1) % 3 === 0 && row < 8) {
+                            cell.classList.add('thick-border-bottom');
+                        }
+                        
+                        const value = grid[row][col];
+                        if (value !== 0) {
+                            cell.textContent = value;
+                            // 초기 값인지 사용자 입력인지 구분
+                            if (solution[row][col] === value && !cell.dataset.userInput) {
+                                cell.classList.add('fixed');
+                            } else {
+                                cell.classList.add('user-input');
+                            }
+                        }
+                        
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        cell.addEventListener('click', () => selectCell(row, col));
+                        
+                        gridElement.appendChild(cell);
+                    }
+                }
+            }
+
+            // 셀 선택
+            function selectCell(row, col) {
+                // 고정된 셀은 선택 불가
+                const cell = document.querySelector(\`[data-row="\${row}"][data-col="\${col}"]\`);
+                if (cell.classList.contains('fixed')) return;
+                
+                // 이전 선택 해제
+                document.querySelectorAll('.sudoku-cell').forEach(c => c.classList.remove('selected'));
+                
+                // 새로운 셀 선택
+                cell.classList.add('selected');
+                selectedCell = { row, col };
+            }
+
+            // 숫자 입력
+            function inputNumber(num) {
+                if (!selectedCell || isGameComplete) return;
+                
+                const { row, col } = selectedCell;
+                grid[row][col] = num;
+                
+                const cell = document.querySelector(\`[data-row="\${row}"][data-col="\${col}"]\`);
+                cell.textContent = num;
+                cell.classList.add('user-input');
+                cell.dataset.userInput = 'true';
+                
+                // 오류 확인
+                if (solution[row][col] !== num) {
+                    cell.classList.add('error');
+                } else {
+                    cell.classList.remove('error');
+                }
+                
+                // 완성 확인
+                checkCompletion();
+            }
+
+            // 숫자 삭제
+            function deleteNumber() {
+                if (!selectedCell || isGameComplete) return;
+                
+                const { row, col } = selectedCell;
+                const cell = document.querySelector(\`[data-row="\${row}"][data-col="\${col}"]\`);
+                
+                if (cell.classList.contains('fixed')) return;
+                
+                grid[row][col] = 0;
+                cell.textContent = '';
+                cell.classList.remove('error', 'user-input');
+            }
+
+            // 힌트 사용
+            function useHint() {
+                if (isGameComplete) return;
+                
+                // 빈 칸 찾기
+                const emptyCells = [];
+                for (let row = 0; row < GRID_SIZE; row++) {
+                    for (let col = 0; col < GRID_SIZE; col++) {
+                        if (grid[row][col] === 0) {
+                            emptyCells.push({ row, col });
+                        }
+                    }
+                }
+                
+                if (emptyCells.length === 0) return;
+                
+                // 랜덤 빈 칸 선택
+                const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                const { row, col } = randomCell;
+                
+                // 정답 채우기
+                grid[row][col] = solution[row][col];
+                const cell = document.querySelector(\`[data-row="\${row}"][data-col="\${col}"]\`);
+                cell.textContent = solution[row][col];
+                cell.classList.add('user-input');
+                cell.classList.remove('error');
+                
+                // 완성 확인
+                checkCompletion();
+            }
+
+            // 게임 완성 확인
+            function checkCompletion() {
+                for (let row = 0; row < GRID_SIZE; row++) {
+                    for (let col = 0; col < GRID_SIZE; col++) {
+                        if (grid[row][col] !== solution[row][col]) {
+                            return false;
+                        }
+                    }
+                }
+                
+                // 게임 완성!
+                isGameComplete = true;
+                clearInterval(timerInterval);
+                
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                
+                setTimeout(() => {
+                    alert(\`축하합니다! 스도쿠를 완성했습니다!\\n완료 시간: \${formatTime(elapsedTime)}\`);
+                    saveScore(elapsedTime);
+                }, 100);
+                
+                return true;
+            }
+
+            // 타이머 시작
+            function startTimer() {
+                startTime = Date.now();
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    document.getElementById('timer').textContent = formatTime(elapsed);
+                }, 1000);
+            }
+
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return \`\${minutes}:\${secs.toString().padStart(2, '0')}\`;
+            }
+
+            // 점수 저장
+            async function saveScore(time) {
+                const token = localStorage.getItem('auth_token');
+                if (!token) {
+                    alert('로그인이 필요합니다.');
+                    return;
+                }
+
+                try {
+                    // 사용자 정보 가져오기
+                    const userResponse = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    });
+                    const userData = await userResponse.json();
+
+                    if (!userData.success) {
+                        alert('사용자 정보를 가져올 수 없습니다.');
+                        return;
+                    }
+
+                    // 점수 저장
+                    const response = await fetch('/api/sudoku/score', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': \`Bearer \${token}\`
+                        },
+                        body: JSON.stringify({
+                            user_id: userData.user.id,
+                            time: time,
+                            difficulty: DIFFICULTY
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('기록이 저장되었습니다!');
+                    }
+                } catch (error) {
+                    console.error('기록 저장 실패:', error);
+                }
+            }
+
+            // 게임 리셋
+            function resetGame() {
+                if (confirm('새 게임을 시작하시겠습니까?')) {
+                    clearInterval(timerInterval);
+                    isGameComplete = false;
+                    selectedCell = null;
+                    generateSudoku();
+                    renderGrid();
+                    startTimer();
+                }
+            }
+
+            // 키보드 입력
+            document.addEventListener('keydown', (e) => {
+                if (isGameComplete) return;
+                
+                if (e.key >= '1' && e.key <= '9') {
+                    inputNumber(parseInt(e.key));
+                } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                    deleteNumber();
+                }
+            });
+
+            // 게임 초기화
+            generateSudoku();
+            renderGrid();
+            startTimer();
+        </script>
     </body>
     </html>
   `)
@@ -1684,7 +2644,7 @@ app.get('/lifestyle', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Lifestyle')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -1783,6 +2743,374 @@ app.get('/lifestyle', (c) => {
         ${getCommonFooter()}
         ${getCommonAuthScript()}
 
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 금융 페이지 ====================
+app.get('/finance', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>금융 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50" id="html-root">
+        ${getCommonHeader('Finance')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '금융'}
+        ])}
+
+        ${getFinanceMenu('/finance')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-won-sign text-4xl text-white"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                    <span class="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">금융</span> 정보
+                </h1>
+                <p class="text-gray-600 text-lg mb-8">
+                    실시간 금융 정보와 다양한 금융 서비스를 제공합니다
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="/finance/stock" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        주식 정보
+                    </a>
+                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-green-500 hover:text-green-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>
+                        메인으로
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-chart-line text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">주식 정보</h3>
+                    <p class="text-gray-600 mb-4">실시간 주식 시세와 차트를 확인하세요</p>
+                    <a href="/finance/stock" class="text-green-600 hover:text-green-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-exchange-alt text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">환율 정보</h3>
+                    <p class="text-gray-600 mb-4">실시간 환율 정보와 환전 계산기</p>
+                    <a href="/finance/exchange" class="text-green-600 hover:text-green-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-university text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">은행 정보</h3>
+                    <p class="text-gray-600 mb-4">예적금 금리 비교 및 은행 서비스</p>
+                    <a href="/finance/banking" class="text-green-600 hover:text-green-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 엔터 페이지 ====================
+app.get('/entertainment', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>엔터 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-pink-50 via-rose-50 to-red-50" id="html-root">
+        ${getCommonHeader('Entertainment')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '엔터'}
+        ])}
+
+        ${getEntertainmentMenu('/entertainment')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-br from-pink-500 to-rose-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-star text-4xl text-white"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                    <span class="bg-gradient-to-r from-pink-500 to-rose-600 bg-clip-text text-transparent">엔터테인먼트</span>
+                </h1>
+                <p class="text-gray-600 text-lg mb-8">
+                    최신 연예, 음악, 영화 소식을 만나보세요
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="/entertainment/music" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-music mr-2"></i>
+                        음악 차트
+                    </a>
+                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-pink-500 hover:text-pink-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>
+                        메인으로
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-music text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">음악 차트</h3>
+                    <p class="text-gray-600 mb-4">실시간 음악 순위와 최신 음악</p>
+                    <a href="/entertainment/music" class="text-pink-600 hover:text-pink-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-film text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">영화 정보</h3>
+                    <p class="text-gray-600 mb-4">최신 개봉작과 박스오피스 순위</p>
+                    <a href="/entertainment/movie" class="text-pink-600 hover:text-pink-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-star text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">연예인 소식</h3>
+                    <p class="text-gray-600 mb-4">연예인 뉴스와 화제의 스타</p>
+                    <a href="/entertainment/celebrity" class="text-pink-600 hover:text-pink-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 교육 페이지 ====================
+app.get('/education', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>교육 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Education')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '교육'}
+        ])}
+
+        ${getEducationMenu('/education')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-graduation-cap text-4xl text-white"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                    <span class="bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">교육</span> 정보
+                </h1>
+                <p class="text-gray-600 text-lg mb-8">
+                    온라인 강의부터 자격증까지, 다양한 교육 정보를 제공합니다
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="/education/online" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-laptop mr-2"></i>
+                        온라인 강의
+                    </a>
+                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-indigo-500 hover:text-indigo-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>
+                        메인으로
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-laptop text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">온라인 강의</h3>
+                    <p class="text-gray-600 mb-4">다양한 분야의 온라인 강의 정보</p>
+                    <a href="/education/online" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-language text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">언어 학습</h3>
+                    <p class="text-gray-600 mb-4">영어, 중국어 등 외국어 학습 정보</p>
+                    <a href="/education/language" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-certificate text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">자격증</h3>
+                    <p class="text-gray-600 mb-4">자격증 시험 일정 및 학습 자료</p>
+                    <a href="/education/certificate" class="text-indigo-600 hover:text-indigo-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 쇼핑 페이지 ====================
+app.get('/shopping', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>쇼핑 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Shopping')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '쇼핑'}
+        ])}
+
+        ${getShoppingMenu('/shopping')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <div class="text-center py-16">
+                <div class="w-24 h-24 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <i class="fas fa-shopping-bag text-4xl text-white"></i>
+                </div>
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                    <span class="bg-gradient-to-r from-teal-500 to-cyan-600 bg-clip-text text-transparent">쇼핑</span> 정보
+                </h1>
+                <p class="text-gray-600 text-lg mb-8">
+                    다양한 쇼핑 정보와 최저가 비교를 제공합니다
+                </p>
+                <div class="flex justify-center gap-4">
+                    <a href="/shopping/fashion" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-tshirt mr-2"></i>
+                        패션
+                    </a>
+                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-teal-500 hover:text-teal-600 transition-all">
+                        <i class="fas fa-home mr-2"></i>
+                        메인으로
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-tshirt text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">패션</h3>
+                    <p class="text-gray-600 mb-4">의류, 신발, 액세서리 쇼핑 정보</p>
+                    <a href="/shopping/fashion" class="text-teal-600 hover:text-teal-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-laptop text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">전자제품</h3>
+                    <p class="text-gray-600 mb-4">스마트폰, 노트북 등 전자제품</p>
+                    <a href="/shopping/electronics" class="text-teal-600 hover:text-teal-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-utensils text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">식품</h3>
+                    <p class="text-gray-600 mb-4">신선식품, 가공식품 쇼핑</p>
+                    <a href="/shopping/food" class="text-teal-600 hover:text-teal-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
     </body>
     </html>
   `)
@@ -2905,7 +4233,7 @@ app.get('/lifestyle/youtube-download', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
-        ${getCommonHeader()}
+        ${getCommonHeader('Lifestyle')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -3534,7 +4862,7 @@ app.get('/news', async (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
-        ${getCommonHeader()}
+        ${getCommonHeader('News')}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -3613,7 +4941,7 @@ app.get('/news', async (c) => {
             <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
                 ${newsFromDB.length > 0 ? newsFromDB.map(news => `
                     <article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">
-                        <div class="p-6 sm:p-7">
+                        <a href="${news.link}" target="_blank" rel="noopener noreferrer" class="block p-6 sm:p-7">
                             <div class="flex items-center justify-between mb-5">
                                 <span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">
                                     ${news.category}
@@ -3622,7 +4950,7 @@ app.get('/news', async (c) => {
                                     ${new Date(news.created_at).toLocaleDateString('ko-KR')}
                                 </span>
                             </div>
-                            <h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem] cursor-pointer" onclick="openNewsLink('${news.link.replace(/'/g, "\\'")}')">
+                            <h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">
                                 ${news.title}
                             </h3>
                             <div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">
@@ -3632,7 +4960,7 @@ app.get('/news', async (c) => {
                                 </span>
                                 <div class="flex items-center space-x-3">
                                     <button 
-                                        onclick="event.stopPropagation(); toggleBookmark('${news.id}', '${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.category}', '${news.publisher || '구글 뉴스'}', '${news.pub_date || ''}')" 
+                                        onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark('${news.id}', '${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.category}', '${news.publisher || '구글 뉴스'}', '${news.pub_date || ''}')" 
                                         class="bookmark-btn text-gray-400 hover:text-yellow-500" 
                                         data-news-id="${news.id}"
                                         title="북마크"
@@ -3640,7 +4968,7 @@ app.get('/news', async (c) => {
                                         <i class="fas fa-bookmark"></i>
                                     </button>
                                     <button 
-                                        onclick="event.stopPropagation(); shareNews('${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.id}')" 
+                                        onclick="event.preventDefault(); event.stopPropagation(); shareNews('${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.id}')" 
                                         class="text-gray-400 hover:text-blue-500" 
                                         title="공유"
                                     >
@@ -3648,7 +4976,7 @@ app.get('/news', async (c) => {
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                        </a>
                     </article>
                 `).join('') : '<div class="col-span-full text-center py-12"><p class="text-gray-500 text-lg">뉴스를 불러오는 중입니다...</p></div>'}
             </div>
@@ -4659,6 +5987,74 @@ app.get('/api/tetris/leaderboard', async (c) => {
     })
   } catch (error) {
     console.error('테트리스 리더보드 조회 오류:', error)
+    return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 스도쿠 기록 저장 ====================
+app.post('/api/sudoku/score', async (c) => {
+  try {
+    const { user_id, time, difficulty } = await c.req.json()
+    
+    if (!user_id || time === undefined || !difficulty) {
+      return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
+    }
+    
+    await c.env.DB.prepare(
+      'INSERT INTO sudoku_scores (user_id, time, difficulty) VALUES (?, ?, ?)'
+    ).bind(user_id, time, difficulty).run()
+    
+    return c.json({ success: true, message: '기록이 저장되었습니다.' })
+  } catch (error) {
+    console.error('스도쿠 기록 저장 오류:', error)
+    return c.json({ success: false, message: '기록 저장 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 스도쿠 최고 기록 조회 ====================
+app.get('/api/sudoku/besttime/:userId/:difficulty', async (c) => {
+  try {
+    const userId = c.req.param('userId')
+    const difficulty = c.req.param('difficulty')
+    
+    const bestTime = await c.env.DB.prepare(
+      'SELECT MIN(time) as best_time FROM sudoku_scores WHERE user_id = ? AND difficulty = ?'
+    ).bind(userId, difficulty).first()
+    
+    return c.json({ 
+      success: true, 
+      bestTime: bestTime?.best_time || 0 
+    })
+  } catch (error) {
+    console.error('스도쿠 최고 기록 조회 오류:', error)
+    return c.json({ success: false, message: '최고 기록 조회 중 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 스도쿠 리더보드 ====================
+app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
+  try {
+    const difficulty = c.req.param('difficulty')
+    
+    const { results } = await c.env.DB.prepare(`
+      SELECT 
+        s.id,
+        s.time,
+        s.created_at,
+        u.email
+      FROM sudoku_scores s
+      JOIN users u ON s.user_id = u.id
+      WHERE s.difficulty = ?
+      ORDER BY s.time ASC
+      LIMIT 10
+    `).bind(difficulty).all()
+    
+    return c.json({ 
+      success: true, 
+      leaderboard: results || [] 
+    })
+  } catch (error) {
+    console.error('스도쿠 리더보드 조회 오류:', error)
     return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
   }
 })
@@ -7107,7 +8503,13 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
                         itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
       
       // source 태그에서 원본 URL 추출 시도
-      const sourceUrl = itemContent.match(/<source[^>]+url=["']([^"']+)["']/)?.[1]
+      // 패턴 1: url="..." 또는 url='...' (따옴표 있음)
+      let sourceUrl = itemContent.match(/<source[^>]+url=["']([^"']+)["']/)?.[1]
+      // 패턴 2: url=... (따옴표 없음 - 드물지만 가능)
+      if (!sourceUrl) {
+        sourceUrl = itemContent.match(/<source[^>]+url=([^\s>]+)/)?.[1]
+      }
+      
       if (sourceUrl) {
         link = sourceUrl // 원본 URL이 있으면 사용
       }
