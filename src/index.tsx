@@ -4939,46 +4939,11 @@ app.get('/news', async (c) => {
 
             <!-- 뉴스 그리드 -->
             <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                ${newsFromDB.length > 0 ? newsFromDB.map(news => `
-                    <article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">
-                        <a href="${news.link}" target="_blank" rel="noopener noreferrer" class="block p-6 sm:p-7">
-                            <div class="flex items-center justify-between mb-5">
-                                <span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">
-                                    ${news.category}
-                                </span>
-                                <span class="text-xs text-gray-500 font-medium">
-                                    ${new Date(news.created_at).toLocaleDateString('ko-KR')}
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">
-                                ${news.title}
-                            </h3>
-                            <div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">
-                                <span class="font-semibold flex items-center">
-                                    <i class="fas fa-newspaper text-gray-400 mr-2"></i>
-                                    ${news.publisher || '구글 뉴스'}
-                                </span>
-                                <div class="flex items-center space-x-3">
-                                    <button 
-                                        onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark('${news.id}', '${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.category}', '${news.publisher || '구글 뉴스'}', '${news.pub_date || ''}')" 
-                                        class="bookmark-btn text-gray-400 hover:text-yellow-500" 
-                                        data-news-id="${news.id}"
-                                        title="북마크"
-                                    >
-                                        <i class="fas fa-bookmark"></i>
-                                    </button>
-                                    <button 
-                                        onclick="event.preventDefault(); event.stopPropagation(); shareNews('${news.title.replace(/'/g, "\\'")}', '${news.link.replace(/'/g, "\\'")}', '${news.id}')" 
-                                        class="text-gray-400 hover:text-blue-500" 
-                                        title="공유"
-                                    >
-                                        <i class="fas fa-share-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </a>
-                    </article>
-                `).join('') : '<div class="col-span-full text-center py-12"><p class="text-gray-500 text-lg">뉴스를 불러오는 중입니다...</p></div>'}
+                <!-- JavaScript로 동적으로 뉴스 로드됨 -->
+                <div class="col-span-full text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                    <p class="text-gray-500 mt-4 text-lg">뉴스를 불러오는 중...</p>
+                </div>
             </div>
 
             <!-- 새로고침 버튼 -->
