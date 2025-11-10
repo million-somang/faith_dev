@@ -5208,26 +5208,32 @@ app.get('/news', async (c) => {
                 console.log('[renderNewsCards] 시작 - 뉴스 수:', newsList.length, 'append:', append);
                 const newsGrid = document.getElementById('news-grid');
                 const newsHTML = newsList.map(news => {
-                    const title = escapeHtml(news.title);
-                    const link = news.link.replace(/'/g, "\\\\'");
-                    const category = escapeHtml(news.category);
-                    const publisher = escapeHtml(news.publisher || '구글 뉴스');
-                    const pubDate = news.pub_date || news.created_at;
+                    // HTML 표시용 (이스케이프 처리)
+                    const titleDisplay = escapeHtml(news.title);
+                    const categoryDisplay = escapeHtml(news.category);
+                    const publisherDisplay = escapeHtml(news.publisher || '구글 뉴스');
+                    
+                    // JavaScript 함수 파라미터용 (JSON으로 안전하게 이스케이프)
+                    const titleParam = JSON.stringify(news.title);
+                    const linkParam = JSON.stringify(news.link);
+                    const categoryParam = JSON.stringify(news.category);
+                    const publisherParam = JSON.stringify(news.publisher || '구글 뉴스');
+                    const pubDateParam = JSON.stringify(news.pub_date || news.created_at);
                     
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
                         '<a href="' + news.link + '" target="_blank" rel="noopener noreferrer" class="block p-6 sm:p-7">' +
                             '<div class="flex items-center justify-between mb-5">' +
-                                '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + category + '</span>' +
+                                '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">' + title + '</h3>' +
+                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">' + titleDisplay + '</h3>' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
-                                '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisher + '</span>' +
+                                '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisherDisplay + '</span>' +
                                 '<div class="flex items-center space-x-3">' +
-                                    '<button onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark(\'' + news.id + '\', \'' + title + '\', \'' + link + '\', \'' + category + '\', \'' + publisher + '\', \'' + pubDate + '\')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
+                                    '<button onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
                                         '<i class="fas fa-bookmark"></i>' +
                                     '</button>' +
-                                    '<button onclick="event.preventDefault(); event.stopPropagation(); shareNews(\'' + title + '\', \'' + link + '\', \'' + news.id + '\')" class="text-gray-400 hover:text-blue-500" title="공유">' +
+                                    '<button onclick="event.preventDefault(); event.stopPropagation(); shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
                                         '<i class="fas fa-share-alt"></i>' +
                                     '</button>' +
                                 '</div>' +
