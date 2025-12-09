@@ -334,7 +334,7 @@ function getCommonAuthScript(): string {
           
           // 관리자 메뉴 추가 (Lv.6 이상)
           if (userLevel >= 6) {
-            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
+            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자페이지</span><span class="sm:hidden">관리자</span></a>';
           }
           
           // 로그아웃 버튼 추가
