@@ -5261,7 +5261,7 @@ app.get('/news', async (c) => {
                     const linkForAttr = news.link.replace(/'/g, "\\'");
                     
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
-                        '<div class="block p-6 sm:p-7 cursor-pointer" onclick="openNewsInNewTab(\'' + linkForAttr + '\')">' +
+                        '<div class="block p-6 sm:p-7 cursor-pointer news-clickable-area" data-news-url="' + escapeHtml(news.link) + '">' +
                             '<div class="flex items-center justify-between mb-5">' +
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
@@ -5290,8 +5290,24 @@ app.get('/news', async (c) => {
                     newsGrid.innerHTML = newsHTML;
                 }
                 
+                // 뉴스 클릭 이벤트 바인딩
+                attachNewsClickListeners();
+                
                 // 북마크 상태 확인
                 checkBookmarkStatus();
+            }
+            
+            // ==================== 뉴스 클릭 이벤트 리스너 ====================
+            function attachNewsClickListeners() {
+                document.querySelectorAll('.news-clickable-area').forEach(element => {
+                    element.addEventListener('click', function(e) {
+                        const url = this.getAttribute('data-news-url');
+                        if (url) {
+                            console.log('[뉴스 클릭] URL:', url);
+                            openNewsInNewTab(url);
+                        }
+                    });
+                });
             }
             
             // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
