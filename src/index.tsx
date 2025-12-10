@@ -5298,10 +5298,10 @@ app.get('/news', async (c) => {
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
                         '<div class="block p-4 sm:p-5 cursor-pointer news-clickable-area" data-news-url="' + escapeHtml(news.link) + '">' +
                             '<div class="flex items-center justify-between mb-3">' +
-                                '<span class="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
-                                '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
+                                '<span class="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
+                                '<span class="text-sm text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-base sm:text-lg text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
+                            '<h3 class="font-bold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
                         '</div>' +
                         '<div class="px-4 sm:px-5 pb-4 sm:pb-5">' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-200">' +
@@ -5805,10 +5805,10 @@ app.get('/bookmarks', (c) => {
                     return '<article class="bookmark-card bg-white rounded-xl shadow-md overflow-hidden">' +
                         '<div class="p-6 sm:p-7">' +
                             '<div class="flex items-center justify-between mb-5">' +
-                                '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + escapeHtml(bookmark.news_category) + '</span>' +
-                                '<span class="text-xs text-gray-500 font-medium">' + new Date(bookmark.created_at).toLocaleDateString('ko-KR') + '</span>' +
+                                '<span class="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-bold rounded-full shadow-sm">' + escapeHtml(bookmark.news_category) + '</span>' +
+                                '<span class="text-sm text-gray-500 font-medium">' + new Date(bookmark.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-base sm:text-lg text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition cursor-pointer" onclick="openNewsLink(\'' + escapeHtml(bookmark.news_link) + '\')">' + escapeHtml(bookmark.news_title) + '</h3>' +
+                            '<h3 class="font-bold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition cursor-pointer" onclick="openNewsLink(\'' + escapeHtml(bookmark.news_link) + '\')">' + escapeHtml(bookmark.news_title) + '</h3>' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + escapeHtml(bookmark.news_source || '구글 뉴스') + '</span>' +
                                 '<button onclick="deleteBookmark(' + bookmark.id + ')" class="text-red-500 hover:text-red-700 transition" title="삭제">' +
