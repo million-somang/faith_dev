@@ -5264,7 +5264,7 @@ app.get('/news', async (c) => {
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">' + titleDisplay + '</h3>' +
+                            '<h3 class="font-bold text-base sm:text-lg text-gray-900 mb-4 line-clamp-3 leading-snug hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
                         '</div>' +
                         '<div class="px-6 sm:px-7 pb-6 sm:pb-7">' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
@@ -5500,10 +5500,40 @@ app.get('/news', async (c) => {
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', function() {
                 loadNews(true); // 초기 로드
+                initScrollToTop(); // 맨 위로 버튼 초기화
             });
+            
+            // ==================== 맨 위로 버튼 ====================
+            function initScrollToTop() {
+                const scrollBtn = document.getElementById('scroll-to-top');
+                
+                // 스크롤 이벤트 리스너
+                window.addEventListener('scroll', function() {
+                    if (window.scrollY > 300) {
+                        scrollBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        scrollBtn.classList.add('opacity-100');
+                    } else {
+                        scrollBtn.classList.add('opacity-0', 'pointer-events-none');
+                        scrollBtn.classList.remove('opacity-100');
+                    }
+                });
+                
+                // 클릭 이벤트
+                scrollBtn.addEventListener('click', function() {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            }
         </script>
 
         ${getCommonAuthScript()}
+        
+        <!-- 맨 위로 버튼 -->
+        <button id="scroll-to-top" class="fixed bottom-8 left-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
+            <i class="fas fa-arrow-up text-lg group-hover:translate-y-[-2px] transition-transform"></i>
+        </button>
 
     </body>
     </html>
@@ -5681,7 +5711,7 @@ app.get('/bookmarks', (c) => {
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + escapeHtml(bookmark.news_category) + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(bookmark.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
-                            '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem] cursor-pointer" onclick="openNewsLink(\'' + escapeHtml(bookmark.news_link) + '\')">' + escapeHtml(bookmark.news_title) + '</h3>' +
+                            '<h3 class="font-bold text-base sm:text-lg text-gray-900 mb-4 line-clamp-3 leading-snug hover:text-purple-600 transition cursor-pointer" onclick="openNewsLink(\'' + escapeHtml(bookmark.news_link) + '\')">' + escapeHtml(bookmark.news_title) + '</h3>' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + escapeHtml(bookmark.news_source || '구글 뉴스') + '</span>' +
                                 '<button onclick="deleteBookmark(' + bookmark.id + ')" class="text-red-500 hover:text-red-700 transition" title="삭제">' +
@@ -5748,11 +5778,41 @@ app.get('/bookmarks', (c) => {
                     document.getElementById('bookmarks-grid').innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-lock text-gray-300 text-6xl mb-4"></i><p class="text-gray-500 text-lg mb-4">로그인이 필요합니다</p><a href="/login" class="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-cyan-500 text-white rounded-xl font-bold hover:shadow-lg transition-all"><i class="fas fa-sign-in-alt mr-2"></i>로그인하기</a></div>';
                 } else {
                     loadBookmarks();
+                    initScrollToTop(); // 맨 위로 버튼 초기화
                 }
             });
+            
+            // ==================== 맨 위로 버튼 ====================
+            function initScrollToTop() {
+                const scrollBtn = document.getElementById('scroll-to-top');
+                
+                // 스크롤 이벤트 리스너
+                window.addEventListener('scroll', function() {
+                    if (window.scrollY > 300) {
+                        scrollBtn.classList.remove('opacity-0', 'pointer-events-none');
+                        scrollBtn.classList.add('opacity-100');
+                    } else {
+                        scrollBtn.classList.add('opacity-0', 'pointer-events-none');
+                        scrollBtn.classList.remove('opacity-100');
+                    }
+                });
+                
+                // 클릭 이벤트
+                scrollBtn.addEventListener('click', function() {
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            }
         </script>
 
         ${getCommonAuthScript()}
+        
+        <!-- 맨 위로 버튼 -->
+        <button id="scroll-to-top" class="fixed bottom-8 left-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
+            <i class="fas fa-arrow-up text-lg group-hover:translate-y-[-2px] transition-transform"></i>
+        </button>
 
     </body>
     </html>
