@@ -564,6 +564,21 @@ app.get('/', async (c) => {
         <link rel="alternate icon" href="/favicon.ico">
         <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            // Tailwind CDN 경고 숨기기 (개발 환경용)
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'brand-navy': '#1e3a8a',
+                            'brand-blue': '#3b82f6',
+                            'accent-orange': '#f97316',
+                        }
+                    }
+                }
+            }
+        </script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
             * {
@@ -4781,6 +4796,10 @@ app.get('/news', async (c) => {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            // Tailwind CDN 경고 숨기기 (개발 환경용)
+            tailwind.config = { darkMode: 'class' }
+        </script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
@@ -5556,6 +5575,10 @@ app.get('/bookmarks', (c) => {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            // Tailwind CDN 경고 숨기기 (개발 환경용)
+            tailwind.config = { darkMode: 'class' }
+        </script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
             .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }

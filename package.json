@@ -24,8 +24,10 @@
     "@cloudflare/workers-types": "4.20250705.0",
     "@hono/vite-build": "^1.2.0",
     "@hono/vite-dev-server": "^0.18.2",
+    "autoprefixer": "^10.4.22",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.0.0",
     "vite": "^6.3.5",
-    "wrangler": "^4.4.0",
-    "typescript": "^5.0.0"
+    "wrangler": "^4.4.0"
   }
 }
