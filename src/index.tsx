@@ -5257,8 +5257,11 @@ app.get('/news', async (c) => {
                     const publisherParam = JSON.stringify(news.publisher || '구글 뉴스');
                     const pubDateParam = JSON.stringify(news.pub_date || news.created_at);
                     
+                    // HTML 속성용 안전한 링크 (작은따옴표로 감싸기 위해 작은따옴표를 이스케이프)
+                    const linkForAttr = news.link.replace(/'/g, "\\'");
+                    
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
-                        '<div class="block p-6 sm:p-7 cursor-pointer" onclick="openNewsInNewTab(' + linkParam + ')">' +
+                        '<div class="block p-6 sm:p-7 cursor-pointer" onclick="openNewsInNewTab(\'' + linkForAttr + '\')">' +
                             '<div class="flex items-center justify-between mb-5">' +
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
