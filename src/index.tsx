@@ -563,9 +563,21 @@ app.get('/', async (c) => {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
         <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <script>
-            // Tailwind CDN 경고 숨기기 (개발 환경용)
             tailwind.config = {
                 darkMode: 'class',
                 theme: {
@@ -4795,9 +4807,21 @@ app.get('/news', async (c) => {
         <title>뉴스 - Faith Portal</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <script>
-            // Tailwind CDN 경고 숨기기 (개발 환경용)
             tailwind.config = { darkMode: 'class' }
         </script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
@@ -5574,9 +5598,21 @@ app.get('/bookmarks', (c) => {
         <title>북마크 - Faith Portal</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <script>
-            // Tailwind CDN 경고 숨기기 (개발 환경용)
             tailwind.config = { darkMode: 'class' }
         </script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
