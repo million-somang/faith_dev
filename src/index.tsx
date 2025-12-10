@@ -5295,16 +5295,6 @@ app.get('/news', async (c) => {
                     const categoryDisplay = escapeHtml(news.category);
                     const publisherDisplay = escapeHtml(news.publisher || '구글 뉴스');
                     
-                    // JavaScript 함수 파라미터용 (JSON으로 안전하게 이스케이프)
-                    const titleParam = JSON.stringify(news.title);
-                    const linkParam = JSON.stringify(news.link);
-                    const categoryParam = JSON.stringify(news.category);
-                    const publisherParam = JSON.stringify(news.publisher || '구글 뉴스');
-                    const pubDateParam = JSON.stringify(news.pub_date || news.created_at);
-                    
-                    // HTML 속성용 안전한 링크 (작은따옴표로 감싸기 위해 작은따옴표를 이스케이프)
-                    const linkForAttr = news.link.replace(/'/g, "\\'");
-                    
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
                         '<div class="block p-4 sm:p-5 cursor-pointer news-clickable-area" data-news-url="' + escapeHtml(news.link) + '">' +
                             '<div class="flex items-center justify-between mb-3">' +
@@ -5317,10 +5307,21 @@ app.get('/news', async (c) => {
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisherDisplay + '</span>' +
                                 '<div class="flex items-center space-x-3">' +
-                                    '<button onclick="toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
+                                    '<button class="bookmark-btn text-gray-400 hover:text-yellow-500" ' +
+                                        'data-news-id="' + news.id + '" ' +
+                                        'data-news-title="' + escapeHtml(news.title) + '" ' +
+                                        'data-news-link="' + escapeHtml(news.link) + '" ' +
+                                        'data-news-category="' + escapeHtml(news.category) + '" ' +
+                                        'data-news-publisher="' + escapeHtml(news.publisher || '구글 뉴스') + '" ' +
+                                        'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '" ' +
+                                        'title="북마크">' +
                                         '<i class="fas fa-bookmark"></i>' +
                                     '</button>' +
-                                    '<button onclick="shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
+                                    '<button class="share-btn text-gray-400 hover:text-blue-500" ' +
+                                        'data-news-id="' + news.id + '" ' +
+                                        'data-news-title="' + escapeHtml(news.title) + '" ' +
+                                        'data-news-link="' + escapeHtml(news.link) + '" ' +
+                                        'title="공유">' +
                                         '<i class="fas fa-share-alt"></i>' +
                                     '</button>' +
                                 '</div>' +
@@ -5338,6 +5339,9 @@ app.get('/news', async (c) => {
                 // 뉴스 클릭 이벤트 바인딩
                 attachNewsClickListeners();
                 
+                // 북마크/공유 버튼 이벤트 바인딩
+                attachBookmarkAndShareListeners();
+                
                 // 북마크 상태 확인
                 checkBookmarkStatus();
             }
@@ -5351,6 +5355,34 @@ app.get('/news', async (c) => {
                             console.log('[뉴스 클릭] URL:', url);
                             openNewsInNewTab(url);
                         }
+                    });
+                });
+            }
+            
+            // ==================== 북마크/공유 버튼 이벤트 리스너 ====================
+            function attachBookmarkAndShareListeners() {
+                // 북마크 버튼 이벤트
+                document.querySelectorAll('.bookmark-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation(); // 뉴스 카드 클릭 이벤트 방지
+                        const newsId = this.getAttribute('data-news-id');
+                        const title = this.getAttribute('data-news-title');
+                        const link = this.getAttribute('data-news-link');
+                        const category = this.getAttribute('data-news-category');
+                        const publisher = this.getAttribute('data-news-publisher');
+                        const pubDate = this.getAttribute('data-news-pubdate');
+                        toggleBookmark(newsId, title, link, category, publisher, pubDate);
+                    });
+                });
+                
+                // 공유 버튼 이벤트
+                document.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation(); // 뉴스 카드 클릭 이벤트 방지
+                        const newsId = this.getAttribute('data-news-id');
+                        const title = this.getAttribute('data-news-title');
+                        const link = this.getAttribute('data-news-link');
+                        shareNews(title, link, newsId);
                     });
                 });
             }
