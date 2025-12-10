@@ -858,11 +858,9 @@ app.get('/', async (c) => {
         <script>
             // 뉴스 링크 열기 (Referrer 없이)
             function openNewsLink(url) {
-                console.log('[openNewsLink] 실행 - URL:', url);
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                    newWindow.opener = null;
-                }
+                console.log('[openNewsLink] 실행 - 원본 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
             }
             
             // 검색 기능
@@ -5310,15 +5308,13 @@ app.get('/news', async (c) => {
                 });
             }
             
-            // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
+            // ==================== 뉴스 링크 열기 (서버 프록시 사용) ====================
             function openNewsInNewTab(url) {
-                // referrer를 보내지 않고 새 탭에서 열기
-                // Google News의 차단을 우회
-                console.log('[openNewsInNewTab] 실행 - URL:', url);
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                    newWindow.opener = null;
-                }
+                // 서버사이드 프록시를 통해 Google News 리다이렉트 우회
+                console.log('[openNewsInNewTab] 실행 - 원본 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                console.log('[openNewsInNewTab] 프록시 URL:', proxyUrl);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
             }
             
             // ==================== 북마크 기능 ====================
@@ -5646,11 +5642,9 @@ app.get('/bookmarks', (c) => {
         <script>
             // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
             function openNewsLink(url) {
-                console.log('[openNewsLink] 실행 - URL:', url);
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                    newWindow.opener = null;
-                }
+                console.log('[openNewsLink] 실행 - 원본 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
             }
             
             // ==================== 전역 변수 ====================
@@ -8933,6 +8927,31 @@ app.get('/api/news/fetch', async (c) => {
 })
 
 // 저장된 뉴스 목록 조회
+// API: 뉴스 리다이렉트 프록시 (Google News 차단 우회)
+app.get('/news/redirect', async (c) => {
+  const url = c.req.query('url')
+  
+  if (!url) {
+    return c.text('URL이 필요합니다', 400)
+  }
+  
+  try {
+    // Google News URL을 fetch하여 최종 redirect URL을 얻음
+    const response = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    })
+    
+    // 최종 URL로 리다이렉트
+    return c.redirect(response.url, 302)
+  } catch (error) {
+    console.error('뉴스 리다이렉트 오류:', error)
+    return c.text('뉴스를 불러올 수 없습니다', 500)
+  }
+})
+
 app.get('/api/news', async (c) => {
   const { DB } = c.env
   const category = c.req.query('category')
@@ -9419,11 +9438,9 @@ app.get('/admin/news', async (c) => {
         <script>
             // 뉴스 링크 열기 (Referrer 없이)
             function openNewsLink(url) {
-                console.log('[openNewsLink] 실행 - URL:', url);
-                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                if (newWindow) {
-                    newWindow.opener = null;
-                }
+                console.log('[openNewsLink] 실행 - 원본 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
             }
             
             // 로그인 확인 및 권한 검증
