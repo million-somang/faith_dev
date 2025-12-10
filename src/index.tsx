@@ -733,18 +733,18 @@ app.get('/', async (c) => {
             <!-- 검색창 - 캡슐형 디자인 -->
             <div class="mb-12 max-w-3xl mx-auto">
                 <div class="relative search-shadow bg-white">
-                    <div class="flex items-center px-6 py-4">
+                    <div class="flex items-center px-4 sm:px-6 py-2 sm:py-3">
                         <input 
                             type="text" 
                             id="search-input"
                             placeholder="무엇을 찾으시나요?" 
-                            class="search-input flex-1 text-lg text-gray-900 placeholder-gray-400"
+                            class="search-input flex-1 text-base sm:text-lg text-gray-900 placeholder-gray-400"
                         />
                         <button 
                             id="search-btn"
-                            class="flex items-center justify-center w-12 h-12 rounded-full brand-navy text-white brand-navy-hover transition-all ml-3"
+                            class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full brand-navy text-white brand-navy-hover transition-all ml-2 sm:ml-3"
                         >
-                            <i class="fas fa-search text-lg"></i>
+                            <i class="fas fa-search text-sm sm:text-lg"></i>
                         </button>
                     </div>
                 </div>
@@ -752,37 +752,51 @@ app.get('/', async (c) => {
 
             <!-- 퀵 메뉴 네비게이션 - 통일된 디자인 -->
             <nav class="mb-16 max-w-3xl mx-auto">
-                <div class="flex justify-center items-center space-x-8">
-                    <a href="/news" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                            <i class="fas fa-newspaper text-2xl text-blue-600"></i>
-                        </div>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-blue-600 transition-colors">뉴스</p>
-                    </a>
-                    <a href="/lifestyle" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                            <i class="fas fa-home text-2xl text-green-600"></i>
-                        </div>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors">생활</p>
-                    </a>
-                    <a href="/game" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                            <i class="fas fa-gamepad text-2xl text-purple-600"></i>
-                        </div>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-purple-600 transition-colors">게임</p>
-                    </a>
-                    <a href="/finance" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                            <i class="fas fa-won-sign text-2xl text-orange-600"></i>
-                        </div>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-orange-600 transition-colors">금융</p>
-                    </a>
-                    <a href="/shopping" class="group text-center">
-                        <div class="w-16 h-16 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                            <i class="fas fa-shopping-bag text-2xl text-pink-600"></i>
-                        </div>
-                        <p class="text-sm text-gray-700 font-semibold group-hover:text-pink-600 transition-colors">쇼핑</p>
-                    </a>
+                <div class="overflow-x-auto">
+                    <div class="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-0">
+                        <a href="/news" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-newspaper text-xl sm:text-2xl text-blue-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-blue-600 transition-colors whitespace-nowrap">뉴스</p>
+                        </a>
+                        <a href="/lifestyle" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-home text-xl sm:text-2xl text-green-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors whitespace-nowrap">생활</p>
+                        </a>
+                        <a href="/game" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-gamepad text-xl sm:text-2xl text-purple-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-purple-600 transition-colors whitespace-nowrap">게임</p>
+                        </a>
+                        <a href="/finance" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-won-sign text-xl sm:text-2xl text-orange-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-orange-600 transition-colors whitespace-nowrap">금융</p>
+                        </a>
+                        <a href="/shopping" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-shopping-bag text-xl sm:text-2xl text-pink-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-pink-600 transition-colors whitespace-nowrap">쇼핑</p>
+                        </a>
+                        <a href="/entertainment" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-film text-xl sm:text-2xl text-red-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-red-600 transition-colors whitespace-nowrap">엔터</p>
+                        </a>
+                        <a href="/education" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-graduation-cap text-xl sm:text-2xl text-indigo-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-indigo-600 transition-colors whitespace-nowrap">교육</p>
+                        </a>
+                    </div>
                 </div>
             </nav>
 
