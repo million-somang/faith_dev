@@ -771,7 +771,7 @@ app.get('/', async (c) => {
                           const timeAgo = getTimeAgo(news.created_at)
                           const categoryColor = getCategoryColor(news.category)
                           return `
-                            <a href="${news.link}" target="_blank" rel="noopener noreferrer" class="block hover:bg-blue-50 py-3 px-3 rounded-lg transition group border-b border-gray-100 last:border-b-0">
+                            <div onclick="openNewsLink('${news.link}')" class="block hover:bg-blue-50 py-3 px-3 rounded-lg transition group border-b border-gray-100 last:border-b-0 cursor-pointer">
                                 <div class="flex items-start gap-3">
                                     <span class="rank-number flex-shrink-0 mt-0.5">${index + 1}</span>
                                     <div class="flex-1 min-w-0">
@@ -782,7 +782,7 @@ app.get('/', async (c) => {
                                         <p class="text-gray-900 group-hover:text-blue-700 font-semibold text-base leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
                                     </div>
                                 </div>
-                            </a>
+                            </div>
                           `
                         }).join('') : `
                             <div class="text-center py-8 text-gray-500">
@@ -856,6 +856,15 @@ app.get('/', async (c) => {
         </main>
 
         <script>
+            // 뉴스 링크 열기 (Referrer 없이)
+            function openNewsLink(url) {
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.opener = null;
+                    newWindow.location = url;
+                }
+            }
+            
             // 검색 기능
             document.getElementById('search-btn').addEventListener('click', function() {
                 const query = document.getElementById('search-input').value;
@@ -5248,8 +5257,8 @@ app.get('/news', async (c) => {
                     const publisherParam = JSON.stringify(news.publisher || '구글 뉴스');
                     const pubDateParam = JSON.stringify(news.pub_date || news.created_at);
                     
-                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
-                        '<a href="' + news.link + '" target="_blank" rel="noopener noreferrer" class="block p-6 sm:p-7">' +
+                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative cursor-pointer" onclick="openNewsInNewTab(' + linkParam + ')">' +
+                        '<div class="block p-6 sm:p-7">' +
                             '<div class="flex items-center justify-between mb-5">' +
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
@@ -5258,15 +5267,15 @@ app.get('/news', async (c) => {
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisherDisplay + '</span>' +
                                 '<div class="flex items-center space-x-3">' +
-                                    '<button onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
+                                    '<button onclick="event.stopPropagation(); toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
                                         '<i class="fas fa-bookmark"></i>' +
                                     '</button>' +
-                                    '<button onclick="event.preventDefault(); event.stopPropagation(); shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
+                                    '<button onclick="event.stopPropagation(); shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
                                         '<i class="fas fa-share-alt"></i>' +
                                     '</button>' +
                                 '</div>' +
                             '</div>' +
-                        '</a>' +
+                        '</div>' +
                     '</article>';
                 }).join('');
                 
@@ -5278,6 +5287,17 @@ app.get('/news', async (c) => {
                 
                 // 북마크 상태 확인
                 checkBookmarkStatus();
+            }
+            
+            // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
+            function openNewsInNewTab(url) {
+                // referrer를 보내지 않고 새 탭에서 열기
+                // Google News의 차단을 우회
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.opener = null;
+                    newWindow.location = url;
+                }
             }
             
             // ==================== 북마크 기능 ====================
@@ -5603,6 +5623,15 @@ app.get('/bookmarks', (c) => {
         ${getCommonFooter()}
 
         <script>
+            // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
+            function openNewsLink(url) {
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.opener = null;
+                    newWindow.location = url;
+                }
+            }
+            
             // ==================== 전역 변수 ====================
             const userId = localStorage.getItem('user_id') || '1';
             let currentCategory = 'all';
@@ -9328,14 +9357,14 @@ app.get('/admin/news', async (c) => {
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
-                                        <a href="${news.link}" target="_blank" class="hover:text-blue-600">
+                                        <span onclick="openNewsLink('${news.link}')" class="hover:text-blue-600 cursor-pointer">
                                             ${news.title}
-                                        </a>
+                                        </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${news.publisher || '구글 뉴스'}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(news.created_at).toLocaleDateString('ko-KR')}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="${news.link}" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">
+                                        <button onclick="openNewsLink('${news.link}')" class="text-blue-600 hover:text-blue-900 mr-3">
                                             <i class="fas fa-external-link-alt mr-1"></i>
                                             보기
                                         </a>
@@ -9367,6 +9396,15 @@ app.get('/admin/news', async (c) => {
         </main>
 
         <script>
+            // 뉴스 링크 열기 (Referrer 없이)
+            function openNewsLink(url) {
+                const newWindow = window.open();
+                if (newWindow) {
+                    newWindow.opener = null;
+                    newWindow.location = url;
+                }
+            }
+            
             // 로그인 확인 및 권한 검증
             const token = localStorage.getItem('auth_token');
             const userEmail = localStorage.getItem('user_email');
@@ -9455,17 +9493,17 @@ app.get('/admin/news', async (c) => {
                                     '</span>' +
                                 '</td>' +
                                 '<td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">' +
-                                    '<a href="' + news.link + '" target="_blank" class="hover:text-blue-600">' +
+                                    '<span onclick="openNewsLink(\'' + news.link + '\')" class="hover:text-blue-600 cursor-pointer">' +
                                         news.title +
-                                    '</a>' +
+                                    '</span>' +
                                 '</td>' +
                                 '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + (news.publisher || '구글 뉴스') + '</td>' +
                                 '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</td>' +
                                 '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
-                                    '<a href="' + news.link + '" target="_blank" class="text-blue-600 hover:text-blue-900 mr-3">' +
+                                    '<button onclick="openNewsLink(\'' + news.link + '\')" class="text-blue-600 hover:text-blue-900 mr-3">' +
                                         '<i class="fas fa-external-link-alt mr-1"></i>' +
                                         '보기' +
-                                    '</a>' +
+                                    '</button>' +
                                     '<button onclick="deleteNews(' + news.id + ')" class="text-red-600 hover:text-red-900">' +
                                         '<i class="fas fa-trash mr-1"></i>' +
                                         '삭제' +
