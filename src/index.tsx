@@ -5257,20 +5257,22 @@ app.get('/news', async (c) => {
                     const publisherParam = JSON.stringify(news.publisher || '구글 뉴스');
                     const pubDateParam = JSON.stringify(news.pub_date || news.created_at);
                     
-                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative cursor-pointer" onclick="openNewsInNewTab(' + linkParam + ')">' +
-                        '<div class="block p-6 sm:p-7">' +
+                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
+                        '<div class="block p-6 sm:p-7 cursor-pointer" onclick="openNewsInNewTab(' + linkParam + ')">' +
                             '<div class="flex items-center justify-between mb-5">' +
                                 '<span class="px-3.5 py-1.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
                                 '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
                             '<h3 class="font-bold text-xl sm:text-2xl text-gray-900 mb-5 line-clamp-3 leading-tight hover:text-purple-600 transition min-h-[4.5rem]">' + titleDisplay + '</h3>' +
+                        '</div>' +
+                        '<div class="px-6 sm:px-7 pb-6 sm:pb-7">' +
                             '<div class="flex items-center justify-between text-sm text-gray-600 pt-5 border-t border-gray-200">' +
                                 '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisherDisplay + '</span>' +
                                 '<div class="flex items-center space-x-3">' +
-                                    '<button onclick="event.stopPropagation(); toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
+                                    '<button onclick="toggleBookmark(' + news.id + ', ' + titleParam + ', ' + linkParam + ', ' + categoryParam + ', ' + publisherParam + ', ' + pubDateParam + ')" class="bookmark-btn text-gray-400 hover:text-yellow-500" data-news-id="' + news.id + '" title="북마크">' +
                                         '<i class="fas fa-bookmark"></i>' +
                                     '</button>' +
-                                    '<button onclick="event.stopPropagation(); shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
+                                    '<button onclick="shareNews(' + titleParam + ', ' + linkParam + ', ' + news.id + ')" class="text-gray-400 hover:text-blue-500" title="공유">' +
                                         '<i class="fas fa-share-alt"></i>' +
                                     '</button>' +
                                 '</div>' +
