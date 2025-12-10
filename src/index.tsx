@@ -5298,7 +5298,7 @@ app.get('/news', async (c) => {
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
                         '<div class="block p-4 sm:p-5 cursor-pointer news-clickable-area" data-news-url="' + escapeHtml(news.link) + '">' +
                             '<div class="flex items-center justify-between mb-3">' +
-                                '<span class="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-bold rounded-full shadow-sm">' + categoryDisplay + '</span>' +
+                                '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-semibold rounded-md border border-blue-200">' + categoryDisplay + '</span>' +
                                 '<span class="text-sm text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
                             '<h3 class="font-bold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
@@ -5805,7 +5805,7 @@ app.get('/bookmarks', (c) => {
                     return '<article class="bookmark-card bg-white rounded-xl shadow-md overflow-hidden">' +
                         '<div class="p-6 sm:p-7">' +
                             '<div class="flex items-center justify-between mb-5">' +
-                                '<span class="px-2.5 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-bold rounded-full shadow-sm">' + escapeHtml(bookmark.news_category) + '</span>' +
+                                '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-semibold rounded-md border border-blue-200">' + escapeHtml(bookmark.news_category) + '</span>' +
                                 '<span class="text-sm text-gray-500 font-medium">' + new Date(bookmark.created_at).toLocaleDateString('ko-KR') + '</span>' +
                             '</div>' +
                             '<h3 class="font-bold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition cursor-pointer" onclick="openNewsLink(\'' + escapeHtml(bookmark.news_link) + '\')">' + escapeHtml(bookmark.news_title) + '</h3>' +
