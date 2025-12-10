@@ -5578,7 +5578,7 @@ app.get('/news', async (c) => {
         ${getCommonAuthScript()}
         
         <!-- 맨 위로 버튼 -->
-        <button id="scroll-to-top" class="fixed bottom-8 left-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
+        <button id="scroll-to-top" class="fixed bottom-8 right-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
             <i class="fas fa-arrow-up text-lg group-hover:translate-y-[-2px] transition-transform"></i>
         </button>
 
@@ -5875,7 +5875,7 @@ app.get('/bookmarks', (c) => {
         ${getCommonAuthScript()}
         
         <!-- 맨 위로 버튼 -->
-        <button id="scroll-to-top" class="fixed bottom-8 left-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
+        <button id="scroll-to-top" class="fixed bottom-8 right-8 w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 opacity-0 pointer-events-none z-50 flex items-center justify-center group">
             <i class="fas fa-arrow-up text-lg group-hover:translate-y-[-2px] transition-transform"></i>
         </button>
 
