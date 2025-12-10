@@ -858,10 +858,10 @@ app.get('/', async (c) => {
         <script>
             // 뉴스 링크 열기 (Referrer 없이)
             function openNewsLink(url) {
-                const newWindow = window.open();
+                console.log('[openNewsLink] 실행 - URL:', url);
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
                 if (newWindow) {
                     newWindow.opener = null;
-                    newWindow.location = url;
                 }
             }
             
@@ -5314,10 +5314,10 @@ app.get('/news', async (c) => {
             function openNewsInNewTab(url) {
                 // referrer를 보내지 않고 새 탭에서 열기
                 // Google News의 차단을 우회
-                const newWindow = window.open();
+                console.log('[openNewsInNewTab] 실행 - URL:', url);
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
                 if (newWindow) {
                     newWindow.opener = null;
-                    newWindow.location = url;
                 }
             }
             
@@ -5646,10 +5646,10 @@ app.get('/bookmarks', (c) => {
         <script>
             // ==================== 뉴스 링크 열기 (Referrer 없이) ====================
             function openNewsLink(url) {
-                const newWindow = window.open();
+                console.log('[openNewsLink] 실행 - URL:', url);
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
                 if (newWindow) {
                     newWindow.opener = null;
-                    newWindow.location = url;
                 }
             }
             
@@ -9419,10 +9419,10 @@ app.get('/admin/news', async (c) => {
         <script>
             // 뉴스 링크 열기 (Referrer 없이)
             function openNewsLink(url) {
-                const newWindow = window.open();
+                console.log('[openNewsLink] 실행 - URL:', url);
+                const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
                 if (newWindow) {
                     newWindow.opener = null;
-                    newWindow.location = url;
                 }
             }
             
