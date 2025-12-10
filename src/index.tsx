@@ -338,7 +338,7 @@ function getCommonAuthScript(): string {
           }
           
           // 로그아웃 버튼 추가
-          menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm brand-navy text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg brand-navy-hover font-semibold shadow-md"><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
+          menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold shadow-md transition-all"><i class="fas fa-sign-out-alt mr-1"></i><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
           
           // 메뉴 업데이트
           const userMenu = document.getElementById('user-menu');
