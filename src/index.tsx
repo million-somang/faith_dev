@@ -4994,25 +4994,25 @@ app.get('/news', async (c) => {
                 </div>
                 <div class="overflow-x-auto">
                     <div class="flex space-x-2 sm:space-x-3 pb-2 min-w-max">
-                        <button onclick="toggleCategory('all')" data-category="all" class="category-btn active px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium text-sm sm:text-base shadow-lg">
+                        <button onclick="toggleCategory('all')" data-category="all" class="category-btn active px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-blue-600 text-white font-medium text-sm sm:text-base shadow hover:bg-blue-700 transition">
                             전체
                         </button>
-                        <button onclick="toggleCategory('general')" data-category="general" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('general')" data-category="general" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             일반
                         </button>
-                        <button onclick="toggleCategory('politics')" data-category="politics" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('politics')" data-category="politics" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             정치
                         </button>
-                        <button onclick="toggleCategory('economy')" data-category="economy" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('economy')" data-category="economy" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             경제
                         </button>
-                        <button onclick="toggleCategory('tech')" data-category="tech" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('tech')" data-category="tech" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             IT/과학
                         </button>
-                        <button onclick="toggleCategory('sports')" data-category="sports" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('sports')" data-category="sports" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             스포츠
                         </button>
-                        <button onclick="toggleCategory('entertainment')" data-category="entertainment" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent">
+                        <button onclick="toggleCategory('entertainment')" data-category="entertainment" class="category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300">
                             엔터테인먼트
                         </button>
                     </div>
@@ -5206,9 +5206,9 @@ app.get('/news', async (c) => {
                 document.querySelectorAll('.category-btn').forEach(btn => {
                     const category = btn.dataset.category;
                     if (currentCategories.includes(category)) {
-                        btn.className = 'category-btn active px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium text-sm sm:text-base shadow-lg border-2 border-red-600';
+                        btn.className = 'category-btn active px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-blue-600 text-white font-medium text-sm sm:text-base shadow hover:bg-blue-700 transition';
                     } else {
-                        btn.className = 'category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border-2 border-transparent';
+                        btn.className = 'category-btn px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-white text-gray-700 font-medium hover:bg-gray-100 text-sm sm:text-base shadow border border-gray-300';
                     }
                 });
             }
