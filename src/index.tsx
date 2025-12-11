@@ -2751,28 +2751,6 @@ app.get('/lifestyle', (c) => {
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-            <div class="text-center py-16">
-                <div class="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <i class="fas fa-home text-4xl text-white"></i>
-                </div>
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
-                    <span class="bg-gradient-to-r from-cyan-500 to-blue-600 bg-clip-text text-transparent">생활</span> 페이지
-                </h1>
-                <p class="text-gray-600 text-lg mb-8">
-                    일상생활에 필요한 다양한 정보와 기능을 제공합니다
-                </p>
-                <div class="flex justify-center gap-4">
-                    <a href="/lifestyle/youtube-download" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
-                        <i class="fab fa-youtube mr-2"></i>
-                        유튜브 다운로드
-                    </a>
-                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-cyan-500 hover:text-cyan-600 transition-all">
-                        <i class="fas fa-home mr-2"></i>
-                        메인으로
-                    </a>
-                </div>
-            </div>
-
             <!-- 서비스 카드 그리드 -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                 <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
