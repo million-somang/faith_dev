@@ -723,6 +723,14 @@ app.get('/', async (c) => {
             .shine:hover::before {
                 left: 100%;
             }
+            /* 스크롤바 숨기기 (기능은 유지) */
+            .hide-scrollbar {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;  /* Chrome, Safari, Opera */
+            }
         </style>
     </head>
     <body class="bg-gray-50 transition-colors duration-300">
@@ -752,7 +760,7 @@ app.get('/', async (c) => {
 
             <!-- 퀵 메뉴 네비게이션 - 통일된 디자인 -->
             <nav class="mb-16 max-w-3xl mx-auto">
-                <div class="overflow-x-auto">
+                <div class="overflow-x-auto hide-scrollbar">
                     <div class="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-0">
                         <a href="/news" class="group text-center flex-shrink-0">
                             <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
