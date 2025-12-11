@@ -956,6 +956,19 @@ app.get('/game/simple', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>심플 게임 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -1046,6 +1059,19 @@ app.get('/game/web', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>웹게임 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -1100,6 +1126,19 @@ app.get('/game/simple/tetris', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>테트리스 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -1938,6 +1977,19 @@ app.get('/game/simple/sudoku', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>스도쿠 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -2224,6 +2276,19 @@ app.get('/game/simple/sudoku/play', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>스도쿠 게임</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -2731,6 +2796,19 @@ app.get('/lifestyle', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>생활 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -2830,6 +2908,19 @@ app.get('/finance', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>금융 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -2922,6 +3013,19 @@ app.get('/entertainment', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>엔터 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -3014,6 +3118,19 @@ app.get('/education', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>교육 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -3106,6 +3223,19 @@ app.get('/shopping', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>쇼핑 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -3198,6 +3328,19 @@ app.get('/lifestyle/calculator', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>다기능 계산기 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -4298,6 +4441,19 @@ app.get('/lifestyle/youtube-download', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>유튜브 다운로드 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -5925,6 +6081,19 @@ app.get('/login', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Faith Portal 로그인</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -6053,6 +6222,19 @@ app.get('/signup', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Faith Portal 회원가입</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -6527,6 +6709,19 @@ app.get('/admin', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>관리자 대시보드 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -6773,6 +6968,19 @@ app.get('/admin/users', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>회원 관리 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -8058,6 +8266,19 @@ app.get('/admin/stats', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>고급 통계 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -8326,6 +8547,19 @@ app.get('/admin/logs', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>활동 로그 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -8531,6 +8765,19 @@ app.get('/admin/notifications', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>알림 센터 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -9332,6 +9579,19 @@ app.get('/admin/news', async (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>뉴스관리 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
@@ -10177,6 +10437,19 @@ app.get('/mypage', (c) => {
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>마이페이지 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
