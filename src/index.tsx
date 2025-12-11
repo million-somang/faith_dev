@@ -3479,30 +3479,8 @@ app.get('/lifestyle/calculator', (c) => {
         </div>
 
         <!-- 메인 컨텐츠 -->
-        <div class="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 네비게이션 (데스크톱) -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-list mr-2 text-blue-500"></i>
-                        페이지 목록
-                    </h3>
-                    <nav class="space-y-1">
-                        <a href="/lifestyle" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                            <i class="fas fa-home mr-2"></i>생활 홈
-                        </a>
-                        <a href="/lifestyle/calculator" class="block px-4 py-2 bg-cyan-50 text-cyan-700 rounded-lg font-medium">
-                            <i class="fas fa-calculator mr-2"></i>계산기
-                        </a>
-                        <a href="/lifestyle/youtube-download" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                            <i class="fab fa-youtube mr-2"></i>유튜브 다운로드
-                        </a>
-                    </nav>
-                </div>
-            </aside>
-
-            <!-- 메인 컨텐츠 영역 -->
-            <main class="flex-1">
+        <div class="max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+            <main class="w-full">
                 <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 lg:p-6">
                     <div class="flex items-center justify-between mb-3 sm:mb-4">
                         <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800">
@@ -4486,41 +4464,7 @@ app.get('/lifestyle/youtube-download', (c) => {
 
         <!-- 메인 컨텐츠 -->
         <div class="max-w-7xl mx-auto px-4 py-8">
-            <div class="flex flex-col lg:flex-row gap-6">
-                <!-- 왼쪽 사이드바 (페이지 네비게이션) -->
-                <aside class="lg:w-64 flex-shrink-0">
-                    <div class="bg-white rounded-lg shadow-lg p-4 sticky top-24">
-                        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
-                            <i class="fas fa-list mr-2 text-cyan-600"></i>
-                            페이지 메뉴
-                        </h3>
-                        <nav class="space-y-2">
-                            <a href="/lifestyle" class="flex items-center px-4 py-2 text-gray-700 hover:bg-cyan-50 hover:text-cyan-600 rounded-lg transition-all">
-                                <i class="fas fa-home mr-3"></i>
-                                생활 홈
-                            </a>
-                            <a href="/lifestyle/youtube-download" class="flex items-center px-4 py-2 bg-cyan-50 text-cyan-600 font-medium rounded-lg">
-                                <i class="fab fa-youtube mr-3"></i>
-                                유튜브 다운로드
-                            </a>
-                            <!-- 추가 메뉴 -->
-                            <div class="pt-2 border-t border-gray-200">
-                                <p class="px-4 py-2 text-xs text-gray-500 font-medium">준비 중인 서비스</p>
-                                <a href="#" class="flex items-center px-4 py-2 text-gray-400 cursor-not-allowed">
-                                    <i class="fas fa-calculator mr-3"></i>
-                                    계산기
-                                </a>
-                                <a href="#" class="flex items-center px-4 py-2 text-gray-400 cursor-not-allowed">
-                                    <i class="fas fa-cloud-sun mr-3"></i>
-                                    날씨
-                                </a>
-                            </div>
-                        </nav>
-                    </div>
-                </aside>
-
-                <!-- 메인 컨텐츠 영역 -->
-                <main class="flex-1">
+            <main class="w-full">
                     <div class="bg-white rounded-lg shadow-lg p-6 sm:p-8">
                         <!-- 페이지 타이틀 -->
                         <div class="mb-8">
