@@ -10675,6 +10675,324 @@ app.get('/figma-test', (c) => {
   `)
 })
 
+// ==================== Puppeteer API 연동 ====================
+// 스크린샷 캡처
+app.get('/api/puppeteer/screenshot', async (c) => {
+  try {
+    const url = c.req.query('url')
+    const fullPage = c.req.query('fullPage') === 'true'
+    const format = c.req.query('format') || 'png'
+    
+    if (!url) {
+      return c.json({ 
+        success: false, 
+        error: 'URL parameter is required' 
+      }, 400)
+    }
+    
+    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
+    // 외부 브라우저 API 서비스 필요 (예: Browserless, Puppeteer as a Service 등)
+    
+    return c.json({
+      success: false,
+      error: 'Puppeteer requires external browser service',
+      message: 'Please use a service like Browserless.io or self-hosted Chrome',
+      example: 'https://chrome.browserless.io/screenshot?token=YOUR_TOKEN'
+    }, 501)
+  } catch (error: any) {
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// PDF 생성
+app.get('/api/puppeteer/pdf', async (c) => {
+  try {
+    const url = c.req.query('url')
+    const format = c.req.query('format') || 'A4'
+    
+    if (!url) {
+      return c.json({ 
+        success: false, 
+        error: 'URL parameter is required' 
+      }, 400)
+    }
+    
+    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
+    
+    return c.json({
+      success: false,
+      error: 'Puppeteer requires external browser service',
+      message: 'Please use a service like Browserless.io or self-hosted Chrome',
+      example: 'https://chrome.browserless.io/pdf?token=YOUR_TOKEN'
+    }, 501)
+  } catch (error: any) {
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// 웹 스크래핑
+app.post('/api/puppeteer/scrape', async (c) => {
+  try {
+    const { url, selector } = await c.req.json()
+    
+    if (!url) {
+      return c.json({ 
+        success: false, 
+        error: 'URL is required' 
+      }, 400)
+    }
+    
+    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
+    
+    return c.json({
+      success: false,
+      error: 'Puppeteer requires external browser service',
+      message: 'Please use a service like Browserless.io or self-hosted Chrome',
+      alternatives: [
+        'Use Cloudflare Browser Rendering API',
+        'Use external headless browser service',
+        'Use simple HTTP fetch for static content'
+      ]
+    }, 501)
+  } catch (error: any) {
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500)
+  }
+})
+
+// Puppeteer 연동 테스트 페이지
+app.get('/puppeteer-test', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Puppeteer API 테스트 - Faith Portal</title>
+        <script>
+          // Tailwind CDN 경고 필터
+          (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+              const message = args.join(' ');
+              if (message.includes('cdn.tailwindcss.com should not be used in production')) {
+                return;
+              }
+              originalWarn.apply(console, args);
+            };
+          })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-robot text-indigo-600 mr-2"></i>
+                    Puppeteer API 연동 테스트
+                </h1>
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>중요:</strong> Cloudflare Workers 환경에서는 Puppeteer를 직접 실행할 수 없습니다.
+                                외부 브라우저 서비스(Browserless.io 등)를 사용하거나 Cloudflare Browser Rendering API를 권장합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-camera text-blue-600 mr-2"></i>
+                    1. 웹페이지 스크린샷
+                </h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        URL
+                    </label>
+                    <input 
+                        type="text" 
+                        id="screenshotUrl"
+                        placeholder="https://example.com"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="fullPage" class="mr-2">
+                        <span class="text-sm text-gray-700">전체 페이지 캡처</span>
+                    </label>
+                </div>
+                <button 
+                    onclick="testScreenshot()" 
+                    class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                    <i class="fas fa-camera mr-2"></i>스크린샷 캡처
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-file-pdf text-red-600 mr-2"></i>
+                    2. PDF 생성
+                </h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        URL
+                    </label>
+                    <input 
+                        type="text" 
+                        id="pdfUrl"
+                        placeholder="https://example.com"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                </div>
+                <button 
+                    onclick="testPdf()" 
+                    class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                    <i class="fas fa-file-pdf mr-2"></i>PDF 생성
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-spider text-purple-600 mr-2"></i>
+                    3. 웹 스크래핑
+                </h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        URL
+                    </label>
+                    <input 
+                        type="text" 
+                        id="scrapeUrl"
+                        placeholder="https://example.com"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        CSS Selector (선택사항)
+                    </label>
+                    <input 
+                        type="text" 
+                        id="selector"
+                        placeholder=".article-title"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                </div>
+                <button 
+                    onclick="testScrape()" 
+                    class="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                    <i class="fas fa-spider mr-2"></i>스크래핑 시작
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-terminal text-green-600 mr-2"></i>
+                    응답
+                </h2>
+                <pre id="response" class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">응답이 여기에 표시됩니다...</pre>
+            </div>
+
+            <div class="mt-6">
+                <a href="/" class="text-indigo-600 hover:text-indigo-800">
+                    <i class="fas fa-arrow-left mr-2"></i>홈으로 돌아가기
+                </a>
+            </div>
+        </div>
+
+        <script>
+            async function testScreenshot() {
+                const url = document.getElementById('screenshotUrl').value
+                const fullPage = document.getElementById('fullPage').checked
+                const response = document.getElementById('response')
+                
+                if (!url) {
+                    response.textContent = 'URL을 입력해주세요.'
+                    return
+                }
+                
+                response.textContent = '요청 중...'
+                
+                try {
+                    const res = await fetch(\`/api/puppeteer/screenshot?url=\${encodeURIComponent(url)}&fullPage=\${fullPage}\`)
+                    const data = await res.json()
+                    response.textContent = JSON.stringify(data, null, 2)
+                } catch (error) {
+                    response.textContent = 'Error: ' + error.message
+                }
+            }
+            
+            async function testPdf() {
+                const url = document.getElementById('pdfUrl').value
+                const response = document.getElementById('response')
+                
+                if (!url) {
+                    response.textContent = 'URL을 입력해주세요.'
+                    return
+                }
+                
+                response.textContent = '요청 중...'
+                
+                try {
+                    const res = await fetch(\`/api/puppeteer/pdf?url=\${encodeURIComponent(url)}\`)
+                    const data = await res.json()
+                    response.textContent = JSON.stringify(data, null, 2)
+                } catch (error) {
+                    response.textContent = 'Error: ' + error.message
+                }
+            }
+            
+            async function testScrape() {
+                const url = document.getElementById('scrapeUrl').value
+                const selector = document.getElementById('selector').value
+                const response = document.getElementById('response')
+                
+                if (!url) {
+                    response.textContent = 'URL을 입력해주세요.'
+                    return
+                }
+                
+                response.textContent = '요청 중...'
+                
+                try {
+                    const res = await fetch('/api/puppeteer/scrape', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url, selector })
+                    })
+                    const data = await res.json()
+                    response.textContent = JSON.stringify(data, null, 2)
+                } catch (error) {
+                    response.textContent = 'Error: ' + error.message
+                }
+            }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 // ==================== 마이페이지 API ====================
 
 // 로그인 기록 조회

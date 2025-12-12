@@ -817,6 +817,62 @@ Faith Portal은 Figma REST API를 통해 디자인 파일과 직접 연동됩니
 - ✅ 디자인-코드 간 일관성 유지
 - ✅ 프로토타입 임베딩
 
+## 🤖 Puppeteer MCP 연동
+
+### 개요
+Faith Portal에 Puppeteer MCP 연동이 추가되었습니다. 웹 스크래핑, PDF 생성, 스크린샷 캡처 등의 브라우저 자동화 기능을 지원합니다.
+
+### ⚠️ 중요 제한사항
+**Cloudflare Workers 환경에서는 Puppeteer를 직접 실행할 수 없습니다.**
+
+해결 방법:
+1. **외부 브라우저 서비스** (Browserless.io 등)
+2. **Cloudflare Browser Rendering API** (Workers Paid 플랜)
+3. **Self-hosted Chrome** (Docker)
+
+### 주요 기능
+1. **웹페이지 스크린샷**
+   - 전체 페이지 또는 부분 캡처
+   - PNG, JPEG 형식 지원
+   
+2. **PDF 생성**
+   - 웹페이지를 PDF로 변환
+   - A4, Letter 등 다양한 용지 크기
+   
+3. **웹 스크래핑**
+   - CSS Selector 기반 데이터 추출
+   - 동적 콘텐츠 지원
+
+### API 엔드포인트
+- `GET /api/puppeteer/screenshot` - 스크린샷 캡처
+- `GET /api/puppeteer/pdf` - PDF 생성
+- `POST /api/puppeteer/scrape` - 웹 스크래핑
+- `GET /puppeteer-test` - 테스트 인터페이스
+
+### 설정 방법
+1. 브라우저 서비스 선택 (Browserless.io 또는 Cloudflare Browser Rendering)
+2. API 키 발급
+3. `.dev.vars` 파일에 토큰 추가
+   ```bash
+   BROWSERLESS_API_TOKEN=your_token_here
+   ```
+4. 개발 서버 재시작
+5. `/puppeteer-test` 페이지에서 테스트
+
+자세한 내용은 `PUPPETEER_INTEGRATION.md` 참고
+
+### 사용 사례
+- ✅ 웹페이지 아카이빙 (PDF 저장)
+- ✅ 뉴스 스크래핑 (외부 콘텐츠 수집)
+- ✅ SEO 프리뷰 이미지 생성
+- ✅ 테스트 자동화 (E2E 테스트)
+- ✅ 동적 웹사이트 데이터 추출
+
+### 권장 서비스
+- **Browserless.io**: 무료 플랜 (월 1,000 요청), 간단한 설정
+- **Cloudflare Browser Rendering**: Workers Paid 플랜 (월 $5), 빠른 속도
+- **Self-hosted Chrome**: 완전한 제어권, Docker 사용
+
 ## 라이선스
 MIT License
 

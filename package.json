@@ -18,7 +18,8 @@
     "test": "curl http://localhost:3000"
   },
   "dependencies": {
-    "hono": "^4.10.3"
+    "hono": "^4.10.3",
+    "puppeteer-core": "^24.33.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250705.0",
