@@ -778,6 +778,45 @@ webapp/
     - "회원가입", "로그아웃": Navy 그라디언트
     - 모든 버튼: 세미볼드 폰트 + 그림자 효과
 
+## 🎨 Figma API 연동
+
+### 개요
+Faith Portal은 Figma REST API를 통해 디자인 파일과 직접 연동됩니다.
+
+### 주요 기능
+1. **디자인 파일 정보 가져오기**
+   - Figma 파일의 전체 구조 조회
+   - 컴포넌트, 스타일, 레이어 정보 접근
+
+2. **이미지 렌더링**
+   - 특정 노드를 PNG/JPG/SVG/PDF로 렌더링
+   - 스케일 조정 가능 (1x~4x)
+   - 아이콘, 로고 등 에셋 자동 내보내기
+
+3. **디자인 토큰 추출**
+   - 색상, 텍스트 스타일, 효과 정보 추출
+   - CSS 변수로 자동 변환 가능
+
+### API 엔드포인트
+- `GET /api/figma/file/:fileKey` - 파일 정보
+- `GET /api/figma/images/:fileKey` - 이미지 렌더링
+- `GET /api/figma/styles/:fileKey` - 디자인 토큰
+- `GET /figma-test` - 테스트 인터페이스
+
+### 설정 방법
+1. Figma Personal Access Token 발급
+2. `.dev.vars` 파일에 토큰 추가
+3. 개발 서버 재시작
+4. `/figma-test` 페이지에서 테스트
+
+자세한 내용은 `FIGMA_INTEGRATION.md` 참고
+
+### 사용 사례
+- ✅ 디자인 시스템 토큰 자동 동기화
+- ✅ 에셋 자동 내보내기 및 최적화
+- ✅ 디자인-코드 간 일관성 유지
+- ✅ 프로토타입 임베딩
+
 ## 라이선스
 MIT License
 
