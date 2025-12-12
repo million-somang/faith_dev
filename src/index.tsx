@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 
 type Bindings = {
   DB: D1Database;
+  FIGMA_ACCESS_TOKEN?: string;
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -10344,6 +10345,334 @@ app.get('/api/news/search', async (c) => {
     console.error('뉴스 검색 오류:', error)
     return c.json({ success: false, error: '뉴스 검색 실패' }, 500)
   }
+})
+
+// ==================== Figma API 연동 ====================
+// Figma 파일 정보 가져오기
+app.get('/api/figma/file/:fileKey', async (c) => {
+  const { FIGMA_ACCESS_TOKEN } = c.env
+  const fileKey = c.req.param('fileKey')
+  
+  if (!FIGMA_ACCESS_TOKEN) {
+    return c.json({ 
+      success: false, 
+      error: 'Figma Access Token이 설정되지 않았습니다. .dev.vars 파일을 확인하세요.' 
+    }, 500)
+  }
+  
+  try {
+    const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
+      headers: {
+        'X-Figma-Token': FIGMA_ACCESS_TOKEN
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.text()
+      console.error('Figma API 오류:', response.status, errorData)
+      return c.json({ 
+        success: false, 
+        error: `Figma API 오류: ${response.status}`,
+        details: errorData
+      }, response.status)
+    }
+    
+    const data = await response.json()
+    return c.json({ 
+      success: true, 
+      data 
+    })
+  } catch (error) {
+    console.error('Figma 파일 가져오기 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || '파일 가져오기 실패' 
+    }, 500)
+  }
+})
+
+// Figma 이미지 렌더링 (PNG/SVG)
+app.get('/api/figma/images/:fileKey', async (c) => {
+  const { FIGMA_ACCESS_TOKEN } = c.env
+  const fileKey = c.req.param('fileKey')
+  const nodeIds = c.req.query('ids') // 쉼표로 구분된 노드 ID들
+  const format = c.req.query('format') || 'png' // png, jpg, svg, pdf
+  const scale = c.req.query('scale') || '1' // 1, 2, 3, 4
+  
+  if (!FIGMA_ACCESS_TOKEN) {
+    return c.json({ 
+      success: false, 
+      error: 'Figma Access Token이 설정되지 않았습니다.' 
+    }, 500)
+  }
+  
+  if (!nodeIds) {
+    return c.json({ 
+      success: false, 
+      error: 'Node IDs를 제공해야 합니다. (예: ?ids=1:2,1:3)' 
+    }, 400)
+  }
+  
+  try {
+    const url = new URL(`https://api.figma.com/v1/images/${fileKey}`)
+    url.searchParams.set('ids', nodeIds)
+    url.searchParams.set('format', format)
+    url.searchParams.set('scale', scale)
+    
+    const response = await fetch(url.toString(), {
+      headers: {
+        'X-Figma-Token': FIGMA_ACCESS_TOKEN
+      }
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.text()
+      return c.json({ 
+        success: false, 
+        error: `Figma API 오류: ${response.status}`,
+        details: errorData
+      }, response.status)
+    }
+    
+    const data = await response.json()
+    return c.json({ 
+      success: true, 
+      images: data.images,
+      metadata: {
+        format,
+        scale,
+        nodeIds: nodeIds.split(',')
+      }
+    })
+  } catch (error) {
+    console.error('Figma 이미지 렌더링 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || '이미지 렌더링 실패' 
+    }, 500)
+  }
+})
+
+// Figma 스타일 가져오기 (디자인 토큰)
+app.get('/api/figma/styles/:fileKey', async (c) => {
+  const { FIGMA_ACCESS_TOKEN } = c.env
+  const fileKey = c.req.param('fileKey')
+  
+  if (!FIGMA_ACCESS_TOKEN) {
+    return c.json({ 
+      success: false, 
+      error: 'Figma Access Token이 설정되지 않았습니다.' 
+    }, 500)
+  }
+  
+  try {
+    // 먼저 파일 정보를 가져와서 스타일 분석
+    const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
+      headers: {
+        'X-Figma-Token': FIGMA_ACCESS_TOKEN
+      }
+    })
+    
+    if (!response.ok) {
+      return c.json({ 
+        success: false, 
+        error: `Figma API 오류: ${response.status}` 
+      }, response.status)
+    }
+    
+    const fileData = await response.json()
+    
+    // 스타일 정보 추출 (색상, 텍스트 스타일 등)
+    const styles = {
+      colors: fileData.styles?.fills || {},
+      textStyles: fileData.styles?.text || {},
+      effectStyles: fileData.styles?.effects || {}
+    }
+    
+    return c.json({ 
+      success: true, 
+      styles,
+      fileName: fileData.name,
+      lastModified: fileData.lastModified
+    })
+  } catch (error) {
+    console.error('Figma 스타일 가져오기 오류:', error)
+    return c.json({ 
+      success: false, 
+      error: error.message || '스타일 가져오기 실패' 
+    }, 500)
+  }
+})
+
+// Figma 연동 테스트 페이지
+app.get('/figma-test', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Figma API 테스트 - Faith Portal</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="max-w-4xl mx-auto px-4 py-8">
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-pencil-ruler text-purple-600 mr-2"></i>
+                    Figma API 연동 테스트
+                </h1>
+                <p class="text-gray-600 mb-4">
+                    Figma Personal Access Token을 설정하고 아래에서 파일 정보를 가져올 수 있습니다.
+                </p>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-file text-blue-600 mr-2"></i>
+                    1. Figma 파일 정보 가져오기
+                </h2>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Figma File Key
+                    </label>
+                    <input 
+                        type="text" 
+                        id="fileKey"
+                        placeholder="예: ABC123xyz"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                    <p class="text-xs text-gray-500 mt-1">
+                        URL에서 file/ 다음의 값: https://www.figma.com/file/<strong>ABC123xyz</strong>/My-Design
+                    </p>
+                </div>
+                <button 
+                    onclick="fetchFileInfo()"
+                    class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                >
+                    <i class="fas fa-download mr-2"></i>
+                    파일 정보 가져오기
+                </button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-image text-green-600 mr-2"></i>
+                    2. 이미지 렌더링
+                </h2>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Figma File Key
+                        </label>
+                        <input 
+                            type="text" 
+                            id="imageFileKey"
+                            placeholder="ABC123xyz"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Node IDs (쉼표 구분)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nodeIds"
+                            placeholder="1:2,1:3"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                        />
+                    </div>
+                </div>
+                <button 
+                    onclick="renderImages()"
+                    class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                >
+                    <i class="fas fa-paint-brush mr-2"></i>
+                    이미지 렌더링
+                </button>
+            </div>
+
+            <div id="result" class="bg-white rounded-xl shadow-lg p-6 hidden">
+                <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                    결과
+                </h3>
+                <pre id="resultContent" class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-auto max-h-96 text-xs"></pre>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-6">
+                <h3 class="text-lg font-bold text-blue-900 mb-2">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    설정 가이드
+                </h3>
+                <ol class="list-decimal list-inside text-blue-800 space-y-2">
+                    <li>Figma 설정에서 Personal Access Token 발급</li>
+                    <li>프로젝트 루트에 <code class="bg-blue-100 px-2 py-1 rounded">.dev.vars</code> 파일 생성</li>
+                    <li><code class="bg-blue-100 px-2 py-1 rounded">FIGMA_ACCESS_TOKEN=your_token</code> 추가</li>
+                    <li>개발 서버 재시작</li>
+                </ol>
+                <p class="text-sm text-blue-700 mt-4">
+                    자세한 내용은 <code class="bg-blue-100 px-2 py-1 rounded">FIGMA_INTEGRATION.md</code> 참고
+                </p>
+            </div>
+        </div>
+
+        <script>
+            async function fetchFileInfo() {
+                const fileKey = document.getElementById('fileKey').value.trim()
+                if (!fileKey) {
+                    alert('Figma File Key를 입력하세요')
+                    return
+                }
+
+                showLoading()
+                try {
+                    const response = await fetch(\`/api/figma/file/\${fileKey}\`)
+                    const data = await response.json()
+                    showResult(data)
+                } catch (error) {
+                    showResult({ success: false, error: error.message })
+                }
+            }
+
+            async function renderImages() {
+                const fileKey = document.getElementById('imageFileKey').value.trim()
+                const nodeIds = document.getElementById('nodeIds').value.trim()
+                
+                if (!fileKey || !nodeIds) {
+                    alert('File Key와 Node IDs를 모두 입력하세요')
+                    return
+                }
+
+                showLoading()
+                try {
+                    const response = await fetch(\`/api/figma/images/\${fileKey}?ids=\${nodeIds}\`)
+                    const data = await response.json()
+                    showResult(data)
+                } catch (error) {
+                    showResult({ success: false, error: error.message })
+                }
+            }
+
+            function showLoading() {
+                const result = document.getElementById('result')
+                const content = document.getElementById('resultContent')
+                result.classList.remove('hidden')
+                content.textContent = '로딩 중...'
+            }
+
+            function showResult(data) {
+                const result = document.getElementById('result')
+                const content = document.getElementById('resultContent')
+                result.classList.remove('hidden')
+                content.textContent = JSON.stringify(data, null, 2)
+            }
+        </script>
+    </body>
+    </html>
+  `)
 })
 
 // ==================== 마이페이지 API ====================

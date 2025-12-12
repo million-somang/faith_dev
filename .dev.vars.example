@@ -1,0 +1,10 @@
+# Figma API Configuration
+# 이 파일을 `.dev.vars`로 복사하고 실제 토큰을 입력하세요
+# .dev.vars 파일은 .gitignore에 포함되어 있어 git에 커밋되지 않습니다
+
+# Figma Personal Access Token
+# 발급 방법: https://www.figma.com/settings > Personal access tokens
+FIGMA_ACCESS_TOKEN=figd_your_token_here
+
+# 예시:
+# FIGMA_ACCESS_TOKEN=figd_AbCdEfGhIjKlMnOpQrStUvWxYz1234567890
