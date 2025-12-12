@@ -10682,6 +10682,8 @@ app.get('/api/puppeteer/screenshot', async (c) => {
     const url = c.req.query('url')
     const fullPage = c.req.query('fullPage') === 'true'
     const format = c.req.query('format') || 'png'
+    const width = parseInt(c.req.query('width') || '1920')
+    const height = parseInt(c.req.query('height') || '1080')
     
     if (!url) {
       return c.json({ 
@@ -10690,15 +10692,77 @@ app.get('/api/puppeteer/screenshot', async (c) => {
       }, 400)
     }
     
-    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
-    // 외부 브라우저 API 서비스 필요 (예: Browserless, Puppeteer as a Service 등)
+    // Browserless.io API 토큰 가져오기
+    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
     
-    return c.json({
-      success: false,
-      error: 'Puppeteer requires external browser service',
-      message: 'Please use a service like Browserless.io or self-hosted Chrome',
-      example: 'https://chrome.browserless.io/screenshot?token=YOUR_TOKEN'
-    }, 501)
+    if (!token || token === 'demo_token_for_testing') {
+      return c.json({
+        success: false,
+        error: 'BROWSERLESS_API_TOKEN not configured',
+        message: '실제 Browserless.io API 토큰을 설정해주세요',
+        guide: {
+          step1: 'https://www.browserless.io 에서 가입',
+          step2: 'API 키 발급',
+          step3: '.dev.vars 파일에 BROWSERLESS_API_TOKEN 설정',
+          step4: '서버 재시작'
+        }
+      }, 401)
+    }
+    
+    try {
+      // Browserless.io Screenshot API 호출
+      const browserlessUrl = `https://chrome.browserless.io/screenshot?token=${token}`
+      
+      const response = await fetch(browserlessUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify({
+          url: url,
+          options: {
+            fullPage: fullPage,
+            type: format,
+            encoding: 'base64'
+          },
+          viewport: {
+            width: width,
+            height: height
+          }
+        })
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        return c.json({
+          success: false,
+          error: 'Browserless.io API error',
+          status: response.status,
+          details: errorText
+        }, response.status)
+      }
+      
+      // Base64 이미지 데이터
+      const screenshotBase64 = await response.text()
+      
+      // Base64를 바이너리로 변환
+      const screenshotBuffer = Uint8Array.from(atob(screenshotBase64), c => c.charCodeAt(0))
+      
+      return new Response(screenshotBuffer, {
+        headers: {
+          'Content-Type': `image/${format}`,
+          'Cache-Control': 'public, max-age=3600',
+          'X-Screenshot-URL': url
+        }
+      })
+    } catch (apiError: any) {
+      return c.json({
+        success: false,
+        error: 'Failed to capture screenshot',
+        message: apiError.message
+      }, 500)
+    }
   } catch (error: any) {
     return c.json({ 
       success: false, 
@@ -10712,6 +10776,7 @@ app.get('/api/puppeteer/pdf', async (c) => {
   try {
     const url = c.req.query('url')
     const format = c.req.query('format') || 'A4'
+    const landscape = c.req.query('landscape') === 'true'
     
     if (!url) {
       return c.json({ 
@@ -10720,14 +10785,66 @@ app.get('/api/puppeteer/pdf', async (c) => {
       }, 400)
     }
     
-    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
+    // Browserless.io API 토큰 가져오기
+    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
     
-    return c.json({
-      success: false,
-      error: 'Puppeteer requires external browser service',
-      message: 'Please use a service like Browserless.io or self-hosted Chrome',
-      example: 'https://chrome.browserless.io/pdf?token=YOUR_TOKEN'
-    }, 501)
+    if (!token || token === 'demo_token_for_testing') {
+      return c.json({
+        success: false,
+        error: 'BROWSERLESS_API_TOKEN not configured',
+        message: '실제 Browserless.io API 토큰을 설정해주세요'
+      }, 401)
+    }
+    
+    try {
+      // Browserless.io PDF API 호출
+      const browserlessUrl = `https://chrome.browserless.io/pdf?token=${token}`
+      
+      const response = await fetch(browserlessUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify({
+          url: url,
+          options: {
+            format: format,
+            landscape: landscape,
+            printBackground: true,
+            preferCSSPageSize: false
+          }
+        })
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        return c.json({
+          success: false,
+          error: 'Browserless.io API error',
+          status: response.status,
+          details: errorText
+        }, response.status)
+      }
+      
+      // PDF 바이너리 데이터
+      const pdfBuffer = await response.arrayBuffer()
+      
+      return new Response(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="page-${Date.now()}.pdf"`,
+          'Cache-Control': 'public, max-age=3600',
+          'X-PDF-URL': url
+        }
+      })
+    } catch (apiError: any) {
+      return c.json({
+        success: false,
+        error: 'Failed to generate PDF',
+        message: apiError.message
+      }, 500)
+    }
   } catch (error: any) {
     return c.json({ 
       success: false, 
@@ -10739,7 +10856,7 @@ app.get('/api/puppeteer/pdf', async (c) => {
 // 웹 스크래핑
 app.post('/api/puppeteer/scrape', async (c) => {
   try {
-    const { url, selector } = await c.req.json()
+    const { url, selector, waitForSelector, waitTime } = await c.req.json()
     
     if (!url) {
       return c.json({ 
@@ -10748,18 +10865,92 @@ app.post('/api/puppeteer/scrape', async (c) => {
       }, 400)
     }
     
-    // Cloudflare Workers에서 직접 Puppeteer 실행 불가
+    // Browserless.io API 토큰 가져오기
+    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
     
-    return c.json({
-      success: false,
-      error: 'Puppeteer requires external browser service',
-      message: 'Please use a service like Browserless.io or self-hosted Chrome',
-      alternatives: [
-        'Use Cloudflare Browser Rendering API',
-        'Use external headless browser service',
-        'Use simple HTTP fetch for static content'
-      ]
-    }, 501)
+    if (!token || token === 'demo_token_for_testing') {
+      return c.json({
+        success: false,
+        error: 'BROWSERLESS_API_TOKEN not configured',
+        message: '실제 Browserless.io API 토큰을 설정해주세요'
+      }, 401)
+    }
+    
+    try {
+      // Browserless.io Scrape API 호출
+      const browserlessUrl = `https://chrome.browserless.io/scrape?token=${token}`
+      
+      // 스크래핑 함수 (브라우저 컨텍스트에서 실행됨)
+      const scrapeFunction = `
+        async () => {
+          ${waitForSelector ? `await page.waitForSelector('${waitForSelector}', { timeout: 10000 });` : ''}
+          ${waitTime ? `await new Promise(r => setTimeout(r, ${waitTime}));` : ''}
+          
+          const data = {
+            title: document.title,
+            url: window.location.href,
+            timestamp: new Date().toISOString()
+          };
+          
+          ${selector ? `
+            const elements = Array.from(document.querySelectorAll('${selector}'));
+            data.elements = elements.map(el => ({
+              text: el.textContent?.trim(),
+              html: el.innerHTML,
+              href: el.getAttribute('href'),
+              src: el.getAttribute('src')
+            }));
+          ` : `
+            data.content = document.body.textContent?.trim();
+          `}
+          
+          return data;
+        }
+      `
+      
+      const response = await fetch(browserlessUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        body: JSON.stringify({
+          url: url,
+          elements: [
+            {
+              selector: selector || 'body'
+            }
+          ],
+          gotoOptions: {
+            waitUntil: 'networkidle2'
+          }
+        })
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        return c.json({
+          success: false,
+          error: 'Browserless.io API error',
+          status: response.status,
+          details: errorText
+        }, response.status)
+      }
+      
+      const scrapedData = await response.json()
+      
+      return c.json({
+        success: true,
+        data: scrapedData,
+        timestamp: new Date().toISOString()
+      })
+    } catch (apiError: any) {
+      return c.json({
+        success: false,
+        error: 'Failed to scrape webpage',
+        message: apiError.message
+      }, 500)
+    }
   } catch (error: any) {
     return c.json({ 
       success: false, 
@@ -10930,12 +11121,35 @@ app.get('/puppeteer-test', (c) => {
                     return
                 }
                 
-                response.textContent = '요청 중...'
+                response.textContent = '스크린샷 캡처 중... (최대 30초 소요)'
                 
                 try {
                     const res = await fetch(\`/api/puppeteer/screenshot?url=\${encodeURIComponent(url)}&fullPage=\${fullPage}\`)
-                    const data = await res.json()
-                    response.textContent = JSON.stringify(data, null, 2)
+                    
+                    // 응답이 JSON인 경우 (에러 또는 설정 필요)
+                    const contentType = res.headers.get('content-type')
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await res.json()
+                        response.textContent = JSON.stringify(data, null, 2)
+                        return
+                    }
+                    
+                    // 이미지 응답인 경우
+                    if (res.ok) {
+                        const blob = await res.blob()
+                        const imageUrl = URL.createObjectURL(blob)
+                        response.innerHTML = \`
+                            <div class="space-y-4">
+                                <p class="text-green-600 font-semibold">✅ 스크린샷 캡처 성공!</p>
+                                <img src="\${imageUrl}" alt="Screenshot" class="max-w-full border border-gray-300 rounded-lg shadow-lg" />
+                                <a href="\${imageUrl}" download="screenshot.png" class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                    <i class="fas fa-download mr-2"></i>다운로드
+                                </a>
+                            </div>
+                        \`
+                    } else {
+                        response.textContent = \`Error: \${res.status} - \${await res.text()}\`
+                    }
                 } catch (error) {
                     response.textContent = 'Error: ' + error.message
                 }
@@ -10950,12 +11164,45 @@ app.get('/puppeteer-test', (c) => {
                     return
                 }
                 
-                response.textContent = '요청 중...'
+                response.textContent = 'PDF 생성 중... (최대 30초 소요)'
                 
                 try {
                     const res = await fetch(\`/api/puppeteer/pdf?url=\${encodeURIComponent(url)}\`)
-                    const data = await res.json()
-                    response.textContent = JSON.stringify(data, null, 2)
+                    
+                    // 응답이 JSON인 경우 (에러 또는 설정 필요)
+                    const contentType = res.headers.get('content-type')
+                    if (contentType && contentType.includes('application/json')) {
+                        const data = await res.json()
+                        response.textContent = JSON.stringify(data, null, 2)
+                        return
+                    }
+                    
+                    // PDF 응답인 경우
+                    if (res.ok) {
+                        const blob = await res.blob()
+                        const pdfUrl = URL.createObjectURL(blob)
+                        const filename = \`page-\${Date.now()}.pdf\`
+                        
+                        // 자동 다운로드
+                        const a = document.createElement('a')
+                        a.href = pdfUrl
+                        a.download = filename
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        
+                        response.innerHTML = \`
+                            <div class="space-y-4">
+                                <p class="text-green-600 font-semibold">✅ PDF 생성 및 다운로드 완료!</p>
+                                <p class="text-sm text-gray-600">파일명: \${filename}</p>
+                                <a href="\${pdfUrl}" target="_blank" class="inline-block bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                                    <i class="fas fa-eye mr-2"></i>PDF 미리보기
+                                </a>
+                            </div>
+                        \`
+                    } else {
+                        response.textContent = \`Error: \${res.status} - \${await res.text()}\`
+                    }
                 } catch (error) {
                     response.textContent = 'Error: ' + error.message
                 }
@@ -10971,7 +11218,7 @@ app.get('/puppeteer-test', (c) => {
                     return
                 }
                 
-                response.textContent = '요청 중...'
+                response.textContent = '웹 스크래핑 중... (최대 30초 소요)'
                 
                 try {
                     const res = await fetch('/api/puppeteer/scrape', {
@@ -10982,7 +11229,17 @@ app.get('/puppeteer-test', (c) => {
                         body: JSON.stringify({ url, selector })
                     })
                     const data = await res.json()
-                    response.textContent = JSON.stringify(data, null, 2)
+                    
+                    if (data.success) {
+                        response.innerHTML = \`
+                            <div class="space-y-2">
+                                <p class="text-green-600 font-semibold">✅ 스크래핑 성공!</p>
+                                <pre class="bg-gray-900 text-green-400 p-4 rounded-lg overflow-x-auto text-sm">\${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        \`
+                    } else {
+                        response.textContent = JSON.stringify(data, null, 2)
+                    }
                 } catch (error) {
                     response.textContent = 'Error: ' + error.message
                 }

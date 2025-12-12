@@ -142,48 +142,86 @@ https://your-domain.pages.dev/puppeteer-test
 - 웹 스크래핑 테스트
 - 실시간 API 응답 확인
 
-## 실제 구현 예시
+## ✅ 실제 구현 완료
 
-### Browserless.io 사용
+### Browserless.io 연동 완료
 
+**현재 구현된 API 엔드포인트:**
+
+#### 1. 스크린샷 API
 ```typescript
-// src/index.tsx에 추가
-app.get('/api/puppeteer/screenshot-real', async (c) => {
-  const url = c.req.query('url')
-  const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
-  
-  if (!token) {
-    return c.json({ error: 'BROWSERLESS_API_TOKEN not configured' }, 500)
-  }
-  
-  try {
-    const response = await fetch(
-      `https://chrome.browserless.io/screenshot?token=${token}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: url,
-          options: {
-            fullPage: true,
-            type: 'png'
-          }
-        })
-      }
-    )
-    
-    const screenshot = await response.arrayBuffer()
-    
-    return new Response(screenshot, {
-      headers: {
-        'Content-Type': 'image/png',
-        'Cache-Control': 'public, max-age=3600'
-      }
-    })
-  } catch (error: any) {
-    return c.json({ error: error.message }, 500)
-  }
-})
+GET /api/puppeteer/screenshot?url=https://example.com&fullPage=true
+
+// 파라미터:
+// - url: 캡처할 웹페이지 URL (필수)
+// - fullPage: 전체 페이지 캡처 여부 (true/false)
+// - format: 이미지 형식 (png, jpeg)
+// - width: 뷰포트 너비 (기본: 1920)
+// - height: 뷰포트 높이 (기본: 1080)
+
+// 응답: PNG/JPEG 이미지 바이너리
+```
+
+#### 2. PDF 생성 API
+```typescript
+GET /api/puppeteer/pdf?url=https://example.com&format=A4
+
+// 파라미터:
+// - url: PDF로 변환할 URL (필수)
+// - format: 용지 크기 (A4, Letter 등)
+// - landscape: 가로 모드 (true/false)
+
+// 응답: PDF 파일 바이너리 (자동 다운로드)
+```
+
+#### 3. 웹 스크래핑 API
+```typescript
+POST /api/puppeteer/scrape
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "selector": ".article-title",
+  "waitForSelector": ".content",
+  "waitTime": 2000
+}
+
+// 응답: JSON 형식 스크래핑 결과
+```
+
+### 실제 사용 예시
+
+#### 스크린샷 캡처
+```bash
+# 기본 스크린샷
+curl "http://localhost:3000/api/puppeteer/screenshot?url=https://example.com" \
+  -o screenshot.png
+
+# 전체 페이지 캡처
+curl "http://localhost:3000/api/puppeteer/screenshot?url=https://example.com&fullPage=true" \
+  -o fullpage.png
+```
+
+#### PDF 생성
+```bash
+# A4 세로 PDF
+curl "http://localhost:3000/api/puppeteer/pdf?url=https://example.com" \
+  -o page.pdf
+
+# A4 가로 PDF
+curl "http://localhost:3000/api/puppeteer/pdf?url=https://example.com&landscape=true" \
+  -o page-landscape.pdf
+```
+
+#### 웹 스크래핑
+```bash
+# 특정 요소 스크래핑
+curl -X POST "http://localhost:3000/api/puppeteer/scrape" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://news.ycombinator.com",
+    "selector": ".titleline a"
+  }'
 ```
 
 ### Cloudflare Browser Rendering 사용
@@ -260,13 +298,60 @@ npx wrangler pages secret put BROWSERLESS_API_TOKEN --project-name webapp
 - **장점**: 완전한 제어권
 - **단점**: 유지보수 부담
 
-## 다음 단계
+## 🚀 시작하기
 
-1. **서비스 선택**: Browserless.io 또는 Cloudflare Browser Rendering 선택
-2. **API 키 발급**: 선택한 서비스에서 API 키 발급
-3. **환경 변수 설정**: `.dev.vars` 및 Cloudflare Secrets에 설정
-4. **API 구현**: 실제 브라우저 서비스 호출 로직 구현
-5. **테스트**: `/puppeteer-test` 페이지에서 기능 확인
+### 1단계: Browserless.io 가입 및 API 키 발급
+
+1. **https://www.browserless.io** 접속
+2. **Sign Up** - 무료 계정 생성
+3. **Dashboard** > **API Keys** > API 키 복사
+
+**무료 플랜:**
+- 월 1,000 요청
+- 기본 기능 모두 사용 가능
+- 신용카드 불필요
+
+### 2단계: 로컬 개발 환경 설정
+
+```bash
+# .dev.vars 파일 편집
+cd /home/user/webapp
+nano .dev.vars
+
+# 다음 내용 추가/수정
+BROWSERLESS_API_TOKEN=your_actual_token_here
+```
+
+### 3단계: 서버 재시작
+
+```bash
+cd /home/user/webapp
+npm run build
+pm2 restart webapp
+```
+
+### 4단계: 테스트
+
+브라우저에서 접속:
+```
+http://localhost:3000/puppeteer-test
+```
+
+1. **스크린샷 테스트**: `https://example.com` 입력 → 캡처
+2. **PDF 테스트**: `https://example.com` 입력 → PDF 생성
+3. **스크래핑 테스트**: URL 및 CSS Selector 입력 → 데이터 추출
+
+### 5단계: 프로덕션 배포
+
+```bash
+# Cloudflare Pages Secrets 설정
+npx wrangler pages secret put BROWSERLESS_API_TOKEN --project-name webapp
+
+# 입력 프롬프트에서 API 토큰 입력
+
+# 배포
+npm run deploy
+```
 
 ## 참고 자료
 

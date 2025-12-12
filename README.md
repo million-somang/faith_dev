@@ -817,61 +817,120 @@ Faith Portal은 Figma REST API를 통해 디자인 파일과 직접 연동됩니
 - ✅ 디자인-코드 간 일관성 유지
 - ✅ 프로토타입 임베딩
 
-## 🤖 Puppeteer MCP 연동
+## 🤖 Puppeteer MCP 연동 (Browserless.io) ✅
 
 ### 개요
-Faith Portal에 Puppeteer MCP 연동이 추가되었습니다. 웹 스크래핑, PDF 생성, 스크린샷 캡처 등의 브라우저 자동화 기능을 지원합니다.
+Faith Portal에 **Browserless.io 기반 Puppeteer 연동이 완료**되었습니다. 웹 스크래핑, PDF 생성, 스크린샷 캡처 등의 브라우저 자동화 기능을 실제로 사용할 수 있습니다.
 
-### ⚠️ 중요 제한사항
-**Cloudflare Workers 환경에서는 Puppeteer를 직접 실행할 수 없습니다.**
+### ✅ 구현 완료 기능
 
-해결 방법:
-1. **외부 브라우저 서비스** (Browserless.io 등)
-2. **Cloudflare Browser Rendering API** (Workers Paid 플랜)
-3. **Self-hosted Chrome** (Docker)
+#### 1. **웹페이지 스크린샷 캡처**
+```bash
+GET /api/puppeteer/screenshot?url=https://example.com&fullPage=true
+```
+- 전체 페이지 또는 뷰포트 캡처
+- PNG, JPEG 형식 지원
+- 커스텀 해상도 설정 가능
+- 캡처된 이미지 즉시 표시 및 다운로드
 
-### 주요 기능
-1. **웹페이지 스크린샷**
-   - 전체 페이지 또는 부분 캡처
-   - PNG, JPEG 형식 지원
-   
-2. **PDF 생성**
-   - 웹페이지를 PDF로 변환
-   - A4, Letter 등 다양한 용지 크기
-   
-3. **웹 스크래핑**
-   - CSS Selector 기반 데이터 추출
-   - 동적 콘텐츠 지원
+#### 2. **PDF 생성**
+```bash
+GET /api/puppeteer/pdf?url=https://example.com&format=A4&landscape=false
+```
+- 웹페이지를 PDF로 변환
+- A4, Letter 등 다양한 용지 크기
+- 세로/가로 모드 선택
+- 자동 다운로드 기능
 
-### API 엔드포인트
-- `GET /api/puppeteer/screenshot` - 스크린샷 캡처
-- `GET /api/puppeteer/pdf` - PDF 생성
-- `POST /api/puppeteer/scrape` - 웹 스크래핑
-- `GET /puppeteer-test` - 테스트 인터페이스
+#### 3. **웹 스크래핑**
+```bash
+POST /api/puppeteer/scrape
+Content-Type: application/json
 
-### 설정 방법
-1. 브라우저 서비스 선택 (Browserless.io 또는 Cloudflare Browser Rendering)
-2. API 키 발급
-3. `.dev.vars` 파일에 토큰 추가
-   ```bash
-   BROWSERLESS_API_TOKEN=your_token_here
-   ```
-4. 개발 서버 재시작
-5. `/puppeteer-test` 페이지에서 테스트
+{
+  "url": "https://example.com",
+  "selector": ".article-title",
+  "waitForSelector": ".content",
+  "waitTime": 2000
+}
+```
+- CSS Selector 기반 데이터 추출
+- 동적 콘텐츠 대기 지원
+- JSON 형식 결과 반환
+- 제목, 텍스트, HTML, 속성 추출
 
-자세한 내용은 `PUPPETEER_INTEGRATION.md` 참고
+### 🚀 빠른 시작
 
-### 사용 사례
-- ✅ 웹페이지 아카이빙 (PDF 저장)
-- ✅ 뉴스 스크래핑 (외부 콘텐츠 수집)
-- ✅ SEO 프리뷰 이미지 생성
-- ✅ 테스트 자동화 (E2E 테스트)
-- ✅ 동적 웹사이트 데이터 추출
+#### 1단계: Browserless.io 가입 (무료)
+1. https://www.browserless.io 접속
+2. Sign Up - 무료 계정 생성 (월 1,000 요청)
+3. Dashboard > API Keys > 토큰 복사
 
-### 권장 서비스
-- **Browserless.io**: 무료 플랜 (월 1,000 요청), 간단한 설정
-- **Cloudflare Browser Rendering**: Workers Paid 플랜 (월 $5), 빠른 속도
-- **Self-hosted Chrome**: 완전한 제어권, Docker 사용
+#### 2단계: 환경 변수 설정
+```bash
+# .dev.vars 파일 수정
+BROWSERLESS_API_TOKEN=your_actual_token_here
+```
+
+#### 3단계: 서버 재시작
+```bash
+npm run build && pm2 restart webapp
+```
+
+#### 4단계: 테스트
+브라우저에서 테스트 인터페이스 접속:
+```
+http://localhost:3000/puppeteer-test
+```
+
+### 💡 실제 사용 예시
+
+#### 뉴스 사이트 스크래핑
+```bash
+curl -X POST "http://localhost:3000/api/puppeteer/scrape" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://news.ycombinator.com",
+    "selector": ".titleline a"
+  }'
+```
+
+#### 웹페이지 PDF 아카이빙
+```bash
+curl "http://localhost:3000/api/puppeteer/pdf?url=https://github.com" \
+  -o github-archive.pdf
+```
+
+#### 소셜 미디어 미리보기 이미지
+```bash
+curl "http://localhost:3000/api/puppeteer/screenshot?url=https://example.com&width=1200&height=630" \
+  -o og-image.png
+```
+
+### 📊 API 상태
+
+| 기능 | 상태 | 엔드포인트 |
+|------|------|-----------|
+| 스크린샷 | ✅ 완료 | `GET /api/puppeteer/screenshot` |
+| PDF 생성 | ✅ 완료 | `GET /api/puppeteer/pdf` |
+| 웹 스크래핑 | ✅ 완료 | `POST /api/puppeteer/scrape` |
+| 테스트 UI | ✅ 완료 | `GET /puppeteer-test` |
+
+### 🎯 사용 사례
+- ✅ **뉴스 콘텐츠 자동 수집**: 외부 뉴스 사이트 스크래핑
+- ✅ **웹페이지 아카이빙**: 중요 페이지 PDF 저장
+- ✅ **SEO 최적화**: 소셜 미디어 공유 이미지 생성
+- ✅ **품질 보증**: E2E 테스트 스크린샷 자동화
+- ✅ **경쟁사 분석**: 동적 웹사이트 데이터 모니터링
+
+### 🔒 보안
+- API 토큰은 환경 변수로 안전하게 관리
+- `.dev.vars` 파일은 `.gitignore`에 포함
+- 프로덕션은 Cloudflare Secrets 사용
+
+### 📚 자세한 문서
+- `PUPPETEER_INTEGRATION.md` - 전체 가이드 및 API 레퍼런스
+- Browserless.io Docs: https://docs.browserless.io/
 
 ## 라이선스
 MIT License

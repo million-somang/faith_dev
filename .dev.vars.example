@@ -1,4 +1,4 @@
-# Figma API Configuration
+# API Configuration
 # 이 파일을 `.dev.vars`로 복사하고 실제 토큰을 입력하세요
 # .dev.vars 파일은 .gitignore에 포함되어 있어 git에 커밋되지 않습니다
 
@@ -8,3 +8,10 @@ FIGMA_ACCESS_TOKEN=figd_your_token_here
 
 # 예시:
 # FIGMA_ACCESS_TOKEN=figd_AbCdEfGhIjKlMnOpQrStUvWxYz1234567890
+
+# Browserless.io API Token
+# 발급 방법: https://www.browserless.io/ > 가입 > API Keys
+BROWSERLESS_API_TOKEN=your_browserless_token_here
+
+# 예시:
+# BROWSERLESS_API_TOKEN=abc123def456ghi789jkl012mno345pqr678
