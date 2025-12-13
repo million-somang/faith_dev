@@ -359,54 +359,68 @@ function getStickyHeader(): string {
     </div>
     <script>
       // ==================== Sticky 헤더 처리 (Naver 스타일 - 모든 페이지) ====================
-      (function() {
-        let lastScrollTop = 0;
-        let isScrollingDown = false;
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initStickyHeader);
+      } else {
+        initStickyHeader();
+      }
+      
+      function initStickyHeader() {
         const stickyHeader = document.getElementById('sticky-header');
         const mainHeader = document.getElementById('main-header');
         const mainSearch = document.getElementById('main-search');
         const quickMenu = document.getElementById('quick-menu');
         
+        console.log('=== Sticky Header Init (DOMContentLoaded) ===');
+        console.log('stickyHeader:', stickyHeader ? 'found' : 'NOT FOUND');
+        console.log('mainHeader:', mainHeader ? 'found' : 'NOT FOUND');
+        console.log('mainSearch:', mainSearch ? 'found' : 'NOT FOUND');
+        console.log('quickMenu:', quickMenu ? 'found' : 'NOT FOUND');
+        
         if (!stickyHeader || !mainHeader) {
-            console.log('Sticky header or main header not found');
+            console.error('Required elements not found!');
             return;
         }
         
-        // 초기 위치 계산을 위한 지연 실행
-        setTimeout(() => {
-            window.addEventListener('scroll', function() {
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        let scrollCount = 0;
+        
+        window.addEventListener('scroll', function() {
+            scrollCount++;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // 메인 헤더의 위치 확인
+            const headerRect = mainHeader.getBoundingClientRect();
+            
+            // 10번째 스크롤마다 로그
+            if (scrollCount % 10 === 0) {
+                console.log('Scroll:', scrollTop, 'headerRect.bottom:', headerRect.bottom);
+            }
+            
+            // 메인 페이지 (퀵 메뉴가 있는 경우)
+            if (mainSearch && quickMenu) {
+                const quickMenuRect = quickMenu.getBoundingClientRect();
+                const scrollThreshold = 50;
                 
-                // 스크롤 방향 감지
-                isScrollingDown = scrollTop > lastScrollTop;
-                
-                // 메인 헤더의 위치 확인
-                const headerRect = mainHeader.getBoundingClientRect();
-                
-                // 메인 페이지 (퀵 메뉴가 있는 경우)
-                if (mainSearch && quickMenu) {
-                    const quickMenuRect = quickMenu.getBoundingClientRect();
-                    const scrollThreshold = 50;
-                    
-                    // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
-                    if (quickMenuRect.bottom < -scrollThreshold) {
-                        stickyHeader.style.transform = 'translateY(0)';
-                    } else {
-                        stickyHeader.style.transform = 'translateY(-100%)';
-                    }
+                // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
+                if (quickMenuRect.bottom < -scrollThreshold) {
+                    if (scrollCount % 10 === 0) console.log('-> Showing sticky header (main page)');
+                    stickyHeader.style.transform = 'translateY(0)';
                 } else {
-                    // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
-                    if (headerRect.bottom <= 0) {
-                        stickyHeader.style.transform = 'translateY(0)';
-                    } else {
-                        stickyHeader.style.transform = 'translateY(-100%)';
-                    }
+                    stickyHeader.style.transform = 'translateY(-100%)';
                 }
-                
-                lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
-            });
-        }, 100);
-      })();
+            } else {
+                // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
+                if (headerRect.bottom <= 0) {
+                    if (scrollCount % 10 === 0) console.log('-> Showing sticky header (sub page)');
+                    stickyHeader.style.transform = 'translateY(0)';
+                } else {
+                    stickyHeader.style.transform = 'translateY(-100%)';
+                }
+            }
+        });
+        
+        console.log('=== Scroll listener attached ===');
+      }
     </script>
   `
 }
