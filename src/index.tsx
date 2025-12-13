@@ -896,6 +896,52 @@ app.get('/', async (c) => {
                 </div>
             </nav>
 
+            <!-- 메인 배너 섹션 -->
+            <section class="mb-12 max-w-6xl mx-auto px-4">
+                <div class="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl overflow-hidden shadow-2xl">
+                    <!-- 배너 컨테이너 -->
+                    <div class="relative h-64 sm:h-80 md:h-96 flex items-center justify-center">
+                        <!-- 배경 패턴 (선택사항) -->
+                        <div class="absolute inset-0 opacity-10">
+                            <div class="absolute inset-0" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 20px 20px;"></div>
+                        </div>
+                        
+                        <!-- 배너 콘텐츠 -->
+                        <div class="relative z-10 text-center px-6 sm:px-12">
+                            <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
+                                <i class="fas fa-rocket mr-3"></i>
+                                Welcome to Faith Portal
+                            </h2>
+                            <p class="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 drop-shadow">
+                                최신 뉴스와 다양한 서비스를 한곳에서
+                            </p>
+                            <div class="flex flex-wrap gap-4 justify-center">
+                                <a href="/news" class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-blue-50 transition-all transform hover:scale-105 shadow-lg">
+                                    <i class="fas fa-newspaper mr-2"></i>
+                                    뉴스 보기
+                                </a>
+                                <a href="/lifestyle" class="inline-block bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-bold hover:bg-white/30 transition-all transform hover:scale-105 border-2 border-white/50">
+                                    <i class="fas fa-home mr-2"></i>
+                                    생활 서비스
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- 장식 요소 -->
+                        <div class="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-2xl"></div>
+                        <div class="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+                    </div>
+                </div>
+                
+                <!-- 배너 설명 (선택사항) -->
+                <div class="mt-4 text-center">
+                    <p class="text-sm text-gray-500">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        이 배너는 커스터마이징 가능합니다. 이미지, 텍스트, 링크를 자유롭게 변경하세요.
+                    </p>
+                </div>
+            </section>
+
             <!-- 뉴스 & 트렌드 섹션 -->
             <div class="grid md:grid-cols-2 gap-6 mb-12">
                 <!-- 실시간 뉴스 -->
