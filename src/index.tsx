@@ -264,9 +264,12 @@ function getCommonHeader(sectionName: string = ''): string {
   // 섹션명 표시 (메인 페이지가 아닐 때만)
   const sectionLabel = sectionName ? `<span class="hidden sm:inline text-gray-700 text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
   
+  // 메인 페이지는 sticky, 서브 페이지는 relative (Sticky 헤더가 대체)
+  const headerClass = sectionName ? 'bg-white backdrop-blur-md shadow-sm relative transition-shadow duration-300' : 'bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300'
+  
   return `
     <!-- 헤더 -->
-    <header class="bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300" id="main-header">
+    <header class="${headerClass}" id="main-header">
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 flex justify-between items-center">
             <a href="/" class="flex items-center">
                 <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
