@@ -327,8 +327,8 @@ function getCommonAuthScript(): string {
         if (token && userEmail) {
           let menuHTML = '';
           
-          // 사용자 이메일 표시
-          menuHTML += '<span class="text-xs sm:text-sm text-gray-700 px-2 font-medium">' + userEmail + '님</span>';
+          // 햄버거 메뉴 버튼
+          menuHTML += '<button id="mobile-menu-btn" class="text-gray-700 hover:text-blue-900 transition-all p-2" aria-label="메뉴 열기"><i class="fas fa-bars text-xl"></i></button>';
           
           // 마이페이지 버튼
           menuHTML += '<a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3"><i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span></a>';
@@ -338,8 +338,8 @@ function getCommonAuthScript(): string {
             menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자페이지</span><span class="sm:hidden">관리자</span></a>';
           }
           
-          // 로그아웃 버튼 추가
-          menuHTML += '<button id="logout-btn" class="text-xs sm:text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-semibold shadow-md transition-all"><i class="fas fa-sign-out-alt mr-1"></i><span class="hidden sm:inline">로그아웃</span><span class="sm:hidden">로그아웃</span></button>';
+          // 로그아웃 버튼 (아이콘만)
+          menuHTML += '<button id="logout-btn" class="text-gray-700 hover:text-red-600 transition-all p-2" title="로그아웃"><i class="fas fa-sign-out-alt text-xl"></i></button>';
           
           // 메뉴 업데이트
           const userMenu = document.getElementById('user-menu');
@@ -351,11 +351,21 @@ function getCommonAuthScript(): string {
           const logoutBtn = document.getElementById('logout-btn');
           if (logoutBtn) {
             logoutBtn.addEventListener('click', function() {
-              localStorage.removeItem('auth_token');
-              localStorage.removeItem('user_email');
-              localStorage.removeItem('user_level');
-              localStorage.removeItem('user_id');
-              window.location.href = '/';
+              if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_level');
+                localStorage.removeItem('user_id');
+                window.location.href = '/';
+              }
+            });
+          }
+          
+          // 햄버거 메뉴 이벤트 리스너
+          const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+          if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+              toggleMobileMenu();
             });
           }
         }
@@ -363,6 +373,83 @@ function getCommonAuthScript(): string {
         // 다크모드 초기화 (로그인 여부 관계없이)
         initDarkMode();
       }
+      
+      // ==================== 모바일 메뉴 토글 함수 ====================
+      function toggleMobileMenu() {
+        // 모바일 메뉴 오버레이 생성 또는 토글
+        let overlay = document.getElementById('mobile-menu-overlay');
+        
+        if (overlay) {
+          // 이미 존재하면 닫기
+          overlay.classList.add('opacity-0');
+          setTimeout(() => {
+            overlay?.remove();
+          }, 300);
+        } else {
+          // 새로 생성
+          const userEmail = localStorage.getItem('user_email') || '';
+          const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+          
+          overlay = document.createElement('div');
+          overlay.id = 'mobile-menu-overlay';
+          overlay.className = 'fixed inset-0 z-50 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300';
+          
+          let menuHTML = '<div class="fixed top-0 right-0 h-full w-64 bg-white shadow-2xl transform translate-x-full transition-transform duration-300" id="mobile-menu-content">';
+          menuHTML += '<div class="p-6">';
+          menuHTML += '<div class="flex justify-between items-center mb-6">';
+          menuHTML += '<h3 class="text-lg font-bold text-gray-900">메뉴</h3>';
+          menuHTML += '<button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">';
+          menuHTML += '<i class="fas fa-times text-xl"></i>';
+          menuHTML += '</button></div>';
+          menuHTML += '<div class="space-y-4">';
+          menuHTML += '<a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>홈</a>';
+          menuHTML += '<a href="/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-newspaper mr-3"></i>뉴스</a>';
+          menuHTML += '<a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>생활</a>';
+          menuHTML += '<a href="/game" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-gamepad mr-3"></i>게임</a>';
+          menuHTML += '<a href="/finance" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-chart-line mr-3"></i>금융</a>';
+          menuHTML += '<a href="/mypage" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-user mr-3"></i>마이페이지</a>';
+          menuHTML += '<a href="/bookmarks" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-bookmark mr-3"></i>북마크</a>';
+          if (userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="block px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"><i class="fas fa-crown mr-3"></i>관리자페이지</a>';
+          }
+          menuHTML += '<hr class="my-2">';
+          menuHTML += '<button onclick="logout()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i class="fas fa-sign-out-alt mr-3"></i>로그아웃</button>';
+          menuHTML += '</div></div></div>';
+          
+          overlay.innerHTML = menuHTML;
+          document.body.appendChild(overlay);
+          
+          // 애니메이션 트리거
+          setTimeout(() => {
+            overlay?.classList.remove('opacity-0');
+            const menuContent = document.getElementById('mobile-menu-content');
+            if (menuContent) {
+              menuContent.classList.remove('translate-x-full');
+            }
+          }, 10);
+          
+          // 오버레이 클릭 시 닫기
+          overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+              toggleMobileMenu();
+            }
+          });
+        }
+      }
+      
+      // 로그아웃 함수 (전역)
+      window.logout = function() {
+        if (confirm('로그아웃 하시겠습니까?')) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_email');
+          localStorage.removeItem('user_level');
+          localStorage.removeItem('user_id');
+          window.location.href = '/';
+        }
+      };
+      
+      // toggleMobileMenu를 전역 함수로 등록
+      window.toggleMobileMenu = toggleMobileMenu;
       
       // ==================== 페이지 로드 시 실행 ====================
       if (document.readyState === 'loading') {
@@ -2876,19 +2963,94 @@ app.get('/lifestyle', (c) => {
             if (token && userEmail) {
                 const userMenu = document.getElementById('user-menu');
                 userMenu.innerHTML = \`
-                    <span class="text-xs sm:text-sm text-gray-700 px-2 sm:px-3">\${userEmail}</span>
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-blue-900 transition-all p-2" title="메뉴 열기">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span>
+                    </a>
                     \${userLevel >= 6 ? '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-2 sm:px-3 py-1.5 rounded font-medium hover:bg-yellow-600 transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>' : ''}
-                    <button onclick="logout()" class="text-xs sm:text-sm text-gray-700 hover:text-red-600 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-out-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그아웃</span>
+                    <button onclick="logout()" class="text-gray-700 hover:text-red-600 transition-all p-2" title="로그아웃">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
                 \`;
             }
             
             function logout() {
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user_email');
-                localStorage.removeItem('user_level');
-                location.href = '/';
+                if (confirm('로그아웃 하시겠습니까?')) {
+                    localStorage.removeItem('auth_token');
+                    localStorage.removeItem('user_email');
+                    localStorage.removeItem('user_level');
+                    location.href = '/';
+                }
+            }
+            
+            function toggleMobileMenu() {
+                let overlay = document.getElementById('mobile-menu-overlay');
+                
+                if (overlay) {
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay?.remove(), 300);
+                } else {
+                    const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+                    
+                    overlay = document.createElement('div');
+                    overlay.id = 'mobile-menu-overlay';
+                    overlay.className = 'fixed inset-0 z-50 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300';
+                    
+                    overlay.innerHTML = \`
+                        <div class="fixed top-0 right-0 h-full w-64 bg-white shadow-2xl transform translate-x-full transition-transform duration-300" id="mobile-menu-content">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-lg font-bold text-gray-900">메뉴</h3>
+                                    <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">
+                                        <i class="fas fa-times text-xl"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-home mr-3"></i>홈
+                                    </a>
+                                    <a href="/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-newspaper mr-3"></i>뉴스
+                                    </a>
+                                    <a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-home mr-3"></i>생활
+                                    </a>
+                                    <a href="/game" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-gamepad mr-3"></i>게임
+                                    </a>
+                                    <a href="/finance" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-chart-line mr-3"></i>금융
+                                    </a>
+                                    <a href="/mypage" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-user mr-3"></i>마이페이지
+                                    </a>
+                                    <a href="/bookmarks" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <i class="fas fa-bookmark mr-3"></i>북마크
+                                    </a>
+                                    \${userLevel >= 6 ? '<a href="/admin" class="block px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"><i class="fas fa-crown mr-3"></i>관리자페이지</a>' : ''}
+                                    <hr class="my-2">
+                                    <button onclick="logout()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                                        <i class="fas fa-sign-out-alt mr-3"></i>로그아웃
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    \`;
+                    
+                    document.body.appendChild(overlay);
+                    
+                    setTimeout(() => {
+                        overlay?.classList.remove('opacity-0');
+                        document.getElementById('mobile-menu-content')?.classList.remove('translate-x-full');
+                    }, 10);
+                    
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) toggleMobileMenu();
+                    });
+                }
             }
         </script>
 
@@ -4585,10 +4747,15 @@ app.get('/lifestyle/youtube-download', (c) => {
             if (token && userEmail) {
                 const userMenu = document.getElementById('user-menu');
                 userMenu.innerHTML = \`
-                    <span class="text-xs sm:text-sm text-gray-700 px-2 sm:px-3">\${userEmail}</span>
+                    <button onclick="toggleMobileMenu()" class="text-gray-700 hover:text-blue-900 transition-all p-2" title="메뉴 열기">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3">
+                        <i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span>
+                    </a>
                     \${userLevel >= 6 ? '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-2 sm:px-3 py-1.5 rounded font-medium hover:bg-yellow-600 transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>' : ''}
-                    <button onclick="logout()" class="text-xs sm:text-sm text-gray-700 hover:text-red-600 font-medium transition-all px-2 sm:px-3">
-                        <i class="fas fa-sign-out-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그아웃</span>
+                    <button onclick="logout()" class="text-gray-700 hover:text-red-600 transition-all p-2" title="로그아웃">
+                        <i class="fas fa-sign-out-alt text-xl"></i>
                     </button>
                 \`;
             }
