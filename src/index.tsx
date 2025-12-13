@@ -824,39 +824,48 @@ app.get('/', async (c) => {
     <body class="bg-gray-50 transition-colors duration-300">
         ${getCommonHeader()}
 
-        <!-- Sticky 헤더 (스크롤 시 표시) -->
-        <div id="sticky-header" class="fixed top-0 left-0 right-0 z-40 bg-white shadow-md transform -translate-y-full transition-transform duration-300">
+        <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
+        <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg transform -translate-y-full transition-all duration-300 ease-in-out">
             <!-- 검색창 - 컴팩트 버전 -->
-            <div class="bg-white border-b border-gray-200">
-                <div class="max-w-6xl mx-auto px-4 py-2">
-                    <div class="flex items-center gap-2">
+            <div class="bg-white border-b border-gray-100">
+                <div class="max-w-6xl mx-auto px-3 py-2.5">
+                    <div class="flex items-center gap-3">
                         <a href="/" class="flex-shrink-0">
-                            <img src="/logo_fl.png" alt="Faith Portal" class="h-8 w-auto object-contain" />
+                            <img src="/logo_fl.png" alt="Faith Portal" class="h-7 w-auto object-contain" />
                         </a>
                         <div class="flex-1 relative">
                             <input 
                                 type="text" 
                                 placeholder="검색어를 입력해 주세요"
-                                class="w-full px-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:border-blue-500"
+                                class="w-full px-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
                             />
                         </div>
-                        <button class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <i class="fas fa-search text-sm"></i>
+                        <button class="flex-shrink-0 w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-colors shadow-sm">
+                            <i class="fas fa-search text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
             
             <!-- 서브 메뉴 -->
-            <div class="bg-green-500">
+            <div class="bg-gradient-to-r from-green-500 to-green-600 border-t border-green-600">
                 <div class="max-w-6xl mx-auto">
                     <div class="overflow-x-auto hide-scrollbar">
-                        <div class="flex items-center px-2">
-                            <a href="/" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">홈</a>
-                            <a href="/news" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">뉴스</a>
-                            <a href="/lifestyle" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">엔터</a>
-                            <a href="/game" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">스포츠</a>
-                            <a href="/finance" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">쇼핑</a>
+                        <div class="flex items-center px-1">
+                            <a href="/" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                                <i class="fas fa-home mr-1.5"></i>홈
+                            </a>
+                            <a href="/news" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                                <i class="fas fa-newspaper mr-1.5"></i>뉴스
+                            </a>
+                            <a href="/lifestyle" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                                <i class="fas fa-star mr-1.5"></i>엔터
+                            </a>
+                            <a href="/game" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                                <i class="fas fa-trophy mr-1.5"></i>스포츠
+                            </a>
+                            <a href="/finance" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                                <i class="fas fa-shopping-cart mr-1.5"></i>쇼핑</a>
                             <a href="/shopping" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">경제</a>
                             <a href="/entertainment" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-green-600 transition-colors">클립</a>
                         </div>
@@ -1048,29 +1057,53 @@ app.get('/', async (c) => {
                 // 페이지 로드 시 날씨 정보 가져오기
                 loadWeather();
                 
-                // ==================== Sticky 헤더 처리 ====================
+                // ==================== Sticky 헤더 처리 (Naver 스타일) ====================
                 let lastScrollTop = 0;
+                let isScrollingDown = false;
                 const stickyHeader = document.getElementById('sticky-header');
                 const mainSearch = document.getElementById('main-search');
                 const quickMenu = document.getElementById('quick-menu');
                 
-                window.addEventListener('scroll', function() {
-                    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                    
-                    // 메인 검색창이 화면에서 사라졌는지 확인
-                    if (mainSearch && quickMenu) {
-                        const quickMenuRect = quickMenu.getBoundingClientRect();
+                // 초기 위치 계산을 위한 지연 실행
+                setTimeout(() => {
+                    window.addEventListener('scroll', function() {
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
                         
-                        // 퀵 메뉴가 화면 상단을 벗어나면 sticky 헤더 표시
-                        if (quickMenuRect.bottom < 0) {
-                            stickyHeader.classList.remove('-translate-y-full');
-                        } else {
-                            stickyHeader.classList.add('-translate-y-full');
+                        // 스크롤 방향 감지
+                        isScrollingDown = scrollTop > lastScrollTop;
+                        
+                        // 메인 검색창과 퀵 메뉴의 위치 확인
+                        if (mainSearch && quickMenu && stickyHeader) {
+                            const quickMenuRect = quickMenu.getBoundingClientRect();
+                            const scrollThreshold = 100; // 더 부드러운 전환을 위한 임계값
+                            
+                            // 퀵 메뉴가 화면 상단을 완전히 벗어났을 때만 sticky 헤더 표시
+                            if (quickMenuRect.bottom < -scrollThreshold) {
+                                // 아래로 스크롤할 때만 표시 (더 자연스러운 동작)
+                                if (isScrollingDown || quickMenuRect.bottom < -scrollThreshold * 2) {
+                                    stickyHeader.classList.remove('-translate-y-full');
+                                    stickyHeader.style.display = 'block';
+                                }
+                            } else {
+                                // 퀵 메뉴가 다시 보이면 즉시 숨김
+                                stickyHeader.classList.add('-translate-y-full');
+                                // 애니메이션 후 display none으로 완전히 숨김
+                                setTimeout(() => {
+                                    if (stickyHeader.classList.contains('-translate-y-full')) {
+                                        stickyHeader.style.display = 'none';
+                                    }
+                                }, 300);
+                            }
                         }
-                    }
+                        
+                        lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+                    });
                     
-                    lastScrollTop = scrollTop;
-                });
+                    // 초기 상태 설정
+                    if (stickyHeader) {
+                        stickyHeader.style.display = 'none';
+                    }
+                }, 100);
             </script>
 
             <!-- 뉴스 & 트렌드 섹션 -->
