@@ -303,57 +303,54 @@ function getCommonHeader(sectionName: string = ''): string {
 // ==================== Sticky 헤더 컴포넌트 ====================
 function getStickyHeader(): string {
   return `
-    <!-- Sticky 헤더 (스크롤 시 표시) - Faith Portal 브랜드 컬러 -->
-    <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg transform -translate-y-full transition-all duration-300 ease-in-out">
-        <!-- 검색창 - 컴팩트 버전 -->
-        <div class="bg-white border-b border-gray-100">
-            <div class="max-w-6xl mx-auto px-3 py-2.5">
+    <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
+    <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md transform -translate-y-full transition-all duration-300 ease-in-out">
+        <!-- 검색창 영역 -->
+        <div class="bg-white">
+            <div class="max-w-7xl mx-auto px-4 py-2">
                 <div class="flex items-center gap-3">
                     <a href="/" class="flex-shrink-0">
-                        <img src="/logo_fl.png" alt="Faith Portal" class="h-7 w-auto object-contain" />
+                        <img src="/logo_fl.png" alt="Faith Portal" class="h-8 w-auto object-contain" />
                     </a>
                     <div class="flex-1 relative">
                         <input 
                             type="text" 
                             placeholder="검색어를 입력해 주세요"
-                            class="w-full px-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500 transition-colors"
                         />
                     </div>
-                    <button class="flex-shrink-0 w-9 h-9 rounded-full text-white flex items-center justify-center transition-all shadow-sm brand-navy brand-navy-hover">
-                        <i class="fas fa-search text-xs"></i>
+                    <button class="flex-shrink-0 w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-600 flex items-center justify-center hover:bg-gray-50 transition-all">
+                        <i class="fas fa-search text-base"></i>
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- 서브 메뉴 - 브랜드 네이비 그라데이션 (항상 표시) -->
-        <div class="border-t border-blue-800" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
-            <div class="max-w-6xl mx-auto">
+        <!-- 서브 메뉴 영역 - 브랜드 네이비 그라데이션 -->
+        <div style="background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 50%, #1e3a8a 100%);">
+            <div class="max-w-7xl mx-auto">
                 <div class="overflow-x-auto hide-scrollbar">
-                    <div class="flex items-center px-2 py-1">
-                        <a href="/" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-home mr-1"></i>홈
+                    <div class="flex items-center">
+                        <a href="/" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            홈
                         </a>
-                        <a href="/news" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-newspaper mr-1"></i>뉴스
+                        <a href="/news" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            뉴스
                         </a>
-                        <a href="/lifestyle" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-home mr-1"></i>생활
+                        <a href="/entertainment" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            엔터
                         </a>
-                        <a href="/game" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-gamepad mr-1"></i>게임
+                        <a href="/game" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            스포츠
                         </a>
-                        <a href="/finance" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-chart-line mr-1"></i>금융
+                        <a href="/shopping" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            쇼핑
                         </a>
-                        <a href="/shopping" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-shopping-cart mr-1"></i>쇼핑
+                        <a href="/finance" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            경제
                         </a>
-                        <a href="/entertainment" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-star mr-1"></i>엔터
-                        </a>
-                        <a href="/education" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
-                            <i class="fas fa-book mr-1"></i>교육
+                        <a href="/lifestyle" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            클립
                         </a>
                     </div>
                 </div>
