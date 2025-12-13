@@ -326,31 +326,34 @@ function getStickyHeader(): string {
             </div>
         </div>
         
-        <!-- 서브 메뉴 - 브랜드 네이비 그라데이션 -->
+        <!-- 서브 메뉴 - 브랜드 네이비 그라데이션 (항상 표시) -->
         <div class="border-t border-blue-800" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
             <div class="max-w-6xl mx-auto">
                 <div class="overflow-x-auto hide-scrollbar">
-                    <div class="flex items-center px-1">
-                        <a href="/" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-home mr-1.5"></i>홈
+                    <div class="flex items-center px-2 py-1">
+                        <a href="/" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-home mr-1"></i>홈
                         </a>
-                        <a href="/news" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-newspaper mr-1.5"></i>뉴스
+                        <a href="/news" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-newspaper mr-1"></i>뉴스
                         </a>
-                        <a href="/lifestyle" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-star mr-1.5"></i>엔터
+                        <a href="/lifestyle" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-home mr-1"></i>생활
                         </a>
-                        <a href="/game" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-trophy mr-1.5"></i>스포츠
+                        <a href="/game" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-gamepad mr-1"></i>게임
                         </a>
-                        <a href="/finance" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-shopping-cart mr-1.5"></i>쇼핑
+                        <a href="/finance" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-chart-line mr-1"></i>금융
                         </a>
-                        <a href="/finance" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-chart-line mr-1.5"></i>경제
+                        <a href="/shopping" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-shopping-cart mr-1"></i>쇼핑
                         </a>
-                        <a href="/lifestyle" class="px-4 py-2.5 text-xs font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            <i class="fas fa-film mr-1.5"></i>클립
+                        <a href="/entertainment" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-star mr-1"></i>엔터
+                        </a>
+                        <a href="/education" class="px-3 py-2 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all rounded">
+                            <i class="fas fa-book mr-1"></i>교육
                         </a>
                     </div>
                 </div>
