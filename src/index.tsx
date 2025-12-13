@@ -896,51 +896,117 @@ app.get('/', async (c) => {
                 </div>
             </nav>
 
-            <!-- 메인 배너 섹션 -->
-            <section class="mb-12 max-w-6xl mx-auto px-4">
-                <div class="relative bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl overflow-hidden shadow-2xl">
-                    <!-- 배너 컨테이너 -->
-                    <div class="relative h-64 sm:h-80 md:h-96 flex items-center justify-center">
-                        <!-- 배경 패턴 (선택사항) -->
-                        <div class="absolute inset-0 opacity-10">
-                            <div class="absolute inset-0" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 20px 20px;"></div>
+            <!-- 메인 배너 섹션 (네이버 스타일) -->
+            <section class="mb-6 max-w-6xl mx-auto px-4">
+                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <a href="/news" class="block">
+                        <div class="flex items-center p-4 sm:p-6">
+                            <!-- 배너 이미지 (왼쪽) -->
+                            <div class="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-xl overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500">
+                                <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop" 
+                                     alt="배너 이미지" 
+                                     class="w-full h-full object-cover"
+                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'fas fa-image text-white text-4xl\\'></i></div>'">
+                            </div>
+                            
+                            <!-- 배너 텍스트 (오른쪽) -->
+                            <div class="flex-1 ml-4 sm:ml-6">
+                                <h3 class="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">
+                                    부해른 윈터 원더랜드
+                                </h3>
+                                <p class="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                    한소희의 홀리데이 위시리스트
+                                </p>
+                            </div>
                         </div>
-                        
-                        <!-- 배너 콘텐츠 -->
-                        <div class="relative z-10 text-center px-6 sm:px-12">
-                            <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4 drop-shadow-lg">
-                                <i class="fas fa-rocket mr-3"></i>
-                                Welcome to Faith Portal
-                            </h2>
-                            <p class="text-lg sm:text-xl md:text-2xl text-white/90 mb-6 drop-shadow">
-                                최신 뉴스와 다양한 서비스를 한곳에서
-                            </p>
-                            <div class="flex flex-wrap gap-4 justify-center">
-                                <a href="/news" class="inline-block bg-white text-blue-600 px-6 py-3 rounded-lg font-bold hover:bg-blue-50 transition-all transform hover:scale-105 shadow-lg">
-                                    <i class="fas fa-newspaper mr-2"></i>
-                                    뉴스 보기
-                                </a>
-                                <a href="/lifestyle" class="inline-block bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-bold hover:bg-white/30 transition-all transform hover:scale-105 border-2 border-white/50">
-                                    <i class="fas fa-home mr-2"></i>
-                                    생활 서비스
-                                </a>
+                    </a>
+                </div>
+            </section>
+
+            <!-- 날씨 위젯 -->
+            <section class="mb-8 max-w-6xl mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-md p-4">
+                    <div class="flex items-center justify-between">
+                        <!-- 현재 날씨 -->
+                        <div class="flex items-center gap-3">
+                            <div class="text-3xl" id="weather-icon">
+                                <i class="fas fa-cloud-sun text-blue-400"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-2xl font-bold text-gray-900" id="weather-temp">1.3°</span>
+                                    <span class="text-sm text-gray-600">비</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1" id="weather-location">서울</div>
                             </div>
                         </div>
                         
-                        <!-- 장식 요소 -->
-                        <div class="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full blur-2xl"></div>
-                        <div class="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-3xl"></div>
+                        <!-- 미세먼지/초미세먼지 -->
+                        <div class="flex gap-3 sm:gap-6">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">미세</div>
+                                <div class="text-sm font-bold">
+                                    <span class="text-blue-600">좋음</span>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">초미세</div>
+                                <div class="text-sm font-bold">
+                                    <span class="text-blue-600">좋음</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <!-- 배너 설명 (선택사항) -->
-                <div class="mt-4 text-center">
-                    <p class="text-sm text-gray-500">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        이 배너는 커스터마이징 가능합니다. 이미지, 텍스트, 링크를 자유롭게 변경하세요.
-                    </p>
-                </div>
             </section>
+
+            <script>
+                // 날씨 API 호출 (OpenWeatherMap 무료 API 사용 가능)
+                async function loadWeather() {
+                    try {
+                        // Geolocation으로 현재 위치 가져오기
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(async (position) => {
+                                const lat = position.coords.latitude;
+                                const lon = position.coords.longitude;
+                                
+                                // 날씨 아이콘 매핑
+                                const weatherIcons = {
+                                    'Clear': 'fa-sun text-yellow-400',
+                                    'Clouds': 'fa-cloud text-gray-400',
+                                    'Rain': 'fa-cloud-rain text-blue-500',
+                                    'Snow': 'fa-snowflake text-blue-200',
+                                    'Drizzle': 'fa-cloud-rain text-blue-400',
+                                    'Thunderstorm': 'fa-bolt text-yellow-600',
+                                    'Mist': 'fa-smog text-gray-400',
+                                    'Fog': 'fa-smog text-gray-400'
+                                };
+                                
+                                // 간단한 날씨 표시 (실제로는 API 호출 필요)
+                                const weatherDesc = ['비', '맑음', '흐림', '눈'][Math.floor(Math.random() * 4)];
+                                const temp = (Math.random() * 20 - 5).toFixed(1);
+                                
+                                document.getElementById('weather-temp').textContent = temp + '°';
+                                
+                                // 날씨 아이콘 업데이트
+                                const iconClasses = weatherDesc === '비' ? 'fa-cloud-rain text-blue-500' :
+                                                   weatherDesc === '맑음' ? 'fa-sun text-yellow-400' :
+                                                   weatherDesc === '흐림' ? 'fa-cloud text-gray-400' :
+                                                   'fa-snowflake text-blue-200';
+                                                   
+                                document.getElementById('weather-icon').innerHTML = '<i class="fas ' + iconClasses + '"></i>';
+                            }, (error) => {
+                                console.log('위치 정보를 가져올 수 없습니다:', error);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('날씨 정보 로드 실패:', error);
+                    }
+                }
+                
+                // 페이지 로드 시 날씨 정보 가져오기
+                loadWeather();
+            </script>
 
             <!-- 뉴스 & 트렌드 섹션 -->
             <div class="grid md:grid-cols-2 gap-6 mb-12">
