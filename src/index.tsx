@@ -304,7 +304,7 @@ function getCommonHeader(sectionName: string = ''): string {
 function getStickyHeader(): string {
   return `
     <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
-    <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md transform -translate-y-full transition-all duration-300 ease-in-out">
+    <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md transition-all duration-300 ease-in-out" style="transform: translateY(-100%);">
         <!-- 검색창 영역 -->
         <div class="bg-white">
             <div class="max-w-7xl mx-auto px-4 py-2">
@@ -390,37 +390,21 @@ function getStickyHeader(): string {
                     
                     // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
                     if (quickMenuRect.bottom < -scrollThreshold) {
-                        stickyHeader.classList.remove('-translate-y-full');
-                        stickyHeader.style.display = 'block';
+                        stickyHeader.style.transform = 'translateY(0)';
                     } else {
-                        stickyHeader.classList.add('-translate-y-full');
-                        setTimeout(() => {
-                            if (stickyHeader.classList.contains('-translate-y-full')) {
-                                stickyHeader.style.display = 'none';
-                            }
-                        }, 300);
+                        stickyHeader.style.transform = 'translateY(-100%)';
                     }
                 } else {
                     // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
                     if (headerRect.bottom <= 0) {
-                        stickyHeader.classList.remove('-translate-y-full');
-                        stickyHeader.style.display = 'block';
+                        stickyHeader.style.transform = 'translateY(0)';
                     } else {
-                        // 메인 헤더가 다시 보이면 즉시 숨김
-                        stickyHeader.classList.add('-translate-y-full');
-                        setTimeout(() => {
-                            if (stickyHeader.classList.contains('-translate-y-full')) {
-                                stickyHeader.style.display = 'none';
-                            }
-                        }, 300);
+                        stickyHeader.style.transform = 'translateY(-100%)';
                     }
                 }
                 
                 lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
             });
-            
-            // 초기 상태 설정
-            stickyHeader.style.display = 'none';
         }, 100);
       })();
     </script>
