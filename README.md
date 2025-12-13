@@ -15,6 +15,12 @@
 - **폰트**: Pretendard (자간 -0.02em)
 - **기술 스택**: Hono + TypeScript + Cloudflare D1 + TailwindCSS + Chart.js
 - **반응형 디자인**: ✅ 모든 페이지 모바일/태블릿/데스크톱 지원
+- **컴포넌트 아키텍처**: ✨NEW
+  - `getCommonHeader()`: 공통 헤더 컴포넌트
+  - `getStickyHeader()`: Sticky 헤더 컴포넌트 (모든 페이지 적용)
+  - `getCommonFooter()`: 공통 푸터 컴포넌트
+  - `getCommonAuthScript()`: 인증 스크립트 컴포넌트
+  - `getAdminNavigation()`: 관리자 네비게이션 컴포넌트
 
 ## 주요 기능
 
