@@ -367,6 +367,11 @@ function getStickyHeader(): string {
         const mainSearch = document.getElementById('main-search');
         const quickMenu = document.getElementById('quick-menu');
         
+        if (!stickyHeader || !mainHeader) {
+            console.log('Sticky header or main header not found');
+            return;
+        }
+        
         // 초기 위치 계산을 위한 지연 실행
         setTimeout(() => {
             window.addEventListener('scroll', function() {
@@ -374,10 +379,6 @@ function getStickyHeader(): string {
                 
                 // 스크롤 방향 감지
                 isScrollingDown = scrollTop > lastScrollTop;
-                
-                if (!stickyHeader || !mainHeader) {
-                    return;
-                }
                 
                 // 메인 헤더의 위치 확인
                 const headerRect = mainHeader.getBoundingClientRect();
@@ -389,10 +390,8 @@ function getStickyHeader(): string {
                     
                     // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
                     if (quickMenuRect.bottom < -scrollThreshold) {
-                        if (isScrollingDown || quickMenuRect.bottom < -scrollThreshold * 2) {
-                            stickyHeader.classList.remove('-translate-y-full');
-                            stickyHeader.style.display = 'block';
-                        }
+                        stickyHeader.classList.remove('-translate-y-full');
+                        stickyHeader.style.display = 'block';
                     } else {
                         stickyHeader.classList.add('-translate-y-full');
                         setTimeout(() => {
@@ -404,11 +403,8 @@ function getStickyHeader(): string {
                 } else {
                     // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
                     if (headerRect.bottom <= 0) {
-                        // 아래로 스크롤 중이거나 헤더가 완전히 사라진 경우
-                        if (isScrollingDown || headerRect.bottom < -20) {
-                            stickyHeader.classList.remove('-translate-y-full');
-                            stickyHeader.style.display = 'block';
-                        }
+                        stickyHeader.classList.remove('-translate-y-full');
+                        stickyHeader.style.display = 'block';
                     } else {
                         // 메인 헤더가 다시 보이면 즉시 숨김
                         stickyHeader.classList.add('-translate-y-full');
@@ -424,9 +420,7 @@ function getStickyHeader(): string {
             });
             
             // 초기 상태 설정
-            if (stickyHeader) {
-                stickyHeader.style.display = 'none';
-            }
+            stickyHeader.style.display = 'none';
         }, 100);
       })();
     </script>
