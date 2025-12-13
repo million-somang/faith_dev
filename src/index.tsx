@@ -824,7 +824,7 @@ app.get('/', async (c) => {
     <body class="bg-gray-50 transition-colors duration-300">
         ${getCommonHeader()}
 
-        <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
+        <!-- Sticky 헤더 (스크롤 시 표시) - Faith Portal 브랜드 컬러 -->
         <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-lg transform -translate-y-full transition-all duration-300 ease-in-out">
             <!-- 검색창 - 컴팩트 버전 -->
             <div class="bg-white border-b border-gray-100">
@@ -837,18 +837,18 @@ app.get('/', async (c) => {
                             <input 
                                 type="text" 
                                 placeholder="검색어를 입력해 주세요"
-                                class="w-full px-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-green-500 focus:bg-white transition-colors"
+                                class="w-full px-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-full focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
                             />
                         </div>
-                        <button class="flex-shrink-0 w-9 h-9 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-colors shadow-sm">
+                        <button class="flex-shrink-0 w-9 h-9 rounded-full text-white flex items-center justify-center transition-all shadow-sm brand-navy brand-navy-hover">
                             <i class="fas fa-search text-xs"></i>
                         </button>
                     </div>
                 </div>
             </div>
             
-            <!-- 서브 메뉴 -->
-            <div class="bg-gradient-to-r from-green-500 to-green-600 border-t border-green-600">
+            <!-- 서브 메뉴 - 브랜드 네이비 그라데이션 -->
+            <div class="border-t border-blue-800" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);">
                 <div class="max-w-6xl mx-auto">
                     <div class="overflow-x-auto hide-scrollbar">
                         <div class="flex items-center px-1">
