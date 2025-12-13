@@ -358,11 +358,12 @@ function getStickyHeader(): string {
         </div>
     </div>
     <script>
-      // ==================== Sticky 헤더 처리 (Naver 스타일) ====================
+      // ==================== Sticky 헤더 처리 (Naver 스타일 - 모든 페이지) ====================
       (function() {
         let lastScrollTop = 0;
         let isScrollingDown = false;
         const stickyHeader = document.getElementById('sticky-header');
+        const mainHeader = document.getElementById('main-header');
         const mainSearch = document.getElementById('main-search');
         const quickMenu = document.getElementById('quick-menu');
         
@@ -374,45 +375,48 @@ function getStickyHeader(): string {
                 // 스크롤 방향 감지
                 isScrollingDown = scrollTop > lastScrollTop;
                 
-                // 메인 검색창과 퀵 메뉴의 위치 확인
-                if (stickyHeader) {
-                    // 퀵 메뉴가 있는 경우 (메인 페이지)
-                    if (mainSearch && quickMenu) {
-                        const quickMenuRect = quickMenu.getBoundingClientRect();
-                        const scrollThreshold = 100; // 더 부드러운 전환을 위한 임계값
-                        
-                        // 퀵 메뉴가 화면 상단을 완전히 벗어났을 때만 sticky 헤더 표시
-                        if (quickMenuRect.bottom < -scrollThreshold) {
-                            // 아래로 스크롤할 때만 표시 (더 자연스러운 동작)
-                            if (isScrollingDown || quickMenuRect.bottom < -scrollThreshold * 2) {
-                                stickyHeader.classList.remove('-translate-y-full');
-                                stickyHeader.style.display = 'block';
-                            }
-                        } else {
-                            // 퀵 메뉴가 다시 보이면 즉시 숨김
-                            stickyHeader.classList.add('-translate-y-full');
-                            // 애니메이션 후 display none으로 완전히 숨김
-                            setTimeout(() => {
-                                if (stickyHeader.classList.contains('-translate-y-full')) {
-                                    stickyHeader.style.display = 'none';
-                                }
-                            }, 300);
+                if (!stickyHeader || !mainHeader) {
+                    return;
+                }
+                
+                // 메인 헤더의 위치 확인
+                const headerRect = mainHeader.getBoundingClientRect();
+                
+                // 메인 페이지 (퀵 메뉴가 있는 경우)
+                if (mainSearch && quickMenu) {
+                    const quickMenuRect = quickMenu.getBoundingClientRect();
+                    const scrollThreshold = 50;
+                    
+                    // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
+                    if (quickMenuRect.bottom < -scrollThreshold) {
+                        if (isScrollingDown || quickMenuRect.bottom < -scrollThreshold * 2) {
+                            stickyHeader.classList.remove('-translate-y-full');
+                            stickyHeader.style.display = 'block';
                         }
                     } else {
-                        // 퀵 메뉴가 없는 페이지 (뉴스, 생활 등)에서는 200px 스크롤 후 표시
-                        if (scrollTop > 200) {
-                            if (isScrollingDown) {
-                                stickyHeader.classList.remove('-translate-y-full');
-                                stickyHeader.style.display = 'block';
+                        stickyHeader.classList.add('-translate-y-full');
+                        setTimeout(() => {
+                            if (stickyHeader.classList.contains('-translate-y-full')) {
+                                stickyHeader.style.display = 'none';
                             }
-                        } else {
-                            stickyHeader.classList.add('-translate-y-full');
-                            setTimeout(() => {
-                                if (stickyHeader.classList.contains('-translate-y-full')) {
-                                    stickyHeader.style.display = 'none';
-                                }
-                            }, 300);
+                        }, 300);
+                    }
+                } else {
+                    // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
+                    if (headerRect.bottom <= 0) {
+                        // 아래로 스크롤 중이거나 헤더가 완전히 사라진 경우
+                        if (isScrollingDown || headerRect.bottom < -20) {
+                            stickyHeader.classList.remove('-translate-y-full');
+                            stickyHeader.style.display = 'block';
                         }
+                    } else {
+                        // 메인 헤더가 다시 보이면 즉시 숨김
+                        stickyHeader.classList.add('-translate-y-full');
+                        setTimeout(() => {
+                            if (stickyHeader.classList.contains('-translate-y-full')) {
+                                stickyHeader.style.display = 'none';
+                            }
+                        }, 300);
                     }
                 }
                 
@@ -1308,6 +1312,7 @@ app.get('/game/simple', (c) => {
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
         ${getCommonHeader('Game')}
+        ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -3148,6 +3153,7 @@ app.get('/lifestyle', (c) => {
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
         ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -3335,6 +3341,7 @@ app.get('/finance', (c) => {
     </head>
     <body class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50" id="html-root">
         ${getCommonHeader('Finance')}
+        ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -5464,6 +5471,7 @@ app.get('/news', async (c) => {
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
         ${getCommonHeader('News')}
+        ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
