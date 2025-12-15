@@ -10055,17 +10055,13 @@ app.get('/api/news/:id/votes', async (c) => {
 // ==================== 키워드 구독 시스템 API ====================
 app.post('/api/keywords/subscribe', async (c) => {
   try {
-    const { keyword } = await c.req.json()
+    const { keyword, userId } = await c.req.json()
     const { env } = c
     
-    // 사용자 인증 확인 (실제 구현 시 JWT 검증 필요)
-    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
-    if (!authToken) {
-      return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
+    // userId 검증
+    if (!userId) {
+      return c.json({ success: false, error: '사용자 ID가 필요합니다' }, 400)
     }
-    
-    // 임시: localStorage의 user_id 사용 (실제로는 JWT에서 추출)
-    const userId = 1 // TODO: JWT에서 실제 user_id 추출
     
     // 키워드 유효성 검사
     if (!keyword || keyword.trim().length === 0) {
@@ -10081,7 +10077,7 @@ app.post('/api/keywords/subscribe', async (c) => {
       await env.DB.prepare(`
         INSERT INTO user_keywords (user_id, keyword)
         VALUES (?, ?)
-      `).bind(userId, keyword.trim()).run()
+      `).bind(parseInt(userId), keyword.trim()).run()
       
       return c.json({ success: true, keyword: keyword.trim() })
     } catch (err: any) {
@@ -10097,6 +10093,29 @@ app.post('/api/keywords/subscribe', async (c) => {
 })
 
 // ==================== 키워드 구독 취소 API ====================
+app.delete('/api/keywords/:id', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const { userId } = await c.req.json()
+    const { env } = c
+    
+    if (!userId) {
+      return c.json({ success: false, error: '사용자 ID가 필요합니다' }, 400)
+    }
+    
+    await env.DB.prepare(`
+      DELETE FROM user_keywords 
+      WHERE id = ? AND user_id = ?
+    `).bind(parseInt(id), parseInt(userId)).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('키워드 구독 취소 오류:', error)
+    return c.json({ success: false, error: '구독 취소 실패' }, 500)
+  }
+})
+
+// DELETE by keyword (legacy)
 app.delete('/api/keywords/:keyword', async (c) => {
   try {
     const keyword = decodeURIComponent(c.req.param('keyword'))
@@ -10147,6 +10166,30 @@ app.get('/api/keywords/my', async (c) => {
   }
 })
 
+// ==================== 키워드 목록 조회 API (userId 파라미터) ====================
+app.get('/api/keywords', async (c) => {
+  try {
+    const userId = c.req.query('userId')
+    const { env } = c
+    
+    if (!userId) {
+      return c.json({ success: false, error: '사용자 ID가 필요합니다' }, 400)
+    }
+    
+    const { results } = await env.DB.prepare(`
+      SELECT id, keyword, created_at 
+      FROM user_keywords 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+    `).bind(parseInt(userId)).all()
+    
+    return c.json({ success: true, keywords: results || [] })
+  } catch (error) {
+    console.error('키워드 목록 조회 오류:', error)
+    return c.json({ success: false, error: '목록 조회 실패' }, 500)
+  }
+})
+
 // ==================== 키워드별 뉴스 조회 API ====================
 app.get('/api/news/keyword/:keyword', async (c) => {
   try {
@@ -10167,6 +10210,91 @@ app.get('/api/news/keyword/:keyword', async (c) => {
   }
 })
 
+// ==================== 투표 API ====================
+app.post('/api/news/vote', async (c) => {
+  try {
+    const { userId, newsId, voteType } = await c.req.json()
+    const { env } = c
+    
+    // 입력 검증
+    if (!userId || !newsId || !voteType) {
+      return c.json({ success: false, error: '필수 파라미터가 누락되었습니다' }, 400)
+    }
+    
+    if (voteType !== 'up' && voteType !== 'down') {
+      return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
+    }
+    
+    // 기존 투표 확인
+    const existingVote = await env.DB.prepare(
+      'SELECT * FROM news_votes WHERE user_id = ? AND news_id = ?'
+    ).bind(userId, newsId).first()
+    
+    // 기존 투표가 있으면 업데이트, 없으면 삽입
+    if (existingVote) {
+      // 같은 타입이면 취소
+      if (existingVote.vote_type === voteType) {
+        // 투표 삭제
+        await env.DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+        
+        // 카운트 감소
+        const field = voteType === 'up' ? 'vote_up' : 'vote_down'
+        await env.DB.prepare(`
+          UPDATE news 
+          SET ${field} = ${field} - 1,
+              popularity_score = vote_up - vote_down
+          WHERE id = ?
+        `).bind(newsId).run()
+      } else {
+        // 다른 타입이면 변경
+        await env.DB.prepare(
+          'UPDATE news_votes SET vote_type = ? WHERE id = ?'
+        ).bind(voteType, existingVote.id).run()
+        
+        // 카운트 업데이트
+        const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
+        const newField = voteType === 'up' ? 'vote_up' : 'vote_down'
+        await env.DB.prepare(`
+          UPDATE news 
+          SET ${oldField} = ${oldField} - 1,
+              ${newField} = ${newField} + 1,
+              popularity_score = vote_up - vote_down
+          WHERE id = ?
+        `).bind(newsId).run()
+      }
+    } else {
+      // 새 투표 추가
+      await env.DB.prepare(
+        'INSERT INTO news_votes (user_id, news_id, vote_type) VALUES (?, ?, ?)'
+      ).bind(userId, newsId, voteType).run()
+      
+      // 카운트 증가
+      const field = voteType === 'up' ? 'vote_up' : 'vote_down'
+      await env.DB.prepare(`
+        UPDATE news 
+        SET ${field} = ${field} + 1,
+            popularity_score = vote_up - vote_down
+        WHERE id = ?
+      `).bind(newsId).run()
+    }
+    
+    // 업데이트된 투표 수 조회
+    const newsData = await env.DB.prepare(
+      'SELECT vote_up, vote_down, popularity_score FROM news WHERE id = ?'
+    ).bind(newsId).first()
+    
+    return c.json({
+      success: true,
+      vote_up: newsData.vote_up,
+      vote_down: newsData.vote_down,
+      popularity_score: newsData.popularity_score
+    })
+  } catch (error) {
+    console.error('투표 처리 오류:', error)
+    return c.json({ success: false, error: '투표 처리 실패' }, 500)
+  }
+})
+
 // ==================== 실시간 HOT 뉴스 API ====================
 app.get('/api/news/hot', async (c) => {
   try {
@@ -10175,7 +10303,7 @@ app.get('/api/news/hot', async (c) => {
     
     const { results } = await env.DB.prepare(`
       SELECT 
-        id, title, summary, image_url, category,
+        id, title, summary, link, image_url, category,
         vote_up, vote_down, view_count, popularity_score,
         ai_summary, sentiment
       FROM news 
