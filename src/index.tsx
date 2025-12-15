@@ -5559,11 +5559,81 @@ app.get('/news', async (c) => {
                 </div>
             </div>
 
-            <!-- ========== 3단 레이아웃 ========== -->
-            <div class="flex flex-col lg:flex-row gap-6">
+            <!-- ========== 모바일 위젯 탭 (모바일만 표시) ========== -->
+            <div class="lg:hidden mb-6">
+                <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                    <!-- 탭 헤더 -->
+                    <div class="flex border-b border-gray-200">
+                        <button 
+                            id="tab-hot" 
+                            onclick="switchMobileTab('hot')" 
+                            class="flex-1 py-4 px-4 font-semibold text-center transition-colors border-b-2 border-red-500 text-red-600"
+                        >
+                            <i class="fas fa-fire mr-2"></i>
+                            HOT 이슈
+                        </button>
+                        <button 
+                            id="tab-keyword" 
+                            onclick="switchMobileTab('keyword')" 
+                            class="flex-1 py-4 px-4 font-semibold text-center transition-colors border-b-2 border-transparent text-gray-500"
+                        >
+                            <i class="fas fa-bookmark mr-2"></i>
+                            키워드 구독
+                        </button>
+                    </div>
+                    
+                    <!-- 탭 컨텐츠 -->
+                    <div class="p-5">
+                        <!-- HOT 뉴스 탭 -->
+                        <div id="mobile-hot-content" class="">
+                            <div id="mobile-hot-news-list" class="space-y-3">
+                                <p class="text-sm text-gray-500 text-center py-4">
+                                    로딩 중...
+                                </p>
+                            </div>
+                            <button onclick="loadMoreHotNews()" class="w-full mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">
+                                <i class="fas fa-chevron-down mr-1"></i>
+                                더보기
+                            </button>
+                        </div>
+                        
+                        <!-- 키워드 구독 탭 -->
+                        <div id="mobile-keyword-content" class="hidden">
+                            <!-- 키워드 추가 입력 -->
+                            <div class="mb-4">
+                                <div class="relative">
+                                    <input 
+                                        type="text" 
+                                        id="mobile-keyword-input" 
+                                        placeholder="키워드 입력..." 
+                                        class="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 focus:border-purple-500 focus:outline-none text-sm"
+                                    />
+                                    <button 
+                                        onclick="addKeyword('mobile')" 
+                                        class="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 hover:text-purple-700"
+                                        title="추가"
+                                    >
+                                        <i class="fas fa-plus-circle text-xl"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- 키워드 목록 -->
+                            <div id="mobile-keyword-list" class="space-y-2 max-h-80 overflow-y-auto">
+                                <p class="text-sm text-gray-500 text-center py-4">
+                                    아직 구독한 키워드가 없습니다
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== 3단 레이아웃 (PC만 표시) ========== -->
+            <div class="hidden lg:flex lg:flex-row gap-6">
                 
-                <!-- 왼쪽 사이드바: 키워드 구독 (PC만 표시) -->
-                <aside class="hidden lg:block lg:w-64 flex-shrink-0">
+                <!-- 왼쪽 사이드바: 키워드 구독 -->
+                <aside class="lg:w-64 flex-shrink-0">
                     <div class="bg-white rounded-xl shadow-md p-5 sticky top-20">
                         <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
                             <i class="fas fa-bookmark text-purple-600 mr-2"></i>
@@ -5632,6 +5702,17 @@ app.get('/news', async (c) => {
                     </div>
                 </aside>
 
+            </div>
+            
+            <!-- ========== 모바일 뉴스 피드 ========== -->
+            <div class="lg:hidden">
+                <div id="mobile-news-feed" class="space-y-4">
+                    <!-- JavaScript로 동적으로 뉴스 로드됨 -->
+                    <div class="text-center py-12">
+                        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                        <p class="text-gray-500 mt-4 text-lg">뉴스를 불러오는 중...</p>
+                    </div>
+                </div>
             </div>
 
             <!-- 새로고침 버튼 -->
@@ -5719,13 +5800,24 @@ app.get('/news', async (c) => {
                 const searchInput = document.getElementById('search-input');
                 const clearSearchBtn = document.getElementById('clear-search');
                 
-                // 키워드 입력 Enter 키 이벤트
+                // 데스크톱 키워드 입력 Enter 키 이벤트
                 const keywordInput = document.getElementById('keyword-input');
                 if (keywordInput) {
                     keywordInput.addEventListener('keypress', function(e) {
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             addKeyword();
+                        }
+                    });
+                }
+                
+                // 모바일 키워드 입력 Enter 키 이벤트
+                const mobileKeywordInput = document.getElementById('mobile-keyword-input');
+                if (mobileKeywordInput) {
+                    mobileKeywordInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addKeyword('mobile');
                         }
                     });
                 }
@@ -5884,7 +5976,10 @@ app.get('/news', async (c) => {
             // ==================== 실시간 HOT 뉴스 ====================
             async function loadHotNews() {
                 const hotNewsList = document.getElementById('hot-news-list');
-                hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">로딩 중...</p>';
+                const mobileHotNewsList = document.getElementById('mobile-hot-news-list');
+                
+                if (hotNewsList) hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">로딩 중...</p>';
+                if (mobileHotNewsList) mobileHotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">로딩 중...</p>';
                 
                 try {
                     const response = await fetch('/api/news/hot?limit=10');
@@ -5911,7 +6006,8 @@ app.get('/news', async (c) => {
                             '</div>';
                         }).join('');
                         
-                        hotNewsList.innerHTML = hotHTML;
+                        if (hotNewsList) hotNewsList.innerHTML = hotHTML;
+                        if (mobileHotNewsList) mobileHotNewsList.innerHTML = hotHTML;
                         
                         // HOT 뉴스 클릭 이벤트 바인딩
                         document.querySelectorAll('.hot-news-item').forEach(item => {
@@ -5921,11 +6017,15 @@ app.get('/news', async (c) => {
                             });
                         });
                     } else {
-                        hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">HOT 뉴스가 없습니다</p>';
+                        const emptyMsg = '<p class="text-sm text-gray-500 text-center py-4">HOT 뉴스가 없습니다</p>';
+                        if (hotNewsList) hotNewsList.innerHTML = emptyMsg;
+                        if (mobileHotNewsList) mobileHotNewsList.innerHTML = emptyMsg;
                     }
                 } catch (error) {
                     console.error('HOT 뉴스 로드 오류:', error);
-                    hotNewsList.innerHTML = '<p class="text-sm text-red-500 text-center py-4">로드 실패</p>';
+                    const errorMsg = '<p class="text-sm text-red-500 text-center py-4">로드 실패</p>';
+                    if (hotNewsList) hotNewsList.innerHTML = errorMsg;
+                    if (mobileHotNewsList) mobileHotNewsList.innerHTML = errorMsg;
                 }
             }
             
@@ -5933,9 +6033,34 @@ app.get('/news', async (c) => {
                 showToast('더 많은 HOT 뉴스 준비 중...', 'info');
             }
             
+            // ==================== 모바일 탭 전환 ====================
+            function switchMobileTab(tab) {
+                const hotTab = document.getElementById('tab-hot');
+                const keywordTab = document.getElementById('tab-keyword');
+                const hotContent = document.getElementById('mobile-hot-content');
+                const keywordContent = document.getElementById('mobile-keyword-content');
+                
+                if (tab === 'hot') {
+                    hotTab.classList.add('border-red-500', 'text-red-600');
+                    hotTab.classList.remove('border-transparent', 'text-gray-500');
+                    keywordTab.classList.remove('border-purple-500', 'text-purple-600');
+                    keywordTab.classList.add('border-transparent', 'text-gray-500');
+                    hotContent.classList.remove('hidden');
+                    keywordContent.classList.add('hidden');
+                } else {
+                    keywordTab.classList.add('border-purple-500', 'text-purple-600');
+                    keywordTab.classList.remove('border-transparent', 'text-gray-500');
+                    hotTab.classList.remove('border-red-500', 'text-red-600');
+                    hotTab.classList.add('border-transparent', 'text-gray-500');
+                    keywordContent.classList.remove('hidden');
+                    hotContent.classList.add('hidden');
+                }
+            }
+            
             // ==================== 키워드 구독 시스템 ====================
-            async function addKeyword() {
-                const input = document.getElementById('keyword-input');
+            async function addKeyword(device = 'desktop') {
+                const inputId = device === 'mobile' ? 'mobile-keyword-input' : 'keyword-input';
+                const input = document.getElementById(inputId);
                 const keyword = input.value.trim();
                 
                 if (!keyword) {
@@ -5976,6 +6101,7 @@ app.get('/news', async (c) => {
                 if (!userId) return;
                 
                 const keywordList = document.getElementById('keyword-list');
+                const mobileKeywordList = document.getElementById('mobile-keyword-list');
                 
                 try {
                     const response = await fetch('/api/keywords?userId=' + userId);
@@ -5991,9 +6117,12 @@ app.get('/news', async (c) => {
                             '</div>';
                         }).join('');
                         
-                        keywordList.innerHTML = keywordsHTML;
+                        if (keywordList) keywordList.innerHTML = keywordsHTML;
+                        if (mobileKeywordList) mobileKeywordList.innerHTML = keywordsHTML;
                     } else {
-                        keywordList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">아직 구독한 키워드가 없습니다</p>';
+                        const emptyMsg = '<p class="text-sm text-gray-500 text-center py-4">아직 구독한 키워드가 없습니다</p>';
+                        if (keywordList) keywordList.innerHTML = emptyMsg;
+                        if (mobileKeywordList) mobileKeywordList.innerHTML = emptyMsg;
                     }
                 } catch (error) {
                     console.error('키워드 로드 오류:', error);
@@ -6037,19 +6166,24 @@ app.get('/news', async (c) => {
                 
                 isLoading = true;
                 const newsFeed = document.getElementById('news-feed');
+                const mobileNewsFeed = document.getElementById('mobile-news-feed');
                 console.log('[loadNews] newsFeed:', newsFeed ? '찾음' : '못찾음');
+                console.log('[loadNews] mobileNewsFeed:', mobileNewsFeed ? '찾음' : '못찾음');
                 
                 if (reset) {
                     currentPage = 0;
                     hasMore = true;
-                    newsFeed.innerHTML = '<div class="text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
+                    const loadingHTML = '<div class="text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
+                    if (newsFeed) newsFeed.innerHTML = loadingHTML;
+                    if (mobileNewsFeed) mobileNewsFeed.innerHTML = loadingHTML;
                 } else {
                     // 로딩 인디케이터 추가
                     const loadingDiv = document.createElement('div');
                     loadingDiv.id = 'loading-more';
                     loadingDiv.className = 'text-center py-6';
                     loadingDiv.innerHTML = '<div class="spinner mx-auto"></div><p class="text-gray-500 mt-2">더 많은 뉴스를 불러오는 중...</p>';
-                    newsFeed.appendChild(loadingDiv);
+                    if (newsFeed) newsFeed.appendChild(loadingDiv);
+                    if (mobileNewsFeed) mobileNewsFeed.appendChild(loadingDiv.cloneNode(true));
                 }
                 
                 try {
@@ -6099,6 +6233,7 @@ app.get('/news', async (c) => {
             function renderNewsCards(newsList, append = false) {
                 console.log('[renderNewsCards] 시작 - 뉴스 수:', newsList.length, 'append:', append);
                 const newsFeed = document.getElementById('news-feed');
+                const mobileNewsFeed = document.getElementById('mobile-news-feed');
                 const newsHTML = newsList.map(news => {
                     // HTML 표시용 (이스케이프 처리)
                     const titleDisplay = escapeHtml(news.title);
@@ -6189,9 +6324,11 @@ app.get('/news', async (c) => {
                 }).join('');
                 
                 if (append) {
-                    newsFeed.insertAdjacentHTML('beforeend', newsHTML);
+                    if (newsFeed) newsFeed.insertAdjacentHTML('beforeend', newsHTML);
+                    if (mobileNewsFeed) mobileNewsFeed.insertAdjacentHTML('beforeend', newsHTML);
                 } else {
-                    newsFeed.innerHTML = newsHTML;
+                    if (newsFeed) newsFeed.innerHTML = newsHTML;
+                    if (mobileNewsFeed) mobileNewsFeed.innerHTML = newsHTML;
                 }
                 
                 // 뉴스 클릭 이벤트 바인딩
