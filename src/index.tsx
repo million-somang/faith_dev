@@ -5715,11 +5715,11 @@ app.get('/news', async (c) => {
             }
             
             // ==================== 검색 기능 ====================
-            const searchInput = document.getElementById('search-input');
-            const clearSearchBtn = document.getElementById('clear-search');
-            
-            // 키워드 입력 Enter 키 이벤트
-            document.addEventListener('DOMContentLoaded', function() {
+            function initSearchAndKeyword() {
+                const searchInput = document.getElementById('search-input');
+                const clearSearchBtn = document.getElementById('clear-search');
+                
+                // 키워드 입력 Enter 키 이벤트
                 const keywordInput = document.getElementById('keyword-input');
                 if (keywordInput) {
                     keywordInput.addEventListener('keypress', function(e) {
@@ -5729,9 +5729,10 @@ app.get('/news', async (c) => {
                         }
                     });
                 }
-            });
-            
-            searchInput.addEventListener('input', function(e) {
+                
+                // 검색 입력 이벤트
+                if (searchInput && clearSearchBtn) {
+                    searchInput.addEventListener('input', function(e) {
                 const query = e.target.value.trim();
                 
                 if (query.length > 0) {
@@ -5749,7 +5750,9 @@ app.get('/news', async (c) => {
                         loadNews();
                     }
                 }, 500);
-            });
+                    });
+                }
+            }
             
             async function searchNews(query) {
                 const newsFeed = document.getElementById('news-feed');
@@ -5890,8 +5893,9 @@ app.get('/news', async (c) => {
                     if (data.success && data.news.length > 0) {
                         const hotHTML = data.news.map((news, index) => {
                             const rankClass = index < 3 ? 'text-red-500 font-bold' : 'text-gray-600';
-                            return '<div class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer" ' +
-                                'onclick="openNewsInNewTab(\'' + escapeHtml(news.link) + '\')">' +
+                            const escapedLink = escapeHtml(news.link).replace(/'/g, '&apos;');
+                            return '<div class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer hot-news-item" ' +
+                                'data-news-link="' + escapedLink + '">' +
                                 '<span class="' + rankClass + ' text-sm font-bold w-5 flex-shrink-0">' + (index + 1) + '</span>' +
                                 '<div class="flex-1 min-w-0">' +
                                     '<h4 class="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">' + escapeHtml(news.title) + '</h4>' +
@@ -5908,6 +5912,14 @@ app.get('/news', async (c) => {
                         }).join('');
                         
                         hotNewsList.innerHTML = hotHTML;
+                        
+                        // HOT 뉴스 클릭 이벤트 바인딩
+                        document.querySelectorAll('.hot-news-item').forEach(item => {
+                            item.addEventListener('click', function() {
+                                const link = this.getAttribute('data-news-link').replace(/&apos;/g, "'");
+                                openNewsInNewTab(link);
+                            });
+                        });
                     } else {
                         hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">HOT 뉴스가 없습니다</p>';
                     }
@@ -6134,13 +6146,13 @@ app.get('/news', async (c) => {
                             '<div class="flex items-center space-x-4">' +
                                 // 투표 UP
                                 '<button class="vote-btn vote-up-btn flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition" ' +
-                                    'data-news-id="' + news.id + '" data-vote-type="up" title="좋아요">' +
+                                    'data-news-id="' + news.id + '" data-vote-type="up">' +
                                     '<i class="fas fa-thumbs-up"></i>' +
                                     '<span class="text-sm font-semibold vote-up-count">' + voteUp + '</span>' +
                                 '</button>' +
                                 // 투표 DOWN
                                 '<button class="vote-btn vote-down-btn flex items-center space-x-1 text-gray-600 hover:text-red-600 transition" ' +
-                                    'data-news-id="' + news.id + '" data-vote-type="down" title="싫어요">' +
+                                    'data-news-id="' + news.id + '" data-vote-type="down">' +
                                     '<i class="fas fa-thumbs-down"></i>' +
                                     '<span class="text-sm font-semibold vote-down-count">' + voteDown + '</span>' +
                                 '</button>' +
@@ -6162,15 +6174,13 @@ app.get('/news', async (c) => {
                                     'data-news-link="' + escapeHtml(news.link) + '" ' +
                                     'data-news-category="' + escapeHtml(news.category) + '" ' +
                                     'data-news-publisher="' + escapeHtml(news.publisher || '구글 뉴스') + '" ' +
-                                    'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '" ' +
-                                    'title="북마크">' +
+                                    'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '">' +
                                     '<i class="fas fa-bookmark"></i>' +
                                 '</button>' +
                                 '<button class="share-btn text-gray-400 hover:text-blue-500" ' +
                                     'data-news-id="' + news.id + '" ' +
                                     'data-news-title="' + escapeHtml(news.title) + '" ' +
-                                    'data-news-link="' + escapeHtml(news.link) + '" ' +
-                                    'title="공유">' +
+                                    'data-news-link="' + escapeHtml(news.link) + '">' +
                                     '<i class="fas fa-share-alt"></i>' +
                                 '</button>' +
                             '</div>' +
@@ -6429,6 +6439,7 @@ app.get('/news', async (c) => {
             
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', function() {
+                initSearchAndKeyword(); // 검색 및 키워드 입력 초기화
                 loadNews(true); // 초기 로드
                 loadHotNews(); // HOT 뉴스 로드
                 loadKeywords(); // 키워드 로드
