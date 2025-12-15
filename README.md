@@ -47,20 +47,33 @@
   - 로그인 상태 표시
   - 관리자 메뉴 표시 (Lv.6 이상)
 
-- **뉴스 페이지** ✨NEW
+- **뉴스 페이지** ✨NEW ✨REDESIGNED
   - Google RSS 뉴스 통합
+  - **3단 레이아웃 개편** ✨MAJOR UPDATE
+    - **PC 화면**: 왼쪽(키워드 구독) + 중앙(뉴스 피드) + 오른쪽(HOT 이슈)
+    - **모바일**: 1단 레이아웃 (HOT → 뉴스 → 키워드 순서)
+    - 반응형 디자인: Tailwind CSS lg 브레이크포인트 활용
+  - **AI 요약 + 감성분석** ✨NEW
+    - AI 요약 보라색 배경 박스 표시
+    - 감성 아이콘 (😊긍정, 😐중립, 😞부정)
+    - 원본 요약 폴백
+  - **투표 시스템** ✨NEW
+    - 좋아요/싫어요 버튼 (UP/DOWN)
+    - 실시간 투표 수 업데이트
+    - 호버 애니메이션 및 클릭 피드백
+  - **실시간 HOT 이슈** ✨NEW
+    - 인기순 TOP 10 뉴스 (투표수 + 조회수 기준)
+    - 상위 3개 빨간색 강조
+    - 실시간 업데이트
+  - **키워드 구독 시스템** ✨NEW
+    - 키워드 추가/삭제 (Enter 키 지원)
+    - 사용자별 키워드 관리
+    - 구독 키워드 목록 표시
   - 카테고리별 필터링 (전체, 일반, 정치, 경제, IT/과학, 스포츠, 엔터테인먼트)
-  - 반응형 그리드 레이아웃 (1열~3열)
   - 실시간 뉴스 업데이트
   - HTML 이스케이프 처리로 안전한 컨텐츠 표시
   - 외부 링크로 뉴스 원문 연결
-  - **가독성 대폭 개선** ✨UPDATE
-    - 중복 콘텐츠 완전 제거 (요약 섹션 삭제)
-    - 제목 중심의 깔끔한 카드 디자인
-    - 매우 큰 제목 텍스트 (2xl 크기)
-    - 3열 그리드로 더 큰 카드
-    - 넉넉한 여백과 간격
-    - 통일된 카드 높이
+  - 조회수 표시
   - **검색 기능** ✨NEW
     - 실시간 검색 (디바운스 적용)
     - 제목 및 요약 전체 검색
@@ -274,8 +287,8 @@
 - **CSV 내보내기**: `GET /api/admin/users/export`
 
 #### 뉴스 API ✨NEW
-- **뉴스 목록 조회**: `GET /api/news?category=&limit=20`
-  - Query: `category` (all/general/politics/economy/tech/sports/entertainment), `limit` (기본 20)
+- **뉴스 목록 조회**: `GET /api/news?category=&limit=20&offset=0`
+  - Query: `category` (all/general/politics/economy/tech/sports/entertainment), `limit` (기본 20), `offset` (페이지네이션)
   - Response: `{ success, news, count }`
 - **뉴스 검색**: `GET /api/news/search?q=검색어&category=` ✨NEW
   - Query: `q` (검색어), `category` (선택), `limit`, `offset`
@@ -283,6 +296,12 @@
 - **뉴스 가져오기**: `GET /api/news/fetch?category=general`
   - Query: `category` (RSS에서 뉴스 가져와 DB에 저장)
   - Response: `{ success, fetched, saved, message }`
+- **HOT 뉴스 조회**: `GET /api/news/hot?limit=10` ✨NEW
+  - Query: `limit` (기본 10개)
+  - Response: `{ success, news }` - 인기순 정렬 (popularity_score DESC)
+- **뉴스 투표**: `POST /api/news/vote` ✨NEW
+  - Body: `{ userId, newsId, voteType: 'up'|'down' }`
+  - Response: `{ success, vote_up, vote_down, popularity_score }`
 - **뉴스 삭제**: `DELETE /api/news/:id` (관리자 전용)
 - **스케줄 설정 조회**: `GET /api/news/schedule`
   - Response: `{ success, schedule }`
@@ -291,6 +310,17 @@
   - Response: `{ success, message, next_run }`
 - **스케줄 실행 기록 업데이트**: `POST /api/news/schedule/update-run`
   - 자동 실행 시 호출되어 last_run 및 next_run 업데이트
+
+#### 키워드 구독 API ✨NEW
+- **키워드 구독 추가**: `POST /api/keywords/subscribe`
+  - Body: `{ userId, keyword }`
+  - Response: `{ success, message }`
+- **키워드 목록 조회**: `GET /api/keywords?userId=`
+  - Query: `userId` (필수)
+  - Response: `{ success, keywords }`
+- **키워드 삭제**: `DELETE /api/keywords/:id`
+  - Body: `{ userId }`
+  - Response: `{ success, message }`
 
 #### 북마크 API ✨NEW
 - **북마크 추가**: `POST /api/bookmarks`
@@ -307,7 +337,7 @@
   - Response: `{ success, bookmarked, bookmarkId }`
 
 ## 배포 URL
-- **로컬 개발**: https://3000-ipz6c4a8pwyoci65e6lba-cc2fbc16.sandbox.novita.ai
+- **로컬 개발**: https://3000-igqqzgkeu63c4u9ihulwt-3844e1b6.sandbox.novita.ai
 - **프로덕션**: (배포 후 업데이트 예정)
 
 ## 데이터 모델
@@ -357,7 +387,7 @@ CREATE TABLE notifications (
 );
 ```
 
-### News 테이블 ✨NEW
+### News 테이블 ✨NEW ✨UPDATED
 ```sql
 CREATE TABLE news (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -368,8 +398,44 @@ CREATE TABLE news (
   image_url TEXT,
   publisher TEXT,
   pub_date TEXT,
+  -- AI 필드 ✨NEW
+  ai_summary TEXT,                  -- Gemini AI 생성 요약
+  sentiment TEXT,                   -- positive/neutral/negative
+  ai_processed INTEGER DEFAULT 0,   -- AI 처리 완료 여부
+  -- 투표 및 통계 필드 ✨NEW
+  vote_up INTEGER DEFAULT 0,        -- 좋아요 수
+  vote_down INTEGER DEFAULT 0,      -- 싫어요 수
+  view_count INTEGER DEFAULT 0,     -- 조회수
+  comment_count INTEGER DEFAULT 0,  -- 댓글 수 (추후 확장)
+  popularity_score INTEGER DEFAULT 0, -- 인기도 점수 (vote_up - vote_down)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### User Keywords 테이블 ✨NEW
+```sql
+CREATE TABLE user_keywords (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  keyword TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, keyword),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### News Votes 테이블 ✨NEW
+```sql
+CREATE TABLE news_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  vote_type TEXT NOT NULL,          -- 'up' or 'down'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (news_id) REFERENCES news(id)
 );
 ```
 
@@ -783,6 +849,39 @@ webapp/
     - "더 많은 뉴스 보기": Orange 그라디언트
     - "회원가입", "로그아웃": Navy 그라디언트
     - 모든 버튼: 세미볼드 폰트 + 그림자 효과
+- **2025-12-15**: 뉴스 페이지 3단 레이아웃 개편 완료 ✨MAJOR REDESIGN
+  - **3단 레이아웃 구조**
+    - 왼쪽 사이드바 (240px): 키워드 구독 위젯
+    - 중앙 영역 (가변): AI 요약 + 투표 버튼 뉴스 피드
+    - 오른쪽 사이드바 (320px): 실시간 HOT 이슈
+  - **키워드 구독 시스템**
+    - 키워드 입력 및 추가 (Enter 키 지원)
+    - 구독 키워드 목록 표시
+    - 키워드 삭제 기능
+    - API 연동: /api/keywords (GET, POST, DELETE)
+  - **AI 요약 + 감성분석**
+    - AI 요약이 있는 경우 보라색 배경 박스로 표시
+    - 감성 아이콘 표시 (😊긍정, 😐중립, 😞부정)
+    - AI 요약이 없으면 원본 요약 표시
+  - **투표 시스템**
+    - 좋아요/싫어요 버튼 (UP/DOWN)
+    - 실시간 투표 수 업데이트
+    - API 연동: /api/news/vote (POST)
+    - 호버 애니메이션 및 클릭 피드백
+  - **실시간 HOT 이슈**
+    - 인기순 TOP 10 뉴스 표시
+    - 상위 3개는 빨간색 강조
+    - 투표수 + 조회수 표시
+    - API 연동: /api/news/hot (GET)
+  - **반응형 디자인**
+    - PC (lg 이상): 3단 레이아웃
+    - 모바일: 1단 레이아웃 (순서: HOT → 뉴스 → 키워드)
+    - 왼쪽 사이드바는 모바일에서 숨김
+    - Tailwind CSS 반응형 유틸리티 활용
+  - **데이터베이스**
+    - news 테이블: ai_summary, sentiment, vote_up, vote_down, view_count 필드 추가
+    - user_keywords 테이블: 사용자별 키워드 구독
+    - news_votes 테이블: 사용자별 투표 기록
 
 ## 🎨 Figma API 연동
 
