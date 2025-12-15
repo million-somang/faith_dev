@@ -5474,6 +5474,20 @@ app.get('/news', async (c) => {
             .bookmark-btn.bookmarked {
                 color: #eab308;
             }
+            /* 투표 버튼 */
+            .vote-btn {
+                transition: all 0.2s;
+            }
+            .vote-btn:hover {
+                transform: scale(1.1);
+            }
+            .vote-btn:active {
+                transform: scale(0.95);
+            }
+            /* 사이드바 스크롤 */
+            aside {
+                max-height: calc(100vh - 120px);
+            }
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50 transition-colors duration-300">
@@ -5485,8 +5499,9 @@ app.get('/news', async (c) => {
           {label: '뉴스'}
         ])}
 
-        <!-- 메인 컨텐츠 -->
+        <!-- 메인 컨텐츠: 3단 레이아웃 (PC) / 1단 레이아웃 (모바일) -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+            
             <!-- 검색 바 -->
             <div class="mb-6 sm:mb-8">
                 <div class="relative">
@@ -5544,13 +5559,79 @@ app.get('/news', async (c) => {
                 </div>
             </div>
 
-            <!-- 뉴스 그리드 -->
-            <div id="news-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                <!-- JavaScript로 동적으로 뉴스 로드됨 -->
-                <div class="col-span-full text-center py-12">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-                    <p class="text-gray-500 mt-4 text-lg">뉴스를 불러오는 중...</p>
+            <!-- ========== 3단 레이아웃 ========== -->
+            <div class="flex flex-col lg:flex-row gap-6">
+                
+                <!-- 왼쪽 사이드바: 키워드 구독 (PC만 표시) -->
+                <aside class="hidden lg:block lg:w-64 flex-shrink-0">
+                    <div class="bg-white rounded-xl shadow-md p-5 sticky top-20">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-bookmark text-purple-600 mr-2"></i>
+                            키워드 구독
+                        </h3>
+                        
+                        <!-- 키워드 추가 입력 -->
+                        <div class="mb-4">
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    id="keyword-input" 
+                                    placeholder="키워드 입력..." 
+                                    class="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 focus:border-purple-500 focus:outline-none text-sm"
+                                />
+                                <button 
+                                    onclick="addKeyword()" 
+                                    class="absolute right-2 top-1/2 transform -translate-y-1/2 text-purple-600 hover:text-purple-700"
+                                    title="추가"
+                                >
+                                    <i class="fas fa-plus-circle text-xl"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 키워드 목록 -->
+                        <div id="keyword-list" class="space-y-2 max-h-96 overflow-y-auto">
+                            <p class="text-sm text-gray-500 text-center py-4">
+                                아직 구독한 키워드가 없습니다
+                            </p>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- 중앙 영역: 뉴스 피드 -->
+                <div class="flex-1 min-w-0">
+                    <div id="news-feed" class="space-y-4">
+                        <!-- JavaScript로 동적으로 뉴스 로드됨 -->
+                        <div class="text-center py-12">
+                            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+                            <p class="text-gray-500 mt-4 text-lg">뉴스를 불러오는 중...</p>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- 오른쪽 사이드바: 실시간 HOT 이슈 -->
+                <aside class="lg:w-80 flex-shrink-0">
+                    <div class="bg-white rounded-xl shadow-md p-5 sticky top-20">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-fire text-red-500 mr-2"></i>
+                            실시간 HOT 이슈
+                        </h3>
+                        
+                        <!-- HOT 뉴스 목록 -->
+                        <div id="hot-news-list" class="space-y-3">
+                            <p class="text-sm text-gray-500 text-center py-4">
+                                로딩 중...
+                            </p>
+                        </div>
+                        
+                        <!-- 더보기 버튼 -->
+                        <button onclick="loadMoreHotNews()" class="w-full mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition">
+                            <i class="fas fa-chevron-down mr-1"></i>
+                            더보기
+                        </button>
+                    </div>
+                </aside>
+
             </div>
 
             <!-- 새로고침 버튼 -->
@@ -5637,6 +5718,19 @@ app.get('/news', async (c) => {
             const searchInput = document.getElementById('search-input');
             const clearSearchBtn = document.getElementById('clear-search');
             
+            // 키워드 입력 Enter 키 이벤트
+            document.addEventListener('DOMContentLoaded', function() {
+                const keywordInput = document.getElementById('keyword-input');
+                if (keywordInput) {
+                    keywordInput.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addKeyword();
+                        }
+                    });
+                }
+            });
+            
             searchInput.addEventListener('input', function(e) {
                 const query = e.target.value.trim();
                 
@@ -5658,8 +5752,8 @@ app.get('/news', async (c) => {
             });
             
             async function searchNews(query) {
-                const newsGrid = document.getElementById('news-grid');
-                newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">검색 중...</p></div>';
+                const newsFeed = document.getElementById('news-feed');
+                newsFeed.innerHTML = '<div class="text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">검색 중...</p></div>';
                 
                 try {
                     const categoryParam = currentCategories.includes('all') ? '' : '&category=' + currentCategories[0];
@@ -5670,12 +5764,12 @@ app.get('/news', async (c) => {
                         renderNewsCards(data.news);
                         showToast(data.news.length + '개의 뉴스를 찾았습니다', 'success');
                     } else {
-                        newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><i class="fas fa-search text-gray-300 text-6xl mb-4"></i><p class="text-gray-500">검색 결과가 없습니다</p></div>';
+                        newsFeed.innerHTML = '<div class="text-center py-12"><i class="fas fa-search text-gray-300 text-6xl mb-4"></i><p class="text-gray-500">검색 결과가 없습니다</p></div>';
                     }
                 } catch (error) {
                     console.error('검색 오류:', error);
                     showToast('검색 중 오류가 발생했습니다', 'error');
-                    newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">검색 중 오류가 발생했습니다</p></div>';
+                    newsFeed.innerHTML = '<div class="text-center py-12"><p class="text-red-500">검색 중 오류가 발생했습니다</p></div>';
                 }
             }
             
@@ -5738,6 +5832,185 @@ app.get('/news', async (c) => {
                 });
             }
             
+            // ==================== 투표 시스템 ====================
+            function attachVoteListeners() {
+                document.querySelectorAll('.vote-btn').forEach(btn => {
+                    btn.addEventListener('click', async function(e) {
+                        e.stopPropagation(); // 뉴스 카드 클릭 방지
+                        const newsId = this.dataset.newsId;
+                        const voteType = this.dataset.voteType;
+                        await handleVote(newsId, voteType);
+                    });
+                });
+            }
+            
+            async function handleVote(newsId, voteType) {
+                if (!userId) {
+                    showToast('로그인이 필요합니다', 'warning');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/news/vote', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: userId,
+                            newsId: parseInt(newsId),
+                            voteType: voteType
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        // UI 업데이트
+                        const card = document.querySelector('.vote-btn[data-news-id="' + newsId + '"]').closest('.news-card');
+                        card.querySelector('.vote-up-count').textContent = data.vote_up;
+                        card.querySelector('.vote-down-count').textContent = data.vote_down;
+                        
+                        showToast(voteType === 'up' ? '좋아요!' : '별로예요', 'success');
+                    } else {
+                        showToast(data.error || '투표 실패', 'error');
+                    }
+                } catch (error) {
+                    console.error('투표 오류:', error);
+                    showToast('투표 중 오류가 발생했습니다', 'error');
+                }
+            }
+            
+            // ==================== 실시간 HOT 뉴스 ====================
+            async function loadHotNews() {
+                const hotNewsList = document.getElementById('hot-news-list');
+                hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">로딩 중...</p>';
+                
+                try {
+                    const response = await fetch('/api/news/hot?limit=10');
+                    const data = await response.json();
+                    
+                    if (data.success && data.news.length > 0) {
+                        const hotHTML = data.news.map((news, index) => {
+                            const rankClass = index < 3 ? 'text-red-500 font-bold' : 'text-gray-600';
+                            return '<div class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer" ' +
+                                'onclick="openNewsInNewTab(\'' + escapeHtml(news.link) + '\')">' +
+                                '<span class="' + rankClass + ' text-sm font-bold w-5 flex-shrink-0">' + (index + 1) + '</span>' +
+                                '<div class="flex-1 min-w-0">' +
+                                    '<h4 class="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">' + escapeHtml(news.title) + '</h4>' +
+                                    '<div class="flex items-center space-x-2 text-xs text-gray-500">' +
+                                        '<span class="flex items-center">' +
+                                            '<i class="fas fa-thumbs-up mr-1"></i>' + (news.vote_up || 0) +
+                                        '</span>' +
+                                        '<span class="flex items-center">' +
+                                            '<i class="fas fa-eye mr-1"></i>' + (news.view_count || 0) +
+                                        '</span>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>';
+                        }).join('');
+                        
+                        hotNewsList.innerHTML = hotHTML;
+                    } else {
+                        hotNewsList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">HOT 뉴스가 없습니다</p>';
+                    }
+                } catch (error) {
+                    console.error('HOT 뉴스 로드 오류:', error);
+                    hotNewsList.innerHTML = '<p class="text-sm text-red-500 text-center py-4">로드 실패</p>';
+                }
+            }
+            
+            function loadMoreHotNews() {
+                showToast('더 많은 HOT 뉴스 준비 중...', 'info');
+            }
+            
+            // ==================== 키워드 구독 시스템 ====================
+            async function addKeyword() {
+                const input = document.getElementById('keyword-input');
+                const keyword = input.value.trim();
+                
+                if (!keyword) {
+                    showToast('키워드를 입력하세요', 'warning');
+                    return;
+                }
+                
+                if (!userId) {
+                    showToast('로그인이 필요합니다', 'warning');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/keywords/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: userId,
+                            keyword: keyword
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        input.value = '';
+                        showToast('키워드가 추가되었습니다', 'success');
+                        loadKeywords();
+                    } else {
+                        showToast(data.error || '키워드 추가 실패', 'error');
+                    }
+                } catch (error) {
+                    console.error('키워드 추가 오류:', error);
+                    showToast('키워드 추가 중 오류가 발생했습니다', 'error');
+                }
+            }
+            
+            async function loadKeywords() {
+                if (!userId) return;
+                
+                const keywordList = document.getElementById('keyword-list');
+                
+                try {
+                    const response = await fetch('/api/keywords?userId=' + userId);
+                    const data = await response.json();
+                    
+                    if (data.success && data.keywords.length > 0) {
+                        const keywordsHTML = data.keywords.map(kw => {
+                            return '<div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">' +
+                                '<span class="text-sm font-medium text-gray-700">' + escapeHtml(kw.keyword) + '</span>' +
+                                '<button onclick="removeKeyword(' + kw.id + ')" class="text-red-500 hover:text-red-700 text-sm" title="삭제">' +
+                                    '<i class="fas fa-times"></i>' +
+                                '</button>' +
+                            '</div>';
+                        }).join('');
+                        
+                        keywordList.innerHTML = keywordsHTML;
+                    } else {
+                        keywordList.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">아직 구독한 키워드가 없습니다</p>';
+                    }
+                } catch (error) {
+                    console.error('키워드 로드 오류:', error);
+                }
+            }
+            
+            async function removeKeyword(keywordId) {
+                if (!userId) return;
+                
+                try {
+                    const response = await fetch('/api/keywords/' + keywordId, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: userId })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showToast('키워드가 삭제되었습니다', 'info');
+                        loadKeywords();
+                    } else {
+                        showToast(data.error || '키워드 삭제 실패', 'error');
+                    }
+                } catch (error) {
+                    console.error('키워드 삭제 오류:', error);
+                    showToast('키워드 삭제 중 오류가 발생했습니다', 'error');
+                }
+            }
+            
             // ==================== 뉴스 로드 (무한 스크롤 지원) ====================
             async function loadNews(reset = true) {
                 console.log('[loadNews] 시작 - reset:', reset);
@@ -5751,20 +6024,20 @@ app.get('/news', async (c) => {
                 }
                 
                 isLoading = true;
-                const newsGrid = document.getElementById('news-grid');
-                console.log('[loadNews] newsGrid:', newsGrid ? '찾음' : '못찾음');
+                const newsFeed = document.getElementById('news-feed');
+                console.log('[loadNews] newsFeed:', newsFeed ? '찾음' : '못찾음');
                 
                 if (reset) {
                     currentPage = 0;
                     hasMore = true;
-                    newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
+                    newsFeed.innerHTML = '<div class="text-center py-12"><div class="spinner mx-auto"></div><p class="text-gray-500 mt-4">뉴스를 불러오는 중...</p></div>';
                 } else {
                     // 로딩 인디케이터 추가
                     const loadingDiv = document.createElement('div');
                     loadingDiv.id = 'loading-more';
-                    loadingDiv.className = 'col-span-full text-center py-6';
+                    loadingDiv.className = 'text-center py-6';
                     loadingDiv.innerHTML = '<div class="spinner mx-auto"></div><p class="text-gray-500 mt-2">더 많은 뉴스를 불러오는 중...</p>';
-                    newsGrid.appendChild(loadingDiv);
+                    newsFeed.appendChild(loadingDiv);
                 }
                 
                 try {
@@ -5792,7 +6065,7 @@ app.get('/news', async (c) => {
                         } else {
                             hasMore = false;
                             if (reset) {
-                                newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-500">뉴스가 없습니다</p></div>';
+                                newsFeed.innerHTML = '<div class="text-center py-12"><p class="text-gray-500">뉴스가 없습니다</p></div>';
                             }
                         }
                     } else {
@@ -5801,7 +6074,7 @@ app.get('/news', async (c) => {
                 } catch (error) {
                     console.error('뉴스 로드 오류:', error);
                     if (reset) {
-                        newsGrid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다</p></div>';
+                        newsFeed.innerHTML = '<div class="text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다</p></div>';
                     }
                 } finally {
                     isLoading = false;
@@ -5810,55 +6083,105 @@ app.get('/news', async (c) => {
                 }
             }
             
-            // ==================== 뉴스 카드 렌더링 (append 모드 지원) ====================
+            // ==================== 뉴스 카드 렌더링 (새로운 피드 스타일, append 모드 지원) ====================
             function renderNewsCards(newsList, append = false) {
                 console.log('[renderNewsCards] 시작 - 뉴스 수:', newsList.length, 'append:', append);
-                const newsGrid = document.getElementById('news-grid');
+                const newsFeed = document.getElementById('news-feed');
                 const newsHTML = newsList.map(news => {
                     // HTML 표시용 (이스케이프 처리)
                     const titleDisplay = escapeHtml(news.title);
                     const categoryDisplay = escapeHtml(news.category);
                     const publisherDisplay = escapeHtml(news.publisher || '구글 뉴스');
+                    const summaryDisplay = escapeHtml(news.summary || '요약 없음');
+                    const aiSummaryDisplay = news.ai_summary ? escapeHtml(news.ai_summary) : null;
+                    const sentiment = news.sentiment || 'neutral';
+                    const sentimentIcon = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+                    const voteUp = news.vote_up || 0;
+                    const voteDown = news.vote_down || 0;
+                    const viewCount = news.view_count || 0;
                     
-                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative">' +
-                        '<div class="block p-4 sm:p-5 cursor-pointer news-clickable-area" data-news-url="' + escapeHtml(news.link) + '">' +
-                            '<div class="flex items-center justify-between mb-3">' +
-                                '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-sm font-semibold rounded-md border border-blue-200">' + categoryDisplay + '</span>' +
-                                '<span class="text-sm text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
-                            '</div>' +
-                            '<h3 class="font-bold text-sm text-gray-900 mb-3 line-clamp-2 leading-snug hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
+                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative p-5">' +
+                        // 카테고리 & 날짜
+                        '<div class="flex items-center justify-between mb-3">' +
+                            '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">' + categoryDisplay + '</span>' +
+                            '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
                         '</div>' +
-                        '<div class="px-4 sm:px-5 pb-4 sm:pb-5">' +
-                            '<div class="flex items-center justify-between text-sm text-gray-600 pt-3 border-t border-gray-200">' +
-                                '<span class="font-semibold flex items-center"><i class="fas fa-newspaper text-gray-400 mr-2"></i>' + publisherDisplay + '</span>' +
-                                '<div class="flex items-center space-x-3">' +
-                                    '<button class="bookmark-btn text-gray-400 hover:text-yellow-500" ' +
-                                        'data-news-id="' + news.id + '" ' +
-                                        'data-news-title="' + escapeHtml(news.title) + '" ' +
-                                        'data-news-link="' + escapeHtml(news.link) + '" ' +
-                                        'data-news-category="' + escapeHtml(news.category) + '" ' +
-                                        'data-news-publisher="' + escapeHtml(news.publisher || '구글 뉴스') + '" ' +
-                                        'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '" ' +
-                                        'title="북마크">' +
-                                        '<i class="fas fa-bookmark"></i>' +
-                                    '</button>' +
-                                    '<button class="share-btn text-gray-400 hover:text-blue-500" ' +
-                                        'data-news-id="' + news.id + '" ' +
-                                        'data-news-title="' + escapeHtml(news.title) + '" ' +
-                                        'data-news-link="' + escapeHtml(news.link) + '" ' +
-                                        'title="공유">' +
-                                        '<i class="fas fa-share-alt"></i>' +
-                                    '</button>' +
+                        
+                        // 제목 (클릭 가능)
+                        '<div class="cursor-pointer news-clickable-area mb-3" data-news-url="' + escapeHtml(news.link) + '" data-news-id="' + news.id + '">' +
+                            '<h3 class="font-bold text-lg text-gray-900 mb-2 hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
+                        '</div>' +
+                        
+                        // AI 요약 (있는 경우)
+                        (aiSummaryDisplay ? 
+                            '<div class="mb-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 rounded">' +
+                                '<div class="flex items-center mb-2">' +
+                                    '<i class="fas fa-robot text-purple-600 mr-2"></i>' +
+                                    '<span class="text-xs font-bold text-purple-700">AI 요약</span>' +
+                                    '<span class="ml-2 text-lg">' + sentimentIcon + '</span>' +
                                 '</div>' +
+                                '<p class="text-sm text-gray-700 leading-relaxed">' + aiSummaryDisplay + '</p>' +
+                            '</div>' 
+                            : 
+                            '<div class="mb-3">' +
+                                '<p class="text-sm text-gray-600 leading-relaxed line-clamp-3">' + summaryDisplay + '</p>' +
+                            '</div>'
+                        ) +
+                        
+                        // 하단 액션 바 (투표 + 조회수 + 북마크 + 공유)
+                        '<div class="flex items-center justify-between pt-3 border-t border-gray-200">' +
+                            // 왼쪽: 투표 + 조회수
+                            '<div class="flex items-center space-x-4">' +
+                                // 투표 UP
+                                '<button class="vote-btn vote-up-btn flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition" ' +
+                                    'data-news-id="' + news.id + '" data-vote-type="up" title="좋아요">' +
+                                    '<i class="fas fa-thumbs-up"></i>' +
+                                    '<span class="text-sm font-semibold vote-up-count">' + voteUp + '</span>' +
+                                '</button>' +
+                                // 투표 DOWN
+                                '<button class="vote-btn vote-down-btn flex items-center space-x-1 text-gray-600 hover:text-red-600 transition" ' +
+                                    'data-news-id="' + news.id + '" data-vote-type="down" title="싫어요">' +
+                                    '<i class="fas fa-thumbs-down"></i>' +
+                                    '<span class="text-sm font-semibold vote-down-count">' + voteDown + '</span>' +
+                                '</button>' +
+                                // 조회수
+                                '<span class="flex items-center space-x-1 text-gray-500 text-sm">' +
+                                    '<i class="fas fa-eye"></i>' +
+                                    '<span>' + viewCount + '</span>' +
+                                '</span>' +
+                            '</div>' +
+                            
+                            // 오른쪽: 북마크 + 공유 + 출처
+                            '<div class="flex items-center space-x-3 text-sm">' +
+                                '<span class="text-gray-500 hidden sm:flex items-center">' +
+                                    '<i class="fas fa-newspaper mr-1"></i>' + publisherDisplay +
+                                '</span>' +
+                                '<button class="bookmark-btn text-gray-400 hover:text-yellow-500" ' +
+                                    'data-news-id="' + news.id + '" ' +
+                                    'data-news-title="' + escapeHtml(news.title) + '" ' +
+                                    'data-news-link="' + escapeHtml(news.link) + '" ' +
+                                    'data-news-category="' + escapeHtml(news.category) + '" ' +
+                                    'data-news-publisher="' + escapeHtml(news.publisher || '구글 뉴스') + '" ' +
+                                    'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '" ' +
+                                    'title="북마크">' +
+                                    '<i class="fas fa-bookmark"></i>' +
+                                '</button>' +
+                                '<button class="share-btn text-gray-400 hover:text-blue-500" ' +
+                                    'data-news-id="' + news.id + '" ' +
+                                    'data-news-title="' + escapeHtml(news.title) + '" ' +
+                                    'data-news-link="' + escapeHtml(news.link) + '" ' +
+                                    'title="공유">' +
+                                    '<i class="fas fa-share-alt"></i>' +
+                                '</button>' +
                             '</div>' +
                         '</div>' +
                     '</article>';
                 }).join('');
                 
                 if (append) {
-                    newsGrid.insertAdjacentHTML('beforeend', newsHTML);
+                    newsFeed.insertAdjacentHTML('beforeend', newsHTML);
                 } else {
-                    newsGrid.innerHTML = newsHTML;
+                    newsFeed.innerHTML = newsHTML;
                 }
                 
                 // 뉴스 클릭 이벤트 바인딩
@@ -5866,6 +6189,9 @@ app.get('/news', async (c) => {
                 
                 // 북마크/공유 버튼 이벤트 바인딩
                 attachBookmarkAndShareListeners();
+                
+                // 투표 버튼 이벤트 바인딩
+                attachVoteListeners();
                 
                 // 북마크 상태 확인
                 checkBookmarkStatus();
@@ -6104,6 +6430,8 @@ app.get('/news', async (c) => {
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', function() {
                 loadNews(true); // 초기 로드
+                loadHotNews(); // HOT 뉴스 로드
+                loadKeywords(); // 키워드 로드
                 initScrollToTop(); // 맨 위로 버튼 초기화
             });
             
