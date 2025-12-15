@@ -726,7 +726,8 @@ app.get('/', async (c) => {
       // 모든 카테고리에서 뉴스 가져오기
       const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment']
       
-      for (const category of categories) {
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i]
         try {
           const newsItems = await parseGoogleNewsRSS(category)
           
@@ -748,6 +749,11 @@ app.get('/', async (c) => {
             } catch (err) {
               // 중복 뉴스는 무시
             }
+          }
+          
+          // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
+          if (i < categories.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000))
           }
         } catch (err) {
           console.error(category + ' 카테고리 뉴스 가져오기 실패:', err)
@@ -5281,7 +5287,8 @@ app.get('/news', async (c) => {
   if (newsFromDB.length === 0) {
     try {
       const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment']
-      for (const category of categories) {
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i]
         const newsItems = await parseGoogleNewsRSS(category)
         for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
           try {
@@ -5300,6 +5307,11 @@ app.get('/news', async (c) => {
           } catch (err) {
             console.error('뉴스 저장 오류:', err)
           }
+        }
+        
+        // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
+        if (i < categories.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 2000))
         }
       }
       // 다시 조회
@@ -9375,7 +9387,22 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
   }
   
   try {
-    const response = await fetch(url)
+    // 구글 차단 방지: User-Agent, Referer 헤더 추가
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Referer': 'https://news.google.com/',
+        'Cache-Control': 'no-cache',
+      },
+    })
+    
+    if (!response.ok) {
+      console.error(`RSS fetch failed: ${response.status} ${response.statusText}`)
+      return []
+    }
+    
     const text = await response.text()
     
     // XML 파싱 (간단한 정규식 기반)
