@@ -9489,6 +9489,368 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
   }
 }
 
+// ==================== Gemini AI 요약 및 감정 분석 함수 ====================
+async function summarizeWithGemini(title: string, summary: string): Promise<{ aiSummary: string, sentiment: string }> {
+  try {
+    // Gemini API 키 확인
+    const GEMINI_API_KEY = 'AIzaSyBKN3R7vG_L7RpQhxO8uZUTL-vfZGx0234' // 실제 API 키로 교체 필요
+    
+    const prompt = `다음 뉴스를 3줄로 요약하고 감정을 분석해주세요.
+
+제목: ${title}
+내용: ${summary}
+
+다음 형식으로 응답해주세요:
+요약: [3줄 요약]
+감정: [positive/negative/neutral 중 하나]`
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Gemini API 호출 실패:', response.status, response.statusText)
+      return {
+        aiSummary: summary.substring(0, 150) + '...',
+        sentiment: 'neutral'
+      }
+    }
+
+    const data = await response.json()
+    const text = data.candidates[0]?.content?.parts[0]?.text || ''
+    
+    // 응답 파싱
+    const summaryMatch = text.match(/요약:\s*(.+?)(?=\n감정:|$)/s)
+    const sentimentMatch = text.match(/감정:\s*(positive|negative|neutral)/i)
+    
+    const aiSummary = summaryMatch ? summaryMatch[1].trim() : summary.substring(0, 150) + '...'
+    const sentiment = sentimentMatch ? sentimentMatch[1].toLowerCase() : 'neutral'
+    
+    return { aiSummary, sentiment }
+  } catch (error) {
+    console.error('Gemini AI 오류:', error)
+    return {
+      aiSummary: summary.substring(0, 150) + '...',
+      sentiment: 'neutral'
+    }
+  }
+}
+
+// ==================== 뉴스 AI 요약 API ====================
+app.post('/api/news/:id/summarize', async (c) => {
+  try {
+    const { id } = c.req.param()
+    const { env } = c
+    
+    // 뉴스 조회
+    const news = await env.DB.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
+    
+    if (!news) {
+      return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
+    }
+    
+    // 이미 AI 처리된 경우
+    if (news.ai_processed) {
+      return c.json({ 
+        success: true, 
+        ai_summary: news.ai_summary,
+        sentiment: news.sentiment
+      })
+    }
+    
+    // Gemini AI로 요약 및 감정 분석
+    const { aiSummary, sentiment } = await summarizeWithGemini(news.title, news.summary || '')
+    
+    // DB 업데이트
+    await env.DB.prepare(`
+      UPDATE news 
+      SET ai_summary = ?, sentiment = ?, ai_processed = 1 
+      WHERE id = ?
+    `).bind(aiSummary, sentiment, id).run()
+    
+    return c.json({ 
+      success: true, 
+      ai_summary: aiSummary,
+      sentiment: sentiment
+    })
+  } catch (error) {
+    console.error('뉴스 요약 오류:', error)
+    return c.json({ success: false, error: '요약 생성 실패' }, 500)
+  }
+})
+
+// ==================== 투표 시스템 API ====================
+app.post('/api/news/:id/vote', async (c) => {
+  try {
+    const { id } = c.req.param()
+    const { type } = await c.req.json() // 'up' or 'down'
+    const { env } = c
+    
+    // 투표 타입 검증
+    if (type !== 'up' && type !== 'down') {
+      return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
+    }
+    
+    // 사용자 IP 가져오기 (중복 투표 방지용)
+    const userIp = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+    
+    // 사용자 ID 가져오기 (로그인한 경우)
+    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    let userId = null
+    
+    if (authToken) {
+      try {
+        const payload = await c.env.JWT_SECRET ? 
+          c.get('jwtPayload') : null
+        userId = payload?.userId || null
+      } catch (e) {
+        // 토큰 검증 실패 시 비로그인으로 처리
+      }
+    }
+    
+    // 중복 투표 체크
+    let existingVote
+    if (userId) {
+      existingVote = await env.DB.prepare(
+        'SELECT * FROM news_votes WHERE news_id = ? AND user_id = ?'
+      ).bind(id, userId).first()
+    } else {
+      existingVote = await env.DB.prepare(
+        'SELECT * FROM news_votes WHERE news_id = ? AND user_ip = ?'
+      ).bind(id, userIp).first()
+    }
+    
+    // 이미 투표한 경우
+    if (existingVote) {
+      // 같은 타입이면 취소
+      if (existingVote.vote_type === type) {
+        await env.DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+        
+        // 카운트 감소
+        const field = type === 'up' ? 'vote_up' : 'vote_down'
+        await env.DB.prepare(`UPDATE news SET ${field} = ${field} - 1 WHERE id = ?`).bind(id).run()
+        
+        return c.json({ success: true, action: 'cancelled', type })
+      } else {
+        // 다른 타입이면 변경
+        await env.DB.prepare(
+          'UPDATE news_votes SET vote_type = ? WHERE id = ?'
+        ).bind(type, existingVote.id).run()
+        
+        // 기존 타입 감소, 새 타입 증가
+        const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
+        const newField = type === 'up' ? 'vote_up' : 'vote_down'
+        await env.DB.prepare(`
+          UPDATE news 
+          SET ${oldField} = ${oldField} - 1, ${newField} = ${newField} + 1 
+          WHERE id = ?
+        `).bind(id).run()
+        
+        return c.json({ success: true, action: 'changed', type })
+      }
+    }
+    
+    // 새 투표 추가
+    await env.DB.prepare(`
+      INSERT INTO news_votes (news_id, user_id, user_ip, vote_type)
+      VALUES (?, ?, ?, ?)
+    `).bind(id, userId, userIp, type).run()
+    
+    // 카운트 증가
+    const field = type === 'up' ? 'vote_up' : 'vote_down'
+    await env.DB.prepare(`UPDATE news SET ${field} = ${field} + 1 WHERE id = ?`).bind(id).run()
+    
+    // 인기도 점수 업데이트 (up은 +2, down은 -1)
+    const scoreChange = type === 'up' ? 2 : -1
+    await env.DB.prepare(`
+      UPDATE news 
+      SET popularity_score = popularity_score + ? 
+      WHERE id = ?
+    `).bind(scoreChange, id).run()
+    
+    return c.json({ success: true, action: 'voted', type })
+  } catch (error) {
+    console.error('투표 처리 오류:', error)
+    return c.json({ success: false, error: '투표 처리 실패' }, 500)
+  }
+})
+
+// ==================== 뉴스 투표 현황 조회 API ====================
+app.get('/api/news/:id/votes', async (c) => {
+  try {
+    const { id } = c.req.param()
+    const { env } = c
+    
+    const news = await env.DB.prepare(`
+      SELECT vote_up, vote_down, popularity_score 
+      FROM news 
+      WHERE id = ?
+    `).bind(id).first()
+    
+    if (!news) {
+      return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
+    }
+    
+    return c.json({
+      success: true,
+      vote_up: news.vote_up || 0,
+      vote_down: news.vote_down || 0,
+      popularity_score: news.popularity_score || 0
+    })
+  } catch (error) {
+    console.error('투표 조회 오류:', error)
+    return c.json({ success: false, error: '투표 조회 실패' }, 500)
+  }
+})
+
+// ==================== 키워드 구독 시스템 API ====================
+app.post('/api/keywords/subscribe', async (c) => {
+  try {
+    const { keyword } = await c.req.json()
+    const { env } = c
+    
+    // 사용자 인증 확인 (실제 구현 시 JWT 검증 필요)
+    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    if (!authToken) {
+      return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
+    }
+    
+    // 임시: localStorage의 user_id 사용 (실제로는 JWT에서 추출)
+    const userId = 1 // TODO: JWT에서 실제 user_id 추출
+    
+    // 키워드 유효성 검사
+    if (!keyword || keyword.trim().length === 0) {
+      return c.json({ success: false, error: '키워드를 입력해주세요' }, 400)
+    }
+    
+    if (keyword.length > 50) {
+      return c.json({ success: false, error: '키워드는 50자 이내로 입력해주세요' }, 400)
+    }
+    
+    try {
+      // 키워드 구독 추가 (중복 시 무시)
+      await env.DB.prepare(`
+        INSERT INTO user_keywords (user_id, keyword)
+        VALUES (?, ?)
+      `).bind(userId, keyword.trim()).run()
+      
+      return c.json({ success: true, keyword: keyword.trim() })
+    } catch (err: any) {
+      if (err.message?.includes('UNIQUE constraint failed')) {
+        return c.json({ success: false, error: '이미 구독 중인 키워드입니다' }, 400)
+      }
+      throw err
+    }
+  } catch (error) {
+    console.error('키워드 구독 오류:', error)
+    return c.json({ success: false, error: '키워드 구독 실패' }, 500)
+  }
+})
+
+// ==================== 키워드 구독 취소 API ====================
+app.delete('/api/keywords/:keyword', async (c) => {
+  try {
+    const keyword = decodeURIComponent(c.req.param('keyword'))
+    const { env } = c
+    
+    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    if (!authToken) {
+      return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
+    }
+    
+    const userId = 1 // TODO: JWT에서 실제 user_id 추출
+    
+    await env.DB.prepare(`
+      DELETE FROM user_keywords 
+      WHERE user_id = ? AND keyword = ?
+    `).bind(userId, keyword).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('키워드 구독 취소 오류:', error)
+    return c.json({ success: false, error: '구독 취소 실패' }, 500)
+  }
+})
+
+// ==================== 내 키워드 목록 조회 API ====================
+app.get('/api/keywords/my', async (c) => {
+  try {
+    const { env } = c
+    
+    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
+    if (!authToken) {
+      return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
+    }
+    
+    const userId = 1 // TODO: JWT에서 실제 user_id 추출
+    
+    const { results } = await env.DB.prepare(`
+      SELECT keyword, created_at 
+      FROM user_keywords 
+      WHERE user_id = ? 
+      ORDER BY created_at DESC
+    `).bind(userId).all()
+    
+    return c.json({ success: true, keywords: results || [] })
+  } catch (error) {
+    console.error('키워드 목록 조회 오류:', error)
+    return c.json({ success: false, error: '목록 조회 실패' }, 500)
+  }
+})
+
+// ==================== 키워드별 뉴스 조회 API ====================
+app.get('/api/news/keyword/:keyword', async (c) => {
+  try {
+    const keyword = decodeURIComponent(c.req.param('keyword'))
+    const { env } = c
+    
+    const { results } = await env.DB.prepare(`
+      SELECT * FROM news 
+      WHERE title LIKE ? OR summary LIKE ?
+      ORDER BY created_at DESC 
+      LIMIT 50
+    `).bind(`%${keyword}%`, `%${keyword}%`).all()
+    
+    return c.json({ success: true, news: results || [], keyword })
+  } catch (error) {
+    console.error('키워드 뉴스 조회 오류:', error)
+    return c.json({ success: false, error: '뉴스 조회 실패' }, 500)
+  }
+})
+
+// ==================== 실시간 HOT 뉴스 API ====================
+app.get('/api/news/hot', async (c) => {
+  try {
+    const { env } = c
+    const limit = parseInt(c.req.query('limit') || '10')
+    
+    const { results } = await env.DB.prepare(`
+      SELECT 
+        id, title, summary, image_url, category,
+        vote_up, vote_down, view_count, popularity_score,
+        ai_summary, sentiment
+      FROM news 
+      ORDER BY popularity_score DESC, vote_up DESC
+      LIMIT ?
+    `).bind(limit).all()
+    
+    return c.json({ success: true, news: results || [] })
+  } catch (error) {
+    console.error('HOT 뉴스 조회 오류:', error)
+    return c.json({ success: false, error: 'HOT 뉴스 조회 실패' }, 500)
+  }
+})
+
 // ==================== 유튜브 다운로드 API ====================
 app.post('/api/youtube/download', async (c) => {
   try {
