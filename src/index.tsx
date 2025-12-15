@@ -5958,12 +5958,31 @@ app.get('/news', async (c) => {
                     
                     const data = await response.json();
                     if (data.success) {
-                        // UI 업데이트
-                        const card = document.querySelector('.vote-btn[data-news-id="' + newsId + '"]').closest('.news-card');
-                        card.querySelector('.vote-up-count').textContent = data.vote_up;
-                        card.querySelector('.vote-down-count').textContent = data.vote_down;
+                        console.log('[투표 성공]', 'newsId:', newsId, 'voteType:', voteType, 'vote_up:', data.vote_up, 'vote_down:', data.vote_down);
                         
-                        showToast(voteType === 'up' ? '좋아요!' : '별로예요', 'success');
+                        // PC 및 모바일 피드 모두에서 해당 뉴스 카드 찾기
+                        const voteUpBtns = document.querySelectorAll('.vote-up-btn[data-news-id="' + newsId + '"]');
+                        const voteDownBtns = document.querySelectorAll('.vote-down-btn[data-news-id="' + newsId + '"]');
+                        
+                        // UP 버튼의 카운터 업데이트
+                        voteUpBtns.forEach(btn => {
+                            const countSpan = btn.querySelector('.vote-up-count');
+                            if (countSpan) {
+                                countSpan.textContent = data.vote_up;
+                                console.log('[투표 UP 카운터 업데이트]', countSpan.textContent);
+                            }
+                        });
+                        
+                        // DOWN 버튼의 카운터 업데이트
+                        voteDownBtns.forEach(btn => {
+                            const countSpan = btn.querySelector('.vote-down-count');
+                            if (countSpan) {
+                                countSpan.textContent = data.vote_down;
+                                console.log('[투표 DOWN 카운터 업데이트]', countSpan.textContent);
+                            }
+                        });
+                        
+                        showToast(voteType === 'up' ? '👍 좋아요!' : '👎 별로예요', 'success');
                     } else {
                         showToast(data.error || '투표 실패', 'error');
                     }
