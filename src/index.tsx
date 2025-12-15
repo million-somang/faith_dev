@@ -6266,7 +6266,7 @@ app.get('/news', async (c) => {
                     const voteDown = news.vote_down || 0;
                     const viewCount = news.view_count || 0;
                     
-                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative p-5">' +
+                    return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative p-5" data-news-id="' + news.id + '">' +
                         // 카테고리 & 날짜
                         '<div class="flex items-center justify-between mb-3">' +
                             '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">' + categoryDisplay + '</span>' +
@@ -6313,7 +6313,7 @@ app.get('/news', async (c) => {
                                 // 조회수
                                 '<span class="flex items-center space-x-1 text-gray-500 text-sm">' +
                                     '<i class="fas fa-eye"></i>' +
-                                    '<span>' + viewCount + '</span>' +
+                                    '<span class="view-count-display">' + viewCount + '</span>' +
                                 '</span>' +
                             '</div>' +
                             
@@ -6368,12 +6368,42 @@ app.get('/news', async (c) => {
                 document.querySelectorAll('.news-clickable-area').forEach(element => {
                     element.addEventListener('click', function(e) {
                         const url = this.getAttribute('data-news-url');
+                        const newsId = this.getAttribute('data-news-id');
                         if (url) {
-                            console.log('[뉴스 클릭] URL:', url);
+                            console.log('[뉴스 클릭] URL:', url, 'newsId:', newsId);
+                            
+                            // 조회수 증가
+                            if (newsId) {
+                                incrementViewCount(newsId);
+                            }
+                            
                             openNewsInNewTab(url);
                         }
                     });
                 });
+            }
+            
+            // ==================== 조회수 증가 ====================
+            async function incrementViewCount(newsId) {
+                try {
+                    const response = await fetch('/api/news/' + newsId + '/view', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        console.log('[조회수 증가] newsId:', newsId, 'view_count:', data.view_count);
+                        
+                        // UI 업데이트 - PC 및 모바일 피드 모두
+                        const viewCountElements = document.querySelectorAll('.news-card[data-news-id="' + newsId + '"] .view-count-display');
+                        viewCountElements.forEach(element => {
+                            element.textContent = data.view_count;
+                        });
+                    }
+                } catch (error) {
+                    console.error('조회수 증가 오류:', error);
+                }
             }
             
             // ==================== 북마크/공유 버튼 이벤트 리스너 ====================
@@ -10367,6 +10397,34 @@ app.get('/api/news/keyword/:keyword', async (c) => {
 })
 
 // ==================== 투표 API ====================
+// 조회수 증가 API
+app.post('/api/news/:id/view', async (c) => {
+  try {
+    const newsId = c.req.param('id')
+    const { env } = c
+    
+    // 조회수 증가
+    await env.DB.prepare(`
+      UPDATE news 
+      SET view_count = view_count + 1
+      WHERE id = ?
+    `).bind(newsId).run()
+    
+    // 업데이트된 조회수 조회
+    const newsData = await env.DB.prepare(
+      'SELECT view_count FROM news WHERE id = ?'
+    ).bind(newsId).first()
+    
+    return c.json({
+      success: true,
+      view_count: newsData?.view_count || 0
+    })
+  } catch (error) {
+    console.error('조회수 증가 오류:', error)
+    return c.json({ success: false, error: '조회수 증가 실패' }, 500)
+  }
+})
+
 app.post('/api/news/vote', async (c) => {
   try {
     const { userId, newsId, voteType } = await c.req.json()
