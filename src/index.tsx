@@ -5039,6 +5039,30 @@ app.get('/lifestyle/text-checker', (c) => {
                 .desktop-stats {
                     display: none;
                 }
+                .mobile-editor-height {
+                    height: 300px !important;
+                    min-height: 250px;
+                }
+                .mobile-stats-card {
+                    display: block !important;
+                    margin-bottom: 1rem;
+                }
+                main {
+                    padding-bottom: 110px !important; /* 모바일 하단 바 공간 확보 */
+                }
+            }
+            @media (max-width: 640px) {
+                .editor-toolbar {
+                    padding: 0.5rem;
+                }
+                .editor-toolbar button {
+                    font-size: 0.75rem;
+                    padding: 0.5rem 0.75rem;
+                }
+                main {
+                    padding-left: 0.75rem;
+                    padding-right: 0.75rem;
+                }
             }
         </style>
     </head>
@@ -5095,7 +5119,7 @@ app.get('/lifestyle/text-checker', (c) => {
 
 자소서, 레포트, 블로그 포스팅 등 어떤 글이든 입력해보세요.
 실시간으로 글자 수를 세고, 맞춤법을 검사해드립니다."
-                        class="w-full h-[500px] p-6 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-base sm:text-lg leading-relaxed text-gray-800"
+                        class="w-full h-[350px] sm:h-[450px] lg:h-[500px] p-4 sm:p-6 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base lg:text-lg leading-relaxed text-gray-800"
                         oninput="updateStats()"
                     ></textarea>
                 </div>
@@ -5315,20 +5339,81 @@ app.get('/lifestyle/text-checker', (c) => {
                 }, 1000);
             }
 
-            // 간단한 오류 찾기 (데모용)
+            // 한국어 맞춤법 검사 (대폭 강화된 버전)
             function findSimpleErrors(text) {
                 const errors = [];
-                const commonErrors = [
-                    { wrong: '할수있', correct: '할 수 있', type: '띄어쓰기' },
-                    { wrong: '할수없', correct: '할 수 없', type: '띄어쓰기' },
-                    { wrong: '그러나', correct: '그러나', type: '접속사' },
-                    { wrong: '됬', correct: '됐', type: '맞춤법' },
-                    { wrong: '틀렸', correct: '틀렸', type: '맞춤법' },
+                const foundErrors = new Set(); // 중복 방지
+                
+                // 간단한 패턴 기반 맞춤법 검사 (정규식 활용)
+                const patterns = [
+                    // === 띄어쓰기 오류 ===
+                    { regex: /([가-힣])수(있|없|도있|도없)/g, replacement: '$1 수 $2', type: '띄어쓰기', example: '할수있 → 할 수 있' },
+                    { regex: /(못|안)할수/g, replacement: '$1 할 수', type: '띄어쓰기' },
+                    { regex: /([가-힣])것(같|이|을|도)/g, replacement: '$1 것 $2', type: '띄어쓰기', example: '하는것 → 하는 것' },
+                    { regex: /([가-힣])만(하|큼)/g, replacement: '$1 만$2', type: '띄어쓰기' },
+                    { regex: /(하지|되지|오지|가지)않/g, replacement: '$1 않', type: '띄어쓰기' },
+                    { regex: /([가-힣])뿐(이|만)/g, replacement: '$1 뿐$2', type: '띄어쓰기' },
+                    { regex: /(이|그|저)런게/g, replacement: '$1런 게', type: '띄어쓰기' },
+                    { regex: /(한|하는|할|된|될|되는)게/g, replacement: '$1 게', type: '띄어쓰기' },
+                    { regex: /(이럴|저럴|그럴)수가/g, replacement: '$1 수가', type: '띄어쓰기' },
+                    
+                    // === 맞춤법 오류: 되/돼 ===
+                    { regex: /\b되요\b/g, replacement: '돼요', type: '맞춤법', example: '되요 → 돼요' },
+                    { regex: /\b안돼\b/g, replacement: '안 돼', type: '띄어쓰기+맞춤법' },
+                    { regex: /\b안되\b/g, replacement: '안 돼', type: '띄어쓰기+맞춤법' },
+                    { regex: /\b됬([어|다|습니다|네요])/g, replacement: '됐$1', type: '맞춤법', example: '됬어 → 됐어' },
+                    { regex: /\b되여\b/g, replacement: '돼', type: '맞춤법' },
+                    
+                    // === 맞춤법 오류: 웬/왠 ===
+                    { regex: /\b웬지\b/g, replacement: '왠지', type: '맞춤법', example: '웬지 → 왠지' },
+                    { regex: /\b왠만하면\b/g, replacement: '웬만하면', type: '맞춤법', example: '왠만하면 → 웬만하면' },
+                    { regex: /\b왠일\b/g, replacement: '웬일', type: '맞춤법' },
+                    
+                    // === 맞춤법 오류: 자주 틀리는 단어 ===
+                    { regex: /\b어떻해\b/g, replacement: '어떡해', type: '맞춤법', example: '어떻해 → 어떡해' },
+                    { regex: /\b어떻케\b/g, replacement: '어떻게', type: '맞춤법' },
+                    { regex: /\b몇일\b/g, replacement: '며칠', type: '맞춤법', example: '몇일 → 며칠' },
+                    { regex: /\b금새\b/g, replacement: '금세', type: '맞춤법' },
+                    { regex: /\b곰방\b/g, replacement: '금방', type: '맞춤법' },
+                    { regex: /\b있따가\b/g, replacement: '이따가', type: '맞춤법' },
+                    { regex: /\b넓이다\b/g, replacement: '넓히다', type: '맞춤법' },
+                    { regex: /\b급자기\b/g, replacement: '갑자기', type: '맞춤법' },
+                    { regex: /\b갑작기\b/g, replacement: '갑자기', type: '맞춤법' },
+                    { regex: /\b설레임\b/g, replacement: '설렘', type: '맞춤법', example: '설레임 → 설렘' },
+                    
+                    // === 맞춤법 오류: ~든지/~던지 ===
+                    { regex: /\b([가-힣]+)던지\s+([가-힣]+)던지\b/g, replacement: '$1든지 $2든지', type: '맞춤법', example: '가던지 오던지 → 가든지 오든지' },
+                    
+                    // === 맞춤법 오류: 로서/로써 ===
+                    { regex: /(자격|입장|역할|신분)([으]?)로써\b/g, replacement: '$1$2로서', type: '맞춤법', example: '학생으로써 → 학생으로서' },
+                    { regex: /(수단|도구|방법)([으]?)로서\b/g, replacement: '$1$2로써', type: '맞춤법', example: '도구로서 → 도구로써' },
                 ];
-
-                commonErrors.forEach(error => {
-                    if (text.includes(error.wrong)) {
-                        errors.push(error);
+                
+                // 패턴 기반 검사
+                patterns.forEach(pattern => {
+                    const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+                    let match;
+                    
+                    while ((match = regex.exec(text)) !== null) {
+                        const wrongText = match[0];
+                        let correctText = pattern.replacement;
+                        
+                        // $1, $2 등 그룹 치환
+                        for (let i = 1; i < match.length; i++) {
+                            correctText = correctText.replace(new RegExp('\\$' + i, 'g'), match[i]);
+                        }
+                        
+                        // 이미 같은 오류가 발견되지 않았다면 추가
+                        const key = wrongText + '_' + correctText;
+                        if (!foundErrors.has(key) && wrongText !== correctText) {
+                            errors.push({
+                                wrong: wrongText,
+                                correct: correctText,
+                                type: pattern.type,
+                                desc: pattern.example || ''
+                            });
+                            foundErrors.add(key);
+                        }
                     }
                 });
 
@@ -5367,6 +5452,7 @@ app.get('/lifestyle/text-checker', (c) => {
                                     </div>
                                     <div class="text-xs text-gray-500 mt-1">
                                         <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded">\${error.type}</span>
+                                        \${error.desc ? '<span class="ml-2 text-gray-500">· ' + error.desc + '</span>' : ''}
                                     </div>
                                 </div>
                             </div>
