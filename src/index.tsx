@@ -6312,7 +6312,7 @@ app.get('/news', async (c) => {
                 const newsHTML = newsList.map(news => {
                     // 제목에서 언론사 분리
                     let cleanTitle = news.title;
-                    let extractedPublisher = news.publisher || '구글 뉴스';
+                    let extractedPublisher = '구글 뉴스';  // 기본값
                     const publisherMatch = news.title.match(/\s*-\s*([가-힣a-zA-Z0-9\s]+)$/);
                     if (publisherMatch) {
                         cleanTitle = news.title.replace(/\s*-\s*[가-힣a-zA-Z0-9\s]+$/, '').trim();
