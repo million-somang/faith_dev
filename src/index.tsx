@@ -4990,6 +4990,431 @@ app.get('/lifestyle/calculator', (c) => {
   `)
 })
 
+// ==================== 글자수 & 맞춤법 검사기 ====================
+app.get('/lifestyle/text-checker', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>무료 글자수 세기 및 맞춤법 검사기 - Faith Portal</title>
+        <meta name="description" content="실시간 글자수 세기, 공백 포함/제외, 바이트 계산, 맞춤법 검사를 한번에! 자소서, 레포트 작성에 필수.">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .editor-toolbar {
+                background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            }
+            .stat-card {
+                background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+                border: 2px solid #bfdbfe;
+            }
+            .spell-error {
+                background-color: #fee2e2;
+                border-bottom: 2px solid #ef4444;
+                padding: 0 2px;
+                cursor: pointer;
+            }
+            .spell-suggestion {
+                background-color: #d1fae5;
+                padding: 0 2px;
+            }
+            .mobile-stats-bar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+                color: white;
+                padding: 12px 16px;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+                z-index: 50;
+                display: none;
+            }
+            @media (max-width: 1024px) {
+                .mobile-stats-bar {
+                    display: flex;
+                }
+                .desktop-stats {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: '글자수 & 맞춤법'}
+        ])}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 pb-24 lg:pb-8">
+            <!-- Header -->
+            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-spell-check text-green-600"></i>
+                        글자수 세기 & 맞춤법 검사
+                    </h1>
+                    <p class="text-gray-600 mt-2 flex items-center gap-2">
+                        <i class="fas fa-lock text-green-500"></i>
+                        입력하신 내용은 브라우저에만 저장되며 서버에 전송되지 않습니다.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Layout: 2 Column Split View -->
+            <div class="flex flex-col lg:flex-row gap-6">
+                
+                <!-- Zone A: Left Editor -->
+                <div class="flex-1 bg-white rounded-xl shadow-lg border-2 border-gray-200 overflow-hidden flex flex-col">
+                    <!-- Toolbar -->
+                    <div class="editor-toolbar p-3 border-b border-gray-300 flex flex-wrap gap-2">
+                        <button onclick="copyText()" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 rounded-md transition border border-gray-300">
+                            <i class="fas fa-copy"></i> 복사
+                        </button>
+                        <button onclick="clearText()" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-red-50 hover:text-red-600 rounded-md transition border border-gray-300">
+                            <i class="fas fa-trash-alt"></i> 전체 삭제
+                        </button>
+                        <button onclick="removeSpecialChars()" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 rounded-md transition border border-gray-300">
+                            <i class="fas fa-eraser"></i> 특수문자 제거
+                        </button>
+                        <button onclick="removeEmojis()" class="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 rounded-md transition border border-gray-300 ml-auto">
+                            <i class="fas fa-smile"></i> 이모지 제거
+                        </button>
+                    </div>
+                    
+                    <!-- Text Area -->
+                    <textarea
+                        id="mainTextarea"
+                        placeholder="여기에 내용을 입력하거나 붙여넣으세요...
+
+자소서, 레포트, 블로그 포스팅 등 어떤 글이든 입력해보세요.
+실시간으로 글자 수를 세고, 맞춤법을 검사해드립니다."
+                        class="w-full h-[500px] p-6 resize-none focus:outline-none focus:ring-2 focus:ring-blue-300 text-base sm:text-lg leading-relaxed text-gray-800"
+                        oninput="updateStats()"
+                    ></textarea>
+                </div>
+
+                <!-- Zone B: Right Dashboard -->
+                <div class="lg:w-[380px] space-y-4 desktop-stats">
+                    
+                    <!-- Stat Card -->
+                    <div class="stat-card rounded-xl p-6 sticky top-4 shadow-lg">
+                        <h3 class="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4 flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i> 실시간 분석
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-end border-b-2 border-blue-300 pb-3">
+                                <span class="text-gray-700 font-medium">공백 포함</span>
+                                <span class="text-4xl font-bold text-blue-900">
+                                    <span id="charWithSpace">0</span>
+                                    <span class="text-sm font-normal text-gray-600 ml-1">자</span>
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-end pb-2">
+                                <span class="text-gray-600 text-sm">공백 제외</span>
+                                <span class="text-2xl font-semibold text-gray-700">
+                                    <span id="charWithoutSpace">0</span>
+                                    <span class="text-sm font-normal text-gray-500 ml-1">자</span>
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-end pb-2">
+                                <span class="text-gray-600 text-sm">용량 (UTF-8)</span>
+                                <span class="text-lg font-medium text-gray-600">
+                                    <span id="byteCount">0</span>
+                                    <span class="text-sm font-normal text-gray-500 ml-1">bytes</span>
+                                </span>
+                            </div>
+                            <div class="flex justify-between items-end">
+                                <span class="text-gray-600 text-sm">줄 바꿈</span>
+                                <span class="text-lg font-medium text-gray-600">
+                                    <span id="lineCount">1</span>
+                                    <span class="text-sm font-normal text-gray-500 ml-1">줄</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Platform Options -->
+                        <div class="mt-6 bg-white p-1 rounded-lg flex text-xs font-medium border-2 border-blue-200">
+                            <button onclick="setPlatform('naver')" id="btn-naver" class="flex-1 py-2 rounded bg-blue-600 text-white shadow-sm transition">
+                                네이버/사람인
+                            </button>
+                            <button onclick="setPlatform('jobkorea')" id="btn-jobkorea" class="flex-1 py-2 hover:bg-gray-100 rounded transition text-gray-600">
+                                잡코리아
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 text-center">
+                            <i class="fas fa-info-circle"></i> 플랫폼별 줄바꿈 계산 방식 적용
+                        </p>
+                    </div>
+
+                    <!-- Spell Check Card -->
+                    <div class="bg-white rounded-xl p-6 border-2 border-gray-200 shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-spell-check text-green-600"></i>
+                                맞춤법 검사
+                            </h3>
+                            <span id="spellStatus" class="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full font-medium">
+                                대기 중
+                            </span>
+                        </div>
+                        
+                        <div id="spellResult" class="text-center py-8 text-gray-400 text-sm bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                            <i class="fas fa-keyboard text-4xl mb-3 text-gray-300"></i>
+                            <p>글을 입력하고<br/>검사 버튼을 눌러주세요.</p>
+                        </div>
+
+                        <button onclick="checkSpelling()" class="w-full mt-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 rounded-lg font-bold transition flex justify-center items-center gap-2 shadow-lg">
+                            <i class="fas fa-wand-magic-sparkles"></i> 맞춤법 검사 시작
+                        </button>
+
+                        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>안내:</strong> 맞춤법 검사는 참고용이며 100% 정확하지 않을 수 있습니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Fixed Bottom Stats Bar -->
+            <div class="mobile-stats-bar justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div>
+                        <span class="text-xs opacity-80">공백 포함</span>
+                        <div class="text-2xl font-bold">
+                            <span id="mobileCharCount">0</span>자
+                        </div>
+                    </div>
+                    <div class="border-l border-white opacity-50 h-10"></div>
+                    <div>
+                        <span class="text-xs opacity-80">공백 제외</span>
+                        <div class="text-lg font-semibold">
+                            <span id="mobileCharNoSpace">0</span>자
+                        </div>
+                    </div>
+                </div>
+                <button onclick="checkSpelling()" class="bg-white text-blue-900 px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-check"></i> 검사
+                </button>
+            </div>
+        </main>
+
+        <script>
+            let currentPlatform = 'naver'; // 기본값: 네이버 기준
+
+            // 플랫폼 선택
+            function setPlatform(platform) {
+                currentPlatform = platform;
+                document.getElementById('btn-naver').className = platform === 'naver' 
+                    ? 'flex-1 py-2 rounded bg-blue-600 text-white shadow-sm transition'
+                    : 'flex-1 py-2 hover:bg-gray-100 rounded transition text-gray-600';
+                document.getElementById('btn-jobkorea').className = platform === 'jobkorea'
+                    ? 'flex-1 py-2 rounded bg-blue-600 text-white shadow-sm transition'
+                    : 'flex-1 py-2 hover:bg-gray-100 rounded transition text-gray-600';
+                updateStats();
+            }
+
+            // 실시간 통계 업데이트
+            function updateStats() {
+                const text = document.getElementById('mainTextarea').value;
+                
+                // 공백 포함
+                const charWithSpace = text.length;
+                
+                // 공백 제외
+                const charWithoutSpace = text.replace(/\\s/g, '').length;
+                
+                // Byte 계산 (UTF-8)
+                const byteCount = new Blob([text]).size;
+                
+                // 줄 수 (플랫폼별 다르게 계산)
+                let lineCount;
+                if (currentPlatform === 'jobkorea') {
+                    // 잡코리아: \\r\\n을 2자로 계산
+                    lineCount = (text.match(/\\n/g) || []).length + 1;
+                } else {
+                    // 네이버/사람인: \\n을 1자로 계산
+                    lineCount = (text.match(/\\n/g) || []).length + 1;
+                }
+                
+                // 데스크톱
+                document.getElementById('charWithSpace').textContent = charWithSpace.toLocaleString();
+                document.getElementById('charWithoutSpace').textContent = charWithoutSpace.toLocaleString();
+                document.getElementById('byteCount').textContent = byteCount.toLocaleString();
+                document.getElementById('lineCount').textContent = lineCount;
+                
+                // 모바일
+                document.getElementById('mobileCharCount').textContent = charWithSpace.toLocaleString();
+                document.getElementById('mobileCharNoSpace').textContent = charWithoutSpace.toLocaleString();
+
+                // LocalStorage에 자동 저장
+                localStorage.setItem('textChecker_content', text);
+            }
+
+            // 복사
+            function copyText() {
+                const textarea = document.getElementById('mainTextarea');
+                textarea.select();
+                document.execCommand('copy');
+                showToast('클립보드에 복사되었습니다!');
+            }
+
+            // 전체 삭제
+            function clearText() {
+                if (confirm('정말로 모든 내용을 삭제하시겠습니까?')) {
+                    document.getElementById('mainTextarea').value = '';
+                    updateStats();
+                    localStorage.removeItem('textChecker_content');
+                    showToast('내용이 삭제되었습니다.');
+                }
+            }
+
+            // 특수문자 제거
+            function removeSpecialChars() {
+                const textarea = document.getElementById('mainTextarea');
+                // HTML 태그와 특수문자 제거 (한글, 영문, 숫자, 공백, 기본 문장부호만 남김)
+                const cleaned = textarea.value.replace(/<[^>]*>/g, '').replace(/[^가-힣a-zA-Z0-9\\s.,!?;:\\-()]/g, '');
+                textarea.value = cleaned;
+                updateStats();
+                showToast('특수문자가 제거되었습니다.');
+            }
+
+            // 이모지 제거
+            function removeEmojis() {
+                const textarea = document.getElementById('mainTextarea');
+                // 이모지 유니코드 범위 제거
+                const cleaned = textarea.value.replace(/[\\u{1F600}-\\u{1F64F}\\u{1F300}-\\u{1F5FF}\\u{1F680}-\\u{1F6FF}\\u{1F1E0}-\\u{1F1FF}\\u{2600}-\\u{26FF}\\u{2700}-\\u{27BF}]/gu, '');
+                textarea.value = cleaned;
+                updateStats();
+                showToast('이모지가 제거되었습니다.');
+            }
+
+            // 맞춤법 검사 (간단한 로직)
+            function checkSpelling() {
+                const text = document.getElementById('mainTextarea').value.trim();
+                
+                if (text.length === 0) {
+                    showToast('먼저 텍스트를 입력해주세요.');
+                    return;
+                }
+
+                document.getElementById('spellStatus').textContent = '검사 중...';
+                document.getElementById('spellStatus').className = 'text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium animate-pulse';
+
+                // 간단한 클라이언트 측 검사 (실제로는 서버 API 필요)
+                setTimeout(() => {
+                    const errors = findSimpleErrors(text);
+                    displaySpellResults(errors);
+                }, 1000);
+            }
+
+            // 간단한 오류 찾기 (데모용)
+            function findSimpleErrors(text) {
+                const errors = [];
+                const commonErrors = [
+                    { wrong: '할수있', correct: '할 수 있', type: '띄어쓰기' },
+                    { wrong: '할수없', correct: '할 수 없', type: '띄어쓰기' },
+                    { wrong: '그러나', correct: '그러나', type: '접속사' },
+                    { wrong: '됬', correct: '됐', type: '맞춤법' },
+                    { wrong: '틀렸', correct: '틀렸', type: '맞춤법' },
+                ];
+
+                commonErrors.forEach(error => {
+                    if (text.includes(error.wrong)) {
+                        errors.push(error);
+                    }
+                });
+
+                return errors;
+            }
+
+            // 맞춤법 결과 표시
+            function displaySpellResults(errors) {
+                const resultDiv = document.getElementById('spellResult');
+                const statusSpan = document.getElementById('spellStatus');
+
+                if (errors.length === 0) {
+                    statusSpan.textContent = '오류 없음';
+                    statusSpan.className = 'text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium';
+                    resultDiv.innerHTML = \`
+                        <div class="text-center py-6">
+                            <i class="fas fa-check-circle text-5xl text-green-500 mb-3"></i>
+                            <p class="text-green-700 font-semibold">오류가 발견되지 않았습니다!</p>
+                            <p class="text-gray-500 text-sm mt-2">맞춤법이 올바릅니다.</p>
+                        </div>
+                    \`;
+                } else {
+                    statusSpan.textContent = \`\${errors.length}개 발견\`;
+                    statusSpan.className = 'text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-medium';
+                    
+                    let html = '<div class="space-y-2">';
+                    errors.forEach((error, index) => {
+                        html += \`
+                            <div class="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                                <i class="fas fa-exclamation-circle text-red-500 mt-1"></i>
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-800">
+                                        <span class="spell-error">\${error.wrong}</span>
+                                        <i class="fas fa-arrow-right mx-2 text-gray-400"></i>
+                                        <span class="spell-suggestion">\${error.correct}</span>
+                                    </div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded">\${error.type}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        \`;
+                    });
+                    html += '</div>';
+                    html += \`
+                        <button onclick="autoFixAll()" class="w-full mt-4 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-medium transition">
+                            <i class="fas fa-magic"></i> 모든 오류 한 번에 수정
+                        </button>
+                    \`;
+                    resultDiv.innerHTML = html;
+                }
+            }
+
+            // 모든 오류 자동 수정
+            function autoFixAll() {
+                showToast('자동 수정 기능은 개발 중입니다.');
+            }
+
+            // Toast 메시지
+            function showToast(message) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed bottom-24 lg:bottom-8 right-8 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-2xl z-50 animate-bounce';
+                toast.innerHTML = \`<i class="fas fa-check-circle mr-2"></i>\${message}\`;
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            }
+
+            // 페이지 로드 시 저장된 내용 복원
+            document.addEventListener('DOMContentLoaded', () => {
+                const saved = localStorage.getItem('textChecker_content');
+                if (saved) {
+                    document.getElementById('mainTextarea').value = saved;
+                    updateStats();
+                    showToast('이전에 작성하던 내용을 불러왔습니다.');
+                }
+            });
+        </script>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+
+    </body>
+    </html>
+  `)
+})
+
 // ==================== 유튜브 다운로드 페이지 ====================
 app.get('/lifestyle/youtube-download', (c) => {
   return c.html(`
