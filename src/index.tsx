@@ -129,7 +129,7 @@ function getGameMenu(currentPage: string): string {
   return menuHtml
 }
 
-// ==================== 생활 메뉴 헬퍼 함수 ====================
+// ==================== 유틸리티 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
   const menuItems = [
     { path: '/lifestyle/calculator', label: '계산기', icon: 'fas fa-calculator' },
@@ -338,7 +338,7 @@ function getStickyHeader(): string {
                             뉴스
                         </a>
                         <a href="/lifestyle" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
-                            생활
+                            유틸리티
                         </a>
                         <a href="/game" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
                             게임
@@ -412,7 +412,7 @@ function getStickyHeader(): string {
                     stickyHeader.style.transform = 'translateY(-100%)';
                 }
             } else {
-                // 서브 페이지 (뉴스, 생활, 게임 등) - 메인 헤더가 사라지면 즉시 표시
+                // 서브 페이지 (뉴스, 유틸리티, 게임 등) - 메인 헤더가 사라지면 즉시 표시
                 if (headerRect.bottom <= 0) {
                     if (scrollCount % 10 === 0) console.log('-> Showing sticky header (sub page)');
                     stickyHeader.style.transform = 'translateY(0)';
@@ -532,7 +532,7 @@ function getCommonAuthScript(): string {
           menuHTML += '<div class="space-y-4">';
           menuHTML += '<a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>홈</a>';
           menuHTML += '<a href="/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-newspaper mr-3"></i>뉴스</a>';
-          menuHTML += '<a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>생활</a>';
+          menuHTML += '<a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>유틸리티</a>';
           menuHTML += '<a href="/game" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-gamepad mr-3"></i>게임</a>';
           menuHTML += '<a href="/finance" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-chart-line mr-3"></i>금융</a>';
           menuHTML += '<a href="/mypage" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-user mr-3"></i>마이페이지</a>';
@@ -610,7 +610,7 @@ function getCommonFooter(): string {
                     <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
                     <ul class="space-y-2">
                         <li><a href="/news" class="text-blue-200 hover:text-white text-sm transition">뉴스</a></li>
-                        <li><a href="/lifestyle" class="text-blue-200 hover:text-white text-sm transition">생활</a></li>
+                        <li><a href="/lifestyle" class="text-blue-200 hover:text-white text-sm transition">유틸리티</a></li>
                         <li><a href="/game" class="text-blue-200 hover:text-white text-sm transition">게임</a></li>
                         <li><a href="/" class="text-blue-200 hover:text-white text-sm transition">쇼핑</a></li>
                     </ul>
@@ -995,7 +995,7 @@ app.get('/', async (c) => {
                             <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
                                 <i class="fas fa-home text-xl sm:text-2xl text-green-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors whitespace-nowrap">생활</p>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors whitespace-nowrap">유틸리티</p>
                         </a>
                         <a href="/game" class="group text-center flex-shrink-0">
                             <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
@@ -3123,7 +3123,7 @@ app.get('/game/simple/sudoku/play', (c) => {
   `)
 })
 
-// ==================== 생활 페이지 ====================
+// ==================== 유틸리티 페이지 ====================
 app.get('/lifestyle', (c) => {
   return c.html(`
     <!DOCTYPE html>
@@ -3131,7 +3131,7 @@ app.get('/lifestyle', (c) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>생활 - Faith Portal</title>
+        <title>유틸리티 - Faith Portal</title>
         <script>
             // Tailwind CDN 경고 필터링 (개발 환경용)
             (function() {
@@ -3158,7 +3158,7 @@ app.get('/lifestyle', (c) => {
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
-          {label: '생활'}
+          {label: '유틸리티'}
         ])}
 
         <!-- 서브 메뉴 -->
@@ -3265,7 +3265,7 @@ app.get('/lifestyle', (c) => {
                                         <i class="fas fa-newspaper mr-3"></i>뉴스
                                     </a>
                                     <a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
-                                        <i class="fas fa-home mr-3"></i>생활
+                                        <i class="fas fa-home mr-3"></i>유틸리티
                                     </a>
                                     <a href="/game" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                                         <i class="fas fa-gamepad mr-3"></i>게임
@@ -3875,7 +3875,7 @@ app.get('/lifestyle/calculator', (c) => {
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
-          {label: '생활', href: '/lifestyle'},
+          {label: '유틸리티', href: '/lifestyle'},
           {label: '계산기'}
         ])}
 
@@ -4857,7 +4857,7 @@ app.get('/lifestyle/youtube-download', (c) => {
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
-          {label: '생활', href: '/lifestyle'},
+          {label: '유틸리티', href: '/lifestyle'},
           {label: '유튜브 다운로드'}
         ])}
 
