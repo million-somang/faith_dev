@@ -3166,9 +3166,28 @@ app.get('/lifestyle', (c) => {
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <!-- 카테고리 탭 -->
+            <div class="mb-6 overflow-x-auto">
+                <div class="flex gap-2 min-w-max">
+                    <button onclick="filterCategory('all')" class="category-tab active px-4 py-2 rounded-full font-medium transition-all">
+                        전체
+                    </button>
+                    <button onclick="filterCategory('life')" class="category-tab px-4 py-2 rounded-full font-medium transition-all">
+                        생활/금융
+                    </button>
+                    <button onclick="filterCategory('work')" class="category-tab px-4 py-2 rounded-full font-medium transition-all">
+                        학습/업무
+                    </button>
+                    <button onclick="filterCategory('dev')" class="category-tab px-4 py-2 rounded-full font-medium transition-all">
+                        개발 도구
+                    </button>
+                </div>
+            </div>
+
             <!-- 서비스 카드 그리드 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- 다기능 계산기 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="life">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-4">
                         <i class="fas fa-calculator text-2xl text-white"></i>
                     </div>
@@ -3179,35 +3198,186 @@ app.get('/lifestyle', (c) => {
                     </a>
                 </div>
 
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
-                        <i class="fab fa-youtube text-2xl text-white"></i>
+                <!-- 글자수 세기 & 맞춤법 검사기 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="work">
+                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-spell-check text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">유튜브 다운로드</h3>
-                    <p class="text-gray-600 mb-4">유튜브 영상을 간편하게 다운로드하세요</p>
-                    <a href="/lifestyle/youtube-download" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">글자수 & 맞춤법</h3>
+                    <p class="text-gray-600 mb-4">한국어 글자수 세기와 맞춤법 검사를 한번에</p>
+                    <a href="/lifestyle/text-checker" class="text-cyan-600 hover:text-cyan-700 font-medium">
                         시작하기 →
                     </a>
                 </div>
 
-                <!-- 추가 서비스 카드는 여기에 -->
-                <div class="bg-white rounded-xl shadow-lg p-6 opacity-50">
-                    <div class="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg flex items-center justify-center mb-4">
-                        <i class="fas fa-plus text-2xl text-white"></i>
+                <!-- 평수 계산기 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="life">
+                    <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-home text-2xl text-white"></i>
                     </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">서비스 준비중</h3>
-                    <p class="text-gray-600 mb-4">곧 더 많은 서비스를 제공할 예정입니다</p>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">평수 계산기</h3>
+                    <p class="text-gray-600 mb-4">평 ↔ m² 변환 (34평 = 112.39m²)</p>
+                    <a href="/lifestyle/pyeong-calculator" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- 한국 나이 계산기 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="life">
+                    <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-birthday-cake text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">한국 나이 계산기</h3>
+                    <p class="text-gray-600 mb-4">만 나이, 한국 나이, 연 나이를 한번에 계산</p>
+                    <a href="/lifestyle/age-calculator" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- D-Day 계산기 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="life">
+                    <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-calendar-alt text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">D-Day 계산기</h3>
+                    <p class="text-gray-600 mb-4">중요한 날까지 남은 시간 계산 (결혼, 시험, 입대)</p>
+                    <a href="/lifestyle/dday-calculator" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- JSON 포매터 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="dev">
+                    <div class="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-code text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">JSON 포매터</h3>
+                    <p class="text-gray-600 mb-4">JSON 데이터 정리, 검증, 압축 (개발자 필수)</p>
+                    <a href="/lifestyle/json-formatter" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- Base64 인코더/디코더 -->
+                <div class="utility-card bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer" data-category="dev">
+                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-lock text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Base64 변환</h3>
+                    <p class="text-gray-600 mb-4">Base64 인코딩/디코딩 (텍스트, 이미지)</p>
+                    <a href="/lifestyle/base64-converter" class="text-cyan-600 hover:text-cyan-700 font-medium">
+                        시작하기 →
+                    </a>
+                </div>
+
+                <!-- 서비스 준비중 (투표 기능) -->
+                <div class="utility-card bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl shadow-lg p-6 border-2 border-dashed border-gray-300" data-category="all">
+                    <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center mb-4">
+                        <i class="fas fa-vote-yea text-2xl text-white"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">다음 서비스 투표</h3>
+                    <p class="text-gray-600 mb-4 text-sm">어떤 유틸리티가 필요하신가요?</p>
+                    <div class="space-y-2 mb-4">
+                        <button onclick="voteUtility('lotto')" class="w-full text-left px-3 py-2 bg-white rounded-lg hover:bg-gray-50 transition-all text-sm">
+                            🎱 로또 번호 생성기 <span class="float-right text-cyan-600 font-bold" id="vote-lotto">0</span>
+                        </button>
+                        <button onclick="voteUtility('ladder')" class="w-full text-left px-3 py-2 bg-white rounded-lg hover:bg-gray-50 transition-all text-sm">
+                            🪜 사다리 게임 <span class="float-right text-cyan-600 font-bold" id="vote-ladder">0</span>
+                        </button>
+                        <button onclick="voteUtility('translator')" class="w-full text-left px-3 py-2 bg-white rounded-lg hover:bg-gray-50 transition-all text-sm">
+                            🌏 번역기 <span class="float-right text-cyan-600 font-bold" id="vote-translator">0</span>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500">* 투표는 1일 1회만 가능합니다</p>
                 </div>
             </div>
         </main>
 
-
+        <style>
+            .category-tab {
+                background: white;
+                color: #6b7280;
+                border: 1px solid #e5e7eb;
+            }
+            .category-tab:hover {
+                background: #f3f4f6;
+            }
+            .category-tab.active {
+                background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+                color: white;
+                border-color: transparent;
+            }
+            .utility-card {
+                transition: all 0.3s ease;
+            }
+            .utility-card:hover {
+                transform: translateY(-5px);
+            }
+        </style>
 
         <script>
             // 로그인 상태 확인
             const token = localStorage.getItem('auth_token');
             const userEmail = localStorage.getItem('user_email');
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+
+            // 카테고리 필터링
+            function filterCategory(category) {
+                const cards = document.querySelectorAll('.utility-card');
+                const tabs = document.querySelectorAll('.category-tab');
+                
+                // 탭 활성화 상태 변경
+                tabs.forEach(tab => tab.classList.remove('active'));
+                event.target.classList.add('active');
+                
+                // 카드 필터링
+                cards.forEach(card => {
+                    const cardCategory = card.getAttribute('data-category');
+                    if (category === 'all' || cardCategory === category || cardCategory === 'all') {
+                        card.style.display = 'block';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            }
+
+            // 투표 기능
+            function voteUtility(utilityName) {
+                const lastVoteDate = localStorage.getItem('lastVoteDate');
+                const today = new Date().toDateString();
+                
+                if (lastVoteDate === today) {
+                    alert('오늘은 이미 투표하셨습니다. 내일 다시 투표해주세요!');
+                    return;
+                }
+                
+                // 투표 수 증가
+                const currentVotes = parseInt(localStorage.getItem(\`votes_\${utilityName}\`) || '0');
+                localStorage.setItem(\`votes_\${utilityName}\`, currentVotes + 1);
+                localStorage.setItem('lastVoteDate', today);
+                
+                // UI 업데이트
+                document.getElementById(\`vote-\${utilityName}\`).textContent = currentVotes + 1;
+                
+                alert('투표해주셔서 감사합니다! 🎉');
+            }
+
+            // 투표 수 불러오기
+            window.addEventListener('DOMContentLoaded', () => {
+                ['lotto', 'ladder', 'translator'].forEach(name => {
+                    const votes = localStorage.getItem(\`votes_\${name}\`) || '0';
+                    const elem = document.getElementById(\`vote-\${name}\`);
+                    if (elem) elem.textContent = votes;
+                });
+            });
             
             if (token && userEmail) {
                 const userMenu = document.getElementById('user-menu');
