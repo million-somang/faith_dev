@@ -6313,9 +6313,9 @@ app.get('/news', async (c) => {
                     // 제목에서 언론사 분리
                     let cleanTitle = news.title;
                     let extractedPublisher = '구글 뉴스';  // 기본값
-                    const publisherMatch = news.title.match(/\s*-\s*([가-힣a-zA-Z0-9\s]+)$/);
+                    const publisherMatch = news.title.match(/\\s*-\\s*([가-힣a-zA-Z0-9\\s]+)$/);
                     if (publisherMatch) {
-                        cleanTitle = news.title.replace(/\s*-\s*[가-힣a-zA-Z0-9\s]+$/, '').trim();
+                        cleanTitle = news.title.replace(/\\s*-\\s*[가-힣a-zA-Z0-9\\s]+$/, '').trim();
                         extractedPublisher = publisherMatch[1].trim();
                     }
                     
