@@ -6005,21 +6005,47 @@ app.get('/news', async (c) => {
                     const data = await response.json();
                     
                     if (data.success && data.news.length > 0) {
+                        // 최대값 계산 (막대 그래프용)
+                        const maxVotes = Math.max(...data.news.map(n => (n.vote_up || 0)));
+                        
                         const hotHTML = data.news.map((news, index) => {
                             const rankClass = index < 3 ? 'text-red-500 font-bold' : 'text-gray-600';
+                            const rankBgClass = index < 3 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white' : 'bg-gray-100 text-gray-700';
                             const escapedLink = escapeHtml(news.link).replace(/'/g, '&apos;');
-                            return '<div class="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded-lg transition cursor-pointer hot-news-item" ' +
+                            
+                            // 변동 아이콘 (랜덤 시뮬레이션 - 실제로는 이전 순위 데이터 필요)
+                            const trendIcons = ['🔺', '➖', '🆕'];
+                            const trendIcon = index < 3 ? '🔺' : (index < 7 ? '➖' : '🆕');
+                            
+                            // 막대 그래프 너비 계산
+                            const barWidth = maxVotes > 0 ? ((news.vote_up || 0) / maxVotes * 100) : 0;
+                            
+                            return '<div class="relative p-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 rounded-lg transition-all cursor-pointer hot-news-item border-b border-gray-100 last:border-0" ' +
                                 'data-news-link="' + escapedLink + '">' +
-                                '<span class="' + rankClass + ' text-sm font-bold w-5 flex-shrink-0">' + (index + 1) + '</span>' +
-                                '<div class="flex-1 min-w-0">' +
-                                    '<h4 class="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">' + escapeHtml(news.title) + '</h4>' +
-                                    '<div class="flex items-center space-x-2 text-xs text-gray-500">' +
-                                        '<span class="flex items-center">' +
-                                            '<i class="fas fa-thumbs-up mr-1"></i>' + (news.vote_up || 0) +
-                                        '</span>' +
-                                        '<span class="flex items-center">' +
-                                            '<i class="fas fa-eye mr-1"></i>' + (news.view_count || 0) +
-                                        '</span>' +
+                                // 막대 그래프 배경
+                                '<div class="absolute inset-0 opacity-10 rounded-lg overflow-hidden">' +
+                                    '<div class="h-full bg-gradient-to-r from-blue-400 to-purple-400" style="width: ' + barWidth + '%"></div>' +
+                                '</div>' +
+                                // 컨텐츠
+                                '<div class="relative flex items-start space-x-3">' +
+                                    // 순위 뱃지
+                                    '<div class="flex flex-col items-center space-y-1">' +
+                                        '<span class="w-7 h-7 flex items-center justify-center rounded-full ' + rankBgClass + ' text-xs font-bold shadow-sm">' + (index + 1) + '</span>' +
+                                        '<span class="text-xs">' + trendIcon + '</span>' +
+                                    '</div>' +
+                                    // 뉴스 정보
+                                    '<div class="flex-1 min-w-0">' +
+                                        '<h4 class="text-sm font-semibold text-gray-900 line-clamp-2 mb-2 leading-tight">' + escapeHtml(news.title) + '</h4>' +
+                                        '<div class="flex items-center space-x-3 text-xs text-gray-500">' +
+                                            '<span class="flex items-center space-x-1 font-semibold text-blue-600">' +
+                                                '<i class="fas fa-thumbs-up"></i>' +
+                                                '<span>' + (news.vote_up || 0) + '</span>' +
+                                            '</span>' +
+                                            '<span class="flex items-center space-x-1">' +
+                                                '<i class="fas fa-eye"></i>' +
+                                                '<span>' + (news.view_count || 0) + '</span>' +
+                                            '</span>' +
+                                        '</div>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>';
@@ -6253,24 +6279,69 @@ app.get('/news', async (c) => {
                 console.log('[renderNewsCards] 시작 - 뉴스 수:', newsList.length, 'append:', append);
                 const newsFeed = document.getElementById('news-feed');
                 const mobileNewsFeed = document.getElementById('mobile-news-feed');
+                
+                // 카테고리 한글 매핑
+                const categoryMap = {
+                    'general': '일반',
+                    'politics': '정치',
+                    'economy': '경제',
+                    'tech': 'IT/과학',
+                    'sports': '스포츠',
+                    'entertainment': '연예',
+                    'world': '국제',
+                    'culture': '문화'
+                };
+                
+                // 상대 시간 계산 함수
+                function getRelativeTime(dateStr) {
+                    const now = new Date();
+                    const date = new Date(dateStr);
+                    const diffMs = now - date;
+                    const diffMins = Math.floor(diffMs / 60000);
+                    const diffHours = Math.floor(diffMs / 3600000);
+                    const diffDays = Math.floor(diffMs / 86400000);
+                    
+                    if (diffMins < 1) return '방금 전';
+                    if (diffMins < 60) return diffMins + '분 전';
+                    if (diffHours < 24) return diffHours + '시간 전';
+                    if (diffDays === 1) return '어제';
+                    if (diffDays < 7) return diffDays + '일 전';
+                    return date.toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' });
+                }
+                
                 const newsHTML = newsList.map(news => {
+                    // 제목에서 언론사 분리
+                    let cleanTitle = news.title;
+                    let extractedPublisher = news.publisher || '구글 뉴스';
+                    const publisherMatch = news.title.match(/\s*-\s*([가-힣a-zA-Z0-9\s]+)$/);
+                    if (publisherMatch) {
+                        cleanTitle = news.title.replace(/\s*-\s*[가-힣a-zA-Z0-9\s]+$/, '').trim();
+                        extractedPublisher = publisherMatch[1].trim();
+                    }
+                    
                     // HTML 표시용 (이스케이프 처리)
-                    const titleDisplay = escapeHtml(news.title);
-                    const categoryDisplay = escapeHtml(news.category);
-                    const publisherDisplay = escapeHtml(news.publisher || '구글 뉴스');
+                    const titleDisplay = escapeHtml(cleanTitle);
+                    const categoryKr = categoryMap[news.category] || escapeHtml(news.category);
+                    const publisherDisplay = escapeHtml(extractedPublisher);
                     const summaryDisplay = escapeHtml(news.summary || '요약 없음');
                     const aiSummaryDisplay = news.ai_summary ? escapeHtml(news.ai_summary) : null;
                     const sentiment = news.sentiment || 'neutral';
                     const sentimentIcon = sentiment === 'positive' ? '😊' : sentiment === 'negative' ? '😞' : '😐';
+                    const sentimentText = sentiment === 'positive' ? '긍정' : sentiment === 'negative' ? '부정' : '중립';
+                    const sentimentColor = sentiment === 'positive' ? 'text-green-600' : sentiment === 'negative' ? 'text-red-600' : 'text-gray-600';
                     const voteUp = news.vote_up || 0;
                     const voteDown = news.vote_down || 0;
                     const viewCount = news.view_count || 0;
+                    const relativeTime = getRelativeTime(news.created_at);
                     
                     return '<article class="news-card bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl relative p-5" data-news-id="' + news.id + '">' +
-                        // 카테고리 & 날짜
+                        // 카테고리 & 날짜 & AI 뱃지
                         '<div class="flex items-center justify-between mb-3">' +
-                            '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">' + categoryDisplay + '</span>' +
-                            '<span class="text-xs text-gray-500 font-medium">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</span>' +
+                            '<div class="flex items-center space-x-2">' +
+                                '<span class="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-md border border-blue-200">' + categoryKr + '</span>' +
+                                (aiSummaryDisplay ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-bold rounded-md">✨ AI</span>' : '') +
+                            '</div>' +
+                            '<span class="text-xs text-gray-500 font-medium">' + relativeTime + '</span>' +
                         '</div>' +
                         
                         // 제목 (클릭 가능)
@@ -6278,42 +6349,47 @@ app.get('/news', async (c) => {
                             '<h3 class="font-bold text-lg text-gray-900 mb-2 hover:text-purple-600 transition">' + titleDisplay + '</h3>' +
                         '</div>' +
                         
-                        // AI 요약 (있는 경우)
+                        // AI 요약 (있는 경우) - 개선된 디자인
                         (aiSummaryDisplay ? 
-                            '<div class="mb-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500 rounded">' +
-                                '<div class="flex items-center mb-2">' +
-                                    '<i class="fas fa-robot text-purple-600 mr-2"></i>' +
-                                    '<span class="text-xs font-bold text-purple-700">AI 요약</span>' +
-                                    '<span class="ml-2 text-lg">' + sentimentIcon + '</span>' +
+                            '<div class="mb-4 p-4 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 border-l-4 border-purple-500 rounded-lg shadow-sm">' +
+                                '<div class="flex items-center justify-between mb-2">' +
+                                    '<div class="flex items-center">' +
+                                        '<i class="fas fa-robot text-purple-600 mr-2 text-lg"></i>' +
+                                        '<span class="text-xs font-bold text-purple-700">🤖 AI 3줄 브리핑</span>' +
+                                    '</div>' +
+                                    '<div class="flex items-center space-x-1">' +
+                                        '<span class="text-lg">' + sentimentIcon + '</span>' +
+                                        '<span class="text-xs font-semibold ' + sentimentColor + '">' + sentimentText + '</span>' +
+                                    '</div>' +
                                 '</div>' +
-                                '<p class="text-sm text-gray-700 leading-relaxed">' + aiSummaryDisplay + '</p>' +
+                                '<p class="text-sm text-gray-800 leading-relaxed font-medium">' + aiSummaryDisplay + '</p>' +
                             '</div>' 
                             : 
-                            '<div class="mb-3">' +
+                            '<div class="mb-3 p-3 bg-gray-50 rounded-lg">' +
                                 '<p class="text-sm text-gray-600 leading-relaxed line-clamp-3">' + summaryDisplay + '</p>' +
                             '</div>'
                         ) +
                         
                         // 하단 액션 바 (투표 + 조회수 + 북마크 + 공유)
-                        '<div class="flex items-center justify-between pt-3 border-t border-gray-200">' +
-                            // 왼쪽: 투표 + 조회수
-                            '<div class="flex items-center space-x-4">' +
-                                // 투표 UP
-                                '<button class="vote-btn vote-up-btn flex items-center space-x-1 text-gray-600 hover:text-blue-600 transition" ' +
-                                    'data-news-id="' + news.id + '" data-vote-type="up">' +
-                                    '<i class="fas fa-thumbs-up"></i>' +
-                                    '<span class="text-sm font-semibold vote-up-count">' + voteUp + '</span>' +
+                        '<div class="flex items-center justify-between pt-4 border-t border-gray-200">' +
+                            // 왼쪽: 투표 + 조회수 (강조된 디자인)
+                            '<div class="flex items-center space-x-3">' +
+                                // 투표 UP (크기 확대 + 파란색)
+                                '<button class="vote-btn vote-up-btn flex items-center space-x-2 px-3 py-2 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 hover:text-blue-700 transition-all transform hover:scale-105" ' +
+                                    'data-news-id="' + news.id + '" data-vote-type="up" title="좋아요">' +
+                                    '<i class="fas fa-thumbs-up text-lg"></i>' +
+                                    '<span class="text-base font-bold vote-up-count">' + voteUp + '</span>' +
                                 '</button>' +
-                                // 투표 DOWN
-                                '<button class="vote-btn vote-down-btn flex items-center space-x-1 text-gray-600 hover:text-red-600 transition" ' +
-                                    'data-news-id="' + news.id + '" data-vote-type="down">' +
-                                    '<i class="fas fa-thumbs-down"></i>' +
-                                    '<span class="text-sm font-semibold vote-down-count">' + voteDown + '</span>' +
+                                // 투표 DOWN (크기 확대 + 빨간색)
+                                '<button class="vote-btn vote-down-btn flex items-center space-x-2 px-3 py-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all transform hover:scale-105" ' +
+                                    'data-news-id="' + news.id + '" data-vote-type="down" title="싫어요">' +
+                                    '<i class="fas fa-thumbs-down text-lg"></i>' +
+                                    '<span class="text-base font-bold vote-down-count">' + voteDown + '</span>' +
                                 '</button>' +
                                 // 조회수
-                                '<span class="flex items-center space-x-1 text-gray-500 text-sm">' +
-                                    '<i class="fas fa-eye"></i>' +
-                                    '<span class="view-count-display">' + viewCount + '</span>' +
+                                '<span class="flex items-center space-x-2 px-3 py-2 rounded-lg bg-gray-50 text-gray-600">' +
+                                    '<i class="fas fa-eye text-base"></i>' +
+                                    '<span class="text-sm font-semibold view-count-display">' + viewCount + '</span>' +
                                 '</span>' +
                             '</div>' +
                             
