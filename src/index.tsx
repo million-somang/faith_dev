@@ -6403,7 +6403,7 @@ app.get('/news', async (c) => {
                                     'data-news-title="' + escapeHtml(news.title) + '" ' +
                                     'data-news-link="' + escapeHtml(news.link) + '" ' +
                                     'data-news-category="' + escapeHtml(news.category) + '" ' +
-                                    'data-news-publisher="' + escapeHtml(news.publisher || '구글 뉴스') + '" ' +
+                                    'data-news-publisher="' + publisherDisplay + '" ' +
                                     'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '">' +
                                     '<i class="fas fa-bookmark"></i>' +
                                 '</button>' +
