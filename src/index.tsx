@@ -236,16 +236,16 @@ function getEducationMenu(currentPage: string): string {
 // ==================== 쇼핑 메뉴 헬퍼 함수 ====================
 function getShoppingMenu(currentPage: string): string {
   const menuItems = [
-    { path: '/shopping/fashion', label: '패션', icon: 'fas fa-tshirt' },
-    { path: '/shopping/electronics', label: '전자제품', icon: 'fas fa-laptop' },
-    { path: '/shopping/food', label: '식품', icon: 'fas fa-utensils' },
+    { path: '/shopping', label: '핫딜 랭킹', icon: 'fas fa-fire' },
+    { path: '/shopping/coupang', label: '쿠팡 핫딜', icon: 'fas fa-tags' },
+    { path: '/shopping/aliexpress', label: '알리 특가', icon: 'fas fa-globe' },
   ]
 
   let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
   
   for (const item of menuItems) {
     const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-700 hover:text-teal-600 hover:border-b-2 hover:border-teal-600'
+    const activeClass = isActive ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-700 hover:text-orange-600 hover:border-b-2 hover:border-orange-600'
     
     menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
@@ -13805,6 +13805,395 @@ app.get('/mypage', (c) => {
                 localStorage.setItem('darkMode', isDarkMode);
             });
         </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 쇼핑 API ====================
+// Mock 쿠팡 핫딜 데이터 API
+app.get('/api/shopping/hotdeals', (c) => {
+  // 실제로는 쿠팡 파트너스 API를 호출해야 하지만, 
+  // 여기서는 Mock 데이터로 시연
+  const hotDeals = [
+    {
+      id: 1,
+      title: '[특가] 삼성 갤럭시 버즈2 프로 무선 이어폰',
+      originalPrice: 289000,
+      salePrice: 149000,
+      discountRate: 48,
+      image: 'https://via.placeholder.com/300x300/667eea/ffffff?text=Galaxy+Buds2+Pro',
+      link: 'https://www.coupang.com',
+      rating: 4.8,
+      reviewCount: 15234,
+      category: '전자제품',
+      platform: 'coupang',
+      badge: '로켓배송'
+    },
+    {
+      id: 2,
+      title: '[오늘만] 나이키 에어맥스 런닝화 - 신상 출시',
+      originalPrice: 159000,
+      salePrice: 89000,
+      discountRate: 44,
+      image: 'https://via.placeholder.com/300x300/f093fb/ffffff?text=Nike+Air+Max',
+      link: 'https://www.coupang.com',
+      rating: 4.7,
+      reviewCount: 8921,
+      category: '패션',
+      platform: 'coupang',
+      badge: '무료배송'
+    },
+    {
+      id: 3,
+      title: 'LG 그램 17인치 노트북 초경량 (1.35kg)',
+      originalPrice: 2590000,
+      salePrice: 1990000,
+      discountRate: 23,
+      image: 'https://via.placeholder.com/300x300/4facfe/ffffff?text=LG+Gram+17',
+      link: 'https://www.coupang.com',
+      rating: 4.9,
+      reviewCount: 3456,
+      category: '전자제품',
+      platform: 'coupang',
+      badge: '로켓배송'
+    },
+    {
+      id: 4,
+      title: '[1+1] 프리미엄 와이드 모니터 27인치 QHD',
+      originalPrice: 349000,
+      salePrice: 249000,
+      discountRate: 29,
+      image: 'https://via.placeholder.com/300x300/00d2ff/ffffff?text=Monitor+27',
+      link: 'https://www.coupang.com',
+      rating: 4.6,
+      reviewCount: 12890,
+      category: '전자제품',
+      platform: 'coupang',
+      badge: '오늘출발'
+    },
+    {
+      id: 5,
+      title: '코스트코 인기 1위 프로틴 보충제 5kg 대용량',
+      originalPrice: 129000,
+      salePrice: 69000,
+      discountRate: 47,
+      image: 'https://via.placeholder.com/300x300/feca57/ffffff?text=Protein+5kg',
+      link: 'https://www.coupang.com',
+      rating: 4.8,
+      reviewCount: 28934,
+      category: '식품',
+      platform: 'coupang',
+      badge: '베스트'
+    },
+    {
+      id: 6,
+      title: '다이슨 V15 무선청소기 최신형 + 사은품 증정',
+      originalPrice: 1390000,
+      salePrice: 999000,
+      discountRate: 28,
+      image: 'https://via.placeholder.com/300x300/ee5a6f/ffffff?text=Dyson+V15',
+      link: 'https://www.coupang.com',
+      rating: 4.9,
+      reviewCount: 5632,
+      category: '생활가전',
+      platform: 'coupang',
+      badge: '로켓직구'
+    },
+    {
+      id: 7,
+      title: 'Apple 에어팟 프로 2세대 USB-C 정품',
+      originalPrice: 359000,
+      salePrice: 289000,
+      discountRate: 19,
+      image: 'https://via.placeholder.com/300x300/764ba2/ffffff?text=AirPods+Pro+2',
+      link: 'https://www.coupang.com',
+      rating: 5.0,
+      reviewCount: 9821,
+      category: '전자제품',
+      platform: 'coupang',
+      badge: '로켓배송'
+    },
+    {
+      id: 8,
+      title: '[타임특가] 샤오미 공기청정기 4 프로 미세먼지',
+      originalPrice: 529000,
+      salePrice: 329000,
+      discountRate: 38,
+      image: 'https://via.placeholder.com/300x300/48dbfb/ffffff?text=Xiaomi+Air+4',
+      link: 'https://www.coupang.com',
+      rating: 4.7,
+      reviewCount: 7234,
+      category: '생활가전',
+      platform: 'coupang',
+      badge: '타임특가'
+    },
+  ]
+
+  return c.json(hotDeals)
+})
+
+// ==================== 쇼핑 메인 페이지 ====================
+app.get('/shopping', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>최저가 핫딜 랭킹 - Faith Portal</title>
+        <meta name="description" content="실시간 급상승 핫딜! 쿠팡, 알리익스프레스 최저가 상품을 한눈에 비교하세요.">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .deal-card {
+                transition: all 0.3s ease;
+                cursor: pointer;
+            }
+            .deal-card:hover {
+                transform: translateY(-8px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            }
+            .badge {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.8; }
+            }
+            .discount-badge {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .loading-skeleton {
+                background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-orange-50 via-red-50 to-pink-50">
+        ${getCommonHeader('Shopping')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '쇼핑', href: '/shopping'}
+        ])}
+
+        <!-- 서브 메뉴 -->
+        ${getShoppingMenu('/shopping')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+            <!-- 헤더 -->
+            <div class="mb-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 flex items-center gap-3">
+                            <i class="fas fa-fire text-orange-600 animate-pulse"></i>
+                            실시간 핫딜 랭킹
+                        </h1>
+                        <p class="text-gray-600 mt-2">
+                            <i class="fas fa-bolt text-yellow-500"></i>
+                            지금 가장 핫한 초특가 상품을 실시간으로 확인하세요!
+                        </p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="filterCategory('all')" id="filter-all" class="px-4 py-2 bg-orange-600 text-white rounded-lg font-medium shadow-md hover:bg-orange-700 transition">
+                            <i class="fas fa-th"></i> 전체
+                        </button>
+                        <button onclick="filterCategory('전자제품')" id="filter-전자제품" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium shadow-md hover:bg-gray-100 transition">
+                            <i class="fas fa-laptop"></i> 전자제품
+                        </button>
+                        <button onclick="filterCategory('패션')" id="filter-패션" class="px-4 py-2 bg-white text-gray-700 rounded-lg font-medium shadow-md hover:bg-gray-100 transition hidden sm:inline-block">
+                            <i class="fas fa-tshirt"></i> 패션
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl p-4 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">총 상품수</p>
+                            <p class="text-2xl font-bold" id="totalProducts">0</p>
+                        </div>
+                        <i class="fas fa-box text-3xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl p-4 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">평균 할인율</p>
+                            <p class="text-2xl font-bold" id="avgDiscount">0%</p>
+                        </div>
+                        <i class="fas fa-percent text-3xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl p-4 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">최대 할인율</p>
+                            <p class="text-2xl font-bold" id="maxDiscount">0%</p>
+                        </div>
+                        <i class="fas fa-fire text-3xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">리뷰 평점</p>
+                            <p class="text-2xl font-bold" id="avgRating">0</p>
+                        </div>
+                        <i class="fas fa-star text-3xl opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 상품 그리드 -->
+            <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <!-- 로딩 스켈레톤 -->
+                <div class="loading-skeleton h-96 rounded-xl"></div>
+                <div class="loading-skeleton h-96 rounded-xl"></div>
+                <div class="loading-skeleton h-96 rounded-xl"></div>
+                <div class="loading-skeleton h-96 rounded-xl"></div>
+            </div>
+        </main>
+
+        <script>
+            let allProducts = [];
+            let currentFilter = 'all';
+
+            // 페이지 로드 시 데이터 가져오기
+            async function loadProducts() {
+                try {
+                    const response = await fetch('/api/shopping/hotdeals');
+                    allProducts = await response.json();
+                    
+                    // 통계 계산
+                    updateStatistics();
+                    
+                    // 상품 표시
+                    displayProducts(allProducts);
+                } catch (error) {
+                    console.error('Failed to load products:', error);
+                    document.getElementById('productsGrid').innerHTML = '<div class="col-span-full text-center py-12 text-gray-500"><i class="fas fa-exclamation-triangle text-4xl mb-3"></i><p>상품을 불러오는데 실패했습니다.</p></div>';
+                }
+            }
+
+            // 통계 업데이트
+            function updateStatistics() {
+                const totalProducts = allProducts.length;
+                const avgDiscount = Math.round(allProducts.reduce((sum, p) => sum + p.discountRate, 0) / totalProducts);
+                const maxDiscount = Math.max(...allProducts.map(p => p.discountRate));
+                const avgRating = (allProducts.reduce((sum, p) => sum + p.rating, 0) / totalProducts).toFixed(1);
+
+                document.getElementById('totalProducts').textContent = totalProducts;
+                document.getElementById('avgDiscount').textContent = avgDiscount + '%';
+                document.getElementById('maxDiscount').textContent = maxDiscount + '%';
+                document.getElementById('avgRating').textContent = avgRating;
+            }
+
+            // 상품 표시
+            function displayProducts(products) {
+                const grid = document.getElementById('productsGrid');
+                
+                if (products.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center py-12 text-gray-500"><i class="fas fa-shopping-bag text-4xl mb-3"></i><p>상품이 없습니다.</p></div>';
+                    return;
+                }
+
+                grid.innerHTML = products.map(product => \`
+                    <div class="deal-card bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200" onclick="window.open('\${product.link}', '_blank')">
+                        <!-- 이미지 -->
+                        <div class="relative">
+                            <img src="\${product.image}" alt="\${product.title}" class="w-full h-48 object-cover">
+                            
+                            <!-- 할인율 배지 -->
+                            <div class="absolute top-3 left-3 discount-badge text-white px-3 py-1.5 rounded-lg font-bold shadow-lg">
+                                <i class="fas fa-tag"></i> \${product.discountRate}%
+                            </div>
+                            
+                            <!-- 플랫폼 배지 -->
+                            <div class="absolute top-3 right-3 bg-white px-3 py-1 rounded-lg text-xs font-semibold text-orange-600 shadow-md">
+                                \${product.badge}
+                            </div>
+                        </div>
+
+                        <!-- 내용 -->
+                        <div class="p-4">
+                            <!-- 카테고리 -->
+                            <span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded mb-2">
+                                \${product.category}
+                            </span>
+
+                            <!-- 제목 -->
+                            <h3 class="font-bold text-gray-800 mb-2 line-clamp-2 min-h-[3rem]">
+                                \${product.title}
+                            </h3>
+
+                            <!-- 평점 -->
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="flex items-center">
+                                    \${'<i class="fas fa-star text-yellow-400"></i>'.repeat(Math.floor(product.rating))}
+                                    \${product.rating % 1 !== 0 ? '<i class="fas fa-star-half-alt text-yellow-400"></i>' : ''}
+                                </div>
+                                <span class="text-sm text-gray-600">\${product.rating}</span>
+                                <span class="text-xs text-gray-400">(\${product.reviewCount.toLocaleString()})</span>
+                            </div>
+
+                            <!-- 가격 -->
+                            <div class="border-t pt-3">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm text-gray-400 line-through">\${product.originalPrice.toLocaleString()}원</p>
+                                        <p class="text-xl font-bold text-orange-600">\${product.salePrice.toLocaleString()}원</p>
+                                    </div>
+                                    <button class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-medium transition">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                \`).join('');
+            }
+
+            // 카테고리 필터
+            function filterCategory(category) {
+                currentFilter = category;
+                
+                // 버튼 스타일 업데이트
+                document.querySelectorAll('[id^="filter-"]').forEach(btn => {
+                    const btnCategory = btn.id.replace('filter-', '');
+                    if (btnCategory === category) {
+                        btn.className = 'px-4 py-2 bg-orange-600 text-white rounded-lg font-medium shadow-md hover:bg-orange-700 transition';
+                    } else {
+                        btn.className = btn.classList.contains('hidden') 
+                            ? 'px-4 py-2 bg-white text-gray-700 rounded-lg font-medium shadow-md hover:bg-gray-100 transition hidden sm:inline-block'
+                            : 'px-4 py-2 bg-white text-gray-700 rounded-lg font-medium shadow-md hover:bg-gray-100 transition';
+                    }
+                });
+
+                // 필터링
+                const filtered = category === 'all' 
+                    ? allProducts 
+                    : allProducts.filter(p => p.category === category);
+                
+                displayProducts(filtered);
+            }
+
+            // 페이지 로드 시 실행
+            document.addEventListener('DOMContentLoaded', loadProducts);
+        </script>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
     </body>
     </html>
   `)
