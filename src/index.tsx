@@ -6838,7 +6838,18 @@ app.get('/news', async (c) => {
                 } catch (error) {
                     console.error('뉴스 로드 오류:', error);
                     if (reset) {
-                        newsFeed.innerHTML = '<div class="text-center py-12"><p class="text-red-500">뉴스를 불러오는 중 오류가 발생했습니다</p></div>';
+                        const errorHTML = '<div class="text-center py-12">' +
+                            '<i class="fas fa-exclamation-triangle text-5xl text-yellow-500 mb-4"></i>' +
+                            '<p class="text-gray-700 font-semibold mb-2">뉴스를 불러올 수 없습니다</p>' +
+                            '<p class="text-gray-500 text-sm mb-4">네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요</p>' +
+                            '<button onclick="location.reload()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">' +
+                            '<i class="fas fa-redo mr-2"></i>새로고침' +
+                            '</button>' +
+                            '</div>';
+                        if (newsFeed) newsFeed.innerHTML = errorHTML;
+                        if (mobileNewsFeed) mobileNewsFeed.innerHTML = errorHTML;
+                    } else {
+                        showToast('추가 뉴스를 불러올 수 없습니다', 'error');
                     }
                 } finally {
                     isLoading = false;
@@ -7232,21 +7243,35 @@ app.get('/news', async (c) => {
                 showToast('최신 뉴스를 가져오는 중...', 'info');
                 const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment'];
                 let totalFetched = 0;
+                let totalErrors = 0;
                 
                 for (const category of categories) {
                     try {
                         const response = await fetch('/api/news/fetch?category=' + category);
                         const data = await response.json();
+                        
                         if (data.success) {
-                            totalFetched += data.saved;
+                            totalFetched += data.saved || 0;
+                        } else if (data.fallback) {
+                            console.log('캐시된 뉴스 사용:', category);
+                        } else {
+                            totalErrors++;
                         }
                     } catch (error) {
-                        console.error('뉴스 가져오기 오류:', error);
+                        console.error('뉴스 가져오기 오류:', category, error);
+                        totalErrors++;
                     }
                 }
                 
-                showToast(totalFetched + '개의 새 뉴스를 가져왔습니다', 'success');
-                setTimeout(() => location.reload(), 1000);
+                if (totalFetched > 0) {
+                    showToast(totalFetched + '개의 새 뉴스를 가져왔습니다', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else if (totalErrors === categories.length) {
+                    showToast('뉴스를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.', 'error');
+                } else {
+                    showToast('일부 카테고리의 뉴스만 업데이트되었습니다', 'warning');
+                    setTimeout(() => location.reload(), 1000);
+                }
             }
             
             // ==================== 무한 스크롤 ====================
@@ -11365,11 +11390,48 @@ app.get('/api/news/fetch', async (c) => {
   const category = c.req.query('category') || 'general'
   
   try {
-    // RSS에서 뉴스 가져오기
-    const newsItems = await parseGoogleNewsRSS(category)
+    // RSS에서 뉴스 가져오기 (최대 3번 재시도)
+    let newsItems: any[] = []
+    let retryCount = 0
+    const maxRetries = 3
+    
+    while (retryCount < maxRetries && newsItems.length === 0) {
+      try {
+        newsItems = await parseGoogleNewsRSS(category)
+        if (newsItems.length > 0) break
+      } catch (err) {
+        console.error(`뉴스 가져오기 시도 ${retryCount + 1}/${maxRetries} 실패:`, err)
+      }
+      retryCount++
+      if (retryCount < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)) // 재시도 대기
+      }
+    }
     
     if (newsItems.length === 0) {
-      return c.json({ error: '뉴스를 가져올 수 없습니다.' }, 500)
+      // DB에서 기존 뉴스 가져오기 (fallback)
+      const { results } = await DB.prepare(`
+        SELECT * FROM news 
+        WHERE category = ? 
+        ORDER BY created_at DESC 
+        LIMIT 20
+      `).bind(category).all()
+      
+      if (results && results.length > 0) {
+        return c.json({ 
+          success: true, 
+          fetched: 0,
+          saved: 0,
+          cached: results.length,
+          message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
+          fallback: true
+        })
+      }
+      
+      return c.json({ 
+        error: '뉴스를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.',
+        fallback: false
+      }, 503)
     }
     
     // DB에 저장 (중복 방지)
@@ -11398,11 +11460,39 @@ app.get('/api/news/fetch', async (c) => {
       success: true, 
       fetched: newsItems.length,
       saved: savedCount,
-      message: `${savedCount}개의 새 뉴스를 저장했습니다.`
+      message: `${savedCount}개의 새 뉴스를 저장했습니다.`,
+      fallback: false
     })
   } catch (error) {
     console.error('뉴스 가져오기 오류:', error)
-    return c.json({ error: '뉴스 가져오기 실패' }, 500)
+    
+    // DB에서 기존 뉴스 가져오기 (fallback)
+    try {
+      const { results } = await DB.prepare(`
+        SELECT * FROM news 
+        WHERE category = ? 
+        ORDER BY created_at DESC 
+        LIMIT 20
+      `).bind(category).all()
+      
+      if (results && results.length > 0) {
+        return c.json({ 
+          success: true, 
+          fetched: 0,
+          saved: 0,
+          cached: results.length,
+          message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
+          fallback: true
+        })
+      }
+    } catch (dbErr) {
+      console.error('DB fallback 오류:', dbErr)
+    }
+    
+    return c.json({ 
+      error: '뉴스 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+      fallback: false
+    }, 503)
   }
 })
 
