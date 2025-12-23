@@ -5843,6 +5843,522 @@ app.get('/lifestyle/youtube-download', (c) => {
   `)
 })
 
+// ==================== 스마트 부동산 평수 계산기 ====================
+app.get('/lifestyle/pyeong-calculator', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>스마트 부동산 평수 계산기 - Faith Portal</title>
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            .quick-chip {
+                transition: all 0.2s;
+            }
+            .quick-chip:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+            .visual-card {
+                background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: '평수 계산기'}
+        ])}
+
+        <!-- 메인 컨텐츠 -->
+        <main class="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
+            <!-- 페이지 헤더 -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl mb-4">
+                    <i class="fas fa-home text-3xl text-white"></i>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    스마트 부동산 평수 계산기
+                </h1>
+                <p class="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
+                    부동산 면적을 평과 m²로 변환하고, 평당 가격을 계산하며, 실제 크기를 느껴보세요
+                </p>
+            </div>
+
+            <!-- 1. 변환 계산기 카드 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-exchange-alt text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">면적 변환</h2>
+                </div>
+
+                <!-- 입력 필드 -->
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <!-- m² 입력 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            제곱미터 (m²)
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="m2Input" 
+                                placeholder="84"
+                                class="w-full px-4 py-4 text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            >
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">m²</span>
+                        </div>
+                    </div>
+
+                    <!-- 평 입력 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            평 (坪)
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="pyeongInput" 
+                                placeholder="25.4"
+                                class="w-full px-4 py-4 text-2xl font-bold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                            >
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">평</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 빠른 선택 버튼 -->
+                <div class="mb-6">
+                    <p class="text-sm font-medium text-gray-600 mb-3">주요 아파트 평형</p>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                        <button onclick="setQuickValue(59)" class="quick-chip px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold rounded-xl border-2 border-blue-200">
+                            <div class="text-xs text-blue-600">25평</div>
+                            <div class="text-sm">59m²</div>
+                        </button>
+                        <button onclick="setQuickValue(84)" class="quick-chip px-4 py-3 bg-purple-50 hover:bg-purple-100 text-purple-700 font-semibold rounded-xl border-2 border-purple-200">
+                            <div class="text-xs text-purple-600">34평</div>
+                            <div class="text-sm">84m²</div>
+                        </button>
+                        <button onclick="setQuickValue(102)" class="quick-chip px-4 py-3 bg-pink-50 hover:bg-pink-100 text-pink-700 font-semibold rounded-xl border-2 border-pink-200">
+                            <div class="text-xs text-pink-600">40평</div>
+                            <div class="text-sm">102m²</div>
+                        </button>
+                        <button onclick="setQuickValue(115)" class="quick-chip px-4 py-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl border-2 border-indigo-200">
+                            <div class="text-xs text-indigo-600">45평</div>
+                            <div class="text-sm">115m²</div>
+                        </button>
+                        <button onclick="setQuickValue(133)" class="quick-chip px-4 py-3 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-semibold rounded-xl border-2 border-cyan-200">
+                            <div class="text-xs text-cyan-600">50평</div>
+                            <div class="text-sm">133m²</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 변환 결과 -->
+                <div id="conversionResult" class="hidden bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
+                    <div class="text-center">
+                        <div class="text-4xl md:text-5xl font-bold text-blue-600 mb-2" id="resultValue">-</div>
+                        <div class="text-gray-600 font-medium" id="resultLabel">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 가격 계산기 카드 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-won-sign text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">평당 가격 계산</h2>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- 총 가격 입력 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            총 가격 (매매가/전세가)
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="totalPrice" 
+                                placeholder="1050000000"
+                                class="w-full px-4 py-4 text-xl font-semibold border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none transition"
+                            >
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">원</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">예: 10억 5천만원 = 1050000000</p>
+                    </div>
+
+                    <!-- 면적 입력 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            면적 (평 또는 m²)
+                        </label>
+                        <div class="flex gap-3">
+                            <div class="flex-1 relative">
+                                <input 
+                                    type="number" 
+                                    id="priceArea" 
+                                    placeholder="34"
+                                    class="w-full px-4 py-4 text-xl font-semibold border-2 border-gray-300 rounded-xl focus:border-green-500 focus:outline-none transition"
+                                >
+                            </div>
+                            <select 
+                                id="areaUnit" 
+                                class="px-6 py-4 border-2 border-gray-300 rounded-xl font-medium focus:border-green-500 focus:outline-none transition"
+                            >
+                                <option value="pyeong">평</option>
+                                <option value="m2">m²</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 계산 버튼 -->
+                    <button 
+                        onclick="calculatePricePerPyeong()"
+                        class="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-700 transition shadow-lg"
+                    >
+                        <i class="fas fa-calculator mr-2"></i>
+                        평당 가격 계산하기
+                    </button>
+
+                    <!-- 가격 계산 결과 -->
+                    <div id="priceResult" class="hidden space-y-4">
+                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
+                            <div class="text-center mb-4">
+                                <div class="text-gray-600 text-sm mb-1">평당 가격</div>
+                                <div class="text-4xl md:text-5xl font-bold text-green-600" id="pricePerPyeong">-</div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div class="bg-white rounded-lg p-3">
+                                    <div class="text-gray-500 text-xs mb-1">총 가격</div>
+                                    <div class="font-bold text-gray-800" id="displayTotalPrice">-</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-3">
+                                    <div class="text-gray-500 text-xs mb-1">면적</div>
+                                    <div class="font-bold text-gray-800" id="displayArea">-</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 비교 정보 -->
+                        <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                            <div class="text-sm text-blue-800">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                <strong>참고:</strong> <span id="priceComparison">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 면적 가이드 카드 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-ruler-combined text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">면적 가이드</h2>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- 전용면적 vs 공급면적 -->
+                    <div class="visual-card rounded-xl p-6">
+                        <h3 class="font-bold text-lg text-gray-800 mb-4">
+                            <i class="fas fa-building text-blue-600 mr-2"></i>
+                            전용면적 vs 공급면적
+                        </h3>
+                        <div class="space-y-3 text-sm text-gray-700">
+                            <div class="flex items-start">
+                                <span class="inline-block w-2 h-2 bg-blue-500 rounded-full mr-3 mt-1.5"></span>
+                                <div>
+                                    <strong class="text-blue-700">전용면적:</strong> 실제로 사용할 수 있는 순수 거주 공간 (방, 거실, 주방 등)
+                                </div>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="inline-block w-2 h-2 bg-purple-500 rounded-full mr-3 mt-1.5"></span>
+                                <div>
+                                    <strong class="text-purple-700">공급면적:</strong> 전용면적 + 벽 두께 + 계단, 복도 등 공용 부분
+                                </div>
+                            </div>
+                            <div class="mt-4 p-4 bg-white rounded-lg border-2 border-blue-200">
+                                <div class="text-xs text-gray-600 mb-2">실제 예시</div>
+                                <div class="font-semibold text-gray-800">
+                                    "34평 아파트" = 보통 84m² 전용면적을 의미
+                                </div>
+                                <div class="text-xs text-gray-600 mt-1">
+                                    공급면적은 약 112m² (전용률 75% 기준)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 시각적 크기 비교 -->
+                    <div id="visualComparison" class="hidden">
+                        <h3 class="font-bold text-lg text-gray-800 mb-4">
+                            <i class="fas fa-eye text-green-600 mr-2"></i>
+                            이 크기는 어느 정도일까요?
+                        </h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-5 border-2 border-pink-200">
+                                <div class="text-3xl mb-2">🛏️</div>
+                                <div class="font-bold text-gray-800 mb-1" id="bedComparison">-</div>
+                                <div class="text-xs text-gray-600">킹사이즈 침대 기준</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 border-2 border-yellow-200">
+                                <div class="text-3xl mb-2">🏀</div>
+                                <div class="font-bold text-gray-800 mb-1" id="courtComparison">-</div>
+                                <div class="text-xs text-gray-600">농구 코트 기준</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                                <div class="text-3xl mb-2">📏</div>
+                                <div class="font-bold text-gray-800 mb-1" id="dimensionEstimate">-</div>
+                                <div class="text-xs text-gray-600">대략적인 크기</div>
+                            </div>
+                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border-2 border-blue-200">
+                                <div class="text-3xl mb-2">🏠</div>
+                                <div class="font-bold text-gray-800 mb-1" id="roomEstimate">-</div>
+                                <div class="text-xs text-gray-600">방 구성 예상</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 법정 단위 안내 -->
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-gavel text-gray-600 mr-3 mt-1"></i>
+                            <div class="text-sm text-gray-700">
+                                <strong class="text-gray-800">법적 단위:</strong> 
+                                대한민국에서는 2007년부터 <strong class="text-blue-600">제곱미터(m²)</strong>가 공식 법정 단위입니다. 
+                                '평'은 관습적으로 사용되지만 공식 문서에는 m²로 표기됩니다.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 서비스 확장 제안 -->
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6 md:p-8 border-2 border-purple-200">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                    이런 정보도 필요하신가요?
+                </h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-2xl mb-2">🚚</div>
+                        <div class="font-semibold text-gray-800 mb-1">이사/청소 견적</div>
+                        <div class="text-xs text-gray-600">평수에 맞는 이사 비용 확인</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-2xl mb-2">🎨</div>
+                        <div class="font-semibold text-gray-800 mb-1">인테리어 자재 계산</div>
+                        <div class="text-xs text-gray-600">벽지, 장판 필요량 계산</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-2xl mb-2">📰</div>
+                        <div class="font-semibold text-gray-800 mb-1">부동산 뉴스</div>
+                        <div class="text-xs text-gray-600">최신 부동산 시장 정보</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-2xl mb-2">💰</div>
+                        <div class="font-semibold text-gray-800 mb-1">대출 계산기</div>
+                        <div class="text-xs text-gray-600">주택담보대출 이자 계산</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // 변환 상수
+            const M2_TO_PYEONG = 0.3025;
+            const PYEONG_TO_M2 = 3.3058;
+            const KING_BED_SIZE = 4.05; // 킹사이즈 침대 약 4.05m²
+            const BASKETBALL_COURT = 420; // 농구 코트 약 420m²
+
+            // m² 입력 이벤트
+            document.getElementById('m2Input').addEventListener('input', function(e) {
+                const m2 = parseFloat(e.target.value);
+                if (!isNaN(m2) && m2 > 0) {
+                    const pyeong = (m2 * M2_TO_PYEONG).toFixed(2);
+                    document.getElementById('pyeongInput').value = pyeong;
+                    showConversionResult(pyeong, '평', m2 + 'm²를 변환한 결과');
+                    updateVisualComparison(m2);
+                } else {
+                    clearResults();
+                }
+            });
+
+            // 평 입력 이벤트
+            document.getElementById('pyeongInput').addEventListener('input', function(e) {
+                const pyeong = parseFloat(e.target.value);
+                if (!isNaN(pyeong) && pyeong > 0) {
+                    const m2 = (pyeong * PYEONG_TO_M2).toFixed(2);
+                    document.getElementById('m2Input').value = m2;
+                    showConversionResult(m2, 'm²', pyeong + '평을 변환한 결과');
+                    updateVisualComparison(parseFloat(m2));
+                } else {
+                    clearResults();
+                }
+            });
+
+            // 빠른 선택 버튼
+            function setQuickValue(m2) {
+                document.getElementById('m2Input').value = m2;
+                const pyeong = (m2 * M2_TO_PYEONG).toFixed(2);
+                document.getElementById('pyeongInput').value = pyeong;
+                showConversionResult(pyeong, '평', m2 + 'm²를 변환한 결과');
+                updateVisualComparison(m2);
+            }
+
+            // 변환 결과 표시
+            function showConversionResult(value, unit, label) {
+                const resultDiv = document.getElementById('conversionResult');
+                resultDiv.classList.remove('hidden');
+                document.getElementById('resultValue').textContent = value + ' ' + unit;
+                document.getElementById('resultLabel').textContent = label;
+            }
+
+            // 시각적 비교 업데이트
+            function updateVisualComparison(m2) {
+                const comparisonDiv = document.getElementById('visualComparison');
+                comparisonDiv.classList.remove('hidden');
+
+                // 킹사이즈 침대 비교
+                const beds = Math.floor(m2 / KING_BED_SIZE);
+                document.getElementById('bedComparison').textContent = 
+                    '킹사이즈 침대 약 ' + beds + '개';
+
+                // 농구 코트 비교
+                const courtPercent = ((m2 / BASKETBALL_COURT) * 100).toFixed(1);
+                document.getElementById('courtComparison').textContent = 
+                    '농구 코트의 ' + courtPercent + '%';
+
+                // 대략적인 크기
+                const sideLength = Math.sqrt(m2).toFixed(1);
+                document.getElementById('dimensionEstimate').textContent = 
+                    '약 ' + sideLength + 'm × ' + sideLength + 'm';
+
+                // 방 구성 예상
+                let roomEstimate = '';
+                if (m2 < 50) {
+                    roomEstimate = '원룸 ~ 투룸';
+                } else if (m2 < 70) {
+                    roomEstimate = '투룸 ~ 방 2개';
+                } else if (m2 < 90) {
+                    roomEstimate = '방 3개 (25평대)';
+                } else if (m2 < 110) {
+                    roomEstimate = '방 3~4개 (34평대)';
+                } else if (m2 < 140) {
+                    roomEstimate = '방 4개 (40평대)';
+                } else {
+                    roomEstimate = '방 4개 이상 (대형)';
+                }
+                document.getElementById('roomEstimate').textContent = roomEstimate;
+            }
+
+            // 평당 가격 계산
+            function calculatePricePerPyeong() {
+                const totalPrice = parseFloat(document.getElementById('totalPrice').value);
+                const area = parseFloat(document.getElementById('priceArea').value);
+                const unit = document.getElementById('areaUnit').value;
+
+                if (isNaN(totalPrice) || isNaN(area) || totalPrice <= 0 || area <= 0) {
+                    alert('총 가격과 면적을 올바르게 입력해주세요.');
+                    return;
+                }
+
+                // 평으로 변환
+                const pyeongArea = unit === 'm2' ? area * M2_TO_PYEONG : area;
+                const pricePerPyeong = totalPrice / pyeongArea;
+
+                // 결과 표시
+                const resultDiv = document.getElementById('priceResult');
+                resultDiv.classList.remove('hidden');
+
+                // 평당 가격
+                document.getElementById('pricePerPyeong').textContent = 
+                    formatPrice(pricePerPyeong) + '원/평';
+
+                // 총 가격
+                document.getElementById('displayTotalPrice').textContent = 
+                    formatPrice(totalPrice) + '원';
+
+                // 면적
+                const m2Area = unit === 'pyeong' ? area * PYEONG_TO_M2 : area;
+                document.getElementById('displayArea').textContent = 
+                    pyeongArea.toFixed(1) + '평 (' + m2Area.toFixed(1) + 'm²)';
+
+                // 비교 정보
+                let comparison = '';
+                if (pricePerPyeong < 20000000) {
+                    comparison = '비교적 저렴한 가격대입니다';
+                } else if (pricePerPyeong < 30000000) {
+                    comparison = '적정한 가격대입니다';
+                } else if (pricePerPyeong < 50000000) {
+                    comparison = '다소 높은 가격대입니다';
+                } else {
+                    comparison = '매우 높은 가격대입니다';
+                }
+                document.getElementById('priceComparison').textContent = comparison;
+            }
+
+            // 가격 포맷팅
+            function formatPrice(price) {
+                const eok = Math.floor(price / 100000000);
+                const man = Math.floor((price % 100000000) / 10000);
+
+                let result = '';
+                if (eok > 0) {
+                    result += eok + '억';
+                    if (man > 0) {
+                        result += ' ' + man + '만';
+                    }
+                } else if (man > 0) {
+                    result += man + '만';
+                } else {
+                    result = price.toLocaleString();
+                }
+                return result;
+            }
+
+            // 결과 초기화
+            function clearResults() {
+                document.getElementById('conversionResult').classList.add('hidden');
+                document.getElementById('visualComparison').classList.add('hidden');
+            }
+        </script>
+
+        ${getCommonFooter()}
+
+    </body>
+    </html>
+  `)
+})
+
 // ==================== 뉴스 페이지 ====================
 app.get('/news', async (c) => {
   const { DB } = c.env
@@ -13790,6 +14306,390 @@ app.get('/mypage', (c) => {
                 localStorage.setItem('darkMode', isDarkMode);
             });
         </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 스마트 부동산 평수 계산기 ====================
+app.get('/lifestyle/pyeong-calculator', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>스마트 부동산 평수 계산기 - Faith Portal</title>
+        <meta name="description" content="㎡를 평으로, 평을 ㎡로 실시간 변환! 평당 가격 계산, 넓이 시각화까지. 부동산 거래 전 필수 체크!">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .converter-card {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .price-card {
+                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            }
+            .quick-chip {
+                transition: all 0.2s ease;
+            }
+            .quick-chip:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .info-badge {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.8; }
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: '평수 계산기'}
+        ])}
+
+        <main class="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+            <!-- 헤더 -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 flex items-center justify-center gap-3">
+                    <i class="fas fa-home text-purple-600"></i>
+                    스마트 부동산 평수 계산기
+                </h1>
+                <p class="text-gray-600">
+                    <i class="fas fa-lightbulb text-yellow-500"></i>
+                    단순 변환을 넘어, 이 집이 실제로 얼마나 넓은지 체감하게 해드립니다
+                </p>
+            </div>
+
+            <!-- A. 변환기 카드 -->
+            <div class="converter-card rounded-2xl shadow-2xl p-6 sm:p-8 mb-6">
+                <div class="flex items-center justify-center gap-2 mb-6">
+                    <h2 class="text-2xl font-bold text-white">
+                        <i class="fas fa-exchange-alt"></i> 실시간 양방향 변환
+                    </h2>
+                </div>
+                
+                <!-- 변환 입력 -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <!-- ㎡ 입력 -->
+                    <div class="bg-white rounded-xl p-4 shadow-lg">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            제곱미터 (㎡)
+                        </label>
+                        <input 
+                            type="number" 
+                            id="m2Input" 
+                            placeholder="84"
+                            class="w-full text-3xl font-bold text-purple-600 border-0 focus:outline-none focus:ring-0 p-2"
+                            oninput="convertFromM2(this.value)"
+                        />
+                        <span class="text-xs text-gray-500 mt-1 block">법적 계량 단위</span>
+                    </div>
+
+                    <!-- 변환 아이콘 -->
+                    <div class="flex justify-center">
+                        <div class="bg-white rounded-full p-4 shadow-lg">
+                            <i class="fas fa-arrows-alt-h text-2xl text-purple-600"></i>
+                        </div>
+                    </div>
+
+                    <!-- 평 입력 -->
+                    <div class="bg-white rounded-xl p-4 shadow-lg">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            평수 (평)
+                        </label>
+                        <input 
+                            type="number" 
+                            id="pyeongInput" 
+                            placeholder="25"
+                            class="w-full text-3xl font-bold text-pink-600 border-0 focus:outline-none focus:ring-0 p-2"
+                            oninput="convertFromPyeong(this.value)"
+                        />
+                        <span class="text-xs text-gray-500 mt-1 block">1평 = 3.3058㎡</span>
+                    </div>
+                </div>
+
+                <!-- 퀵 칩 버튼 -->
+                <div class="mt-6">
+                    <p class="text-white text-sm font-semibold mb-3 text-center">
+                        <i class="fas fa-bolt"></i> 국민 평형 퀵 선택
+                    </p>
+                    <div class="flex flex-wrap justify-center gap-2">
+                        <button onclick="setQuickValue(59)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
+                            59㎡ (18평)
+                        </button>
+                        <button onclick="setQuickValue(84)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
+                            84㎡ (25평)
+                        </button>
+                        <button onclick="setQuickValue(102)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
+                            102㎡ (31평)
+                        </button>
+                        <button onclick="setQuickValue(114)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
+                            114㎡ (34평)
+                        </button>
+                        <button onclick="setQuickValue(135)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
+                            135㎡ (41평)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B. 가격 분석기 -->
+            <div class="price-card rounded-2xl shadow-2xl p-6 sm:p-8 mb-6">
+                <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="fas fa-calculator"></i> 평당 가격 계산기
+                </h2>
+                
+                <div class="bg-white rounded-xl p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                총 매매/전세 가격 (억원)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="totalPrice" 
+                                placeholder="10.5"
+                                step="0.1"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none text-lg font-semibold"
+                                oninput="calculatePricePerPyeong()"
+                            />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                면적 (㎡)
+                            </label>
+                            <input 
+                                type="number" 
+                                id="priceM2" 
+                                placeholder="84"
+                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none text-lg font-semibold"
+                                oninput="calculatePricePerPyeong()"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- 결과 표시 -->
+                    <div id="priceResult" class="hidden mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-gray-600 mb-1">평당 가격</p>
+                                <p class="text-3xl font-bold text-orange-600">
+                                    <span id="pricePerPyeong">0</span>
+                                    <span class="text-lg">만원</span>
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-gray-600 mb-1">㎡당 가격</p>
+                                <p class="text-xl font-semibold text-gray-700">
+                                    <span id="pricePerM2">0</span>
+                                    <span class="text-sm">만원</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div id="priceLevel" class="mt-3 text-center"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C. 넓이 시각화 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fas fa-eye text-blue-600"></i> 넓이 체감하기
+                </h2>
+                
+                <div id="visualization" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <i class="fas fa-bed text-4xl text-blue-600 mb-2"></i>
+                        <p class="text-sm text-gray-600">킹사이즈 침대</p>
+                        <p class="text-2xl font-bold text-blue-600">
+                            <span id="bedCount">0</span>개
+                        </p>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 rounded-lg">
+                        <i class="fas fa-car text-4xl text-green-600 mb-2"></i>
+                        <p class="text-sm text-gray-600">주차 가능 대수</p>
+                        <p class="text-2xl font-bold text-green-600">
+                            <span id="carCount">0</span>대
+                        </p>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <i class="fas fa-running text-4xl text-purple-600 mb-2"></i>
+                        <p class="text-sm text-gray-600">왕복 걸음 수</p>
+                        <p class="text-2xl font-bold text-purple-600">
+                            <span id="walkSteps">0</span>걸음
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D. 정보 가이드 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- 전용면적 vs 공급면적 -->
+                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-6 border-2 border-cyan-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-cyan-600"></i>
+                        전용면적 vs 공급면적
+                    </h3>
+                    <div class="space-y-2 text-sm text-gray-700">
+                        <p><strong class="text-cyan-700">전용면적:</strong> 실제로 사용 가능한 공간</p>
+                        <p><strong class="text-cyan-700">공급면적:</strong> 전용 + 주거공용 (복도, 계단 등)</p>
+                        <p class="mt-3 p-3 bg-white rounded-lg text-xs">
+                            <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                            "34평 아파트"는 보통 <strong>전용면적 84㎡</strong>를 의미합니다!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 계약 시 주의사항 -->
+                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border-2 border-yellow-200">
+                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fas fa-file-contract text-orange-600"></i>
+                        계약 시 주의사항
+                    </h3>
+                    <ul class="space-y-2 text-sm text-gray-700">
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <span>법적 계량 단위는 <strong>㎡</strong>입니다</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <span>계약서에는 반드시 <strong>㎡로 표기</strong>됩니다</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="fas fa-check text-green-500 mt-1"></i>
+                            <span>전용면적과 공급면적을 <strong>혼동하지 마세요</strong></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- E. 추천 서비스 연동 -->
+            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6 text-white">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-link"></i> 연관 서비스
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <a href="#" class="bg-white text-purple-600 rounded-lg p-4 hover:shadow-lg transition text-center">
+                        <i class="fas fa-truck text-3xl mb-2"></i>
+                        <p class="font-semibold">이사 견적</p>
+                        <p class="text-xs text-gray-600">평수별 이사 비용 조회</p>
+                    </a>
+                    <a href="#" class="bg-white text-pink-600 rounded-lg p-4 hover:shadow-lg transition text-center">
+                        <i class="fas fa-broom text-3xl mb-2"></i>
+                        <p class="font-semibold">입주 청소</p>
+                        <p class="text-xs text-gray-600">전문 청소 최저가 비교</p>
+                    </a>
+                    <a href="/news" class="bg-white text-blue-600 rounded-lg p-4 hover:shadow-lg transition text-center">
+                        <i class="fas fa-newspaper text-3xl mb-2"></i>
+                        <p class="font-semibold">부동산 뉴스</p>
+                        <p class="text-xs text-gray-600">최신 시장 동향 확인</p>
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // 상태 관리 (기준은 항상 m2)
+            let currentM2 = 0;
+
+            // ㎡에서 평으로 변환
+            function convertFromM2(value) {
+                currentM2 = parseFloat(value) || 0;
+                const pyeong = (currentM2 * 0.3025).toFixed(2);
+                document.getElementById('pyeongInput').value = pyeong;
+                updateVisualization();
+            }
+
+            // 평에서 ㎡로 변환
+            function convertFromPyeong(value) {
+                const pyeong = parseFloat(value) || 0;
+                currentM2 = pyeong / 0.3025;
+                document.getElementById('m2Input').value = currentM2.toFixed(2);
+                updateVisualization();
+            }
+
+            // 퀵 버튼
+            function setQuickValue(m2) {
+                document.getElementById('m2Input').value = m2;
+                convertFromM2(m2);
+                document.getElementById('priceM2').value = m2;
+            }
+
+            // 넓이 시각화
+            function updateVisualization() {
+                // 킹사이즈 침대 (약 4㎡)
+                const bedCount = Math.floor(currentM2 / 4);
+                document.getElementById('bedCount').textContent = bedCount;
+
+                // 주차 (1대당 약 12.5㎡)
+                const carCount = Math.floor(currentM2 / 12.5);
+                document.getElementById('carCount').textContent = carCount;
+
+                // 걸음 수 (1걸음 약 0.7m, 왕복)
+                const sideLength = Math.sqrt(currentM2);
+                const walkSteps = Math.round(sideLength / 0.7 * 2);
+                document.getElementById('walkSteps').textContent = walkSteps;
+            }
+
+            // 평당 가격 계산
+            function calculatePricePerPyeong() {
+                const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
+                const m2 = parseFloat(document.getElementById('priceM2').value) || 0;
+                
+                if (totalPrice > 0 && m2 > 0) {
+                    const pyeong = m2 * 0.3025;
+                    const pricePerPyeong = (totalPrice * 10000 / pyeong).toFixed(0);
+                    const pricePerM2 = (totalPrice * 10000 / m2).toFixed(0);
+                    
+                    document.getElementById('pricePerPyeong').textContent = parseInt(pricePerPyeong).toLocaleString();
+                    document.getElementById('pricePerM2').textContent = parseInt(pricePerM2).toLocaleString();
+                    document.getElementById('priceResult').classList.remove('hidden');
+
+                    // 가격 등급 표시
+                    const levelDiv = document.getElementById('priceLevel');
+                    let levelText = '';
+                    let levelColor = '';
+
+                    if (pricePerPyeong >= 5000) {
+                        levelText = '🏆 프리미엄급 (강남/분당 수준)';
+                        levelColor = 'text-red-600';
+                    } else if (pricePerPyeong >= 3000) {
+                        levelText = '💎 고급 (서울 주요 지역)';
+                        levelColor = 'text-orange-600';
+                    } else if (pricePerPyeong >= 2000) {
+                        levelText = '✨ 중상급 (수도권 인기 지역)';
+                        levelColor = 'text-yellow-600';
+                    } else if (pricePerPyeong >= 1000) {
+                        levelText = '👍 중급 (수도권 평균)';
+                        levelColor = 'text-green-600';
+                    } else {
+                        levelText = '💰 합리적 (지방 주요 도시)';
+                        levelColor = 'text-blue-600';
+                    }
+
+                    levelDiv.innerHTML = '<p class="font-semibold ' + levelColor + '">' + levelText + '</p>';
+                } else {
+                    document.getElementById('priceResult').classList.add('hidden');
+                }
+            }
+
+            // 페이지 로드 시 기본값 설정
+            window.addEventListener('DOMContentLoaded', function() {
+                setQuickValue(84);
+            });
+        </script>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
     </body>
     </html>
   `)
