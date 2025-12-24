@@ -14311,385 +14311,503 @@ app.get('/mypage', (c) => {
   `)
 })
 
-// ==================== 스마트 부동산 평수 계산기 ====================
-app.get('/lifestyle/pyeong-calculator', (c) => {
+// ==================== 스마트 한국 나이 계산기 ====================
+app.get('/lifestyle/age-calculator', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ko">
+    <html lang="ko" id="html-root">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>스마트 부동산 평수 계산기 - Faith Portal</title>
-        <meta name="description" content="㎡를 평으로, 평을 ㎡로 실시간 변환! 평당 가격 계산, 넓이 시각화까지. 부동산 거래 전 필수 체크!">
+        <title>스마트 만 나이 & 생활 연령 계산기 - Faith Portal</title>
+        <meta name="description" content="내 나이, 이제 헷갈리지 마세요! 만 나이, 연 나이, 세는 나이를 한눈에 확인하고 술·담배·투표 등 생활 가이드까지">
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <style>
-            .converter-card {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .age-card {
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
             }
-            .price-card {
-                background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            .age-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
             }
-            .quick-chip {
+            .check-item {
                 transition: all 0.2s ease;
             }
-            .quick-chip:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-            .info-badge {
-                animation: pulse 2s infinite;
-            }
-            @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: 0.8; }
+            .check-item:hover {
+                background-color: rgba(59, 130, 246, 0.05);
             }
         </style>
     </head>
-    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" id="html-root">
         ${getCommonHeader('Lifestyle')}
         ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
           {label: '유틸리티', href: '/lifestyle'},
-          {label: '평수 계산기'}
+          {label: '한국 나이 계산기'}
         ])}
 
-        <main class="max-w-5xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
-            <!-- 헤더 -->
+        <main class="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
+            <!-- 페이지 헤더 -->
             <div class="text-center mb-8">
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 flex items-center justify-center gap-3">
-                    <i class="fas fa-home text-purple-600"></i>
-                    스마트 부동산 평수 계산기
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl mb-4">
+                    <i class="fas fa-birthday-cake text-3xl text-white"></i>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    스마트 만 나이 & 생활 연령 계산기
                 </h1>
-                <p class="text-gray-600">
-                    <i class="fas fa-lightbulb text-yellow-500"></i>
-                    단순 변환을 넘어, 이 집이 실제로 얼마나 넓은지 체감하게 해드립니다
+                <p class="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
+                    내 나이, 이제 헷갈리지 마세요! 법적 나이부터 술/담배 가능 여부까지 한 번에.
                 </p>
             </div>
 
-            <!-- A. 변환기 카드 -->
-            <div class="converter-card rounded-2xl shadow-2xl p-6 sm:p-8 mb-6">
-                <div class="flex items-center justify-center gap-2 mb-6">
-                    <h2 class="text-2xl font-bold text-white">
-                        <i class="fas fa-exchange-alt"></i> 실시간 양방향 변환
-                    </h2>
+            <!-- 입력 영역 -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                <div class="flex items-center mb-6">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+                        <i class="fas fa-calendar-alt text-xl text-white"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800">생년월일 입력</h2>
                 </div>
-                
-                <!-- 변환 입력 -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                    <!-- ㎡ 입력 -->
-                    <div class="bg-white rounded-xl p-4 shadow-lg">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            제곱미터 (㎡)
-                        </label>
+
+                <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">생년 (YYYY)</label>
                         <input 
                             type="number" 
-                            id="m2Input" 
-                            placeholder="84"
-                            class="w-full text-3xl font-bold text-purple-600 border-0 focus:outline-none focus:ring-0 p-2"
-                            oninput="convertFromM2(this.value)"
-                        />
-                        <span class="text-xs text-gray-500 mt-1 block">법적 계량 단위</span>
+                            id="birthYear" 
+                            placeholder="1995"
+                            min="1900"
+                            max="2025"
+                            class="w-full px-4 py-3 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                        >
                     </div>
-
-                    <!-- 변환 아이콘 -->
-                    <div class="flex justify-center">
-                        <div class="bg-white rounded-full p-4 shadow-lg">
-                            <i class="fas fa-arrows-alt-h text-2xl text-purple-600"></i>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">월 (MM)</label>
+                        <select 
+                            id="birthMonth"
+                            class="w-full px-4 py-3 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                        >
+                            <option value="">선택</option>
+                            ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}월</option>`).join('')}
+                        </select>
                     </div>
-
-                    <!-- 평 입력 -->
-                    <div class="bg-white rounded-xl p-4 shadow-lg">
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
-                            평수 (평)
-                        </label>
-                        <input 
-                            type="number" 
-                            id="pyeongInput" 
-                            placeholder="25"
-                            class="w-full text-3xl font-bold text-pink-600 border-0 focus:outline-none focus:ring-0 p-2"
-                            oninput="convertFromPyeong(this.value)"
-                        />
-                        <span class="text-xs text-gray-500 mt-1 block">1평 = 3.3058㎡</span>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">일 (DD)</label>
+                        <select 
+                            id="birthDay"
+                            class="w-full px-4 py-3 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                        >
+                            <option value="">선택</option>
+                            ${Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}일</option>`).join('')}
+                        </select>
                     </div>
                 </div>
 
-                <!-- 퀵 칩 버튼 -->
-                <div class="mt-6">
-                    <p class="text-white text-sm font-semibold mb-3 text-center">
-                        <i class="fas fa-bolt"></i> 국민 평형 퀵 선택
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        계산 기준일 (선택사항)
+                    </label>
+                    <div class="flex items-center gap-3">
+                        <input 
+                            type="date" 
+                            id="referenceDate"
+                            class="flex-1 px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                        >
+                        <button 
+                            onclick="setToday()"
+                            class="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-xl transition"
+                        >
+                            오늘
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        특정 날짜(예: 입학일, 계약일)에 몇 살인지 계산할 수 있습니다
                     </p>
-                    <div class="flex flex-wrap justify-center gap-2">
-                        <button onclick="setQuickValue(59)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
-                            59㎡ (18평)
-                        </button>
-                        <button onclick="setQuickValue(84)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
-                            84㎡ (25평)
-                        </button>
-                        <button onclick="setQuickValue(102)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
-                            102㎡ (31평)
-                        </button>
-                        <button onclick="setQuickValue(114)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
-                            114㎡ (34평)
-                        </button>
-                        <button onclick="setQuickValue(135)" class="quick-chip bg-white text-purple-600 px-4 py-2 rounded-lg font-semibold shadow-md hover:bg-purple-50">
-                            135㎡ (41평)
-                        </button>
-                    </div>
                 </div>
+
+                <button 
+                    onclick="calculateAge()"
+                    class="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold text-lg rounded-xl hover:from-blue-600 hover:to-indigo-700 transition shadow-lg"
+                >
+                    <i class="fas fa-calculator mr-2"></i>
+                    나이 계산하기
+                </button>
             </div>
 
-            <!-- B. 가격 분석기 -->
-            <div class="price-card rounded-2xl shadow-2xl p-6 sm:p-8 mb-6">
-                <h2 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                    <i class="fas fa-calculator"></i> 평당 가격 계산기
-                </h2>
-                
-                <div class="bg-white rounded-xl p-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                총 매매/전세 가격 (억원)
-                            </label>
-                            <input 
-                                type="number" 
-                                id="totalPrice" 
-                                placeholder="10.5"
-                                step="0.1"
-                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none text-lg font-semibold"
-                                oninput="calculatePricePerPyeong()"
-                            />
+            <!-- 결과 영역 -->
+            <div id="results" class="hidden space-y-6">
+                <!-- 메인 나이 카드들 -->
+                <div class="grid md:grid-cols-3 gap-4">
+                    <!-- 만 나이 -->
+                    <div class="age-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">📄 만 나이</h3>
+                            <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">법적 표준</span>
                         </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                면적 (㎡)
-                            </label>
-                            <input 
-                                type="number" 
-                                id="priceM2" 
-                                placeholder="84"
-                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-pink-500 focus:outline-none text-lg font-semibold"
-                                oninput="calculatePricePerPyeong()"
-                            />
+                        <div class="text-5xl font-bold mb-2" id="manAge">-</div>
+                        <p class="text-sm text-blue-100 mb-4">관공서, 계약, 병원, 은행에서 쓰는 진짜 내 나이입니다</p>
+                        <div class="text-sm bg-white bg-opacity-10 rounded-lg p-3" id="birthdayInfo">
+                            다음 생일까지 D-?
                         </div>
                     </div>
 
-                    <!-- 결과 표시 -->
-                    <div id="priceResult" class="hidden mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-gray-600 mb-1">평당 가격</p>
-                                <p class="text-3xl font-bold text-orange-600">
-                                    <span id="pricePerPyeong">0</span>
-                                    <span class="text-lg">만원</span>
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm text-gray-600 mb-1">㎡당 가격</p>
-                                <p class="text-xl font-semibold text-gray-700">
-                                    <span id="pricePerM2">0</span>
-                                    <span class="text-sm">만원</span>
-                                </p>
-                            </div>
+                    <!-- 연 나이 -->
+                    <div class="age-card bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">🍺 연 나이</h3>
+                            <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">청소년 보호법</span>
                         </div>
-                        <div id="priceLevel" class="mt-3 text-center"></div>
+                        <div class="text-5xl font-bold mb-2" id="yeonAge">-</div>
+                        <p class="text-sm text-purple-100 mb-4">술·담배 구매, 군대 입영 영장은 이 나이를 따릅니다</p>
+                        <div class="text-sm bg-white bg-opacity-10 rounded-lg p-3">
+                            = 현재 연도 - 출생 연도
+                        </div>
+                    </div>
+
+                    <!-- 세는 나이 -->
+                    <div class="age-card bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">🗣️ 세는 나이</h3>
+                            <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-xs font-medium">사회적 나이</span>
+                        </div>
+                        <div class="text-5xl font-bold mb-2" id="koreanAge">-</div>
+                        <p class="text-sm text-pink-100 mb-4">한국 사람들끼리 "저 00년생(00살)입니다" 할 때 주로 씁니다</p>
+                        <div class="text-sm bg-white bg-opacity-10 rounded-lg p-3">
+                            = 연 나이 + 1
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- C. 넓이 시각화 -->
-            <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-eye text-blue-600"></i> 넓이 체감하기
-                </h2>
-                
-                <div id="visualization" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="text-center p-4 bg-blue-50 rounded-lg">
-                        <i class="fas fa-bed text-4xl text-blue-600 mb-2"></i>
-                        <p class="text-sm text-gray-600">킹사이즈 침대</p>
-                        <p class="text-2xl font-bold text-blue-600">
-                            <span id="bedCount">0</span>개
-                        </p>
+                <!-- 체크리스트 위젯 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
+                    <div class="flex items-center mb-6">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3">
+                            <i class="fas fa-check-circle text-xl text-white"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">할 수 있는 것 / 없는 것</h2>
                     </div>
-                    <div class="text-center p-4 bg-green-50 rounded-lg">
-                        <i class="fas fa-car text-4xl text-green-600 mb-2"></i>
-                        <p class="text-sm text-gray-600">주차 가능 대수</p>
-                        <p class="text-2xl font-bold text-green-600">
-                            <span id="carCount">0</span>대
-                        </p>
-                    </div>
-                    <div class="text-center p-4 bg-purple-50 rounded-lg">
-                        <i class="fas fa-running text-4xl text-purple-600 mb-2"></i>
-                        <p class="text-sm text-gray-600">왕복 걸음 수</p>
-                        <p class="text-2xl font-bold text-purple-600">
-                            <span id="walkSteps">0</span>걸음
-                        </p>
+
+                    <div class="grid md:grid-cols-2 gap-4" id="checklistGrid">
+                        <!-- JavaScript로 동적 생성 -->
                     </div>
                 </div>
-            </div>
 
-            <!-- D. 정보 가이드 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <!-- 전용면적 vs 공급면적 -->
-                <div class="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-6 border-2 border-cyan-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <i class="fas fa-info-circle text-cyan-600"></i>
-                        전용면적 vs 공급면적
+                <!-- 띠와 별자리 -->
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-gradient-to-br from-orange-50 to-red-50 rounded-2xl shadow-lg p-6 border-2 border-orange-200">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <span class="text-3xl" id="zodiacEmoji">🐉</span>
+                            <span>나의 띠</span>
+                        </h3>
+                        <div class="text-4xl font-bold text-orange-600 mb-2" id="zodiacName">-</div>
+                        <p class="text-sm text-gray-600" id="zodiacDesc">-</p>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-lg p-6 border-2 border-indigo-200">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <span class="text-3xl">⭐</span>
+                            <span>나의 별자리</span>
+                        </h3>
+                        <div class="text-4xl font-bold text-indigo-600 mb-2" id="starSign">-</div>
+                        <p class="text-sm text-gray-600" id="starSignDate">-</p>
+                    </div>
+                </div>
+
+                <!-- 생애 주기 알림 -->
+                <div id="lifecycleAlerts" class="hidden bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl shadow-lg p-6 md:p-8 border-2 border-yellow-300">
+                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-bell text-yellow-600"></i>
+                        <span>생애 주기 알림</span>
                     </h3>
-                    <div class="space-y-2 text-sm text-gray-700">
-                        <p><strong class="text-cyan-700">전용면적:</strong> 실제로 사용 가능한 공간</p>
-                        <p><strong class="text-cyan-700">공급면적:</strong> 전용 + 주거공용 (복도, 계단 등)</p>
-                        <p class="mt-3 p-3 bg-white rounded-lg text-xs">
-                            <i class="fas fa-exclamation-triangle text-yellow-500"></i>
-                            "34평 아파트"는 보통 <strong>전용면적 84㎡</strong>를 의미합니다!
-                        </p>
+                    <div id="lifecycleContent" class="space-y-3">
+                        <!-- JavaScript로 동적 생성 -->
                     </div>
-                </div>
-
-                <!-- 계약 시 주의사항 -->
-                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border-2 border-yellow-200">
-                    <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                        <i class="fas fa-file-contract text-orange-600"></i>
-                        계약 시 주의사항
-                    </h3>
-                    <ul class="space-y-2 text-sm text-gray-700">
-                        <li class="flex items-start gap-2">
-                            <i class="fas fa-check text-green-500 mt-1"></i>
-                            <span>법적 계량 단위는 <strong>㎡</strong>입니다</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="fas fa-check text-green-500 mt-1"></i>
-                            <span>계약서에는 반드시 <strong>㎡로 표기</strong>됩니다</span>
-                        </li>
-                        <li class="flex items-start gap-2">
-                            <i class="fas fa-check text-green-500 mt-1"></i>
-                            <span>전용면적과 공급면적을 <strong>혼동하지 마세요</strong></span>
-                        </li>
-                    </ul>
                 </div>
             </div>
 
-            <!-- E. 추천 서비스 연동 -->
-            <div class="bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl shadow-xl p-6 text-white">
-                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
-                    <i class="fas fa-link"></i> 연관 서비스
+            <!-- 서비스 확장 -->
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl shadow-lg p-6 md:p-8 border-2 border-purple-200">
+                <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fas fa-lightbulb text-yellow-500"></i>
+                    <span>이런 정보도 궁금하신가요?</span>
                 </h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <a href="#" class="bg-white text-purple-600 rounded-lg p-4 hover:shadow-lg transition text-center">
-                        <i class="fas fa-truck text-3xl mb-2"></i>
-                        <p class="font-semibold">이사 견적</p>
-                        <p class="text-xs text-gray-600">평수별 이사 비용 조회</p>
-                    </a>
-                    <a href="#" class="bg-white text-pink-600 rounded-lg p-4 hover:shadow-lg transition text-center">
-                        <i class="fas fa-broom text-3xl mb-2"></i>
-                        <p class="font-semibold">입주 청소</p>
-                        <p class="text-xs text-gray-600">전문 청소 최저가 비교</p>
-                    </a>
-                    <a href="/news" class="bg-white text-blue-600 rounded-lg p-4 hover:shadow-lg transition text-center">
-                        <i class="fas fa-newspaper text-3xl mb-2"></i>
-                        <p class="font-semibold">부동산 뉴스</p>
-                        <p class="text-xs text-gray-600">최신 시장 동향 확인</p>
-                    </a>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-3xl mb-2">🎓</div>
+                        <div class="font-semibold text-gray-800 mb-1">학교 입학 계산기</div>
+                        <div class="text-xs text-gray-600">자녀 초등학교 입학 시기 확인</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-3xl mb-2">⚖️</div>
+                        <div class="font-semibold text-gray-800 mb-1">법적 나이 FAQ</div>
+                        <div class="text-xs text-gray-600">2023년 만 나이 통일법 완벽 정리</div>
+                    </div>
+                    <div class="bg-white rounded-xl p-4 hover:shadow-md transition cursor-pointer">
+                        <div class="text-3xl mb-2">🎂</div>
+                        <div class="font-semibold text-gray-800 mb-1">생일 D-Day</div>
+                        <div class="text-xs text-gray-600">내 생일까지 남은 시간</div>
+                    </div>
                 </div>
             </div>
         </main>
 
         <script>
-            // 상태 관리 (기준은 항상 m2)
-            let currentM2 = 0;
+            // 페이지 로드 시 오늘 날짜 설정
+            window.addEventListener('DOMContentLoaded', function() {
+                setToday();
+            });
 
-            // ㎡에서 평으로 변환
-            function convertFromM2(value) {
-                currentM2 = parseFloat(value) || 0;
-                const pyeong = (currentM2 * 0.3025).toFixed(2);
-                document.getElementById('pyeongInput').value = pyeong;
-                updateVisualization();
+            function setToday() {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                document.getElementById('referenceDate').value = year + '-' + month + '-' + day;
             }
 
-            // 평에서 ㎡로 변환
-            function convertFromPyeong(value) {
-                const pyeong = parseFloat(value) || 0;
-                currentM2 = pyeong / 0.3025;
-                document.getElementById('m2Input').value = currentM2.toFixed(2);
-                updateVisualization();
-            }
+            function calculateAge() {
+                const year = parseInt(document.getElementById('birthYear').value);
+                const month = parseInt(document.getElementById('birthMonth').value);
+                const day = parseInt(document.getElementById('birthDay').value);
+                const refDate = document.getElementById('referenceDate').value;
 
-            // 퀵 버튼
-            function setQuickValue(m2) {
-                document.getElementById('m2Input').value = m2;
-                convertFromM2(m2);
-                document.getElementById('priceM2').value = m2;
-            }
+                if (!year || !month || !day || !refDate) {
+                    alert('생년월일과 계산 기준일을 모두 입력해주세요.');
+                    return;
+                }
 
-            // 넓이 시각화
-            function updateVisualization() {
-                // 킹사이즈 침대 (약 4㎡)
-                const bedCount = Math.floor(currentM2 / 4);
-                document.getElementById('bedCount').textContent = bedCount;
+                const birthDate = new Date(year, month - 1, day);
+                const reference = new Date(refDate);
+                const currentYear = reference.getFullYear();
 
-                // 주차 (1대당 약 12.5㎡)
-                const carCount = Math.floor(currentM2 / 12.5);
-                document.getElementById('carCount').textContent = carCount;
+                // 1. 연 나이
+                const yeonAge = currentYear - year;
 
-                // 걸음 수 (1걸음 약 0.7m, 왕복)
-                const sideLength = Math.sqrt(currentM2);
-                const walkSteps = Math.round(sideLength / 0.7 * 2);
-                document.getElementById('walkSteps').textContent = walkSteps;
-            }
+                // 2. 세는 나이
+                const koreanAge = yeonAge + 1;
 
-            // 평당 가격 계산
-            function calculatePricePerPyeong() {
-                const totalPrice = parseFloat(document.getElementById('totalPrice').value) || 0;
-                const m2 = parseFloat(document.getElementById('priceM2').value) || 0;
+                // 3. 만 나이
+                let manAge = yeonAge;
+                const isBirthdayPassed = 
+                    reference.getMonth() > birthDate.getMonth() || 
+                    (reference.getMonth() === birthDate.getMonth() && reference.getDate() >= birthDate.getDate());
                 
-                if (totalPrice > 0 && m2 > 0) {
-                    const pyeong = m2 * 0.3025;
-                    const pricePerPyeong = (totalPrice * 10000 / pyeong).toFixed(0);
-                    const pricePerM2 = (totalPrice * 10000 / m2).toFixed(0);
-                    
-                    document.getElementById('pricePerPyeong').textContent = parseInt(pricePerPyeong).toLocaleString();
-                    document.getElementById('pricePerM2').textContent = parseInt(pricePerM2).toLocaleString();
-                    document.getElementById('priceResult').classList.remove('hidden');
+                if (!isBirthdayPassed) {
+                    manAge -= 1;
+                }
 
-                    // 가격 등급 표시
-                    const levelDiv = document.getElementById('priceLevel');
-                    let levelText = '';
-                    let levelColor = '';
+                // 다음 생일까지 남은 일수
+                const nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+                if (isBirthdayPassed) {
+                    nextBirthday.setFullYear(currentYear + 1);
+                }
+                const daysUntilBirthday = Math.ceil((nextBirthday - reference) / (1000 * 60 * 60 * 24));
 
-                    if (pricePerPyeong >= 5000) {
-                        levelText = '🏆 프리미엄급 (강남/분당 수준)';
-                        levelColor = 'text-red-600';
-                    } else if (pricePerPyeong >= 3000) {
-                        levelText = '💎 고급 (서울 주요 지역)';
-                        levelColor = 'text-orange-600';
-                    } else if (pricePerPyeong >= 2000) {
-                        levelText = '✨ 중상급 (수도권 인기 지역)';
-                        levelColor = 'text-yellow-600';
-                    } else if (pricePerPyeong >= 1000) {
-                        levelText = '👍 중급 (수도권 평균)';
-                        levelColor = 'text-green-600';
+                // 결과 표시
+                document.getElementById('manAge').textContent = manAge + '세';
+                document.getElementById('yeonAge').textContent = yeonAge + '세';
+                document.getElementById('koreanAge').textContent = koreanAge + '세';
+                document.getElementById('birthdayInfo').textContent = 
+                    daysUntilBirthday === 0 ? '🎉 오늘이 생일입니다!' : '다음 생일까지 D-' + daysUntilBirthday;
+
+                // 체크리스트 생성
+                generateChecklist(manAge, yeonAge, birthDate, reference);
+
+                // 띠와 별자리
+                displayZodiacAndStar(year, month, day);
+
+                // 생애 주기 알림
+                displayLifecycleAlerts(manAge);
+
+                // 결과 영역 표시
+                document.getElementById('results').classList.remove('hidden');
+
+                // 결과 영역으로 스크롤
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            function generateChecklist(manAge, yeonAge, birthDate, reference) {
+                const checks = [
+                    { name: '투표', manReq: 18, yeonReq: null, icon: '🗳️', desc: '국회의원, 대통령 선거' },
+                    { name: '운전면허', manReq: 18, yeonReq: null, icon: '🚗', desc: '2종 보통면허 취득 가능' },
+                    { name: '아르바이트', manReq: 15, yeonReq: null, icon: '💼', desc: '취업 인증 필요' },
+                    { name: '술/담배 구매', manReq: null, yeonReq: 19, icon: '🍺', desc: '1월 1일 기준 연 나이' },
+                    { name: '영화 관람 (청불)', manReq: 18, yeonReq: null, icon: '🎬', desc: '청소년 관람불가' },
+                    { name: '워킹홀리데이', manReq: 18, yeonReq: null, maxAge: 30, icon: '✈️', desc: '국가별 상이' }
+                ];
+
+                const grid = document.getElementById('checklistGrid');
+                grid.innerHTML = '';
+
+                checks.forEach(check => {
+                    let canDo = false;
+                    let statusText = '';
+
+                    if (check.yeonReq !== null) {
+                        canDo = yeonAge >= check.yeonReq;
+                        statusText = canDo ? '가능' : ('연 ' + check.yeonReq + '세부터');
                     } else {
-                        levelText = '💰 합리적 (지방 주요 도시)';
-                        levelColor = 'text-blue-600';
+                        if (check.maxAge) {
+                            canDo = manAge >= check.manReq && manAge <= check.maxAge;
+                            statusText = canDo ? '가능' : 
+                                (manAge < check.manReq ? ('만 ' + check.manReq + '세부터') : '연령 초과');
+                        } else {
+                            canDo = manAge >= check.manReq;
+                            statusText = canDo ? '가능' : ('만 ' + check.manReq + '세부터');
+                        }
                     }
 
-                    levelDiv.innerHTML = '<p class="font-semibold ' + levelColor + '">' + levelText + '</p>';
-                } else {
-                    document.getElementById('priceResult').classList.add('hidden');
-                }
+                    const statusColor = canDo ? 'text-green-600' : 'text-gray-400';
+                    const bgColor = canDo ? 'bg-green-50' : 'bg-gray-50';
+                    const icon = canDo ? '✅' : '❌';
+
+                    grid.innerHTML += '<div class="check-item p-4 rounded-xl border-2 ' + 
+                        (canDo ? 'border-green-200' : 'border-gray-200') + ' ' + bgColor + '">' +
+                        '<div class="flex items-start justify-between mb-2">' +
+                        '<div class="flex items-center gap-2">' +
+                        '<span class="text-2xl">' + check.icon + '</span>' +
+                        '<span class="font-bold text-gray-800">' + check.name + '</span>' +
+                        '</div>' +
+                        '<span class="text-2xl">' + icon + '</span>' +
+                        '</div>' +
+                        '<div class="text-sm text-gray-600 mb-1">' + check.desc + '</div>' +
+                        '<div class="text-xs font-semibold ' + statusColor + '">' + statusText + '</div>' +
+                        '</div>';
+                });
             }
 
-            // 페이지 로드 시 기본값 설정
-            window.addEventListener('DOMContentLoaded', function() {
-                setQuickValue(84);
-            });
+            function displayZodiacAndStar(year, month, day) {
+                // 띠 계산
+                const zodiacs = [
+                    {name: '쥐띠', emoji: '🐭', desc: '영리하고 순발력이 뛰어남'},
+                    {name: '소띠', emoji: '🐮', desc: '성실하고 인내심이 강함'},
+                    {name: '호랑이띠', emoji: '🐯', desc: '용감하고 카리스마 있음'},
+                    {name: '토끼띠', emoji: '🐰', desc: '온화하고 섬세함'},
+                    {name: '용띠', emoji: '🐉', desc: '열정적이고 리더십이 강함'},
+                    {name: '뱀띠', emoji: '🐍', desc: '지혜롭고 신중함'},
+                    {name: '말띠', emoji: '🐴', desc: '활동적이고 자유로움'},
+                    {name: '양띠', emoji: '🐑', desc: '온순하고 예술적 감각이 뛰어남'},
+                    {name: '원숭이띠', emoji: '🐵', desc: '재치있고 사교적'},
+                    {name: '닭띠', emoji: '🐓', desc: '정직하고 부지런함'},
+                    {name: '개띠', emoji: '🐶', desc: '충성스럽고 정의로움'},
+                    {name: '돼지띠', emoji: '🐷', desc: '관대하고 순수함'}
+                ];
+
+                const zodiacIndex = (year - 4) % 12;
+                const zodiac = zodiacs[zodiacIndex];
+
+                document.getElementById('zodiacEmoji').textContent = zodiac.emoji;
+                document.getElementById('zodiacName').textContent = zodiac.name;
+                document.getElementById('zodiacDesc').textContent = zodiac.desc;
+
+                // 별자리 계산
+                const starSigns = [
+                    {name: '물병자리', start: [1,20], end: [2,18]},
+                    {name: '물고기자리', start: [2,19], end: [3,20]},
+                    {name: '양자리', start: [3,21], end: [4,19]},
+                    {name: '황소자리', start: [4,20], end: [5,20]},
+                    {name: '쌍둥이자리', start: [5,21], end: [6,21]},
+                    {name: '게자리', start: [6,22], end: [7,22]},
+                    {name: '사자자리', start: [7,23], end: [8,22]},
+                    {name: '처녀자리', start: [8,23], end: [9,23]},
+                    {name: '천칭자리', start: [9,24], end: [10,22]},
+                    {name: '전갈자리', start: [10,23], end: [11,22]},
+                    {name: '사수자리', start: [11,23], end: [12,24]},
+                    {name: '염소자리', start: [12,25], end: [1,19]}
+                ];
+
+                let starSign = '';
+                for (const sign of starSigns) {
+                    const [startMonth, startDay] = sign.start;
+                    const [endMonth, endDay] = sign.end;
+                    
+                    if (startMonth === endMonth) {
+                        if (month === startMonth && day >= startDay && day <= endDay) {
+                            starSign = sign.name;
+                            break;
+                        }
+                    } else {
+                        if ((month === startMonth && day >= startDay) || (month === endMonth && day <= endDay)) {
+                            starSign = sign.name;
+                            break;
+                        }
+                    }
+                }
+
+                document.getElementById('starSign').textContent = starSign;
+                document.getElementById('starSignDate').textContent = month + '월 ' + day + '일';
+            }
+
+            function displayLifecycleAlerts(manAge) {
+                const alerts = [];
+
+                if (manAge === 18 || manAge === 19) {
+                    alerts.push({
+                        icon: '🎓',
+                        title: '성년의 시작',
+                        desc: '법적으로 성인이 되었습니다. 투표권, 운전면허 취득 가능'
+                    });
+                }
+
+                if (manAge >= 18 && manAge < 30) {
+                    alerts.push({
+                        icon: '✈️',
+                        title: '워킹홀리데이',
+                        desc: '해외에서 일하며 여행할 수 있는 절호의 기회입니다'
+                    });
+                }
+
+                if (manAge >= 38 && manAge <= 42) {
+                    alerts.push({
+                        icon: '🏥',
+                        title: '생애전환기 건강검진',
+                        desc: '만 40세부터 생애전환기 건강검진 대상입니다'
+                    });
+                }
+
+                if (manAge >= 63 && manAge <= 67) {
+                    alerts.push({
+                        icon: '💰',
+                        title: '국민연금 수령',
+                        desc: '만 65세부터 기초연금 수급 대상인지 확인해보세요'
+                    });
+                }
+
+                if (alerts.length > 0) {
+                    const content = document.getElementById('lifecycleContent');
+                    content.innerHTML = alerts.map(alert => 
+                        '<div class="flex items-start gap-3 p-4 bg-white rounded-xl">' +
+                        '<div class="text-3xl">' + alert.icon + '</div>' +
+                        '<div>' +
+                        '<div class="font-bold text-gray-800 mb-1">' + alert.title + '</div>' +
+                        '<div class="text-sm text-gray-600">' + alert.desc + '</div>' +
+                        '</div>' +
+                        '</div>'
+                    ).join('');
+                    document.getElementById('lifecycleAlerts').classList.remove('hidden');
+                } else {
+                    document.getElementById('lifecycleAlerts').classList.add('hidden');
+                }
+            }
         </script>
 
         ${getCommonFooter()}
-        ${getCommonAuthScript()}
     </body>
     </html>
   `)
