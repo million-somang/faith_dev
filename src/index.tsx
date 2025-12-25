@@ -14813,6 +14813,722 @@ app.get('/lifestyle/age-calculator', (c) => {
   `)
 })
 
+// ==================== 감성 D-Day 매니저 ====================
+app.get('/lifestyle/dday-calculator', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>감성 D-Day 매니저 - Faith Portal</title>
+        <meta name="description" content="단순히 날짜만 세는 게 아니라, 설레는 기다림을 시각화해주는 D-Day 관리 도구">
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+        <style>
+            .dday-card {
+                transition: all 0.3s ease;
+            }
+            .dday-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            }
+            .color-option {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            .color-option:hover {
+                transform: scale(1.15);
+            }
+            .color-option.selected {
+                border: 3px solid #1f2937;
+                transform: scale(1.2);
+            }
+            .emoji-option {
+                font-size: 28px;
+                cursor: pointer;
+                padding: 8px;
+                border-radius: 8px;
+                transition: all 0.2s;
+            }
+            .emoji-option:hover {
+                background-color: rgba(0,0,0,0.05);
+                transform: scale(1.1);
+            }
+            .emoji-option.selected {
+                background-color: rgba(59, 130, 246, 0.2);
+            }
+            .progress-bar {
+                transition: width 0.5s ease;
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: 'D-Day 매니저'}
+        ])}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
+            <!-- 페이지 헤더 -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl mb-4">
+                    <i class="fas fa-heart text-3xl text-white"></i>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
+                    감성 D-Day 매니저
+                </h1>
+                <p class="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
+                    단순히 날짜만 세는 게 아니라, 설레는 기다림을 시각화해드립니다
+                </p>
+            </div>
+
+            <!-- 메인 그리드: 좌측(입력) - 우측(리스트) -->
+            <div class="grid lg:grid-cols-2 gap-6">
+                <!-- 좌측: D-Day 생성기 -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8 h-fit">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-purple-600"></i>
+                        <span>새 D-Day 만들기</span>
+                    </h2>
+
+                    <!-- 제목 입력 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            제목 <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="ddayTitle" 
+                            placeholder="예: 유럽 여행 ✈️"
+                            class="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                        >
+                    </div>
+
+                    <!-- 날짜 선택 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            목표 날짜 <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            type="date" 
+                            id="ddayDate"
+                            class="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition"
+                        >
+                    </div>
+
+                    <!-- 계산 모드 선택 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            계산 모드
+                        </label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button 
+                                onclick="setMode('countdown')"
+                                id="modeCountdown"
+                                class="mode-btn px-4 py-3 bg-blue-50 text-blue-700 border-2 border-blue-200 rounded-xl font-semibold hover:bg-blue-100 transition"
+                            >
+                                <i class="fas fa-hourglass-half"></i>
+                                <div class="text-xs mt-1">D-Day</div>
+                            </button>
+                            <button 
+                                onclick="setMode('countup')"
+                                id="modeCountup"
+                                class="mode-btn px-4 py-3 bg-gray-100 text-gray-600 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-200 transition"
+                            >
+                                <i class="fas fa-calendar-plus"></i>
+                                <div class="text-xs mt-1">기념일</div>
+                            </button>
+                            <button 
+                                onclick="setMode('datefinder')"
+                                id="modeDatefinder"
+                                class="mode-btn px-4 py-3 bg-gray-100 text-gray-600 border-2 border-gray-300 rounded-xl font-semibold hover:bg-gray-200 transition"
+                            >
+                                <i class="fas fa-search"></i>
+                                <div class="text-xs mt-1">날짜찾기</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 커플 옵션 (countup일 때만) -->
+                    <div id="anniversaryOption" class="hidden mb-6">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                id="isAnniversary"
+                                class="w-5 h-5 text-pink-600 rounded focus:ring-pink-500"
+                            >
+                            <span class="text-gray-700">
+                                <i class="fas fa-heart text-pink-500"></i>
+                                기준일을 1일로 포함 (커플 기념일용)
+                            </span>
+                        </label>
+                    </div>
+
+                    <!-- 카드 꾸미기 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            배경색 선택
+                        </label>
+                        <div class="flex gap-3">
+                            <div class="color-option selected" data-color="#667eea" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="selectColor(this, '#667eea')"></div>
+                            <div class="color-option" data-color="#f093fb" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);" onclick="selectColor(this, '#f093fb')"></div>
+                            <div class="color-option" data-color="#4facfe" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);" onclick="selectColor(this, '#4facfe')"></div>
+                            <div class="color-option" data-color="#43e97b" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);" onclick="selectColor(this, '#43e97b')"></div>
+                            <div class="color-option" data-color="#fa709a" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);" onclick="selectColor(this, '#fa709a')"></div>
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            대표 이모지
+                        </label>
+                        <div class="grid grid-cols-6 gap-2">
+                            <div class="emoji-option selected text-center" data-emoji="📅" onclick="selectEmoji(this, '📅')">📅</div>
+                            <div class="emoji-option text-center" data-emoji="❤️" onclick="selectEmoji(this, '❤️')">❤️</div>
+                            <div class="emoji-option text-center" data-emoji="✈️" onclick="selectEmoji(this, '✈️')">✈️</div>
+                            <div class="emoji-option text-center" data-emoji="📚" onclick="selectEmoji(this, '📚')">📚</div>
+                            <div class="emoji-option text-center" data-emoji="🎂" onclick="selectEmoji(this, '🎂')">🎂</div>
+                            <div class="emoji-option text-center" data-emoji="🎓" onclick="selectEmoji(this, '🎓')">🎓</div>
+                            <div class="emoji-option text-center" data-emoji="💪" onclick="selectEmoji(this, '💪')">💪</div>
+                            <div class="emoji-option text-center" data-emoji="🏃" onclick="selectEmoji(this, '🏃')">🏃</div>
+                            <div class="emoji-option text-center" data-emoji="🎵" onclick="selectEmoji(this, '🎵')">🎵</div>
+                            <div class="emoji-option text-center" data-emoji="🎮" onclick="selectEmoji(this, '🎮')">🎮</div>
+                            <div class="emoji-option text-center" data-emoji="🎬" onclick="selectEmoji(this, '🎬')">🎬</div>
+                            <div class="emoji-option text-center" data-emoji="⚽" onclick="selectEmoji(this, '⚽')">⚽</div>
+                        </div>
+                    </div>
+
+                    <!-- 프리셋 버튼 -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            빠른 선택
+                        </label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="setPreset('christmas')" class="px-4 py-2 bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 transition text-sm">
+                                🎄 크리스마스
+                            </button>
+                            <button onclick="setPreset('newyear')" class="px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition text-sm">
+                                🎆 새해
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 추가 버튼 -->
+                    <button 
+                        onclick="addDday()"
+                        class="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg rounded-xl hover:from-purple-600 hover:to-pink-600 transition shadow-lg"
+                    >
+                        <i class="fas fa-plus mr-2"></i>
+                        리스트에 추가하기
+                    </button>
+                </div>
+
+                <!-- 우측: D-Day 대시보드 -->
+                <div class="space-y-6">
+                    <!-- Hero Section: 가장 가까운 D-Day -->
+                    <div id="heroDday" class="hidden bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-2xl p-8 text-white">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold">가장 가까운 목표</h3>
+                            <button onclick="captureHero()" class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition text-sm">
+                                <i class="fas fa-camera mr-1"></i> 저장
+                            </button>
+                        </div>
+                        <div id="heroContent">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+                    </div>
+
+                    <!-- D-Day 리스트 -->
+                    <div class="bg-white rounded-2xl shadow-xl p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-list text-purple-600"></i>
+                                <span>나의 D-Day</span>
+                                <span id="ddayCount" class="text-lg text-gray-500">(0)</span>
+                            </h2>
+                            <button onclick="exportAllAsImage()" class="px-4 py-2 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition text-sm font-medium">
+                                <i class="fas fa-download mr-1"></i> 전체 저장
+                            </button>
+                        </div>
+
+                        <!-- 빈 상태 -->
+                        <div id="emptyState" class="text-center py-12">
+                            <div class="text-6xl mb-4">📅</div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">아직 등록된 D-Day가 없어요</h3>
+                            <p class="text-gray-600">왼쪽에서 새로운 D-Day를 만들어보세요!</p>
+                        </div>
+
+                        <!-- 리스트 컨테이너 -->
+                        <div id="ddayList" class="grid grid-cols-1 gap-4">
+                            <!-- JavaScript로 동적 생성 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            let ddayData = [];
+            let currentMode = 'countdown';
+            let selectedColor = '#667eea';
+            let selectedEmoji = '📅';
+            let currentUser = null;
+
+            // 페이지 로드 시 초기화
+            window.addEventListener('DOMContentLoaded', async function() {
+                // 사용자 세션 확인
+                await checkUserSession();
+                
+                // D-Day 데이터 로드
+                await loadDdayData();
+                
+                // 오늘 날짜 설정
+                const today = new Date();
+                document.getElementById('ddayDate').valueAsDate = new Date(today.getTime() + 24*60*60*1000);
+            });
+
+            // 사용자 세션 확인
+            async function checkUserSession() {
+                try {
+                    const response = await fetch('/api/user/session');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.user) {
+                            currentUser = data.user;
+                        }
+                    }
+                } catch (error) {
+                    console.log('세션 확인 실패:', error);
+                }
+            }
+
+            // D-Day 데이터 로드
+            async function loadDdayData() {
+                if (currentUser) {
+                    // 로그인한 경우: DB에서 로드
+                    try {
+                        const response = await fetch('/api/dday/list');
+                        if (response.ok) {
+                            const data = await response.json();
+                            ddayData = data.ddays || [];
+                            renderDdayList();
+                        }
+                    } catch (error) {
+                        console.error('D-Day 로드 실패:', error);
+                    }
+                } else {
+                    // 비로그인: localStorage에서 로드
+                    const saved = localStorage.getItem('ddayData');
+                    if (saved) {
+                        ddayData = JSON.parse(saved);
+                        renderDdayList();
+                    }
+                }
+            }
+
+            // D-Day 저장
+            async function saveDdayData() {
+                if (currentUser) {
+                    // 서버에 저장하지 않고 추가/삭제 API만 사용
+                } else {
+                    // localStorage에 저장
+                    localStorage.setItem('ddayData', JSON.stringify(ddayData));
+                }
+            }
+
+            // 모드 설정
+            function setMode(mode) {
+                currentMode = mode;
+                
+                // 버튼 스타일 업데이트
+                document.querySelectorAll('.mode-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                    btn.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-300');
+                });
+                
+                const activeBtn = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+                activeBtn.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-300');
+                activeBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                
+                // 기념일 옵션 표시/숨김
+                if (mode === 'countup') {
+                    document.getElementById('anniversaryOption').classList.remove('hidden');
+                } else {
+                    document.getElementById('anniversaryOption').classList.add('hidden');
+                }
+            }
+
+            // 색상 선택
+            function selectColor(element, color) {
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                element.classList.add('selected');
+                selectedColor = color;
+            }
+
+            // 이모지 선택
+            function selectEmoji(element, emoji) {
+                document.querySelectorAll('.emoji-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                element.classList.add('selected');
+                selectedEmoji = emoji;
+            }
+
+            // 프리셋 설정
+            function setPreset(type) {
+                const now = new Date();
+                const year = now.getFullYear();
+                
+                if (type === 'christmas') {
+                    const christmas = new Date(year, 11, 25);
+                    if (christmas < now) christmas.setFullYear(year + 1);
+                    document.getElementById('ddayTitle').value = '크리스마스 🎄';
+                    document.getElementById('ddayDate').valueAsDate = christmas;
+                    selectedEmoji = '🎄';
+                    document.querySelector('[data-emoji="🎄"]')?.classList.add('selected');
+                } else if (type === 'newyear') {
+                    const newyear = new Date(year + 1, 0, 1);
+                    document.getElementById('ddayTitle').value = '새해 첫날 🎆';
+                    document.getElementById('ddayDate').valueAsDate = newyear;
+                    selectedEmoji = '🎆';
+                }
+                
+                setMode('countdown');
+            }
+
+            // D-Day 추가
+            async function addDday() {
+                const title = document.getElementById('ddayTitle').value.trim();
+                const date = document.getElementById('ddayDate').value;
+                const isAnniversary = document.getElementById('isAnniversary').checked;
+                
+                if (!title) {
+                    alert('제목을 입력해주세요.');
+                    return;
+                }
+                
+                if (!date) {
+                    alert('날짜를 선택해주세요.');
+                    return;
+                }
+                
+                const newDday = {
+                    id: Date.now(),
+                    title: title,
+                    targetDate: date,
+                    mode: currentMode,
+                    isAnniversary: isAnniversary,
+                    color: selectedColor,
+                    emoji: selectedEmoji,
+                    createdAt: new Date().toISOString()
+                };
+                
+                if (currentUser) {
+                    // 서버에 저장
+                    try {
+                        const response = await fetch('/api/dday/add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(newDday)
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            newDday.id = data.id;
+                            ddayData.push(newDday);
+                            renderDdayList();
+                            resetForm();
+                        }
+                    } catch (error) {
+                        console.error('D-Day 추가 실패:', error);
+                        alert('D-Day 추가에 실패했습니다.');
+                    }
+                } else {
+                    // localStorage에 저장
+                    ddayData.push(newDday);
+                    saveDdayData();
+                    renderDdayList();
+                    resetForm();
+                }
+            }
+
+            // D-Day 삭제
+            async function deleteDday(id) {
+                if (!confirm('정말 삭제하시겠습니까?')) return;
+                
+                if (currentUser) {
+                    try {
+                        const response = await fetch('/api/dday/' + id, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (response.ok) {
+                            ddayData = ddayData.filter(d => d.id !== id);
+                            renderDdayList();
+                        }
+                    } catch (error) {
+                        console.error('D-Day 삭제 실패:', error);
+                    }
+                } else {
+                    ddayData = ddayData.filter(d => d.id !== id);
+                    saveDdayData();
+                    renderDdayList();
+                }
+            }
+
+            // 양식 초기화
+            function resetForm() {
+                document.getElementById('ddayTitle').value = '';
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                document.getElementById('ddayDate').valueAsDate = tomorrow;
+                document.getElementById('isAnniversary').checked = false;
+            }
+
+            // D-Day 계산
+            function calculateDday(targetDate, mode, isAnniversary) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const target = new Date(targetDate);
+                target.setHours(0, 0, 0, 0);
+                
+                const diffTime = target - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (mode === 'countdown') {
+                    if (diffDays === 0) return 'D-Day';
+                    if (diffDays > 0) return 'D-' + diffDays;
+                    return 'D+' + Math.abs(diffDays);
+                } else if (mode === 'countup') {
+                    const days = Math.abs(diffDays) + (isAnniversary ? 1 : 0);
+                    return days + '일째';
+                } else {
+                    return target.toLocaleDateString('ko-KR');
+                }
+            }
+
+            // D-Day 리스트 렌더링
+            function renderDdayList() {
+                const listContainer = document.getElementById('ddayList');
+                const emptyState = document.getElementById('emptyState');
+                const countSpan = document.getElementById('ddayCount');
+                
+                countSpan.textContent = '(' + ddayData.length + ')';
+                
+                if (ddayData.length === 0) {
+                    listContainer.innerHTML = '';
+                    emptyState.classList.remove('hidden');
+                    document.getElementById('heroDday').classList.add('hidden');
+                    return;
+                }
+                
+                emptyState.classList.add('hidden');
+                
+                // Hero D-Day 찾기 (가장 가까운 countdown)
+                const upcomingDdays = ddayData
+                    .filter(d => d.mode === 'countdown')
+                    .map(d => {
+                        const target = new Date(d.targetDate);
+                        const today = new Date();
+                        const diff = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+                        return { ...d, diff };
+                    })
+                    .filter(d => d.diff >= 0)
+                    .sort((a, b) => a.diff - b.diff);
+                
+                if (upcomingDdays.length > 0) {
+                    renderHeroDday(upcomingDdays[0]);
+                } else {
+                    document.getElementById('heroDday').classList.add('hidden');
+                }
+                
+                // 리스트 렌더링
+                listContainer.innerHTML = ddayData.map(dday => {
+                    const ddayText = calculateDday(dday.targetDate, dday.mode, dday.isAnniversary);
+                    const colorStyle = dday.color.startsWith('#') 
+                        ? 'background: linear-gradient(135deg, ' + dday.color + ' 0%, ' + adjustColor(dday.color) + ' 100%);'
+                        : 'background: ' + dday.color + ';';
+                    
+                    return '<div class="dday-card rounded-xl shadow-lg p-5" style="' + colorStyle + '">' +
+                        '<div class="flex items-start justify-between mb-3">' +
+                        '<div class="flex items-center gap-3">' +
+                        '<span class="text-4xl">' + dday.emoji + '</span>' +
+                        '<div class="text-white">' +
+                        '<h3 class="font-bold text-lg">' + dday.title + '</h3>' +
+                        '<p class="text-sm opacity-90">' + new Date(dday.targetDate).toLocaleDateString('ko-KR') + '</p>' +
+                        '</div>' +
+                        '</div>' +
+                        '<button onclick="deleteDday(' + dday.id + ')" class="text-white opacity-70 hover:opacity-100 transition">' +
+                        '<i class="fas fa-times"></i>' +
+                        '</button>' +
+                        '</div>' +
+                        '<div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">' +
+                        '<div class="text-4xl font-bold text-white">' + ddayText + '</div>' +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            }
+
+            // Hero D-Day 렌더링
+            function renderHeroDday(dday) {
+                const heroSection = document.getElementById('heroDday');
+                const heroContent = document.getElementById('heroContent');
+                
+                const ddayText = calculateDday(dday.targetDate, dday.mode, dday.isAnniversary);
+                const diff = dday.diff;
+                const progress = Math.max(0, Math.min(100, 100 - (diff / 30 * 100)));
+                
+                heroContent.innerHTML = 
+                    '<div class="flex items-center gap-4 mb-4">' +
+                    '<span class="text-6xl">' + dday.emoji + '</span>' +
+                    '<div>' +
+                    '<h2 class="text-3xl font-bold mb-1">' + dday.title + '</h2>' +
+                    '<p class="text-lg opacity-90">까지 딱 ' + diff + '일 남았어요!</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="bg-white bg-opacity-20 rounded-xl p-6 mb-4">' +
+                    '<div class="text-6xl font-bold text-center">' + ddayText + '</div>' +
+                    '</div>' +
+                    '<div class="bg-white bg-opacity-10 rounded-full h-3 overflow-hidden">' +
+                    '<div class="progress-bar bg-white h-full" style="width: ' + progress + '%"></div>' +
+                    '</div>';
+                
+                heroSection.classList.remove('hidden');
+            }
+
+            // 색상 조정 (그라디언트용)
+            function adjustColor(hex) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                
+                const adjusted = '#' + 
+                    Math.min(255, r + 30).toString(16).padStart(2, '0') +
+                    Math.min(255, g + 30).toString(16).padStart(2, '0') +
+                    Math.min(255, b + 30).toString(16).padStart(2, '0');
+                
+                return adjusted;
+            }
+
+            // Hero 캡처
+            async function captureHero() {
+                const element = document.getElementById('heroDday');
+                try {
+                    const canvas = await html2canvas(element, { backgroundColor: null });
+                    const link = document.createElement('a');
+                    link.download = 'my-dday.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                } catch (error) {
+                    console.error('이미지 저장 실패:', error);
+                    alert('이미지 저장에 실패했습니다.');
+                }
+            }
+
+            // 전체 리스트 캡처
+            async function exportAllAsImage() {
+                if (ddayData.length === 0) {
+                    alert('저장할 D-Day가 없습니다.');
+                    return;
+                }
+                
+                const element = document.getElementById('ddayList');
+                try {
+                    const canvas = await html2canvas(element, { backgroundColor: '#ffffff' });
+                    const link = document.createElement('a');
+                    link.download = 'my-dday-list.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                } catch (error) {
+                    console.error('이미지 저장 실패:', error);
+                    alert('이미지 저장에 실패했습니다.');
+                }
+            }
+        </script>
+
+        ${getCommonFooter()}
+    </body>
+    </html>
+  `)
+})
+
+// D-Day API
+app.get('/api/dday/list', async (c) => {
+  const { DB } = c.env
+  const userId = c.get('userId') || null
+  
+  try {
+    const { results } = await DB.prepare(
+      'SELECT * FROM dday WHERE user_id = ? ORDER BY target_date ASC'
+    ).bind(userId).all()
+    
+    return c.json({ success: true, ddays: results || [] })
+  } catch (error) {
+    console.error('D-Day 조회 오류:', error)
+    return c.json({ success: false, error: 'D-Day 조회 실패' }, 500)
+  }
+})
+
+app.post('/api/dday/add', async (c) => {
+  const { DB } = c.env
+  const userId = c.get('userId') || null
+  
+  try {
+    const body = await c.req.json()
+    const { title, targetDate, mode, isAnniversary, color, emoji } = body
+    
+    const result = await DB.prepare(
+      'INSERT INTO dday (user_id, title, target_date, mode, is_anniversary, color, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).bind(userId, title, targetDate, mode, isAnniversary ? 1 : 0, color, emoji).run()
+    
+    return c.json({ success: true, id: result.meta.last_row_id })
+  } catch (error) {
+    console.error('D-Day 추가 오류:', error)
+    return c.json({ success: false, error: 'D-Day 추가 실패' }, 500)
+  }
+})
+
+app.delete('/api/dday/:id', async (c) => {
+  const { DB } = c.env
+  const userId = c.get('userId') || null
+  const id = c.req.param('id')
+  
+  try {
+    await DB.prepare(
+      'DELETE FROM dday WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
+    ).bind(id, userId).run()
+    
+    return c.json({ success: true })
+  } catch (error) {
+    console.error('D-Day 삭제 오류:', error)
+    return c.json({ success: false, error: 'D-Day 삭제 실패' }, 500)
+  }
+})
+
 // ==================== 쇼핑 API ====================
 // Mock 쿠팡 핫딜 데이터 API
 app.get('/api/shopping/hotdeals', (c) => {
