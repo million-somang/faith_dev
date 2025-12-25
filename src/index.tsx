@@ -14094,15 +14094,18 @@ app.get('/mypage', (c) => {
             <!-- 탭 메뉴 -->
             <div class="bg-white rounded-lg shadow-lg mb-6">
                 <div class="border-b border-gray-200">
-                    <nav class="flex space-x-4 sm:space-x-8 px-4 sm:px-6" aria-label="Tabs">
-                        <button id="tab-info" class="tab-button border-b-2 border-sky-500 text-sky-600 py-4 px-1 text-sm font-medium">
-                            <i class="fas fa-user mr-2"></i>내 정보
+                    <nav class="flex space-x-2 sm:space-x-4 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
+                        <button id="tab-info" class="tab-button border-b-2 border-sky-500 text-sky-600 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-user mr-1 sm:mr-2"></i>내 정보
                         </button>
-                        <button id="tab-history" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium">
-                            <i class="fas fa-history mr-2"></i>로그인 기록
+                        <button id="tab-dday" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-heart mr-1 sm:mr-2"></i>D-Day
                         </button>
-                        <button id="tab-settings" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-sm font-medium">
-                            <i class="fas fa-cog mr-2"></i>설정
+                        <button id="tab-history" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-history mr-1 sm:mr-2"></i>로그인 기록
+                        </button>
+                        <button id="tab-settings" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-cog mr-1 sm:mr-2"></i>설정
                         </button>
                     </nav>
                 </div>
@@ -14132,6 +14135,25 @@ app.get('/mypage', (c) => {
                                     <p id="user-created" class="text-lg font-medium text-gray-900">-</p>
                                 </div>
                                 <i class="fas fa-calendar text-2xl text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- D-Day 탭 -->
+                    <div id="content-dday" class="tab-content hidden">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">나의 D-Day</h3>
+                                <p class="text-sm text-gray-600">등록한 D-Day 목록입니다</p>
+                            </div>
+                            <a href="/lifestyle/dday-calculator" class="faith-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm">
+                                <i class="fas fa-plus mr-1"></i>새로 만들기
+                            </a>
+                        </div>
+                        <div id="dday-list-container" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>D-Day 목록을 불러오는 중...</p>
                             </div>
                         </div>
                     </div>
@@ -14235,6 +14257,10 @@ app.get('/mypage', (c) => {
                     if (tabId === 'history') {
                         loadLoginHistory();
                     }
+                    // D-Day 탭이면 데이터 로드
+                    if (tabId === 'dday') {
+                        loadDdayList();
+                    }
                 });
             });
             
@@ -14276,6 +14302,112 @@ app.get('/mypage', (c) => {
                     console.error('로그인 기록 로드 오류:', error);
                     document.getElementById('login-history-list').innerHTML = 
                         '<div class="text-center py-8 text-red-500"><p>로그인 기록을 불러오는데 실패했습니다.</p></div>';
+                }
+            }
+            
+            // D-Day 목록 로드
+            async function loadDdayList() {
+                try {
+                    const response = await axios.get('/api/dday/list');
+                    
+                    if (response.data.success) {
+                        const ddays = response.data.ddays;
+                        const listEl = document.getElementById('dday-list-container');
+                        
+                        if (ddays.length === 0) {
+                            listEl.innerHTML = \`
+                                <div class="text-center py-12">
+                                    <div class="text-6xl mb-4">📅</div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">등록된 D-Day가 없습니다</h3>
+                                    <p class="text-gray-600 mb-4">새로운 D-Day를 만들어보세요!</p>
+                                    <a href="/lifestyle/dday-calculator" class="inline-block faith-blue text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all">
+                                        <i class="fas fa-plus mr-2"></i>D-Day 만들기
+                                    </a>
+                                </div>
+                            \`;
+                            return;
+                        }
+                        
+                        listEl.innerHTML = ddays.map(dday => {
+                            const ddayText = calculateDday(dday.target_date, dday.mode, dday.is_anniversary);
+                            const colorStyle = getColorGradient(dday.color);
+                            
+                            return \`
+                                <div class="rounded-xl shadow-lg p-5 hover:shadow-xl transition-all" style="\${colorStyle}">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-4xl">\${dday.emoji}</span>
+                                            <div class="text-white">
+                                                <h3 class="font-bold text-lg">\${dday.title}</h3>
+                                                <p class="text-sm opacity-90">\${new Date(dday.target_date).toLocaleDateString('ko-KR')}</p>
+                                            </div>
+                                        </div>
+                                        <button onclick="deleteDdayFromMypage(\${dday.id})" class="text-white opacity-70 hover:opacity-100 transition">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                                        <div class="text-4xl font-bold text-white">\${ddayText}</div>
+                                    </div>
+                                </div>
+                            \`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('D-Day 목록 로드 오류:', error);
+                    document.getElementById('dday-list-container').innerHTML = 
+                        '<div class="text-center py-8 text-red-500"><p>D-Day 목록을 불러오는데 실패했습니다.</p></div>';
+                }
+            }
+            
+            // D-Day 계산
+            function calculateDday(targetDate, mode, isAnniversary) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                const target = new Date(targetDate);
+                target.setHours(0, 0, 0, 0);
+                
+                const diffTime = target - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (mode === 'countdown') {
+                    if (diffDays === 0) return 'D-Day';
+                    if (diffDays > 0) return 'D-' + diffDays;
+                    return 'D+' + Math.abs(diffDays);
+                } else if (mode === 'countup') {
+                    const days = Math.abs(diffDays) + (isAnniversary ? 1 : 0);
+                    return days + '일째';
+                } else {
+                    return target.toLocaleDateString('ko-KR');
+                }
+            }
+            
+            // 색상 그라디언트
+            function getColorGradient(color) {
+                const gradients = {
+                    '#667eea': 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);',
+                    '#f093fb': 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);',
+                    '#4facfe': 'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);',
+                    '#43e97b': 'background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);',
+                    '#fa709a': 'background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);'
+                };
+                return gradients[color] || gradients['#667eea'];
+            }
+            
+            // D-Day 삭제
+            async function deleteDdayFromMypage(id) {
+                if (!confirm('정말 삭제하시겠습니까?')) return;
+                
+                try {
+                    const response = await axios.delete('/api/dday/' + id);
+                    if (response.data.success) {
+                        alert('삭제되었습니다.');
+                        loadDdayList();
+                    }
+                } catch (error) {
+                    console.error('D-Day 삭제 오류:', error);
+                    alert('삭제에 실패했습니다.');
                 }
             }
             
