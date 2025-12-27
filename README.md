@@ -686,6 +686,34 @@ webapp/
 └── RESPONSIVE_GUIDE.md    # 반응형 디자인 가이드
 ```
 
+## 헤더 인증 상태 일관성 ✨중요
+
+### 문제 상황
+페이지마다 헤더가 다르게 보이거나, 로그인했는데도 "로그인/회원가입" 버튼이 보이는 문제가 있었습니다.
+
+### 해결 방법
+모든 페이지에서 **반드시 이 순서를 지켜야 합니다**:
+
+```typescript
+<body class="..." id="html-root">
+    ${getCommonAuthScript()}  // 1️⃣ 인증 스크립트 먼저
+    ${getCommonHeader('섹션명')}  // 2️⃣ 헤더
+    ${getStickyHeader()}  // 3️⃣ Sticky 헤더
+    
+    <!-- 페이지 콘텐츠 -->
+    
+    ${getCommonFooter()}  // 마지막에 푸터만
+    // ❌ getCommonAuthScript()는 여기 있으면 안됨!
+</body>
+```
+
+### 적용된 페이지
+- ✅ D-Day 매니저 (`/lifestyle/dday-calculator`)
+- ✅ 평수 계산기 (`/lifestyle/pyeong-calculator`)
+- ✅ 나이 계산기 (`/lifestyle/age-calculator`)
+
+**자세한 내용**: `HEADER_AUTH_GUIDELINES.md` 참고
+
 ## 디자인 시스템
 
 ### 브랜드 컬러
