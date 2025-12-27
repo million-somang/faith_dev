@@ -276,6 +276,7 @@ function getCommonHeader(sectionName: string = ''): string {
                 ${sectionLabel}
             </a>
             <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                <!-- 로그인 상태는 JavaScript로 동적 로드됨 -->
                 <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3">
                     <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
                 </a>
@@ -5882,6 +5883,7 @@ app.get('/lifestyle/pyeong-calculator', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50" id="html-root">
+        ${getCommonAuthScript()}
         ${getCommonHeader('Lifestyle')}
         ${getStickyHeader()}
         
@@ -6353,6 +6355,7 @@ app.get('/lifestyle/pyeong-calculator', (c) => {
         </script>
 
         ${getCommonFooter()}
+        ${getCommonAuthScript()}
 
     </body>
     </html>
@@ -14485,6 +14488,7 @@ app.get('/lifestyle/age-calculator', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50" id="html-root">
+        ${getCommonAuthScript()}
         ${getCommonHeader('Lifestyle')}
         ${getStickyHeader()}
         
@@ -14940,6 +14944,7 @@ app.get('/lifestyle/age-calculator', (c) => {
         </script>
 
         ${getCommonFooter()}
+        ${getCommonAuthScript()}
     </body>
     </html>
   `)
@@ -15012,6 +15017,7 @@ app.get('/lifestyle/dday-calculator', (c) => {
         </style>
     </head>
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonAuthScript()}
         ${getCommonHeader('Lifestyle')}
         ${getStickyHeader()}
         
