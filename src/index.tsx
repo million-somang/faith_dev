@@ -15614,6 +15614,781 @@ app.get('/lifestyle/dday-calculator', (c) => {
   `)
 })
 
+// ==================== Pro JSON Studio (Developer Tool) ====================
+app.get('/lifestyle/json-formatter', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Pro JSON Studio - Faith Portal</title>
+        <meta name="description" content="개발자를 위한 전문 JSON 에디터. 실시간 검증, 포맷팅, 트리뷰, 변환 기능 제공. 100% 클라이언트 처리로 보안 걱정 NO.">
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        
+        <!-- Monaco Editor (VS Code 엔진) -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+        
+        <!-- JSON5 for auto-fix -->
+        <script src="https://cdn.jsdelivr.net/npm/json5@2.2.3/dist/index.min.js"></script>
+        
+        <!-- js-yaml for YAML conversion -->
+        <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+        
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { height: 100%; overflow: hidden; }
+            
+            /* Dark theme colors */
+            :root {
+                --bg-primary: #1e1e1e;
+                --bg-secondary: #252526;
+                --bg-tertiary: #2d2d30;
+                --border-color: #3e3e42;
+                --text-primary: #d4d4d4;
+                --text-secondary: #858585;
+                --accent-blue: #007acc;
+                --accent-green: #4ec9b0;
+                --error-red: #f48771;
+                --success-green: #89d185;
+            }
+            
+            body {
+                background: var(--bg-primary);
+                color: var(--text-primary);
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            }
+            
+            /* Toolbar styles */
+            .toolbar {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+                padding: 12px 16px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                padding: 8px 16px;
+                border-radius: 4px;
+                border: none;
+                cursor: pointer;
+                font-size: 13px;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .btn-primary {
+                background: var(--accent-blue);
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #005a9e;
+            }
+            
+            .btn-secondary {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+            }
+            
+            .btn-secondary:hover {
+                background: #3e3e42;
+            }
+            
+            .btn-danger {
+                background: #d32f2f;
+                color: white;
+            }
+            
+            .btn-danger:hover {
+                background: #b71c1c;
+            }
+            
+            .btn-success {
+                background: #388e3c;
+                color: white;
+            }
+            
+            .btn-success:hover {
+                background: #2e7d32;
+            }
+            
+            /* Status bar */
+            .status-bar {
+                background: var(--bg-secondary);
+                border-top: 1px solid var(--border-color);
+                padding: 6px 16px;
+                font-size: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .status-error {
+                color: var(--error-red);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            .status-success {
+                color: var(--success-green);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            
+            /* Split panel */
+            .split-panel {
+                display: flex;
+                height: calc(100vh - 120px);
+            }
+            
+            .panel {
+                flex: 1;
+                overflow: hidden;
+                position: relative;
+            }
+            
+            .panel-divider {
+                width: 4px;
+                background: var(--border-color);
+                cursor: col-resize;
+                position: relative;
+            }
+            
+            .panel-divider:hover {
+                background: var(--accent-blue);
+            }
+            
+            /* Monaco editor container */
+            #editor-container {
+                height: 100%;
+                width: 100%;
+            }
+            
+            /* Output panel */
+            .output-panel {
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .output-tabs {
+                background: var(--bg-secondary);
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                padding: 0 16px;
+            }
+            
+            .output-tab {
+                padding: 10px 16px;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                font-size: 13px;
+                transition: all 0.2s;
+            }
+            
+            .output-tab:hover {
+                background: var(--bg-tertiary);
+            }
+            
+            .output-tab.active {
+                border-bottom-color: var(--accent-blue);
+                color: var(--accent-blue);
+            }
+            
+            .output-content {
+                flex: 1;
+                overflow: auto;
+                padding: 16px;
+            }
+            
+            /* Tree view styles */
+            .tree-view {
+                font-family: 'Consolas', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+            
+            .tree-node {
+                margin-left: 20px;
+            }
+            
+            .tree-key {
+                color: var(--accent-green);
+                cursor: pointer;
+            }
+            
+            .tree-key:hover {
+                text-decoration: underline;
+            }
+            
+            .tree-value-string { color: #ce9178; }
+            .tree-value-number { color: #b5cea8; }
+            .tree-value-boolean { color: #569cd6; }
+            .tree-value-null { color: #858585; }
+            
+            .tree-toggle {
+                cursor: pointer;
+                color: var(--text-secondary);
+                margin-right: 4px;
+                user-select: none;
+            }
+            
+            /* Code view */
+            .code-view {
+                font-family: 'Consolas', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                white-space: pre;
+                color: var(--text-primary);
+            }
+            
+            /* Privacy badge */
+            .privacy-badge {
+                background: rgba(76, 175, 80, 0.1);
+                border: 1px solid rgba(76, 175, 80, 0.3);
+                color: var(--success-green);
+                padding: 4px 10px;
+                border-radius: 4px;
+                font-size: 11px;
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+            }
+            
+            /* Dropdown */
+            select {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 13px;
+                cursor: pointer;
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                .split-panel {
+                    flex-direction: column;
+                    height: calc(100vh - 140px);
+                }
+                
+                .panel-divider {
+                    width: 100%;
+                    height: 4px;
+                    cursor: row-resize;
+                }
+                
+                .toolbar {
+                    padding: 8px;
+                }
+                
+                .btn {
+                    padding: 6px 12px;
+                    font-size: 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        ${getCommonAuthScript()}
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: 'JSON Studio'}
+        ])}
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <button class="btn btn-primary" onclick="formatJson()" title="Beautify JSON (Ctrl+Shift+F)">
+                <i class="fas fa-magic"></i> <span class="hidden sm:inline">Format</span>
+            </button>
+            <button class="btn btn-secondary" onclick="minifyJson()" title="Compress JSON">
+                <i class="fas fa-compress"></i> <span class="hidden sm:inline">Minify</span>
+            </button>
+            <button class="btn btn-success" onclick="autoFixJson()" title="Try to fix broken JSON">
+                <i class="fas fa-wrench"></i> <span class="hidden sm:inline">Auto Fix</span>
+            </button>
+            <button class="btn btn-secondary" onclick="clearEditor()" title="Clear all">
+                <i class="fas fa-eraser"></i> <span class="hidden sm:inline">Clear</span>
+            </button>
+            <button class="btn btn-secondary" onclick="copyToClipboard()" title="Copy to clipboard">
+                <i class="fas fa-copy"></i> <span class="hidden sm:inline">Copy</span>
+            </button>
+            
+            <div class="hidden sm:block" style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <label for="indent-select" style="font-size: 12px;">Indent:</label>
+                <select id="indent-select" onchange="updateIndent()">
+                    <option value="2" selected>2 spaces</option>
+                    <option value="4">4 spaces</option>
+                    <option value="tab">Tab</option>
+                </select>
+            </div>
+            
+            <div class="privacy-badge">
+                <i class="fas fa-shield-alt"></i>
+                <span class="hidden sm:inline">100% Client-side Processing</span>
+                <span class="sm:hidden">Secure</span>
+            </div>
+        </div>
+
+        <!-- Main Split Panel -->
+        <div class="split-panel">
+            <!-- Left: Monaco Editor -->
+            <div class="panel">
+                <div id="editor-container"></div>
+            </div>
+            
+            <div class="panel-divider"></div>
+            
+            <!-- Right: Output Viewer -->
+            <div class="panel">
+                <div class="output-panel">
+                    <div class="output-tabs">
+                        <div class="output-tab active" onclick="switchTab('code')" data-tab="code">
+                            <i class="fas fa-code"></i> Code
+                        </div>
+                        <div class="output-tab" onclick="switchTab('tree')" data-tab="tree">
+                            <i class="fas fa-sitemap"></i> Tree View
+                        </div>
+                        <div class="output-tab" onclick="switchTab('convert')" data-tab="convert">
+                            <i class="fas fa-exchange-alt"></i> Convert
+                        </div>
+                    </div>
+                    <div class="output-content">
+                        <div id="code-view" class="code-view"></div>
+                        <div id="tree-view" class="tree-view" style="display: none;"></div>
+                        <div id="convert-view" style="display: none;">
+                            <div style="margin-bottom: 16px;">
+                                <button class="btn btn-secondary" onclick="convertTo('yaml')" style="margin-right: 8px;">
+                                    <i class="fas fa-file-code"></i> To YAML
+                                </button>
+                                <button class="btn btn-secondary" onclick="convertTo('xml')" style="margin-right: 8px;">
+                                    <i class="fas fa-file-code"></i> To XML
+                                </button>
+                                <button class="btn btn-secondary" onclick="convertTo('csv')">
+                                    <i class="fas fa-file-csv"></i> To CSV
+                                </button>
+                            </div>
+                            <pre id="convert-output" class="code-view"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div id="status-message" style="display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-info-circle"></i>
+                <span>Ready</span>
+            </div>
+            <div id="stats-message" style="font-size: 11px; color: var(--text-secondary);"></div>
+        </div>
+
+        <script>
+            let editor;
+            let currentJson = null;
+            let currentIndent = 2;
+            let currentTab = 'code';
+
+            // Initialize Monaco Editor
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' }});
+            
+            require(['vs/editor/editor.main'], function() {
+                editor = monaco.editor.create(document.getElementById('editor-container'), {
+                    value: \`{
+  "message": "Welcome to Pro JSON Studio! 👋",
+  "features": [
+    "Real-time validation",
+    "Auto-fix broken JSON",
+    "Tree view explorer",
+    "Format converter (YAML, XML, CSV)",
+    "100% client-side processing"
+  ],
+  "shortcuts": {
+    "format": "Ctrl+Shift+F",
+    "find": "Ctrl+F",
+    "replace": "Ctrl+H"
+  },
+  "privacy": "No data sent to server ✅"
+}\`,
+                    language: 'json',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    folding: true,
+                    bracketPairColorization: {
+                        enabled: true
+                    },
+                    formatOnPaste: true,
+                    formatOnType: true
+                });
+
+                // Real-time validation
+                editor.onDidChangeModelContent(() => {
+                    validateAndUpdate();
+                });
+
+                // Initial validation
+                setTimeout(() => validateAndUpdate(), 500);
+            });
+
+            // Validate and update output
+            function validateAndUpdate() {
+                const value = editor.getValue().trim();
+                
+                if (!value) {
+                    setStatus('info', 'Enter JSON data to begin');
+                    currentJson = null;
+                    updateOutput();
+                    return;
+                }
+
+                // Try to detect URL query string
+                if (value.startsWith('?') || (value.includes('=') && value.includes('&'))) {
+                    try {
+                        const params = new URLSearchParams(value.startsWith('?') ? value : '?' + value);
+                        const obj = {};
+                        params.forEach((val, key) => obj[key] = val);
+                        currentJson = obj;
+                        const formatted = JSON.stringify(obj, null, currentIndent);
+                        editor.setValue(formatted);
+                        setStatus('success', 'Auto-converted URL query string to JSON');
+                        updateOutput();
+                        return;
+                    } catch (e) {}
+                }
+
+                try {
+                    currentJson = JSON.parse(value);
+                    setStatus('success', 'Valid JSON ✓');
+                    updateStats(value);
+                    updateOutput();
+                } catch (e) {
+                    currentJson = null;
+                    const lineMatch = e.message.match(/position (\\d+)/);
+                    if (lineMatch) {
+                        const pos = parseInt(lineMatch[1]);
+                        const model = editor.getModel();
+                        const position = model.getPositionAt(pos);
+                        setStatus('error', \`Syntax Error at line \${position.lineNumber}: \${e.message}\`);
+                    } else {
+                        setStatus('error', \`Syntax Error: \${e.message}\`);
+                    }
+                    updateStats(value);
+                }
+            }
+
+            // Format JSON
+            function formatJson() {
+                if (!currentJson) {
+                    alert('Please fix JSON errors first');
+                    return;
+                }
+                const indentStr = currentIndent === 'tab' ? '\\t' : ' '.repeat(currentIndent);
+                const formatted = JSON.stringify(currentJson, null, indentStr);
+                editor.setValue(formatted);
+                setStatus('success', 'JSON formatted successfully');
+            }
+
+            // Minify JSON
+            function minifyJson() {
+                if (!currentJson) {
+                    alert('Please fix JSON errors first');
+                    return;
+                }
+                const minified = JSON.stringify(currentJson);
+                editor.setValue(minified);
+                setStatus('success', 'JSON minified successfully');
+            }
+
+            // Auto-fix broken JSON using JSON5
+            function autoFixJson() {
+                const value = editor.getValue().trim();
+                if (!value) return;
+
+                try {
+                    // First try standard JSON
+                    JSON.parse(value);
+                    setStatus('info', 'JSON is already valid');
+                    return;
+                } catch (e) {
+                    // Try JSON5 (tolerant parsing)
+                    try {
+                        const fixed = JSON5.parse(value);
+                        const formatted = JSON.stringify(fixed, null, currentIndent);
+                        editor.setValue(formatted);
+                        setStatus('success', 'Auto-fixed and formatted! (converted from JSON5)');
+                        currentJson = fixed;
+                        updateOutput();
+                    } catch (e2) {
+                        setStatus('error', \`Cannot auto-fix: \${e2.message}\`);
+                    }
+                }
+            }
+
+            // Clear editor
+            function clearEditor() {
+                if (confirm('Clear all content?')) {
+                    editor.setValue('');
+                    currentJson = null;
+                    updateOutput();
+                    setStatus('info', 'Editor cleared');
+                }
+            }
+
+            // Copy to clipboard
+            async function copyToClipboard() {
+                const value = editor.getValue();
+                if (!value) {
+                    alert('Nothing to copy');
+                    return;
+                }
+                try {
+                    await navigator.clipboard.writeText(value);
+                    setStatus('success', 'Copied to clipboard!');
+                } catch (e) {
+                    alert('Failed to copy');
+                }
+            }
+
+            // Update indent setting
+            function updateIndent() {
+                const select = document.getElementById('indent-select');
+                currentIndent = select.value === 'tab' ? 'tab' : parseInt(select.value);
+                setStatus('info', \`Indent changed to: \${select.options[select.selectedIndex].text}\`);
+            }
+
+            // Switch output tab
+            function switchTab(tabName) {
+                currentTab = tabName;
+                
+                // Update tab UI
+                document.querySelectorAll('.output-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabName);
+                });
+
+                // Update view
+                document.getElementById('code-view').style.display = tabName === 'code' ? 'block' : 'none';
+                document.getElementById('tree-view').style.display = tabName === 'tree' ? 'block' : 'none';
+                document.getElementById('convert-view').style.display = tabName === 'convert' ? 'block' : 'none';
+                
+                updateOutput();
+            }
+
+            // Update output based on current tab
+            function updateOutput() {
+                if (currentTab === 'code') {
+                    updateCodeView();
+                } else if (currentTab === 'tree') {
+                    updateTreeView();
+                }
+            }
+
+            // Update code view
+            function updateCodeView() {
+                const codeView = document.getElementById('code-view');
+                if (!currentJson) {
+                    codeView.textContent = '// Waiting for valid JSON...';
+                    return;
+                }
+                const indentStr = currentIndent === 'tab' ? '\\t' : ' '.repeat(currentIndent);
+                codeView.textContent = JSON.stringify(currentJson, null, indentStr);
+            }
+
+            // Update tree view
+            function updateTreeView() {
+                const treeView = document.getElementById('tree-view');
+                if (!currentJson) {
+                    treeView.innerHTML = '<div style="color: var(--text-secondary);">// Waiting for valid JSON...</div>';
+                    return;
+                }
+                treeView.innerHTML = renderTreeNode('root', currentJson);
+            }
+
+            // Render tree node
+            function renderTreeNode(key, value, level = 0) {
+                const indent = '&nbsp;'.repeat(level * 4);
+                let html = '';
+
+                if (Array.isArray(value)) {
+                    html += \`<div>\${indent}<span class="tree-toggle" onclick="toggleNode(this)">▼</span><span class="tree-key">\${key}</span>: [<span style="color: var(--text-secondary);">\${value.length} items</span>]</div>\`;
+                    html += '<div class="tree-node">';
+                    value.forEach((item, i) => {
+                        html += renderTreeNode(i, item, level + 1);
+                    });
+                    html += '</div>';
+                } else if (typeof value === 'object' && value !== null) {
+                    const keys = Object.keys(value);
+                    html += \`<div>\${indent}<span class="tree-toggle" onclick="toggleNode(this)">▼</span><span class="tree-key">\${key}</span>: {<span style="color: var(--text-secondary);">\${keys.length} keys</span>}</div>\`;
+                    html += '<div class="tree-node">';
+                    keys.forEach(k => {
+                        html += renderTreeNode(k, value[k], level + 1);
+                    });
+                    html += '</div>';
+                } else {
+                    const className = value === null ? 'tree-value-null' :
+                                    typeof value === 'string' ? 'tree-value-string' :
+                                    typeof value === 'number' ? 'tree-value-number' :
+                                    typeof value === 'boolean' ? 'tree-value-boolean' : '';
+                    const displayValue = typeof value === 'string' ? \`"\${value}"\` : String(value);
+                    html += \`<div>\${indent}<span class="tree-key">\${key}</span>: <span class="\${className}">\${displayValue}</span></div>\`;
+                }
+
+                return html;
+            }
+
+            // Toggle tree node
+            function toggleNode(toggle) {
+                const node = toggle.parentElement.nextElementSibling;
+                if (node && node.classList.contains('tree-node')) {
+                    const isCollapsed = node.style.display === 'none';
+                    node.style.display = isCollapsed ? 'block' : 'none';
+                    toggle.textContent = isCollapsed ? '▼' : '▶';
+                }
+            }
+
+            // Convert to other formats
+            function convertTo(format) {
+                if (!currentJson) {
+                    alert('Please fix JSON errors first');
+                    return;
+                }
+
+                const output = document.getElementById('convert-output');
+                
+                try {
+                    if (format === 'yaml') {
+                        output.textContent = jsyaml.dump(currentJson);
+                        setStatus('success', 'Converted to YAML');
+                    } else if (format === 'xml') {
+                        output.textContent = jsonToXml(currentJson);
+                        setStatus('success', 'Converted to XML');
+                    } else if (format === 'csv') {
+                        output.textContent = jsonToCsv(currentJson);
+                        setStatus('success', 'Converted to CSV');
+                    }
+                } catch (e) {
+                    output.textContent = 'Error: ' + e.message;
+                    setStatus('error', 'Conversion failed: ' + e.message);
+                }
+            }
+
+            // JSON to XML converter
+            function jsonToXml(obj, rootName = 'root') {
+                let xml = \`<?xml version="1.0" encoding="UTF-8"?>\\n<\${rootName}>\\n\`;
+                
+                function convert(obj, indent = '  ') {
+                    let result = '';
+                    for (const [key, value] of Object.entries(obj)) {
+                        if (Array.isArray(value)) {
+                            value.forEach(item => {
+                                if (typeof item === 'object') {
+                                    result += \`\${indent}<\${key}>\\n\`;
+                                    result += convert(item, indent + '  ');
+                                    result += \`\${indent}</\${key}>\\n\`;
+                                } else {
+                                    result += \`\${indent}<\${key}>\${item}</\${key}>\\n\`;
+                                }
+                            });
+                        } else if (typeof value === 'object' && value !== null) {
+                            result += \`\${indent}<\${key}>\\n\`;
+                            result += convert(value, indent + '  ');
+                            result += \`\${indent}</\${key}>\\n\`;
+                        } else {
+                            result += \`\${indent}<\${key}>\${value}</\${key}>\\n\`;
+                        }
+                    }
+                    return result;
+                }
+                
+                xml += convert(obj);
+                xml += \`</\${rootName}>\`;
+                return xml;
+            }
+
+            // JSON to CSV converter
+            function jsonToCsv(obj) {
+                if (Array.isArray(obj)) {
+                    if (obj.length === 0) return '';
+                    
+                    const keys = Object.keys(obj[0]);
+                    let csv = keys.join(',') + '\\n';
+                    
+                    obj.forEach(row => {
+                        const values = keys.map(key => {
+                            const val = row[key];
+                            if (typeof val === 'string' && (val.includes(',') || val.includes('"'))) {
+                                return \`"\${val.replace(/"/g, '""')}"\`;
+                            }
+                            return val;
+                        });
+                        csv += values.join(',') + '\\n';
+                    });
+                    
+                    return csv;
+                } else {
+                    return 'CSV conversion requires an array of objects';
+                }
+            }
+
+            // Set status message
+            function setStatus(type, message) {
+                const statusEl = document.getElementById('status-message');
+                const icon = type === 'success' ? 'fa-check-circle' :
+                           type === 'error' ? 'fa-exclamation-circle' :
+                           'fa-info-circle';
+                const color = type === 'success' ? 'var(--success-green)' :
+                            type === 'error' ? 'var(--error-red)' :
+                            'var(--text-primary)';
+                
+                statusEl.innerHTML = \`<i class="fas \${icon}" style="color: \${color}"></i><span>\${message}</span>\`;
+            }
+
+            // Update stats
+            function updateStats(jsonString) {
+                const lines = jsonString.split('\\n').length;
+                const chars = jsonString.length;
+                const size = new Blob([jsonString]).size;
+                document.getElementById('stats-message').textContent = 
+                    \`Lines: \${lines} | Characters: \${chars} | Size: \${size} bytes\`;
+            }
+        </script>
+
+        ${getCommonFooter()}
+    </body>
+    </html>
+  `)
+})
+
 // D-Day API
 app.get('/api/dday/list', async (c) => {
   const { DB } = c.env
