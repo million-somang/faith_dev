@@ -16389,6 +16389,656 @@ app.get('/lifestyle/json-formatter', (c) => {
   `)
 })
 
+// ==================== Secret Base64 Converter (Developer Tool) ====================
+app.get('/lifestyle/base64-converter', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Secret Base64 Converter - Faith Portal</title>
+        <meta name="description" content="100% 클라이언트 처리 Base64 변환기. 한글 완벽 지원, JWT 자동 감지, 이미지 변환. 서버 전송 0%.">
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        
+        <!-- js-base64 for UTF-8 support -->
+        <script src="https://cdn.jsdelivr.net/npm/js-base64@3.7.5/base64.min.js"></script>
+        
+        <style>
+            * { box-sizing: border-box; }
+            
+            /* Dark theme */
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-secondary: #252525;
+                --bg-tertiary: #2d2d2d;
+                --border-color: #404040;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --accent-blue: #3b82f6;
+                --accent-green: #10b981;
+                --error-red: #ef4444;
+                --success-green: #22c55e;
+            }
+            
+            body {
+                background: var(--bg-primary);
+                color: var(--text-primary);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            }
+            
+            /* Tabs */
+            .mode-tabs {
+                display: flex;
+                background: var(--bg-secondary);
+                border-bottom: 2px solid var(--border-color);
+                padding: 0 20px;
+            }
+            
+            .mode-tab {
+                padding: 16px 24px;
+                cursor: pointer;
+                border-bottom: 3px solid transparent;
+                font-size: 15px;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .mode-tab:hover {
+                background: var(--bg-tertiary);
+            }
+            
+            .mode-tab.active {
+                border-bottom-color: var(--accent-blue);
+                color: var(--accent-blue);
+            }
+            
+            /* Split panel */
+            .split-panel {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 0;
+                height: calc(100vh - 200px);
+                padding: 20px;
+            }
+            
+            .panel {
+                display: flex;
+                flex-direction: column;
+                min-width: 0;
+            }
+            
+            .panel-divider {
+                width: 60px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+            }
+            
+            /* Textarea */
+            textarea {
+                flex: 1;
+                width: 100%;
+                padding: 16px;
+                background: var(--bg-secondary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                color: var(--text-primary);
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 14px;
+                line-height: 1.6;
+                resize: none;
+                outline: none;
+            }
+            
+            textarea:focus {
+                border-color: var(--accent-blue);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+            
+            textarea::placeholder {
+                color: var(--text-secondary);
+            }
+            
+            /* Buttons */
+            .btn {
+                padding: 10px 20px;
+                border-radius: 6px;
+                border: none;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                transition: all 0.2s;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .btn-primary {
+                background: var(--accent-blue);
+                color: white;
+            }
+            
+            .btn-primary:hover {
+                background: #2563eb;
+                transform: translateY(-1px);
+            }
+            
+            .btn-secondary {
+                background: var(--bg-tertiary);
+                color: var(--text-primary);
+                border: 1px solid var(--border-color);
+            }
+            
+            .btn-secondary:hover {
+                background: var(--bg-secondary);
+            }
+            
+            .btn-success {
+                background: var(--success-green);
+                color: white;
+            }
+            
+            .btn-success:hover {
+                background: #16a34a;
+            }
+            
+            /* Drop zone */
+            .drop-zone {
+                flex: 1;
+                border: 2px dashed var(--border-color);
+                border-radius: 12px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 40px;
+                cursor: pointer;
+                transition: all 0.3s;
+                background: var(--bg-secondary);
+            }
+            
+            .drop-zone:hover, .drop-zone.drag-over {
+                border-color: var(--accent-blue);
+                background: rgba(59, 130, 246, 0.05);
+            }
+            
+            .drop-zone i {
+                font-size: 48px;
+                color: var(--accent-blue);
+                margin-bottom: 16px;
+            }
+            
+            /* Image preview */
+            .image-preview {
+                max-width: 100%;
+                max-height: 300px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            
+            /* JWT chip */
+            .jwt-chip {
+                background: rgba(59, 130, 246, 0.1);
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                color: var(--accent-blue);
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 13px;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            
+            .jwt-chip:hover {
+                background: rgba(59, 130, 246, 0.2);
+            }
+            
+            /* Privacy badge */
+            .privacy-badge {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(34, 197, 94, 0.1);
+                border: 1px solid rgba(34, 197, 94, 0.3);
+                color: var(--success-green);
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 13px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                .split-panel {
+                    grid-template-columns: 1fr;
+                    height: auto;
+                    min-height: calc(100vh - 200px);
+                }
+                
+                .panel-divider {
+                    width: 100%;
+                    height: 60px;
+                    flex-direction: row;
+                }
+                
+                .privacy-badge {
+                    bottom: 10px;
+                    right: 10px;
+                    font-size: 11px;
+                    padding: 8px 12px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        ${getCommonAuthScript()}
+        ${getCommonHeader('Lifestyle')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '유틸리티', href: '/lifestyle'},
+          {label: 'Base64 변환'}
+        ])}
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <div class="mode-tab active" onclick="switchMode('text')" data-mode="text">
+                <i class="fas fa-font"></i>
+                <span>텍스트 변환</span>
+            </div>
+            <div class="mode-tab" onclick="switchMode('image')" data-mode="image">
+                <i class="fas fa-image"></i>
+                <span>이미지 변환</span>
+            </div>
+        </div>
+
+        <!-- Text Mode -->
+        <div id="text-mode" class="split-panel">
+            <div class="panel">
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 16px; font-weight: 600;">Input</h3>
+                    <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+                        <input type="checkbox" id="realtime-toggle" checked onchange="toggleRealtime()">
+                        <span>실시간 변환</span>
+                    </label>
+                </div>
+                <textarea id="text-input" placeholder="변환할 텍스트를 입력하세요... (한글 완벽 지원)"></textarea>
+            </div>
+            
+            <div class="panel-divider">
+                <button class="btn btn-primary" onclick="encodeText()" title="인코딩">
+                    <i class="fas fa-arrow-right"></i>
+                    <span class="hidden sm:inline">Encode</span>
+                </button>
+                <button class="btn btn-secondary" onclick="decodeText()" title="디코딩">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="hidden sm:inline">Decode</span>
+                </button>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin-top: 8px;">
+                    <input type="checkbox" id="url-safe-toggle">
+                    <span>URL Safe</span>
+                </label>
+            </div>
+            
+            <div class="panel">
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="font-size: 16px; font-weight: 600;">Output</h3>
+                    <div style="display: flex; gap: 8px;">
+                        <div id="jwt-indicator"></div>
+                        <button class="btn btn-success btn-sm" onclick="copyOutput()" style="padding: 6px 12px; font-size: 13px;">
+                            <i class="fas fa-copy"></i>
+                            <span class="hidden sm:inline">복사</span>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="text-output" placeholder="변환 결과가 여기에 표시됩니다..." readonly></textarea>
+            </div>
+        </div>
+
+        <!-- Image Mode -->
+        <div id="image-mode" style="display: none; padding: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: calc(100vh - 240px);">
+                <!-- Left: Drop Zone & Results -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px;">이미지 업로드</h3>
+                        <p style="color: var(--text-secondary); font-size: 14px;">클릭하거나 이미지를 드래그 앤 드롭</p>
+                        <p style="color: var(--text-secondary); font-size: 12px; margin-top: 8px;">JPG, PNG, GIF, WebP 지원</p>
+                        <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                    </div>
+                    
+                    <div id="image-results" style="display: none; flex: 1; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary" onclick="copyImageResult('raw')" style="flex: 1;">
+                                <i class="fas fa-copy"></i> Raw Copy
+                            </button>
+                            <button class="btn btn-secondary" onclick="copyImageResult('html')" style="flex: 1;">
+                                <i class="fas fa-code"></i> &lt;img&gt; Copy
+                            </button>
+                            <button class="btn btn-secondary" onclick="copyImageResult('css')" style="flex: 1;">
+                                <i class="fas fa-palette"></i> CSS Copy
+                            </button>
+                        </div>
+                        <textarea id="image-output" readonly style="flex: 1; font-size: 12px;"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Right: Preview -->
+                <div style="display: flex; flex-direction: column; background: var(--bg-secondary); border-radius: 12px; padding: 20px; align-items: center; justify-content: center;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; align-self: flex-start;">Preview</h3>
+                    <div id="image-preview-container" style="flex: 1; display: flex; align-items: center; justify-content: center; width: 100%;">
+                        <p style="color: var(--text-secondary); font-size: 14px;">이미지를 업로드하면 미리보기가 표시됩니다</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacy Badge -->
+        <div class="privacy-badge">
+            <i class="fas fa-shield-alt"></i>
+            <span>100% 클라이언트 처리 - 서버 전송 0%</span>
+        </div>
+
+        <script>
+            let currentMode = 'text';
+            let realtimeEnabled = true;
+            let currentImageData = null;
+
+            // Initialize
+            document.getElementById('text-input').addEventListener('input', () => {
+                if (realtimeEnabled) {
+                    encodeText();
+                }
+            });
+
+            // Mode switching
+            function switchMode(mode) {
+                currentMode = mode;
+                
+                // Update tabs
+                document.querySelectorAll('.mode-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.mode === mode);
+                });
+                
+                // Update views
+                document.getElementById('text-mode').style.display = mode === 'text' ? 'grid' : 'none';
+                document.getElementById('image-mode').style.display = mode === 'image' ? 'block' : 'none';
+            }
+
+            // Toggle realtime conversion
+            function toggleRealtime() {
+                realtimeEnabled = document.getElementById('realtime-toggle').checked;
+            }
+
+            // Encode text
+            function encodeText() {
+                const input = document.getElementById('text-input').value;
+                const output = document.getElementById('text-output');
+                const urlSafe = document.getElementById('url-safe-toggle').checked;
+                
+                if (!input) {
+                    output.value = '';
+                    return;
+                }
+                
+                try {
+                    // UTF-8 safe encoding using js-base64
+                    let encoded = Base64.encode(input);
+                    
+                    // URL Safe conversion
+                    if (urlSafe) {
+                        encoded = encoded.replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=/g, '');
+                    }
+                    
+                    output.value = encoded;
+                    checkJWT(encoded);
+                } catch (e) {
+                    output.value = '인코딩 오류: ' + e.message;
+                }
+            }
+
+            // Decode text
+            function decodeText() {
+                const input = document.getElementById('text-input').value;
+                const output = document.getElementById('text-output');
+                const urlSafe = document.getElementById('url-safe-toggle').checked;
+                
+                if (!input) {
+                    output.value = '';
+                    return;
+                }
+                
+                try {
+                    let toDecode = input.trim();
+                    
+                    // URL Safe conversion back
+                    if (urlSafe || toDecode.includes('-') || toDecode.includes('_')) {
+                        toDecode = toDecode.replace(/-/g, '+').replace(/_/g, '/');
+                        // Add padding if needed
+                        while (toDecode.length % 4) {
+                            toDecode += '=';
+                        }
+                    }
+                    
+                    // UTF-8 safe decoding using js-base64
+                    const decoded = Base64.decode(toDecode);
+                    output.value = decoded;
+                    checkJWT(toDecode);
+                } catch (e) {
+                    output.value = '유효하지 않은 Base64 형식입니다: ' + e.message;
+                }
+            }
+
+            // Check if it's a JWT token
+            function checkJWT(base64String) {
+                const indicator = document.getElementById('jwt-indicator');
+                
+                // JWT tokens start with "ey"
+                if (base64String.startsWith('ey')) {
+                    try {
+                        // JWT has 3 parts separated by dots
+                        const parts = base64String.split('.');
+                        if (parts.length === 3) {
+                            indicator.innerHTML = \`
+                                <div class="jwt-chip" onclick="showJWT('\${base64String}')">
+                                    <i class="fas fa-key"></i>
+                                    <span>JWT 토큰 감지 - 클릭하여 Payload 보기</span>
+                                </div>
+                            \`;
+                            return;
+                        }
+                    } catch (e) {}
+                }
+                
+                indicator.innerHTML = '';
+            }
+
+            // Show JWT payload
+            function showJWT(token) {
+                try {
+                    const parts = token.split('.');
+                    if (parts.length !== 3) {
+                        alert('유효하지 않은 JWT 형식입니다.');
+                        return;
+                    }
+                    
+                    // Decode header and payload
+                    const header = JSON.parse(Base64.decode(parts[0]));
+                    const payload = JSON.parse(Base64.decode(parts[1]));
+                    
+                    // Pretty print
+                    const formatted = \`JWT Header:\\n\${JSON.stringify(header, null, 2)}\\n\\nJWT Payload:\\n\${JSON.stringify(payload, null, 2)}\`;
+                    
+                    // Show in output
+                    document.getElementById('text-output').value = formatted;
+                    
+                    // Show alert with key info
+                    let info = 'JWT Token 정보:\\n\\n';
+                    if (payload.exp) {
+                        const expDate = new Date(payload.exp * 1000);
+                        info += \`만료: \${expDate.toLocaleString('ko-KR')}\\n\`;
+                    }
+                    if (payload.iat) {
+                        const iatDate = new Date(payload.iat * 1000);
+                        info += \`발행: \${iatDate.toLocaleString('ko-KR')}\\n\`;
+                    }
+                    if (payload.sub) info += \`Subject: \${payload.sub}\\n\`;
+                    if (payload.iss) info += \`Issuer: \${payload.iss}\\n\`;
+                    
+                    alert(info);
+                } catch (e) {
+                    alert('JWT 파싱 오류: ' + e.message);
+                }
+            }
+
+            // Copy output
+            async function copyOutput() {
+                const output = document.getElementById('text-output').value;
+                if (!output) {
+                    alert('복사할 내용이 없습니다.');
+                    return;
+                }
+                
+                try {
+                    await navigator.clipboard.writeText(output);
+                    const btn = event.target.closest('button');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> <span class="hidden sm:inline">복사됨!</span>';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                    }, 2000);
+                } catch (e) {
+                    alert('복사에 실패했습니다.');
+                }
+            }
+
+            // Image upload handling
+            function handleImageUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+                
+                if (!file.type.startsWith('image/')) {
+                    alert('이미지 파일만 업로드 가능합니다.');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    currentImageData = reader.result;
+                    displayImageResult(currentImageData);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Display image result
+            function displayImageResult(base64Data) {
+                // Show results section
+                document.getElementById('image-results').style.display = 'flex';
+                
+                // Set output
+                document.getElementById('image-output').value = base64Data;
+                
+                // Show preview
+                const previewContainer = document.getElementById('image-preview-container');
+                previewContainer.innerHTML = \`<img src="\${base64Data}" class="image-preview" alt="Preview">\`;
+            }
+
+            // Copy image result in different formats
+            async function copyImageResult(format) {
+                if (!currentImageData) {
+                    alert('변환할 이미지가 없습니다.');
+                    return;
+                }
+                
+                let textToCopy = '';
+                
+                switch(format) {
+                    case 'raw':
+                        textToCopy = currentImageData;
+                        break;
+                    case 'html':
+                        textToCopy = \`<img src="\${currentImageData}" alt="Image">\`;
+                        break;
+                    case 'css':
+                        textToCopy = \`background-image: url('\${currentImageData}');\`;
+                        break;
+                }
+                
+                try {
+                    await navigator.clipboard.writeText(textToCopy);
+                    const btn = event.target.closest('button');
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> 복사됨!';
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                    }, 2000);
+                } catch (e) {
+                    alert('복사에 실패했습니다.');
+                }
+            }
+
+            // Drag and drop
+            const dropZone = document.getElementById('drop-zone');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        currentImageData = reader.result;
+                        displayImageResult(currentImageData);
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('이미지 파일만 업로드 가능합니다.');
+                }
+            });
+        </script>
+
+        ${getCommonFooter()}
+    </body>
+    </html>
+  `)
+})
+
 // D-Day API
 app.get('/api/dday/list', async (c) => {
   const { DB } = c.env
