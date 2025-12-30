@@ -2700,6 +2700,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             /* 컨텐츠 영역 */
             .modal-body {
                 padding: 15px;
+                text-align: center;
             }
             
             /* 하단 정보 바 */
@@ -2854,6 +2855,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 height: 320px;
                 margin: 0 auto;
                 border: 3px solid #2d3748;
+                box-sizing: border-box;
+                display: block;
             }
             
             .sudoku-grid td {
