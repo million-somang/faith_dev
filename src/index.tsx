@@ -2783,6 +2783,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 
                 .modal-body {
                     padding: 15px;
+                    text-align: center;
                 }
                 
                 .info-bar {
@@ -2844,8 +2845,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Sudoku Grid - TABLE */
             .sudoku-grid {
-                margin: 0 auto;
+                margin: 0 auto 15px auto;
                 text-align: center;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 100%;
             }
             
             .sudoku-grid table {
