@@ -2639,18 +2639,25 @@ app.get('/game/simple/sudoku/play', (c) => {
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
+                height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                overflow-y: auto;
-                overflow-x: hidden;
-                padding: 10px;
+                overflow: hidden;
+                padding: 5px;
                 margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             /* 모바일 반응형 */
             @media (max-width: 768px) {
                 body {
-                    padding: 5px;
+                    padding: 2px;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    display: block;
+                    height: auto;
+                    min-height: 100vh;
                 }
                 
                 .sudoku-grid {
@@ -2658,32 +2665,36 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
                 
                 .sudoku-grid table {
-                    width: 360px;
-                    height: 360px;
+                    width: 320px;
+                    height: 320px;
                 }
                 
                 .sudoku-grid td {
-                    width: 40px !important;
-                    height: 40px !important;
-                    min-width: 40px !important;
-                    max-width: 40px !important;
-                    min-height: 40px !important;
-                    max-height: 40px !important;
-                    font-size: 20px !important;
+                    width: 35px !important;
+                    height: 35px !important;
+                    min-width: 35px !important;
+                    max-width: 35px !important;
+                    min-height: 35px !important;
+                    max-height: 35px !important;
+                    font-size: 18px !important;
                 }
             }
             
             .container {
-                max-width: 800px;
+                max-width: 1000px;
                 width: 100%;
                 margin: 0 auto;
                 padding: 0;
+                max-height: 100vh;
+                overflow-y: auto;
+                overflow-x: hidden;
             }
             
             @media (max-width: 768px) {
                 .container {
                     max-width: 100%;
                     padding: 0;
+                    max-height: none;
                 }
             }
             
@@ -2701,22 +2712,22 @@ app.get('/game/simple/sudoku/play', (c) => {
                 border-collapse: collapse;
                 background: white !important;
                 table-layout: fixed;
-                width: 456px;
-                height: 456px;
+                width: 380px;
+                height: 380px;
             }
             
             .sudoku-grid td {
-                width: 50px !important;
-                height: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-                min-height: 50px !important;
-                max-height: 50px !important;
+                width: 42px !important;
+                height: 42px !important;
+                min-width: 42px !important;
+                max-width: 42px !important;
+                min-height: 42px !important;
+                max-height: 42px !important;
                 background: white !important;
                 border: 1px solid #cbd5e0 !important;
                 text-align: center !important;
                 vertical-align: middle !important;
-                font-size: 24px !important;
+                font-size: 20px !important;
                 font-weight: 700 !important;
                 cursor: pointer !important;
                 padding: 0 !important;
@@ -2788,19 +2799,19 @@ app.get('/game/simple/sudoku/play', (c) => {
             .number-pad {
                 display: grid;
                 grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
+                gap: 6px;
                 width: 100%;
-                max-width: 500px;
-                margin: 0 auto;  /* 가운데 정렬 */
+                max-width: 420px;
+                margin: 0 auto;
             }
             
             .number-btn {
                 aspect-ratio: 1;
-                min-height: 50px;
+                min-height: 40px;
                 background: white;
                 border: 2px solid #e5e7eb;
-                border-radius: 12px;
-                font-size: 24px;
+                border-radius: 8px;
+                font-size: 20px;
                 font-weight: 700;
                 color: #1f2937;
                 cursor: pointer;
@@ -2835,16 +2846,16 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Action buttons */
             .action-btn {
-                padding: 12px 20px;
-                border-radius: 12px;
+                padding: 8px 12px;
+                border-radius: 8px;
                 font-weight: 600;
                 border: none;
                 cursor: pointer;
                 transition: all 0.2s;
                 display: inline-flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 14px;
+                gap: 6px;
+                font-size: 12px;
             }
             
             .action-btn.primary {
@@ -2928,35 +2939,35 @@ app.get('/game/simple/sudoku/play', (c) => {
     <body>
         <div class="container">
             <!-- Header -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="background: white; border-radius: 12px; padding: 10px 15px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div>
-                        <div style="font-size: 14px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">
+                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">
                             ${difficulty.toUpperCase()} MODE
                         </div>
-                        <div class="timer" id="timer">00:00</div>
+                        <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="timer">00:00</div>
                     </div>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                         <div style="text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">실수</div>
-                            <div style="font-size: 24px; font-weight: 700; color: #ef4444;" id="mistakes">0</div>
+                            <div style="font-size: 10px; color: #6b7280; margin-bottom: 2px;">실수</div>
+                            <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="mistakes">0</div>
                         </div>
                         <div style="text-align: center;">
-                            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">힌트</div>
-                            <div style="font-size: 24px; font-weight: 700; color: #10b981;" id="hints-left">3</div>
+                            <div style="font-size: 10px; color: #6b7280; margin-bottom: 2px;">힌트</div>
+                            <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="hints-left">3</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center;">
+            <div style="background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center;">
                 <div class="sudoku-grid" id="sudoku-grid"></div>
             </div>
 
             <!-- Actions -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px;">
+            <div style="background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px;">
                     <button class="action-btn secondary" onclick="undo()" id="undo-btn">
                         <i class="fas fa-undo"></i> 되돌리기
                     </button>
