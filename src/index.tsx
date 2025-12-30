@@ -3087,15 +3087,18 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - FLEXBOX ROWS');
+                console.log('📋 renderGrid() 시작 - INLINE STYLES');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
+                // 그리드 인라인 스타일 강제 적용
+                gridEl.style.cssText = 'display: flex; flex-direction: column; width: 456px; margin: 0 auto; background: #2d3748; border: 3px solid #2d3748; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden;';
+                
                 // 9개의 행 생성
                 for (let row = 0; row < 9; row++) {
                     const rowDiv = document.createElement('div');
-                    rowDiv.className = 'sudoku-row';
+                    rowDiv.style.cssText = 'display: flex; flex-direction: row;';
                     
                     // 각 행에 9개의 셀 생성
                     for (let col = 0; col < 9; col++) {
@@ -3104,12 +3107,15 @@ app.get('/game/simple/sudoku/play', (c) => {
                         cell.dataset.row = row;
                         cell.dataset.col = col;
                         
+                        // 기본 셀 스타일 (인라인)
+                        let cellStyle = 'width: 50px; height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
+                        
                         // 3x3 박스 구분선
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            cell.classList.add('border-right');
+                            cellStyle += ' border-right: 3px solid #2d3748;';
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            cell.classList.add('border-bottom');
+                            cellStyle += ' border-bottom: 3px solid #2d3748;';
                         }
                         
                         const value = currentGrid[row][col];
@@ -3117,29 +3123,34 @@ app.get('/game/simple/sudoku/play', (c) => {
                         
                         if (isFixed) {
                             cell.classList.add('fixed');
+                            cellStyle += ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
                             cell.textContent = value;
                         } else if (value !== 0) {
                             cell.classList.add('user-input');
+                            cellStyle += ' color: #3b82f6;';
                             cell.textContent = value;
                         } else if (notes[row][col].size > 0) {
                             // 메모 표시
                             const notesDiv = document.createElement('div');
                             notesDiv.className = 'notes';
+                            notesDiv.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-size: 9px; font-weight: 400; color: #6b7280; height: 100%; width: 100%; padding: 2px;';
                             for (let i = 1; i <= 9; i++) {
                                 const span = document.createElement('span');
+                                span.style.cssText = 'display: flex; align-items: center; justify-content: center; font-size: 8px;';
                                 span.textContent = notes[row][col].has(i) ? i : '';
                                 notesDiv.appendChild(span);
                             }
                             cell.appendChild(notesDiv);
                         }
                         
+                        cell.style.cssText = cellStyle;
                         cell.addEventListener('click', () => selectCell(row, col));
                         rowDiv.appendChild(cell);
                     }
                     
                     gridEl.appendChild(rowDiv);
                 }
-                console.log('✅ 9 rows x 9 cols = 81개 FLEXBOX 셀 생성됨');
+                console.log('✅ 9 rows x 9 cols = 81개 INLINE 셀 생성됨');
                 
                 updateNumberPad();
             }
