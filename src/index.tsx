@@ -2647,9 +2647,10 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             .container {
                 background: white;
-                max-width: 100%;
+                max-width: 900px;
                 width: 100%;
                 min-width: 700px;
+                margin: 0 auto;
                 overflow: hidden;
                 position: relative;
             }
