@@ -2638,81 +2638,167 @@ app.get('/game/simple/sudoku/play', (c) => {
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: rgba(0, 0, 0, 0.5);
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 padding: 10px;
             }
             
             .container {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
-            
-            /* PC 레이아웃: 2컬럼 (그리드 왼쪽, 컨트롤 오른쪽) */
-            .game-layout {
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 15px;
-                align-items: start;
-            }
-            
-            .grid-section {
                 background: white;
-                border-radius: 12px;
-                padding: 15px;
-                box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+                border-radius: 20px;
+                max-width: 500px;
+                width: 100%;
+                overflow: hidden;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             }
             
-            .controls-section {
+            /* 보라색 헤더 */
+            .modal-header {
+                background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+                padding: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                color: white;
+            }
+            
+            .modal-title {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-size: 24px;
+                font-weight: 700;
+            }
+            
+            .close-btn {
+                background: none;
+                border: none;
+                color: white;
+                font-size: 28px;
+                cursor: pointer;
+                padding: 0;
+                width: 32px;
+                height: 32px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: background 0.2s;
+            }
+            
+            .close-btn:hover {
+                background: rgba(255,255,255,0.2);
+            }
+            
+            /* 컨텐츠 영역 */
+            .modal-body {
+                padding: 20px;
+            }
+            
+            /* 하단 정보 바 */
+            .info-bar {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 15px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                color: white;
+            }
+            
+            .info-left {
                 display: flex;
                 flex-direction: column;
-                gap: 12px;
+                gap: 5px;
             }
             
-            /* 모바일: 1컬럼 세로 레이아웃 */
+            .info-label {
+                font-size: 11px;
+                text-transform: uppercase;
+                opacity: 0.9;
+                font-weight: 600;
+            }
+            
+            .info-value {
+                font-size: 32px;
+                font-weight: 700;
+                font-variant-numeric: tabular-nums;
+            }
+            
+            .info-right {
+                display: flex;
+                gap: 20px;
+            }
+            
+            .info-stat {
+                text-align: center;
+            }
+            
+            .info-stat-label {
+                font-size: 11px;
+                opacity: 0.9;
+                margin-bottom: 3px;
+            }
+            
+            .info-stat-value {
+                font-size: 24px;
+                font-weight: 700;
+            }
+            
+            .info-stat-value.mistakes {
+                color: #fca5a5;
+            }
+            
+            .info-stat-value.hints {
+                color: #86efac;
+            }
+            
+            /* 모바일: 작은 화면 최적화 */
             @media (max-width: 768px) {
                 body {
                     padding: 5px;
+                    align-items: flex-start;
                 }
                 
-                .game-layout {
-                    grid-template-columns: 1fr;
+                .container {
+                    border-radius: 16px;
+                    max-width: 100%;
+                }
+                
+                .modal-header {
+                    padding: 15px;
+                }
+                
+                .modal-title {
+                    font-size: 20px;
                     gap: 8px;
                 }
                 
-                .grid-section {
-                    padding: 10px;
+                .modal-body {
+                    padding: 15px;
                 }
                 
-                .game-header {
-                    padding: 8px 12px;
+                .info-bar {
+                    padding: 12px 15px;
                 }
                 
-                .header-content {
-                    gap: 8px;
+                .info-label {
+                    font-size: 10px;
                 }
                 
-                .difficulty-label {
-                    font-size: 9px;
-                    margin-bottom: 1px;
+                .info-value {
+                    font-size: 24px;
                 }
                 
-                .timer {
-                    font-size: 18px;
+                .info-stat-label {
+                    font-size: 10px;
                 }
                 
-                .stat-label {
-                    font-size: 8px;
-                    margin-bottom: 1px;
-                }
-                
-                .stat-value {
-                    font-size: 16px;
-                }
-                
-                .sudoku-grid {
-                    padding: 2px;
+                .info-stat-value {
+                    font-size: 20px;
                 }
                 
                 .sudoku-grid table {
@@ -2731,107 +2817,40 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
                 
                 .action-btn {
-                    padding: 6px 10px;
-                    font-size: 11px;
-                    gap: 4px;
-                }
-                
-                .number-pad {
-                    gap: 4px;
-                    max-width: 100%;
+                    padding: 8px 12px;
+                    font-size: 12px;
                 }
                 
                 .number-btn {
-                    min-height: 38px;
-                    font-size: 16px;
-                }
-                
-                .modal-emoji {
-                    font-size: 40px;
-                    margin-bottom: 15px;
-                }
-                
-                .modal-title {
-                    font-size: 24px;
-                    margin-bottom: 8px;
-                }
-                
-                .modal-text {
-                    font-size: 14px;
-                    margin-bottom: 16px;
+                    min-height: 42px;
+                    font-size: 18px;
                 }
             }
             
             /* Game sections */
-            .game-header {
-                background: white;
-                border-radius: 12px;
-                padding: 12px 15px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
             
-            .game-actions {
-                background: white;
-                border-radius: 12px;
-                padding: 12px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            }
-            
+            /* 액션 버튼 */
             .action-buttons {
                 display: flex;
-                gap: 6px;
+                gap: 8px;
                 flex-wrap: wrap;
                 justify-content: center;
-                margin-bottom: 10px;
-            }
-            
-            @media (max-width: 768px) {
-                .container {
-                    max-width: 100%;
-                    padding: 0;
-                    max-height: none;
-                }
-                
-                .game-header {
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    margin-bottom: 6px;
-                }
-                
-                .game-grid-container {
-                    border-radius: 8px;
-                    padding: 8px;
-                    margin-bottom: 6px;
-                }
-                
-                .game-actions {
-                    border-radius: 8px;
-                    padding: 8px;
-                    margin-bottom: 6px;
-                }
-                
-                .action-buttons {
-                    gap: 4px;
-                    margin-bottom: 8px;
-                }
+                margin-bottom: 12px;
             }
             
             /* Sudoku Grid - TABLE */
             .sudoku-grid {
                 margin: 0 auto;
-                background: white;
-                padding: 3px;
-                border-radius: 8px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-                position: relative;
+                text-align: center;
             }
             
             .sudoku-grid table {
                 border-collapse: collapse;
-                background: white !important;
                 table-layout: fixed;
                 width: 360px;
                 height: 360px;
+                margin: 0 auto;
+                border: 3px solid #2d3748;
             }
             
             .sudoku-grid td {
@@ -3067,7 +3086,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             /* Modal */
-            .modal {
+            /* Success Modal */
+            .success-modal {
                 position: fixed;
                 inset: 0;
                 background: rgba(0,0,0,0.75);
@@ -3078,11 +3098,11 @@ app.get('/game/simple/sudoku/play', (c) => {
                 padding: 20px;
             }
             
-            .modal.active {
+            .success-modal.active {
                 display: flex;
             }
             
-            .modal-content {
+            .success-modal-content {
                 background: white;
                 border-radius: 20px;
                 padding: 40px;
@@ -3103,25 +3123,25 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
             }
             
-            .modal-emoji {
+            .success-emoji {
                 font-size: 60px;
                 margin-bottom: 20px;
             }
             
-            .modal-title {
+            .success-title {
                 font-size: 32px;
                 font-weight: 700;
                 color: #1f2937;
                 margin-bottom: 12px;
             }
             
-            .modal-text {
+            .success-text {
                 font-size: 18px;
                 color: #6b7280;
                 margin-bottom: 24px;
             }
             
-            .modal-buttons {
+            .success-buttons {
                 display: flex;
                 gap: 12px;
                 justify-content: center;
@@ -3130,76 +3150,75 @@ app.get('/game/simple/sudoku/play', (c) => {
     </head>
     <body>
         <div class="container">
-            <div class="game-layout">
-                <!-- 왼쪽: 스도쿠 그리드 -->
-                <div class="grid-section">
-                    <div class="sudoku-grid" id="sudoku-grid"></div>
+            <!-- 보라색 헤더 -->
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-th"></i>
+                    스도쿠 게임
+                </div>
+                <button class="close-btn" onclick="window.history.back()">×</button>
+            </div>
+            
+            <!-- 컨텐츠 영역 -->
+            <div class="modal-body">
+                <!-- 스도쿠 그리드 -->
+                <div class="sudoku-grid" id="sudoku-grid"></div>
+                
+                <!-- 액션 버튼 -->
+                <div class="action-buttons">
+                    <button class="action-btn secondary" onclick="undo()" id="undo-btn">
+                        <i class="fas fa-undo"></i> 되돌리기
+                    </button>
+                    <button class="action-btn secondary" onclick="toggleNoteMode()" id="note-btn">
+                        <i class="fas fa-pencil-alt"></i> 메모 모드
+                    </button>
+                    <button class="action-btn primary" onclick="giveHint()">
+                        <i class="fas fa-lightbulb"></i> 힌트
+                    </button>
+                    <button class="action-btn secondary" onclick="clearCell()">
+                        <i class="fas fa-eraser"></i> 지우기
+                    </button>
+                    <button class="action-btn success" onclick="checkSolution()">
+                        <i class="fas fa-check"></i> 검사
+                    </button>
                 </div>
                 
-                <!-- 오른쪽: 컨트롤 패널 -->
-                <div class="controls-section">
-                    <!-- Header -->
-                    <div class="game-header">
-                        <div class="header-content">
-                            <div class="header-left">
-                                <div class="difficulty-label">
-                                    ${difficulty.toUpperCase()} MODE
-                                </div>
-                                <div class="timer" id="timer">00:00</div>
-                            </div>
-                            <div class="header-right">
-                                <div class="stat-item">
-                                    <div class="stat-label">실수</div>
-                                    <div class="stat-value mistakes" id="mistakes">0</div>
-                                </div>
-                                <div class="stat-item">
-                                    <div class="stat-label">힌트</div>
-                                    <div class="stat-value hints" id="hints-left">3</div>
-                                </div>
-                            </div>
-                        </div>
+                <!-- 숫자 패드 -->
+                <div class="number-pad">
+                    ${Array.from({length: 9}, (_, i) => `
+                        <button class="number-btn" onclick="inputNumber(${i + 1})">${i + 1}</button>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- 하단 정보 바 -->
+            <div class="info-bar">
+                <div class="info-left">
+                    <div class="info-label">${difficulty.toUpperCase()} MODE</div>
+                    <div class="info-value" id="timer">00:00</div>
+                </div>
+                <div class="info-right">
+                    <div class="info-stat">
+                        <div class="info-stat-label">실수</div>
+                        <div class="info-stat-value mistakes" id="mistakes">0</div>
                     </div>
-
-                    <!-- Actions -->
-                    <div class="game-actions">
-                        <div class="action-buttons">
-                            <button class="action-btn secondary" onclick="undo()" id="undo-btn">
-                                <i class="fas fa-undo"></i> 되돌리기
-                            </button>
-                            <button class="action-btn secondary" onclick="toggleNoteMode()" id="note-btn">
-                                <i class="fas fa-pencil-alt"></i> 메모 모드
-                            </button>
-                            <button class="action-btn primary" onclick="giveHint()">
-                                <i class="fas fa-lightbulb"></i> 힌트
-                            </button>
-                            <button class="action-btn secondary" onclick="clearCell()">
-                                <i class="fas fa-eraser"></i> 지우기
-                            </button>
-                            <button class="action-btn success" onclick="checkSolution()">
-                                <i class="fas fa-check"></i> 검사
-                            </button>
-                        </div>
-
-                        <!-- Number Pad -->
-                        <div class="number-pad">
-                            ${Array.from({length: 9}, (_, i) => `
-                                <button class="number-btn" onclick="inputNumber(${i + 1})">${i + 1}</button>
-                            `).join('')}
-                        </div>
+                    <div class="info-stat">
+                        <div class="info-stat-label">힌트</div>
+                        <div class="info-stat-value hints" id="hints-left">3</div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Success Modal -->
-        <div class="modal" id="success-modal">
-            <div class="modal-content">
-                <div class="modal-emoji">🎉</div>
-                <h2 class="modal-title">축하합니다!</h2>
-                <p class="modal-text">
+        <div class="success-modal" id="success-modal">
+            <div class="success-modal-content">
+                <div class="success-emoji">🎉</div>
+                <h2 class="success-title">축하합니다!</h2>
+                <p class="success-text">
                     <span id="final-time"></span> 만에 완료했습니다!
                 </p>
-                <div class="modal-buttons">
+                <div class="success-buttons">
                     <button class="action-btn primary" onclick="saveScore()">
                         <i class="fas fa-save"></i> 기록 저장
                     </button>
