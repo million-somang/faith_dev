@@ -2652,20 +2652,18 @@ app.get('/game/simple/sudoku/play', (c) => {
                 margin: 0 auto;
             }
             
-            /* Sudoku Grid - DIV GRID 방식 */
+            /* Sudoku Grid - ABSOLUTE POSITIONING */
             .sudoku-grid {
-                display: grid;
-                grid-template-columns: repeat(9, 50px);
-                grid-template-rows: repeat(9, 50px);
-                width: 450px;
-                height: 450px;
-                gap: 0;
+                position: relative;
+                width: 456px;  /* (50px + 1px border) * 9 */
+                height: 456px;
                 background: #2d3748;
                 border: 3px solid #2d3748;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             }
             
             .sudoku-cell {
+                position: absolute;
                 width: 50px;
                 height: 50px;
                 background: white;
@@ -2677,31 +2675,10 @@ app.get('/game/simple/sudoku/play', (c) => {
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.15s;
-                position: relative;
+                box-sizing: border-box;
             }
             
-            /* 3x3 박스 구분 굵은 테두리 - DIV Grid */
-            .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
-                border-right: 3px solid #2d3748;
-            }
-            .sudoku-cell:nth-child(n+19):nth-child(-n+27),
-            .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-                border-bottom: 3px solid #2d3748;
-            }
-            
-            @media (max-width: 768px) {
-                .sudoku-grid {
-                    grid-template-columns: repeat(9, 40px);
-                    grid-template-rows: repeat(9, 40px);
-                    width: 360px;
-                    height: 360px;
-                }
-                .sudoku-cell {
-                    width: 40px;
-                    height: 40px;
-                    font-size: 20px;
-                }
-            }
+            /* 3x3 박스 구분은 JavaScript에서 처리 */
             
             /* Cell states */
             .sudoku-cell.selected {
@@ -3094,10 +3071,13 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - DIV GRID 방식');
+                console.log('📋 renderGrid() 시작 - ABSOLUTE POSITIONING');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
+                
+                const cellSize = 50;
+                const borderThick = 3;
                 
                 for (let row = 0; row < 9; row++) {
                     for (let col = 0; col < 9; col++) {
@@ -3105,6 +3085,20 @@ app.get('/game/simple/sudoku/play', (c) => {
                         cell.className = 'sudoku-cell';
                         cell.dataset.row = row;
                         cell.dataset.col = col;
+                        
+                        // 절대 위치 계산
+                        const left = col * cellSize + Math.floor(col / 3) * (borderThick - 1);
+                        const top = row * cellSize + Math.floor(row / 3) * (borderThick - 1);
+                        cell.style.left = left + 'px';
+                        cell.style.top = top + 'px';
+                        
+                        // 3x3 박스 테두리
+                        if ((col + 1) % 3 === 0 && col < 8) {
+                            cell.style.borderRight = '3px solid #2d3748';
+                        }
+                        if ((row + 1) % 3 === 0 && row < 8) {
+                            cell.style.borderBottom = '3px solid #2d3748';
+                        }
                         
                         const value = currentGrid[row][col];
                         const isFixed = puzzle[row][col] !== 0;
@@ -3131,7 +3125,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         gridEl.appendChild(cell);
                     }
                 }
-                console.log('✅ 9x9 = 81개 DIV 셀 생성됨');
+                console.log('✅ 9x9 = 81개 ABSOLUTE 셀 생성됨');
                 
                 updateNumberPad();
             }
