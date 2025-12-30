@@ -3644,8 +3644,28 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             async function saveScore() {
-                const playerName = prompt('이름을 입력하세요:', 'Anonymous');
-                if (!playerName) return;
+                // 로그인 상태 확인
+                let playerName = 'Anonymous';
+                let isLoggedIn = false;
+                
+                // 쿠키에서 사용자 정보 확인
+                const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                    const [key, value] = cookie.trim().split('=');
+                    acc[key] = value;
+                    return acc;
+                }, {});
+                
+                // 로그인되어 있다면 사용자 이름 가져오기
+                if (cookies.auth_token || cookies.user_name) {
+                    playerName = decodeURIComponent(cookies.user_name || 'User');
+                    isLoggedIn = true;
+                }
+                
+                // 로그인 안 되어 있으면 이름 입력 받기
+                if (!isLoggedIn) {
+                    playerName = prompt('이름을 입력하세요:', 'Anonymous');
+                    if (!playerName) return;
+                }
                 
                 const elapsed = getElapsedTime();
                 
@@ -3655,6 +3675,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         headers: {
                             'Content-Type': 'application/json'
                         },
+                        credentials: 'include', // 쿠키 전송
                         body: JSON.stringify({
                             difficulty: '${difficulty}',
                             time: elapsed,
@@ -3786,42 +3807,52 @@ app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
 
 app.post('/api/sudoku/score', async (c) => {
   const { DB } = c.env
-  const { difficulty, time, mistakes } = await c.req.json()
+  const { difficulty, time, mistakes, player_name } = await c.req.json()
   
   // 로그인 확인
-  const authHeader = c.req.header('Authorization')
-  let playerName = 'Anonymous'
+  const authCookie = c.req.header('Cookie')
+  let playerName = player_name || 'Anonymous'
   let userId = null
   
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.substring(7)
-    // 간단한 토큰 검증 (실제로는 JWT 검증 필요)
-    try {
-      const user = await DB.prepare('SELECT id, name FROM users WHERE id = ?').bind(token).first()
-      if (user) {
-        playerName = user.name
-        userId = user.id
+  if (authCookie) {
+    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {})
+    
+    if (cookies.auth_token) {
+      try {
+        // JWT 토큰 검증 (jwt 라이브러리가 있다면)
+        // 여기서는 간단하게 토큰으로 사용자 조회
+        const user = await DB.prepare('SELECT id, name FROM users WHERE id = ?').bind(cookies.auth_token).first()
+        if (user) {
+          playerName = user.name
+          userId = user.id
+        }
+      } catch (e) {
+        console.log('사용자 조회 실패:', e)
       }
-    } catch (e) {
-      console.log('사용자 조회 실패:', e)
     }
   }
   
   try {
-    await DB.prepare(`
+    const result = await DB.prepare(`
       INSERT INTO sudoku_scores (difficulty, time, mistakes, player_name, user_id, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).bind(difficulty, time, mistakes, playerName, userId).run()
+    `).bind(difficulty, time, mistakes || 0, playerName, userId).run()
+    
+    console.log('✅ 스도쿠 기록 저장 성공:', { difficulty, time, mistakes, playerName, userId })
     
     return c.json({
       success: true,
       message: '기록이 저장되었습니다'
     })
   } catch (error) {
-    console.error('기록 저장 오류:', error)
+    console.error('❌ 기록 저장 오류:', error)
     return c.json({
       success: false,
-      message: '기록 저장 중 오류가 발생했습니다'
+      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
     }, 500)
   }
 })
