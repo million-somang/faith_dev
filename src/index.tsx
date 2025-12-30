@@ -3469,11 +3469,14 @@ app.get('/game/simple/sudoku/play', (c) => {
                         
                         // 셀에 에러 표시
                         setTimeout(() => {
-                            const cells = document.querySelectorAll('.sudoku-cell');
-                            cells[row * 9 + col].classList.add('error');
-                            setTimeout(() => {
-                                cells[row * 9 + col].classList.remove('error');
-                            }, 1000);
+                            const cells = document.querySelectorAll('#sudoku-grid td');
+                            const cell = cells[row * 9 + col];
+                            if (cell) {
+                                cell.classList.add('error');
+                                setTimeout(() => {
+                                    cell.classList.remove('error');
+                                }, 1000);
+                            }
                         }, 0);
                     }
                 }
