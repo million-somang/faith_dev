@@ -2652,22 +2652,18 @@ app.get('/game/simple/sudoku/play', (c) => {
                 margin: 0 auto;
             }
             
-            /* Sudoku Grid - FLEXBOX ROWS */
+            /* Sudoku Grid - TABLE */
             .sudoku-grid {
-                display: flex;
-                flex-direction: column;
-                width: 456px;
                 margin: 0 auto;
+                width: fit-content;
+            }
+            
+            .sudoku-grid table {
+                border-collapse: collapse;
                 background: #2d3748;
                 border: 3px solid #2d3748;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
                 border-radius: 8px;
-                overflow: hidden;
-            }
-            
-            .sudoku-row {
-                display: flex;
-                flex-direction: row;
             }
             
             .sudoku-cell {
@@ -2675,24 +2671,14 @@ app.get('/game/simple/sudoku/play', (c) => {
                 height: 50px;
                 background: white;
                 border: 1px solid #cbd5e0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                text-align: center;
+                vertical-align: middle;
                 font-size: 24px;
                 font-weight: 700;
                 cursor: pointer;
                 transition: all 0.15s;
+                padding: 0;
                 box-sizing: border-box;
-                flex-shrink: 0;
-            }
-            
-            /* 3x3 박스 구분선 */
-            .sudoku-cell.border-right {
-                border-right: 3px solid #2d3748;
-            }
-            
-            .sudoku-cell.border-bottom {
-                border-bottom: 3px solid #2d3748;
             }
             
             /* Cell states */
@@ -3087,50 +3073,48 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - INLINE STYLES');
+                console.log('📋 renderGrid() 시작 - HTML TABLE');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
-                // 그리드 인라인 스타일 강제 적용
-                gridEl.style.cssText = 'display: flex; flex-direction: column; width: 456px; min-width: 456px; max-width: 456px; margin: 0 auto; background: #2d3748; border: 3px solid #2d3748; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden;';
+                // 그리드를 TABLE로 변경
+                const table = document.createElement('table');
+                table.style.cssText = 'border-collapse: collapse; background: #2d3748; border: 3px solid #2d3748; margin: 0 auto;';
                 
                 // 9개의 행 생성
                 for (let row = 0; row < 9; row++) {
-                    const rowDiv = document.createElement('div');
-                    rowDiv.style.cssText = 'display: flex; flex-direction: row;';
+                    const tr = document.createElement('tr');
                     
                     // 각 행에 9개의 셀 생성
                     for (let col = 0; col < 9; col++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'sudoku-cell';
-                        cell.dataset.row = row;
-                        cell.dataset.col = col;
+                        const td = document.createElement('td');
+                        td.className = 'sudoku-cell';
+                        td.dataset.row = row;
+                        td.dataset.col = col;
                         
                         // 기본 셀 스타일
-                        const baseStyle = 'width: 50px; min-width: 50px; max-width: 50px; height: 50px; min-height: 50px; max-height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
+                        let cellStyle = 'width: 50px; height: 50px; background: white; border: 1px solid #cbd5e0; text-align: center; vertical-align: middle; font-size: 24px; font-weight: 700; cursor: pointer; padding: 0; box-sizing: border-box;';
                         
                         // 3x3 박스 구분선
-                        let borderStyle = '';
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            borderStyle += ' border-right: 3px solid #2d3748 !important;';
+                            cellStyle += ' border-right: 3px solid #2d3748 !important;';
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            borderStyle += ' border-bottom: 3px solid #2d3748 !important;';
+                            cellStyle += ' border-bottom: 3px solid #2d3748 !important;';
                         }
                         
                         const value = currentGrid[row][col];
                         const isFixed = puzzle[row][col] !== 0;
                         
-                        let contentStyle = '';
                         if (isFixed) {
-                            cell.classList.add('fixed');
-                            contentStyle = ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
-                            cell.textContent = value;
+                            td.classList.add('fixed');
+                            cellStyle += ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
+                            td.textContent = value;
                         } else if (value !== 0) {
-                            cell.classList.add('user-input');
-                            contentStyle = ' color: #3b82f6;';
-                            cell.textContent = value;
+                            td.classList.add('user-input');
+                            cellStyle += ' color: #3b82f6;';
+                            td.textContent = value;
                         } else if (notes[row][col].size > 0) {
                             // 메모 표시
                             const notesDiv = document.createElement('div');
@@ -3142,17 +3126,19 @@ app.get('/game/simple/sudoku/play', (c) => {
                                 span.textContent = notes[row][col].has(i) ? i : '';
                                 notesDiv.appendChild(span);
                             }
-                            cell.appendChild(notesDiv);
+                            td.appendChild(notesDiv);
                         }
                         
-                        cell.style.cssText = baseStyle + borderStyle + contentStyle;
-                        cell.addEventListener('click', () => selectCell(row, col));
-                        rowDiv.appendChild(cell);
+                        td.style.cssText = cellStyle;
+                        td.addEventListener('click', () => selectCell(row, col));
+                        tr.appendChild(td);
                     }
                     
-                    gridEl.appendChild(rowDiv);
+                    table.appendChild(tr);
                 }
-                console.log('✅ 9 rows x 9 cols = 81개 INLINE 셀 생성됨');
+                
+                gridEl.appendChild(table);
+                console.log('✅ 9 rows x 9 cols = 81개 TABLE 셀 생성됨');
                 
                 updateNumberPad();
             }
