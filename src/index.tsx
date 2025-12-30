@@ -2651,6 +2651,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 background: white;
                 max-width: 100%;
                 width: 100%;
+                min-width: 700px;
                 overflow: hidden;
                 position: relative;
             }
@@ -2700,7 +2701,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 padding: 10px 15px 15px 0;
                 display: flex;
                 flex-direction: row;
-                gap: 15px;
+                gap: 20px;
                 align-items: flex-start;
             }
             
@@ -2877,8 +2878,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             .sudoku-grid table {
                 border-collapse: collapse;
                 table-layout: fixed;
-                width: 300px;
-                height: 300px;
+                width: 360px;
+                height: 360px;
                 margin: 0;
                 border: 2px solid #2d3748;
                 box-sizing: border-box;
@@ -2886,12 +2887,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             .sudoku-grid td {
-                width: 33px !important;
-                height: 33px !important;
-                min-width: 33px !important;
-                max-width: 33px !important;
-                min-height: 33px !important;
-                max-height: 33px !important;
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                max-width: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
                 background: white !important;
                 border: 1px solid #cbd5e0 !important;
                 text-align: center !important;
