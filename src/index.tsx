@@ -2660,23 +2660,43 @@ app.get('/game/simple/sudoku/play', (c) => {
                     min-height: 100vh;
                 }
                 
+                .container {
+                    padding: 5px;
+                }
+                
                 .sudoku-grid {
                     padding: 2px;
                 }
                 
                 .sudoku-grid table {
-                    width: 320px;
-                    height: 320px;
+                    width: min(95vw, 340px);
+                    height: min(95vw, 340px);
                 }
                 
                 .sudoku-grid td {
-                    width: 35px !important;
-                    height: 35px !important;
-                    min-width: 35px !important;
-                    max-width: 35px !important;
-                    min-height: 35px !important;
-                    max-height: 35px !important;
-                    font-size: 18px !important;
+                    width: min(10.5vw, 37px) !important;
+                    height: min(10.5vw, 37px) !important;
+                    min-width: min(10.5vw, 37px) !important;
+                    max-width: min(10.5vw, 37px) !important;
+                    min-height: min(10.5vw, 37px) !important;
+                    max-height: min(10.5vw, 37px) !important;
+                    font-size: 16px !important;
+                }
+                
+                .action-btn {
+                    padding: 8px 10px;
+                    font-size: 11px;
+                    gap: 4px;
+                }
+                
+                .number-pad {
+                    gap: 4px;
+                    max-width: 100%;
+                }
+                
+                .number-btn {
+                    min-height: 45px;
+                    font-size: 18px;
                 }
             }
             
