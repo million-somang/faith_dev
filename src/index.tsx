@@ -2643,13 +2643,48 @@ app.get('/game/simple/sudoku/play', (c) => {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 overflow-y: auto;
                 overflow-x: hidden;
-                padding: 20px;
+                padding: 10px;
+                margin: 0;
+            }
+            
+            /* 모바일 반응형 */
+            @media (max-width: 768px) {
+                body {
+                    padding: 5px;
+                }
+                
+                .sudoku-grid {
+                    padding: 2px;
+                }
+                
+                .sudoku-grid table {
+                    width: 360px;
+                    height: 360px;
+                }
+                
+                .sudoku-grid td {
+                    width: 40px !important;
+                    height: 40px !important;
+                    min-width: 40px !important;
+                    max-width: 40px !important;
+                    min-height: 40px !important;
+                    max-height: 40px !important;
+                    font-size: 20px !important;
+                }
             }
             
             .container {
                 max-width: 800px;
                 width: 100%;
                 margin: 0 auto;
+                padding: 0;
+            }
+            
+            @media (max-width: 768px) {
+                .container {
+                    max-width: 100%;
+                    padding: 0;
+                }
             }
             
             /* Sudoku Grid - TABLE */
@@ -2689,6 +2724,15 @@ app.get('/game/simple/sudoku/play', (c) => {
                 box-sizing: border-box !important;
                 position: relative !important;
                 overflow: hidden !important;
+            }
+            
+            /* 3x3 박스 구분선 (굵게) */
+            .sudoku-grid td.border-right {
+                border-right: 3px solid #2d3748 !important;
+            }
+            
+            .sudoku-grid td.border-bottom {
+                border-bottom: 3px solid #2d3748 !important;
             }
             
             /* Cell states */
@@ -3100,12 +3144,12 @@ app.get('/game/simple/sudoku/play', (c) => {
                         td.dataset.row = row;
                         td.dataset.col = col;
                         
-                        // 3x3 박스 구분선 (인라인으로 강제)
+                        // 3x3 박스 구분선 (클래스 추가)
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            td.style.borderRight = '3px solid #2d3748';
+                            td.classList.add('border-right');
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            td.style.borderBottom = '3px solid #2d3748';
+                            td.classList.add('border-bottom');
                         }
                         
                         const value = currentGrid[row][col];
@@ -3392,6 +3436,9 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             async function saveScore() {
+                const playerName = prompt('이름을 입력하세요:', 'Anonymous');
+                if (!playerName) return;
+                
                 const elapsed = getElapsedTime();
                 
                 try {
@@ -3403,7 +3450,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                         body: JSON.stringify({
                             difficulty: '${difficulty}',
                             time: elapsed,
-                            mistakes: mistakes
+                            mistakes: mistakes,
+                            player_name: playerName
                         })
                     });
                     
@@ -3411,8 +3459,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                     
                     if (data.success) {
                         alert('기록이 저장되었습니다!');
-                        window.parent.postMessage('gameCompleted', '*');
-                        playAgain();
+                        document.getElementById('success-modal').classList.remove('active');
+                        await loadLeaderboard();
                     } else {
                         alert(data.message || '기록 저장에 실패했습니다.');
                     }
@@ -8995,15 +9043,15 @@ app.get('/api/tetris/leaderboard', async (c) => {
 // ==================== API: 스도쿠 기록 저장 ====================
 app.post('/api/sudoku/score', async (c) => {
   try {
-    const { user_id, time, difficulty } = await c.req.json()
+    const { player_name, time, difficulty, mistakes } = await c.req.json()
     
-    if (!user_id || time === undefined || !difficulty) {
+    if (!player_name || time === undefined || !difficulty) {
       return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
     }
     
     await c.env.DB.prepare(
-      'INSERT INTO sudoku_scores (user_id, time, difficulty) VALUES (?, ?, ?)'
-    ).bind(user_id, time, difficulty).run()
+      'INSERT INTO sudoku_scores (player_name, time, difficulty, mistakes) VALUES (?, ?, ?, ?)'
+    ).bind(player_name, time, difficulty, mistakes || 0).run()
     
     return c.json({ success: true, message: '기록이 저장되었습니다.' })
   } catch (error) {
