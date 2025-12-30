@@ -2700,7 +2700,21 @@ app.get('/game/simple/sudoku/play', (c) => {
             /* 컨텐츠 영역 */
             .modal-body {
                 padding: 15px;
-                text-align: center;
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 20px;
+                align-items: start;
+            }
+            
+            .grid-section {
+                display: flex;
+                justify-content: center;
+            }
+            
+            .controls-section {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
             }
             
             /* 하단 정보 바 */
@@ -2784,6 +2798,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 .modal-body {
                     padding: 15px;
                     text-align: center;
+                    grid-template-columns: 1fr;
+                    gap: 10px;
                 }
                 
                 .info-bar {
@@ -2845,12 +2861,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Sudoku Grid - TABLE */
             .sudoku-grid {
-                margin: 0 auto 15px auto;
                 text-align: center;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                width: 100%;
             }
             
             .sudoku-grid table {
@@ -3163,33 +3174,38 @@ app.get('/game/simple/sudoku/play', (c) => {
         <div class="container" id="game-container">
             <!-- 컨텐츠 영역 -->
             <div class="modal-body">
-                <!-- 스도쿠 그리드 -->
-                <div class="sudoku-grid" id="sudoku-grid"></div>
-                
-                <!-- 액션 버튼 -->
-                <div class="action-buttons">
-                    <button class="action-btn secondary" onclick="undo()" id="undo-btn">
-                        <i class="fas fa-undo"></i> 되돌리기
-                    </button>
-                    <button class="action-btn secondary" onclick="toggleNoteMode()" id="note-btn">
-                        <i class="fas fa-pencil-alt"></i> 메모 모드
-                    </button>
-                    <button class="action-btn primary" onclick="giveHint()">
-                        <i class="fas fa-lightbulb"></i> 힌트
-                    </button>
-                    <button class="action-btn secondary" onclick="clearCell()">
-                        <i class="fas fa-eraser"></i> 지우기
-                    </button>
-                    <button class="action-btn success" onclick="checkSolution()">
-                        <i class="fas fa-check"></i> 검사
-                    </button>
+                <!-- 왼쪽: 스도쿠 그리드 -->
+                <div class="grid-section">
+                    <div class="sudoku-grid" id="sudoku-grid"></div>
                 </div>
                 
-                <!-- 숫자 패드 -->
-                <div class="number-pad">
-                    ${Array.from({length: 9}, (_, i) => `
-                        <button class="number-btn" onclick="inputNumber(${i + 1})">${i + 1}</button>
-                    `).join('')}
+                <!-- 오른쪽: 컨트롤 -->
+                <div class="controls-section">
+                    <!-- 액션 버튼 -->
+                    <div class="action-buttons">
+                        <button class="action-btn secondary" onclick="undo()" id="undo-btn">
+                            <i class="fas fa-undo"></i> 되돌리기
+                        </button>
+                        <button class="action-btn secondary" onclick="toggleNoteMode()" id="note-btn">
+                            <i class="fas fa-pencil-alt"></i> 메모 모드
+                        </button>
+                        <button class="action-btn primary" onclick="giveHint()">
+                            <i class="fas fa-lightbulb"></i> 힌트
+                        </button>
+                        <button class="action-btn secondary" onclick="clearCell()">
+                            <i class="fas fa-eraser"></i> 지우기
+                        </button>
+                        <button class="action-btn success" onclick="checkSolution()">
+                            <i class="fas fa-check"></i> 검사
+                        </button>
+                    </div>
+                    
+                    <!-- 숫자 패드 -->
+                    <div class="number-pad">
+                        ${Array.from({length: 9}, (_, i) => `
+                            <button class="number-btn" onclick="inputNumber(${i + 1})">${i + 1}</button>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
             
