@@ -2822,8 +2822,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
                 
                 .sudoku-grid table {
-                    width: 300px;
-                    height: 300px;
+                    width: 300px !important;
+                    height: 300px !important;
                 }
                 
                 .sudoku-grid td {
