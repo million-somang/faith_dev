@@ -2656,29 +2656,29 @@ app.get('/game/simple/sudoku/play', (c) => {
             .sudoku-grid {
                 margin: 0 auto;
                 width: fit-content;
+                background: white;
+                padding: 3px;
+                border-radius: 8px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             }
             
             .sudoku-grid table {
                 border-collapse: collapse;
-                background: #2d3748;
-                border: 3px solid #2d3748;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-                border-radius: 8px;
+                background: white !important;
             }
             
-            .sudoku-cell {
-                width: 50px;
-                height: 50px;
-                background: white;
-                border: 1px solid #cbd5e0;
-                text-align: center;
-                vertical-align: middle;
-                font-size: 24px;
-                font-weight: 700;
-                cursor: pointer;
-                transition: all 0.15s;
-                padding: 0;
-                box-sizing: border-box;
+            .sudoku-grid td {
+                width: 50px !important;
+                height: 50px !important;
+                background: white !important;
+                border: 1px solid #cbd5e0 !important;
+                text-align: center !important;
+                vertical-align: middle !important;
+                font-size: 24px !important;
+                font-weight: 700 !important;
+                cursor: pointer !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
             }
             
             /* Cell states */
@@ -3073,14 +3073,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - HTML TABLE');
+                console.log('📋 renderGrid() 시작 - SIMPLE TABLE');
                 const gridEl = document.getElementById('sudoku-grid');
-                console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
-                // 그리드를 TABLE로 변경
+                // TABLE 생성
                 const table = document.createElement('table');
-                table.style.cssText = 'border-collapse: collapse; background: #2d3748; border: 3px solid #2d3748; margin: 0 auto;';
                 
                 // 9개의 행 생성
                 for (let row = 0; row < 9; row++) {
@@ -3089,19 +3087,15 @@ app.get('/game/simple/sudoku/play', (c) => {
                     // 각 행에 9개의 셀 생성
                     for (let col = 0; col < 9; col++) {
                         const td = document.createElement('td');
-                        td.className = 'sudoku-cell';
                         td.dataset.row = row;
                         td.dataset.col = col;
                         
-                        // 기본 셀 스타일
-                        let cellStyle = 'width: 50px; height: 50px; background: white; border: 1px solid #cbd5e0; text-align: center; vertical-align: middle; font-size: 24px; font-weight: 700; cursor: pointer; padding: 0; box-sizing: border-box;';
-                        
-                        // 3x3 박스 구분선
+                        // 3x3 박스 구분선 (인라인으로 강제)
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            cellStyle += ' border-right: 3px solid #2d3748 !important;';
+                            td.style.borderRight = '3px solid #2d3748';
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            cellStyle += ' border-bottom: 3px solid #2d3748 !important;';
+                            td.style.borderBottom = '3px solid #2d3748';
                         }
                         
                         const value = currentGrid[row][col];
@@ -3109,17 +3103,18 @@ app.get('/game/simple/sudoku/play', (c) => {
                         
                         if (isFixed) {
                             td.classList.add('fixed');
-                            cellStyle += ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
+                            td.style.background = '#f3f4f6';
+                            td.style.color = '#1f2937';
+                            td.style.cursor = 'not-allowed';
                             td.textContent = value;
                         } else if (value !== 0) {
                             td.classList.add('user-input');
-                            cellStyle += ' color: #3b82f6;';
+                            td.style.color = '#3b82f6';
                             td.textContent = value;
                         } else if (notes[row][col].size > 0) {
                             // 메모 표시
                             const notesDiv = document.createElement('div');
-                            notesDiv.className = 'notes';
-                            notesDiv.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-size: 9px; font-weight: 400; color: #6b7280; height: 100%; width: 100%; padding: 2px;';
+                            notesDiv.style.cssText = 'display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); font-size: 9px; color: #6b7280; width: 100%; height: 100%;';
                             for (let i = 1; i <= 9; i++) {
                                 const span = document.createElement('span');
                                 span.style.cssText = 'display: flex; align-items: center; justify-content: center; font-size: 8px;';
@@ -3129,7 +3124,6 @@ app.get('/game/simple/sudoku/play', (c) => {
                             td.appendChild(notesDiv);
                         }
                         
-                        td.style.cssText = cellStyle;
                         td.addEventListener('click', () => selectCell(row, col));
                         tr.appendChild(td);
                     }
@@ -3138,7 +3132,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
                 
                 gridEl.appendChild(table);
-                console.log('✅ 9 rows x 9 cols = 81개 TABLE 셀 생성됨');
+                console.log('✅ 9×9 SIMPLE TABLE 생성 완료');
                 
                 updateNumberPad();
             }
@@ -3149,14 +3143,17 @@ app.get('/game/simple/sudoku/play', (c) => {
                 selectedCell = { row, col };
                 
                 // 모든 셀 하이라이트 제거
-                document.querySelectorAll('.sudoku-cell').forEach(cell => {
+                document.querySelectorAll('.sudoku-grid td').forEach(cell => {
                     cell.classList.remove('selected', 'same-number');
+                    cell.style.background = cell.classList.contains('fixed') ? '#f3f4f6' : 'white';
                 });
                 
                 // 선택된 셀 하이라이트
-                const cells = document.querySelectorAll('.sudoku-cell');
+                const cells = document.querySelectorAll('.sudoku-grid td');
                 const index = row * 9 + col;
                 cells[index].classList.add('selected');
+                cells[index].style.background = '#fef3c7';
+                cells[index].style.border = '2px solid #f59e0b';
                 
                 // 같은 숫자 하이라이트
                 const value = currentGrid[row][col];
@@ -3166,6 +3163,9 @@ app.get('/game/simple/sudoku/play', (c) => {
                         const c = i % 9;
                         if (currentGrid[r][c] === value) {
                             cell.classList.add('same-number');
+                            if (!cell.classList.contains('selected')) {
+                                cell.style.background = '#dbeafe';
+                            }
                         }
                     });
                 }
