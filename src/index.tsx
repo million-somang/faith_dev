@@ -2652,19 +2652,25 @@ app.get('/game/simple/sudoku/play', (c) => {
                 margin: 0 auto;
             }
             
-            /* Sudoku Grid - ABSOLUTE POSITIONING */
+            /* Sudoku Grid - FLEXBOX ROWS */
             .sudoku-grid {
-                position: relative;
-                width: 456px;  /* (50px + 1px border) * 9 */
-                height: 456px;
-                margin: 0 auto;  /* 가운데 정렬 */
+                display: flex;
+                flex-direction: column;
+                width: 456px;
+                margin: 0 auto;
                 background: #2d3748;
                 border: 3px solid #2d3748;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            
+            .sudoku-row {
+                display: flex;
+                flex-direction: row;
             }
             
             .sudoku-cell {
-                position: absolute;
                 width: 50px;
                 height: 50px;
                 background: white;
@@ -2677,9 +2683,17 @@ app.get('/game/simple/sudoku/play', (c) => {
                 cursor: pointer;
                 transition: all 0.15s;
                 box-sizing: border-box;
+                flex-shrink: 0;
             }
             
-            /* 3x3 박스 구분은 JavaScript에서 처리 */
+            /* 3x3 박스 구분선 */
+            .sudoku-cell.border-right {
+                border-right: 3px solid #2d3748;
+            }
+            
+            .sudoku-cell.border-bottom {
+                border-bottom: 3px solid #2d3748;
+            }
             
             /* Cell states */
             .sudoku-cell.selected {
@@ -3073,33 +3087,29 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - ABSOLUTE POSITIONING');
+                console.log('📋 renderGrid() 시작 - FLEXBOX ROWS');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
-                const cellSize = 50;
-                const borderThick = 3;
-                
+                // 9개의 행 생성
                 for (let row = 0; row < 9; row++) {
+                    const rowDiv = document.createElement('div');
+                    rowDiv.className = 'sudoku-row';
+                    
+                    // 각 행에 9개의 셀 생성
                     for (let col = 0; col < 9; col++) {
                         const cell = document.createElement('div');
                         cell.className = 'sudoku-cell';
                         cell.dataset.row = row;
                         cell.dataset.col = col;
                         
-                        // 절대 위치 계산
-                        const left = col * cellSize + Math.floor(col / 3) * (borderThick - 1);
-                        const top = row * cellSize + Math.floor(row / 3) * (borderThick - 1);
-                        cell.style.left = left + 'px';
-                        cell.style.top = top + 'px';
-                        
-                        // 3x3 박스 테두리
+                        // 3x3 박스 구분선
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            cell.style.borderRight = '3px solid #2d3748';
+                            cell.classList.add('border-right');
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            cell.style.borderBottom = '3px solid #2d3748';
+                            cell.classList.add('border-bottom');
                         }
                         
                         const value = currentGrid[row][col];
@@ -3124,10 +3134,12 @@ app.get('/game/simple/sudoku/play', (c) => {
                         }
                         
                         cell.addEventListener('click', () => selectCell(row, col));
-                        gridEl.appendChild(cell);
+                        rowDiv.appendChild(cell);
                     }
+                    
+                    gridEl.appendChild(rowDiv);
                 }
-                console.log('✅ 9x9 = 81개 ABSOLUTE 셀 생성됨');
+                console.log('✅ 9 rows x 9 cols = 81개 FLEXBOX 셀 생성됨');
                 
                 updateNumberPad();
             }
