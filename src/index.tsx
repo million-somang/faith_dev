@@ -2655,21 +2655,28 @@ app.get('/game/simple/sudoku/play', (c) => {
             /* Sudoku Grid - TABLE */
             .sudoku-grid {
                 margin: 0 auto;
-                width: fit-content;
                 background: white;
                 padding: 3px;
                 border-radius: 8px;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                position: relative;
             }
             
             .sudoku-grid table {
                 border-collapse: collapse;
                 background: white !important;
+                table-layout: fixed;
+                width: 456px;
+                height: 456px;
             }
             
             .sudoku-grid td {
                 width: 50px !important;
                 height: 50px !important;
+                min-width: 50px !important;
+                max-width: 50px !important;
+                min-height: 50px !important;
+                max-height: 50px !important;
                 background: white !important;
                 border: 1px solid #cbd5e0 !important;
                 text-align: center !important;
@@ -2678,7 +2685,10 @@ app.get('/game/simple/sudoku/play', (c) => {
                 font-weight: 700 !important;
                 cursor: pointer !important;
                 padding: 0 !important;
+                margin: 0 !important;
                 box-sizing: border-box !important;
+                position: relative !important;
+                overflow: hidden !important;
             }
             
             /* Cell states */
@@ -2896,7 +2906,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; justify-content: center;">
+            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center;">
                 <div class="sudoku-grid" id="sudoku-grid"></div>
             </div>
 
