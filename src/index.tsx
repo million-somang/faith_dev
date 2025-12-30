@@ -3093,7 +3093,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 gridEl.innerHTML = '';
                 
                 // 그리드 인라인 스타일 강제 적용
-                gridEl.style.cssText = 'display: flex; flex-direction: column; width: 456px; margin: 0 auto; background: #2d3748; border: 3px solid #2d3748; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden;';
+                gridEl.style.cssText = 'display: flex; flex-direction: column; width: 456px; min-width: 456px; max-width: 456px; margin: 0 auto; background: #2d3748; border: 3px solid #2d3748; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-radius: 8px; overflow: hidden;';
                 
                 // 9개의 행 생성
                 for (let row = 0; row < 9; row++) {
@@ -3108,7 +3108,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         cell.dataset.col = col;
                         
                         // 기본 셀 스타일 (인라인)
-                        let cellStyle = 'width: 50px; height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
+                        let cellStyle = 'width: 50px; min-width: 50px; max-width: 50px; height: 50px; min-height: 50px; max-height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
                         
                         // 3x3 박스 구분선
                         if ((col + 1) % 3 === 0 && col < 8) {
