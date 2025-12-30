@@ -2649,11 +2649,9 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             .container {
                 background: white;
-                border-radius: 20px;
-                max-width: 800px;
+                max-width: 100%;
                 width: 100%;
                 overflow: hidden;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
                 position: relative;
             }
             
@@ -3185,15 +3183,6 @@ app.get('/game/simple/sudoku/play', (c) => {
     </head>
     <body>
         <div class="container" id="game-container">
-            <!-- 보라색 헤더 -->
-            <div class="modal-header">
-                <div class="modal-title">
-                    <i class="fas fa-th"></i>
-                    <span>스도쿠 게임</span>
-                </div>
-                <button class="modal-close" onclick="window.history.back()">×</button>
-            </div>
-            
             <!-- 컨텐츠 영역 -->
             <div class="modal-body">
                 <!-- 왼쪽: 스도쿠 그리드 -->
