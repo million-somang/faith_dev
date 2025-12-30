@@ -2657,6 +2657,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 position: relative;
                 width: 456px;  /* (50px + 1px border) * 9 */
                 height: 456px;
+                margin: 0 auto;  /* 가운데 정렬 */
                 background: #2d3748;
                 border: 3px solid #2d3748;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
@@ -2736,6 +2737,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 gap: 8px;
                 width: 100%;
                 max-width: 500px;
+                margin: 0 auto;  /* 가운데 정렬 */
             }
             
             .number-btn {
