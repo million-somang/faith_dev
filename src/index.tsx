@@ -2701,7 +2701,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 하단 정보 바 */
             .info-bar {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 padding: 15px 20px;
                 display: flex;
                 justify-content: space-between;
