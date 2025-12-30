@@ -2652,14 +2652,15 @@ app.get('/game/simple/sudoku/play', (c) => {
                 margin: 0 auto;
             }
             
-            /* Sudoku Grid - TABLE 방식 */
+            /* Sudoku Grid - DIV GRID 방식 */
             .sudoku-grid {
-                border-collapse: collapse;
-                background: white;
+                display: inline-grid;
+                grid-template-columns: repeat(9, 50px);
+                grid-template-rows: repeat(9, 50px);
+                gap: 0;
+                background: #2d3748;
+                border: 3px solid #2d3748;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-                margin: 0 auto;
-                table-layout: fixed;
-                width: 450px;
             }
             
             .sudoku-cell {
@@ -2667,8 +2668,9 @@ app.get('/game/simple/sudoku/play', (c) => {
                 height: 50px;
                 background: white;
                 border: 1px solid #cbd5e0;
-                text-align: center;
-                vertical-align: middle;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 font-size: 24px;
                 font-weight: 700;
                 cursor: pointer;
@@ -2676,29 +2678,25 @@ app.get('/game/simple/sudoku/play', (c) => {
                 position: relative;
             }
             
+            /* 3x3 박스 구분 굵은 테두리 - DIV Grid */
+            .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+                border-right: 3px solid #2d3748;
+            }
+            .sudoku-cell:nth-child(n+19):nth-child(-n+27),
+            .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+                border-bottom: 3px solid #2d3748;
+            }
+            
             @media (max-width: 768px) {
+                .sudoku-grid {
+                    grid-template-columns: repeat(9, 40px);
+                    grid-template-rows: repeat(9, 40px);
+                }
                 .sudoku-cell {
                     width: 40px;
                     height: 40px;
                     font-size: 20px;
                 }
-            }
-            
-            /* 3x3 박스 구분 굵은 테두리 */
-            .sudoku-cell:nth-child(3n) {
-                border-right: 3px solid #2d3748;
-            }
-            .sudoku-cell:nth-child(9) {
-                border-right: 1px solid #cbd5e0;
-            }
-            .sudoku-grid tr:nth-child(3n) td {
-                border-bottom: 3px solid #2d3748;
-            }
-            .sudoku-grid tr:nth-child(9) td {
-                border-bottom: 1px solid #cbd5e0;
-            }
-            .sudoku-grid {
-                border: 3px solid #2d3748;
             }
             
             /* Cell states */
@@ -2915,8 +2913,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; overflow-x: auto;">
-                <table class="sudoku-grid" id="sudoku-grid"></table>
+            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; justify-content: center;">
+                <div class="sudoku-grid" id="sudoku-grid"></div>
             </div>
 
             <!-- Actions -->
@@ -3092,38 +3090,17 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - TABLE 방식 (인라인 스타일)');
+                console.log('📋 renderGrid() 시작 - DIV GRID 방식');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
                 for (let row = 0; row < 9; row++) {
-                    const tr = document.createElement('tr');
-                    
                     for (let col = 0; col < 9; col++) {
-                        const cell = document.createElement('td');
+                        const cell = document.createElement('div');
                         cell.className = 'sudoku-cell';
                         cell.dataset.row = row;
                         cell.dataset.col = col;
-                        
-                        // 인라인 스타일 강제 적용
-                        cell.style.width = '50px';
-                        cell.style.height = '50px';
-                        cell.style.minWidth = '50px';
-                        cell.style.minHeight = '50px';
-                        cell.style.maxWidth = '50px';
-                        cell.style.maxHeight = '50px';
-                        cell.style.padding = '0';
-                        cell.style.margin = '0';
-                        cell.style.boxSizing = 'border-box';
-                        
-                        // 3x3 박스 테두리
-                        if ((col + 1) % 3 === 0 && col < 8) {
-                            cell.style.borderRight = '3px solid #2d3748';
-                        }
-                        if ((row + 1) % 3 === 0 && row < 8) {
-                            cell.style.borderBottom = '3px solid #2d3748';
-                        }
                         
                         const value = currentGrid[row][col];
                         const isFixed = puzzle[row][col] !== 0;
@@ -3147,12 +3124,10 @@ app.get('/game/simple/sudoku/play', (c) => {
                         }
                         
                         cell.addEventListener('click', () => selectCell(row, col));
-                        tr.appendChild(cell);
+                        gridEl.appendChild(cell);
                     }
-                    
-                    gridEl.appendChild(tr);
                 }
-                console.log('✅ 9행 x 9열 = 81개 셀 생성됨 (TABLE with inline styles)');
+                console.log('✅ 9x9 = 81개 DIV 셀 생성됨');
                 
                 updateNumberPad();
             }
