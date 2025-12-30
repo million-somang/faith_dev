@@ -2683,9 +2683,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             /* 3x3 박스 구분 굵은 테두리 */
-            .sudoku-cell:nth-child(3n):not(:nth-child(9n)) {
+            /* 세로 구분선: 3열, 6열 뒤에 */
+            .sudoku-cell:nth-child(9n+3),
+            .sudoku-cell:nth-child(9n+6) {
                 border-right: 3px solid #2d3748;
             }
+            /* 가로 구분선: 3행, 6행 뒤에 */
             .sudoku-cell:nth-child(n+19):nth-child(-n+27),
             .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
                 border-bottom: 3px solid #2d3748;
@@ -3067,16 +3070,22 @@ app.get('/game/simple/sudoku/play', (c) => {
             // ==================== 게임 초기화 ====================
             
             function initGame() {
+                console.log('🎮 initGame() 시작');
                 puzzle = generateSudoku();
+                console.log('✅ 퍼즐 생성 완료:', puzzle);
                 solution = solveSudoku(puzzle.map(row => [...row]));
+                console.log('✅ 솔루션 생성 완료');
                 currentGrid = puzzle.map(row => [...row]);
                 
                 renderGrid();
+                console.log('✅ 그리드 렌더링 완료');
                 startTimer();
             }
             
             function renderGrid() {
+                console.log('📋 renderGrid() 시작');
                 const gridEl = document.getElementById('sudoku-grid');
+                console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
                 for (let row = 0; row < 9; row++) {
@@ -3111,6 +3120,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         gridEl.appendChild(cell);
                     }
                 }
+                console.log('✅ 총', gridEl.children.length, '개 셀 생성됨');
                 
                 updateNumberPad();
             }
