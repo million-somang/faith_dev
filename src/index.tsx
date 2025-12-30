@@ -2697,11 +2697,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 컨텐츠 영역 */
             .modal-body {
-                padding: 20px;
+                padding: 15px;
                 display: flex;
                 flex-direction: row;
-                gap: 30px;
+                gap: 15px;
                 align-items: flex-start;
+                min-width: 600px;
             }
             
             .grid-section {
@@ -2712,8 +2713,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 flex: 1;
                 display: flex;
                 flex-direction: column;
-                gap: 15px;
-                min-width: 300px;
+                gap: 10px;
+                min-width: 250px;
             }
             
             /* 하단 정보 바 */
@@ -2877,8 +2878,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             .sudoku-grid table {
                 border-collapse: collapse;
                 table-layout: fixed;
-                width: 360px;
-                height: 360px;
+                width: 300px;
+                height: 300px;
                 margin: 0;
                 border: 3px solid #2d3748;
                 box-sizing: border-box;
@@ -2886,12 +2887,12 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             .sudoku-grid td {
-                width: 40px !important;
-                height: 40px !important;
-                min-width: 40px !important;
-                max-width: 40px !important;
-                min-height: 40px !important;
-                max-height: 40px !important;
+                width: 33px !important;
+                height: 33px !important;
+                min-width: 33px !important;
+                max-width: 33px !important;
+                min-height: 33px !important;
+                max-height: 33px !important;
                 background: white !important;
                 border: 1px solid #cbd5e0 !important;
                 text-align: center !important;
