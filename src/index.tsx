@@ -2699,21 +2699,23 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 컨텐츠 영역 */
             .modal-body {
-                padding: 15px;
-                display: grid;
-                grid-template-columns: auto 1fr;
-                gap: 20px;
-                align-items: start;
+                padding: 20px;
+                display: flex;
+                flex-direction: row;
+                gap: 30px;
+                align-items: flex-start;
             }
             
             .grid-section {
-                /* 그리드를 왼쪽에 고정 */
+                flex-shrink: 0;
             }
             
             .controls-section {
+                flex: 1;
                 display: flex;
                 flex-direction: column;
                 gap: 15px;
+                min-width: 300px;
             }
             
             /* 하단 정보 바 */
@@ -2796,9 +2798,20 @@ app.get('/game/simple/sudoku/play', (c) => {
                 
                 .modal-body {
                     padding: 15px;
-                    text-align: center;
-                    grid-template-columns: 1fr;
-                    gap: 10px;
+                    flex-direction: column;
+                    gap: 15px;
+                    align-items: center;
+                }
+                
+                .grid-section {
+                    width: 100%;
+                    display: flex;
+                    justify-content: center;
+                }
+                
+                .controls-section {
+                    width: 100%;
+                    min-width: unset;
                 }
                 
                 .info-bar {
