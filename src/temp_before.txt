@@ -1,0 +1,2606 @@
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+
+type Bindings = {
+  DB: D1Database;
+  FIGMA_ACCESS_TOKEN?: string;
+}
+
+const app = new Hono<{ Bindings: Bindings }>()
+
+// CORS 설정 (API 요청용)
+app.use('/api/*', cors())
+
+// ==================== 헬퍼 함수 ====================
+// HTML 이스케이프 함수
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }
+  return text.replace(/[&<>"']/g, (char) => map[char])
+}
+
+// 카테고리 이름 변환
+function getCategoryName(category: string): string {
+  const names: Record<string, string> = {
+    'general': '일반',
+    'politics': '정치',
+    'economy': '경제',
+    'tech': 'IT/과학',
+    'sports': '스포츠',
+    'entertainment': '엔터'
+  }
+  return names[category] || category
+}
+
+// 카테고리 색상 (배지 스타일)
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'general': 'bg-gray-100 text-gray-700',
+    'politics': 'bg-blue-100 text-blue-700',
+    'economy': 'bg-green-100 text-green-700',
+    'tech': 'bg-purple-100 text-purple-700',
+    'sports': 'bg-orange-100 text-orange-700',
+    'entertainment': 'bg-pink-100 text-pink-700'
+  }
+  return colors[category] || 'bg-gray-100 text-gray-700'
+}
+
+// 시간 전 표시
+function getTimeAgo(dateString: string): string {
+  const now = new Date()
+  const past = new Date(dateString)
+  const diffMs = now.getTime() - past.getTime()
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+  
+  if (diffMins < 1) return '방금 전'
+  if (diffMins < 60) return `${diffMins}분 전`
+  if (diffHours < 24) return `${diffHours}시간 전`
+  if (diffDays < 7) return `${diffDays}일 전`
+  return past.toLocaleDateString('ko-KR')
+}
+
+// ==================== Breadcrumb 네비게이션 헬퍼 함수 ====================
+function getBreadcrumb(items: Array<{label: string, href?: string}>): string {
+  let breadcrumbHtml = `
+    <nav class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+        <ol class="flex items-center space-x-2 text-sm">
+  `
+  
+  items.forEach((item, index) => {
+    const isLast = index === items.length - 1
+    
+    if (isLast) {
+      // 마지막 항목 (현재 페이지)
+      breadcrumbHtml += `
+        <li class="flex items-center">
+          <span class="text-gray-900 font-semibold">${item.label}</span>
+        </li>
+      `
+    } else {
+      // 링크 항목
+      breadcrumbHtml += `
+        <li class="flex items-center">
+          <a href="${item.href}" class="text-gray-500 hover:text-cyan-600 transition-colors">${item.label}</a>
+          <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+        </li>
+      `
+    }
+  })
+  
+  breadcrumbHtml += `
+        </ol>
+      </div>
+    </nav>
+  `
+  
+  return breadcrumbHtml
+}
+
+// ==================== 게임 메뉴 헬퍼 함수 ====================
+function getGameMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/game/simple', label: '심플 게임', icon: 'fas fa-gamepad' },
+    { path: '/game/web', label: '웹게임', icon: 'fas fa-globe' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage.startsWith(item.path)
+    const activeClass = isActive ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-700 hover:text-purple-600 hover:border-b-2 hover:border-purple-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 유틸리티 메뉴 헬퍼 함수 ====================
+function getLifestyleMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/lifestyle/calculator', label: '계산기', icon: 'fas fa-calculator' },
+    { path: '/lifestyle/youtube-download', label: '유튜브 다운로드', icon: 'fab fa-youtube' },
+    // 추가 메뉴는 여기에
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-cyan-600 border-b-2 border-cyan-600' : 'text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2 ${item.icon.includes('youtube') ? 'text-red-500' : ''}"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 금융 메뉴 헬퍼 함수 ====================
+function getFinanceMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/finance/stock', label: '주식', icon: 'fas fa-chart-line' },
+    { path: '/finance/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
+    { path: '/finance/banking', label: '은행', icon: 'fas fa-university' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-700 hover:text-green-600 hover:border-b-2 hover:border-green-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 엔터 메뉴 헬퍼 함수 ====================
+function getEntertainmentMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/entertainment/music', label: '음악', icon: 'fas fa-music' },
+    { path: '/entertainment/movie', label: '영화', icon: 'fas fa-film' },
+    { path: '/entertainment/celebrity', label: '연예인', icon: 'fas fa-star' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-700 hover:text-pink-600 hover:border-b-2 hover:border-pink-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 교육 메뉴 헬퍼 함수 ====================
+function getEducationMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/education/online', label: '온라인 강의', icon: 'fas fa-laptop' },
+    { path: '/education/language', label: '언어', icon: 'fas fa-language' },
+    { path: '/education/certificate', label: '자격증', icon: 'fas fa-certificate' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:border-b-2 hover:border-indigo-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 쇼핑 메뉴 헬퍼 함수 ====================
+function getShoppingMenu(currentPage: string): string {
+  const menuItems = [
+    { path: '/shopping', label: '핫딜 랭킹', icon: 'fas fa-fire' },
+    { path: '/shopping/coupang', label: '쿠팡 핫딜', icon: 'fas fa-tags' },
+    { path: '/shopping/aliexpress', label: '알리 특가', icon: 'fas fa-globe' },
+  ]
+
+  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path
+    const activeClass = isActive ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-700 hover:text-orange-600 hover:border-b-2 hover:border-orange-600'
+    
+    menuHtml += `
+      <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
+        <i class="${item.icon} mr-2"></i>
+        ${item.label}
+      </a>
+    `
+  }
+  
+  menuHtml += '</div></div></nav>'
+  return menuHtml
+}
+
+// ==================== 공통 헤더 헬퍼 함수 ====================
+function getCommonHeader(sectionName: string = ''): string {
+  // 섹션명 표시 (메인 페이지가 아닐 때만)
+  const sectionLabel = sectionName ? `<span class="hidden sm:inline text-gray-700 text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
+  
+  // 메인 페이지는 sticky, 서브 페이지는 relative (Sticky 헤더가 대체)
+  const headerClass = sectionName ? 'bg-white backdrop-blur-md shadow-sm relative transition-shadow duration-300' : 'bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300'
+  
+  return `
+    <!-- 헤더 -->
+    <header class="${headerClass}" id="main-header">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 flex justify-between items-center">
+            <a href="/" class="flex items-center">
+                <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
+                ${sectionLabel}
+            </a>
+            <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+                <!-- 로그인 상태는 JavaScript로 동적 로드됨 -->
+                <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3">
+                    <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
+                </a>
+                <a href="/signup" class="text-xs sm:text-sm brand-navy text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg brand-navy-hover font-semibold">
+                    <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    <script>
+      // 스크롤 시 헤더 그림자 효과
+      window.addEventListener('scroll', function() {
+        const header = document.getElementById('main-header');
+        if (header) {
+          if (window.scrollY > 50) {
+            header.classList.add('shadow-lg');
+            header.classList.remove('shadow-sm');
+          } else {
+            header.classList.add('shadow-sm');
+            header.classList.remove('shadow-lg');
+          }
+        }
+      });
+    </script>
+  `
+}
+
+// ==================== Sticky 헤더 컴포넌트 ====================
+function getStickyHeader(): string {
+  return `
+    <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
+    <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md transition-all duration-300 ease-in-out" style="transform: translateY(-100%);">
+        <!-- 검색창 영역 -->
+        <div class="bg-white">
+            <div class="max-w-7xl mx-auto px-4 py-2">
+                <div class="flex items-center gap-3">
+                    <a href="/" class="flex-shrink-0">
+                        <img src="/logo_fl.png" alt="Faith Portal" class="h-8 w-auto object-contain" />
+                    </a>
+                    <div class="flex-1 relative">
+                        <input 
+                            type="text" 
+                            placeholder="검색어를 입력해 주세요"
+                            class="w-full px-4 py-2.5 text-sm border-2 border-gray-300 rounded focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                    </div>
+                    <button class="flex-shrink-0 w-10 h-10 rounded-full bg-white border-2 border-gray-300 text-gray-600 flex items-center justify-center hover:bg-gray-50 transition-all">
+                        <i class="fas fa-search text-base"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 서브 메뉴 영역 - 브랜드 네이비 그라데이션 -->
+        <div style="background: linear-gradient(90deg, #1e3a8a 0%, #1e40af 50%, #1e3a8a 100%);">
+            <div class="max-w-7xl mx-auto">
+                <div class="overflow-x-auto hide-scrollbar">
+                    <div class="flex items-center">
+                        <a href="/news" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            뉴스
+                        </a>
+                        <a href="/lifestyle" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            유틸리티
+                        </a>
+                        <a href="/game" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            게임
+                        </a>
+                        <a href="/finance" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            금융
+                        </a>
+                        <a href="/shopping" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            쇼핑
+                        </a>
+                        <a href="/entertainment" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            엔터
+                        </a>
+                        <a href="/education" class="px-4 py-3 text-sm font-bold text-white whitespace-nowrap hover:bg-white hover:bg-opacity-20 transition-all">
+                            교육
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+      // ==================== Sticky 헤더 처리 (Naver 스타일 - 모든 페이지) ====================
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initStickyHeader);
+      } else {
+        initStickyHeader();
+      }
+      
+      function initStickyHeader() {
+        const stickyHeader = document.getElementById('sticky-header');
+        const mainHeader = document.getElementById('main-header');
+        const mainSearch = document.getElementById('main-search');
+        const quickMenu = document.getElementById('quick-menu');
+        
+        console.log('=== Sticky Header Init (DOMContentLoaded) ===');
+        console.log('stickyHeader:', stickyHeader ? 'found' : 'NOT FOUND');
+        console.log('mainHeader:', mainHeader ? 'found' : 'NOT FOUND');
+        console.log('mainSearch:', mainSearch ? 'found' : 'NOT FOUND');
+        console.log('quickMenu:', quickMenu ? 'found' : 'NOT FOUND');
+        
+        if (!stickyHeader || !mainHeader) {
+            console.error('Required elements not found!');
+            return;
+        }
+        
+        let scrollCount = 0;
+        
+        window.addEventListener('scroll', function() {
+            scrollCount++;
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            // 메인 헤더의 위치 확인
+            const headerRect = mainHeader.getBoundingClientRect();
+            
+            // 10번째 스크롤마다 로그
+            if (scrollCount % 10 === 0) {
+                console.log('Scroll:', scrollTop, 'headerRect.bottom:', headerRect.bottom);
+            }
+            
+            // 메인 페이지 (퀵 메뉴가 있는 경우)
+            if (mainSearch && quickMenu) {
+                const quickMenuRect = quickMenu.getBoundingClientRect();
+                const scrollThreshold = 50;
+                
+                // 퀵 메뉴가 화면에서 완전히 사라지면 sticky 헤더 표시
+                if (quickMenuRect.bottom < -scrollThreshold) {
+                    if (scrollCount % 10 === 0) console.log('-> Showing sticky header (main page)');
+                    stickyHeader.style.transform = 'translateY(0)';
+                } else {
+                    stickyHeader.style.transform = 'translateY(-100%)';
+                }
+            } else {
+                // 서브 페이지 (뉴스, 유틸리티, 게임 등) - 메인 헤더가 사라지면 즉시 표시
+                if (headerRect.bottom <= 0) {
+                    if (scrollCount % 10 === 0) console.log('-> Showing sticky header (sub page)');
+                    stickyHeader.style.transform = 'translateY(0)';
+                } else {
+                    stickyHeader.style.transform = 'translateY(-100%)';
+                }
+            }
+        });
+        
+        console.log('=== Scroll listener attached ===');
+      }
+    </script>
+  `
+}
+
+// ==================== 공통 인증 스크립트 헬퍼 함수 ====================
+function getCommonAuthScript(): string {
+  return `
+    <script>
+      // ==================== 다크모드 초기화 ====================
+      function initDarkMode() {
+        const darkMode = localStorage.getItem('darkMode') === 'true';
+        const htmlRoot = document.getElementById('html-root');
+        
+        if (htmlRoot) {
+          if (darkMode) {
+            htmlRoot.classList.add('dark');
+          } else {
+            htmlRoot.classList.remove('dark');
+          }
+        }
+      }
+      
+      // ==================== 로그인 상태 확인 및 메뉴 업데이트 ====================
+      function updateUserMenu() {
+        const token = localStorage.getItem('auth_token');
+        const userEmail = localStorage.getItem('user_email');
+        const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+        
+        if (token && userEmail) {
+          let menuHTML = '';
+          
+          // 햄버거 메뉴 버튼
+          menuHTML += '<button id="mobile-menu-btn" class="text-gray-700 hover:text-blue-900 transition-all p-2" aria-label="메뉴 열기"><i class="fas fa-bars text-xl"></i></button>';
+          
+          // 마이페이지 버튼
+          menuHTML += '<a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3"><i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span></a>';
+          
+          // 관리자 메뉴 추가 (Lv.6 이상)
+          if (userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자페이지</span><span class="sm:hidden">관리자</span></a>';
+          }
+          
+          // 로그아웃 버튼 (아이콘만)
+          menuHTML += '<button id="logout-btn" class="text-gray-700 hover:text-red-600 transition-all p-2" title="로그아웃"><i class="fas fa-sign-out-alt text-xl"></i></button>';
+          
+          // 메뉴 업데이트
+          const userMenu = document.getElementById('user-menu');
+          if (userMenu) {
+            userMenu.innerHTML = menuHTML;
+          }
+          
+          // 로그아웃 이벤트 리스너 추가
+          const logoutBtn = document.getElementById('logout-btn');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+              if (confirm('로그아웃 하시겠습니까?')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_email');
+                localStorage.removeItem('user_level');
+                localStorage.removeItem('user_id');
+                window.location.href = '/';
+              }
+            });
+          }
+          
+          // 햄버거 메뉴 이벤트 리스너
+          const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+          if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', function() {
+              toggleMobileMenu();
+            });
+          }
+        }
+        
+        // 다크모드 초기화 (로그인 여부 관계없이)
+        initDarkMode();
+      }
+      
+      // ==================== 모바일 메뉴 토글 함수 ====================
+      function toggleMobileMenu() {
+        // 모바일 메뉴 오버레이 생성 또는 토글
+        let overlay = document.getElementById('mobile-menu-overlay');
+        
+        if (overlay) {
+          // 이미 존재하면 닫기
+          overlay.classList.add('opacity-0');
+          setTimeout(() => {
+            overlay?.remove();
+          }, 300);
+        } else {
+          // 새로 생성
+          const userEmail = localStorage.getItem('user_email') || '';
+          const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+          
+          overlay = document.createElement('div');
+          overlay.id = 'mobile-menu-overlay';
+          overlay.className = 'fixed inset-0 z-50 bg-black bg-opacity-50 opacity-0 transition-opacity duration-300';
+          
+          let menuHTML = '<div class="fixed top-0 right-0 h-full w-64 bg-white shadow-2xl transform translate-x-full transition-transform duration-300" id="mobile-menu-content">';
+          menuHTML += '<div class="p-6">';
+          menuHTML += '<div class="flex justify-between items-center mb-6">';
+          menuHTML += '<h3 class="text-lg font-bold text-gray-900">메뉴</h3>';
+          menuHTML += '<button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">';
+          menuHTML += '<i class="fas fa-times text-xl"></i>';
+          menuHTML += '</button></div>';
+          menuHTML += '<div class="space-y-4">';
+          menuHTML += '<a href="/" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>홈</a>';
+          menuHTML += '<a href="/news" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-newspaper mr-3"></i>뉴스</a>';
+          menuHTML += '<a href="/lifestyle" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-home mr-3"></i>유틸리티</a>';
+          menuHTML += '<a href="/game" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-gamepad mr-3"></i>게임</a>';
+          menuHTML += '<a href="/finance" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-chart-line mr-3"></i>금융</a>';
+          menuHTML += '<a href="/mypage" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-user mr-3"></i>마이페이지</a>';
+          menuHTML += '<a href="/bookmarks" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-bookmark mr-3"></i>북마크</a>';
+          if (userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="block px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"><i class="fas fa-crown mr-3"></i>관리자페이지</a>';
+          }
+          menuHTML += '<hr class="my-2">';
+          menuHTML += '<button onclick="logout()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i class="fas fa-sign-out-alt mr-3"></i>로그아웃</button>';
+          menuHTML += '</div></div></div>';
+          
+          overlay.innerHTML = menuHTML;
+          document.body.appendChild(overlay);
+          
+          // 애니메이션 트리거
+          setTimeout(() => {
+            overlay?.classList.remove('opacity-0');
+            const menuContent = document.getElementById('mobile-menu-content');
+            if (menuContent) {
+              menuContent.classList.remove('translate-x-full');
+            }
+          }, 10);
+          
+          // 오버레이 클릭 시 닫기
+          overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+              toggleMobileMenu();
+            }
+          });
+        }
+      }
+      
+      // 로그아웃 함수 (전역)
+      window.logout = function() {
+        if (confirm('로그아웃 하시겠습니까?')) {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('user_email');
+          localStorage.removeItem('user_level');
+          localStorage.removeItem('user_id');
+          window.location.href = '/';
+        }
+      };
+      
+      // toggleMobileMenu를 전역 함수로 등록
+      window.toggleMobileMenu = toggleMobileMenu;
+      
+      // ==================== 페이지 로드 시 실행 ====================
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', updateUserMenu);
+      } else {
+        updateUserMenu();
+      }
+    </script>
+  `
+}
+
+// ==================== 공통 푸터 헬퍼 함수 ====================
+function getCommonFooter(): string {
+  return `
+    <!-- 푸터 -->
+    <footer class="bg-gradient-to-r from-blue-900 to-blue-800 text-white mt-16 py-8">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- 회사 정보 -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">Faith Portal</h3>
+                    <p class="text-blue-200 text-sm leading-relaxed">
+                        믿음의 포탈, Faith Portal은<br>
+                        여러분의 디지털 라이프를 풍요롭게 만들어드립니다.
+                    </p>
+                </div>
+                
+                <!-- 빠른 링크 -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">빠른 링크</h3>
+                    <ul class="space-y-2">
+                        <li><a href="/news" class="text-blue-200 hover:text-white text-sm transition">뉴스</a></li>
+                        <li><a href="/lifestyle" class="text-blue-200 hover:text-white text-sm transition">유틸리티</a></li>
+                        <li><a href="/game" class="text-blue-200 hover:text-white text-sm transition">게임</a></li>
+                        <li><a href="/" class="text-blue-200 hover:text-white text-sm transition">쇼핑</a></li>
+                    </ul>
+                </div>
+                
+                <!-- 연락처 -->
+                <div>
+                    <h3 class="text-lg font-bold mb-4">고객 지원</h3>
+                    <ul class="space-y-2">
+                        <li class="text-blue-200 text-sm">
+                            <i class="fas fa-envelope mr-2"></i>
+                            support@faithportal.com
+                        </li>
+                        <li class="text-blue-200 text-sm">
+                            <i class="fas fa-phone mr-2"></i>
+                            1577-1577
+                        </li>
+                        <li class="text-blue-200 text-sm">
+                            <i class="fas fa-clock mr-2"></i>
+                            평일 09:00 - 18:00
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-blue-700 mt-8 pt-6 text-center">
+                <p class="text-blue-200 text-sm">
+                    © 2024 Faith Portal. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </footer>
+  `
+}
+
+// ==================== 관리자 네비게이션 헬퍼 함수 ====================
+function getAdminNavigation(currentPage: string): string {
+  const menuItems = [
+    { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt', shortLabel: '대시보드' },
+    { path: '/admin/users', label: '회원 관리', icon: 'fa-users', shortLabel: '회원' },
+    { path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', shortLabel: '컨텐츠', hasDropdown: true, dropdownItems: [
+      { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
+    ]},
+    { path: '/admin/stats', label: '통계', icon: 'fa-chart-line', shortLabel: '통계' },
+    { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
+    { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
+  ]
+
+  let navHtml = '<div class="flex overflow-x-auto space-x-2 sm:space-x-4 lg:space-x-8 py-2 scrollbar-hide">'
+  
+  for (const item of menuItems) {
+    const isActive = currentPage === item.path || (item.dropdownItems && item.dropdownItems.some(sub => sub.path === currentPage))
+    const activeClass = isActive ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'
+    
+    if (item.hasDropdown) {
+      navHtml += `
+        <div class="relative group flex-shrink-0">
+          <button class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center text-sm sm:text-base whitespace-nowrap">
+            <i class="fas ${item.icon} sm:mr-2"></i>
+            <span class="hidden sm:inline ml-1">${item.label}</span>
+            <span class="sm:hidden ml-1">${item.shortLabel}</span>
+            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+          </button>
+          <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
+      `
+      
+      for (const subItem of item.dropdownItems || []) {
+        const subActive = currentPage === subItem.path
+        navHtml += `
+            <a href="${subItem.path}" class="block px-4 py-3 ${subActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'} text-sm sm:text-base">
+              <i class="fas ${subItem.icon} mr-2"></i>
+              ${subItem.label}
+            </a>
+        `
+      }
+      
+      navHtml += `
+          </div>
+        </div>
+      `
+    } else {
+      navHtml += `
+        <a href="${item.path}" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas ${item.icon} sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">${item.label}</span>
+          <span class="sm:hidden ml-1">${item.shortLabel}</span>
+        </a>
+      `
+    }
+  }
+  
+  navHtml += '</div>'
+  return navHtml
+}
+
+// ==================== 메인 페이지 ====================
+app.get('/', async (c) => {
+  const { DB } = c.env
+  
+  // 자동 뉴스 가져오기 로직
+  try {
+    // 마지막 뉴스 가져온 시간 확인
+    const lastFetch = await DB.prepare('SELECT MAX(created_at) as last_time FROM news').first()
+    const lastFetchTime = lastFetch?.last_time
+    
+    // 마지막 뉴스가 없거나 1시간 이상 지났으면 뉴스 가져오기
+    const shouldFetch = !lastFetchTime || 
+      (new Date().getTime() - new Date(lastFetchTime).getTime()) > (60 * 60 * 1000)
+    
+    if (shouldFetch) {
+      console.log('자동으로 뉴스를 가져옵니다...')
+      
+      // 모든 카테고리에서 뉴스 가져오기
+      const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment']
+      
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i]
+        try {
+          const newsItems = await parseGoogleNewsRSS(category)
+          
+          // DB에 저장
+          for (const item of newsItems) {
+            try {
+              await DB.prepare(`
+                INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+              `).bind(
+                item.category,
+                item.title,
+                item.summary,
+                item.link,
+                item.image_url,
+                item.publisher,
+                item.pub_date
+              ).run()
+            } catch (err) {
+              // 중복 뉴스는 무시
+            }
+          }
+          
+          // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
+          if (i < categories.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 2000))
+          }
+        } catch (err) {
+          console.error(category + ' 카테고리 뉴스 가져오기 실패:', err)
+        }
+      }
+      
+      console.log('뉴스 가져오기 완료')
+    }
+  } catch (error) {
+    console.error('자동 뉴스 가져오기 오류:', error)
+  }
+  
+  // 최신 뉴스 5개 가져오기
+  let latestNews: any[] = []
+  try {
+    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 5').all()
+    latestNews = results || []
+  } catch (error) {
+    console.error('뉴스 조회 오류:', error)
+  }
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Faith Portal - 믿음의 포탈</title>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+        <link rel="alternate icon" href="/favicon.ico">
+        <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                darkMode: 'class',
+                theme: {
+                    extend: {
+                        colors: {
+                            'brand-navy': '#1e3a8a',
+                            'brand-blue': '#3b82f6',
+                            'accent-orange': '#f97316',
+                        }
+                    }
+                }
+            }
+        </script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            * {
+                font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+                letter-spacing: -0.02em;
+            }
+            /* 새로운 컬러 팔레트 */
+            .brand-navy { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
+            .brand-navy-hover:hover { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+            .accent-orange { background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); }
+            .accent-orange-hover:hover { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); }
+            .faith-blue { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+            /* 다크모드 스타일 */
+            .dark {
+                color-scheme: dark;
+            }
+            .dark body {
+                background: linear-gradient(to bottom right, #1e293b, #0f172a, #020617);
+            }
+            .dark .bg-white {
+                background-color: #1e293b !important;
+            }
+            .dark .text-gray-900 {
+                color: #f1f5f9 !important;
+            }
+            .dark .text-gray-800 {
+                color: #e2e8f0 !important;
+            }
+            .dark .text-gray-700 {
+                color: #cbd5e1 !important;
+            }
+            .dark .text-gray-600 {
+                color: #94a3b8 !important;
+            }
+            .dark .text-gray-500 {
+                color: #64748b !important;
+            }
+            .dark .border-gray-200 {
+                border-color: #334155 !important;
+            }
+            .dark .bg-gray-50 {
+                background-color: #0f172a !important;
+            }
+            /* 검색창 스타일 - 캡슐형 */
+            .search-shadow { 
+                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+                transition: all 0.3s ease;
+                border-radius: 50px;
+            }
+            .search-shadow:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+                transform: translateY(-2px);
+            }
+            .search-input {
+                border: none;
+                outline: none;
+            }
+            .search-input::placeholder {
+                color: #94a3b8;
+            }
+            /* 카드 디자인 */
+            .content-card {
+                background: white;
+                border-radius: 16px;
+                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+                transition: all 0.3s ease;
+            }
+            .content-card:hover {
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                transform: translateY(-4px);
+            }
+            .pulse-animation {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: .7; }
+            }
+            /* 배지 스타일 */
+            .badge {
+                display: inline-flex;
+                align-items: center;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-size: 0.75rem;
+                font-weight: 600;
+            }
+            /* 순위 숫자 스타일 */
+            .rank-number {
+                font-weight: 700;
+                font-size: 1.125rem;
+                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            /* 타이포그래피 */
+            .title-bold {
+                font-weight: 700;
+                color: #111827;
+            }
+            .text-medium {
+                color: #4b5563;
+            }
+            .text-light {
+                color: #9ca3af;
+            }
+            .floating {
+                animation: floating 3s ease-in-out infinite;
+            }
+            @keyframes floating {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-10px); }
+            }
+            .shine {
+                position: relative;
+                overflow: hidden;
+            }
+            .shine::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: -100%;
+                width: 100%;
+                height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+                transition: left 0.5s;
+            }
+            .shine:hover::before {
+                left: 100%;
+            }
+            /* 스크롤바 숨기기 (기능은 유지) */
+            .hide-scrollbar {
+                -ms-overflow-style: none;  /* IE and Edge */
+                scrollbar-width: none;  /* Firefox */
+            }
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;  /* Chrome, Safari, Opera */
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 transition-colors duration-300">
+        ${getCommonHeader()}
+        ${getStickyHeader()}
+
+        <!-- 메인 검색 영역 -->
+        <main class="max-w-6xl mx-auto px-4 py-16">
+            <!-- 검색창 - 캡슐형 디자인 -->
+            <div class="mb-12 max-w-3xl mx-auto" id="main-search">
+                <div class="relative search-shadow bg-white">
+                    <div class="flex items-center px-4 sm:px-6 py-2 sm:py-3">
+                        <input 
+                            type="text" 
+                            id="search-input"
+                            placeholder="무엇을 찾으시나요?" 
+                            class="search-input flex-1 text-base sm:text-lg text-gray-900 placeholder-gray-400"
+                        />
+                        <button 
+                            id="search-btn"
+                            class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full brand-navy text-white brand-navy-hover transition-all ml-2 sm:ml-3"
+                        >
+                            <i class="fas fa-search text-sm sm:text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 퀵 메뉴 네비게이션 - 통일된 디자인 -->
+            <nav class="mb-16 max-w-3xl mx-auto" id="quick-menu">
+                <div class="overflow-x-auto hide-scrollbar">
+                    <div class="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-0">
+                        <a href="/news" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-newspaper text-xl sm:text-2xl text-blue-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-blue-600 transition-colors whitespace-nowrap">뉴스</p>
+                        </a>
+                        <a href="/lifestyle" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-home text-xl sm:text-2xl text-green-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors whitespace-nowrap">유틸리티</p>
+                        </a>
+                        <a href="/game" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-gamepad text-xl sm:text-2xl text-purple-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-purple-600 transition-colors whitespace-nowrap">게임</p>
+                        </a>
+                        <a href="/finance" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-won-sign text-xl sm:text-2xl text-orange-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-orange-600 transition-colors whitespace-nowrap">금융</p>
+                        </a>
+                        <a href="/shopping" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-shopping-bag text-xl sm:text-2xl text-pink-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-pink-600 transition-colors whitespace-nowrap">쇼핑</p>
+                        </a>
+                        <a href="/entertainment" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-film text-xl sm:text-2xl text-red-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-red-600 transition-colors whitespace-nowrap">엔터</p>
+                        </a>
+                        <a href="/education" class="group text-center flex-shrink-0">
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
+                                <i class="fas fa-graduation-cap text-xl sm:text-2xl text-indigo-600"></i>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-indigo-600 transition-colors whitespace-nowrap">교육</p>
+                        </a>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- 메인 배너 섹션 (네이버 스타일) -->
+            <section class="mb-6 max-w-6xl mx-auto px-4">
+                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    <a href="/news" class="block">
+                        <div class="flex items-center p-4 sm:p-6">
+                            <!-- 배너 이미지 (왼쪽) -->
+                            <div class="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-xl overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500">
+                                <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop" 
+                                     alt="배너 이미지" 
+                                     class="w-full h-full object-cover"
+                                     onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center\\'><i class=\\'fas fa-image text-white text-4xl\\'></i></div>'">
+                            </div>
+                            
+                            <!-- 배너 텍스트 (오른쪽) -->
+                            <div class="flex-1 ml-4 sm:ml-6">
+                                <h3 class="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">
+                                    부해른 윈터 원더랜드
+                                </h3>
+                                <p class="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                    한소희의 홀리데이 위시리스트
+                                </p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </section>
+
+            <!-- 날씨 위젯 -->
+            <section class="mb-8 max-w-6xl mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-md p-4">
+                    <div class="flex items-center justify-between">
+                        <!-- 현재 날씨 -->
+                        <div class="flex items-center gap-3">
+                            <div class="text-3xl" id="weather-icon">
+                                <i class="fas fa-cloud-sun text-blue-400"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-baseline gap-2">
+                                    <span class="text-2xl font-bold text-gray-900" id="weather-temp">1.3°</span>
+                                    <span class="text-sm text-gray-600">비</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1" id="weather-location">서울</div>
+                            </div>
+                        </div>
+                        
+                        <!-- 미세먼지/초미세먼지 -->
+                        <div class="flex gap-3 sm:gap-6">
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">미세</div>
+                                <div class="text-sm font-bold">
+                                    <span class="text-blue-600">좋음</span>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-xs text-gray-500 mb-1">초미세</div>
+                                <div class="text-sm font-bold">
+                                    <span class="text-blue-600">좋음</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <script>
+                // 날씨 API 호출 (OpenWeatherMap 무료 API 사용 가능)
+                async function loadWeather() {
+                    try {
+                        // Geolocation으로 현재 위치 가져오기
+                        if (navigator.geolocation) {
+                            navigator.geolocation.getCurrentPosition(async (position) => {
+                                const lat = position.coords.latitude;
+                                const lon = position.coords.longitude;
+                                
+                                // 날씨 아이콘 매핑
+                                const weatherIcons = {
+                                    'Clear': 'fa-sun text-yellow-400',
+                                    'Clouds': 'fa-cloud text-gray-400',
+                                    'Rain': 'fa-cloud-rain text-blue-500',
+                                    'Snow': 'fa-snowflake text-blue-200',
+                                    'Drizzle': 'fa-cloud-rain text-blue-400',
+                                    'Thunderstorm': 'fa-bolt text-yellow-600',
+                                    'Mist': 'fa-smog text-gray-400',
+                                    'Fog': 'fa-smog text-gray-400'
+                                };
+                                
+                                // 간단한 날씨 표시 (실제로는 API 호출 필요)
+                                const weatherDesc = ['비', '맑음', '흐림', '눈'][Math.floor(Math.random() * 4)];
+                                const temp = (Math.random() * 20 - 5).toFixed(1);
+                                
+                                document.getElementById('weather-temp').textContent = temp + '°';
+                                
+                                // 날씨 아이콘 업데이트
+                                const iconClasses = weatherDesc === '비' ? 'fa-cloud-rain text-blue-500' :
+                                                   weatherDesc === '맑음' ? 'fa-sun text-yellow-400' :
+                                                   weatherDesc === '흐림' ? 'fa-cloud text-gray-400' :
+                                                   'fa-snowflake text-blue-200';
+                                                   
+                                document.getElementById('weather-icon').innerHTML = '<i class="fas ' + iconClasses + '"></i>';
+                            }, (error) => {
+                                console.log('위치 정보를 가져올 수 없습니다:', error);
+                            });
+                        }
+                    } catch (error) {
+                        console.error('날씨 정보 로드 실패:', error);
+                    }
+                }
+                
+                // 페이지 로드 시 날씨 정보 가져오기
+                loadWeather();
+            </script>
+
+            <!-- 뉴스 & 트렌드 섹션 -->
+            <div class="grid md:grid-cols-2 gap-6 mb-12">
+                <!-- 실시간 뉴스 -->
+                <div class="content-card p-8">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-newspaper text-blue-600 text-2xl mr-3"></i>
+                        실시간 뉴스
+                        <span class="ml-3 text-xs bg-red-500 text-white px-3 py-1 rounded-full pulse-animation font-semibold">LIVE</span>
+                    </h3>
+                    <div class="space-y-2" id="latest-news">
+                        ${latestNews.length > 0 ? latestNews.map((news, index) => {
+                          const timeAgo = getTimeAgo(news.created_at)
+                          const categoryColor = getCategoryColor(news.category)
+                          return `
+                            <div onclick="openNewsLink('${news.link}')" class="block hover:bg-blue-50 py-3 px-3 rounded-lg transition group border-b border-gray-100 last:border-b-0 cursor-pointer">
+                                <div class="flex items-start gap-3">
+                                    <span class="rank-number flex-shrink-0 mt-0.5">${index + 1}</span>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 mb-1.5">
+                                            <span class="badge ${categoryColor}">${getCategoryName(news.category)}</span>
+                                            <span class="text-gray-500 text-xs font-medium flex-shrink-0">${timeAgo}</span>
+                                        </div>
+                                        <p class="text-gray-900 group-hover:text-blue-700 font-semibold text-base leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                          `
+                        }).join('') : `
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-newspaper text-4xl mb-3 text-gray-300"></i>
+                                <p>뉴스를 불러오는 중입니다...</p>
+                                <a href="/news" class="mt-3 inline-block text-blue-700 hover:text-blue-800 font-semibold">
+                                    뉴스 페이지로 이동 →
+                                </a>
+                            </div>
+                        `}
+                    </div>
+                    ${latestNews.length > 0 ? `
+                        <div class="mt-6 text-center">
+                            <a href="/news" class="inline-flex items-center px-6 py-2.5 accent-orange text-white rounded-lg hover:shadow-lg transition-all accent-orange-hover font-semibold">
+                                <span>더 많은 뉴스 보기</span>
+                                <i class="fas fa-arrow-right ml-2"></i>
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <!-- 트렌드 토픽 -->
+                <div class="content-card p-8">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                        <i class="fas fa-chart-line text-orange-600 text-2xl mr-3"></i>
+                        실시간 트렌드
+                        <span class="ml-3 text-xs bg-orange-500 text-white px-3 py-1 rounded-full pulse-animation font-semibold">HOT</span>
+                    </h3>
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition border-b border-gray-100">
+                            <div class="flex items-center">
+                                <span class="rank-number mr-3">1</span>
+                                <span class="text-gray-900 font-semibold">인공지능 기술</span>
+                            </div>
+                            <i class="fas fa-arrow-up text-green-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition border-b border-gray-100">
+                            <div class="flex items-center">
+                                <span class="rank-number mr-3">2</span>
+                                <span class="text-gray-900 font-semibold">날씨 정보</span>
+                            </div>
+                            <i class="fas fa-arrow-up text-green-500"></i>
+                        </div>
+                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition border-b border-gray-100">
+                            <div class="flex items-center">
+                                <span class="rank-number mr-3">3</span>
+                                <span class="text-gray-900 font-semibold">맛집 추천</span>
+                            </div>
+                            <i class="fas fa-minus text-gray-400"></i>
+                        </div>
+                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition">
+                            <div class="flex items-center">
+                                <span class="rank-number mr-3">4</span>
+                                <span class="text-gray-900 font-semibold">여행 정보</span>
+                            </div>
+                            <i class="fas fa-arrow-down text-red-500"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 추천 콘텐츠 -->
+            <div class="bg-gradient-to-r from-blue-900 to-blue-700 rounded-xl sm:rounded-2xl shadow-2xl p-6 sm:p-8 text-center text-white shine mx-4">
+                <i class="fas fa-star text-yellow-400 text-3xl sm:text-4xl mb-3 sm:mb-4"></i>
+                <h3 class="text-xl sm:text-2xl font-bold mb-2">Faith Portal과 함께하세요</h3>
+                <p class="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base">지금 가입하고 더 많은 혜택을 누리세요</p>
+                <a href="/signup" class="inline-block bg-white text-blue-900 px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg sm:rounded-xl font-bold hover:bg-gray-100 transition shadow-lg text-sm sm:text-base">
+                    무료로 시작하기 <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </main>
+
+        <script>
+            // 뉴스 링크 열기 (Referrer 없이)
+            function openNewsLink(url) {
+                console.log('[openNewsLink] 실행 - 원본 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
+            }
+            
+            // 검색 기능
+            document.getElementById('search-btn').addEventListener('click', function() {
+                const query = document.getElementById('search-input').value;
+                if (query.trim()) {
+                    alert('검색어: ' + query + '\\n(실제 검색 기능은 추가 구현이 필요합니다)');
+                }
+            });
+
+            // 엔터키로 검색
+            document.getElementById('search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    document.getElementById('search-btn').click();
+                }
+            });
+
+            // 로그인 상태 확인과 다크모드는 공통 스크립트에서 처리
+        </script>
+
+        ${getCommonAuthScript()}
+
+        ${getCommonFooter()}
+
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 게임 페이지 ====================
+// 게임 메인 페이지 (심플 게임으로 리다이렉트)
+app.get('/game', (c) => {
+  return c.redirect('/game/simple')
+})
+
+// 심플 게임 페이지
+app.get('/game/simple', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>심플 게임 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Game')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                    <div class="text-center py-16">
+                        <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                            <i class="fas fa-gamepad text-4xl text-white"></i>
+                        </div>
+                        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                            <span class="bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">심플 게임</span>
+                        </h1>
+                        <p class="text-gray-600 text-lg mb-8">
+                            간단하게 즐길 수 있는 브라우저 게임
+                        </p>
+                        
+                        <!-- 게임 카드 그리드 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+                            <a href="/game/simple/tetris" class="block bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                                    <i class="fas fa-th text-3xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white mb-2">테트리스</h3>
+                                <p class="text-blue-100 text-sm">블록을 쌓아 라인을 완성하세요</p>
+                            </a>
+                            
+                            <a href="/game/simple/sudoku" class="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
+                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
+                                    <i class="fas fa-table text-3xl text-white"></i>
+                                </div>
+                                <h3 class="text-xl font-bold text-white mb-2">스도쿠</h3>
+                                <p class="text-green-100 text-sm">숫자 퍼즐을 풀어보세요</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 웹게임 페이지
+app.get('/game/web', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>웹게임 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Game')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '웹게임'}
+        ])}
+
+        ${getGameMenu('/game/web')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+            <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                <div class="text-center py-16">
+                    <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fas fa-globe text-4xl text-white"></i>
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
+                        <span class="bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">웹게임</span>
+                    </h1>
+                    <p class="text-gray-600 text-lg mb-8">
+                        다양한 온라인 웹 게임을 즐겨보세요
+                    </p>
+                    <div class="bg-gray-100 rounded-lg p-8 mt-8">
+                        <i class="fas fa-tools text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">준비 중입니다...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 테트리스 정보 페이지
+app.get('/game/simple/tetris', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>테트리스 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Game')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '테트리스'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1 space-y-6">
+                <!-- 게임 헤더 -->
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-lg p-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl sm:text-4xl font-bold mb-2">
+                                <i class="fas fa-th mr-3"></i>테트리스
+                            </h1>
+                            <p class="text-blue-100">클래식 블록 퍼즐 게임</p>
+                        </div>
+                        <button onclick="openGameModal()" class="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-blue-50 transition-all shadow-lg">
+                            <i class="fas fa-play mr-2"></i>게임 시작
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 사용법 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-keyboard mr-2 text-blue-500"></i>
+                            조작법
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ←
+                                </div>
+                                <span class="text-gray-700">왼쪽으로 이동</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    →
+                                </div>
+                                <span class="text-gray-700">오른쪽으로 이동</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ↑
+                                </div>
+                                <span class="text-gray-700">블록 회전</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    ↓
+                                </div>
+                                <span class="text-gray-700">빠르게 내리기</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center text-xs mr-4">
+                                    SPACE
+                                </div>
+                                <span class="text-gray-700">즉시 바닥까지 내리기</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 게임 규칙 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-info-circle mr-2 text-green-500"></i>
+                            게임 규칙
+                        </h2>
+                        <div class="space-y-3 text-gray-700">
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>떨어지는 블록을 회전하고 이동하여 가로줄을 완성하세요</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>한 줄을 완성하면 <strong>10점</strong>을 획득합니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span><strong>200점</strong>마다 레벨이 올라가고 속도가 빨라집니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>다음에 나올 블록을 미리 확인할 수 있습니다</span>
+                            </div>
+                            <div class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>블록이 화면 위까지 쌓이면 게임 오버입니다</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 최고 점수 리스트 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                        최고 점수 랭킹
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="border-b-2 border-gray-200">
+                                    <th class="text-left py-3 px-4 text-gray-600 font-semibold">순위</th>
+                                    <th class="text-left py-3 px-4 text-gray-600 font-semibold">ID</th>
+                                    <th class="text-right py-3 px-4 text-gray-600 font-semibold">점수</th>
+                                    <th class="text-right py-3 px-4 text-gray-600 font-semibold">달성 날짜</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard">
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                        <p>로딩 중...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 게임 모달 (전체화면) -->
+        <div id="gameModal" class="fixed inset-0 bg-black hidden z-50" style="display: none;">
+            <div class="relative w-full h-full flex flex-col">
+                <button onclick="closeGameModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 w-12 h-12 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+                <iframe id="gameFrame" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+        
+        <script>
+            // Load leaderboard
+            function loadLeaderboard() {
+                fetch('/api/tetris/leaderboard')
+                    .then(res => res.json())
+                    .then(data => {
+                        const tbody = document.getElementById('leaderboard');
+                        if (data.success && data.leaderboard.length > 0) {
+                            tbody.innerHTML = data.leaderboard.map((item, index) => {
+                                const rank = index + 1;
+                                const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                                const date = new Date(item.created_at).toLocaleDateString('ko-KR');
+                                const email = item.email.split('@')[0]; // Only show username part
+                                
+                                return \`
+                                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                                        <td class="py-3 px-4 font-bold text-lg">\${medal}</td>
+                                        <td class="py-3 px-4 text-gray-700">\${email}</td>
+                                        <td class="py-3 px-4 text-right font-bold text-blue-600">\${item.score.toLocaleString()}</td>
+                                        <td class="py-3 px-4 text-right text-gray-500 text-sm">\${date}</td>
+                                    </tr>
+                                \`;
+                            }).join('');
+                        } else {
+                            tbody.innerHTML = \`
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-gray-500">
+                                        아직 기록이 없습니다. 첫 번째 기록을 남겨보세요!
+                                    </td>
+                                </tr>
+                            \`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Leaderboard load error:', err);
+                        document.getElementById('leaderboard').innerHTML = \`
+                            <tr>
+                                <td colspan="4" class="text-center py-8 text-red-500">
+                                    리더보드를 불러오는 중 오류가 발생했습니다.
+                                </td>
+                            </tr>
+                        \`;
+                    });
+            }
+            
+            function openGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                
+                iframe.src = '/game/simple/tetris/play';
+                modal.style.display = 'flex';
+                
+                setTimeout(() => iframe.focus(), 100);
+            }
+            
+            function closeGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                modal.style.display = 'none';
+                iframe.src = '';
+                
+                // Reload leaderboard in case of new high score
+                loadLeaderboard();
+            }
+            
+            // Close modal on background click
+            document.getElementById('gameModal')?.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeGameModal();
+                }
+            });
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('gameModal').style.display === 'flex') {
+                    closeGameModal();
+                }
+            });
+            
+            // Load leaderboard on page load
+            loadLeaderboard();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// 테트리스 게임 실행 페이지
+app.get('/game/simple/tetris/play', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>테트리스 - Faith Portal</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: 'Arial', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                overflow: hidden;
+                padding: 10px;
+            }
+            .game-container {
+                display: flex;
+                flex-direction: row;
+                gap: 20px;
+                padding: 20px;
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 20px;
+                box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+                max-width: 100%;
+                max-height: 95vh;
+            }
+            .main-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+            }
+            #tetris {
+                border: 3px solid #333;
+                background: #000;
+                display: block;
+                max-width: 100%;
+                height: auto;
+            }
+            .side-panel {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                min-width: 180px;
+                max-width: 220px;
+            }
+            .info-box {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                padding: 15px;
+                border-radius: 10px;
+                color: white;
+            }
+            .info-box h3 {
+                margin-bottom: 8px;
+                font-size: 16px;
+                border-bottom: 2px solid rgba(255,255,255,0.3);
+                padding-bottom: 5px;
+            }
+            .info-box p {
+                font-size: 20px;
+                font-weight: bold;
+                margin: 5px 0;
+            }
+            .next-piece {
+                width: 80px;
+                height: 80px;
+                margin: 10px auto;
+                background: rgba(0,0,0,0.3);
+                border: 2px solid rgba(255,255,255,0.3);
+                border-radius: 5px;
+            }
+            .controls {
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 10px;
+                font-size: 12px;
+            }
+            .controls h3 {
+                margin-bottom: 8px;
+                color: #333;
+                font-size: 14px;
+            }
+            .controls p {
+                margin: 3px 0;
+                color: #666;
+            }
+            button {
+                width: 100%;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.3s;
+            }
+            .start-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+            }
+            .start-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            }
+            .start-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            #gameOver {
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+                text-align: center;
+                z-index: 1000;
+            }
+            #gameOver h2 {
+                color: #e74c3c;
+                font-size: 32px;
+                margin-bottom: 20px;
+            }
+            #gameOver p {
+                font-size: 20px;
+                margin: 10px 0;
+                color: #333;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                z-index: 999;
+            }
+            
+            /* 반응형 스타일 */
+            @media (max-width: 768px) {
+                body {
+                    padding: 5px;
+                }
+                .game-container {
+                    flex-direction: column;
+                    gap: 15px;
+                    padding: 15px;
+                    max-height: 100vh;
+                    overflow-y: auto;
+                }
+                #tetris {
+                    width: 240px !important;
+                    height: 480px !important;
+                }
+                .side-panel {
+                    flex-direction: row;
+                    flex-wrap: wrap;
+                    min-width: 100%;
+                    max-width: 100%;
+                    gap: 10px;
+                }
+                .info-box {
+                    flex: 1;
+                    min-width: calc(50% - 5px);
+                    padding: 10px;
+                }
+                .info-box h3 {
+                    font-size: 14px;
+                }
+                .info-box p {
+                    font-size: 16px;
+                }
+                .controls {
+                    flex: 1 1 100%;
+                    order: 10;
+                }
+                button {
+                    padding: 10px;
+                    font-size: 14px;
+                }
+                .next-piece {
+                    width: 60px;
+                    height: 60px;
+                }
+                #gameOver {
+                    padding: 20px;
+                    width: 90%;
+                    max-width: 300px;
+                }
+                #gameOver h2 {
+                    font-size: 24px;
+                }
+                #gameOver p {
+                    font-size: 16px;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                #tetris {
+                    width: 200px !important;
+                    height: 400px !important;
+                }
+                .info-box {
+                    min-width: 100%;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="overlay" id="overlay"></div>
+        
+        <div class="game-container">
+            <div class="main-panel">
+                <canvas id="tetris" width="300" height="600"></canvas>
+            </div>
+            
+            <div class="side-panel">
+                <div class="info-box">
+                    <h3>점수</h3>
+                    <p id="score">0</p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>최고 점수</h3>
+                    <p id="highScore">0</p>
+                </div>
+                
+                <div class="info-box">
+                    <h3>다음 블록</h3>
+                    <canvas id="nextPiece" width="100" height="100" class="next-piece"></canvas>
+                </div>
+                
+                <div class="info-box">
+                    <h3>레벨</h3>
+                    <p id="level">1</p>
+                </div>
+                
+                <button class="start-btn" id="startBtn" onclick="startGame()">게임 시작</button>
+                
+                <div class="controls">
+                    <h3>조작법</h3>
+                    <p>← → : 좌우 이동</p>
+                    <p>↑ : 회전</p>
+                    <p>↓ : 빠르게 내리기</p>
+                    <p>Space : 즉시 내리기</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="gameOver">
+            <h2>게임 오버!</h2>
+            <p>최종 점수: <span id="finalScore">0</span></p>
+            <p id="newHighScore" style="color: #27ae60; display: none;">🎉 신기록 달성!</p>
+            <button class="start-btn" onclick="restartGame()" style="margin-top: 20px;">다시 시작</button>
+        </div>
+
+        <script>
+            const canvas = document.getElementById('tetris');
+            const ctx = canvas.getContext('2d');
+            const nextCanvas = document.getElementById('nextPiece');
+            const nextCtx = nextCanvas.getContext('2d');
+            
+            const BLOCK_SIZE = 30;
+            const COLS = 10;
+            const ROWS = 20;
+            
+            let board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+            let score = 0;
+            let highScore = 0;
+            let level = 1;
+            let dropSpeed = 1000;
+            let gameRunning = false;
+            let gameInterval;
+            let currentPiece;
+            let nextPiece;
+            
+            const SHAPES = [
+                [[1,1,1,1]], // I
+                [[1,1],[1,1]], // O
+                [[1,1,1],[0,1,0]], // T
+                [[1,1,1],[1,0,0]], // L
+                [[1,1,1],[0,0,1]], // J
+                [[1,1,0],[0,1,1]], // S
+                [[0,1,1],[1,1,0]]  // Z
+            ];
+            
+            const COLORS = ['#00f0f0', '#f0f000', '#a000f0', '#f0a000', '#0000f0', '#00f000', '#f00000'];
+            
+            // Load high score
+            loadHighScore();
+            
+            function loadHighScore() {
+                const userId = localStorage.getItem('user_id');
+                if (userId) {
+                    fetch(\`/api/tetris/highscore/\${userId}\`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                highScore = data.highScore || 0;
+                                document.getElementById('highScore').textContent = highScore;
+                            }
+                        });
+                }
+            }
+            
+            function saveHighScore() {
+                const userId = localStorage.getItem('user_id');
+                if (userId && score > highScore) {
+                    fetch('/api/tetris/score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: userId, score: score })
+                    }).then(() => {
+                        highScore = score;
+                        document.getElementById('highScore').textContent = highScore;
+                    });
+                }
+            }
+            
+            function createPiece() {
+                const shapeIndex = Math.floor(Math.random() * SHAPES.length);
+                return {
+                    shape: SHAPES[shapeIndex],
+                    color: COLORS[shapeIndex],
+                    x: Math.floor(COLS / 2) - 1,
+                    y: 0
+                };
+            }
+            
+            function drawBlock(ctx, x, y, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+            }
+            
+            function drawBoard() {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        if (board[y][x]) {
+                            drawBlock(ctx, x, y, board[y][x]);
+                        }
+                    }
+                }
+            }
+            
+            function drawPiece(piece, context, offsetX = 0, offsetY = 0) {
+                piece.shape.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell) {
+                            if (context === ctx) {
+                                drawBlock(context, piece.x + x, piece.y + y, piece.color);
+                            } else {
+                                // Draw on next piece canvas
+                                context.fillStyle = piece.color;
+                                context.fillRect(
+                                    (x + offsetX) * 20 + 10,
+                                    (y + offsetY) * 20 + 10,
+                                    20, 20
+                                );
+                                context.strokeStyle = '#000';
+                                context.strokeRect(
+                                    (x + offsetX) * 20 + 10,
+                                    (y + offsetY) * 20 + 10,
+                                    20, 20
+                                );
+                            }
+                        }
+                    });
+                });
+            }
+            
+            function collision(piece) {
+                for (let y = 0; y < piece.shape.length; y++) {
+                    for (let x = 0; x < piece.shape[y].length; x++) {
+                        if (piece.shape[y][x]) {
+                            const newX = piece.x + x;
+                            const newY = piece.y + y;
+                            if (newX < 0 || newX >= COLS || newY >= ROWS || (newY >= 0 && board[newY][newX])) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            function merge() {
+                currentPiece.shape.forEach((row, y) => {
+                    row.forEach((cell, x) => {
+                        if (cell) {
+                            board[currentPiece.y + y][currentPiece.x + x] = currentPiece.color;
+                        }
+                    });
+                });
+            }
+            
+            function clearLines() {
+                let linesCleared = 0;
+                for (let y = ROWS - 1; y >= 0; y--) {
+                    if (board[y].every(cell => cell !== 0)) {
+                        board.splice(y, 1);
+                        board.unshift(Array(COLS).fill(0));
+                        linesCleared++;
+                        y++;
+                    }
+                }
+                if (linesCleared > 0) {
+                    score += linesCleared * 10;
+                    document.getElementById('score').textContent = score;
+                    
+                    // Speed up every 200 points
+                    const newLevel = Math.floor(score / 200) + 1;
+                    if (newLevel > level) {
+                        level = newLevel;
+                        dropSpeed = Math.max(100, dropSpeed / 1.2);
+                        document.getElementById('level').textContent = level;
+                        clearInterval(gameInterval);
+                        gameInterval = setInterval(drop, dropSpeed);
+                    }
+                }
+            }
+            
+            function rotate() {
+                const rotated = currentPiece.shape[0].map((_, i) =>
+                    currentPiece.shape.map(row => row[i]).reverse()
+                );
+                const previousShape = currentPiece.shape;
+                currentPiece.shape = rotated;
+                if (collision(currentPiece)) {
+                    currentPiece.shape = previousShape;
+                }
+            }
+            
+            function moveDown() {
+                currentPiece.y++;
+                if (collision(currentPiece)) {
+                    currentPiece.y--;
+                    merge();
+                    clearLines();
+                    currentPiece = nextPiece;
+                    nextPiece = createPiece();
+                    if (collision(currentPiece)) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            function moveLeft() {
+                currentPiece.x--;
+                if (collision(currentPiece)) {
+                    currentPiece.x++;
+                }
+            }
+            
+            function moveRight() {
+                currentPiece.x++;
+                if (collision(currentPiece)) {
+                    currentPiece.x--;
+                }
+            }
+            
+            function hardDrop() {
+                while (!collision(currentPiece)) {
+                    currentPiece.y++;
+                }
+                currentPiece.y--;
+                merge();
+                clearLines();
+                currentPiece = nextPiece;
+                nextPiece = createPiece();
+                if (collision(currentPiece)) {
+                    gameOver();
+                }
+            }
+            
+            function drop() {
+                moveDown();
+                draw();
+            }
+            
+            function draw() {
+                drawBoard();
+                drawPiece(currentPiece, ctx);
+                
+                // Draw next piece
+                nextCtx.fillStyle = 'rgba(0,0,0,0.3)';
+                nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+                drawPiece(nextPiece, nextCtx, 0, 0);
+            }
+            
+            function startGame() {
+                board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+                score = 0;
+                level = 1;
+                dropSpeed = 1000;
+                document.getElementById('score').textContent = 0;
+                document.getElementById('level').textContent = 1;
+                currentPiece = createPiece();
+                nextPiece = createPiece();
+                gameRunning = true;
+                document.getElementById('startBtn').disabled = true;
+                gameInterval = setInterval(drop, dropSpeed);
+                draw();
+            }
+            
+            function gameOver() {
+                gameRunning = false;
+                clearInterval(gameInterval);
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('finalScore').textContent = score;
+                
+                if (score > highScore) {
+                    document.getElementById('newHighScore').style.display = 'block';
+                    saveHighScore();
+                } else {
+                    document.getElementById('newHighScore').style.display = 'none';
+                }
+                
+                document.getElementById('overlay').style.display = 'block';
+                document.getElementById('gameOver').style.display = 'block';
+            }
+            
+            function restartGame() {
+                document.getElementById('overlay').style.display = 'none';
+                document.getElementById('gameOver').style.display = 'none';
+                startGame();
+            }
+            
+            document.addEventListener('keydown', (e) => {
+                if (!gameRunning) return;
+                
+                if (e.key === 'ArrowLeft') {
+                    moveLeft();
+                    draw();
+                } else if (e.key === 'ArrowRight') {
+                    moveRight();
+                    draw();
+                } else if (e.key === 'ArrowDown') {
+                    moveDown();
+                    draw();
+                } else if (e.key === 'ArrowUp') {
+                    rotate();
+                    draw();
+                } else if (e.key === ' ') {
+                    e.preventDefault();
+                    hardDrop();
+                    draw();
+                }
+            });
+            
+            // Initial draw
+            drawBoard();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// 스도쿠 정보 페이지
+// ==================== 포털형 스도쿠 챌린지 ====================
+app.get('/game/simple/sudoku', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>스도쿠 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            .difficulty-tab { cursor: pointer; transition: all 0.3s; }
+            .difficulty-tab.active { background-color: #10b981; color: white; }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
+        ${getCommonHeader('Game')}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '스도쿠'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1 space-y-6">
+                <!-- 게임 헤더 -->
+                <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl shadow-lg p-8 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-3xl sm:text-4xl font-bold mb-2">
+                                <i class="fas fa-table mr-3"></i>스도쿠
+                            </h1>
+                            <p class="text-green-100">클래식 숫자 퍼즐 게임</p>
+                        </div>
+                        <button onclick="openGameModal()" class="bg-white text-green-600 px-8 py-4 rounded-lg font-bold text-lg hover:bg-green-50 transition-all shadow-lg">
+                            <i class="fas fa-play mr-2"></i>게임 시작
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 난이도 탭 -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex space-x-2 mb-6">
+                        <button onclick="changeDifficulty('easy')" class="difficulty-tab active px-6 py-3 rounded-lg font-bold" id="tab-easy">
+                            <i class="fas fa-star mr-2"></i>쉬움
+                        </button>
+                        <button onclick="changeDifficulty('medium')" class="difficulty-tab px-6 py-3 rounded-lg font-bold bg-gray-100" id="tab-medium">
+                            <i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i>보통
+                        </button>
+                        <button onclick="changeDifficulty('hard')" class="difficulty-tab px-6 py-3 rounded-lg font-bold bg-gray-100" id="tab-hard">
+                            <i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i><i class="fas fa-star mr-2"></i>어려움
+                        </button>
+                    </div>
+
+                    <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>
+                        최고 기록 (<span id="difficulty-label">쉬움</span>)
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">순위</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">플레이어</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">완료 시간</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">날짜</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-body" class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 게임 규칙 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-book mr-2 text-green-500"></i>
+                            게임 규칙
+                        </h2>
+                        <ul class="space-y-3 text-gray-700">
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>9×9 칸에 1부터 9까지 숫자를 채워야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 행에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 열에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-check-circle text-green-500 mr-3 mt-1"></i>
+                                <span>각 3×3 박스에는 1-9가 한 번씩만 나와야 합니다</span>
+                            </li>
+                            <li class="flex items-start">
+                                <i class="fas fa-clock text-blue-500 mr-3 mt-1"></i>
+                                <span>가능한 한 빨리 완성하세요!</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- 조작법 -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                            <i class="fas fa-keyboard mr-2 text-green-500"></i>
+                            조작법
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    클릭
+                                </div>
+                                <span class="text-gray-700">빈 칸 선택</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold mr-4">
+                                    1-9
+                                </div>
+                                <span class="text-gray-700">숫자 입력 (키보드 또는 버튼)</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-green-500 text-white rounded-lg flex items-center justify-center font-bold text-xs mr-4">
+                                    DEL
+                                </div>
+                                <span class="text-gray-700">숫자 지우기</span>
+                            </div>
+                            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                                <div class="w-12 h-12 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-xs mr-4">
+                                    HINT
+                                </div>
+                                <span class="text-gray-700">힌트 받기 (랜덤 1칸 채워짐)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 게임 모달 (전체화면) -->
+        <div id="gameModal" class="hidden fixed inset-0 bg-black z-50">
+            <div class="relative w-full h-full flex flex-col overflow-auto">
+                <button onclick="closeGameModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 w-12 h-12 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+                <iframe id="gameFrame" class="w-full h-full border-0" style="min-width: 600px;"></iframe>
+            </div>
+        </div>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+
+        <script>
+            let currentDifficulty = 'easy';
+
+            // 페이지 로드 시 리더보드 로드
+            window.addEventListener('DOMContentLoaded', () => {
+                loadLeaderboard();
+            });
+
+            // 난이도 변경
+            function changeDifficulty(difficulty) {
+                currentDifficulty = difficulty;
+                
+                // 탭 활성화 상태 변경
+                document.querySelectorAll('.difficulty-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    tab.classList.add('bg-gray-100');
+                });
+                const activeTab = document.getElementById(\`tab-\${difficulty}\`);
+                activeTab.classList.add('active');
+                activeTab.classList.remove('bg-gray-100');
+
+                // 난이도 라벨 변경
+                const labels = { easy: '쉬움', medium: '보통', hard: '어려움' };
+                document.getElementById('difficulty-label').textContent = labels[difficulty];
+
+                // 리더보드 로드
+                loadLeaderboard();
+            }
+
+            // 리더보드 로드
+            async function loadLeaderboard() {
+                const leaderboardBody = document.getElementById('leaderboard-body');
+                leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>불러오는 중...</td></tr>';
+
+                try {
+                    const response = await fetch(\`/api/sudoku/leaderboard/\${currentDifficulty}\`);
+                    const data = await response.json();
+
+                    if (data.success && data.leaderboard && data.leaderboard.length > 0) {
+                        leaderboardBody.innerHTML = data.leaderboard.map((entry, index) => {
+                            const date = new Date(entry.created_at).toLocaleDateString('ko-KR');
+                            const minutes = Math.floor(entry.time / 60);
+                            const seconds = entry.time % 60;
+                            const timeStr = \`\${minutes}분 \${seconds}초\`;
+                            
+                            const rankIcon = index === 0 ? '<i class="fas fa-crown text-yellow-500 mr-1"></i>' :
+                                           index === 1 ? '<i class="fas fa-medal text-gray-400 mr-1"></i>' :
+                                           index === 2 ? '<i class="fas fa-medal text-orange-600 mr-1"></i>' : '';
+                            
+                            return \`
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        \${rankIcon}\${index + 1}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">\${entry.email}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-bold text-green-600">\${timeStr}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">\${date}</td>
+                                </tr>
+                            \`;
+                        }).join('');
+                    } else {
+                        leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">아직 기록이 없습니다</td></tr>';
+                    }
+                } catch (error) {
+                    console.error('리더보드 로드 실패:', error);
+                    leaderboardBody.innerHTML = '<tr><td colspan="4" class="px-4 py-8 text-center text-red-500">리더보드를 불러오는데 실패했습니다</td></tr>';
+                }
+            }
+
+            // 게임 모달 열기
+            function openGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                iframe.src = \`/game/simple/sudoku/play?difficulty=\${currentDifficulty}\`;
+                modal.classList.remove('hidden');
+            }
+
+            // 게임 모달 닫기
+            function closeGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                modal.classList.add('hidden');
+                iframe.src = '';
+                // 리더보드 새로고침 (새로운 기록이 있을 수 있음)
+                loadLeaderboard();
+            }
+
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeGameModal();
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
