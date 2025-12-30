@@ -3017,7 +3017,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Action buttons */
             .action-btn {
-                padding: 6px 10px;
+                padding: 10px 16px;
                 border-radius: 8px;
                 font-weight: 600;
                 border: none;
@@ -3025,8 +3025,9 @@ app.get('/game/simple/sudoku/play', (c) => {
                 transition: all 0.2s;
                 display: inline-flex;
                 align-items: center;
-                gap: 4px;
-                font-size: 11px;
+                gap: 6px;
+                font-size: 14px;
+                white-space: nowrap;
             }
             
             .action-btn.primary {
@@ -3184,6 +3185,15 @@ app.get('/game/simple/sudoku/play', (c) => {
     </head>
     <body>
         <div class="container" id="game-container">
+            <!-- 보라색 헤더 -->
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="fas fa-th"></i>
+                    <span>스도쿠 게임</span>
+                </div>
+                <button class="modal-close" onclick="window.history.back()">×</button>
+            </div>
+            
             <!-- 컨텐츠 영역 -->
             <div class="modal-body">
                 <!-- 왼쪽: 스도쿠 그리드 -->
