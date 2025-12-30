@@ -2638,13 +2638,11 @@ app.get('/game/simple/sudoku/play', (c) => {
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                background: #000000;
+                background: white;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 10px;
+                margin: 0;
+                padding: 0;
             }
             
             .container {
