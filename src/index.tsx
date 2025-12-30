@@ -3107,27 +3107,29 @@ app.get('/game/simple/sudoku/play', (c) => {
                         cell.dataset.row = row;
                         cell.dataset.col = col;
                         
-                        // 기본 셀 스타일 (인라인)
-                        let cellStyle = 'width: 50px; min-width: 50px; max-width: 50px; height: 50px; min-height: 50px; max-height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
+                        // 기본 셀 스타일
+                        const baseStyle = 'width: 50px; min-width: 50px; max-width: 50px; height: 50px; min-height: 50px; max-height: 50px; background: white; border: 1px solid #cbd5e0; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; cursor: pointer; transition: all 0.15s; box-sizing: border-box; flex-shrink: 0;';
                         
                         // 3x3 박스 구분선
+                        let borderStyle = '';
                         if ((col + 1) % 3 === 0 && col < 8) {
-                            cellStyle += ' border-right: 3px solid #2d3748;';
+                            borderStyle += ' border-right: 3px solid #2d3748 !important;';
                         }
                         if ((row + 1) % 3 === 0 && row < 8) {
-                            cellStyle += ' border-bottom: 3px solid #2d3748;';
+                            borderStyle += ' border-bottom: 3px solid #2d3748 !important;';
                         }
                         
                         const value = currentGrid[row][col];
                         const isFixed = puzzle[row][col] !== 0;
                         
+                        let contentStyle = '';
                         if (isFixed) {
                             cell.classList.add('fixed');
-                            cellStyle += ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
+                            contentStyle = ' color: #1f2937; background: #f3f4f6; cursor: not-allowed;';
                             cell.textContent = value;
                         } else if (value !== 0) {
                             cell.classList.add('user-input');
-                            cellStyle += ' color: #3b82f6;';
+                            contentStyle = ' color: #3b82f6;';
                             cell.textContent = value;
                         } else if (notes[row][col].size > 0) {
                             // 메모 표시
@@ -3143,7 +3145,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                             cell.appendChild(notesDiv);
                         }
                         
-                        cell.style.cssText = cellStyle;
+                        cell.style.cssText = baseStyle + borderStyle + contentStyle;
                         cell.addEventListener('click', () => selectCell(row, col));
                         rowDiv.appendChild(cell);
                     }
