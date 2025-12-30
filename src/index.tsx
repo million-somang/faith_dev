@@ -2500,7 +2500,7 @@ app.get('/game/simple/sudoku', (c) => {
                     </button>
                 </div>
                 <div class="overflow-auto" style="max-height: calc(95vh - 64px);">
-                    <iframe id="game-frame" class="w-full" style="min-height: 600px; border: none;"></iframe>
+                    <iframe id="game-frame" class="w-full" style="min-height: 900px; border: none;"></iframe>
                 </div>
             </div>
         </div>
