@@ -2664,27 +2664,55 @@ app.get('/game/simple/sudoku/play', (c) => {
                     padding: 5px;
                 }
                 
+                .game-header {
+                    border-radius: 8px;
+                    padding: 6px 10px;
+                    margin-bottom: 4px;
+                }
+                
+                .header-content {
+                    gap: 8px;
+                }
+                
+                .difficulty-label {
+                    font-size: 9px;
+                    margin-bottom: 1px;
+                }
+                
+                .timer {
+                    font-size: 18px;
+                }
+                
+                .stat-label {
+                    font-size: 8px;
+                    margin-bottom: 1px;
+                }
+                
+                .stat-value {
+                    font-size: 16px;
+                }
+                
                 .sudoku-grid {
                     padding: 2px;
                 }
                 
                 .sudoku-grid table {
-                    width: min(95vw, 340px);
-                    height: min(95vw, 340px);
+                    width: 300px;
+                    height: 300px;
                 }
                 
                 .sudoku-grid td {
-                    width: min(10.5vw, 37px) !important;
-                    height: min(10.5vw, 37px) !important;
-                    min-width: min(10.5vw, 37px) !important;
-                    max-width: min(10.5vw, 37px) !important;
-                    min-height: min(10.5vw, 37px) !important;
-                    max-height: min(10.5vw, 37px) !important;
-                    font-size: 16px !important;
+                    width: 33px !important;
+                    height: 33px !important;
+                    min-width: 33px !important;
+                    max-width: 33px !important;
+                    min-height: 33px !important;
+                    max-height: 33px !important;
+                    font-size: 15px !important;
                 }
                 
                 .action-btn {
-                    padding: 8px 10px;
+                    padding: 6px 10px;
                     font-size: 11px;
                     gap: 4px;
                 }
@@ -2695,8 +2723,23 @@ app.get('/game/simple/sudoku/play', (c) => {
                 }
                 
                 .number-btn {
-                    min-height: 45px;
-                    font-size: 18px;
+                    min-height: 38px;
+                    font-size: 16px;
+                }
+                
+                .modal-emoji {
+                    font-size: 40px;
+                    margin-bottom: 15px;
+                }
+                
+                .modal-title {
+                    font-size: 24px;
+                    margin-bottom: 8px;
+                }
+                
+                .modal-text {
+                    font-size: 14px;
+                    margin-bottom: 16px;
                 }
             }
             
@@ -2789,22 +2832,22 @@ app.get('/game/simple/sudoku/play', (c) => {
                 border-collapse: collapse;
                 background: white !important;
                 table-layout: fixed;
-                width: 380px;
-                height: 380px;
+                width: 360px;
+                height: 360px;
             }
             
             .sudoku-grid td {
-                width: 42px !important;
-                height: 42px !important;
-                min-width: 42px !important;
-                max-width: 42px !important;
-                min-height: 42px !important;
-                max-height: 42px !important;
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                max-width: 40px !important;
+                min-height: 40px !important;
+                max-height: 40px !important;
                 background: white !important;
                 border: 1px solid #cbd5e0 !important;
                 text-align: center !important;
                 vertical-align: middle !important;
-                font-size: 20px !important;
+                font-size: 18px !important;
                 font-weight: 700 !important;
                 cursor: pointer !important;
                 padding: 0 !important;
@@ -2923,7 +2966,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Action buttons */
             .action-btn {
-                padding: 8px 12px;
+                padding: 6px 10px;
                 border-radius: 8px;
                 font-weight: 600;
                 border: none;
@@ -2931,8 +2974,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 transition: all 0.2s;
                 display: inline-flex;
                 align-items: center;
-                gap: 6px;
-                font-size: 12px;
+                gap: 4px;
+                font-size: 11px;
             }
             
             .action-btn.primary {
@@ -2967,12 +3010,62 @@ app.get('/game/simple/sudoku/play', (c) => {
                 color: white;
             }
             
-            /* Timer */
+            /* Header Styles */
+            .header-content {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            
+            .header-left {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .header-right {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            
+            .difficulty-label {
+                font-size: 11px;
+                color: #6b7280;
+                text-transform: uppercase;
+                font-weight: 600;
+                margin-bottom: 2px;
+            }
+            
             .timer {
-                font-size: 32px;
+                font-size: 24px;
                 font-weight: 700;
                 color: #1f2937;
                 font-variant-numeric: tabular-nums;
+            }
+            
+            .stat-item {
+                text-align: center;
+            }
+            
+            .stat-label {
+                font-size: 10px;
+                color: #6b7280;
+                margin-bottom: 2px;
+            }
+            
+            .stat-value {
+                font-size: 20px;
+                font-weight: 700;
+            }
+            
+            .stat-value.mistakes {
+                color: #ef4444;
+            }
+            
+            .stat-value.hints {
+                color: #10b981;
             }
             
             /* Modal */
@@ -3011,27 +3104,51 @@ app.get('/game/simple/sudoku/play', (c) => {
                     opacity: 1;
                 }
             }
+            
+            .modal-emoji {
+                font-size: 60px;
+                margin-bottom: 20px;
+            }
+            
+            .modal-title {
+                font-size: 32px;
+                font-weight: 700;
+                color: #1f2937;
+                margin-bottom: 12px;
+            }
+            
+            .modal-text {
+                font-size: 18px;
+                color: #6b7280;
+                margin-bottom: 24px;
+            }
+            
+            .modal-buttons {
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
         </style>
     </head>
     <body>
         <div class="container">
             <!-- Header -->
             <div class="game-header">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                    <div>
-                        <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">
+                <div class="header-content">
+                    <div class="header-left">
+                        <div class="difficulty-label">
                             ${difficulty.toUpperCase()} MODE
                         </div>
-                        <div style="font-size: 24px; font-weight: 700; color: #1f2937;" id="timer">00:00</div>
+                        <div class="timer" id="timer">00:00</div>
                     </div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-                        <div style="text-align: center;">
-                            <div style="font-size: 10px; color: #6b7280; margin-bottom: 2px;">실수</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="mistakes">0</div>
+                    <div class="header-right">
+                        <div class="stat-item">
+                            <div class="stat-label">실수</div>
+                            <div class="stat-value mistakes" id="mistakes">0</div>
                         </div>
-                        <div style="text-align: center;">
-                            <div style="font-size: 10px; color: #6b7280; margin-bottom: 2px;">힌트</div>
-                            <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="hints-left">3</div>
+                        <div class="stat-item">
+                            <div class="stat-label">힌트</div>
+                            <div class="stat-value hints" id="hints-left">3</div>
                         </div>
                     </div>
                 </div>
@@ -3074,12 +3191,12 @@ app.get('/game/simple/sudoku/play', (c) => {
         <!-- Success Modal -->
         <div class="modal" id="success-modal">
             <div class="modal-content">
-                <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
-                <h2 style="font-size: 32px; font-weight: 700; color: #1f2937; margin-bottom: 12px;">축하합니다!</h2>
-                <p style="font-size: 18px; color: #6b7280; margin-bottom: 24px;">
+                <div class="modal-emoji">🎉</div>
+                <h2 class="modal-title">축하합니다!</h2>
+                <p class="modal-text">
                     <span id="final-time"></span> 만에 완료했습니다!
                 </p>
-                <div style="display: flex; gap: 12px; justify-content: center;">
+                <div class="modal-buttons">
                     <button class="action-btn primary" onclick="saveScore()">
                         <i class="fas fa-save"></i> 기록 저장
                     </button>
