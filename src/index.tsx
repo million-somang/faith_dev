@@ -2654,9 +2654,11 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Sudoku Grid - DIV GRID 방식 */
             .sudoku-grid {
-                display: inline-grid;
+                display: grid;
                 grid-template-columns: repeat(9, 50px);
                 grid-template-rows: repeat(9, 50px);
+                width: 450px;
+                height: 450px;
                 gap: 0;
                 background: #2d3748;
                 border: 3px solid #2d3748;
@@ -2691,6 +2693,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 .sudoku-grid {
                     grid-template-columns: repeat(9, 40px);
                     grid-template-rows: repeat(9, 40px);
+                    width: 360px;
+                    height: 360px;
                 }
                 .sudoku-cell {
                     width: 40px;
