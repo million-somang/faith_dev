@@ -2648,25 +2648,21 @@ app.get('/game/simple/sudoku/play', (c) => {
                 padding: 20px;
             }
             
-            /* Sudoku Grid */
+            /* Sudoku Grid - TABLE 방식 */
             .sudoku-grid {
-                display: grid;
-                grid-template-columns: repeat(9, 1fr);
-                gap: 0;
-                background: #2d3748;
-                border: 3px solid #2d3748;
+                border-collapse: collapse;
+                background: white;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+                margin: 0 auto;
             }
             
             .sudoku-cell {
-                aspect-ratio: 1;
-                min-width: 40px;
-                min-height: 40px;
+                width: 50px;
+                height: 50px;
                 background: white;
                 border: 1px solid #cbd5e0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                text-align: center;
+                vertical-align: middle;
                 font-size: 24px;
                 font-weight: 700;
                 cursor: pointer;
@@ -2674,24 +2670,29 @@ app.get('/game/simple/sudoku/play', (c) => {
                 position: relative;
             }
             
-            @media (min-width: 768px) {
+            @media (max-width: 768px) {
                 .sudoku-cell {
-                    min-width: 50px;
-                    min-height: 50px;
-                    font-size: 28px;
+                    width: 40px;
+                    height: 40px;
+                    font-size: 20px;
                 }
             }
             
             /* 3x3 박스 구분 굵은 테두리 */
-            /* 세로 구분선: 3열, 6열 뒤에 */
-            .sudoku-cell:nth-child(9n+3),
-            .sudoku-cell:nth-child(9n+6) {
+            .sudoku-cell:nth-child(3n) {
                 border-right: 3px solid #2d3748;
             }
-            /* 가로 구분선: 3행, 6행 뒤에 */
-            .sudoku-cell:nth-child(n+19):nth-child(-n+27),
-            .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+            .sudoku-cell:nth-child(9) {
+                border-right: 1px solid #cbd5e0;
+            }
+            .sudoku-grid tr:nth-child(3n) td {
                 border-bottom: 3px solid #2d3748;
+            }
+            .sudoku-grid tr:nth-child(9) td {
+                border-bottom: 1px solid #cbd5e0;
+            }
+            .sudoku-grid {
+                border: 3px solid #2d3748;
             }
             
             /* Cell states */
@@ -2906,8 +2907,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; justify-content: center;">
-                <div class="sudoku-grid" id="sudoku-grid"></div>
+            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; justify-content: center; overflow-x: auto;">
+                <table class="sudoku-grid" id="sudoku-grid"></table>
             </div>
 
             <!-- Actions -->
@@ -3083,14 +3084,16 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작');
+                console.log('📋 renderGrid() 시작 - TABLE 방식');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
                 
                 for (let row = 0; row < 9; row++) {
+                    const tr = document.createElement('tr');
+                    
                     for (let col = 0; col < 9; col++) {
-                        const cell = document.createElement('div');
+                        const cell = document.createElement('td');
                         cell.className = 'sudoku-cell';
                         cell.dataset.row = row;
                         cell.dataset.col = col;
@@ -3117,10 +3120,12 @@ app.get('/game/simple/sudoku/play', (c) => {
                         }
                         
                         cell.addEventListener('click', () => selectCell(row, col));
-                        gridEl.appendChild(cell);
+                        tr.appendChild(cell);
                     }
+                    
+                    gridEl.appendChild(tr);
                 }
-                console.log('✅ 총', gridEl.children.length, '개 셀 생성됨');
+                console.log('✅ 9행 x 9열 = 81개 셀 생성됨 (TABLE)');
                 
                 updateNumberPad();
             }
