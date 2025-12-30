@@ -2880,7 +2880,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 width: 300px;
                 height: 300px;
                 margin: 0;
-                border: 3px solid #2d3748;
+                border: 2px solid #2d3748;
                 box-sizing: border-box;
                 display: block;
             }
@@ -2908,11 +2908,11 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 3x3 박스 구분선 (굵게) */
             .sudoku-grid td.border-right {
-                border-right: 3px solid #2d3748 !important;
+                border-right: 2px solid #2d3748 !important;
             }
             
             .sudoku-grid td.border-bottom {
-                border-bottom: 3px solid #2d3748 !important;
+                border-bottom: 2px solid #2d3748 !important;
             }
             
             /* Cell states */
