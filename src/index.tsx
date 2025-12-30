@@ -2653,7 +2653,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 max-width: 500px;
                 width: 100%;
                 overflow: hidden;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             }
             
             /* 보라색 헤더 */
