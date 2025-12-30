@@ -3090,7 +3090,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             function renderGrid() {
-                console.log('📋 renderGrid() 시작 - TABLE 방식');
+                console.log('📋 renderGrid() 시작 - TABLE 방식 (인라인 스타일)');
                 const gridEl = document.getElementById('sudoku-grid');
                 console.log('Grid element:', gridEl);
                 gridEl.innerHTML = '';
@@ -3103,6 +3103,25 @@ app.get('/game/simple/sudoku/play', (c) => {
                         cell.className = 'sudoku-cell';
                         cell.dataset.row = row;
                         cell.dataset.col = col;
+                        
+                        // 인라인 스타일 강제 적용
+                        cell.style.width = '50px';
+                        cell.style.height = '50px';
+                        cell.style.minWidth = '50px';
+                        cell.style.minHeight = '50px';
+                        cell.style.maxWidth = '50px';
+                        cell.style.maxHeight = '50px';
+                        cell.style.padding = '0';
+                        cell.style.margin = '0';
+                        cell.style.boxSizing = 'border-box';
+                        
+                        // 3x3 박스 테두리
+                        if ((col + 1) % 3 === 0 && col < 8) {
+                            cell.style.borderRight = '3px solid #2d3748';
+                        }
+                        if ((row + 1) % 3 === 0 && row < 8) {
+                            cell.style.borderBottom = '3px solid #2d3748';
+                        }
                         
                         const value = currentGrid[row][col];
                         const isFixed = puzzle[row][col] !== 0;
@@ -3131,7 +3150,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                     
                     gridEl.appendChild(tr);
                 }
-                console.log('✅ 9행 x 9열 = 81개 셀 생성됨 (TABLE)');
+                console.log('✅ 9행 x 9열 = 81개 셀 생성됨 (TABLE with inline styles)');
                 
                 updateNumberPad();
             }
