@@ -2707,8 +2707,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             .grid-section {
-                display: flex;
-                justify-content: center;
+                /* 그리드를 왼쪽에 고정 */
             }
             
             .controls-section {
@@ -2869,7 +2868,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 table-layout: fixed;
                 width: 320px;
                 height: 320px;
-                margin: 0 auto;
+                margin: 0;
                 border: 3px solid #2d3748;
                 box-sizing: border-box;
                 display: block;
