@@ -2710,11 +2710,68 @@ app.get('/game/simple/sudoku/play', (c) => {
                 overflow-x: hidden;
             }
             
+            /* Game sections */
+            .game-header {
+                background: white;
+                border-radius: 12px;
+                padding: 10px 15px;
+                margin-bottom: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            
+            .game-grid-container {
+                background: white;
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                text-align: center;
+            }
+            
+            .game-actions {
+                background: white;
+                border-radius: 12px;
+                padding: 12px;
+                margin-bottom: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            
+            .action-buttons {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+            
             @media (max-width: 768px) {
                 .container {
                     max-width: 100%;
                     padding: 0;
                     max-height: none;
+                }
+                
+                .game-header {
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    margin-bottom: 6px;
+                }
+                
+                .game-grid-container {
+                    border-radius: 8px;
+                    padding: 8px;
+                    margin-bottom: 6px;
+                }
+                
+                .game-actions {
+                    border-radius: 8px;
+                    padding: 8px;
+                    margin-bottom: 6px;
+                }
+                
+                .action-buttons {
+                    gap: 4px;
+                    margin-bottom: 8px;
                 }
             }
             
@@ -2959,7 +3016,7 @@ app.get('/game/simple/sudoku/play', (c) => {
     <body>
         <div class="container">
             <!-- Header -->
-            <div style="background: white; border-radius: 12px; padding: 10px 15px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div class="game-header">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div>
                         <div style="font-size: 11px; color: #6b7280; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;">
@@ -2981,13 +3038,13 @@ app.get('/game/simple/sudoku/play', (c) => {
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center;">
+            <div class="game-grid-container">
                 <div class="sudoku-grid" id="sudoku-grid"></div>
             </div>
 
             <!-- Actions -->
-            <div style="background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 10px;">
+            <div class="game-actions">
+                <div class="action-buttons">
                     <button class="action-btn secondary" onclick="undo()" id="undo-btn">
                         <i class="fas fa-undo"></i> 되돌리기
                     </button>
