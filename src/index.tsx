@@ -2658,6 +2658,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 background: white;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.4);
                 margin: 0 auto;
+                table-layout: fixed;
+                width: 450px;
             }
             
             .sudoku-cell {
