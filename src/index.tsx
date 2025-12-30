@@ -2773,8 +2773,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 color: #86efac;
             }
             
-            /* 모바일: 작은 화면 최적화 */
-            @media (max-width: 768px) {
+            /* 모바일: 작은 화면 최적화 (500px 이하만) */
+            @media (max-width: 500px) {
                 body {
                     padding: 5px;
                     align-items: flex-start;
