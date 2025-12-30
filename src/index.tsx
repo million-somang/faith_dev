@@ -2638,7 +2638,7 @@ app.get('/game/simple/sudoku/play', (c) => {
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
             body {
-                background: rgba(0, 0, 0, 0.5);
+                background: #000000;
                 min-height: 100vh;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 display: flex;
@@ -2654,6 +2654,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 width: 100%;
                 overflow: hidden;
                 box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                position: relative;
             }
             
             /* 보라색 헤더 */
@@ -2664,6 +2665,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                 align-items: center;
                 justify-content: space-between;
                 color: white;
+                position: relative;
+                z-index: 10;
             }
             
             .modal-title {
@@ -3154,7 +3157,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             <div class="modal-header">
                 <div class="modal-title">
                     <i class="fas fa-th"></i>
-                    스도쿠 게임
+                    스도쿠 게임 [SINGLE HEADER TEST]
                 </div>
                 <button class="close-btn" onclick="window.history.back()">×</button>
             </div>
