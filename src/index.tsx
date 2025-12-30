@@ -2913,7 +2913,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             </div>
 
             <!-- Sudoku Grid -->
-            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; justify-content: center; overflow-x: auto;">
+            <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); text-align: center; overflow-x: auto;">
                 <table class="sudoku-grid" id="sudoku-grid"></table>
             </div>
 
