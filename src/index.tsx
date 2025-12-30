@@ -2640,12 +2640,16 @@ app.get('/game/simple/sudoku/play', (c) => {
             body {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                overflow: auto;
+                overflow-y: auto;
+                overflow-x: hidden;
                 padding: 20px;
+            }
+            
+            .container {
+                max-width: 800px;
+                width: 100%;
+                margin: 0 auto;
             }
             
             /* Sudoku Grid - TABLE 방식 */
@@ -2726,20 +2730,22 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* Note mode (pencil marks) */
             .sudoku-cell .notes {
-                position: absolute;
-                inset: 2px;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
                 grid-template-rows: repeat(3, 1fr);
-                font-size: 10px;
+                font-size: 9px;
                 font-weight: 400;
                 color: #6b7280;
+                height: 100%;
+                width: 100%;
+                padding: 2px;
             }
             
             .sudoku-cell .notes span {
                 display: flex;
                 align-items: center;
                 justify-content: center;
+                font-size: 8px;
             }
             
             /* Number pad */
@@ -2883,7 +2889,7 @@ app.get('/game/simple/sudoku/play', (c) => {
         </style>
     </head>
     <body>
-        <div style="max-width: 800px; width: 100%; margin: 0 auto;">
+        <div class="container">
             <!-- Header -->
             <div style="background: white; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
