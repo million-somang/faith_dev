@@ -3152,16 +3152,7 @@ app.get('/game/simple/sudoku/play', (c) => {
         </style>
     </head>
     <body>
-        <div class="container">
-            <!-- 보라색 헤더 -->
-            <div class="modal-header">
-                <div class="modal-title">
-                    <i class="fas fa-th"></i>
-                    스도쿠 게임 [SINGLE HEADER TEST]
-                </div>
-                <button class="close-btn" onclick="window.history.back()">×</button>
-            </div>
-            
+        <div class="container" id="game-container">
             <!-- 컨텐츠 영역 -->
             <div class="modal-body">
                 <!-- 스도쿠 그리드 -->
