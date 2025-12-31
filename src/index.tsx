@@ -2647,12 +2647,19 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             .container {
                 background: white;
-                max-width: 900px;
+                max-width: 100%;
                 width: 100%;
-                min-width: 700px;
                 margin: 0 auto;
                 overflow: hidden;
                 position: relative;
+            }
+            
+            /* PC only: wider container */
+            @media (min-width: 501px) {
+                .container {
+                    max-width: 900px;
+                    min-width: 700px;
+                }
             }
             
             /* 보라색 헤더 */
@@ -2774,7 +2781,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             /* 아주 작은 모바일만 (400px 이하) */
-            @media (max-width: 400px) {
+            @media (max-width: 500px) {
                 body {
                     padding: 5px;
                     align-items: flex-start;
@@ -2783,6 +2790,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                 .container {
                     border-radius: 16px;
                     max-width: 100%;
+                    min-width: unset !important;
                 }
                 
                 .modal-header {
