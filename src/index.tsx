@@ -2657,8 +2657,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             /* PC only: wider container */
             @media (min-width: 501px) {
                 .container {
-                    max-width: 100%;
-                    min-width: auto;
+                    max-width: 850px;
+                    min-width: 700px;
                 }
             }
             
@@ -2704,10 +2704,10 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 컨텐츠 영역 */
             .modal-body {
-                padding: 10px 0 15px 0;
+                padding: 15px;
                 display: flex;
                 flex-direction: row;
-                gap: 3px;
+                gap: 15px;
                 align-items: flex-start;
             }
             
