@@ -2657,8 +2657,8 @@ app.get('/game/simple/sudoku/play', (c) => {
             /* PC only: wider container */
             @media (min-width: 501px) {
                 .container {
-                    max-width: 900px;
-                    min-width: 700px;
+                    max-width: 100%;
+                    min-width: auto;
                 }
             }
             
