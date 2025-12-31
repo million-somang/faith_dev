@@ -2709,6 +2709,11 @@ app.get('/game/simple/sudoku/play', (c) => {
                 flex-direction: row;
                 gap: 20px;
                 align-items: flex-start;
+                padding-left: 10px;
+            }
+            
+            .grid-section {
+                margin-left: -10px;
             }
             
             .grid-section {
