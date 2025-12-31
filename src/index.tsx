@@ -2704,7 +2704,7 @@ app.get('/game/simple/sudoku/play', (c) => {
             
             /* 컨텐츠 영역 */
             .modal-body {
-                padding: 15px;
+                padding: 15px 15px 15px 5px;
                 display: flex;
                 flex-direction: row;
                 gap: 15px;
