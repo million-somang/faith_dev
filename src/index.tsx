@@ -2488,8 +2488,8 @@ app.get('/game/simple/sudoku', (c) => {
         </div>
 
         <!-- 게임 모달 -->
-        <div id="game-modal" class="fixed inset-0 bg-white z-50 hidden items-center justify-center p-4">
-            <div class="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden" style="max-height: 95vh; max-width: 95vw;">
+        <div id="game-modal" class="fixed inset-0 bg-white z-50 hidden items-center justify-center">
+            <div class="relative w-full bg-white rounded-2xl shadow-2xl overflow-hidden" style="max-height: 98vh; max-width: 98vw;">
                 <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 p-4 flex justify-between items-center z-10">
                     <h2 class="text-white text-xl font-bold">
                         <i class="fas fa-th mr-2"></i>
