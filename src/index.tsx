@@ -1461,7 +1461,7 @@ app.get('/game/simple', (c) => {
                                     const minutes = Math.floor(rank.time / 60);
                                     const seconds = rank.time % 60;
                                     const timeText = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
-                                    const username = rank.player_name || '익명';
+                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
                                     return '<div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">' +
                                         '<div class="flex items-center space-x-3">' +
                                         '<span class="font-bold w-8">' + medal + '</span>' +
@@ -2641,12 +2641,13 @@ app.get('/game/simple/sudoku', (c) => {
                             const seconds = score.time % 60;
                             const timeStr = minutes + '분 ' + seconds + '초';
                             const date = new Date(score.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                            const username = score.email ? score.email.split('@')[0] : 'Anonymous';
                             
                             return '<div class="leaderboard-row bg-gray-50 rounded-lg p-3 flex items-center justify-between">' +
                                 '<div class="flex items-center gap-3">' +
                                 '<span class="text-xl font-bold w-10 text-center">' + medal + '</span>' +
                                 '<div>' +
-                                '<div class="font-semibold text-gray-800">' + (score.player_name || 'Anonymous') + '</div>' +
+                                '<div class="font-semibold text-gray-800">' + username + '</div>' +
                                 '<div class="text-xs text-gray-500">' + date + '</div>' +
                                 '</div>' +
                                 '</div>' +
@@ -3929,13 +3930,15 @@ app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
   try {
     const result = await DB.prepare(`
       SELECT 
-        player_name,
-        time,
-        mistakes,
-        created_at
-      FROM sudoku_scores
-      WHERE difficulty = ?
-      ORDER BY time ASC, mistakes ASC
+        s.player_name,
+        s.time,
+        s.mistakes,
+        s.created_at,
+        u.email
+      FROM sudoku_scores s
+      LEFT JOIN users u ON s.user_id = u.id
+      WHERE s.difficulty = ?
+      ORDER BY s.time ASC, s.mistakes ASC
       LIMIT 10
     `).bind(difficulty).all()
     
