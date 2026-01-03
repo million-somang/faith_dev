@@ -3786,15 +3786,21 @@ app.get('/game/simple/sudoku/play', (c) => {
                     return acc;
                 }, {});
                 
+                console.log('🍪 Available cookies:', cookies);
+                console.log('🔍 Checking login status...');
+                
                 // 로그인되어 있다면 사용자 이름 가져오기
-                if (cookies.auth_token || cookies.user_name) {
-                    playerName = decodeURIComponent(cookies.user_name || 'User');
+                if (cookies.user_id || cookies.user_name || cookies.auth_token) {
+                    playerName = decodeURIComponent(cookies.user_name || cookies.user_id || 'User');
                     isLoggedIn = true;
+                    console.log('✅ User logged in:', playerName);
+                } else {
+                    console.log('❌ User not logged in');
                 }
                 
                 // 로그인 확인
                 if (!isLoggedIn) {
-                    alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.');
+                    alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.\\n\\n현재 쿠키: ' + JSON.stringify(cookies));
                     return;
                 }
                 
