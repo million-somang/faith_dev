@@ -9548,12 +9548,8 @@ app.post('/api/login', async (c) => {
     // 간단한 토큰 생성 (실제로는 JWT 등을 사용해야 함)
     const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
     
-    // 쿠키 설정 (중요!)
-    c.header('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=86400; SameSite=None; Secure`)
-    c.header('Set-Cookie', `user_name=${encodeURIComponent(user.name)}; Path=/; Max-Age=86400; SameSite=None; Secure`, { append: true })
-    c.header('Set-Cookie', `auth_token=${token}; Path=/; Max-Age=86400; SameSite=None; Secure`, { append: true })
-    
-    return c.json({
+    // 응답 생성
+    const response = c.json({
       success: true,
       message: '로그인 성공',
       token: token,
@@ -9566,6 +9562,13 @@ app.post('/api/login', async (c) => {
         status: user.status
       }
     })
+    
+    // 쿠키 설정 (응답 헤더에 추가)
+    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
+    response.headers.append('Set-Cookie', `user_name=${encodeURIComponent(user.name)}; Path=/; Max-Age=86400; SameSite=Lax`)
+    response.headers.append('Set-Cookie', `auth_token=${token}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
+    
+    return response
   } catch (error) {
     console.error('Login error:', error)
     return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
