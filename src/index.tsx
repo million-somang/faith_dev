@@ -3800,7 +3800,8 @@ app.get('/game/simple/sudoku/play', (c) => {
                     if (data.success) {
                         alert('기록이 저장되었습니다!');
                         document.getElementById('success-modal').classList.remove('active');
-                        await loadLeaderboard();
+                        // 리더보드가 있으면 새로고침
+                        window.location.reload();
                     } else {
                         if (data.requireLogin) {
                             alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.');
