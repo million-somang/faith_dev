@@ -3792,10 +3792,10 @@ app.get('/game/simple/sudoku/play', (c) => {
                     isLoggedIn = true;
                 }
                 
-                // 로그인 안 되어 있으면 이름 입력 받기
+                // 로그인 확인
                 if (!isLoggedIn) {
-                    playerName = prompt('이름을 입력하세요:', 'Anonymous');
-                    if (!playerName) return;
+                    alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.');
+                    return;
                 }
                 
                 const elapsed = getElapsedTime();
@@ -3810,8 +3810,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         body: JSON.stringify({
                             difficulty: '${difficulty}',
                             time: elapsed,
-                            mistakes: mistakes,
-                            player_name: playerName
+                            mistakes: mistakes
                         })
                     });
                     
@@ -3822,7 +3821,15 @@ app.get('/game/simple/sudoku/play', (c) => {
                         document.getElementById('success-modal').classList.remove('active');
                         await loadLeaderboard();
                     } else {
-                        alert(data.message || '기록 저장에 실패했습니다.');
+                        if (data.requireLogin) {
+                            alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.');
+                            // 로그인 페이지로 이동할지 물어보기
+                            if (confirm('로그인 페이지로 이동하시겠습니까?')) {
+                                window.location.href = '/auth/login';
+                            }
+                        } else {
+                            alert(data.message || '기록 저장에 실패했습니다.');
+                        }
                     }
                 } catch (error) {
                     console.error('기록 저장 오류:', error);
@@ -3938,28 +3945,28 @@ app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
 
 app.post('/api/sudoku/score', async (c) => {
   const { DB } = c.env
-  const { difficulty, time, mistakes, player_name } = await c.req.json()
+  const { difficulty, time, mistakes } = await c.req.json()
   
-  // 로그인 확인
+  // 쿠키에서 사용자 정보 가져오기
   const authCookie = c.req.header('Cookie')
-  let playerName = player_name || 'Anonymous'
   let userId = null
+  let username = 'Anonymous'
   
   if (authCookie) {
     const cookies = authCookie.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=')
       acc[key] = value
       return acc
-    }, {})
+    }, {} as Record<string, string>)
     
-    if (cookies.auth_token) {
+    if (cookies.user_id) {
+      userId = decodeURIComponent(cookies.user_id)
+      
       try {
-        // JWT 토큰 검증 (jwt 라이브러리가 있다면)
-        // 여기서는 간단하게 토큰으로 사용자 조회
-        const user = await DB.prepare('SELECT id, name FROM users WHERE id = ?').bind(cookies.auth_token).first()
+        // 사용자 정보 조회
+        const user = await DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(userId).first()
         if (user) {
-          playerName = user.name
-          userId = user.id
+          username = (user.name as string) || (user.email as string) || 'Anonymous'
         }
       } catch (e) {
         console.log('사용자 조회 실패:', e)
@@ -3967,19 +3974,28 @@ app.post('/api/sudoku/score', async (c) => {
     }
   }
   
+  // 로그인 안 된 경우 점수 저장 거부
+  if (!userId) {
+    return c.json({
+      success: false,
+      message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
+      requireLogin: true
+    }, 401)
+  }
+  
   try {
     const result = await DB.prepare(`
       INSERT INTO sudoku_scores (difficulty, time, mistakes, player_name, user_id, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).bind(difficulty, time, mistakes || 0, playerName, userId).run()
+    `).bind(difficulty, time, mistakes || 0, username, userId).run()
     
-    console.log('✅ 스도쿠 기록 저장 성공:', { difficulty, time, mistakes, playerName, userId })
+    console.log('✅ 스도쿠 기록 저장 성공:', { difficulty, time, mistakes, username, userId })
     
     return c.json({
       success: true,
       message: '기록이 저장되었습니다'
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ 기록 저장 오류:', error)
     return c.json({
       success: false,
@@ -9411,25 +9427,6 @@ app.get('/api/tetris/leaderboard', async (c) => {
 })
 
 // ==================== API: 스도쿠 기록 저장 ====================
-app.post('/api/sudoku/score', async (c) => {
-  try {
-    const { player_name, time, difficulty, mistakes } = await c.req.json()
-    
-    if (!player_name || time === undefined || !difficulty) {
-      return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
-    }
-    
-    await c.env.DB.prepare(
-      'INSERT INTO sudoku_scores (player_name, time, difficulty, mistakes) VALUES (?, ?, ?, ?)'
-    ).bind(player_name, time, difficulty, mistakes || 0).run()
-    
-    return c.json({ success: true, message: '기록이 저장되었습니다.' })
-  } catch (error) {
-    console.error('스도쿠 기록 저장 오류:', error)
-    return c.json({ success: false, message: '기록 저장 중 오류가 발생했습니다.' }, 500)
-  }
-})
-
 // ==================== API: 스도쿠 최고 기록 조회 ====================
 app.get('/api/sudoku/besttime/:userId/:difficulty', async (c) => {
   try {
