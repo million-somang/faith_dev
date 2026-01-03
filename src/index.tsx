@@ -1348,7 +1348,7 @@ app.get('/game/simple', (c) => {
                 <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                     <div class="text-center py-16">
                         <!-- 게임 랭킹 그리드 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                             <!-- 테트리스 랭킹 -->
                             <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
                                 <div class="flex items-center justify-between mb-4">
@@ -1388,6 +1388,29 @@ app.get('/game/simple', (c) => {
                                 
                                 <!-- 랭킹 리스트 -->
                                 <div class="bg-white bg-opacity-10 rounded-lg p-4 space-y-2" id="sudoku-ranking">
+                                    <div class="text-white text-sm text-center py-4">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        랭킹 불러오는 중...
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 2048 랭킹 -->
+                            <div class="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-th-large text-2xl text-white"></i>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-white">2048 랭킹</h3>
+                                    </div>
+                                    <a href="/game/simple/2048" class="text-white hover:text-yellow-100 transition-colors">
+                                        <i class="fas fa-play-circle text-2xl"></i>
+                                    </a>
+                                </div>
+                                
+                                <!-- 랭킹 리스트 -->
+                                <div class="bg-white bg-opacity-10 rounded-lg p-4 space-y-2" id="game2048-ranking">
                                     <div class="text-white text-sm text-center py-4">
                                         <i class="fas fa-spinner fa-spin mr-2"></i>
                                         랭킹 불러오는 중...
