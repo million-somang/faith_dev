@@ -1401,14 +1401,24 @@ app.get('/game/simple', (c) => {
                             async function loadRankings() {
                                 try {
                                     // 테트리스 랭킹
-                                    const tetrisRes = await fetch('/api/game/tetris/ranking?limit=5');
+                                    const tetrisRes = await fetch('/api/tetris/leaderboard');
                                     const tetrisData = await tetrisRes.json();
-                                    displayRanking('tetris-ranking', tetrisData.rankings || []);
                                     
-                                    // 스도쿠 랭킹
-                                    const sudokuRes = await fetch('/api/game/sudoku/ranking?limit=5');
+                                    if (tetrisData.success) {
+                                        displayTetrisRanking('tetris-ranking', tetrisData.leaderboard || []);
+                                    } else {
+                                        document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    }
+                                    
+                                    // 스도쿠 랭킹 (쉬움 난이도)
+                                    const sudokuRes = await fetch('/api/sudoku/leaderboard/easy');
                                     const sudokuData = await sudokuRes.json();
-                                    displayRanking('sudoku-ranking', sudokuData.rankings || []);
+                                    
+                                    if (sudokuData.success) {
+                                        displaySudokuRanking('sudoku-ranking', sudokuData.scores || []);
+                                    } else {
+                                        document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    }
                                 } catch (error) {
                                     console.error('랭킹 로드 실패:', error);
                                     document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
@@ -1416,25 +1426,49 @@ app.get('/game/simple', (c) => {
                                 }
                             }
                             
-                            function displayRanking(elementId, rankings) {
+                            function displayTetrisRanking(elementId, rankings) {
                                 const element = document.getElementById(elementId);
                                 if (rankings.length === 0) {
                                     element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
                                     return;
                                 }
                                 
-                                const html = rankings.map((rank, index) => {
-                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : \`\${index + 1}위\`;
-                                    const scoreText = elementId.includes('tetris') ? \`\${rank.score.toLocaleString()}점\` : \`\${rank.time}\`;
-                                    return \`
-                                        <div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">
-                                            <div class="flex items-center space-x-3">
-                                                <span class="font-bold w-8">\${medal}</span>
-                                                <span class="truncate max-w-[120px]">\${rank.username || rank.user_id || '익명'}</span>
-                                            </div>
-                                            <span class="font-bold">\${scoreText}</span>
-                                        </div>
-                                    \`;
+                                const html = rankings.slice(0, 5).map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '위';
+                                    const scoreText = rank.score.toLocaleString() + '점';
+                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    return '<div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">' +
+                                        '<div class="flex items-center space-x-3">' +
+                                        '<span class="font-bold w-8">' + medal + '</span>' +
+                                        '<span class="truncate max-w-[120px]">' + username + '</span>' +
+                                        '</div>' +
+                                        '<span class="font-bold">' + scoreText + '</span>' +
+                                        '</div>';
+                                }).join('');
+                                
+                                element.innerHTML = html;
+                            }
+                            
+                            function displaySudokuRanking(elementId, rankings) {
+                                const element = document.getElementById(elementId);
+                                if (rankings.length === 0) {
+                                    element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
+                                    return;
+                                }
+                                
+                                const html = rankings.slice(0, 5).map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '위';
+                                    const minutes = Math.floor(rank.time / 60);
+                                    const seconds = rank.time % 60;
+                                    const timeText = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+                                    const username = rank.player_name || '익명';
+                                    return '<div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">' +
+                                        '<div class="flex items-center space-x-3">' +
+                                        '<span class="font-bold w-8">' + medal + '</span>' +
+                                        '<span class="truncate max-w-[120px]">' + username + '</span>' +
+                                        '</div>' +
+                                        '<span class="font-bold">' + timeText + '</span>' +
+                                        '</div>';
                                 }).join('');
                                 
                                 element.innerHTML = html;
@@ -9430,33 +9464,6 @@ app.get('/api/sudoku/besttime/:userId/:difficulty', async (c) => {
 })
 
 // ==================== API: 스도쿠 리더보드 ====================
-app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
-  try {
-    const difficulty = c.req.param('difficulty')
-    
-    const { results } = await c.env.DB.prepare(`
-      SELECT 
-        s.id,
-        s.time,
-        s.created_at,
-        u.email
-      FROM sudoku_scores s
-      JOIN users u ON s.user_id = u.id
-      WHERE s.difficulty = ?
-      ORDER BY s.time ASC
-      LIMIT 10
-    `).bind(difficulty).all()
-    
-    return c.json({ 
-      success: true, 
-      leaderboard: results || [] 
-    })
-  } catch (error) {
-    console.error('스도쿠 리더보드 조회 오류:', error)
-    return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
-  }
-})
-
 // ==================== API: 회원가입 ====================
 app.post('/api/signup', async (c) => {
   try {
