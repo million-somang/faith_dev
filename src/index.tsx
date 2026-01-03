@@ -3787,7 +3787,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         },
                         credentials: 'include', // 쿠키 전송
                         body: JSON.stringify({
-                            difficulty: '${difficulty}',
+                            difficulty: difficulty,
                             time: elapsed,
                             mistakes: mistakes
                         })
