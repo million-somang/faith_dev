@@ -3339,6 +3339,9 @@ app.get('/game/simple/sudoku/play', (c) => {
         </div>
 
         <script>
+            // ==================== 전역 변수 ====================
+            const difficulty = '${difficulty}';
+            
             // ==================== 스도쿠 생성 알고리즘 ====================
             
             // 스도쿠 생성 (백트래킹 알고리즘)
@@ -3349,7 +3352,6 @@ app.get('/game/simple/sudoku/play', (c) => {
                 fillGrid(grid);
                 
                 // 난이도에 따라 셀 제거
-                const difficulty = '${difficulty}';
                 const cellsToRemove = {
                     easy: 35,
                     medium: 45,
