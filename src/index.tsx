@@ -1339,6 +1339,9 @@ app.get('/game/simple', (c) => {
                         <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-table mr-2"></i>스도쿠
                         </a>
+                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
                     </nav>
                 </div>
             </aside>
@@ -4010,11 +4013,15 @@ app.get('/game/simple/2048', (c) => {
     </head>
     <body class="bg-gray-50">
         ${getCommonHeader()}
-        ${getBreadcrumb(['게임', '간단한 게임', '2048'])}
+        ${getBreadcrumb([
+          {label: '게임', href: '/game/simple'},
+          {label: '간단한 게임', href: '/game/simple'},
+          {label: '2048'}
+        ])}
         
         <div class="max-w-7xl mx-auto px-4 py-8">
             <div class="flex gap-8">
-                ${getGameMenu('2048')}
+                ${getGameMenu('/game/simple/2048')}
                 
                 <div class="flex-1">
                     <div class="bg-white rounded-lg shadow-md p-6">
