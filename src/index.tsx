@@ -2619,7 +2619,7 @@ app.get('/game/simple/sudoku', (c) => {
                 document.querySelectorAll('.difficulty-tab').forEach(tab => {
                     tab.classList.remove('active');
                 });
-                document.querySelector(\`[data-difficulty="\${difficulty}"]\`).classList.add('active');
+                document.querySelector('[data-difficulty="' + difficulty + '"]').classList.add('active');
                 
                 // 리더보드 로드
                 loadLeaderboard();
@@ -2630,51 +2630,45 @@ app.get('/game/simple/sudoku', (c) => {
                 content.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div></div>';
                 
                 try {
-                    const response = await fetch(\`/api/sudoku/leaderboard/\${currentDifficulty}\`);
+                    const response = await fetch('/api/sudoku/leaderboard/' + currentDifficulty);
                     const data = await response.json();
                     
                     if (data.success && data.scores.length > 0) {
-                        content.innerHTML = data.scores.map((score, index) => {
+                        content.innerHTML = data.scores.map(function(score, index) {
                             const rank = index + 1;
-                            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : \`#\${rank}\`;
+                            const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '#' + rank;
                             const minutes = Math.floor(score.time / 60);
                             const seconds = score.time % 60;
-                            const timeStr = \`\${minutes}분 \${seconds}초\`;
+                            const timeStr = minutes + '분 ' + seconds + '초';
                             const date = new Date(score.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
                             
-                            return \`
-                                <div class="leaderboard-row bg-gray-50 rounded-lg p-3 flex items-center justify-between">
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-xl font-bold w-10 text-center">\${medal}</span>
-                                        <div>
-                                            <div class="font-semibold text-gray-800">\${score.player_name || 'Anonymous'}</div>
-                                            <div class="text-xs text-gray-500">\${date}</div>
-                                        </div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="font-bold text-purple-600">\${timeStr}</div>
-                                        <div class="text-xs text-gray-500">실수: \${score.mistakes}</div>
-                                    </div>
-                                </div>
-                            \`;
+                            return '<div class="leaderboard-row bg-gray-50 rounded-lg p-3 flex items-center justify-between">' +
+                                '<div class="flex items-center gap-3">' +
+                                '<span class="text-xl font-bold w-10 text-center">' + medal + '</span>' +
+                                '<div>' +
+                                '<div class="font-semibold text-gray-800">' + (score.player_name || 'Anonymous') + '</div>' +
+                                '<div class="text-xs text-gray-500">' + date + '</div>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div class="text-right">' +
+                                '<div class="font-bold text-purple-600">' + timeStr + '</div>' +
+                                '<div class="text-xs text-gray-500">실수: ' + score.mistakes + '</div>' +
+                                '</div>' +
+                                '</div>';
                         }).join('');
                     } else {
-                        content.innerHTML = \`
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
-                                <p>아직 기록이 없습니다</p>
-                                <p class="text-sm">첫 번째 기록의 주인공이 되어보세요!</p>
-                            </div>
-                        \`;
+                        content.innerHTML = '<div class="text-center py-8 text-gray-500">' +
+                            '<i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>' +
+                            '<p>아직 기록이 없습니다</p>' +
+                            '<p class="text-sm">첫 번째 기록의 주인공이 되어보세요!</p>' +
+                            '</div>';
                     }
                 } catch (error) {
                     console.error('리더보드 로드 실패:', error);
-                    content.innerHTML = \`
-                        <div class="text-center py-8 text-red-500">
-                            <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
-                            <p>리더보드를 불러올 수 없습니다</p>
-                        </div>
-                    \`;
+                    content.innerHTML = '<div class="text-center py-8 text-red-500">' +
+                        '<i class="fas fa-exclamation-triangle text-3xl mb-2"></i>' +
+                        '<p>리더보드를 불러올 수 없습니다</p>' +
+                        '</div>';
                 }
             }
 
