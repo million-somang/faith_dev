@@ -1442,10 +1442,21 @@ app.get('/game/simple', (c) => {
                                     } else {
                                         document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     }
+                                    
+                                    // 2048 랭킹
+                                    const game2048Res = await fetch('/api/2048/leaderboard');
+                                    const game2048Data = await game2048Res.json();
+                                    
+                                    if (game2048Data.success) {
+                                        display2048Ranking('game2048-ranking', game2048Data.scores || []);
+                                    } else {
+                                        document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    }
                                 } catch (error) {
                                     console.error('랭킹 로드 실패:', error);
                                     document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                 }
                             }
                             
@@ -1491,6 +1502,29 @@ app.get('/game/simple', (c) => {
                                         '<span class="truncate max-w-[120px]">' + username + '</span>' +
                                         '</div>' +
                                         '<span class="font-bold">' + timeText + '</span>' +
+                                        '</div>';
+                                }).join('');
+                                
+                                element.innerHTML = html;
+                            }
+                            
+                            function display2048Ranking(elementId, rankings) {
+                                const element = document.getElementById(elementId);
+                                if (rankings.length === 0) {
+                                    element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
+                                    return;
+                                }
+                                
+                                const html = rankings.slice(0, 5).map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '위';
+                                    const scoreText = rank.score.toLocaleString() + '점';
+                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    return '<div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">' +
+                                        '<div class="flex items-center space-x-3">' +
+                                        '<span class="font-bold w-8">' + medal + '</span>' +
+                                        '<span class="truncate max-w-[120px]">' + username + '</span>' +
+                                        '</div>' +
+                                        '<span class="font-bold">' + scoreText + '</span>' +
                                         '</div>';
                                 }).join('');
                                 
@@ -3944,6 +3978,877 @@ app.get('/game/simple/sudoku/play', (c) => {
   `)
 })
 
+// ==================== 2048 게임 ====================
+
+// 2048 메인 페이지
+app.get('/game/simple/2048', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>2048 챌린지 - Faith Portal</title>
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        ${getCommonHeader()}
+        ${getBreadcrumb(['게임', '간단한 게임', '2048'])}
+        
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex gap-8">
+                ${getGameMenu('2048')}
+                
+                <div class="flex-1">
+                    <div class="bg-white rounded-lg shadow-md p-6">
+                        <h1 class="text-3xl font-bold text-gray-800 mb-6">
+                            <i class="fas fa-th mr-2 text-cyan-500"></i>
+                            2048 챌린지
+                        </h1>
+
+                        <button 
+                            onclick="openGameModal()"
+                            class="faith-blue faith-blue-hover text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-md hover:shadow-lg transition-all mb-6 w-full">
+                            <i class="fas fa-play mr-2"></i>
+                            게임 시작
+                        </button>
+
+                        <div class="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-6 mb-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                                <i class="fas fa-info-circle mr-2 text-cyan-500"></i>
+                                게임 규칙
+                            </h2>
+                            <div class="space-y-3 text-gray-700">
+                                <p><i class="fas fa-arrow-right text-cyan-500 mr-2"></i>방향키로 타일을 이동하세요</p>
+                                <p><i class="fas fa-plus text-cyan-500 mr-2"></i>같은 숫자끼리 합쳐집니다</p>
+                                <p><i class="fas fa-trophy text-cyan-500 mr-2"></i>2048을 만들면 승리!</p>
+                                <p><i class="fas fa-gamepad text-cyan-500 mr-2"></i>모바일에서는 스와이프로 조작하세요</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-lg border border-gray-200 p-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                                <i class="fas fa-crown mr-2 text-yellow-500"></i>
+                                리더보드
+                            </h2>
+                            
+                            <div id="loading" class="text-center py-8">
+                                <i class="fas fa-spinner fa-spin text-3xl text-cyan-500"></i>
+                                <p class="text-gray-600 mt-2">로딩중...</p>
+                            </div>
+                            
+                            <div id="leaderboard-content" class="hidden space-y-3">
+                                <!-- 랭킹이 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 게임 모달 -->
+        <div id="game-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-auto">
+                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-800">
+                        <i class="fas fa-th mr-2 text-cyan-500"></i>
+                        2048
+                    </h2>
+                    <button onclick="closeGameModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+                <div class="p-0">
+                    <iframe id="game-frame" class="w-full" style="height: 80vh; border: none;"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let currentDifficulty = 'all';
+            
+            // 리더보드 로드
+            async function loadLeaderboard() {
+                const loading = document.getElementById('loading');
+                const content = document.getElementById('leaderboard-content');
+                
+                try {
+                    const response = await fetch('/api/2048/leaderboard');
+                    const data = await response.json();
+                    
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                    
+                    if (data.success && data.scores && data.scores.length > 0) {
+                        content.innerHTML = data.scores.slice(0, 10).map((score, index) => {
+                            const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '#' + (index + 1);
+                            const date = new Date(score.created_at);
+                            const dateStr = date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                            const username = score.email ? score.email.split('@')[0] : 'Anonymous';
+                            
+                            return '<div class="leaderboard-row bg-gray-50 rounded-lg p-3 flex items-center justify-between hover:bg-gray-100 transition-colors">' +
+                                '<div class="flex items-center gap-3">' +
+                                '<span class="text-xl font-bold w-8">' + medal + '</span>' +
+                                '<div>' +
+                                '<div class="font-semibold text-gray-800">' + username + '</div>' +
+                                '<div class="text-sm text-gray-500">' + dateStr + '</div>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div class="text-right">' +
+                                '<div class="font-bold text-cyan-600">' + score.score.toLocaleString() + '점</div>' +
+                                '<div class="text-sm text-gray-500">최고타일: ' + score.max_tile + '</div>' +
+                                '</div>' +
+                                '</div>';
+                        }).join('');
+                    } else {
+                        content.innerHTML = '<div class="text-center py-8 text-gray-500">' +
+                            '<i class="fas fa-inbox text-4xl mb-2"></i>' +
+                            '<p>아직 기록이 없습니다</p>' +
+                            '<p class="text-sm">첫 번째 기록의 주인공이 되어보세요!</p>' +
+                            '</div>';
+                    }
+                } catch (error) {
+                    console.error('리더보드 로드 오류:', error);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                    content.innerHTML = '<div class="text-center text-red-500">' +
+                        '<i class="fas fa-exclamation-triangle text-3xl mb-2"></i>' +
+                        '<p>리더보드를 불러올 수 없습니다</p>' +
+                        '</div>';
+                }
+            }
+            
+            // 게임 모달 열기/닫기
+            function openGameModal() {
+                const modal = document.getElementById('game-modal');
+                const frame = document.getElementById('game-frame');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                frame.src = '/game/simple/2048/play';
+            }
+            
+            function closeGameModal() {
+                const modal = document.getElementById('game-modal');
+                const frame = document.getElementById('game-frame');
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                frame.src = '';
+                loadLeaderboard();
+            }
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeGameModal();
+                }
+            });
+            
+            // 페이지 로드 시 리더보드 로드
+            document.addEventListener('DOMContentLoaded', loadLeaderboard);
+        </script>
+        
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 2048 플레이 페이지
+app.get('/game/simple/2048/play', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>2048 게임</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                touch-action: manipulation;
+            }
+            
+            body {
+                font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+                background: #faf8ef;
+                color: #776e65;
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                min-height: 100vh;
+            }
+            
+            .container {
+                width: 100%;
+                max-width: 500px;
+            }
+            
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            
+            .title {
+                font-size: 48px;
+                font-weight: bold;
+                color: #776e65;
+            }
+            
+            .scores {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .score-container {
+                background: #bbada0;
+                padding: 10px 20px;
+                border-radius: 5px;
+                text-align: center;
+                min-width: 80px;
+            }
+            
+            .score-title {
+                font-size: 12px;
+                color: #eee4da;
+                text-transform: uppercase;
+            }
+            
+            .score-value {
+                font-size: 24px;
+                font-weight: bold;
+                color: white;
+            }
+            
+            .controls {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            
+            .button {
+                flex: 1;
+                background: #8f7a66;
+                color: white;
+                padding: 12px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background 0.2s;
+            }
+            
+            .button:hover {
+                background: #9f8a76;
+            }
+            
+            .button:disabled {
+                background: #cdc1b4;
+                cursor: not-allowed;
+            }
+            
+            .game-board {
+                background: #bbada0;
+                border-radius: 10px;
+                padding: 15px;
+                position: relative;
+                width: 100%;
+                aspect-ratio: 1;
+            }
+            
+            .grid-container {
+                position: relative;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .grid-row {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .grid-row:last-child {
+                margin-bottom: 0;
+            }
+            
+            .grid-cell {
+                flex: 1;
+                aspect-ratio: 1;
+                background: rgba(238, 228, 218, 0.35);
+                border-radius: 5px;
+            }
+            
+            .tile-container {
+                position: absolute;
+                inset: 15px;
+            }
+            
+            .tile {
+                position: absolute;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 5px;
+                font-weight: bold;
+                transition: all 0.15s ease-in-out;
+            }
+            
+            .tile-2 { background: #eee4da; color: #776e65; }
+            .tile-4 { background: #ede0c8; color: #776e65; }
+            .tile-8 { background: #f2b179; color: #f9f6f2; }
+            .tile-16 { background: #f59563; color: #f9f6f2; }
+            .tile-32 { background: #f67c5f; color: #f9f6f2; }
+            .tile-64 { background: #f65e3b; color: #f9f6f2; }
+            .tile-128 { background: #edcf72; color: #f9f6f2; font-size: 0.8em; }
+            .tile-256 { background: #edcc61; color: #f9f6f2; font-size: 0.8em; }
+            .tile-512 { background: #edc850; color: #f9f6f2; font-size: 0.8em; }
+            .tile-1024 { background: #edc53f; color: #f9f6f2; font-size: 0.7em; }
+            .tile-2048 { background: #edc22e; color: #f9f6f2; font-size: 0.7em; }
+            .tile-4096 { background: #3c3a32; color: #f9f6f2; font-size: 0.7em; }
+            
+            .tile-new {
+                animation: pop 0.2s ease-in-out;
+            }
+            
+            .tile-merged {
+                animation: merge 0.2s ease-in-out;
+            }
+            
+            @keyframes pop {
+                0% {
+                    transform: scale(0);
+                }
+                50% {
+                    transform: scale(1.1);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes merge {
+                0% {
+                    transform: scale(1);
+                }
+                50% {
+                    transform: scale(1.2);
+                }
+                100% {
+                    transform: scale(1);
+                }
+            }
+            
+            .tip {
+                text-align: center;
+                margin-top: 20px;
+                color: #776e65;
+                font-size: 14px;
+            }
+            
+            .game-over-modal, .win-modal {
+                position: fixed;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.9);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+            
+            .modal-content {
+                background: white;
+                padding: 40px;
+                border-radius: 10px;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                max-width: 400px;
+                width: 90%;
+            }
+            
+            .modal-title {
+                font-size: 32px;
+                font-weight: bold;
+                color: #776e65;
+                margin-bottom: 20px;
+            }
+            
+            .modal-score {
+                font-size: 24px;
+                color: #8f7a66;
+                margin-bottom: 30px;
+            }
+            
+            .modal-buttons {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .modal-button {
+                flex: 1;
+                padding: 15px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+                transition: opacity 0.2s;
+            }
+            
+            .modal-button:hover {
+                opacity: 0.9;
+            }
+            
+            .primary-button {
+                background: #8f7a66;
+                color: white;
+            }
+            
+            .secondary-button {
+                background: #eee4da;
+                color: #776e65;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <div class="title">2048</div>
+                <div class="scores">
+                    <div class="score-container">
+                        <div class="score-title">Score</div>
+                        <div class="score-value" id="score">0</div>
+                    </div>
+                    <div class="score-container">
+                        <div class="score-title">Best</div>
+                        <div class="score-value" id="best">0</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="button" onclick="newGame()">새 게임</button>
+                <button class="button" id="undo-btn" onclick="undo()" disabled>Undo (3)</button>
+            </div>
+            
+            <div class="game-board">
+                <div class="grid-container">
+                    <div class="grid-row">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                    <div class="grid-row">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                    <div class="grid-row">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                    <div class="grid-row">
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                        <div class="grid-cell"></div>
+                    </div>
+                </div>
+                <div class="tile-container" id="tile-container"></div>
+            </div>
+            
+            <div class="tip">
+                <strong>Tip:</strong> 같은 숫자를 합쳐보세요!
+            </div>
+        </div>
+        
+        <!-- 게임 오버 모달 -->
+        <div class="game-over-modal" id="game-over-modal">
+            <div class="modal-content">
+                <div class="modal-title">게임 오버!</div>
+                <div class="modal-score">
+                    최종 점수: <strong id="final-score">0</strong><br>
+                    최고 타일: <strong id="final-tile">0</strong>
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-button secondary-button" onclick="closeGameOver()">닫기</button>
+                    <button class="modal-button primary-button" onclick="newGame()">다시 하기</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 승리 모달 -->
+        <div class="win-modal" id="win-modal">
+            <div class="modal-content">
+                <div class="modal-title">🎉 축하합니다! 🎉</div>
+                <div class="modal-score">
+                    2048 타일을 만들었습니다!
+                </div>
+                <div class="modal-buttons">
+                    <button class="modal-button secondary-button" onclick="closeWin()">계속 하기</button>
+                    <button class="modal-button primary-button" onclick="newGame()">새 게임</button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // 게임 상태
+            let grid = [];
+            let score = 0;
+            let best = localStorage.getItem('2048-best') || 0;
+            let undoStack = [];
+            let maxUndos = 3;
+            let hasWon = false;
+            
+            // 터치 이벤트
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+            
+            // 초기화
+            function initGame() {
+                grid = Array(4).fill(null).map(() => Array(4).fill(0));
+                score = 0;
+                undoStack = [];
+                hasWon = false;
+                updateDisplay();
+                addRandomTile();
+                addRandomTile();
+                renderGrid();
+            }
+            
+            // 새 게임
+            function newGame() {
+                document.getElementById('game-over-modal').style.display = 'none';
+                document.getElementById('win-modal').style.display = 'none';
+                initGame();
+            }
+            
+            // 랜덤 타일 추가
+            function addRandomTile() {
+                const empty = [];
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (grid[r][c] === 0) {
+                            empty.push([r, c]);
+                        }
+                    }
+                }
+                
+                if (empty.length > 0) {
+                    const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+                    grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+                }
+            }
+            
+            // 이동 가능 여부 체크
+            function canMove() {
+                // 빈 칸이 있으면 이동 가능
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (grid[r][c] === 0) return true;
+                    }
+                }
+                
+                // 인접한 같은 숫자가 있으면 이동 가능
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (c < 3 && grid[r][c] === grid[r][c + 1]) return true;
+                        if (r < 3 && grid[r][c] === grid[r + 1][c]) return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            // 게임 오버
+            function gameOver() {
+                document.getElementById('final-score').textContent = score;
+                const maxTile = Math.max(...grid.flat());
+                document.getElementById('final-tile').textContent = maxTile;
+                document.getElementById('game-over-modal').style.display = 'flex';
+                
+                // 점수 저장
+                saveScore(score, maxTile);
+            }
+            
+            // 점수 저장
+            async function saveScore(finalScore, maxTile) {
+                try {
+                    const response = await fetch('/api/2048/score', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ score: finalScore, max_tile: maxTile })
+                    });
+                    
+                    const data = await response.json();
+                    console.log('Score saved:', data);
+                } catch (error) {
+                    console.error('Failed to save score:', error);
+                }
+            }
+            
+            // 승리 체크
+            function checkWin() {
+                if (hasWon) return;
+                
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (grid[r][c] === 2048) {
+                            hasWon = true;
+                            document.getElementById('win-modal').style.display = 'flex';
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // 모달 닫기
+            function closeGameOver() {
+                document.getElementById('game-over-modal').style.display = 'none';
+            }
+            
+            function closeWin() {
+                document.getElementById('win-modal').style.display = 'none';
+            }
+            
+            // 이동 로직
+            function move(direction) {
+                const oldGrid = grid.map(row => [...row]);
+                const oldScore = score;
+                let moved = false;
+                
+                // 상태 저장 (undo용)
+                if (undoStack.length >= maxUndos) {
+                    undoStack.shift();
+                }
+                undoStack.push({ grid: oldGrid, score: oldScore });
+                
+                if (direction === 'left') {
+                    for (let r = 0; r < 4; r++) {
+                        moved = slideRow(r) || moved;
+                    }
+                } else if (direction === 'right') {
+                    for (let r = 0; r < 4; r++) {
+                        grid[r].reverse();
+                        moved = slideRow(r) || moved;
+                        grid[r].reverse();
+                    }
+                } else if (direction === 'up') {
+                    rotateLeft();
+                    for (let r = 0; r < 4; r++) {
+                        moved = slideRow(r) || moved;
+                    }
+                    rotateRight();
+                } else if (direction === 'down') {
+                    rotateLeft();
+                    for (let r = 0; r < 4; r++) {
+                        grid[r].reverse();
+                        moved = slideRow(r) || moved;
+                        grid[r].reverse();
+                    }
+                    rotateRight();
+                }
+                
+                if (moved) {
+                    addRandomTile();
+                    updateDisplay();
+                    renderGrid();
+                    checkWin();
+                    
+                    if (!canMove()) {
+                        setTimeout(gameOver, 500);
+                    }
+                } else {
+                    undoStack.pop(); // 이동하지 않았으면 undo 스택에서 제거
+                }
+            }
+            
+            // 행 슬라이드
+            function slideRow(row) {
+                let arr = grid[row].filter(val => val !== 0);
+                let moved = false;
+                
+                for (let i = 0; i < arr.length - 1; i++) {
+                    if (arr[i] === arr[i + 1]) {
+                        arr[i] *= 2;
+                        score += arr[i];
+                        arr.splice(i + 1, 1);
+                        moved = true;
+                    }
+                }
+                
+                while (arr.length < 4) {
+                    arr.push(0);
+                }
+                
+                if (JSON.stringify(grid[row]) !== JSON.stringify(arr)) {
+                    moved = true;
+                }
+                
+                grid[row] = arr;
+                return moved;
+            }
+            
+            // 그리드 회전
+            function rotateLeft() {
+                const newGrid = Array(4).fill(null).map(() => Array(4).fill(0));
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        newGrid[3 - c][r] = grid[r][c];
+                    }
+                }
+                grid = newGrid;
+            }
+            
+            function rotateRight() {
+                const newGrid = Array(4).fill(null).map(() => Array(4).fill(0));
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        newGrid[c][3 - r] = grid[r][c];
+                    }
+                }
+                grid = newGrid;
+            }
+            
+            // Undo
+            function undo() {
+                if (undoStack.length > 0) {
+                    const state = undoStack.pop();
+                    grid = state.grid;
+                    score = state.score;
+                    updateDisplay();
+                    renderGrid();
+                }
+            }
+            
+            // 디스플레이 업데이트
+            function updateDisplay() {
+                document.getElementById('score').textContent = score;
+                document.getElementById('best').textContent = best = Math.max(score, best);
+                localStorage.setItem('2048-best', best);
+                
+                const undoBtn = document.getElementById('undo-btn');
+                undoBtn.disabled = undoStack.length === 0;
+                undoBtn.textContent = 'Undo (' + (maxUndos - undoStack.length) + ')';
+            }
+            
+            // 그리드 렌더링
+            function renderGrid() {
+                const container = document.getElementById('tile-container');
+                container.innerHTML = '';
+                
+                const cellSize = (container.clientWidth - 45) / 4; // 15px gap * 3
+                
+                for (let r = 0; r < 4; r++) {
+                    for (let c = 0; c < 4; c++) {
+                        if (grid[r][c] !== 0) {
+                            const tile = document.createElement('div');
+                            tile.className = 'tile tile-' + grid[r][c];
+                            tile.textContent = grid[r][c];
+                            tile.style.width = cellSize + 'px';
+                            tile.style.height = cellSize + 'px';
+                            tile.style.fontSize = (cellSize * 0.5) + 'px';
+                            tile.style.left = (c * (cellSize + 15)) + 'px';
+                            tile.style.top = (r * (cellSize + 15)) + 'px';
+                            container.appendChild(tile);
+                        }
+                    }
+                }
+            }
+            
+            // 키보드 이벤트
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    move('left');
+                } else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    move('right');
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    move('up');
+                } else if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    move('down');
+                }
+            });
+            
+            // 터치 이벤트
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+            
+            document.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                touchEndY = e.changedTouches[0].screenY;
+                handleSwipe();
+            }, { passive: true });
+            
+            function handleSwipe() {
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                const absDx = Math.abs(dx);
+                const absDy = Math.abs(dy);
+                
+                if (Math.max(absDx, absDy) < 30) return;
+                
+                if (absDx > absDy) {
+                    if (dx > 0) {
+                        move('right');
+                    } else {
+                        move('left');
+                    }
+                } else {
+                    if (dy > 0) {
+                        move('down');
+                    } else {
+                        move('up');
+                    }
+                }
+            }
+            
+            // 리사이즈 이벤트
+            window.addEventListener('resize', renderGrid);
+            
+            // 게임 시작
+            initGame();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 // API: 리더보드
 
 app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
@@ -4036,6 +4941,81 @@ app.post('/api/sudoku/score', async (c) => {
     return c.json({
       success: false,
       message: '기록 저장 중 오류가 발생했습니다: ' + error.message
+    }, 500)
+  }
+})
+
+// ==================== 2048 API ====================
+
+// 2048 점수 저장
+app.post('/api/2048/score', async (c) => {
+  const { DB } = c.env
+  const { score, max_tile } = await c.req.json()
+  
+  // 쿠키에서 사용자 정보 가져오기
+  const authCookie = c.req.header('Cookie')
+  let userId = null
+  
+  if (authCookie) {
+    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {} as Record<string, string>)
+    
+    if (cookies.user_id) {
+      userId = decodeURIComponent(cookies.user_id)
+    }
+  }
+  
+  // 로그인하지 않은 경우에도 기록은 저장하지만, user_id를 NULL로 저장
+  try {
+    await DB.prepare(`
+      INSERT INTO game2048_scores (user_id, score, max_tile, created_at)
+      VALUES (?, ?, ?, datetime('now'))
+    `).bind(userId, score, max_tile).run()
+    
+    return c.json({
+      success: true,
+      message: '기록이 저장되었습니다'
+    })
+  } catch (error: any) {
+    console.error('2048 점수 저장 오류:', error)
+    return c.json({
+      success: false,
+      message: '기록 저장 중 오류가 발생했습니다'
+    }, 500)
+  }
+})
+
+// 2048 리더보드
+app.get('/api/2048/leaderboard', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const result = await DB.prepare(`
+      SELECT 
+        g.id,
+        g.score,
+        g.max_tile,
+        g.created_at,
+        u.email
+      FROM game2048_scores g
+      LEFT JOIN users u ON g.user_id = u.id
+      ORDER BY g.score DESC, g.created_at ASC
+      LIMIT 50
+    `).all()
+    
+    return c.json({
+      success: true,
+      scores: result.results || []
+    })
+  } catch (error: any) {
+    console.error('2048 리더보드 조회 오류:', error)
+    return c.json({
+      success: false,
+      message: '리더보드 조회 중 오류가 발생했습니다',
+      scores: []
     }, 500)
   }
 })
@@ -18356,6 +19336,91 @@ app.get('/shopping', (c) => {
     </body>
     </html>
   `)
+})
+
+// ==================== 2048 게임 API ====================
+// 2048 점수 저장
+app.post('/api/game2048/score', async (c) => {
+  const { DB } = c.env
+  const { score, highest_tile, moves } = await c.req.json()
+  
+  // 쿠키에서 사용자 정보 가져오기
+  const authCookie = c.req.header('Cookie')
+  let userId = null
+  let username = 'Anonymous'
+  
+  if (authCookie) {
+    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {} as Record<string, string>)
+    
+    if (cookies.user_id) {
+      userId = decodeURIComponent(cookies.user_id)
+      
+      try {
+        const user = await DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(userId).first()
+        if (user) {
+          username = (user.name as string) || (user.email as string) || 'Anonymous'
+        }
+      } catch (e) {
+        console.log('사용자 조회 실패:', e)
+      }
+    }
+  }
+  
+  try {
+    const result = await DB.prepare(`
+      INSERT INTO game2048_scores (score, highest_tile, moves, player_name, user_id, created_at)
+      VALUES (?, ?, ?, ?, ?, datetime('now'))
+    `).bind(score, highest_tile, moves, username, userId).run()
+    
+    console.log('✅ 2048 기록 저장 성공:', { score, highest_tile, moves, username, userId })
+    
+    return c.json({
+      success: true,
+      message: '기록이 저장되었습니다'
+    })
+  } catch (error: any) {
+    console.error('❌ 2048 기록 저장 오류:', error)
+    return c.json({
+      success: false,
+      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
+    }, 500)
+  }
+})
+
+// 2048 리더보드
+app.get('/api/game2048/leaderboard', async (c) => {
+  const { DB } = c.env
+  
+  try {
+    const result = await DB.prepare(`
+      SELECT 
+        g.score,
+        g.highest_tile,
+        g.moves,
+        g.created_at,
+        u.email
+      FROM game2048_scores g
+      LEFT JOIN users u ON g.user_id = u.id
+      ORDER BY g.score DESC, g.created_at ASC
+      LIMIT 10
+    `).all()
+    
+    return c.json({
+      success: true,
+      scores: result.results || []
+    })
+  } catch (error) {
+    console.error('2048 리더보드 조회 오류:', error)
+    return c.json({
+      success: false,
+      message: '리더보드 조회 중 오류가 발생했습니다',
+      scores: []
+    })
+  }
 })
 
 export default app
