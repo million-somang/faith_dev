@@ -1347,34 +1347,102 @@ app.get('/game/simple', (c) => {
             <main class="flex-1">
                 <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                     <div class="text-center py-16">
-                        <div class="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                            <i class="fas fa-gamepad text-4xl text-white"></i>
-                        </div>
-                        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
-                            <span class="bg-gradient-to-r from-purple-500 to-pink-600 bg-clip-text text-transparent">심플 게임</span>
-                        </h1>
-                        <p class="text-gray-600 text-lg mb-8">
-                            간단하게 즐길 수 있는 브라우저 게임
-                        </p>
-                        
-                        <!-- 게임 카드 그리드 -->
+                        <!-- 게임 랭킹 그리드 -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
-                            <a href="/game/simple/tetris" class="block bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
-                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                                    <i class="fas fa-th text-3xl text-white"></i>
+                            <!-- 테트리스 랭킹 -->
+                            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-th text-2xl text-white"></i>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-white">테트리스 랭킹</h3>
+                                    </div>
+                                    <a href="/game/simple/tetris" class="text-white hover:text-blue-100 transition-colors">
+                                        <i class="fas fa-play-circle text-2xl"></i>
+                                    </a>
                                 </div>
-                                <h3 class="text-xl font-bold text-white mb-2">테트리스</h3>
-                                <p class="text-blue-100 text-sm">블록을 쌓아 라인을 완성하세요</p>
-                            </a>
+                                
+                                <!-- 랭킹 리스트 -->
+                                <div class="bg-white bg-opacity-10 rounded-lg p-4 space-y-2" id="tetris-ranking">
+                                    <div class="text-white text-sm text-center py-4">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        랭킹 불러오는 중...
+                                    </div>
+                                </div>
+                            </div>
                             
-                            <a href="/game/simple/sudoku" class="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6 hover:shadow-xl transition-all transform hover:-translate-y-2">
-                                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mb-4 mx-auto">
-                                    <i class="fas fa-table text-3xl text-white"></i>
+                            <!-- 스도쿠 랭킹 -->
+                            <div class="bg-gradient-to-br from-green-500 to-teal-600 rounded-xl shadow-lg p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-table text-2xl text-white"></i>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-white">스도쿠 랭킹</h3>
+                                    </div>
+                                    <a href="/game/simple/sudoku" class="text-white hover:text-green-100 transition-colors">
+                                        <i class="fas fa-play-circle text-2xl"></i>
+                                    </a>
                                 </div>
-                                <h3 class="text-xl font-bold text-white mb-2">스도쿠</h3>
-                                <p class="text-green-100 text-sm">숫자 퍼즐을 풀어보세요</p>
-                            </a>
+                                
+                                <!-- 랭킹 리스트 -->
+                                <div class="bg-white bg-opacity-10 rounded-lg p-4 space-y-2" id="sudoku-ranking">
+                                    <div class="text-white text-sm text-center py-4">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        랭킹 불러오는 중...
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+                        
+                        <script>
+                            // 랭킹 데이터 로드
+                            async function loadRankings() {
+                                try {
+                                    // 테트리스 랭킹
+                                    const tetrisRes = await fetch('/api/game/tetris/ranking?limit=5');
+                                    const tetrisData = await tetrisRes.json();
+                                    displayRanking('tetris-ranking', tetrisData.rankings || []);
+                                    
+                                    // 스도쿠 랭킹
+                                    const sudokuRes = await fetch('/api/game/sudoku/ranking?limit=5');
+                                    const sudokuData = await sudokuRes.json();
+                                    displayRanking('sudoku-ranking', sudokuData.rankings || []);
+                                } catch (error) {
+                                    console.error('랭킹 로드 실패:', error);
+                                    document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                }
+                            }
+                            
+                            function displayRanking(elementId, rankings) {
+                                const element = document.getElementById(elementId);
+                                if (rankings.length === 0) {
+                                    element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
+                                    return;
+                                }
+                                
+                                const html = rankings.map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : \`\${index + 1}위\`;
+                                    const scoreText = elementId.includes('tetris') ? \`\${rank.score.toLocaleString()}점\` : \`\${rank.time}\`;
+                                    return \`
+                                        <div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">
+                                            <div class="flex items-center space-x-3">
+                                                <span class="font-bold w-8">\${medal}</span>
+                                                <span class="truncate max-w-[120px]">\${rank.username || rank.user_id || '익명'}</span>
+                                            </div>
+                                            <span class="font-bold">\${scoreText}</span>
+                                        </div>
+                                    \`;
+                                }).join('');
+                                
+                                element.innerHTML = html;
+                            }
+                            
+                            // 페이지 로드 시 랭킹 불러오기
+                            loadRankings();
+                        </script>
                     </div>
                 </div>
             </main>
