@@ -11856,9 +11856,11 @@ app.get('/admin', async (c) => {
         <script>
             // 인증 체크
             const token = localStorage.getItem('auth_token');
+            const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
-            if (!token || userLevel < 6) {
+            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            if (!token || (userRole !== 'admin' && userLevel < 6)) {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/login';
             }
@@ -12226,9 +12228,11 @@ app.get('/admin/users', async (c) => {
         <script>
             // 인증 체크
             const token = localStorage.getItem('auth_token');
+            const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
-            if (!token || userLevel < 6) {
+            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            if (!token || (userRole !== 'admin' && userLevel < 6)) {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/login';
             }
@@ -13369,9 +13373,11 @@ app.get('/admin/stats', async (c) => {
         <script>
             // 인증 체크
             const token = localStorage.getItem('auth_token');
+            const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
-            if (!token || userLevel < 6) {
+            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            if (!token || (userRole !== 'admin' && userLevel < 6)) {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/login';
             }
@@ -13665,9 +13671,11 @@ app.get('/admin/logs', async (c) => {
         <script>
             // 인증 체크
             const token = localStorage.getItem('auth_token');
+            const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
-            if (!token || userLevel < 6) {
+            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            if (!token || (userRole !== 'admin' && userLevel < 6)) {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/login';
             }
@@ -13859,9 +13867,11 @@ app.get('/admin/notifications', async (c) => {
         <script>
             // 인증 체크
             const token = localStorage.getItem('auth_token');
+            const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
             
-            if (!token || userLevel < 6) {
+            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            if (!token || (userRole !== 'admin' && userLevel < 6)) {
                 alert('관리자 권한이 필요합니다.');
                 window.location.href = '/login';
             }
