@@ -492,8 +492,27 @@ function getCommonAuthScript(): string {
       function updateUserMenu() {
         const token = localStorage.getItem('auth_token');
         const userEmail = localStorage.getItem('user_email');
-        const userRole = localStorage.getItem('user_role') || 'user';
+        let userRole = localStorage.getItem('user_role') || 'user';
         const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+        
+        // role 정보가 없고 token이 있으면 서버에서 가져오기
+        if (token && userEmail && !localStorage.getItem('user_role')) {
+          fetch('/api/user/me', {
+            headers: {
+              'Authorization': 'Bearer ' + token
+            }
+          })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success && data.user) {
+              localStorage.setItem('user_role', data.user.role || 'user');
+              userRole = data.user.role || 'user';
+              // role 업데이트 후 메뉴 다시 렌더링
+              updateUserMenu();
+            }
+          })
+          .catch(err => console.error('Failed to fetch user role:', err));
+        }
         
         if (token && userEmail) {
           let menuHTML = '';
@@ -11606,6 +11625,48 @@ app.get('/api/user', async (c) => {
     })
   } catch (error) {
     console.error('User info error:', error)
+    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+  }
+})
+
+// ==================== API: 현재 사용자 정보 (role 포함) ====================
+app.get('/api/user/me', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    
+    if (!authHeader) {
+      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    }
+    
+    // 토큰 검증
+    const token = authHeader.replace('Bearer ', '')
+    const decoded = Buffer.from(token, 'base64').toString()
+    const userId = decoded.split(':')[0]
+    
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, name, phone, role, level, status, created_at, last_login FROM users WHERE id = ?'
+    ).bind(userId).first()
+    
+    if (!user) {
+      return c.json({ success: false, message: '사용자를 찾을 수 없습니다.' }, 404)
+    }
+    
+    return c.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        role: user.role || 'user',
+        level: user.level,
+        status: user.status,
+        created_at: user.created_at,
+        last_login: user.last_login
+      }
+    })
+  } catch (error) {
+    console.error('User me error:', error)
     return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
   }
 })
