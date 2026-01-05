@@ -1342,6 +1342,9 @@ app.get('/game/simple', (c) => {
                         <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th-large mr-2"></i>2048
                         </a>
+                        <a href="/game/simple/minesweeper" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
+                        </a>
                     </nav>
                 </div>
             </aside>
@@ -1351,7 +1354,7 @@ app.get('/game/simple', (c) => {
                 <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                     <div class="text-center py-16">
                         <!-- 게임 랭킹 그리드 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
                             <!-- 테트리스 랭킹 -->
                             <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
                                 <div class="flex items-center justify-between mb-4">
@@ -1420,6 +1423,29 @@ app.get('/game/simple', (c) => {
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- 지뢰찾기 랭킹 -->
+                            <div class="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl shadow-lg p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-white bg-opacity-20 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-bomb text-2xl text-white"></i>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-white">지뢰찾기 랭킹</h3>
+                                    </div>
+                                    <a href="/game/simple/minesweeper" class="text-white hover:text-red-100 transition-colors">
+                                        <i class="fas fa-play-circle text-2xl"></i>
+                                    </a>
+                                </div>
+                                
+                                <!-- 랭킹 리스트 -->
+                                <div class="bg-white bg-opacity-10 rounded-lg p-4 space-y-2" id="minesweeper-ranking">
+                                    <div class="text-white text-sm text-center py-4">
+                                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                                        랭킹 불러오는 중...
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <script>
@@ -1455,11 +1481,22 @@ app.get('/game/simple', (c) => {
                                     } else {
                                         document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     }
+                                    
+                                    // 지뢰찾기 랭킹 (초급)
+                                    const minesweeperRes = await fetch('/api/minesweeper/leaderboard/beginner');
+                                    const minesweeperData = await minesweeperRes.json();
+                                    
+                                    if (minesweeperData.success) {
+                                        displayMinesweeperRanking('minesweeper-ranking', minesweeperData.scores || []);
+                                    } else {
+                                        document.getElementById('minesweeper-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    }
                                 } catch (error) {
                                     console.error('랭킹 로드 실패:', error);
                                     document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                    document.getElementById('minesweeper-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                 }
                             }
                             
@@ -1528,6 +1565,29 @@ app.get('/game/simple', (c) => {
                                         '<span class="truncate max-w-[120px]">' + username + '</span>' +
                                         '</div>' +
                                         '<span class="font-bold">' + scoreText + '</span>' +
+                                        '</div>';
+                                }).join('');
+                                
+                                element.innerHTML = html;
+                            }
+                            
+                            function displayMinesweeperRanking(elementId, rankings) {
+                                const element = document.getElementById(elementId);
+                                if (rankings.length === 0) {
+                                    element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
+                                    return;
+                                }
+                                
+                                const html = rankings.slice(0, 5).map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '위';
+                                    const timeText = rank.time.toFixed(2) + '초';
+                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    return '<div class="flex items-center justify-between text-white text-sm py-2 px-3 hover:bg-white hover:bg-opacity-5 rounded transition-colors">' +
+                                        '<div class="flex items-center space-x-3">' +
+                                        '<span class="font-bold w-8">' + medal + '</span>' +
+                                        '<span class="truncate max-w-[120px]">' + username + '</span>' +
+                                        '</div>' +
+                                        '<span class="font-bold">' + timeText + '</span>' +
                                         '</div>';
                                 }).join('');
                                 
@@ -1674,6 +1734,9 @@ app.get('/game/simple/tetris', (c) => {
                         </a>
                         <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
+                        <a href="/game/simple/minesweeper" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
                         </a>
                     </nav>
                 </div>
@@ -2556,6 +2619,9 @@ app.get('/game/simple/sudoku', (c) => {
                         </a>
                         <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
+                        <a href="/game/simple/minesweeper" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
                         </a>
                     </nav>
                 </div>
