@@ -5256,7 +5256,27 @@ app.get('/game/simple/minesweeper', (c) => {
             }
             
             function startGame() {
-                window.location.href = '/game/simple/minesweeper/play?difficulty=' + currentDifficulty;
+                openGameModal();
+            }
+            
+            function openGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                
+                iframe.src = '/game/simple/minesweeper/play?difficulty=' + currentDifficulty;
+                modal.style.display = 'flex';
+                
+                setTimeout(() => iframe.focus(), 100);
+            }
+            
+            function closeGameModal() {
+                const modal = document.getElementById('gameModal');
+                const iframe = document.getElementById('gameFrame');
+                modal.style.display = 'none';
+                iframe.src = '';
+                
+                // 리더보드 새로고침
+                loadLeaderboards();
             }
             
             async function loadLeaderboards() {
@@ -5304,6 +5324,16 @@ app.get('/game/simple/minesweeper', (c) => {
             
             loadLeaderboards();
         </script>
+        
+        <!-- 게임 모달 (전체화면) -->
+        <div id="gameModal" class="fixed inset-0 bg-black hidden z-50" style="display: none;">
+            <div class="relative w-full h-full flex flex-col">
+                <button onclick="closeGameModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 text-3xl font-bold z-10 bg-black bg-opacity-50 w-12 h-12 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+                <iframe id="gameFrame" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
         
         ${getCommonFooter()}
         ${getCommonAuthScript()}
