@@ -1672,6 +1672,9 @@ app.get('/game/simple/tetris', (c) => {
                         <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
                             <i class="fas fa-table mr-2"></i>스도쿠
                         </a>
+                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
                     </nav>
                 </div>
             </aside>
@@ -2525,6 +2528,7 @@ app.get('/game/simple/sudoku', (c) => {
     <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50" id="html-root">
         ${getCommonAuthScript()}
         ${getCommonHeader('Game')}
+        ${getStickyHeader()}
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
@@ -2535,7 +2539,30 @@ app.get('/game/simple/sudoku', (c) => {
 
         ${getGameMenu('/game/simple')}
 
-        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg font-semibold">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
             <!-- 게임 헤더 -->
             <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
                 <div class="flex items-center justify-between flex-wrap gap-4">
@@ -2647,6 +2674,7 @@ app.get('/game/simple/sudoku', (c) => {
                     </div>
                 </div>
             </div>
+            </main>
         </div>
 
         <!-- 게임 모달 -->
