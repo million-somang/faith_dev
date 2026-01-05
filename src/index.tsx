@@ -5071,6 +5071,799 @@ app.post('/api/sudoku/score', async (c) => {
   }
 })
 
+// ==================== 지뢰찾기 게임 ====================
+
+// 지뢰찾기 메인 페이지
+app.get('/game/simple/minesweeper', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>지뢰찾기 - Faith Portal</title>
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            .difficulty-tab { 
+                cursor: pointer; 
+                transition: all 0.3s; 
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-weight: 600;
+            }
+            .difficulty-tab.active { 
+                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                color: white;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            }
+            .difficulty-tab:hover:not(.active) {
+                background: #fee2e2;
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        ${getCommonHeader('Game')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '게임', href: '/game'},
+          {label: '심플 게임', href: '/game/simple'},
+          {label: '지뢰찾기'}
+        ])}
+
+        ${getGameMenu('/game/simple')}
+        
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
+            <!-- 좌측 사이드바 (게임 메뉴) -->
+            <aside class="lg:w-64 flex-shrink-0">
+                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+                        게임 목록
+                    </h3>
+                    <nav class="space-y-2">
+                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th mr-2"></i>테트리스
+                        </a>
+                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-table mr-2"></i>스도쿠
+                        </a>
+                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
+                            <i class="fas fa-th-large mr-2"></i>2048
+                        </a>
+                        <a href="/game/simple/minesweeper" class="block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg font-semibold">
+                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
+                        </a>
+                    </nav>
+                </div>
+            </aside>
+
+            <!-- 메인 컨텐츠 -->
+            <main class="flex-1">
+                <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+                    <h1 class="text-3xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-bomb mr-2 text-red-500"></i>
+                        스피드 지뢰찾기
+                    </h1>
+
+                    <!-- 난이도 선택 -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-sliders-h mr-2 text-red-500"></i>
+                            난이도 선택
+                        </h2>
+                        <div class="flex gap-3 flex-wrap">
+                            <div class="difficulty-tab active" data-difficulty="beginner" onclick="selectDifficulty('beginner')">
+                                <i class="fas fa-smile mr-2"></i>
+                                초급 (9×9)
+                            </div>
+                            <div class="difficulty-tab" data-difficulty="intermediate" onclick="selectDifficulty('intermediate')">
+                                <i class="fas fa-meh mr-2"></i>
+                                중급 (16×16)
+                            </div>
+                            <div class="difficulty-tab" data-difficulty="expert" onclick="selectDifficulty('expert')">
+                                <i class="fas fa-skull mr-2"></i>
+                                고급 (30×16)
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        onclick="startGame()"
+                        class="faith-blue faith-blue-hover text-white px-8 py-4 rounded-lg font-semibold text-lg shadow-md hover:shadow-lg transition-all mb-6 w-full">
+                        <i class="fas fa-play mr-2"></i>
+                        게임 시작
+                    </button>
+
+                    <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-lg p-6 mb-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-info-circle mr-2 text-red-500"></i>
+                            게임 규칙
+                        </h2>
+                        <div class="space-y-3 text-gray-700">
+                            <p><i class="fas fa-mouse-pointer text-red-500 mr-2"></i>좌클릭: 칸 열기</p>
+                            <p><i class="fas fa-flag text-red-500 mr-2"></i>우클릭: 깃발 꽂기</p>
+                            <p><i class="fas fa-hand-pointer text-red-500 mr-2"></i>양클릭 (Chording): 숫자 칸에서 주변 깃발 수가 맞으면 나머지 칸 열기</p>
+                            <p><i class="fas fa-shield-alt text-red-500 mr-2"></i>첫 클릭은 절대 안전합니다!</p>
+                            <p><i class="fas fa-trophy text-red-500 mr-2"></i>목표: 지뢰가 아닌 모든 칸을 최대한 빨리 열기</p>
+                        </div>
+                    </div>
+
+                    <!-- 난이도별 리더보드 -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4">
+                            <i class="fas fa-crown mr-2 text-yellow-500"></i>
+                            명예의 전당
+                        </h2>
+                        
+                        <div class="space-y-6">
+                            <!-- 초급 -->
+                            <div>
+                                <h3 class="font-semibold text-gray-700 mb-2">초급 (9×9, 지뢰 10개)</h3>
+                                <div id="beginner-leaderboard" class="space-y-2"></div>
+                            </div>
+                            
+                            <!-- 중급 -->
+                            <div>
+                                <h3 class="font-semibold text-gray-700 mb-2">중급 (16×16, 지뢰 40개)</h3>
+                                <div id="intermediate-leaderboard" class="space-y-2"></div>
+                            </div>
+                            
+                            <!-- 고급 -->
+                            <div>
+                                <h3 class="font-semibold text-gray-700 mb-2">고급 (30×16, 지뢰 99개)</h3>
+                                <div id="expert-leaderboard" class="space-y-2"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script>
+            let currentDifficulty = 'beginner';
+            
+            function selectDifficulty(difficulty) {
+                currentDifficulty = difficulty;
+                document.querySelectorAll('.difficulty-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                document.querySelector('[data-difficulty="' + difficulty + '"]').classList.add('active');
+            }
+            
+            function startGame() {
+                window.location.href = '/game/simple/minesweeper/play?difficulty=' + currentDifficulty;
+            }
+            
+            async function loadLeaderboards() {
+                const difficulties = ['beginner', 'intermediate', 'expert'];
+                
+                for (const difficulty of difficulties) {
+                    try {
+                        const response = await fetch('/api/minesweeper/leaderboard/' + difficulty);
+                        const data = await response.json();
+                        
+                        const container = document.getElementById(difficulty + '-leaderboard');
+                        
+                        if (data.success && data.scores && data.scores.length > 0) {
+                            container.innerHTML = data.scores.slice(0, 10).map((score, index) => {
+                                const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1) + '위';
+                                const username = score.email ? score.email.split('@')[0] : '익명';
+                                const timeText = score.time.toFixed(2) + '초';
+                                const date = new Date(score.created_at);
+                                const dateStr = date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
+                                
+                                return '<div class="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">' +
+                                    '<div class="flex items-center gap-3">' +
+                                    '<span class="text-lg font-bold w-10">' + medal + '</span>' +
+                                    '<div>' +
+                                    '<div class="font-semibold text-gray-800">' + username + '</div>' +
+                                    '<div class="text-sm text-gray-500">' + dateStr + '</div>' +
+                                    '</div>' +
+                                    '</div>' +
+                                    '<div class="font-bold text-red-600">' + timeText + '</div>' +
+                                    '</div>';
+                            }).join('');
+                        } else {
+                            container.innerHTML = '<div class="text-center text-gray-500 py-4">' +
+                                '<i class="fas fa-inbox text-3xl mb-2"></i>' +
+                                '<p>아직 기록이 없습니다</p>' +
+                                '</div>';
+                        }
+                    } catch (error) {
+                        console.error('리더보드 로드 실패:', error);
+                        document.getElementById(difficulty + '-leaderboard').innerHTML = 
+                            '<div class="text-center text-red-500">로드 실패</div>';
+                    }
+                }
+            }
+            
+            loadLeaderboards();
+        </script>
+        
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 지뢰찾기 플레이 페이지
+app.get('/game/simple/minesweeper/play', (c) => {
+  const difficulty = c.req.query('difficulty') || 'beginner';
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>지뢰찾기 - ${difficulty}</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: #c0c0c0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                padding: 20px;
+            }
+            
+            .game-container {
+                background: #c0c0c0;
+                border: 3px outset #fff;
+                padding: 10px;
+            }
+            
+            .header {
+                background: #c0c0c0;
+                border: 2px inset #808080;
+                padding: 10px;
+                margin-bottom: 10px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .counter {
+                background: #000;
+                color: #f00;
+                font-family: 'Courier New', monospace;
+                font-size: 32px;
+                font-weight: bold;
+                padding: 5px 10px;
+                border: 2px inset #808080;
+                min-width: 60px;
+                text-align: center;
+            }
+            
+            .reset-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 32px;
+                border: 3px outset #fff;
+                background: #c0c0c0;
+                cursor: pointer;
+                user-select: none;
+            }
+            
+            .reset-btn:active {
+                border-style: inset;
+            }
+            
+            .board {
+                border: 3px inset #808080;
+                display: inline-grid;
+                gap: 0;
+                background: #c0c0c0;
+            }
+            
+            .cell {
+                width: 30px;
+                height: 30px;
+                border: 2px outset #fff;
+                background: #c0c0c0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: bold;
+                font-size: 18px;
+                cursor: pointer;
+                user-select: none;
+            }
+            
+            .cell:active {
+                border-style: inset;
+            }
+            
+            .cell.revealed {
+                border: 1px solid #808080;
+                background: #bdbdbd;
+                cursor: default;
+            }
+            
+            .cell.flagged::before {
+                content: '🚩';
+            }
+            
+            .cell.mine {
+                background: #f00;
+            }
+            
+            .cell.mine::before {
+                content: '💣';
+            }
+            
+            .cell.wrong-flag {
+                background: #f00;
+            }
+            
+            .cell.wrong-flag::before {
+                content: '❌';
+            }
+            
+            .cell.num-1 { color: #0000ff; }
+            .cell.num-2 { color: #008000; }
+            .cell.num-3 { color: #ff0000; }
+            .cell.num-4 { color: #000080; }
+            .cell.num-5 { color: #800000; }
+            .cell.num-6 { color: #008080; }
+            .cell.num-7 { color: #000; }
+            .cell.num-8 { color: #808080; }
+            
+            .modal {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.7);
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            }
+            
+            .modal.active {
+                display: flex;
+            }
+            
+            .modal-content {
+                background: white;
+                padding: 30px;
+                border-radius: 10px;
+                text-align: center;
+                max-width: 400px;
+            }
+            
+            .modal-title {
+                font-size: 32px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            }
+            
+            .modal-buttons {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+            }
+            
+            .modal-button {
+                flex: 1;
+                padding: 12px;
+                border: none;
+                border-radius: 5px;
+                font-size: 16px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            
+            .btn-primary {
+                background: #4CAF50;
+                color: white;
+            }
+            
+            .btn-secondary {
+                background: #808080;
+                color: white;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="game-container">
+            <div class="header">
+                <div class="counter" id="mine-counter">010</div>
+                <button class="reset-btn" id="reset-btn" onclick="resetGame()">😎</button>
+                <div class="counter" id="timer">000</div>
+            </div>
+            <div class="board" id="board"></div>
+        </div>
+        
+        <div class="modal" id="game-over-modal">
+            <div class="modal-content">
+                <div class="modal-title" id="modal-title"></div>
+                <div id="modal-message"></div>
+                <div class="modal-buttons">
+                    <button class="modal-button btn-secondary" onclick="closeModal()">닫기</button>
+                    <button class="modal-button btn-primary" onclick="resetGame()">다시하기</button>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            const DIFFICULTY = '${difficulty}';
+            const CONFIG = {
+                beginner: { rows: 9, cols: 9, mines: 10 },
+                intermediate: { rows: 16, cols: 16, mines: 40 },
+                expert: { rows: 16, cols: 30, mines: 99 }
+            };
+            
+            let config = CONFIG[DIFFICULTY];
+            let board = [];
+            let revealed = [];
+            let flagged = [];
+            let gameStarted = false;
+            let gameOver = false;
+            let startTime = 0;
+            let timerInterval = null;
+            let firstClick = true;
+            
+            function initGame() {
+                const boardEl = document.getElementById('board');
+                boardEl.style.gridTemplateColumns = 'repeat(' + config.cols + ', 30px)';
+                boardEl.innerHTML = '';
+                
+                board = Array(config.rows).fill(null).map(() => Array(config.cols).fill(0));
+                revealed = Array(config.rows).fill(null).map(() => Array(config.cols).fill(false));
+                flagged = Array(config.rows).fill(null).map(() => Array(config.cols).fill(false));
+                
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = r;
+                        cell.dataset.col = c;
+                        
+                        cell.addEventListener('click', handleLeftClick);
+                        cell.addEventListener('contextmenu', handleRightClick);
+                        cell.addEventListener('mousedown', handleMouseDown);
+                        cell.addEventListener('mouseup', handleMouseUp);
+                        
+                        boardEl.appendChild(cell);
+                    }
+                }
+                
+                gameStarted = false;
+                gameOver = false;
+                firstClick = true;
+                document.getElementById('mine-counter').textContent = String(config.mines).padStart(3, '0');
+                document.getElementById('timer').textContent = '000';
+                document.getElementById('reset-btn').textContent = '😎';
+                
+                if (timerInterval) {
+                    clearInterval(timerInterval);
+                    timerInterval = null;
+                }
+            }
+            
+            function placeMines(excludeRow, excludeCol) {
+                const excludeCells = new Set();
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = excludeRow + dr;
+                        const nc = excludeCol + dc;
+                        if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols) {
+                            excludeCells.add(nr + ',' + nc);
+                        }
+                    }
+                }
+                
+                let minesPlaced = 0;
+                while (minesPlaced < config.mines) {
+                    const r = Math.floor(Math.random() * config.rows);
+                    const c = Math.floor(Math.random() * config.cols);
+                    
+                    if (board[r][c] !== -1 && !excludeCells.has(r + ',' + c)) {
+                        board[r][c] = -1;
+                        minesPlaced++;
+                    }
+                }
+                
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        if (board[r][c] === -1) continue;
+                        
+                        let count = 0;
+                        for (let dr = -1; dr <= 1; dr++) {
+                            for (let dc = -1; dc <= 1; dc++) {
+                                const nr = r + dr;
+                                const nc = c + dc;
+                                if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols && board[nr][nc] === -1) {
+                                    count++;
+                                }
+                            }
+                        }
+                        board[r][c] = count;
+                    }
+                }
+            }
+            
+            function handleLeftClick(e) {
+                if (gameOver) return;
+                
+                const row = parseInt(e.target.dataset.row);
+                const col = parseInt(e.target.dataset.col);
+                
+                if (flagged[row][col] || revealed[row][col]) return;
+                
+                if (firstClick) {
+                    placeMines(row, col);
+                    firstClick = false;
+                    startTimer();
+                }
+                
+                revealCell(row, col);
+            }
+            
+            function handleRightClick(e) {
+                e.preventDefault();
+                if (gameOver || !gameStarted) return;
+                
+                const row = parseInt(e.target.dataset.row);
+                const col = parseInt(e.target.dataset.col);
+                
+                if (revealed[row][col]) return;
+                
+                flagged[row][col] = !flagged[row][col];
+                updateCell(row, col);
+                updateMineCounter();
+            }
+            
+            let mouseDownBtn = null;
+            
+            function handleMouseDown(e) {
+                mouseDownBtn = e.button;
+                if ((e.button === 0 && e.buttons === 3) || e.button === 1) {
+                    e.preventDefault();
+                    const row = parseInt(e.target.dataset.row);
+                    const col = parseInt(e.target.dataset.col);
+                    if (revealed[row][col] && board[row][col] > 0) {
+                        highlightNeighbors(row, col, true);
+                    }
+                }
+            }
+            
+            function handleMouseUp(e) {
+                if ((mouseDownBtn === 0 && e.button === 2) || (mouseDownBtn === 2 && e.button === 0) || e.button === 1) {
+                    e.preventDefault();
+                    const row = parseInt(e.target.dataset.row);
+                    const col = parseInt(e.target.dataset.col);
+                    if (revealed[row][col] && board[row][col] > 0) {
+                        highlightNeighbors(row, col, false);
+                        chordClick(row, col);
+                    }
+                }
+                mouseDownBtn = null;
+            }
+            
+            function chordClick(row, col) {
+                if (gameOver || !revealed[row][col]) return;
+                
+                const cellValue = board[row][col];
+                if (cellValue === 0) return;
+                
+                let flagCount = 0;
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols && flagged[nr][nc]) {
+                            flagCount++;
+                        }
+                    }
+                }
+                
+                if (flagCount === cellValue) {
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = row + dr;
+                            const nc = col + dc;
+                            if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols && !revealed[nr][nc] && !flagged[nr][nc]) {
+                                revealCell(nr, nc);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            function highlightNeighbors(row, col, highlight) {
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols && !revealed[nr][nc] && !flagged[nr][nc]) {
+                            const cell = document.querySelector('[data-row="' + nr + '"][data-col="' + nc + '"]');
+                            if (highlight) {
+                                cell.style.borderStyle = 'inset';
+                            } else {
+                                cell.style.borderStyle = 'outset';
+                            }
+                        }
+                    }
+                }
+            }
+            
+            function revealCell(row, col) {
+                if (revealed[row][col] || flagged[row][col] || gameOver) return;
+                
+                if (!gameStarted) {
+                    gameStarted = true;
+                }
+                
+                revealed[row][col] = true;
+                
+                if (board[row][col] === -1) {
+                    gameOver = true;
+                    revealAllMines();
+                    document.getElementById('reset-btn').textContent = '😵';
+                    setTimeout(() => showGameOver(false), 500);
+                    return;
+                }
+                
+                updateCell(row, col);
+                
+                if (board[row][col] === 0) {
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            const nr = row + dr;
+                            const nc = col + dc;
+                            if (nr >= 0 && nr < config.rows && nc >= 0 && nc < config.cols) {
+                                revealCell(nr, nc);
+                            }
+                        }
+                    }
+                }
+                
+                checkWin();
+            }
+            
+            function updateCell(row, col) {
+                const cell = document.querySelector('[data-row="' + row + '"][data-col="' + col + '"]');
+                
+                if (flagged[row][col]) {
+                    cell.classList.add('flagged');
+                } else {
+                    cell.classList.remove('flagged');
+                }
+                
+                if (revealed[row][col]) {
+                    cell.classList.add('revealed');
+                    if (board[row][col] > 0) {
+                        cell.textContent = board[row][col];
+                        cell.classList.add('num-' + board[row][col]);
+                    }
+                }
+            }
+            
+            function updateMineCounter() {
+                let flagCount = 0;
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        if (flagged[r][c]) flagCount++;
+                    }
+                }
+                const remaining = config.mines - flagCount;
+                document.getElementById('mine-counter').textContent = String(Math.max(0, remaining)).padStart(3, '0');
+            }
+            
+            function startTimer() {
+                startTime = Date.now();
+                timerInterval = setInterval(() => {
+                    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                    document.getElementById('timer').textContent = String(Math.min(elapsed, 999)).padStart(3, '0');
+                }, 1000);
+            }
+            
+            function checkWin() {
+                let revealedCount = 0;
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        if (revealed[r][c]) revealedCount++;
+                    }
+                }
+                
+                const totalCells = config.rows * config.cols;
+                if (revealedCount === totalCells - config.mines) {
+                    gameOver = true;
+                    clearInterval(timerInterval);
+                    document.getElementById('reset-btn').textContent = '😎';
+                    const finalTime = (Date.now() - startTime) / 1000;
+                    setTimeout(() => showGameOver(true, finalTime), 500);
+                }
+            }
+            
+            function revealAllMines() {
+                clearInterval(timerInterval);
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        const cell = document.querySelector('[data-row="' + r + '"][data-col="' + c + '"]');
+                        if (board[r][c] === -1) {
+                            cell.classList.add('mine');
+                        } else if (flagged[r][c]) {
+                            cell.classList.add('wrong-flag');
+                        }
+                    }
+                }
+            }
+            
+            async function showGameOver(won, time) {
+                const modal = document.getElementById('game-over-modal');
+                const title = document.getElementById('modal-title');
+                const message = document.getElementById('modal-message');
+                
+                if (won) {
+                    title.textContent = '🎉 축하합니다!';
+                    message.innerHTML = '<p style="font-size: 20px; margin: 10px 0;">기록: <strong>' + time.toFixed(2) + '초</strong></p>';
+                    
+                    try {
+                        const response = await fetch('/api/minesweeper/score', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ difficulty: DIFFICULTY, time: time })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            message.innerHTML += '<p style="color: green;">✓ 기록이 저장되었습니다!</p>';
+                        }
+                    } catch (error) {
+                        console.error('Failed to save score:', error);
+                    }
+                } else {
+                    title.textContent = '💥 게임 오버';
+                    message.innerHTML = '<p>다시 도전해보세요!</p>';
+                }
+                
+                modal.classList.add('active');
+            }
+            
+            function closeModal() {
+                document.getElementById('game-over-modal').classList.remove('active');
+            }
+            
+            function resetGame() {
+                closeModal();
+                initGame();
+            }
+            
+            initGame();
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 // ==================== 2048 API ====================
 
 // 2048 점수 저장
@@ -5138,6 +5931,81 @@ app.get('/api/2048/leaderboard', async (c) => {
     })
   } catch (error: any) {
     console.error('2048 리더보드 조회 오류:', error)
+    return c.json({
+      success: false,
+      message: '리더보드 조회 중 오류가 발생했습니다',
+      scores: []
+    }, 500)
+  }
+})
+
+// ==================== 지뢰찾기 API ====================
+
+// 지뢰찾기 점수 저장
+app.post('/api/minesweeper/score', async (c) => {
+  const { DB } = c.env
+  const { difficulty, time } = await c.req.json()
+  
+  // 쿠키에서 사용자 정보 가져오기
+  const authCookie = c.req.header('Cookie')
+  let userId = null
+  
+  if (authCookie) {
+    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=')
+      acc[key] = value
+      return acc
+    }, {} as Record<string, string>)
+    
+    if (cookies.user_id) {
+      userId = decodeURIComponent(cookies.user_id)
+    }
+  }
+  
+  try {
+    await DB.prepare(`
+      INSERT INTO minesweeper_scores (user_id, difficulty, time, created_at)
+      VALUES (?, ?, ?, datetime('now'))
+    `).bind(userId, difficulty, time).run()
+    
+    return c.json({
+      success: true,
+      message: '기록이 저장되었습니다'
+    })
+  } catch (error: any) {
+    console.error('지뢰찾기 점수 저장 오류:', error)
+    return c.json({
+      success: false,
+      message: '기록 저장 중 오류가 발생했습니다'
+    }, 500)
+  }
+})
+
+// 지뢰찾기 리더보드
+app.get('/api/minesweeper/leaderboard/:difficulty', async (c) => {
+  const { DB } = c.env
+  const difficulty = c.req.param('difficulty')
+  
+  try {
+    const result = await DB.prepare(`
+      SELECT 
+        m.id,
+        m.time,
+        m.created_at,
+        u.email
+      FROM minesweeper_scores m
+      LEFT JOIN users u ON m.user_id = u.id
+      WHERE m.difficulty = ?
+      ORDER BY m.time ASC
+      LIMIT 50
+    `).bind(difficulty).all()
+    
+    return c.json({
+      success: true,
+      scores: result.results || []
+    })
+  } catch (error: any) {
+    console.error('지뢰찾기 리더보드 조회 오류:', error)
     return c.json({
       success: false,
       message: '리더보드 조회 중 오류가 발생했습니다',
