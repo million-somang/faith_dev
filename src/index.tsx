@@ -492,6 +492,7 @@ function getCommonAuthScript(): string {
       function updateUserMenu() {
         const token = localStorage.getItem('auth_token');
         const userEmail = localStorage.getItem('user_email');
+        const userRole = localStorage.getItem('user_role') || 'user';
         const userLevel = parseInt(localStorage.getItem('user_level') || '0');
         
         if (token && userEmail) {
@@ -503,9 +504,9 @@ function getCommonAuthScript(): string {
           // 마이페이지 버튼
           menuHTML += '<a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3"><i class="fas fa-user mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span></a>';
           
-          // 관리자 메뉴 추가 (Lv.6 이상)
-          if (userLevel >= 6) {
-            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자페이지</span><span class="sm:hidden">관리자</span></a>';
+          // 관리자 메뉴 추가 (role = 'admin' 또는 Lv.6 이상)
+          if (userRole === 'admin' || userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="text-xs sm:text-sm bg-yellow-500 text-gray-900 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-yellow-600 font-semibold shadow-md transition-all"><i class="fas fa-crown mr-1"></i><span class="hidden sm:inline">관리자</span></a>';
           }
           
           // 로그아웃 버튼 (아이콘만)
@@ -524,6 +525,7 @@ function getCommonAuthScript(): string {
               if (confirm('로그아웃 하시겠습니까?')) {
                 localStorage.removeItem('auth_token');
                 localStorage.removeItem('user_email');
+                localStorage.removeItem('user_role');
                 localStorage.removeItem('user_level');
                 localStorage.removeItem('user_id');
                 window.location.href = '/';
@@ -558,6 +560,7 @@ function getCommonAuthScript(): string {
         } else {
           // 새로 생성
           const userEmail = localStorage.getItem('user_email') || '';
+          const userRole = localStorage.getItem('user_role') || 'user';
           const userLevel = parseInt(localStorage.getItem('user_level') || '0');
           
           overlay = document.createElement('div');
@@ -579,8 +582,8 @@ function getCommonAuthScript(): string {
           menuHTML += '<a href="/finance" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-chart-line mr-3"></i>금융</a>';
           menuHTML += '<a href="/mypage" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-user mr-3"></i>마이페이지</a>';
           menuHTML += '<a href="/bookmarks" class="block px-4 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><i class="fas fa-bookmark mr-3"></i>북마크</a>';
-          if (userLevel >= 6) {
-            menuHTML += '<a href="/admin" class="block px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"><i class="fas fa-crown mr-3"></i>관리자페이지</a>';
+          if (userRole === 'admin' || userLevel >= 6) {
+            menuHTML += '<a href="/admin" class="block px-4 py-3 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 rounded-lg transition-colors"><i class="fas fa-crown mr-3"></i>관리자</a>';
           }
           menuHTML += '<hr class="my-2">';
           menuHTML += '<button onclick="logout()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"><i class="fas fa-sign-out-alt mr-3"></i>로그아웃</button>';
@@ -612,6 +615,7 @@ function getCommonAuthScript(): string {
         if (confirm('로그아웃 하시겠습니까?')) {
           localStorage.removeItem('auth_token');
           localStorage.removeItem('user_email');
+          localStorage.removeItem('user_role');
           localStorage.removeItem('user_level');
           localStorage.removeItem('user_id');
           window.location.href = '/';
@@ -11160,12 +11164,13 @@ app.get('/login', (c) => {
                         localStorage.setItem('auth_token', response.data.token);
                         localStorage.setItem('user_id', response.data.user.id);
                         localStorage.setItem('user_email', response.data.user.email);
+                        localStorage.setItem('user_role', response.data.user.role || 'user');
                         localStorage.setItem('user_level', response.data.user.level);
                         
                         alert('로그인 성공!');
                         
-                        // 관리자는 관리자 페이지로
-                        if (response.data.user.level >= 6) {
+                        // 관리자는 관리자 페이지로 (role = 'admin' 또는 level >= 6)
+                        if (response.data.user.role === 'admin' || response.data.user.level >= 6) {
                             window.location.href = '/admin';
                         } else {
                             window.location.href = '/';
@@ -11507,9 +11512,9 @@ app.post('/api/login', async (c) => {
       return c.json({ success: false, message: '이메일과 비밀번호를 입력해주세요.' }, 400)
     }
     
-    // 사용자 조회 (level, status 포함)
+    // 사용자 조회 (role, level, status 포함)
     const user = await c.env.DB.prepare(
-      'SELECT id, email, name, phone, level, status FROM users WHERE email = ? AND password = ?'
+      'SELECT id, email, name, phone, role, level, status FROM users WHERE email = ? AND password = ?'
     ).bind(email, password).first()
     
     if (!user) {
@@ -11555,6 +11560,7 @@ app.post('/api/login', async (c) => {
         email: user.email,
         name: user.name,
         phone: user.phone,
+        role: user.role || 'user',
         level: user.level,
         status: user.status
       }
