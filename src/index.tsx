@@ -1352,9 +1352,17 @@ app.get('/game/simple', (c) => {
             <!-- 메인 컨텐츠 -->
             <main class="flex-1">
                 <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
-                    <div class="text-center py-16">
-                        <!-- 게임 랭킹 그리드 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12 max-w-7xl mx-auto">
+                    <!-- 게임별 랭킹 타이틀 -->
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-gray-800 mb-2">
+                            <i class="fas fa-trophy text-yellow-500 mr-3"></i>
+                            게임별 랭킹
+                        </h2>
+                        <p class="text-gray-600 text-sm">실시간 최고 기록을 확인하세요</p>
+                    </div>
+                    
+                    <!-- 게임 랭킹 그리드 -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
                             <!-- 테트리스 랭킹 -->
                             <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
                                 <div class="flex items-center justify-between mb-4">
@@ -1597,7 +1605,6 @@ app.get('/game/simple', (c) => {
                             // 페이지 로드 시 랭킹 불러오기
                             loadRankings();
                         </script>
-                    </div>
                 </div>
             </main>
         </div>
