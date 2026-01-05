@@ -11617,11 +11617,11 @@ async function checkAdminAuth(c: any) {
     const userId = decoded.split(':')[0]
     
     const user = await c.env.DB.prepare(
-      'SELECT id, email, name, level, status FROM users WHERE id = ?'
+      'SELECT id, email, name, role, level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
-    // 관리자 등급 체크 (6 이상)
-    if (user && user.level >= 6 && user.status === 'active') {
+    // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+    if (user && (user.role === 'admin' || user.level >= 6) && user.status === 'active') {
       return user
     }
   } catch (error) {
