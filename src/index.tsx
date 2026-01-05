@@ -129,6 +129,47 @@ function getGameMenu(currentPage: string): string {
   return menuHtml
 }
 
+// ==================== 심플 게임 사이드바 메뉴 ====================
+function getSimpleGameSidebar(currentPage: string): string {
+  const games = [
+    { path: '/game/simple/tetris', label: '테트리스', icon: 'fas fa-th' },
+    { path: '/game/simple/sudoku', label: '스도쿠', icon: 'fas fa-table' },
+    { path: '/game/simple/2048', label: '2048', icon: 'fas fa-th-large' },
+    { path: '/game/simple/minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb' },
+  ]
+
+  let sidebarHtml = `
+    <aside class="lg:w-64 flex-shrink-0">
+      <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
+        <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+          <i class="fas fa-gamepad mr-2 text-purple-500"></i>
+          게임 목록
+        </h3>
+        <nav class="space-y-2">
+  `
+  
+  for (const game of games) {
+    const isActive = currentPage === game.path
+    const activeClass = isActive 
+      ? 'bg-purple-50 text-purple-600 font-semibold' 
+      : 'hover:bg-purple-50 text-gray-700 hover:text-purple-600'
+    
+    sidebarHtml += `
+      <a href="${game.path}" class="block px-4 py-2 ${activeClass} rounded-lg transition-all">
+        <i class="${game.icon} mr-2"></i>${game.label}
+      </a>
+    `
+  }
+  
+  sidebarHtml += `
+        </nav>
+      </div>
+    </aside>
+  `
+  
+  return sidebarHtml
+}
+
 // ==================== 유틸리티 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
   const menuItems = [
@@ -1725,29 +1766,7 @@ app.get('/game/simple/tetris', (c) => {
         ${getGameMenu('/game/simple')}
 
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
-                        게임 목록
-                    </h3>
-                    <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 bg-purple-50 text-purple-700 rounded-lg font-medium">
-                            <i class="fas fa-th mr-2"></i>테트리스
-                        </a>
-                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-table mr-2"></i>스도쿠
-                        </a>
-                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th-large mr-2"></i>2048
-                        </a>
-                        <a href="/game/simple/minesweeper" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            ${getSimpleGameSidebar('/game/simple/tetris')}
 
             <!-- 메인 컨텐츠 -->
             <main class="flex-1 space-y-6">
@@ -2610,29 +2629,7 @@ app.get('/game/simple/sudoku', (c) => {
         ${getGameMenu('/game/simple')}
 
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 (게임 메뉴) -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
-                        게임 목록
-                    </h3>
-                    <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th mr-2"></i>테트리스
-                        </a>
-                        <a href="/game/simple/sudoku" class="block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg font-semibold">
-                            <i class="fas fa-table mr-2"></i>스도쿠
-                        </a>
-                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th-large mr-2"></i>2048
-                        </a>
-                        <a href="/game/simple/minesweeper" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            ${getSimpleGameSidebar('/game/simple/sudoku')}
 
             <!-- 메인 컨텐츠 -->
             <main class="flex-1">
@@ -4126,26 +4123,7 @@ app.get('/game/simple/2048', (c) => {
         ${getGameMenu('/game/simple')}
         
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 (게임 메뉴) -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
-                        게임 목록
-                    </h3>
-                    <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th mr-2"></i>테트리스
-                        </a>
-                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-table mr-2"></i>스도쿠
-                        </a>
-                        <a href="/game/simple/2048" class="block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg font-semibold">
-                            <i class="fas fa-th-large mr-2"></i>2048
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            ${getSimpleGameSidebar('/game/simple/2048')}
 
             <!-- 메인 컨텐츠 -->
             <main class="flex-1">
@@ -5138,29 +5116,7 @@ app.get('/game/simple/minesweeper', (c) => {
         ${getGameMenu('/game/simple')}
         
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
-            <!-- 좌측 사이드바 (게임 메뉴) -->
-            <aside class="lg:w-64 flex-shrink-0">
-                <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
-                    <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-                        <i class="fas fa-gamepad mr-2 text-purple-500"></i>
-                        게임 목록
-                    </h3>
-                    <nav class="space-y-2">
-                        <a href="/game/simple/tetris" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th mr-2"></i>테트리스
-                        </a>
-                        <a href="/game/simple/sudoku" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-table mr-2"></i>스도쿠
-                        </a>
-                        <a href="/game/simple/2048" class="block px-4 py-2 hover:bg-purple-50 text-gray-700 hover:text-purple-600 rounded-lg transition-all">
-                            <i class="fas fa-th-large mr-2"></i>2048
-                        </a>
-                        <a href="/game/simple/minesweeper" class="block px-4 py-2 bg-purple-50 text-purple-600 rounded-lg font-semibold">
-                            <i class="fas fa-bomb mr-2"></i>지뢰찾기
-                        </a>
-                    </nav>
-                </div>
-            </aside>
+            ${getSimpleGameSidebar('/game/simple/minesweeper')}
 
             <!-- 메인 컨텐츠 -->
             <main class="flex-1">
