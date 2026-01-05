@@ -1354,7 +1354,7 @@ app.get('/game/simple', (c) => {
                 <div class="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                     <div class="text-center py-16">
                         <!-- 게임 랭킹 그리드 -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12 max-w-7xl mx-auto">
                             <!-- 테트리스 랭킹 -->
                             <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg p-6">
                                 <div class="flex items-center justify-between mb-4">
@@ -1511,10 +1511,12 @@ app.get('/game/simple', (c) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
                                     const username = rank.email ? rank.email.split('@')[0] : '익명';
-                                    return '<div class="flex items-center gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
-                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center">' + medal + '</span>' +
-                                        '<span class="flex-1 truncate font-medium" title="' + username + '">' + username + '</span>' +
-                                        '<span class="flex-shrink-0 font-bold text-yellow-200 min-w-[70px] text-right">' + scoreText + '<span class="text-xs ml-1 opacity-80">점</span></span>' +
+                                    return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
+                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
+                                        '<div class="flex-1 min-w-0 flex flex-col">' +
+                                        '<span class="truncate font-medium text-xs opacity-80" title="' + username + '">' + username + '</span>' +
+                                        '<span class="font-bold text-yellow-200 text-base">' + scoreText + '<span class="text-xs ml-1 opacity-80">점</span></span>' +
+                                        '</div>' +
                                         '</div>';
                                 }).join('');
                                 
@@ -1534,10 +1536,12 @@ app.get('/game/simple', (c) => {
                                     const seconds = rank.time % 60;
                                     const timeText = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
                                     const username = rank.email ? rank.email.split('@')[0] : '익명';
-                                    return '<div class="flex items-center gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
-                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center">' + medal + '</span>' +
-                                        '<span class="flex-1 truncate font-medium" title="' + username + '">' + username + '</span>' +
-                                        '<span class="flex-shrink-0 font-bold text-yellow-200 font-mono min-w-[70px] text-right">' + timeText + '</span>' +
+                                    return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
+                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
+                                        '<div class="flex-1 min-w-0 flex flex-col">' +
+                                        '<span class="truncate font-medium text-xs opacity-80" title="' + username + '">' + username + '</span>' +
+                                        '<span class="font-bold text-yellow-200 font-mono text-base">' + timeText + '</span>' +
+                                        '</div>' +
                                         '</div>';
                                 }).join('');
                                 
@@ -1555,10 +1559,12 @@ app.get('/game/simple', (c) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
                                     const username = rank.email ? rank.email.split('@')[0] : '익명';
-                                    return '<div class="flex items-center gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
-                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center">' + medal + '</span>' +
-                                        '<span class="flex-1 truncate font-medium" title="' + username + '">' + username + '</span>' +
-                                        '<span class="flex-shrink-0 font-bold text-yellow-200 min-w-[70px] text-right">' + scoreText + '<span class="text-xs ml-1 opacity-80">점</span></span>' +
+                                    return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
+                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
+                                        '<div class="flex-1 min-w-0 flex flex-col">' +
+                                        '<span class="truncate font-medium text-xs opacity-80" title="' + username + '">' + username + '</span>' +
+                                        '<span class="font-bold text-yellow-200 text-base">' + scoreText + '<span class="text-xs ml-1 opacity-80">점</span></span>' +
+                                        '</div>' +
                                         '</div>';
                                 }).join('');
                                 
@@ -1576,10 +1582,12 @@ app.get('/game/simple', (c) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const timeText = rank.time.toFixed(2);
                                     const username = rank.email ? rank.email.split('@')[0] : '익명';
-                                    return '<div class="flex items-center gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
-                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center">' + medal + '</span>' +
-                                        '<span class="flex-1 truncate font-medium" title="' + username + '">' + username + '</span>' +
-                                        '<span class="flex-shrink-0 font-bold text-yellow-200 font-mono min-w-[70px] text-right">' + timeText + '<span class="text-xs ml-1 opacity-80">초</span></span>' +
+                                    return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
+                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
+                                        '<div class="flex-1 min-w-0 flex flex-col">' +
+                                        '<span class="truncate font-medium text-xs opacity-80" title="' + username + '">' + username + '</span>' +
+                                        '<span class="font-bold text-yellow-200 font-mono text-base">' + timeText + '<span class="text-xs ml-1 opacity-80">초</span></span>' +
+                                        '</div>' +
                                         '</div>';
                                 }).join('');
                                 
