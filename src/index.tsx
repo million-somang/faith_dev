@@ -6490,6 +6490,542 @@ app.get('/finance', (c) => {
   `)
 })
 
+// ==================== 주식 페이지 ====================
+// MOCK 데이터 - 주요 지수
+const MOCK_INDICES = [
+  { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
+  { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down' },
+  { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63, status: 'up' }
+]
+
+// MOCK 데이터 - 인기 종목
+const MOCK_POPULAR_STOCKS = [
+  { rank: 1, ticker: '005930', name: '삼성전자', price: 72500, change: 1200, rate: 1.68, status: 'up' },
+  { rank: 2, ticker: 'NVDA', name: 'NVIDIA', price: 495.50, change: -8.30, rate: -1.65, status: 'down' },
+  { rank: 3, ticker: 'TSLA', name: '테슬라', price: 242.84, change: 5.12, rate: 2.15, status: 'up' },
+  { rank: 4, ticker: '000660', name: 'SK하이닉스', price: 168000, change: 3500, rate: 2.13, status: 'up' },
+  { rank: 5, ticker: 'AAPL', name: '애플', price: 185.64, change: -2.15, rate: -1.14, status: 'down' }
+]
+
+// MOCK 데이터 - 차트용 (1개월 데이터)
+const generateMockChartData = (basePrice: number) => {
+  const data = []
+  const today = new Date()
+  for (let i = 30; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+    const randomChange = (Math.random() - 0.5) * basePrice * 0.05
+    const price = Math.round((basePrice + randomChange) * 100) / 100
+    data.push({
+      date: date.toISOString().split('T')[0],
+      price: price
+    })
+  }
+  return data
+}
+
+app.get('/finance/stock', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>주식 - Faith Portal</title>
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif; }
+            .stock-number { font-family: 'Roboto Mono', 'Courier New', monospace; }
+        </style>
+    </head>
+    <body class="bg-slate-50" id="html-root">
+        ${getCommonHeader('Finance')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '금융', href: '/finance'},
+          {label: '주식'}
+        ])}
+
+        ${getFinanceMenu('/finance/stock')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <!-- 페이지 헤더 -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-chart-line text-green-600 mr-2"></i>
+                    주식 정보
+                </h1>
+                <p class="text-gray-600">실시간 주식 시세 및 인기 종목을 확인하세요</p>
+            </div>
+
+            <!-- 상단 주요 지수 위젯 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                ${MOCK_INDICES.map(index => `
+                    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-sm font-medium text-gray-600">${index.name}</h3>
+                            <span class="text-xs px-2 py-1 rounded ${index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}">
+                                ${index.status === 'up' ? '상승' : '하락'}
+                            </span>
+                        </div>
+                        <div class="stock-number text-2xl font-bold text-gray-900 mb-1">
+                            ${index.value.toLocaleString('ko-KR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium">
+                                ${index.status === 'up' ? '▲' : '▼'} ${Math.abs(index.change).toLocaleString('ko-KR', {minimumFractionDigits: 2})}
+                            </span>
+                            <span class="stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} text-sm">
+                                ${index.rate > 0 ? '+' : ''}${index.rate.toFixed(2)}%
+                            </span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <!-- 실시간 랭킹 & 시장 동향 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- 인기 종목 Top5 -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-fire text-orange-500 mr-2"></i>
+                            인기 종목 Top5
+                        </h2>
+                        <a href="#" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                            더보기 →
+                        </a>
+                    </div>
+                    <div class="space-y-4">
+                        ${MOCK_POPULAR_STOCKS.map(stock => `
+                            <a href="/finance/stock/${stock.ticker}" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3 flex-1">
+                                        <span class="flex items-center justify-center w-8 h-8 rounded-full ${
+                                            stock.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+                                            stock.rank === 2 ? 'bg-gray-100 text-gray-700' :
+                                            stock.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                                            'bg-blue-50 text-blue-600'
+                                        } font-bold text-sm">
+                                            ${stock.rank}
+                                        </span>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="font-semibold text-gray-900 truncate">${stock.name}</div>
+                                            <div class="text-xs text-gray-500">${stock.ticker}</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right ml-4">
+                                        <div class="stock-number font-bold text-gray-900">
+                                            ${stock.price.toLocaleString('ko-KR')}
+                                        </div>
+                                        <div class="stock-number text-sm ${stock.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium">
+                                            ${stock.status === 'up' ? '▲' : '▼'} ${stock.rate > 0 ? '+' : ''}${stock.rate.toFixed(2)}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- 최신 뉴스 -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-newspaper text-blue-500 mr-2"></i>
+                            증시 뉴스
+                        </h2>
+                        <a href="/news" class="text-sm text-green-600 hover:text-green-700 font-medium">
+                            더보기 →
+                        </a>
+                    </div>
+                    <div class="space-y-4">
+                        <a href="#" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="font-medium text-gray-900 mb-1 line-clamp-2">
+                                코스피, 외국인 매수세에 상승 마감...2650선 회복
+                            </div>
+                            <div class="text-sm text-gray-500">10분 전</div>
+                        </a>
+                        <a href="#" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="font-medium text-gray-900 mb-1 line-clamp-2">
+                                삼성전자, 신규 AI 칩 개발 발표...주가 급등
+                            </div>
+                            <div class="text-sm text-gray-500">1시간 전</div>
+                        </a>
+                        <a href="#" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="font-medium text-gray-900 mb-1 line-clamp-2">
+                                미국 증시 상승 마감, 나스닥 1.2% 상승
+                            </div>
+                            <div class="text-sm text-gray-500">2시간 전</div>
+                        </a>
+                        <a href="#" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="font-medium text-gray-900 mb-1 line-clamp-2">
+                                반도체 업황 개선 기대감...SK하이닉스 강세
+                            </div>
+                            <div class="text-sm text-gray-500">3시간 전</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 빠른 링크 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <a href="/finance/exchange" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center">
+                    <i class="fas fa-exchange-alt text-3xl text-blue-600 mb-3"></i>
+                    <div class="font-semibold text-gray-900">환율</div>
+                </a>
+                <a href="/finance/banking" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center">
+                    <i class="fas fa-university text-3xl text-indigo-600 mb-3"></i>
+                    <div class="font-semibold text-gray-900">은행</div>
+                </a>
+                <a href="#" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center opacity-50 cursor-not-allowed">
+                    <i class="fas fa-calculator text-3xl text-gray-400 mb-3"></i>
+                    <div class="font-semibold text-gray-500">계산기</div>
+                    <div class="text-xs text-gray-400 mt-1">준비중</div>
+                </a>
+                <a href="#" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center opacity-50 cursor-not-allowed">
+                    <i class="fas fa-robot text-3xl text-gray-400 mb-3"></i>
+                    <div class="font-semibold text-gray-500">AI 브리핑</div>
+                    <div class="text-xs text-gray-400 mt-1">준비중</div>
+                </a>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+    </body>
+    </html>
+  `)
+})
+
+// 주식 상세 페이지
+app.get('/finance/stock/:ticker', (c) => {
+  const ticker = c.req.param('ticker')
+  
+  // 해당 종목 찾기
+  const stock = MOCK_POPULAR_STOCKS.find(s => s.ticker === ticker) || {
+    ticker: ticker,
+    name: ticker,
+    price: 50000,
+    change: 0,
+    rate: 0,
+    status: 'flat'
+  }
+
+  // 차트 데이터 생성
+  const chartData = generateMockChartData(stock.price)
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${stock.name} (${ticker}) - Faith Portal</title>
+        <script>
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return;
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, sans-serif; }
+            .stock-number { font-family: 'Roboto Mono', 'Courier New', monospace; }
+            .tab-button.active {
+                border-bottom: 2px solid #10b981;
+                color: #10b981;
+                font-weight: 600;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50" id="html-root">
+        ${getCommonHeader('Finance')}
+        ${getStickyHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '금융', href: '/finance'},
+          {label: '주식', href: '/finance/stock'},
+          {label: stock.name}
+        ])}
+
+        ${getFinanceMenu('/finance/stock')}
+
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <!-- 주식 헤더 -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">${stock.name}</h1>
+                        <p class="text-gray-500">${ticker}</p>
+                    </div>
+                    <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                        <i class="far fa-star"></i>
+                        관심종목
+                    </button>
+                </div>
+                <div class="flex items-end gap-4">
+                    <div class="stock-number text-4xl font-bold text-gray-900">
+                        ${stock.price.toLocaleString('ko-KR')}
+                    </div>
+                    <div class="stock-number mb-2 ${stock.status === 'up' ? 'text-red-600' : stock.status === 'down' ? 'text-blue-600' : 'text-gray-600'} font-semibold text-lg">
+                        ${stock.status === 'up' ? '▲' : stock.status === 'down' ? '▼' : '－'} ${Math.abs(stock.change).toLocaleString('ko-KR')} 
+                        (${stock.rate > 0 ? '+' : ''}${stock.rate.toFixed(2)}%)
+                    </div>
+                </div>
+            </div>
+
+            <!-- 차트 영역 -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-chart-area text-green-600 mr-2"></i>
+                        가격 차트 (1개월)
+                    </h2>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 text-sm bg-green-600 text-white rounded-lg">1개월</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">3개월</button>
+                        <button class="px-3 py-1 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200">1년</button>
+                    </div>
+                </div>
+                <div style="position: relative; height: 400px;">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 탭 메뉴 -->
+            <div class="bg-white rounded-lg shadow-sm mb-6">
+                <div class="border-b border-gray-200">
+                    <div class="flex gap-8 px-6">
+                        <button class="tab-button active px-4 py-4 text-gray-600 hover:text-green-600 transition-colors" data-tab="summary">
+                            종합
+                        </button>
+                        <button class="tab-button px-4 py-4 text-gray-600 hover:text-green-600 transition-colors" data-tab="news">
+                            뉴스
+                        </button>
+                        <button class="tab-button px-4 py-4 text-gray-600 hover:text-green-600 transition-colors" data-tab="discussion">
+                            토론
+                        </button>
+                        <button class="tab-button px-4 py-4 text-gray-600 hover:text-green-600 transition-colors" data-tab="financial">
+                            재무
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <!-- 종합 탭 -->
+                    <div id="tab-summary" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">기업 정보</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">시가총액</span>
+                                        <span class="stock-number font-medium">약 430조원</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">시가</span>
+                                        <span class="stock-number font-medium">${stock.price.toLocaleString('ko-KR')}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">고가</span>
+                                        <span class="stock-number font-medium">${(stock.price * 1.02).toLocaleString('ko-KR')}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">저가</span>
+                                        <span class="stock-number font-medium">${(stock.price * 0.98).toLocaleString('ko-KR')}</span>
+                                    </div>
+                                    <div class="flex justify-between py-2">
+                                        <span class="text-gray-600">거래량</span>
+                                        <span class="stock-number font-medium">15,234,567주</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-4">투자 지표</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">PER</span>
+                                        <span class="stock-number font-medium">15.3</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">PBR</span>
+                                        <span class="stock-number font-medium">1.2</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">ROE</span>
+                                        <span class="stock-number font-medium">8.5%</span>
+                                    </div>
+                                    <div class="flex justify-between py-2 border-b border-gray-100">
+                                        <span class="text-gray-600">배당수익률</span>
+                                        <span class="stock-number font-medium">2.3%</span>
+                                    </div>
+                                    <div class="flex justify-between py-2">
+                                        <span class="text-gray-600">52주 최고</span>
+                                        <span class="stock-number font-medium">${(stock.price * 1.25).toLocaleString('ko-KR')}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 수익률 계산기 링크 -->
+                        <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="font-bold text-gray-900 mb-1">
+                                        <i class="fas fa-calculator text-green-600 mr-2"></i>
+                                        이 주식 수익률 계산해 보기
+                                    </h4>
+                                    <p class="text-sm text-gray-600">내가 투자했다면 얼마를 벌었을까요?</p>
+                                </div>
+                                <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                                    계산하기
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 뉴스 탭 -->
+                    <div id="tab-news" class="tab-content hidden">
+                        <div class="space-y-4">
+                            <p class="text-gray-500 text-center py-8">관련 뉴스가 곧 제공될 예정입니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 토론 탭 -->
+                    <div id="tab-discussion" class="tab-content hidden">
+                        <div class="space-y-4">
+                            <p class="text-gray-500 text-center py-8">토론 기능이 곧 제공될 예정입니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- 재무 탭 -->
+                    <div id="tab-financial" class="tab-content hidden">
+                        <div class="space-y-4">
+                            <p class="text-gray-500 text-center py-8">재무 정보가 곧 제공될 예정입니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+
+        <script>
+        // 차트 초기화
+        const ctx = document.getElementById('stockChart').getContext('2d');
+        const chartData = ${JSON.stringify(chartData)};
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => {
+                    const date = new Date(d.date);
+                    return (date.getMonth() + 1) + '/' + date.getDate();
+                }),
+                datasets: [{
+                    label: '주가',
+                    data: chartData.map(d => d.price),
+                    borderColor: '${stock.status === 'up' ? 'rgb(220, 38, 38)' : stock.status === 'down' ? 'rgb(37, 99, 235)' : 'rgb(107, 114, 128)'}',
+                    backgroundColor: '${stock.status === 'up' ? 'rgba(220, 38, 38, 0.1)' : stock.status === 'down' ? 'rgba(37, 99, 235, 0.1)' : 'rgba(107, 114, 128, 0.1)'}',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '${stock.status === 'up' ? 'rgb(220, 38, 38)' : stock.status === 'down' ? 'rgb(37, 99, 235)' : 'rgb(107, 114, 128)'}',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return '₩ ' + context.parsed.y.toLocaleString('ko-KR');
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '₩' + value.toLocaleString('ko-KR');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 탭 전환
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                
+                // 모든 탭 버튼 비활성화
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                // 클릭된 탭 버튼 활성화
+                button.classList.add('active');
+                
+                // 모든 탭 콘텐츠 숨기기
+                tabContents.forEach(content => content.classList.add('hidden'));
+                // 선택된 탭 콘텐츠 표시
+                document.getElementById('tab-' + tabName).classList.remove('hidden');
+            });
+        });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 // ==================== 엔터 페이지 ====================
 app.get('/entertainment', (c) => {
   return c.html(`
