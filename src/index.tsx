@@ -199,7 +199,7 @@ function getLifestyleMenu(currentPage: string): string {
 // ==================== 금융 메뉴 헬퍼 함수 ====================
 function getFinanceMenu(currentPage: string): string {
   const menuItems = [
-    { path: '/finance/stock', label: '주식', icon: 'fas fa-chart-line' },
+    { path: '/finance', label: '주식', icon: 'fas fa-chart-line' },
     { path: '/finance/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
     { path: '/finance/banking', label: '은행', icon: 'fas fa-university' },
   ]
@@ -6384,113 +6384,7 @@ app.get('/lifestyle', (c) => {
   `)
 })
 
-// ==================== 금융 페이지 ====================
-app.get('/finance', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ko" id="html-root">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>금융 - Faith Portal</title>
-        <script>
-            // Tailwind CDN 경고 필터링 (개발 환경용)
-            (function() {
-                const originalWarn = console.warn;
-                console.warn = function(...args) {
-                    if (args[0] && typeof args[0] === 'string' && 
-                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
-                        return; // Tailwind CDN 경고 무시
-                    }
-                    originalWarn.apply(console, args);
-                };
-            })();
-        </script>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <style>
-            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
-        </style>
-    </head>
-    <body class="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50" id="html-root">
-        ${getCommonHeader('Finance')}
-        ${getStickyHeader()}
-        
-        ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '금융'}
-        ])}
-
-        ${getFinanceMenu('/finance')}
-
-        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-            <div class="text-center py-16">
-                <div class="w-24 h-24 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
-                    <i class="fas fa-won-sign text-4xl text-white"></i>
-                </div>
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">
-                    <span class="bg-gradient-to-r from-green-500 to-emerald-600 bg-clip-text text-transparent">금융</span> 정보
-                </h1>
-                <p class="text-gray-600 text-lg mb-8">
-                    실시간 금융 정보와 다양한 금융 서비스를 제공합니다
-                </p>
-                <div class="flex justify-center gap-4">
-                    <a href="/finance/stock" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        주식 정보
-                    </a>
-                    <a href="/" class="inline-flex items-center px-6 py-3 bg-white text-gray-700 rounded-lg font-medium border border-gray-300 hover:border-green-500 hover:text-green-600 transition-all">
-                        <i class="fas fa-home mr-2"></i>
-                        메인으로
-                    </a>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                    <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-4">
-                        <i class="fas fa-chart-line text-2xl text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">주식 정보</h3>
-                    <p class="text-gray-600 mb-4">실시간 주식 시세와 차트를 확인하세요</p>
-                    <a href="/finance/stock" class="text-green-600 hover:text-green-700 font-medium">
-                        시작하기 →
-                    </a>
-                </div>
-
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                    <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mb-4">
-                        <i class="fas fa-exchange-alt text-2xl text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">환율 정보</h3>
-                    <p class="text-gray-600 mb-4">실시간 환율 정보와 환전 계산기</p>
-                    <a href="/finance/exchange" class="text-green-600 hover:text-green-700 font-medium">
-                        시작하기 →
-                    </a>
-                </div>
-
-                <div class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all">
-                    <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
-                        <i class="fas fa-university text-2xl text-white"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">은행 정보</h3>
-                    <p class="text-gray-600 mb-4">예적금 금리 비교 및 은행 서비스</p>
-                    <a href="/finance/banking" class="text-green-600 hover:text-green-700 font-medium">
-                        시작하기 →
-                    </a>
-                </div>
-            </div>
-        </main>
-
-        ${getCommonFooter()}
-        ${getCommonAuthScript()}
-    </body>
-    </html>
-  `)
-})
-
-// ==================== 주식 페이지 ====================
+// ==================== 금융 페이지 (주식 메인) ====================
 // MOCK 데이터 - 주요 지수
 const MOCK_INDICES = [
   { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
@@ -6524,14 +6418,14 @@ const generateMockChartData = (basePrice: number) => {
   return data
 }
 
-app.get('/finance/stock', (c) => {
+app.get('/finance', (c) => {
   return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>주식 - Faith Portal</title>
+        <title>금융 (주식) - Faith Portal</title>
         <script>
             (function() {
                 const originalWarn = console.warn;
@@ -6559,11 +6453,10 @@ app.get('/finance/stock', (c) => {
         
         ${getBreadcrumb([
           {label: '홈', href: '/'},
-          {label: '금융', href: '/finance'},
-          {label: '주식'}
+          {label: '금융'}
         ])}
 
-        ${getFinanceMenu('/finance/stock')}
+        ${getFinanceMenu('/finance')}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 페이지 헤더 -->
@@ -6773,11 +6666,10 @@ app.get('/finance/stock/:ticker', (c) => {
         ${getBreadcrumb([
           {label: '홈', href: '/'},
           {label: '금융', href: '/finance'},
-          {label: '주식', href: '/finance/stock'},
           {label: stock.name}
         ])}
 
-        ${getFinanceMenu('/finance/stock')}
+        ${getFinanceMenu('/finance')}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 주식 헤더 -->
