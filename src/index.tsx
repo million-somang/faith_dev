@@ -884,22 +884,51 @@ app.get('/', async (c) => {
                 font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
                 letter-spacing: -0.02em;
             }
+            
+            /* 모던 그라데이션 배경 */
+            body {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background-attachment: fixed;
+                min-height: 100vh;
+            }
+            
+            body::before {
+                content: '';
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: 
+                    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(255, 100, 150, 0.3), transparent 50%),
+                    radial-gradient(circle at 40% 20%, rgba(138, 180, 248, 0.3), transparent 50%);
+                z-index: -1;
+            }
+            
             /* 새로운 컬러 팔레트 */
-            .brand-navy { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
-            .brand-navy-hover:hover { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
-            .accent-orange { background: linear-gradient(135deg, #f97316 0%, #fb923c 100%); }
-            .accent-orange-hover:hover { background: linear-gradient(135deg, #ea580c 0%, #f97316 100%); }
-            .faith-blue { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%); }
-            .faith-blue-hover:hover { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); }
+            .brand-navy { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+            .brand-navy-hover:hover { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3); }
+            .accent-orange { background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); }
+            .accent-orange-hover:hover { background: linear-gradient(135deg, #d97706 0%, #ea580c 100%); transform: translateY(-2px); box-shadow: 0 10px 30px rgba(245, 158, 11, 0.3); }
+            .faith-blue { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+            
             /* 다크모드 스타일 */
             .dark {
                 color-scheme: dark;
             }
             .dark body {
-                background: linear-gradient(to bottom right, #1e293b, #0f172a, #020617);
+                background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+            }
+            .dark body::before {
+                background: 
+                    radial-gradient(circle at 20% 50%, rgba(79, 70, 229, 0.2), transparent 50%),
+                    radial-gradient(circle at 80% 80%, rgba(219, 39, 119, 0.2), transparent 50%);
             }
             .dark .bg-white {
-                background-color: #1e293b !important;
+                background-color: rgba(30, 27, 75, 0.95) !important;
+                backdrop-filter: blur(10px);
             }
             .dark .text-gray-900 {
                 color: #f1f5f9 !important;
@@ -917,82 +946,181 @@ app.get('/', async (c) => {
                 color: #64748b !important;
             }
             .dark .border-gray-200 {
-                border-color: #334155 !important;
+                border-color: rgba(99, 102, 241, 0.2) !important;
             }
             .dark .bg-gray-50 {
-                background-color: #0f172a !important;
+                background-color: rgba(15, 23, 42, 0.5) !important;
             }
-            /* 검색창 스타일 - 캡슐형 */
+            .dark .bg-gray-100 {
+                background-color: rgba(30, 41, 59, 0.8) !important;
+            }
+            
+            /* 글래스모피즘 검색창 */
             .search-shadow { 
-                box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-                transition: all 0.3s ease;
-                border-radius: 50px;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                box-shadow: 
+                    0 8px 32px rgba(0, 0, 0, 0.1),
+                    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                border-radius: 60px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
             }
             .search-shadow:hover {
-                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-                transform: translateY(-2px);
+                transform: translateY(-4px);
+                box-shadow: 
+                    0 20px 60px rgba(0, 0, 0, 0.15),
+                    0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+                border-color: rgba(99, 102, 241, 0.3);
+            }
+            .search-shadow:focus-within {
+                transform: translateY(-4px) scale(1.02);
+                border-color: rgba(99, 102, 241, 0.5);
+                box-shadow: 
+                    0 20px 60px rgba(99, 102, 241, 0.25),
+                    0 0 0 1px rgba(99, 102, 241, 0.3) inset;
             }
             .search-input {
                 border: none;
                 outline: none;
+                background: transparent;
             }
             .search-input::placeholder {
                 color: #94a3b8;
             }
-            /* 카드 디자인 */
+            
+            /* 글래스모피즘 카드 디자인 */
             .content-card {
-                background: white;
-                border-radius: 16px;
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 
+                    0 8px 32px rgba(0, 0, 0, 0.08),
+                    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .content-card:hover {
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-                transform: translateY(-4px);
+                transform: translateY(-8px);
+                box-shadow: 
+                    0 20px 60px rgba(0, 0, 0, 0.12),
+                    0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+                border-color: rgba(99, 102, 241, 0.2);
             }
+            
+            /* 배너 카드 */
+            .banner-card {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 24px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 
+                    0 8px 32px rgba(0, 0, 0, 0.08),
+                    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .banner-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12);
+            }
+            
+            /* 날씨 위젯 */
+            .weather-widget {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(20px);
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 
+                    0 8px 32px rgba(0, 0, 0, 0.08),
+                    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            }
+            
+            /* 퀵 메뉴 아이콘 */
+            .quick-menu-icon {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            .quick-menu-icon:hover {
+                transform: translateY(-4px) scale(1.05);
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+                background: rgba(255, 255, 255, 1);
+            }
+            
             .pulse-animation {
                 animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
             }
             @keyframes pulse {
-                0%, 100% { opacity: 1; }
-                50% { opacity: .7; }
+                0%, 100% { 
+                    opacity: 1; 
+                    transform: scale(1);
+                }
+                50% { 
+                    opacity: 0.8; 
+                    transform: scale(1.05);
+                }
             }
-            /* 배지 스타일 */
+            
+            /* 모던 배지 스타일 */
             .badge {
                 display: inline-flex;
                 align-items: center;
-                padding: 4px 12px;
-                border-radius: 12px;
+                padding: 6px 14px;
+                border-radius: 16px;
                 font-size: 0.75rem;
-                font-weight: 600;
-            }
-            /* 순위 숫자 스타일 */
-            .rank-number {
                 font-weight: 700;
-                font-size: 1.125rem;
-                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+                letter-spacing: 0.02em;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                transition: all 0.2s ease;
+            }
+            .badge:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            
+            /* 3D 순위 숫자 스타일 */
+            .rank-number {
+                font-weight: 800;
+                font-size: 1.25rem;
+                background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
+                filter: drop-shadow(0 2px 4px rgba(99, 102, 241, 0.3));
+                transition: all 0.3s ease;
             }
-            /* 타이포그래피 */
+            .rank-number:hover {
+                transform: scale(1.1);
+                filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.4));
+            }
+            
+            /* 타이포그래피 개선 */
             .title-bold {
-                font-weight: 700;
+                font-weight: 800;
                 color: #111827;
+                letter-spacing: -0.03em;
             }
             .text-medium {
                 color: #4b5563;
+                font-weight: 500;
             }
             .text-light {
                 color: #9ca3af;
+                font-weight: 400;
             }
+            
+            /* Floating 애니메이션 */
             .floating {
                 animation: floating 3s ease-in-out infinite;
             }
             @keyframes floating {
                 0%, 100% { transform: translateY(0px); }
-                50% { transform: translateY(-10px); }
+                50% { transform: translateY(-15px); }
             }
+            
+            /* Shine 효과 */
             .shine {
                 position: relative;
                 overflow: hidden;
@@ -1004,11 +1132,25 @@ app.get('/', async (c) => {
                 left: -100%;
                 width: 100%;
                 height: 100%;
-                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-                transition: left 0.5s;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+                transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .shine:hover::before {
                 left: 100%;
+            }
+            
+            /* Glow 효과 */
+            .glow {
+                box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+                animation: glow 2s ease-in-out infinite;
+            }
+            @keyframes glow {
+                0%, 100% { 
+                    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+                }
+                50% { 
+                    box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+                }
             }
             /* 스크롤바 숨기기 (기능은 유지) */
             .hide-scrollbar {
@@ -1020,89 +1162,89 @@ app.get('/', async (c) => {
             }
         </style>
     </head>
-    <body class="bg-gray-50 transition-colors duration-300">
+    <body class="transition-colors duration-300">
         ${getCommonHeader()}
         ${getStickyHeader()}
 
         <!-- 메인 검색 영역 -->
-        <main class="max-w-6xl mx-auto px-4 py-16">
-            <!-- 검색창 - 캡슐형 디자인 -->
-            <div class="mb-12 max-w-3xl mx-auto" id="main-search">
-                <div class="relative search-shadow bg-white">
-                    <div class="flex items-center px-4 sm:px-6 py-2 sm:py-3">
+        <main class="max-w-6xl mx-auto px-4 py-12">
+            <!-- 검색창 - 글래스모피즘 디자인 -->
+            <div class="mb-16 max-w-3xl mx-auto" id="main-search">
+                <div class="relative search-shadow">
+                    <div class="flex items-center px-6 sm:px-8 py-3 sm:py-4">
                         <input 
                             type="text" 
                             id="search-input"
                             placeholder="무엇을 찾으시나요?" 
-                            class="search-input flex-1 text-base sm:text-lg text-gray-900 placeholder-gray-400"
+                            class="search-input flex-1 text-base sm:text-lg text-gray-900 placeholder-gray-400 font-medium"
                         />
                         <button 
                             id="search-btn"
-                            class="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full brand-navy text-white brand-navy-hover transition-all ml-2 sm:ml-3"
+                            class="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full brand-navy text-white brand-navy-hover transition-all ml-3 sm:ml-4 shine"
                         >
-                            <i class="fas fa-search text-sm sm:text-lg"></i>
+                            <i class="fas fa-search text-base sm:text-xl"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- 퀵 메뉴 네비게이션 - 통일된 디자인 -->
-            <nav class="mb-16 max-w-3xl mx-auto" id="quick-menu">
+            <!-- 퀵 메뉴 네비게이션 - 모던 디자인 -->
+            <nav class="mb-16 max-w-4xl mx-auto" id="quick-menu">
                 <div class="overflow-x-auto hide-scrollbar">
                     <div class="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 px-4 sm:px-0">
                         <a href="/news" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-newspaper text-xl sm:text-2xl text-blue-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-newspaper text-2xl sm:text-3xl text-blue-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-blue-600 transition-colors whitespace-nowrap">뉴스</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-blue-300 transition-colors whitespace-nowrap">뉴스</p>
                         </a>
                         <a href="/lifestyle" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-home text-xl sm:text-2xl text-green-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-home text-2xl sm:text-3xl text-green-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-green-600 transition-colors whitespace-nowrap">유틸리티</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-green-300 transition-colors whitespace-nowrap">유틸리티</p>
                         </a>
                         <a href="/game" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-gamepad text-xl sm:text-2xl text-purple-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-gamepad text-2xl sm:text-3xl text-purple-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-purple-600 transition-colors whitespace-nowrap">게임</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-purple-300 transition-colors whitespace-nowrap">게임</p>
                         </a>
                         <a href="/finance" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-won-sign text-xl sm:text-2xl text-orange-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-won-sign text-2xl sm:text-3xl text-orange-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-orange-600 transition-colors whitespace-nowrap">금융</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-orange-300 transition-colors whitespace-nowrap">금융</p>
                         </a>
                         <a href="/shopping" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-shopping-bag text-xl sm:text-2xl text-pink-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-shopping-bag text-2xl sm:text-3xl text-pink-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-pink-600 transition-colors whitespace-nowrap">쇼핑</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-pink-300 transition-colors whitespace-nowrap">쇼핑</p>
                         </a>
                         <a href="/entertainment" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-film text-xl sm:text-2xl text-red-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-film text-2xl sm:text-3xl text-red-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-red-600 transition-colors whitespace-nowrap">엔터</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-red-300 transition-colors whitespace-nowrap">엔터</p>
                         </a>
                         <a href="/education" class="group text-center flex-shrink-0">
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-gray-200 transition-all">
-                                <i class="fas fa-graduation-cap text-xl sm:text-2xl text-indigo-600"></i>
+                            <div class="w-16 h-16 sm:w-18 sm:h-18 mx-auto mb-3 rounded-2xl quick-menu-icon flex items-center justify-center">
+                                <i class="fas fa-graduation-cap text-2xl sm:text-3xl text-indigo-600"></i>
                             </div>
-                            <p class="text-xs sm:text-sm text-gray-700 font-semibold group-hover:text-indigo-600 transition-colors whitespace-nowrap">교육</p>
+                            <p class="text-xs sm:text-sm text-white font-bold group-hover:text-indigo-300 transition-colors whitespace-nowrap">교육</p>
                         </a>
                     </div>
                 </div>
             </nav>
 
-            <!-- 메인 배너 섹션 (네이버 스타일) -->
-            <section class="mb-6 max-w-6xl mx-auto px-4">
-                <div class="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+            <!-- 메인 배너 섹션 (모던 스타일) -->
+            <section class="mb-8 max-w-6xl mx-auto px-4">
+                <div class="banner-card overflow-hidden shine">
                     <a href="/news" class="block">
-                        <div class="flex items-center p-4 sm:p-6">
+                        <div class="flex items-center p-5 sm:p-6">
                             <!-- 배너 이미지 (왼쪽) -->
-                            <div class="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-xl overflow-hidden bg-gradient-to-br from-blue-400 to-purple-500">
+                            <div class="flex-shrink-0 w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 shadow-lg">
                                 <img src="https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=400&fit=crop" 
                                      alt="배너 이미지" 
                                      class="w-full h-full object-cover"
@@ -1110,11 +1252,11 @@ app.get('/', async (c) => {
                             </div>
                             
                             <!-- 배너 텍스트 (오른쪽) -->
-                            <div class="flex-1 ml-4 sm:ml-6">
-                                <h3 class="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-1 sm:mb-2 line-clamp-2">
+                            <div class="flex-1 ml-5 sm:ml-6">
+                                <h3 class="text-base sm:text-lg md:text-2xl font-bold text-gray-900 mb-2 line-clamp-2">
                                     부해른 윈터 원더랜드
                                 </h3>
-                                <p class="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                <p class="text-sm sm:text-base text-gray-600 line-clamp-2 font-medium">
                                     한소희의 홀리데이 위시리스트
                                 </p>
                             </div>
@@ -1125,33 +1267,33 @@ app.get('/', async (c) => {
 
             <!-- 날씨 위젯 -->
             <section class="mb-8 max-w-6xl mx-auto px-4">
-                <div class="bg-white rounded-xl shadow-md p-4">
+                <div class="weather-widget p-5">
                     <div class="flex items-center justify-between">
                         <!-- 현재 날씨 -->
-                        <div class="flex items-center gap-3">
-                            <div class="text-3xl" id="weather-icon">
+                        <div class="flex items-center gap-4">
+                            <div class="text-4xl" id="weather-icon">
                                 <i class="fas fa-cloud-sun text-blue-400"></i>
                             </div>
                             <div>
                                 <div class="flex items-baseline gap-2">
-                                    <span class="text-2xl font-bold text-gray-900" id="weather-temp">1.3°</span>
-                                    <span class="text-sm text-gray-600">비</span>
+                                    <span class="text-3xl font-bold text-gray-900" id="weather-temp">1.3°</span>
+                                    <span class="text-base text-gray-600 font-medium">비</span>
                                 </div>
-                                <div class="text-xs text-gray-500 mt-1" id="weather-location">서울</div>
+                                <div class="text-sm text-gray-500 mt-1 font-medium" id="weather-location">서울</div>
                             </div>
                         </div>
                         
                         <!-- 미세먼지/초미세먼지 -->
-                        <div class="flex gap-3 sm:gap-6">
+                        <div class="flex gap-4 sm:gap-8">
                             <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1">미세</div>
-                                <div class="text-sm font-bold">
+                                <div class="text-xs text-gray-500 mb-1.5 font-medium">미세</div>
+                                <div class="text-base font-bold">
                                     <span class="text-blue-600">좋음</span>
                                 </div>
                             </div>
                             <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1">초미세</div>
-                                <div class="text-sm font-bold">
+                                <div class="text-xs text-gray-500 mb-1.5 font-medium">초미세</div>
+                                <div class="text-base font-bold">
                                     <span class="text-blue-600">좋음</span>
                                 </div>
                             </div>
@@ -1209,45 +1351,47 @@ app.get('/', async (c) => {
             </script>
 
             <!-- 뉴스 & 트렌드 섹션 -->
-            <div class="grid md:grid-cols-2 gap-6 mb-12">
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
                 <!-- 실시간 뉴스 -->
                 <div class="content-card p-8">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <i class="fas fa-newspaper text-blue-600 text-2xl mr-3"></i>
-                        실시간 뉴스
-                        <span class="ml-3 text-xs bg-red-500 text-white px-3 py-1 rounded-full pulse-animation font-semibold">LIVE</span>
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-newspaper text-white text-lg"></i>
+                        </div>
+                        <span>실시간 뉴스</span>
+                        <span class="ml-3 text-xs bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1.5 rounded-full pulse-animation font-bold shadow-lg">LIVE</span>
                     </h3>
                     <div class="space-y-2" id="latest-news">
                         ${latestNews.length > 0 ? latestNews.map((news, index) => {
                           const timeAgo = getTimeAgo(news.created_at)
                           const categoryColor = getCategoryColor(news.category)
                           return `
-                            <div onclick="openNewsLink('${news.link}')" class="block hover:bg-blue-50 py-3 px-3 rounded-lg transition group border-b border-gray-100 last:border-b-0 cursor-pointer">
+                            <div onclick="openNewsLink('${news.link}')" class="block hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 py-4 px-4 rounded-xl transition-all group border border-transparent hover:border-blue-200 cursor-pointer">
                                 <div class="flex items-start gap-3">
-                                    <span class="rank-number flex-shrink-0 mt-0.5">${index + 1}</span>
+                                    <span class="rank-number flex-shrink-0 mt-1">${index + 1}</span>
                                     <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-1.5">
+                                        <div class="flex items-center gap-2 mb-2">
                                             <span class="badge ${categoryColor}">${getCategoryName(news.category)}</span>
-                                            <span class="text-gray-500 text-xs font-medium flex-shrink-0">${timeAgo}</span>
+                                            <span class="text-gray-500 text-xs font-bold flex-shrink-0">${timeAgo}</span>
                                         </div>
-                                        <p class="text-gray-900 group-hover:text-blue-700 font-semibold text-base leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
+                                        <p class="text-gray-900 group-hover:text-blue-700 font-bold text-base leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
                                     </div>
                                 </div>
                             </div>
                           `
                         }).join('') : `
-                            <div class="text-center py-8 text-gray-500">
-                                <i class="fas fa-newspaper text-4xl mb-3 text-gray-300"></i>
-                                <p>뉴스를 불러오는 중입니다...</p>
-                                <a href="/news" class="mt-3 inline-block text-blue-700 hover:text-blue-800 font-semibold">
+                            <div class="text-center py-12 text-gray-500">
+                                <i class="fas fa-newspaper text-5xl mb-4 text-gray-300"></i>
+                                <p class="font-medium">뉴스를 불러오는 중입니다...</p>
+                                <a href="/news" class="mt-4 inline-block text-blue-700 hover:text-blue-800 font-bold">
                                     뉴스 페이지로 이동 →
                                 </a>
                             </div>
                         `}
                     </div>
                     ${latestNews.length > 0 ? `
-                        <div class="mt-6 text-center">
-                            <a href="/news" class="inline-flex items-center px-6 py-2.5 accent-orange text-white rounded-lg hover:shadow-lg transition-all accent-orange-hover font-semibold">
+                        <div class="mt-8 text-center">
+                            <a href="/news" class="inline-flex items-center px-8 py-3 accent-orange text-white rounded-xl hover:shadow-xl transition-all accent-orange-hover font-bold shine">
                                 <span>더 많은 뉴스 보기</span>
                                 <i class="fas fa-arrow-right ml-2"></i>
                             </a>
@@ -1258,19 +1402,21 @@ app.get('/', async (c) => {
                 <!-- 트렌드 토픽 -->
                 <div class="content-card p-8">
                     <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <i class="fas fa-chart-line text-orange-600 text-2xl mr-3"></i>
-                        실시간 트렌드
-                        <span class="ml-3 text-xs bg-orange-500 text-white px-3 py-1 rounded-full pulse-animation font-semibold">HOT</span>
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-3">
+                            <i class="fas fa-chart-line text-white text-lg"></i>
+                        </div>
+                        <span>실시간 트렌드</span>
+                        <span class="ml-3 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full pulse-animation font-bold shadow-lg">HOT</span>
                     </h3>
                     <div class="space-y-2">
-                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition border-b border-gray-100">
+                        <div class="flex items-center justify-between py-4 px-4 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 rounded-xl transition-all border border-transparent hover:border-orange-200">
                             <div class="flex items-center">
-                                <span class="rank-number mr-3">1</span>
-                                <span class="text-gray-900 font-semibold">인공지능 기술</span>
+                                <span class="rank-number mr-4">1</span>
+                                <span class="text-gray-900 font-bold">인공지능 기술</span>
                             </div>
-                            <i class="fas fa-arrow-up text-green-500"></i>
+                            <i class="fas fa-arrow-up text-green-500 text-lg"></i>
                         </div>
-                        <div class="flex items-center justify-between py-3 px-3 hover:bg-blue-50 rounded-lg transition border-b border-gray-100">
+                        <div class="flex items-center justify-between py-4 px-4 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50 rounded-xl transition-all border border-transparent hover:border-orange-200">
                             <div class="flex items-center">
                                 <span class="rank-number mr-3">2</span>
                                 <span class="text-gray-900 font-semibold">날씨 정보</span>
