@@ -303,27 +303,60 @@ function getShoppingMenu(currentPage: string): string {
 // ==================== 공통 헤더 헬퍼 함수 ====================
 function getCommonHeader(sectionName: string = ''): string {
   // 섹션명 표시 (메인 페이지가 아닐 때만)
-  const sectionLabel = sectionName ? `<span class="hidden sm:inline text-gray-700 text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
+  const sectionLabel = sectionName ? `<span class="hidden sm:inline text-white text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
   
-  // 메인 페이지는 sticky, 서브 페이지는 relative (Sticky 헤더가 대체)
-  const headerClass = sectionName ? 'bg-white backdrop-blur-md shadow-sm relative transition-shadow duration-300' : 'bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300'
+  // 메인 페이지는 sticky, 서브 페이지는 relative
+  const headerClass = sectionName ? 'header-gradient shadow-lg relative transition-shadow duration-300' : 'header-gradient shadow-lg sticky top-0 z-50 transition-shadow duration-300'
   
   return `
     <!-- 헤더 -->
     <header class="${headerClass}" id="main-header">
-        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 flex justify-between items-center">
-            <a href="/" class="flex items-center">
-                <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center group">
+                <div class="bg-white rounded-xl p-2 shadow-lg group-hover:shadow-xl transition-all group-hover:scale-105">
+                    <img src="/logo_fl.png" alt="Faith Portal" class="h-6 sm:h-8 md:h-10 w-auto object-contain" />
+                </div>
                 ${sectionLabel}
             </a>
-            <div id="user-menu" class="flex items-center space-x-1 sm:space-x-2 md:space-x-3">
+            <div id="user-menu" class="flex items-center space-x-2 sm:space-x-3">
                 <!-- 로그인 상태는 JavaScript로 동적 로드됨 -->
-                <a href="/login" class="text-xs sm:text-sm text-gray-700 hover:text-blue-900 font-medium transition-all px-2 sm:px-3">
-                    <i class="fas fa-sign-in-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그인</span>
+                <a href="/login" class="text-xs sm:text-sm text-white hover:text-yellow-300 font-semibold transition-all px-3 sm:px-4 py-2 rounded-lg hover:bg-white/10">
+                    <i class="fas fa-sign-in-alt mr-1 sm:mr-2"></i><span class="hidden sm:inline">로그인</span>
                 </a>
-                <a href="/signup" class="text-xs sm:text-sm brand-navy text-white px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 md:py-2.5 rounded-lg shadow-lg brand-navy-hover font-semibold">
-                    <i class="fas fa-user-plus mr-0 sm:mr-1"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
+                <a href="/signup" class="text-xs sm:text-sm bg-white text-green-600 px-4 sm:px-5 md:px-6 py-2 sm:py-2.5 rounded-lg shadow-lg hover:shadow-xl hover:scale-105 transition-all font-bold">
+                    <i class="fas fa-user-plus mr-1 sm:mr-2"></i><span class="hidden sm:inline">회원가입</span><span class="sm:hidden">가입</span>
                 </a>
+            </div>
+        </div>
+        
+        <!-- 하단 메뉴 바 -->
+        <div class="border-t border-white/20">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+                <div class="overflow-x-auto hide-scrollbar">
+                    <div class="flex items-center justify-center sm:justify-start gap-1">
+                        <a href="/news" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-newspaper mr-1.5 text-blue-400"></i>뉴스
+                        </a>
+                        <a href="/lifestyle" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-home mr-1.5 text-green-400"></i>유틸리티
+                        </a>
+                        <a href="/game" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-gamepad mr-1.5 text-purple-400"></i>게임
+                        </a>
+                        <a href="/finance" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-won-sign mr-1.5 text-orange-400"></i>금융
+                        </a>
+                        <a href="/shopping" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-shopping-bag mr-1.5 text-pink-400"></i>쇼핑
+                        </a>
+                        <a href="/entertainment" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-film mr-1.5 text-red-400"></i>엔터
+                        </a>
+                        <a href="/education" class="px-4 sm:px-5 py-3 text-sm font-bold text-white/90 hover:text-white hover:bg-white/15 rounded-t-lg transition-all whitespace-nowrap border-b-2 border-transparent hover:border-yellow-300">
+                            <i class="fas fa-graduation-cap mr-1.5 text-indigo-400"></i>교육
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -333,11 +366,11 @@ function getCommonHeader(sectionName: string = ''): string {
         const header = document.getElementById('main-header');
         if (header) {
           if (window.scrollY > 50) {
-            header.classList.add('shadow-lg');
-            header.classList.remove('shadow-sm');
-          } else {
-            header.classList.add('shadow-sm');
+            header.classList.add('shadow-2xl');
             header.classList.remove('shadow-lg');
+          } else {
+            header.classList.add('shadow-lg');
+            header.classList.remove('shadow-2xl');
           }
         }
       });
@@ -883,6 +916,18 @@ app.get('/', async (c) => {
             * {
                 font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
                 letter-spacing: -0.02em;
+            }
+            
+            /* 헤더 그라데이션 */
+            .header-gradient {
+                background: linear-gradient(135deg, #03c75a 0%, #059b44 50%, #03c75a 100%);
+                background-size: 200% 100%;
+                animation: headerShift 10s ease-in-out infinite;
+            }
+            
+            @keyframes headerShift {
+                0%, 100% { background-position: 0% 50%; }
+                50% { background-position: 100% 50%; }
             }
             
             /* 네이버 스타일 화이트 배경 */
