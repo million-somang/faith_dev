@@ -6503,16 +6503,24 @@ app.get('/api/stock/quote/:symbol', async (c) => {
   
   try {
     // Yahoo Finance API (무료)
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-    const response = await fetch(url)
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    
     const data = await response.json()
     
-    if (data.chart.result && data.chart.result[0]) {
+    if (data.chart?.result?.[0]) {
       const result = data.chart.result[0]
       const meta = result.meta
-      const quote = result.indicators.quote[0]
       
-      const currentPrice = meta.regularMarketPrice
+      const currentPrice = meta.regularMarketPrice || meta.previousClose
       const previousClose = meta.chartPreviousClose || meta.previousClose
       const change = currentPrice - previousClose
       const changePercent = (change / previousClose) * 100
@@ -6520,7 +6528,7 @@ app.get('/api/stock/quote/:symbol', async (c) => {
       return c.json({
         success: true,
         symbol: symbol,
-        name: meta.symbol,
+        name: meta.symbol || symbol,
         price: currentPrice,
         change: change,
         changePercent: changePercent,
@@ -6532,10 +6540,11 @@ app.get('/api/stock/quote/:symbol', async (c) => {
     
     throw new Error('No data available')
   } catch (error) {
-    console.error('Stock API Error:', error)
+    console.error(`Stock API Error for ${symbol}:`, error)
     return c.json({
       success: false,
       message: 'Failed to fetch stock data',
+      symbol: symbol,
       error: error.message
     }, 500)
   }
@@ -6555,22 +6564,33 @@ app.get('/api/stocks/quotes', async (c) => {
   try {
     const promises = symbols.map(async (symbol) => {
       try {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.trim()}`
-        const response = await fetch(url)
+        const trimmedSymbol = symbol.trim()
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${trimmedSymbol}?interval=1d&range=1d`
+        const response = await fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        })
+        
+        if (!response.ok) {
+          console.error(`HTTP ${response.status} for ${trimmedSymbol}`)
+          return null
+        }
+        
         const data = await response.json()
         
-        if (data.chart.result && data.chart.result[0]) {
+        if (data.chart?.result?.[0]) {
           const result = data.chart.result[0]
           const meta = result.meta
           
-          const currentPrice = meta.regularMarketPrice
+          const currentPrice = meta.regularMarketPrice || meta.previousClose
           const previousClose = meta.chartPreviousClose || meta.previousClose
           const change = currentPrice - previousClose
           const changePercent = (change / previousClose) * 100
           
           return {
-            symbol: symbol,
-            name: meta.symbol,
+            symbol: trimmedSymbol,
+            name: meta.symbol || trimmedSymbol,
             price: currentPrice,
             change: change,
             changePercent: changePercent,
@@ -7008,57 +7028,93 @@ app.get('/finance', (c) => {
                 }
             });
 
-            // ==================== 실시간 주식 데이터 시뮬레이션 ====================
+            // ==================== 실시간 주식 데이터 로드 (실제 API) ====================
             
-            // 현재 데이터 저장
-            let currentStockData = {
-                indices: [
-                    { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58 },
-                    { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38 },
-                    { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63 }
-                ],
-                stocks: [
-                    { ticker: '005930.KS', name: '삼성전자', price: 72500 },
-                    { ticker: 'NVDA', name: 'NVIDIA', price: 495.50 },
-                    { ticker: 'TSLA', name: '테슬라', price: 242.84 },
-                    { ticker: '000660.KS', name: 'SK하이닉스', price: 168000 },
-                    { ticker: 'AAPL', name: '애플', price: 185.64 }
-                ]
-            };
-            
-            // 실시간 데이터 시뮬레이션 (작은 랜덤 변동)
-            function simulateRealTimeData() {
-                // 지수 업데이트
-                currentStockData.indices.forEach(index => {
-                    const randomChange = (Math.random() - 0.5) * 2; // -1 ~ +1
-                    index.value += randomChange;
-                    index.change += randomChange;
-                    index.rate = (index.change / (index.value - index.change)) * 100;
+            // 실제 API를 통한 실시간 데이터 로드
+            async function loadRealTimeStockData() {
+                try {
+                    // 주요 지수 및 인기 종목 심볼
+                    const symbols = [
+                        '^KS11',      // KOSPI
+                        '^KQ11',      // KOSDAQ
+                        'KRW=X',      // USD/KRW
+                        '005930.KS',  // 삼성전자
+                        'NVDA',       // NVIDIA
+                        'TSLA',       // 테슬라
+                        '000660.KS',  // SK하이닉스
+                        'AAPL'        // 애플
+                    ];
                     
-                    updateIndexCard(index.name, {
-                        price: index.value,
-                        change: index.change,
-                        changePercent: index.rate,
-                        status: index.change >= 0 ? 'up' : 'down'
-                    });
+                    console.log('Fetching real-time stock data...');
+                    const response = await fetch('/api/stocks/quotes?symbols=' + symbols.join(','));
+                    const data = await response.json();
+                    
+                    console.log('API Response:', data);
+                    
+                    if (data.success && data.stocks && data.stocks.length > 0) {
+                        updateStockUI(data.stocks);
+                        console.log('Stock data updated successfully');
+                    } else {
+                        console.warn('No stock data available, using fallback');
+                        // API 실패 시 작은 변동만 표시
+                        simulateSmallChanges();
+                    }
+                } catch (error) {
+                    console.error('Failed to load real-time stock data:', error);
+                    // API 실패 시 작은 변동만 표시
+                    simulateSmallChanges();
+                }
+            }
+            
+            // API 실패 시 작은 변동 표시
+            function simulateSmallChanges() {
+                const stockElements = document.querySelectorAll('[data-stock-ticker]');
+                const indexElements = document.querySelectorAll('[data-index]');
+                
+                // 작은 깜빡임 효과
+                stockElements.forEach(el => {
+                    el.style.opacity = '0.8';
+                    setTimeout(() => { el.style.opacity = '1'; }, 200);
+                });
+                indexElements.forEach(el => {
+                    el.style.opacity = '0.8';
+                    setTimeout(() => { el.style.opacity = '1'; }, 200);
+                });
+            }
+            
+            // UI 업데이트
+            function updateStockUI(stocks) {
+                const stockMap = {};
+                stocks.forEach(stock => {
+                    stockMap[stock.symbol] = stock;
                 });
                 
-                // 주식 업데이트
-                currentStockData.stocks.forEach(stock => {
-                    const isKorean = stock.ticker.includes('.KS');
-                    const maxChange = isKorean ? 1000 : 0.5; // 한국 주식은 원 단위, 미국 주식은 달러 단위
-                    const randomChange = (Math.random() - 0.5) * maxChange;
-                    const oldPrice = stock.price;
-                    stock.price = Math.max(stock.price + randomChange, 1); // 최소값 1
-                    const priceChange = stock.price - oldPrice;
-                    const changePercent = (priceChange / oldPrice) * 100;
-                    
-                    updateStockCard(stock.ticker, {
-                        price: stock.price,
-                        change: priceChange,
-                        changePercent: changePercent,
-                        status: priceChange >= 0 ? 'up' : 'down'
-                    });
+                console.log('Stock Map:', stockMap);
+                
+                // KOSPI 업데이트
+                if (stockMap['^KS11']) {
+                    console.log('Updating KOSPI:', stockMap['^KS11']);
+                    updateIndexCard('KOSPI', stockMap['^KS11']);
+                }
+                
+                // KOSDAQ 업데이트
+                if (stockMap['^KQ11']) {
+                    console.log('Updating KOSDAQ:', stockMap['^KQ11']);
+                    updateIndexCard('KOSDAQ', stockMap['^KQ11']);
+                }
+                
+                // USD/KRW 업데이트
+                if (stockMap['KRW=X']) {
+                    console.log('Updating USD/KRW:', stockMap['KRW=X']);
+                    updateIndexCard('USD/KRW', stockMap['KRW=X']);
+                }
+                
+                // 인기 종목 업데이트
+                ['005930.KS', 'NVDA', 'TSLA', '000660.KS', 'AAPL'].forEach(ticker => {
+                    if (stockMap[ticker]) {
+                        console.log(\`Updating \${ticker}:\`, stockMap[ticker]);
+                        updateStockCard(ticker, stockMap[ticker]);
+                    }
                 });
             }
             
@@ -7084,6 +7140,10 @@ app.get('/finance', (c) => {
                         changeEl.className = 'index-change stock-number text-sm font-medium ' + 
                             (data.status === 'up' ? 'text-red-600' : 'text-blue-600');
                     }
+                    
+                    // 깜빡임 효과
+                    card.style.backgroundColor = data.status === 'up' ? '#fee' : '#eef';
+                    setTimeout(() => { card.style.backgroundColor = ''; }, 300);
                 }
             }
             
@@ -7109,13 +7169,22 @@ app.get('/finance', (c) => {
                         changeEl.className = 'stock-change stock-number text-sm font-medium ' + 
                             (data.status === 'up' ? 'text-red-600' : 'text-blue-600');
                     }
+                    
+                    // 깜빡임 효과
+                    card.style.backgroundColor = data.status === 'up' ? '#fef2f2' : '#eff6ff';
+                    setTimeout(() => { card.style.backgroundColor = ''; }, 300);
                 }
             }
             
-            // 페이지 로드 시 시뮬레이션 시작
+            // 페이지 로드 시 실시간 데이터 로드
             document.addEventListener('DOMContentLoaded', function() {
-                // 5초마다 데이터 업데이트
-                setInterval(simulateRealTimeData, 5000);
+                console.log('Page loaded, starting real-time data fetch');
+                
+                // 즉시 첫 로드
+                loadRealTimeStockData();
+                
+                // 30초마다 자동 갱신
+                setInterval(loadRealTimeStockData, 30000);
             });
         </script>
 
