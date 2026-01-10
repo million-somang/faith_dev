@@ -6692,6 +6692,26 @@ app.get('/finance', (c) => {
                 </div>
 
                 <div class="space-y-3">
+                    <!-- 종목 선택 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
+                            <i class="fas fa-chart-line text-purple-600 mr-1"></i>
+                            종목 선택 (선택사항)
+                        </label>
+                        <select 
+                            id="stockSelect" 
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-gray-900 bg-white"
+                            onchange="selectStock()"
+                        >
+                            <option value="">직접 입력</option>
+                            <option value="005930">삼성전자 (005930)</option>
+                            <option value="000660">SK하이닉스 (000660)</option>
+                            <option value="035420">NAVER (035420)</option>
+                            <option value="005380">현대차 (005380)</option>
+                            <option value="035720">카카오 (035720)</option>
+                        </select>
+                    </div>
+
                     <!-- 투자 금액 입력 -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">
@@ -6776,6 +6796,26 @@ app.get('/finance', (c) => {
         </div>
 
         <script>
+            // 종목 데이터
+            const stockData = {
+                '005930': { name: '삼성전자', price: 72500 },
+                '000660': { name: 'SK하이닉스', price: 168000 },
+                '035420': { name: 'NAVER', price: 215000 },
+                '005380': { name: '현대차', price: 185000 },
+                '035720': { name: '카카오', price: 52000 }
+            };
+
+            // 종목 선택 시
+            function selectStock() {
+                const ticker = document.getElementById('stockSelect').value;
+                if (ticker && stockData[ticker]) {
+                    const stock = stockData[ticker];
+                    // 현재가 자동 입력
+                    document.getElementById('currentPrice').value = stock.price.toLocaleString('ko-KR');
+                    calculateProfit();
+                }
+            }
+
             // 팝업 열기
             function openProfitCalculator() {
                 document.getElementById('profitCalculatorModal').classList.remove('hidden');
@@ -6853,6 +6893,7 @@ app.get('/finance', (c) => {
 
             // 초기화
             function resetCalculator() {
+                document.getElementById('stockSelect').value = '';
                 document.getElementById('investAmount').value = '';
                 document.getElementById('buyPrice').value = '';
                 document.getElementById('currentPrice').value = '';
