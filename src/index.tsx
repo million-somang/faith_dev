@@ -6679,10 +6679,10 @@ app.get('/finance', (c) => {
         </main>
 
         <!-- 수익률 계산기 팝업 모달 -->
-        <div id="profitCalculatorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4" onclick="closeProfitCalculator(event)">
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-gray-900">
+        <div id="profitCalculatorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4 overflow-y-auto" onclick="closeProfitCalculator(event)">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 my-8 max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">
                         <i class="fas fa-calculator text-green-600 mr-2"></i>
                         수익률 계산기
                     </h2>
@@ -6691,10 +6691,10 @@ app.get('/finance', (c) => {
                     </button>
                 </div>
 
-                <div class="space-y-4">
+                <div class="space-y-3">
                     <!-- 투자 금액 입력 -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
                             <i class="fas fa-won-sign text-blue-600 mr-1"></i>
                             투자 금액 (원)
                         </label>
@@ -6702,14 +6702,14 @@ app.get('/finance', (c) => {
                             type="text" 
                             id="investAmount" 
                             placeholder="1,000,000"
-                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
                             oninput="formatCurrency(this); calculateProfit()"
                         />
                     </div>
 
                     <!-- 매수가 입력 -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
                             <i class="fas fa-arrow-down text-red-600 mr-1"></i>
                             매수가 (원)
                         </label>
@@ -6717,14 +6717,14 @@ app.get('/finance', (c) => {
                             type="text" 
                             id="buyPrice" 
                             placeholder="60,000"
-                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
                             oninput="formatCurrency(this); calculateProfit()"
                         />
                     </div>
 
                     <!-- 현재가 입력 -->
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">
                             <i class="fas fa-arrow-up text-green-600 mr-1"></i>
                             현재가/목표가 (원)
                         </label>
@@ -6732,42 +6732,42 @@ app.get('/finance', (c) => {
                             type="text" 
                             id="currentPrice" 
                             placeholder="75,000"
-                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
                             oninput="formatCurrency(this); calculateProfit()"
                         />
                     </div>
 
                     <!-- 구분선 -->
-                    <div class="border-t-2 border-gray-200 my-6"></div>
+                    <div class="border-t-2 border-gray-200 my-4"></div>
 
                     <!-- 결과 표시 -->
-                    <div id="profitResult" class="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-4 space-y-3">
+                    <div id="profitResult" class="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-3 space-y-2">
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-700 font-medium">보유 수량</span>
-                            <span id="shareCount" class="text-xl font-bold text-gray-900">- 주</span>
+                            <span class="text-gray-700 font-medium text-sm">보유 수량</span>
+                            <span id="shareCount" class="text-lg font-bold text-gray-900">- 주</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-700 font-medium">평가 금액</span>
-                            <span id="currentValue" class="text-xl font-bold text-gray-900">- 원</span>
+                            <span class="text-gray-700 font-medium text-sm">평가 금액</span>
+                            <span id="currentValue" class="text-lg font-bold text-gray-900">- 원</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-700 font-medium">손익 금액</span>
-                            <span id="profitAmount" class="text-2xl font-bold text-green-600">- 원</span>
+                            <span class="text-gray-700 font-medium text-sm">손익 금액</span>
+                            <span id="profitAmount" class="text-xl font-bold text-green-600">- 원</span>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-gray-700 font-medium">수익률</span>
-                            <span id="profitRate" class="text-2xl font-bold text-green-600">- %</span>
+                            <span class="text-gray-700 font-medium text-sm">수익률</span>
+                            <span id="profitRate" class="text-xl font-bold text-green-600">- %</span>
                         </div>
                     </div>
 
                     <!-- 도움말 -->
-                    <div class="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
+                    <div class="bg-blue-50 rounded-lg p-2 text-xs text-blue-800">
                         <i class="fas fa-info-circle mr-1"></i>
                         투자 금액을 매수가로 나눈 수량으로 계산됩니다. 수수료는 포함되지 않습니다.
                     </div>
 
                     <!-- 초기화 버튼 -->
-                    <button onclick="resetCalculator()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg transition-colors">
+                    <button onclick="resetCalculator()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 rounded-lg transition-colors">
                         <i class="fas fa-redo mr-2"></i>
                         초기화
                     </button>
@@ -6829,25 +6829,25 @@ app.get('/finance', (c) => {
                     
                     if (profitAmount >= 0) {
                         profitAmountEl.textContent = '+' + profitAmount.toLocaleString('ko-KR') + ' 원';
-                        profitAmountEl.className = 'text-2xl font-bold text-red-600';
+                        profitAmountEl.className = 'text-xl font-bold text-red-600';
                         
                         profitRateEl.textContent = '+' + profitRate.toFixed(2) + ' %';
-                        profitRateEl.className = 'text-2xl font-bold text-red-600';
+                        profitRateEl.className = 'text-xl font-bold text-red-600';
                     } else {
                         profitAmountEl.textContent = profitAmount.toLocaleString('ko-KR') + ' 원';
-                        profitAmountEl.className = 'text-2xl font-bold text-blue-600';
+                        profitAmountEl.className = 'text-xl font-bold text-blue-600';
                         
                         profitRateEl.textContent = profitRate.toFixed(2) + ' %';
-                        profitRateEl.className = 'text-2xl font-bold text-blue-600';
+                        profitRateEl.className = 'text-xl font-bold text-blue-600';
                     }
                 } else {
                     // 입력 값이 없으면 초기 상태로
                     document.getElementById('shareCount').textContent = '- 주';
                     document.getElementById('currentValue').textContent = '- 원';
                     document.getElementById('profitAmount').textContent = '- 원';
-                    document.getElementById('profitAmount').className = 'text-2xl font-bold text-green-600';
+                    document.getElementById('profitAmount').className = 'text-xl font-bold text-green-600';
                     document.getElementById('profitRate').textContent = '- %';
-                    document.getElementById('profitRate').className = 'text-2xl font-bold text-green-600';
+                    document.getElementById('profitRate').className = 'text-xl font-bold text-green-600';
                 }
             }
 
