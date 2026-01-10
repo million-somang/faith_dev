@@ -6462,19 +6462,19 @@ app.get('/lifestyle', (c) => {
 })
 
 // ==================== 금융 페이지 (주식 메인) ====================
-// MOCK 데이터 - 주요 지수
+// MOCK 데이터 - 주요 지수 (백업용)
 const MOCK_INDICES = [
   { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
   { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down' },
   { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63, status: 'up' }
 ]
 
-// MOCK 데이터 - 인기 종목
+// MOCK 데이터 - 인기 종목 (백업용)
 const MOCK_POPULAR_STOCKS = [
-  { rank: 1, ticker: '005930', name: '삼성전자', price: 72500, change: 1200, rate: 1.68, status: 'up' },
+  { rank: 1, ticker: '005930.KS', name: '삼성전자', price: 72500, change: 1200, rate: 1.68, status: 'up' },
   { rank: 2, ticker: 'NVDA', name: 'NVIDIA', price: 495.50, change: -8.30, rate: -1.65, status: 'down' },
   { rank: 3, ticker: 'TSLA', name: '테슬라', price: 242.84, change: 5.12, rate: 2.15, status: 'up' },
-  { rank: 4, ticker: '000660', name: 'SK하이닉스', price: 168000, change: 3500, rate: 2.13, status: 'up' },
+  { rank: 4, ticker: '000660.KS', name: 'SK하이닉스', price: 168000, change: 3500, rate: 2.13, status: 'up' },
   { rank: 5, ticker: 'AAPL', name: '애플', price: 185.64, change: -2.15, rate: -1.14, status: 'down' }
 ]
 
@@ -6494,6 +6494,112 @@ const generateMockChartData = (basePrice: number) => {
   }
   return data
 }
+
+// ==================== 실시간 주식 데이터 API ====================
+
+// Yahoo Finance API를 통한 실시간 주식 데이터 가져오기
+app.get('/api/stock/quote/:symbol', async (c) => {
+  const symbol = c.req.param('symbol')
+  
+  try {
+    // Yahoo Finance API (무료)
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
+    const response = await fetch(url)
+    const data = await response.json()
+    
+    if (data.chart.result && data.chart.result[0]) {
+      const result = data.chart.result[0]
+      const meta = result.meta
+      const quote = result.indicators.quote[0]
+      
+      const currentPrice = meta.regularMarketPrice
+      const previousClose = meta.chartPreviousClose || meta.previousClose
+      const change = currentPrice - previousClose
+      const changePercent = (change / previousClose) * 100
+      
+      return c.json({
+        success: true,
+        symbol: symbol,
+        name: meta.symbol,
+        price: currentPrice,
+        change: change,
+        changePercent: changePercent,
+        status: change >= 0 ? 'up' : 'down',
+        currency: meta.currency,
+        timestamp: meta.regularMarketTime
+      })
+    }
+    
+    throw new Error('No data available')
+  } catch (error) {
+    console.error('Stock API Error:', error)
+    return c.json({
+      success: false,
+      message: 'Failed to fetch stock data',
+      error: error.message
+    }, 500)
+  }
+})
+
+// 여러 종목 동시 조회
+app.get('/api/stocks/quotes', async (c) => {
+  const symbols = c.req.query('symbols')?.split(',') || []
+  
+  if (symbols.length === 0) {
+    return c.json({
+      success: false,
+      message: 'No symbols provided'
+    }, 400)
+  }
+  
+  try {
+    const promises = symbols.map(async (symbol) => {
+      try {
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.trim()}`
+        const response = await fetch(url)
+        const data = await response.json()
+        
+        if (data.chart.result && data.chart.result[0]) {
+          const result = data.chart.result[0]
+          const meta = result.meta
+          
+          const currentPrice = meta.regularMarketPrice
+          const previousClose = meta.chartPreviousClose || meta.previousClose
+          const change = currentPrice - previousClose
+          const changePercent = (change / previousClose) * 100
+          
+          return {
+            symbol: symbol,
+            name: meta.symbol,
+            price: currentPrice,
+            change: change,
+            changePercent: changePercent,
+            status: change >= 0 ? 'up' : 'down'
+          }
+        }
+        return null
+      } catch (error) {
+        console.error(`Error fetching ${symbol}:`, error)
+        return null
+      }
+    })
+    
+    const results = await Promise.all(promises)
+    const validResults = results.filter(r => r !== null)
+    
+    return c.json({
+      success: true,
+      count: validResults.length,
+      stocks: validResults
+    })
+  } catch (error) {
+    console.error('Stocks API Error:', error)
+    return c.json({
+      success: false,
+      message: 'Failed to fetch stocks data'
+    }, 500)
+  }
+})
 
 app.get('/finance', (c) => {
   return c.html(`
@@ -6548,23 +6654,18 @@ app.get('/finance', (c) => {
             <!-- 상단 주요 지수 위젯 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 ${MOCK_INDICES.map(index => `
-                    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow" data-index="${index.name}">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-sm font-medium text-gray-600">${index.name}</h3>
                             <span class="text-xs px-2 py-1 rounded ${index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'}">
                                 ${index.status === 'up' ? '상승' : '하락'}
                             </span>
                         </div>
-                        <div class="stock-number text-2xl font-bold text-gray-900 mb-1">
+                        <div class="index-price stock-number text-2xl font-bold text-gray-900 mb-1">
                             ${index.value.toLocaleString('ko-KR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </div>
-                        <div class="flex items-center gap-2">
-                            <span class="stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium">
-                                ${index.status === 'up' ? '▲' : '▼'} ${Math.abs(index.change).toLocaleString('ko-KR', {minimumFractionDigits: 2})}
-                            </span>
-                            <span class="stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} text-sm">
-                                ${index.rate > 0 ? '+' : ''}${index.rate.toFixed(2)}%
-                            </span>
+                        <div class="index-change stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} text-sm font-medium">
+                            ${index.status === 'up' ? '▲' : '▼'} ${Math.abs(index.change).toFixed(2)} (${index.rate > 0 ? '+' : ''}${index.rate.toFixed(2)}%)
                         </div>
                     </div>
                 `).join('')}
@@ -6585,7 +6686,7 @@ app.get('/finance', (c) => {
                     </div>
                     <div class="space-y-4">
                         ${MOCK_POPULAR_STOCKS.map(stock => `
-                            <a href="/finance/stock/${stock.ticker}" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200">
+                            <a href="/finance/stock/${stock.ticker}" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200" data-stock-ticker="${stock.ticker}">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3 flex-1">
                                         <span class="flex items-center justify-center w-8 h-8 rounded-full ${
@@ -6602,10 +6703,10 @@ app.get('/finance', (c) => {
                                         </div>
                                     </div>
                                     <div class="text-right ml-4">
-                                        <div class="stock-number font-bold text-gray-900">
+                                        <div class="stock-price stock-number font-bold text-gray-900">
                                             ${stock.price.toLocaleString('ko-KR')}
                                         </div>
-                                        <div class="stock-number text-sm ${stock.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium">
+                                        <div class="stock-change stock-number text-sm ${stock.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium">
                                             ${stock.status === 'up' ? '▲' : '▼'} ${stock.rate > 0 ? '+' : ''}${stock.rate.toFixed(2)}%
                                         </div>
                                     </div>
@@ -6905,6 +7006,116 @@ app.get('/finance', (c) => {
                 if (event.key === 'Escape') {
                     closeProfitCalculator();
                 }
+            });
+
+            // ==================== 실시간 주식 데이터 시뮬레이션 ====================
+            
+            // 현재 데이터 저장
+            let currentStockData = {
+                indices: [
+                    { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58 },
+                    { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38 },
+                    { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63 }
+                ],
+                stocks: [
+                    { ticker: '005930.KS', name: '삼성전자', price: 72500 },
+                    { ticker: 'NVDA', name: 'NVIDIA', price: 495.50 },
+                    { ticker: 'TSLA', name: '테슬라', price: 242.84 },
+                    { ticker: '000660.KS', name: 'SK하이닉스', price: 168000 },
+                    { ticker: 'AAPL', name: '애플', price: 185.64 }
+                ]
+            };
+            
+            // 실시간 데이터 시뮬레이션 (작은 랜덤 변동)
+            function simulateRealTimeData() {
+                // 지수 업데이트
+                currentStockData.indices.forEach(index => {
+                    const randomChange = (Math.random() - 0.5) * 2; // -1 ~ +1
+                    index.value += randomChange;
+                    index.change += randomChange;
+                    index.rate = (index.change / (index.value - index.change)) * 100;
+                    
+                    updateIndexCard(index.name, {
+                        price: index.value,
+                        change: index.change,
+                        changePercent: index.rate,
+                        status: index.change >= 0 ? 'up' : 'down'
+                    });
+                });
+                
+                // 주식 업데이트
+                currentStockData.stocks.forEach(stock => {
+                    const isKorean = stock.ticker.includes('.KS');
+                    const maxChange = isKorean ? 1000 : 0.5; // 한국 주식은 원 단위, 미국 주식은 달러 단위
+                    const randomChange = (Math.random() - 0.5) * maxChange;
+                    const oldPrice = stock.price;
+                    stock.price = Math.max(stock.price + randomChange, 1); // 최소값 1
+                    const priceChange = stock.price - oldPrice;
+                    const changePercent = (priceChange / oldPrice) * 100;
+                    
+                    updateStockCard(stock.ticker, {
+                        price: stock.price,
+                        change: priceChange,
+                        changePercent: changePercent,
+                        status: priceChange >= 0 ? 'up' : 'down'
+                    });
+                });
+            }
+            
+            // 지수 카드 업데이트
+            function updateIndexCard(name, data) {
+                const card = document.querySelector(\`[data-index="\${name}"]\`);
+                if (card && data) {
+                    const priceEl = card.querySelector('.index-price');
+                    const changeEl = card.querySelector('.index-change');
+                    
+                    if (priceEl) {
+                        priceEl.textContent = data.price.toLocaleString('ko-KR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                    
+                    if (changeEl) {
+                        const changeText = (data.change >= 0 ? '▲' : '▼') + ' ' + 
+                            Math.abs(data.change).toFixed(2) + ' (' +
+                            (data.change >= 0 ? '+' : '') + data.changePercent.toFixed(2) + '%)';
+                        changeEl.textContent = changeText;
+                        changeEl.className = 'index-change stock-number text-sm font-medium ' + 
+                            (data.status === 'up' ? 'text-red-600' : 'text-blue-600');
+                    }
+                }
+            }
+            
+            // 주식 카드 업데이트
+            function updateStockCard(ticker, data) {
+                const card = document.querySelector(\`[data-stock-ticker="\${ticker}"]\`);
+                if (card && data) {
+                    const priceEl = card.querySelector('.stock-price');
+                    const changeEl = card.querySelector('.stock-change');
+                    
+                    if (priceEl) {
+                        const decimals = ticker.includes('.KS') ? 0 : 2;
+                        priceEl.textContent = data.price.toLocaleString('ko-KR', {
+                            minimumFractionDigits: decimals,
+                            maximumFractionDigits: decimals
+                        });
+                    }
+                    
+                    if (changeEl) {
+                        const changeText = (data.status === 'up' ? '▲' : '▼') + ' ' +
+                            (data.change >= 0 ? '+' : '') + data.changePercent.toFixed(2) + '%';
+                        changeEl.textContent = changeText;
+                        changeEl.className = 'stock-change stock-number text-sm font-medium ' + 
+                            (data.status === 'up' ? 'text-red-600' : 'text-blue-600');
+                    }
+                }
+            }
+            
+            // 페이지 로드 시 시뮬레이션 시작
+            document.addEventListener('DOMContentLoaded', function() {
+                // 5초마다 데이터 업데이트
+                setInterval(simulateRealTimeData, 5000);
             });
         </script>
 
