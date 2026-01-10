@@ -6665,11 +6665,11 @@ app.get('/finance', (c) => {
                     <i class="fas fa-university text-3xl text-indigo-600 mb-3"></i>
                     <div class="font-semibold text-gray-900">은행</div>
                 </a>
-                <a href="#" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center opacity-50 cursor-not-allowed">
-                    <i class="fas fa-calculator text-3xl text-gray-400 mb-3"></i>
-                    <div class="font-semibold text-gray-500">계산기</div>
-                    <div class="text-xs text-gray-400 mt-1">준비중</div>
-                </a>
+                <button onclick="openProfitCalculator()" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center w-full">
+                    <i class="fas fa-calculator text-3xl text-green-600 mb-3"></i>
+                    <div class="font-semibold text-gray-900">수익률 계산기</div>
+                    <div class="text-xs text-gray-600 mt-1">투자 수익 계산</div>
+                </button>
                 <a href="#" class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center opacity-50 cursor-not-allowed">
                     <i class="fas fa-robot text-3xl text-gray-400 mb-3"></i>
                     <div class="font-semibold text-gray-500">AI 브리핑</div>
@@ -6677,6 +6677,195 @@ app.get('/finance', (c) => {
                 </a>
             </div>
         </main>
+
+        <!-- 수익률 계산기 팝업 모달 -->
+        <div id="profitCalculatorModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4" onclick="closeProfitCalculator(event)">
+            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6" onclick="event.stopPropagation()">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-calculator text-green-600 mr-2"></i>
+                        수익률 계산기
+                    </h2>
+                    <button onclick="closeProfitCalculator()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- 투자 금액 입력 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-won-sign text-blue-600 mr-1"></i>
+                            투자 금액 (원)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="investAmount" 
+                            placeholder="1,000,000"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            oninput="formatCurrency(this); calculateProfit()"
+                        />
+                    </div>
+
+                    <!-- 매수가 입력 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-arrow-down text-red-600 mr-1"></i>
+                            매수가 (원)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="buyPrice" 
+                            placeholder="60,000"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            oninput="formatCurrency(this); calculateProfit()"
+                        />
+                    </div>
+
+                    <!-- 현재가 입력 -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <i class="fas fa-arrow-up text-green-600 mr-1"></i>
+                            현재가/목표가 (원)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="currentPrice" 
+                            placeholder="75,000"
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg font-mono"
+                            oninput="formatCurrency(this); calculateProfit()"
+                        />
+                    </div>
+
+                    <!-- 구분선 -->
+                    <div class="border-t-2 border-gray-200 my-6"></div>
+
+                    <!-- 결과 표시 -->
+                    <div id="profitResult" class="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-4 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700 font-medium">보유 수량</span>
+                            <span id="shareCount" class="text-xl font-bold text-gray-900">- 주</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700 font-medium">평가 금액</span>
+                            <span id="currentValue" class="text-xl font-bold text-gray-900">- 원</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700 font-medium">손익 금액</span>
+                            <span id="profitAmount" class="text-2xl font-bold text-green-600">- 원</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-gray-700 font-medium">수익률</span>
+                            <span id="profitRate" class="text-2xl font-bold text-green-600">- %</span>
+                        </div>
+                    </div>
+
+                    <!-- 도움말 -->
+                    <div class="bg-blue-50 rounded-lg p-3 text-sm text-blue-800">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        투자 금액을 매수가로 나눈 수량으로 계산됩니다. 수수료는 포함되지 않습니다.
+                    </div>
+
+                    <!-- 초기화 버튼 -->
+                    <button onclick="resetCalculator()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg transition-colors">
+                        <i class="fas fa-redo mr-2"></i>
+                        초기화
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 팝업 열기
+            function openProfitCalculator() {
+                document.getElementById('profitCalculatorModal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+
+            // 팝업 닫기
+            function closeProfitCalculator(event) {
+                if (!event || event.target.id === 'profitCalculatorModal') {
+                    document.getElementById('profitCalculatorModal').classList.add('hidden');
+                    document.body.style.overflow = 'auto';
+                }
+            }
+
+            // 숫자 포맷팅 (콤마 추가)
+            function formatCurrency(input) {
+                let value = input.value.replace(/,/g, '');
+                if (!isNaN(value) && value !== '') {
+                    input.value = parseInt(value).toLocaleString('ko-KR');
+                }
+            }
+
+            // 수익률 계산
+            function calculateProfit() {
+                const investAmount = parseInt(document.getElementById('investAmount').value.replace(/,/g, '') || '0');
+                const buyPrice = parseInt(document.getElementById('buyPrice').value.replace(/,/g, '') || '0');
+                const currentPrice = parseInt(document.getElementById('currentPrice').value.replace(/,/g, '') || '0');
+
+                if (investAmount > 0 && buyPrice > 0 && currentPrice > 0) {
+                    // 보유 수량 계산 (소수점 버림)
+                    const shareCount = Math.floor(investAmount / buyPrice);
+                    
+                    // 실제 투자금 (수수료 제외)
+                    const actualInvestment = shareCount * buyPrice;
+                    
+                    // 평가 금액
+                    const currentValue = shareCount * currentPrice;
+                    
+                    // 손익 금액
+                    const profitAmount = currentValue - actualInvestment;
+                    
+                    // 수익률
+                    const profitRate = (profitAmount / actualInvestment) * 100;
+
+                    // 결과 표시
+                    document.getElementById('shareCount').textContent = shareCount.toLocaleString('ko-KR') + ' 주';
+                    document.getElementById('currentValue').textContent = currentValue.toLocaleString('ko-KR') + ' 원';
+                    
+                    const profitAmountEl = document.getElementById('profitAmount');
+                    const profitRateEl = document.getElementById('profitRate');
+                    
+                    if (profitAmount >= 0) {
+                        profitAmountEl.textContent = '+' + profitAmount.toLocaleString('ko-KR') + ' 원';
+                        profitAmountEl.className = 'text-2xl font-bold text-red-600';
+                        
+                        profitRateEl.textContent = '+' + profitRate.toFixed(2) + ' %';
+                        profitRateEl.className = 'text-2xl font-bold text-red-600';
+                    } else {
+                        profitAmountEl.textContent = profitAmount.toLocaleString('ko-KR') + ' 원';
+                        profitAmountEl.className = 'text-2xl font-bold text-blue-600';
+                        
+                        profitRateEl.textContent = profitRate.toFixed(2) + ' %';
+                        profitRateEl.className = 'text-2xl font-bold text-blue-600';
+                    }
+                } else {
+                    // 입력 값이 없으면 초기 상태로
+                    document.getElementById('shareCount').textContent = '- 주';
+                    document.getElementById('currentValue').textContent = '- 원';
+                    document.getElementById('profitAmount').textContent = '- 원';
+                    document.getElementById('profitAmount').className = 'text-2xl font-bold text-green-600';
+                    document.getElementById('profitRate').textContent = '- %';
+                    document.getElementById('profitRate').className = 'text-2xl font-bold text-green-600';
+                }
+            }
+
+            // 초기화
+            function resetCalculator() {
+                document.getElementById('investAmount').value = '';
+                document.getElementById('buyPrice').value = '';
+                document.getElementById('currentPrice').value = '';
+                calculateProfit();
+            }
+
+            // ESC 키로 닫기
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    closeProfitCalculator();
+                }
+            });
+        </script>
 
         ${getCommonFooter()}
         ${getCommonAuthScript()}
