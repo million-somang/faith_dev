@@ -6621,6 +6621,93 @@ app.get('/api/stocks/quotes', async (c) => {
   }
 })
 
+// 미국 주요 주식 4대장 API
+app.get('/api/us-stocks/major', async (c) => {
+  const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
+  const nameMap = {
+    'AAPL': '애플',
+    'TSLA': '테슬라', 
+    'NVDA': '엔비디아',
+    'MSFT': '마이크로소프트'
+  }
+  
+  try {
+    const promises = symbols.map(async (symbol) => {
+      try {
+        // 현재가 조회
+        const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+        const quoteResponse = await fetch(quoteUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+        
+        if (!quoteResponse.ok) return null
+        
+        const quoteData = await quoteResponse.json()
+        
+        if (quoteData.chart?.result?.[0]) {
+          const result = quoteData.chart.result[0]
+          const meta = result.meta
+          
+          const currentPrice = meta.regularMarketPrice || meta.previousClose
+          const previousClose = meta.chartPreviousClose || meta.previousClose
+          const change = currentPrice - previousClose
+          const changePercent = (change / previousClose) * 100
+          
+          // 1개월 차트 데이터 조회
+          const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`
+          const chartResponse = await fetch(chartUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+          })
+          
+          let chartData = []
+          if (chartResponse.ok) {
+            const chartJson = await chartResponse.json()
+            if (chartJson.chart?.result?.[0]) {
+              const timestamps = chartJson.chart.result[0].timestamp || []
+              const closes = chartJson.chart.result[0].indicators?.quote?.[0]?.close || []
+              
+              chartData = timestamps.slice(-30).map((ts, idx) => ({
+                date: new Date(ts * 1000).toISOString().split('T')[0],
+                price: closes[idx] || 0
+              })).filter(d => d.price > 0)
+            }
+          }
+          
+          return {
+            symbol: symbol,
+            name: nameMap[symbol] || symbol,
+            fullName: meta.longName || meta.shortName || symbol,
+            price: currentPrice,
+            change: change,
+            changePercent: changePercent,
+            status: change >= 0 ? 'up' : 'down',
+            chartData: chartData
+          }
+        }
+        return null
+      } catch (error) {
+        console.error(`Error fetching ${symbol}:`, error)
+        return null
+      }
+    })
+    
+    const results = await Promise.all(promises)
+    const validResults = results.filter(r => r !== null)
+    
+    return c.json({
+      success: true,
+      count: validResults.length,
+      stocks: validResults
+    })
+  } catch (error) {
+    console.error('US Stocks API Error:', error)
+    return c.json({
+      success: false,
+      message: 'Failed to fetch US stocks data'
+    }, 500)
+  }
+})
+
 app.get('/finance', (c) => {
   return c.html(`
     <!DOCTYPE html>
@@ -6689,6 +6776,32 @@ app.get('/finance', (c) => {
                         </div>
                     </div>
                 `).join('')}
+            </div>
+
+            <!-- 미국 주식 4대장 위젯 -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-flag-usa text-blue-600 mr-2"></i>
+                        미국 빅테크 4대장
+                    </h2>
+                    <span class="text-xs text-gray-500">15분 지연 시세</span>
+                </div>
+                
+                <div id="us-stocks-widget" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Loading skeleton -->
+                    ${[1,2,3,4].map(() => `
+                        <div class="us-stock-skeleton bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="h-4 bg-gray-200 rounded w-20"></div>
+                                <div class="h-6 bg-gray-200 rounded w-12"></div>
+                            </div>
+                            <div class="h-8 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div class="h-4 bg-gray-200 rounded w-16 mb-4"></div>
+                            <div class="h-16 bg-gray-200 rounded"></div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
 
             <!-- 실시간 랭킹 & 시장 동향 -->
@@ -7182,10 +7295,124 @@ app.get('/finance', (c) => {
                 
                 // 즉시 첫 로드
                 loadRealTimeStockData();
+                loadUSStocks();
                 
                 // 30초마다 자동 갱신
                 setInterval(loadRealTimeStockData, 30000);
+                setInterval(loadUSStocks, 30000);
             });
+
+            // ==================== 미국 주식 4대장 로드 ====================
+            
+            async function loadUSStocks() {
+                try {
+                    console.log('Fetching US major stocks...');
+                    const response = await fetch('/api/us-stocks/major');
+                    const data = await response.json();
+                    
+                    console.log('US Stocks Response:', data);
+                    
+                    if (data.success && data.stocks && data.stocks.length > 0) {
+                        renderUSStocks(data.stocks);
+                    }
+                } catch (error) {
+                    console.error('Failed to load US stocks:', error);
+                }
+            }
+            
+            function renderUSStocks(stocks) {
+                const container = document.getElementById('us-stocks-widget');
+                if (!container) return;
+                
+                container.innerHTML = stocks.map(stock => {
+                    const isUp = stock.status === 'up';
+                    const colorClass = isUp ? 'text-red-600' : 'text-blue-600';
+                    const bgClass = isUp ? 'bg-red-50' : 'bg-blue-50';
+                    const borderClass = isUp ? 'border-red-200' : 'border-blue-200';
+                    
+                    return \`
+                        <div class="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow border-2 \${borderClass}">
+                            <!-- 헤더 -->
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <div class="font-bold text-gray-900">\${stock.name}</div>
+                                    <div class="text-xs text-gray-500">\${stock.symbol}</div>
+                                </div>
+                                <span class="px-2 py-1 rounded text-xs font-semibold \${bgClass} \${colorClass}">
+                                    \${isUp ? '▲' : '▼'} \${Math.abs(stock.changePercent).toFixed(2)}%
+                                </span>
+                            </div>
+                            
+                            <!-- 가격 정보 -->
+                            <div class="mb-3">
+                                <div class="stock-number text-2xl font-bold text-gray-900">
+                                    $\${stock.price.toFixed(2)}
+                                </div>
+                                <div class="stock-number text-sm \${colorClass} font-medium">
+                                    \${isUp ? '+' : ''}\${stock.change.toFixed(2)} (\${isUp ? '+' : ''}\${stock.changePercent.toFixed(2)}%)
+                                </div>
+                            </div>
+                            
+                            <!-- 미니 차트 -->
+                            <div class="h-16">
+                                <canvas id="chart-\${stock.symbol}" class="w-full h-full"></canvas>
+                            </div>
+                        </div>
+                    \`;
+                }).join('');
+                
+                // 차트 그리기
+                setTimeout(() => {
+                    stocks.forEach(stock => {
+                        drawMiniChart(stock);
+                    });
+                }, 100);
+            }
+            
+            function drawMiniChart(stock) {
+                const canvas = document.getElementById(\`chart-\${stock.symbol}\`);
+                if (!canvas || !stock.chartData || stock.chartData.length === 0) return;
+                
+                const ctx = canvas.getContext('2d');
+                const width = canvas.offsetWidth;
+                const height = canvas.offsetHeight;
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                const prices = stock.chartData.map(d => d.price);
+                const minPrice = Math.min(...prices);
+                const maxPrice = Math.max(...prices);
+                const priceRange = maxPrice - minPrice;
+                
+                // 선 색상 설정 (한국형: 상승=빨강, 하락=파랑)
+                const lineColor = stock.status === 'up' ? '#dc2626' : '#2563eb';
+                
+                ctx.clearRect(0, 0, width, height);
+                ctx.strokeStyle = lineColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                prices.forEach((price, index) => {
+                    const x = (index / (prices.length - 1)) * width;
+                    const y = height - ((price - minPrice) / priceRange) * height;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                
+                ctx.stroke();
+                
+                // 영역 채우기 (투명도)
+                ctx.lineTo(width, height);
+                ctx.lineTo(0, height);
+                ctx.closePath();
+                ctx.fillStyle = stock.status === 'up' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(37, 99, 235, 0.1)';
+                ctx.fill();
+            }
         </script>
 
         ${getCommonFooter()}
