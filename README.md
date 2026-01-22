@@ -106,23 +106,27 @@
   - 뉴스 원문 링크
   - 다크 모드 지원
 
-- **회원가입 기능**
+- **회원가입 기능** ✨UPDATED
   - 이메일 중복 체크
   - 필수 정보: 이메일, 비밀번호, 이름
   - 선택 정보: 휴대전화
   - 비밀번호 확인 검증
+  - 비밀번호 해싱 (SHA-256)
   - D1 데이터베이스 저장
+  - 자동 로그인 (세션 생성)
   - 자동 활동 로그 기록
   - 신규 가입 알림 생성
 
-- **로그인 기능**
+- **로그인 기능** ✨UPDATED
   - 이메일/비밀번호 인증
-  - 토큰 기반 인증 (localStorage)
+  - **세션 기반 인증** (쿠키)
   - 계정 상태 체크 (활성/정지/삭제)
   - 마지막 로그인 시간 기록
+  - 로그인 기록 저장 (IP, User-Agent)
   - 로그인 활동 로그 기록
   - 관리자 자동 리다이렉트
-  - 로그아웃 기능
+  - 로그아웃 기능 (세션 삭제)
+  - **헤더 로그인 상태 표시** (사용자 이름 표시)
 
 #### 2. 관리자 기능 (Lv.6 이상)
 
@@ -249,18 +253,25 @@
 - **활동 로그**: `GET /admin/logs` (Lv.6 이상) ✨NEW
 - **알림 센터**: `GET /admin/notifications` (Lv.6 이상) ✨NEW
 
-### 사용자 API
-- **회원가입**: `POST /api/signup`
+### 사용자 API ✨UPDATED
+- **회원가입**: `POST /api/auth/signup`
   - Body: `{ email, password, name, phone? }`
-  - Response: `{ success, message, userId }`
+  - Response: `{ success, message, user: { id, email, name, role, level } }`
+  - 자동 로그인 (세션 쿠키 설정)
   
-- **로그인**: `POST /api/login`
+- **로그인**: `POST /api/auth/login`
   - Body: `{ email, password }`
-  - Response: `{ success, token, user }`
+  - Response: `{ success, message, user: { id, email, name, role, level } }`
+  - 세션 쿠키 설정 (HttpOnly, Secure, SameSite=Lax, 7일 만료)
+  - 로그인 기록 저장 (IP, User-Agent)
   
-- **사용자 정보 조회**: `GET /api/user`
-  - Header: `Authorization: Bearer <token>`
-  - Response: `{ success, user }`
+- **로그아웃**: `POST /api/auth/logout`
+  - Response: `{ success, message }`
+  - 세션 삭제 및 쿠키 제거
+
+- **사용자 정보 조회**: `GET /api/auth/me`
+  - Cookie: `session_id` (자동)
+  - Response: `{ success, loggedIn, user? }`
 
 ### 관리자 API (Lv.6 이상)
 
@@ -347,14 +358,44 @@
 CREATE TABLE users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL,
+  password TEXT NOT NULL,              -- SHA-256 해시
   name TEXT NOT NULL,
   phone TEXT,
-  level INTEGER,                    -- 회원 등급 (1~10)
-  status TEXT,                      -- 상태 (active/suspended/deleted)
+  level INTEGER DEFAULT 1,             -- 회원 등급 (1~10)
+  status TEXT DEFAULT 'active',        -- 상태 (active/suspended/deleted)
+  role TEXT DEFAULT 'user',            -- 역할 (user/admin)
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   last_login DATETIME,
   updated_at DATETIME
+);
+```
+
+### Sessions 테이블 ✨NEW
+```sql
+CREATE TABLE sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT UNIQUE NOT NULL,     -- UUID 세션 ID
+  user_id INTEGER NOT NULL,
+  expires_at DATETIME NOT NULL,        -- 만료 시간 (7일)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 인덱스
+CREATE INDEX idx_sessions_session_id ON sessions(session_id);
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+```
+
+### Login History 테이블 ✨NEW
+```sql
+CREATE TABLE login_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
 );
 ```
 
@@ -760,19 +801,24 @@ webapp/
 ## 보안 고려사항
 
 ### 현재 구현된 보안
+- ✅ 비밀번호 해싱 (SHA-256)
+- ✅ 세션 기반 인증 (HttpOnly 쿠키)
+- ✅ 세션 만료 (7일)
 - ✅ 이메일 중복 체크
+- ✅ 비밀번호 최소 길이 (6자)
+- ✅ 이메일 형식 검증
 - ✅ 계정 상태 체크 (정지/삭제 계정 로그인 차단)
 - ✅ 관리자 권한 체크 (모든 관리자 API에 적용)
 - ✅ 등급별 권한 분리
+- ✅ 로그인 기록 (IP 주소, User-Agent)
 - ✅ 활동 로그 기록 (감사 추적)
 - ✅ 소프트 삭제 (데이터 복구 가능)
 
 ### 추가 필요 보안
-- ⚠️ 비밀번호 해싱 (bcrypt)
-- ⚠️ JWT 토큰 인증
+- ⚠️ 비밀번호 강도 검증 강화
 - ⚠️ CSRF 보호
-- ⚠️ Rate Limiting
-- ⚠️ XSS 방어
+- ⚠️ Rate Limiting (로그인 시도 제한)
+- ⚠️ XSS 방어 강화
 
 ## 성능 최적화
 

@@ -344,9 +344,7 @@ function getCommonHeader(sectionName: string = ''): string {
       async function updateUserMenu() {
         console.log('updateUserMenu 실행');
         try {
-          const response = await fetch('/api/auth/me', {
-            credentials: 'include'
-          });
+          const response = await fetch('/api/auth/me');
           const data = await response.json();
           console.log('API 응답:', data);
           const userMenu = document.getElementById('user-menu');
@@ -359,9 +357,6 @@ function getCommonHeader(sectionName: string = ''): string {
                 '<i class="fas fa-user text-blue-600 mr-1"></i>' +
                 data.user.name + '님' +
               '</span>' +
-              '<a href="/mypage" class="text-xs sm:text-sm text-gray-700 hover:text-blue-600 font-medium transition-all px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:border-blue-400">' +
-                '<i class="fas fa-user-circle mr-0 sm:mr-1"></i><span class="hidden sm:inline">마이페이지</span>' +
-              '</a>' +
               '<button onclick="logout()" class="text-xs sm:text-sm text-gray-600 hover:text-red-600 font-medium transition-all px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg hover:border-red-400">' +
                 '<i class="fas fa-sign-out-alt mr-0 sm:mr-1"></i><span class="hidden sm:inline">로그아웃</span>' +
               '</button>' +
@@ -394,10 +389,7 @@ function getCommonHeader(sectionName: string = ''): string {
         if (!confirm('로그아웃 하시겠습니까?')) return;
         
         try {
-          const response = await fetch('/api/auth/logout', { 
-            method: 'POST',
-            credentials: 'include'
-          });
+          const response = await fetch('/api/auth/logout', { method: 'POST' });
           const data = await response.json();
           
           if (data.success) {
@@ -14457,6 +14449,330 @@ app.get('/bookmarks', (c) => {
   `)
 })
 
+// ==================== 로그인 페이지 ====================
+app.get('/login', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Faith Portal 로그인</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
+        <div class="min-h-screen flex items-center justify-center px-4">
+            <div class="max-w-md w-full">
+                <!-- 로고 -->
+                <div class="text-center mb-8">
+                    <a href="/">
+                        <h1 class="text-5xl font-bold faith-blue text-white inline-block px-8 py-3 rounded-lg">Faith Portal</h1>
+                    </a>
+                </div>
+
+                <!-- 로그인 폼 -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">로그인</h2>
+                    
+                    <form id="login-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">이메일</label>
+                            <input 
+                                type="email" 
+                                id="email"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="이메일을 입력하세요"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">비밀번호</label>
+                            <input 
+                                type="password" 
+                                id="password"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="비밀번호를 입력하세요"
+                            />
+                        </div>
+
+                        <div id="error-message" class="hidden text-red-500 text-sm"></div>
+
+                        <button 
+                            type="submit"
+                            class="w-full faith-blue text-white py-3 rounded-lg font-medium faith-blue-hover transition"
+                        >
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            로그인
+                        </button>
+                    </form>
+
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            아직 회원이 아니신가요?
+                            <a href="/signup" class="text-blue-600 hover:text-blue-700 font-medium">회원가입</a>
+                        </p>
+                    </div>
+
+                    <!-- 테스트 계정 안내 -->
+                    <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+                        <p class="text-xs text-blue-800 font-medium mb-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            테스트 계정
+                        </p>
+                        <p class="text-xs text-blue-700">
+                            이메일: test@example.com<br>
+                            비밀번호: test1234
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            document.getElementById('login-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorDiv = document.getElementById('error-message');
+                
+                try {
+                    const response = await axios.post('/api/login', {
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (response.data.success) {
+                        // 로그인 성공
+                        localStorage.setItem('auth_token', response.data.token);
+                        localStorage.setItem('user_id', response.data.user.id);
+                        localStorage.setItem('user_email', response.data.user.email);
+                        localStorage.setItem('user_role', response.data.user.role || 'user');
+                        localStorage.setItem('user_level', response.data.user.level);
+                        
+                        alert('로그인 성공!');
+                        
+                        // 관리자는 관리자 페이지로 (role = 'admin' 또는 level >= 6)
+                        if (response.data.user.role === 'admin' || response.data.user.level >= 6) {
+                            window.location.href = '/admin';
+                        } else {
+                            window.location.href = '/';
+                        }
+                    }
+                } catch (error) {
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.textContent = error.response?.data?.message || '로그인에 실패했습니다.';
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ==================== 회원가입 페이지 ====================
+app.get('/signup', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Faith Portal 회원가입</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-sky-50 via-cyan-50 to-blue-50">
+        <div class="min-h-screen flex items-center justify-center px-4 py-12">
+            <div class="max-w-md w-full">
+                <!-- 로고 -->
+                <div class="text-center mb-8">
+                    <a href="/">
+                        <h1 class="text-5xl font-bold faith-blue text-white inline-block px-8 py-3 rounded-lg">Faith Portal</h1>
+                    </a>
+                </div>
+
+                <!-- 회원가입 폼 -->
+                <div class="bg-white rounded-lg shadow-lg p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">회원가입</h2>
+                    
+                    <form id="signup-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                이메일 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="email" 
+                                id="email"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="example@email.com"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                비밀번호 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                id="password"
+                                required
+                                minlength="6"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="6자 이상 입력하세요"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                비밀번호 확인 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="password" 
+                                id="password-confirm"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="비밀번호를 다시 입력하세요"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                이름 <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="name"
+                                required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="홍길동"
+                            />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                휴대전화
+                            </label>
+                            <input 
+                                type="tel" 
+                                id="phone"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="010-1234-5678"
+                            />
+                        </div>
+
+                        <div id="error-message" class="hidden text-red-500 text-sm"></div>
+                        <div id="success-message" class="hidden text-blue-500 text-sm"></div>
+
+                        <button 
+                            type="submit"
+                            class="w-full faith-blue text-white py-3 rounded-lg font-medium faith-blue-hover transition"
+                        >
+                            <i class="fas fa-user-plus mr-2"></i>
+                            회원가입
+                        </button>
+                    </form>
+
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            이미 회원이신가요?
+                            <a href="/login" class="text-blue-600 hover:text-blue-700 font-medium">로그인</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            document.getElementById('signup-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const passwordConfirm = document.getElementById('password-confirm').value;
+                const name = document.getElementById('name').value;
+                const phone = document.getElementById('phone').value;
+                
+                const errorDiv = document.getElementById('error-message');
+                const successDiv = document.getElementById('success-message');
+                
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+                
+                // 비밀번호 확인
+                if (password !== passwordConfirm) {
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.textContent = '비밀번호가 일치하지 않습니다.';
+                    return;
+                }
+                
+                try {
+                    const response = await axios.post('/api/signup', {
+                        email: email,
+                        password: password,
+                        name: name,
+                        phone: phone
+                    });
+                    
+                    if (response.data.success) {
+                        successDiv.classList.remove('hidden');
+                        successDiv.textContent = '회원가입이 완료되었습니다! 로그인 페이지로 이동합니다...';
+                        
+                        setTimeout(() => {
+                            window.location.href = '/login';
+                        }, 2000);
+                    }
+                } catch (error) {
+                    errorDiv.classList.remove('hidden');
+                    errorDiv.textContent = error.response?.data?.message || '회원가입에 실패했습니다.';
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 // ==================== API: 테트리스 최고 점수 저장 ====================
 app.post('/api/tetris/score', async (c) => {
   try {
@@ -23957,7 +24273,6 @@ app.get('/login', async (c) => {
               headers: {
                 'Content-Type': 'application/json'
               },
-              credentials: 'include',
               body: JSON.stringify({ email, password })
             });
 
@@ -24249,7 +24564,6 @@ app.get('/signup', async (c) => {
               headers: {
                 'Content-Type': 'application/json'
               },
-              credentials: 'include',
               body: JSON.stringify({ name, email, phone, password })
             });
 
