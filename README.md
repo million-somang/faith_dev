@@ -246,6 +246,7 @@
 - **회원가입 페이지**: `GET /signup`
 - **뉴스 페이지**: `GET /news` ✨NEW
 - **북마크 페이지**: `GET /bookmarks` ✨NEW
+- **마이페이지**: `GET /mypage` ✨NEW (2026-01-27)
 - **관리자 대시보드**: `GET /admin` (Lv.6 이상)
 - **회원 관리**: `GET /admin/users` (Lv.6 이상)
 - **뉴스 관리**: `GET /admin/news` (Lv.6 이상) ✨NEW
@@ -347,8 +348,44 @@
   - Query: `userId`, `link` (필수)
   - Response: `{ success, bookmarked, bookmarkId }`
 
+#### 마이페이지 API ✨NEW (2026-01-27)
+
+##### 뉴스 관련 (8개)
+- `POST /api/user/keywords` - 키워드 구독 추가
+- `GET /api/user/keywords` - 키워드 목록 조회
+- `DELETE /api/user/keywords/:keywordId` - 키워드 삭제
+- `GET /api/user/news/by-keyword` - 키워드별 뉴스 조회 (페이지네이션)
+- `POST /api/user/bookmarks` - 북마크 추가
+- `GET /api/user/bookmarks` - 북마크 목록 조회
+- `DELETE /api/user/bookmarks/:bookmarkId` - 북마크 삭제
+- `POST /api/user/news/:newsId/read` - 뉴스 읽음 처리
+
+##### 주식 관련 (8개)
+- `POST /api/user/watchlist` - 관심 종목 추가
+- `GET /api/user/watchlist` - 관심 종목 목록
+- `PUT /api/user/watchlist/:stockId` - 관심 종목 수정
+- `DELETE /api/user/watchlist/:stockId` - 관심 종목 삭제
+- `POST /api/user/watchlist/alerts` - 주가 알림 추가
+- `GET /api/user/watchlist/alerts` - 주가 알림 목록
+- `DELETE /api/user/watchlist/alerts/:alertId` - 주가 알림 삭제
+- `GET /api/user/watchlist/stats` - 포트폴리오 통계
+
+##### 게임 관련 (4개)
+- `POST /api/user/games/scores` - 게임 점수 저장
+- `GET /api/user/games/stats` - 게임 통계 조회
+- `GET /api/user/games/history` - 게임 히스토리 (페이지네이션)
+- `GET /api/games/leaderboard` - 게임 리더보드 (공개)
+
+##### 유틸리티 관련 (5개)
+- `POST /api/user/utils/settings` - 유틸리티 설정 저장
+- `GET /api/user/utils/settings` - 유틸리티 설정 조회
+- `POST /api/user/utils/history` - 유틸리티 히스토리 저장
+- `GET /api/user/utils/history` - 유틸리티 히스토리 조회 (페이지네이션)
+- `DELETE /api/user/utils/history/:historyId` - 히스토리 삭제
+
 ## 배포 URL
-- **로컬 개발**: https://3000-igqqzgkeu63c4u9ihulwt-3844e1b6.sandbox.novita.ai
+- **로컬 개발**: https://3000-igqqzgkeu63c4u9ihulwt-c81df28e.sandbox.novita.ai
+- **마이페이지**: https://3000-igqqzgkeu63c4u9ihulwt-c81df28e.sandbox.novita.ai/mypage
 - **프로덕션**: (배포 후 업데이트 예정)
 
 ## 데이터 모델
@@ -510,8 +547,116 @@ CREATE TABLE bookmarks (
 );
 ```
 
+### 마이페이지 테이블 (8개) ✨NEW (2026-01-27)
+
+#### User Keyword Subscriptions
+```sql
+CREATE TABLE user_keyword_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  keyword TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, keyword),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User News Bookmarks
+```sql
+CREATE TABLE user_news_bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User News Read
+```sql
+CREATE TABLE user_news_read (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Watchlist Stocks
+```sql
+CREATE TABLE user_watchlist_stocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  stock_symbol TEXT NOT NULL,
+  stock_name TEXT NOT NULL,
+  market_type TEXT NOT NULL,
+  target_price REAL,
+  memo TEXT,
+  added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, stock_symbol),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Stock Alerts
+```sql
+CREATE TABLE user_stock_alerts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  stock_symbol TEXT NOT NULL,
+  alert_type TEXT NOT NULL,
+  target_price REAL NOT NULL,
+  is_active INTEGER DEFAULT 1,
+  triggered_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Game Scores
+```sql
+CREATE TABLE user_game_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  game_type TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  game_data TEXT,
+  played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Util Settings
+```sql
+CREATE TABLE user_util_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  setting_key TEXT NOT NULL,
+  setting_value TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, setting_key),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Util History
+```sql
+CREATE TABLE user_util_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  util_type TEXT NOT NULL,
+  input_data TEXT NOT NULL,
+  result_data TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
 ## 스토리지 서비스
-- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정, 북마크 저장
+- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정, 북마크, **마이페이지 데이터 (8 테이블)** 저장
 - **로컬 개발**: `.wrangler/state/v3/d1` (자동 생성)
 - **외부 API**: Google News RSS (뉴스 데이터 소스)
 
@@ -956,6 +1101,29 @@ webapp/
     - news 테이블: ai_summary, sentiment, vote_up, vote_down, view_count 필드 추가
     - user_keywords 테이블: 사용자별 키워드 구독
     - news_votes 테이블: 사용자별 투표 기록
+- **2026-01-27**: 마이페이지 시스템 구현 완료 ✨NEW
+  - **Week 1 백엔드 API 구현 (25개 엔드포인트)**
+    - 데이터베이스 마이그레이션 (8개 테이블)
+    - 뉴스 관련 API (8개): 키워드 구독, 북마크, 읽음 처리
+    - 주식 관련 API (8개): 관심 종목, 주가 알림, 포트폴리오 통계
+    - 게임 관련 API (4개): 점수 저장, 통계, 히스토리, 리더보드
+    - 유틸리티 관련 API (5개): 설정 저장, 히스토리 관리
+  - **프런트엔드 UI 통합**
+    - 4개 섹션 사이드바 네비게이션 (뉴스/주식/게임/유틸)
+    - 비동기 데이터 로딩 (Axios)
+    - Tailwind CSS + FontAwesome 아이콘
+    - 실시간 API 데이터 표시
+  - **통합 테스트**
+    - 자동화 테스트 스크립트 (test_api_integration.sh)
+    - 11/12 테스트 통과 (91.7%)
+  - **버그 수정**
+    - 키워드별 뉴스 조회 API 수정 (keywords 컬럼 → summary 컬럼)
+    - JSON 직렬화 문제 해결
+  - **문서화**
+    - WEEK1_SUMMARY.md: Week 1 백엔드 완료 요약
+    - MYPAGE_IMPLEMENTATION_COMPLETE.md: 마이페이지 구현 완료
+    - API_FIX_SUMMARY.md: API 수정 내역
+    - FINAL_PROJECT_REPORT.md: 최종 프로젝트 보고서
 
 ## 🎨 Figma API 연동
 
