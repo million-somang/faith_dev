@@ -20374,381 +20374,434 @@ app.get('/api/mypage/login-history', async (c) => {
 })
 
 // ==================== 마이페이지 ====================
-app.get('/mypage', optionalAuth, (c) => {
-  const user = c.get('user')
-  
+app.get('/mypage', (c) => {
   return c.html(`
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>마이페이지 - Faith Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <style>
-        .section-active {
-            border-left-color: #0ea5e9;
-            background-color: #f0f9ff;
-            font-weight: 600;
-        }
-        .dark .section-active {
-            background-color: #1e293b;
-        }
-    </style>
-</head>
-<body class="bg-gray-50 min-h-screen">
-    
-    ${getCommonHeader()}
-    
-    <!-- 메인 컨테이너 -->
-    <div class="max-w-7xl mx-auto px-4 py-8">
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-user-circle mr-2"></i>마이페이지
-            </h1>
-            <p class="text-gray-600">나의 저장 항목과 활동 내역을 확인하세요</p>
-        </div>
-        
-        <!-- 레이아웃: 사이드바 + 컨텐츠 -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+    <!DOCTYPE html>
+    <html lang="ko" id="html-root">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>마이페이지 - Faith Portal</title>
+        <script>
+            // Tailwind CDN 경고 필터링 (개발 환경용)
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 경고 무시
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <style>
+            .faith-blue { background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%); }
+            .faith-blue-hover:hover { background: linear-gradient(135deg, #0284c7 0%, #0891b2 100%); }
             
-            <!-- 사이드바 -->
-            <div class="lg:col-span-1">
-                <div class="bg-white rounded-lg shadow-lg p-4 sticky top-4">
-                    <nav class="space-y-2">
-                        <button onclick="showSection('news')" id="nav-news" class="section-nav w-full text-left px-4 py-3 rounded-lg border-l-4 border-transparent hover:bg-gray-50 transition-all section-active">
-                            <i class="fas fa-newspaper mr-3 text-sky-500"></i>
-                            <span>뉴스</span>
+            /* 다크모드 스타일 */
+            .dark {
+                color-scheme: dark;
+            }
+            .dark body {
+                background: linear-gradient(to bottom right, #1e293b, #0f172a, #020617);
+            }
+            .dark .bg-white {
+                background-color: #1e293b !important;
+            }
+            .dark .text-gray-900 {
+                color: #f1f5f9 !important;
+            }
+            .dark .text-gray-800 {
+                color: #e2e8f0 !important;
+            }
+            .dark .text-gray-700 {
+                color: #cbd5e1 !important;
+            }
+            .dark .text-gray-600 {
+                color: #94a3b8 !important;
+            }
+            .dark .border-gray-200 {
+                border-color: #334155 !important;
+            }
+            .dark .bg-gray-50 {
+                background-color: #0f172a !important;
+            }
+            .dark .bg-gray-100 {
+                background-color: #1e293b !important;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 min-h-screen" id="html-root">
+        ${getCommonHeader()}
+        
+        ${getBreadcrumb([
+          {label: '홈', href: '/'},
+          {label: '마이페이지'}
+        ])}
+        
+        <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
+            <div class="mb-6">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">
+                    <i class="fas fa-user mr-2"></i>마이페이지
+                </h1>
+                <p class="text-gray-600 mt-2">내 정보 및 설정을 관리합니다</p>
+            </div>
+            
+            <!-- 탭 메뉴 -->
+            <div class="bg-white rounded-lg shadow-lg mb-6">
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-2 sm:space-x-4 px-4 sm:px-6 overflow-x-auto" aria-label="Tabs">
+                        <button id="tab-info" class="tab-button border-b-2 border-sky-500 text-sky-600 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-user mr-1 sm:mr-2"></i>내 정보
                         </button>
-                        <button onclick="showSection('stocks')" id="nav-stocks" class="section-nav w-full text-left px-4 py-3 rounded-lg border-l-4 border-transparent hover:bg-gray-50 transition-all">
-                            <i class="fas fa-chart-line mr-3 text-green-500"></i>
-                            <span>주식</span>
+                        <button id="tab-dday" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-heart mr-1 sm:mr-2"></i>D-Day
                         </button>
-                        <button onclick="showSection('games')" id="nav-games" class="section-nav w-full text-left px-4 py-3 rounded-lg border-l-4 border-transparent hover:bg-gray-50 transition-all">
-                            <i class="fas fa-gamepad mr-3 text-purple-500"></i>
-                            <span>게임</span>
+                        <button id="tab-history" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-history mr-1 sm:mr-2"></i>로그인 기록
                         </button>
-                        <button onclick="showSection('utils')" id="nav-utils" class="section-nav w-full text-left px-4 py-3 rounded-lg border-l-4 border-transparent hover:bg-gray-50 transition-all">
-                            <i class="fas fa-tools mr-3 text-orange-500"></i>
-                            <span>유틸리티</span>
+                        <button id="tab-settings" class="tab-button border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 text-xs sm:text-sm font-medium whitespace-nowrap">
+                            <i class="fas fa-cog mr-1 sm:mr-2"></i>설정
                         </button>
                     </nav>
                 </div>
-            </div>
-            
-            <!-- 메인 컨텐츠 -->
-            <div class="lg:col-span-3">
                 
-                <!-- 뉴스 섹션 -->
-                <div id="section-news" class="section-content">
-                    <div class="bg-white rounded-lg shadow-lg p-6">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-                            <i class="fas fa-newspaper mr-2 text-sky-500"></i>뉴스
-                        </h2>
-                        
-                        <!-- 구독 키워드 -->
-                        <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">구독 키워드</h3>
-                            <div id="keywords-list" class="flex flex-wrap gap-2">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
+                <!-- 탭 콘텐츠 -->
+                <div class="p-4 sm:p-6">
+                    <!-- 내 정보 탭 -->
+                    <div id="content-info" class="tab-content">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">이메일</p>
+                                    <p id="user-email" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-envelope text-2xl text-gray-400"></i>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">회원 레벨</p>
+                                    <p id="user-level" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-star text-2xl text-gray-400"></i>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-gray-600">가입일</p>
+                                    <p id="user-created" class="text-lg font-medium text-gray-900">-</p>
+                                </div>
+                                <i class="fas fa-calendar text-2xl text-gray-400"></i>
                             </div>
                         </div>
-                        
-                        <!-- 북마크 -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">북마크한 뉴스</h3>
-                            <div id="bookmarks-list" class="space-y-4">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
+                    </div>
+                    
+                    <!-- D-Day 탭 -->
+                    <div id="content-dday" class="tab-content hidden">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">나의 D-Day</h3>
+                                <p class="text-sm text-gray-600">등록한 D-Day 목록입니다</p>
+                            </div>
+                            <a href="/lifestyle/dday-calculator" class="faith-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm">
+                                <i class="fas fa-plus mr-1"></i>새로 만들기
+                            </a>
+                        </div>
+                        <div id="dday-list-container" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>D-Day 목록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 로그인 기록 탭 -->
+                    <div id="content-history" class="tab-content hidden">
+                        <div class="mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">최근 로그인 기록</h3>
+                            <p class="text-sm text-gray-600">최근 50개의 로그인 기록을 표시합니다</p>
+                        </div>
+                        <div id="login-history-list" class="space-y-3">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>로그인 기록을 불러오는 중...</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 설정 탭 -->
+                    <div id="content-settings" class="tab-content hidden">
+                        <div class="space-y-6">
+                            <!-- 다크모드 설정 -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">
+                                            <i class="fas fa-moon mr-2"></i>다크모드
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mt-1">어두운 테마를 사용합니다</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-sky-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- 북마크 바로가기 -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-medium text-gray-900">
+                                            <i class="fas fa-bookmark mr-2"></i>북마크
+                                        </h3>
+                                        <p class="text-sm text-gray-600 mt-1">저장한 뉴스를 확인합니다</p>
+                                    </div>
+                                    <a href="/bookmarks" class="faith-blue text-white px-4 py-2 rounded-lg hover:opacity-90 transition-all">
+                                        바로가기 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 주식 섹션 -->
-                <div id="section-stocks" class="section-content hidden">
-                    <div class="bg-white rounded-lg shadow-lg p-6">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-                            <i class="fas fa-chart-line mr-2 text-green-500"></i>주식
-                        </h2>
-                        
-                        <!-- 포트폴리오 통계 -->
-                        <div class="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-                                <div class="text-sm opacity-90 mb-1">총 종목 수</div>
-                                <div class="text-3xl font-bold" id="total-stocks">-</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-4 text-white">
-                                <div class="text-sm opacity-90 mb-1">미국 주식</div>
-                                <div class="text-3xl font-bold" id="us-stocks">-</div>
-                            </div>
-                            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-                                <div class="text-sm opacity-90 mb-1">한국 주식</div>
-                                <div class="text-3xl font-bold" id="kr-stocks">-</div>
-                            </div>
-                        </div>
-                        
-                        <!-- 관심 종목 -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">관심 종목</h3>
-                            <div id="watchlist" class="space-y-3">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 게임 섹션 -->
-                <div id="section-games" class="section-content hidden">
-                    <div class="bg-white rounded-lg shadow-lg p-6">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-                            <i class="fas fa-gamepad mr-2 text-purple-500"></i>게임
-                        </h2>
-                        
-                        <!-- 게임 통계 -->
-                        <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">게임 통계</h3>
-                            <div id="game-stats" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="text-gray-500 text-sm">게임 기록이 없습니다</div>
-                            </div>
-                        </div>
-                        
-                        <!-- 최근 플레이 -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">최근 플레이</h3>
-                            <div id="game-history" class="space-y-3">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 유틸리티 섹션 -->
-                <div id="section-utils" class="section-content hidden">
-                    <div class="bg-white rounded-lg shadow-lg p-6">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-6">
-                            <i class="fas fa-tools mr-2 text-orange-500"></i>유틸리티
-                        </h2>
-                        
-                        <!-- 저장된 설정 -->
-                        <div class="mb-8">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">저장된 설정</h3>
-                            <div id="util-settings" class="space-y-3">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
-                            </div>
-                        </div>
-                        
-                        <!-- 사용 히스토리 -->
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">사용 히스토리</h3>
-                            <div id="util-history" class="space-y-3">
-                                <div class="text-gray-500 text-sm">로딩 중...</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
             </div>
         </div>
-    </div>
-    
-    <script>
-        // 섹션 전환
-        function showSection(sectionName) {
-            document.querySelectorAll('.section-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.section-nav').forEach(el => el.classList.remove('section-active'));
+        
+        ${getCommonFooter()}
+        ${getCommonAuthScript()}
+        
+        <script>
+            // 로그인 체크
+            const token = localStorage.getItem('auth_token');
+            const userId = localStorage.getItem('user_id');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = localStorage.getItem('user_level');
             
-            document.getElementById(\`section-\${sectionName}\`).classList.remove('hidden');
-            document.getElementById(\`nav-\${sectionName}\`).classList.add('section-active');
+            if (!token || !userId) {
+                alert('로그인이 필요합니다.');
+                window.location.href = '/login';
+            }
             
-            loadSectionData(sectionName);
-        }
-        
-        async function loadSectionData(sectionName) {
-            switch(sectionName) {
-                case 'news': await loadNewsData(); break;
-                case 'stocks': await loadStocksData(); break;
-                case 'games': await loadGamesData(); break;
-                case 'utils': await loadUtilsData(); break;
-            }
-        }
-        
-        async function loadNewsData() {
-            try {
-                const keywordsRes = await axios.get('/api/user/keywords');
-                const keywords = keywordsRes.data.keywords || [];
-                
-                const keywordsList = document.getElementById('keywords-list');
-                if (keywords.length > 0) {
-                    keywordsList.innerHTML = keywords.map(kw => \`
-                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-sky-100 text-sky-800 text-sm">
-                            <i class="fas fa-tag mr-1"></i>\${kw.keyword}
-                        </span>
-                    \`).join('');
-                } else {
-                    keywordsList.innerHTML = '<div class="text-gray-500 text-sm">구독 중인 키워드가 없습니다</div>';
-                }
-                
-                const bookmarksRes = await axios.get('/api/user/bookmarks?page=1&limit=10');
-                const bookmarks = bookmarksRes.data.bookmarks || [];
-                
-                const bookmarksList = document.getElementById('bookmarks-list');
-                if (bookmarks.length > 0) {
-                    bookmarksList.innerHTML = bookmarks.map(bm => \`
-                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <h4 class="font-semibold text-gray-900 mb-2">\${bm.title}</h4>
-                            <div class="text-sm text-gray-500">
-                                <span class="inline-block px-2 py-1 bg-gray-100 rounded text-xs mr-2">\${bm.category}</span>
-                                \${new Date(bm.bookmarked_at).toLocaleDateString('ko-KR')}
-                            </div>
-                        </div>
-                    \`).join('');
-                } else {
-                    bookmarksList.innerHTML = '<div class="text-gray-500 text-sm">북마크한 뉴스가 없습니다</div>';
-                }
-            } catch (error) {
-                console.error('뉴스 데이터 로드 실패:', error);
-            }
-        }
-        
-        async function loadStocksData() {
-            try {
-                const statsRes = await axios.get('/api/user/watchlist/stats');
-                const stats = statsRes.data.stats || {};
-                
-                document.getElementById('total-stocks').textContent = stats.total_stocks || 0;
-                document.getElementById('us-stocks').textContent = stats.market_distribution?.US || 0;
-                document.getElementById('kr-stocks').textContent = stats.market_distribution?.KR || 0;
-                
-                const watchlistRes = await axios.get('/api/user/watchlist');
-                const stocks = watchlistRes.data.stocks || [];
-                
-                const watchlist = document.getElementById('watchlist');
-                if (stocks.length > 0) {
-                    watchlist.innerHTML = stocks.map(stock => \`
-                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-semibold text-gray-900">\${stock.stock_name}</h4>
-                                    <div class="text-sm text-gray-500 mt-1">\${stock.stock_symbol}</div>
+            // 사용자 정보 표시
+            document.getElementById('user-email').textContent = userEmail || '-';
+            document.getElementById('user-level').textContent = 'Lv.' + (userLevel || '0');
+            
+            // 탭 전환
+            const tabs = document.querySelectorAll('.tab-button');
+            const contents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // 모든 탭 비활성화
+                    tabs.forEach(t => {
+                        t.classList.remove('border-sky-500', 'text-sky-600');
+                        t.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // 클릭된 탭 활성화
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    this.classList.add('border-sky-500', 'text-sky-600');
+                    
+                    // 모든 콘텐츠 숨기기
+                    contents.forEach(c => c.classList.add('hidden'));
+                    
+                    // 해당 콘텐츠 표시
+                    const tabId = this.id.replace('tab-', '');
+                    document.getElementById('content-' + tabId).classList.remove('hidden');
+                    
+                    // 로그인 기록 탭이면 데이터 로드
+                    if (tabId === 'history') {
+                        loadLoginHistory();
+                    }
+                    // D-Day 탭이면 데이터 로드
+                    if (tabId === 'dday') {
+                        loadDdayList();
+                    }
+                });
+            });
+            
+            // 로그인 기록 로드
+            async function loadLoginHistory() {
+                try {
+                    const response = await axios.get('/api/mypage/login-history?userId=' + userId);
+                    
+                    if (response.data.success) {
+                        const history = response.data.history;
+                        const listEl = document.getElementById('login-history-list');
+                        
+                        if (history.length === 0) {
+                            listEl.innerHTML = '<div class="text-center py-8 text-gray-500"><p>로그인 기록이 없습니다.</p></div>';
+                            return;
+                        }
+                        
+                        listEl.innerHTML = history.map(item => {
+                            const date = new Date(item.login_time);
+                            const dateStr = date.toLocaleString('ko-KR');
+                            const ua = item.user_agent || 'unknown';
+                            const browser = getBrowserInfo(ua);
+                            
+                            return \`
+                                <div class="flex items-start p-4 bg-gray-50 rounded-lg">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-\${browser.icon} text-2xl text-gray-400"></i>
+                                    </div>
+                                    <div class="ml-4 flex-1">
+                                        <p class="text-sm font-medium text-gray-900">\${dateStr}</p>
+                                        <p class="text-xs text-gray-600 mt-1">IP: \${item.ip_address}</p>
+                                        <p class="text-xs text-gray-600">기기: \${browser.name}</p>
+                                    </div>
                                 </div>
-                                <span class="px-2 py-1 rounded text-xs \${stock.market_type === 'US' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}">
-                                    \${stock.market_type}
-                                </span>
-                            </div>
-                            \${stock.memo ? \`<div class="text-sm text-gray-600 mt-2">\${stock.memo}</div>\` : ''}
-                            \${stock.target_price ? \`<div class="text-sm text-gray-500 mt-2">목표가: \${stock.target_price.toLocaleString()}\${stock.market_type === 'KR' ? '원' : '$'}</div>\` : ''}
-                        </div>
-                    \`).join('');
-                } else {
-                    watchlist.innerHTML = '<div class="text-gray-500 text-sm">관심 종목이 없습니다</div>';
+                            \`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('로그인 기록 로드 오류:', error);
+                    document.getElementById('login-history-list').innerHTML = 
+                        '<div class="text-center py-8 text-red-500"><p>로그인 기록을 불러오는데 실패했습니다.</p></div>';
                 }
-            } catch (error) {
-                console.error('주식 데이터 로드 실패:', error);
             }
-        }
-        
-        async function loadGamesData() {
-            try {
-                const statsRes = await axios.get('/api/user/games/stats');
-                const stats = statsRes.data.stats || {};
-                
-                const gameStats = document.getElementById('game-stats');
-                const statsKeys = Object.keys(stats);
-                
-                if (statsKeys.length > 0) {
-                    gameStats.innerHTML = statsKeys.map(gameType => {
-                        const stat = stats[gameType];
-                        return \`
-                            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-                                <div class="text-sm opacity-90 mb-1">\${gameType}</div>
-                                <div class="text-2xl font-bold mb-2">\${stat.best_score}</div>
-                                <div class="text-xs opacity-80">플레이: \${stat.play_count}회</div>
-                            </div>
-                        \`;
-                    }).join('');
-                } else {
-                    gameStats.innerHTML = '<div class="text-gray-500 text-sm col-span-2">게임 기록이 없습니다</div>';
-                }
-                
-                const historyRes = await axios.get('/api/user/games/history?limit=10');
-                const history = historyRes.data.history?.history || [];
-                
-                const gameHistory = document.getElementById('game-history');
-                if (history.length > 0) {
-                    gameHistory.innerHTML = history.map(game => \`
-                        <div class="border border-gray-200 rounded-lg p-4">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h4 class="font-semibold text-gray-900">\${game.game_type}</h4>
-                                    <div class="text-2xl font-bold text-purple-600 mt-1">\${game.score}점</div>
+            
+            // D-Day 목록 로드
+            async function loadDdayList() {
+                try {
+                    const response = await axios.get('/api/dday/list');
+                    
+                    if (response.data.success) {
+                        const ddays = response.data.ddays;
+                        const listEl = document.getElementById('dday-list-container');
+                        
+                        if (ddays.length === 0) {
+                            listEl.innerHTML = \`
+                                <div class="text-center py-12">
+                                    <div class="text-6xl mb-4">📅</div>
+                                    <h3 class="text-xl font-bold text-gray-800 mb-2">등록된 D-Day가 없습니다</h3>
+                                    <p class="text-gray-600 mb-4">새로운 D-Day를 만들어보세요!</p>
+                                    <a href="/lifestyle/dday-calculator" class="inline-block faith-blue text-white px-6 py-3 rounded-lg hover:opacity-90 transition-all">
+                                        <i class="fas fa-plus mr-2"></i>D-Day 만들기
+                                    </a>
                                 </div>
-                                <div class="text-sm text-gray-500">\${new Date(game.played_at).toLocaleDateString('ko-KR')}</div>
-                            </div>
-                        </div>
-                    \`).join('');
-                } else {
-                    gameHistory.innerHTML = '<div class="text-gray-500 text-sm">플레이 기록이 없습니다</div>';
+                            \`;
+                            return;
+                        }
+                        
+                        listEl.innerHTML = ddays.map(dday => {
+                            const ddayText = calculateDday(dday.target_date, dday.mode, dday.is_anniversary);
+                            const colorStyle = getColorGradient(dday.color);
+                            
+                            return \`
+                                <div class="rounded-xl shadow-lg p-5 hover:shadow-xl transition-all" style="\${colorStyle}">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-4xl">\${dday.emoji}</span>
+                                            <div class="text-white">
+                                                <h3 class="font-bold text-lg">\${dday.title}</h3>
+                                                <p class="text-sm opacity-90">\${new Date(dday.target_date).toLocaleDateString('ko-KR')}</p>
+                                            </div>
+                                        </div>
+                                        <button onclick="deleteDdayFromMypage(\${dday.id})" class="text-white opacity-70 hover:opacity-100 transition">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                                        <div class="text-4xl font-bold text-white">\${ddayText}</div>
+                                    </div>
+                                </div>
+                            \`;
+                        }).join('');
+                    }
+                } catch (error) {
+                    console.error('D-Day 목록 로드 오류:', error);
+                    document.getElementById('dday-list-container').innerHTML = 
+                        '<div class="text-center py-8 text-red-500"><p>D-Day 목록을 불러오는데 실패했습니다.</p></div>';
                 }
-            } catch (error) {
-                console.error('게임 데이터 로드 실패:', error);
             }
-        }
-        
-        async function loadUtilsData() {
-            try {
-                const settingsRes = await axios.get('/api/user/utils/settings');
-                const settings = settingsRes.data.settings || {};
+            
+            // D-Day 계산
+            function calculateDday(targetDate, mode, isAnniversary) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
                 
-                const utilSettings = document.getElementById('util-settings');
-                const settingsKeys = Object.keys(settings);
+                const target = new Date(targetDate);
+                target.setHours(0, 0, 0, 0);
                 
-                if (settingsKeys.length > 0) {
-                    utilSettings.innerHTML = settingsKeys.map(utilType => \`
-                        <div class="border border-gray-200 rounded-lg p-4">
-                            <h4 class="font-semibold text-gray-900 mb-2">\${utilType}</h4>
-                            <pre class="text-sm text-gray-600 bg-gray-50 p-2 rounded overflow-x-auto">\${JSON.stringify(settings[utilType], null, 2)}</pre>
-                        </div>
-                    \`).join('');
+                const diffTime = target - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                
+                if (mode === 'countdown') {
+                    if (diffDays === 0) return 'D-Day';
+                    if (diffDays > 0) return 'D-' + diffDays;
+                    return 'D+' + Math.abs(diffDays);
+                } else if (mode === 'countup') {
+                    const days = Math.abs(diffDays) + (isAnniversary ? 1 : 0);
+                    return days + '일째';
                 } else {
-                    utilSettings.innerHTML = '<div class="text-gray-500 text-sm">저장된 설정이 없습니다</div>';
+                    return target.toLocaleDateString('ko-KR');
                 }
-                
-                const historyRes = await axios.get('/api/user/utils/history?limit=10');
-                const history = historyRes.data.history || [];
-                
-                const utilHistory = document.getElementById('util-history');
-                if (history.length > 0) {
-                    utilHistory.innerHTML = history.map(item => \`
-                        <div class="border border-gray-200 rounded-lg p-4">
-                            <div class="flex justify-between items-start mb-2">
-                                <h4 class="font-semibold text-gray-900">\${item.util_type}</h4>
-                                <div class="text-sm text-gray-500">\${new Date(item.created_at).toLocaleDateString('ko-KR')}</div>
-                            </div>
-                            <div class="text-sm text-gray-600">
-                                <div class="mb-1"><strong>입력:</strong> \${JSON.stringify(item.input_data)}</div>
-                                \${item.result_data ? \`<div><strong>결과:</strong> \${JSON.stringify(item.result_data)}</div>\` : ''}
-                            </div>
-                        </div>
-                    \`).join('');
-                } else {
-                    utilHistory.innerHTML = '<div class="text-gray-500 text-sm">사용 기록이 없습니다</div>';
-                }
-            } catch (error) {
-                console.error('유틸리티 데이터 로드 실패:', error);
             }
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            showSection('news');
-        });
-    </script>
-</body>
-</html>
+            
+            // 색상 그라디언트
+            function getColorGradient(color) {
+                const gradients = {
+                    '#667eea': 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);',
+                    '#f093fb': 'background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);',
+                    '#4facfe': 'background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);',
+                    '#43e97b': 'background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);',
+                    '#fa709a': 'background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);'
+                };
+                return gradients[color] || gradients['#667eea'];
+            }
+            
+            // D-Day 삭제
+            async function deleteDdayFromMypage(id) {
+                if (!confirm('정말 삭제하시겠습니까?')) return;
+                
+                try {
+                    const response = await axios.delete('/api/dday/' + id);
+                    if (response.data.success) {
+                        alert('삭제되었습니다.');
+                        loadDdayList();
+                    }
+                } catch (error) {
+                    console.error('D-Day 삭제 오류:', error);
+                    alert('삭제에 실패했습니다.');
+                }
+            }
+            
+            // 브라우저 정보 파싱
+            function getBrowserInfo(ua) {
+                if (ua.includes('Chrome')) return { name: 'Chrome', icon: 'chrome' };
+                if (ua.includes('Firefox')) return { name: 'Firefox', icon: 'firefox' };
+                if (ua.includes('Safari')) return { name: 'Safari', icon: 'safari' };
+                if (ua.includes('Edge')) return { name: 'Edge', icon: 'edge' };
+                return { name: 'Unknown', icon: 'globe' };
+            }
+            
+            // 다크모드 토글
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            const isDark = localStorage.getItem('darkMode') === 'true';
+            darkModeToggle.checked = isDark;
+            
+            darkModeToggle.addEventListener('change', function() {
+                const htmlRoot = document.getElementById('html-root');
+                const isDarkMode = this.checked;
+                
+                if (isDarkMode) {
+                    htmlRoot.classList.add('dark');
+                } else {
+                    htmlRoot.classList.remove('dark');
+                }
+                
+                localStorage.setItem('darkMode', isDarkMode);
+            });
+        </script>
+    </body>
+    </html>
   `)
 })
-
 
 // ==================== 스마트 한국 나이 계산기 ====================
 app.get('/lifestyle/age-calculator', (c) => {
