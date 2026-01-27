@@ -5996,18 +5996,29 @@ app.post('/api/2048/score', requireAuth, async (c) => {
   const user = c.get('user') as SessionUser
   const { score, max_tile } = await c.req.json()
   
+  console.log('🎮 [2048] 점수 저장 요청:', { user_id: user.id, score, max_tile })
+  
   try {
+    // 1. game2048_scores 테이블에 저장 (리더보드용)
     await DB.prepare(`
       INSERT INTO game2048_scores (user_id, score, max_tile, created_at)
       VALUES (?, ?, ?, datetime('now'))
     `).bind(user.id, score, max_tile).run()
     
+    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+    const gameData = JSON.stringify({ max_tile: max_tile || 0 })
+    await DB.prepare(`
+      INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(user.id, '2048', score, gameData).run()
+    
+    console.log('✅ [2048] 점수 저장 완료')
     return c.json({
       success: true,
       message: '기록이 저장되었습니다'
     })
   } catch (error: any) {
-    console.error('2048 점수 저장 오류:', error)
+    console.error('❌ [2048] 점수 저장 오류:', error)
     return c.json({
       success: false,
       message: '기록 저장 중 오류가 발생했습니다'
@@ -6054,37 +6065,75 @@ app.post('/api/minesweeper/score', async (c) => {
   const { DB } = c.env
   const { difficulty, time } = await c.req.json()
   
-  // 쿠키에서 사용자 정보 가져오기
-  const authCookie = c.req.header('Cookie')
+  // 쿠키에서 사용자 정보 가져오기 (스도쿠와 동일한 방식)
+  const cookieHeader = c.req.header('Cookie')
   let userId = null
+  let sessionId = null
   
-  if (authCookie) {
-    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+  console.log('🎮 [지뢰찾기] 점수 저장 요청:', { difficulty, time })
+  console.log('🍪 [지뢰찾기] 쿠키 헤더:', cookieHeader)
+  
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=')
       acc[key] = value
       return acc
     }, {} as Record<string, string>)
     
-    if (cookies.user_id) {
-      userId = decodeURIComponent(cookies.user_id)
+    sessionId = cookies.session_id
+    console.log('🔑 [지뢰찾기] 세션 ID:', sessionId)
+  }
+  
+  // 세션에서 사용자 ID 조회
+  if (sessionId) {
+    const session = await DB.prepare(`
+      SELECT user_id FROM sessions WHERE session_id = ? AND expires_at > datetime('now')
+    `).bind(sessionId).first() as any
+    
+    if (session) {
+      userId = session.user_id
+      console.log('✅ [지뢰찾기] 사용자 인증 성공:', userId)
+    } else {
+      console.warn('⚠️ [지뢰찾기] 세션 없음 또는 만료')
     }
   }
   
+  if (!userId) {
+    console.warn('⚠️ [지뢰찾기] 로그인 필요')
+    return c.json({
+      success: false,
+      message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
+      requireLogin: true
+    }, 401)
+  }
+  
   try {
+    // 1. minesweeper_scores 테이블에 저장 (리더보드용)
     await DB.prepare(`
       INSERT INTO minesweeper_scores (user_id, difficulty, time, created_at)
       VALUES (?, ?, ?, datetime('now'))
     `).bind(userId, difficulty, time).run()
     
+    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+    // 지뢰찾기는 시간이 짧을수록 좋으므로 점수 계산: 10000 - (time * 10)
+    const score = Math.max(0, 10000 - (time * 10))
+    const gameData = JSON.stringify({ difficulty, time })
+    await DB.prepare(`
+      INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(userId, 'minesweeper', score, gameData).run()
+    
+    console.log('✅ [지뢰찾기] 점수 저장 완료:', { userId, difficulty, time, score })
     return c.json({
       success: true,
-      message: '기록이 저장되었습니다'
+      message: '기록이 저장되었습니다',
+      score
     })
   } catch (error: any) {
-    console.error('지뢰찾기 점수 저장 오류:', error)
+    console.error('❌ [지뢰찾기] 점수 저장 오류:', error)
     return c.json({
       success: false,
-      message: '기록 저장 중 오류가 발생했습니다'
+      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
     }, 500)
   }
 })
@@ -14505,20 +14554,30 @@ app.get('/bookmarks', (c) => {
 // ==================== API: 테트리스 최고 점수 저장 ====================
 app.post('/api/tetris/score', async (c) => {
   try {
-    const { user_id, score } = await c.req.json()
+    const { user_id, score, lines, level } = await c.req.json()
     
     if (!user_id || score === undefined) {
       return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
     }
     
-    // 점수 저장
+    console.log('🎮 [테트리스] 점수 저장 요청:', { user_id, score, lines, level })
+    
+    // 1. tetris_scores 테이블에 저장 (리더보드용)
     await c.env.DB.prepare(
       'INSERT INTO tetris_scores (user_id, score) VALUES (?, ?)'
     ).bind(user_id, score).run()
     
+    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+    const gameData = JSON.stringify({ lines: lines || 0, level: level || 1 })
+    await c.env.DB.prepare(`
+      INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(user_id, 'tetris', score, gameData).run()
+    
+    console.log('✅ [테트리스] 점수 저장 완료')
     return c.json({ success: true, message: '점수가 저장되었습니다.' })
   } catch (error) {
-    console.error('테트리스 점수 저장 오류:', error)
+    console.error('❌ [테트리스] 점수 저장 오류:', error)
     return c.json({ success: false, message: '점수 저장 중 오류가 발생했습니다.' }, 500)
   }
 })
