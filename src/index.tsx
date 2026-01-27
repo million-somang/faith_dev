@@ -4000,11 +4000,18 @@ app.get('/game/simple/sudoku/play', (c) => {
             }
             
             async function saveScore() {
-                console.log('🎯 Saving score...');
+                console.log('🎯 [프론트] Saving score...');
+                console.log('📊 [프론트] 현재 난이도:', difficulty);
+                console.log('⏱️ [프론트] 소요 시간:', getElapsedTime());
+                console.log('❌ [프론트] 실수 횟수:', mistakes);
                 
                 const elapsed = getElapsedTime();
                 
+                // 현재 쿠키 확인
+                console.log('🍪 [프론트] 현재 쿠키:', document.cookie);
+                
                 try {
+                    console.log('🌐 [프론트] API 요청 시작...');
                     const response = await fetch('/api/sudoku/score', {
                         method: 'POST',
                         headers: {
@@ -4018,16 +4025,22 @@ app.get('/game/simple/sudoku/play', (c) => {
                         })
                     });
                     
+                    console.log('📡 [프론트] 응답 상태:', response.status, response.statusText);
+                    
                     const data = await response.json();
+                    console.log('📦 [프론트] 응답 데이터:', data);
                     
                     if (data.success) {
+                        console.log('✅ [프론트] 점수 저장 성공!');
                         alert('기록이 저장되었습니다!');
                         document.getElementById('success-modal').classList.remove('active');
                         // 리더보드가 있으면 새로고침
                         window.location.reload();
                     } else {
+                        console.log('❌ [프론트] 점수 저장 실패:', data.message);
                         if (data.requireLogin) {
                             alert('로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.');
+                            console.log('🔐 [프론트] 로그인 필요 - 로그인 페이지로 이동 제안');
                             // 로그인 페이지로 이동할지 물어보기
                             if (confirm('로그인 페이지로 이동하시겠습니까?')) {
                                 window.location.href = '/auth/login';
@@ -4037,7 +4050,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                         }
                     }
                 } catch (error) {
-                    console.error('기록 저장 오류:', error);
+                    console.error('💥 [프론트] 기록 저장 오류:', error);
                     alert('기록 저장에 실패했습니다.');
                 }
             }
@@ -5035,35 +5048,67 @@ app.post('/api/sudoku/score', async (c) => {
   const { DB } = c.env
   const { difficulty, time, mistakes } = await c.req.json()
   
-  // 쿠키에서 사용자 정보 가져오기
-  const authCookie = c.req.header('Cookie')
+  console.log('🎯 [스도쿠 점수 저장] API 호출됨')
+  console.log('📦 [스도쿠] 받은 데이터:', { difficulty, time, mistakes })
+  
+  // 세션에서 사용자 정보 가져오기
+  const cookieHeader = c.req.header('Cookie')
+  console.log('🍪 [스도쿠] Cookie 헤더:', cookieHeader)
+  
   let userId = null
   let username = 'Anonymous'
   
-  if (authCookie) {
-    const cookies = authCookie.split(';').reduce((acc, cookie) => {
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=')
       acc[key] = value
       return acc
     }, {} as Record<string, string>)
     
-    if (cookies.user_id) {
-      userId = decodeURIComponent(cookies.user_id)
-      
+    console.log('🍪 [스도쿠] 파싱된 쿠키:', Object.keys(cookies))
+    
+    const sessionId = cookies.session_id
+    console.log('🔑 [스도쿠] Session ID:', sessionId ? '존재함' : '없음')
+    
+    if (sessionId) {
       try {
-        // 사용자 정보 조회
-        const user = await DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(userId).first()
-        if (user) {
-          username = (user.name as string) || (user.email as string) || 'Anonymous'
+        // 세션에서 사용자 ID 조회
+        const session = await DB.prepare(`
+          SELECT user_id FROM sessions 
+          WHERE session_id = ? AND expires_at > datetime('now')
+        `).bind(sessionId).first() as { user_id: number } | null
+        
+        console.log('👤 [스도쿠] 세션 조회 결과:', session)
+        
+        if (session) {
+          userId = session.user_id
+          
+          // 사용자 정보 조회
+          const user = await DB.prepare('SELECT id, email, name FROM users WHERE id = ?')
+            .bind(userId).first() as { id: number, email: string, name: string } | null
+          
+          console.log('👤 [스도쿠] 사용자 정보:', user)
+          
+          if (user) {
+            username = user.name || user.email || 'Anonymous'
+            console.log('✅ [스도쿠] 사용자 인증 성공:', { userId, username })
+          }
+        } else {
+          console.log('❌ [스도쿠] 세션이 만료되었거나 존재하지 않음')
         }
       } catch (e) {
-        console.log('사용자 조회 실패:', e)
+        console.error('❌ [스도쿠] 세션/사용자 조회 실패:', e)
       }
+    } else {
+      console.log('⚠️ [스도쿠] session_id 쿠키가 없음')
     }
+  } else {
+    console.log('⚠️ [스도쿠] Cookie 헤더가 없음')
   }
   
   // 로그인 안 된 경우 점수 저장 거부
   if (!userId) {
+    console.log('❌ [스도쿠] 로그인되지 않음 - 점수 저장 거부')
     return c.json({
       success: false,
       message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
