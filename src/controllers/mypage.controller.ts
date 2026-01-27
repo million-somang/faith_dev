@@ -444,4 +444,250 @@ export class MyPageController {
       throw error
     }
   }
+
+  // ============================================
+  // 게임 관련 핸들러
+  // ============================================
+
+  static async saveGameScore(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const { game_type, score, metadata } = await c.req.json()
+
+      if (!game_type || score === undefined) {
+        throw new AppError('game_type과 score는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      const rankInfo = await service.saveGameScore(
+        user.id,
+        game_type,
+        score,
+        metadata  // Service will JSON.stringify
+      )
+
+      logger.info('Game score saved', { userId: user.id, gameType: game_type, score })
+
+      return c.json({
+        success: true,
+        message: '게임 점수가 저장되었습니다',
+        rank: rankInfo.rank,
+        percentile: rankInfo.percentile
+      })
+    } catch (error) {
+      logger.error('Failed to save game score', error)
+      throw error
+    }
+  }
+
+  static async getGameStats(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const gameType = c.req.query('game_type')
+
+      const service = new MyPageService(c.env.DB)
+      const stats = await service.getGameStats(user.id, gameType)
+
+      return c.json({
+        success: true,
+        stats
+      })
+    } catch (error) {
+      logger.error('Failed to get game stats', error)
+      throw error
+    }
+  }
+
+  static async getGameHistory(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const gameType = c.req.query('game_type')
+      const limit = parseInt(c.req.query('limit') || '20')
+
+      const service = new MyPageService(c.env.DB)
+      const history = await service.getGameHistory(user.id, gameType, limit)
+
+      return c.json({
+        success: true,
+        game_type: gameType,
+        history
+      })
+    } catch (error) {
+      logger.error('Failed to get game history', error)
+      throw error
+    }
+  }
+
+  static async getGameLeaderboard(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const gameType = c.req.query('game_type')
+      if (!gameType) {
+        throw new AppError('game_type은 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const limit = parseInt(c.req.query('limit') || '100')
+
+      const service = new MyPageService(c.env.DB)
+      const leaderboard = await service.getGameLeaderboard(gameType, limit)
+
+      return c.json({
+        success: true,
+        game_type: gameType,
+        leaderboard
+      })
+    } catch (error) {
+      logger.error('Failed to get game leaderboard', error)
+      throw error
+    }
+  }
+
+  // ============================================
+  // 유틸 관련 핸들러
+  // ============================================
+
+  static async saveUtilSetting(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const { util_type, settings } = await c.req.json()
+
+      if (!util_type || !settings) {
+        throw new AppError('util_type과 settings는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.saveUtilSetting(
+        user.id,
+        util_type,  // settingKey
+        settings    // settingValue (will be JSON.stringified in service)
+      )
+
+      logger.info('Util setting saved', { userId: user.id, utilType: util_type })
+
+      return c.json({
+        success: true,
+        message: '설정이 저장되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to save util setting', error)
+      throw error
+    }
+  }
+
+  static async getUtilSettings(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      const settings = await service.getUtilSettings(user.id)
+
+      return c.json({
+        success: true,
+        settings
+      })
+    } catch (error) {
+      logger.error('Failed to get util settings', error)
+      throw error
+    }
+  }
+
+  static async saveUtilHistory(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const { util_type, input_data, result_data } = await c.req.json()
+
+      if (!util_type || !input_data) {
+        throw new AppError('util_type과 input_data는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.saveUtilHistory(
+        user.id,
+        util_type,
+        input_data,    // Already an object, service will JSON.stringify
+        result_data    // Already an object, service will JSON.stringify
+      )
+
+      logger.info('Util history saved', { userId: user.id, utilType: util_type })
+
+      return c.json({
+        success: true,
+        message: '히스토리가 저장되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to save util history', error)
+      throw error
+    }
+  }
+
+  static async getUtilHistory(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const utilType = c.req.query('util_type')
+      const page = parseInt(c.req.query('page') || '1')
+      const limit = parseInt(c.req.query('limit') || '20')
+
+      const service = new MyPageService(c.env.DB)
+      const result = await service.getUtilHistory(user.id, utilType, page, limit)
+
+      return c.json({
+        success: true,
+        util_type: utilType,
+        ...result  // Contains history and total
+      })
+    } catch (error) {
+      logger.error('Failed to get util history', error)
+      throw error
+    }
+  }
+
+  static async deleteUtilHistory(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const historyId = parseInt(c.req.param('historyId'))
+
+      const service = new MyPageService(c.env.DB)
+      await service.deleteUtilHistory(user.id, historyId)
+
+      logger.info('Util history deleted', { userId: user.id, historyId })
+
+      return c.json({
+        success: true,
+        message: '히스토리가 삭제되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to delete util history', error)
+      throw error
+    }
+  }
 }

@@ -24480,4 +24480,21 @@ app.delete('/api/user/watchlist/alerts/:alertId', requireAuth, MyPageController.
 // 포트폴리오 통계
 app.get('/api/user/watchlist/stats', requireAuth, MyPageController.getWatchlistStats)
 
+// ============================================
+// 게임 관련 API
+// ============================================
+app.post('/api/user/games/scores', requireAuth, MyPageController.saveGameScore)
+app.get('/api/user/games/stats', requireAuth, MyPageController.getGameStats)
+app.get('/api/user/games/history', requireAuth, MyPageController.getGameHistory)
+app.get('/api/games/leaderboard', MyPageController.getGameLeaderboard) // Public API
+
+// ============================================
+// 유틸 관련 API
+// ============================================
+app.post('/api/user/utils/settings', requireAuth, MyPageController.saveUtilSetting)
+app.get('/api/user/utils/settings', requireAuth, MyPageController.getUtilSettings)
+app.post('/api/user/utils/history', requireAuth, MyPageController.saveUtilHistory)
+app.get('/api/user/utils/history', requireAuth, MyPageController.getUtilHistory)
+app.delete('/api/user/utils/history/:historyId', requireAuth, MyPageController.deleteUtilHistory)
+
 export default app

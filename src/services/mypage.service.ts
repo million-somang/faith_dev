@@ -325,4 +325,352 @@ export class MyPageService {
       top_loser: undefined
     }
   }
+
+  // ===== 게임 점수 =====
+
+  async saveGameScore(
+    userId: number,
+    gameType: string,
+    score: number,
+    gameData?: object
+  ): Promise<{ rank: number, percentile: number }> {
+    // 점수 저장
+    await this.db
+      .prepare(`
+        INSERT INTO user_game_scores (user_id, game_type, score, game_data)
+        VALUES (?, ?, ?, ?)
+      `)
+      .bind(userId, gameType, score, gameData ? JSON.stringify(gameData) : null)
+      .run()
+
+    // 순위 계산
+    const rankResult = await this.db
+      .prepare(`
+        SELECT 
+          COUNT(*) + 1 as rank,
+          (SELECT COUNT(DISTINCT user_id) FROM user_game_scores WHERE game_type = ?) as total_players
+        FROM (
+          SELECT user_id, MAX(score) as max_score
+          FROM user_game_scores
+          WHERE game_type = ?
+          GROUP BY user_id
+        ) scores
+        WHERE max_score > ?
+      `)
+      .bind(gameType, gameType, score)
+      .first()
+
+    const rank = (rankResult as any)?.rank || 1
+    const totalPlayers = (rankResult as any)?.total_players || 1
+    const percentile = ((rank / totalPlayers) * 100).toFixed(1)
+
+    return { rank, percentile: parseFloat(percentile) }
+  }
+
+  async getGameStats(userId: number): Promise<Record<string, GameStats>> {
+    const games = ['tetris', 'snake', '2048', 'minesweeper']
+    const stats: Record<string, GameStats> = {}
+
+    for (const gameType of games) {
+      const result = await this.db
+        .prepare(`
+          SELECT 
+            MAX(score) as best_score,
+            AVG(score) as average_score,
+            COUNT(*) as play_count,
+            MAX(played_at) as last_played
+          FROM user_game_scores
+          WHERE user_id = ? AND game_type = ?
+        `)
+        .bind(userId, gameType)
+        .first()
+
+      if (result && (result as any).play_count > 0) {
+        const bestScore = (result as any).best_score
+
+        // 순위 계산
+        const rankResult = await this.db
+          .prepare(`
+            SELECT 
+              COUNT(*) + 1 as rank,
+              (SELECT COUNT(DISTINCT user_id) FROM user_game_scores WHERE game_type = ?) as total_players
+            FROM (
+              SELECT user_id, MAX(score) as max_score
+              FROM user_game_scores
+              WHERE game_type = ?
+              GROUP BY user_id
+            ) scores
+            WHERE max_score > ?
+          `)
+          .bind(gameType, gameType, bestScore)
+          .first()
+
+        const rank = (rankResult as any)?.rank || 1
+        const totalPlayers = (rankResult as any)?.total_players || 1
+        const percentile = ((rank / totalPlayers) * 100).toFixed(1)
+
+        stats[gameType] = {
+          best_score: bestScore,
+          average_score: Math.round((result as any).average_score),
+          play_count: (result as any).play_count,
+          rank,
+          percentile: parseFloat(percentile),
+          last_played: (result as any).last_played
+        }
+      }
+    }
+
+    return stats
+  }
+
+  async getLeaderboard(
+    gameType: string,
+    limit: number = 100,
+    userId?: number
+  ): Promise<{ leaderboard: LeaderboardEntry[], userRank?: number, totalPlayers: number }> {
+    // 리더보드 조회
+    const leaderboard = await this.db
+      .prepare(`
+        SELECT 
+          ROW_NUMBER() OVER (ORDER BY max_score DESC) as rank,
+          user_id,
+          u.name as user_name,
+          max_score as score,
+          played_at
+        FROM (
+          SELECT 
+            user_id,
+            MAX(score) as max_score,
+            MAX(played_at) as played_at
+          FROM user_game_scores
+          WHERE game_type = ?
+          GROUP BY user_id
+        ) scores
+        JOIN users u ON scores.user_id = u.id
+        ORDER BY max_score DESC
+        LIMIT ?
+      `)
+      .bind(gameType, limit)
+      .all()
+
+    const totalPlayersResult = await this.db
+      .prepare(`SELECT COUNT(DISTINCT user_id) as count FROM user_game_scores WHERE game_type = ?`)
+      .bind(gameType)
+      .first()
+
+    const entries: LeaderboardEntry[] = (leaderboard.results as any[]).map(row => ({
+      rank: row.rank,
+      user_id: row.user_id,
+      user_name: row.user_name,
+      score: row.score,
+      played_at: row.played_at,
+      is_current_user: userId ? row.user_id === userId : false
+    }))
+
+    // 현재 사용자 순위 조회
+    let userRank: number | undefined
+    if (userId) {
+      const userBestScore = await this.db
+        .prepare(`SELECT MAX(score) as max_score FROM user_game_scores WHERE user_id = ? AND game_type = ?`)
+        .bind(userId, gameType)
+        .first()
+
+      if (userBestScore && (userBestScore as any).max_score) {
+        const rankResult = await this.db
+          .prepare(`
+            SELECT COUNT(*) + 1 as rank
+            FROM (
+              SELECT user_id, MAX(score) as max_score
+              FROM user_game_scores
+              WHERE game_type = ?
+              GROUP BY user_id
+            ) scores
+            WHERE max_score > ?
+          `)
+          .bind(gameType, (userBestScore as any).max_score)
+          .first()
+
+        userRank = (rankResult as any)?.rank
+      }
+    }
+
+    return {
+      leaderboard: entries,
+      userRank,
+      totalPlayers: (totalPlayersResult as any)?.count || 0
+    }
+  }
+
+  async getGameHistory(
+    userId: number,
+    gameType?: string,
+    page: number = 1,
+    limit: number = 10
+  ): Promise<{ history: UserGameScore[], total: number }> {
+    const offset = (page - 1) * limit
+
+    const query = gameType
+      ? `WHERE user_id = ? AND game_type = ?`
+      : `WHERE user_id = ?`
+
+    const [history, totalResult] = await Promise.all([
+      this.db
+        .prepare(`
+          SELECT id, user_id, game_type, score, game_data, played_at
+          FROM user_game_scores
+          ${query}
+          ORDER BY played_at DESC
+          LIMIT ? OFFSET ?
+        `)
+        .bind(...(gameType ? [userId, gameType, limit, offset] : [userId, limit, offset]))
+        .all(),
+      this.db
+        .prepare(`SELECT COUNT(*) as count FROM user_game_scores ${query}`)
+        .bind(...(gameType ? [userId, gameType] : [userId]))
+        .first()
+    ])
+
+    return {
+      history: history.results as UserGameScore[],
+      total: (totalResult as any)?.count || 0
+    }
+  }
+
+  async getGameLeaderboard(
+    gameType: string,
+    limit: number = 100
+  ): Promise<any[]> {
+    // For D1, we need to use a different approach since RANK() window function may not be fully supported
+    // We'll calculate rank programmatically
+    const result = await this.db
+      .prepare(`
+        SELECT 
+          gs.id, 
+          gs.user_id, 
+          u.name as user_name, 
+          MAX(gs.score) as score,
+          MAX(gs.played_at) as played_at
+        FROM user_game_scores gs
+        LEFT JOIN users u ON gs.user_id = u.id
+        WHERE gs.game_type = ?
+        GROUP BY gs.user_id
+        ORDER BY score DESC
+        LIMIT ?
+      `)
+      .bind(gameType, limit)
+      .all()
+
+    // Add rank to each entry
+    const leaderboard = result.results.map((entry: any, index: number) => ({
+      ...entry,
+      rank: index + 1
+    }))
+
+    return leaderboard
+  }
+
+  // ===== 유틸 설정 =====
+
+  async saveUtilSetting(userId: number, settingKey: string, settingValue: object): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO user_util_settings (user_id, setting_key, setting_value, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id, setting_key) 
+        DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP
+      `)
+      .bind(userId, settingKey, JSON.stringify(settingValue))
+      .run()
+  }
+
+  async getUtilSettings(userId: number): Promise<Record<string, any>> {
+    const result = await this.db
+      .prepare(`
+        SELECT setting_key, setting_value
+        FROM user_util_settings
+        WHERE user_id = ?
+      `)
+      .bind(userId)
+      .all()
+
+    const settings: Record<string, any> = {}
+    for (const row of result.results as any[]) {
+      settings[row.setting_key] = JSON.parse(row.setting_value)
+    }
+
+    return settings
+  }
+
+  // ===== 유틸 히스토리 =====
+
+  async saveUtilHistory(
+    userId: number,
+    utilType: string,
+    inputData: object,
+    resultData?: object
+  ): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO user_util_history (user_id, util_type, input_data, result_data)
+        VALUES (?, ?, ?, ?)
+      `)
+      .bind(
+        userId, 
+        utilType, 
+        JSON.stringify(inputData), 
+        resultData ? JSON.stringify(resultData) : null
+      )
+      .run()
+  }
+
+  async getUtilHistory(
+    userId: number,
+    utilType?: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ history: any[], total: number }> {
+    const offset = (page - 1) * limit
+
+    const query = utilType
+      ? `WHERE user_id = ? AND util_type = ?`
+      : `WHERE user_id = ?`
+
+    const [history, totalResult] = await Promise.all([
+      this.db
+        .prepare(`
+          SELECT id, util_type, input_data, result_data, created_at
+          FROM user_util_history
+          ${query}
+          ORDER BY created_at DESC
+          LIMIT ? OFFSET ?
+        `)
+        .bind(...(utilType ? [userId, utilType, limit, offset] : [userId, limit, offset]))
+        .all(),
+      this.db
+        .prepare(`SELECT COUNT(*) as count FROM user_util_history ${query}`)
+        .bind(...(utilType ? [userId, utilType] : [userId]))
+        .first()
+    ])
+
+    return {
+      history: history.results.map((row: any) => ({
+        id: row.id,
+        util_type: row.util_type,
+        input_data: JSON.parse(row.input_data),
+        result_data: row.result_data ? JSON.parse(row.result_data) : null,
+        created_at: row.created_at
+      })),
+      total: (totalResult as any)?.count || 0
+    }
+  }
+
+  async deleteUtilHistory(userId: number, historyId: number): Promise<void> {
+    await this.db
+      .prepare(`
+        DELETE FROM user_util_history
+        WHERE id = ? AND user_id = ?
+      `)
+      .bind(historyId, userId)
+      .run()
+  }
 }
