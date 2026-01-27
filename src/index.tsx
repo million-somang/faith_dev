@@ -20744,6 +20744,20 @@ app.get('/mypage', optionalAuth, (c) => {
             }
         }
         
+        // 게임 타입을 한글 이름으로 변환하는 함수
+        function getGameDisplayName(gameType) {
+            const gameNames = {
+                'sudoku': '스도쿠',
+                'number_guess': '숫자 맞추기',
+                'memory_match': '카드 매칭',
+                'tetris': '테트리스',
+                'snake': '스네이크',
+                '2048': '2048',
+                'minesweeper': '지뢰찾기'
+            };
+            return gameNames[gameType] || gameType;
+        }
+        
         async function loadGamesData() {
             console.log('🎮 [마이페이지 프론트] 게임 데이터 로딩 시작...')
             
@@ -20763,12 +20777,15 @@ app.get('/mypage', optionalAuth, (c) => {
                 if (statsKeys.length > 0) {
                     gameStats.innerHTML = statsKeys.map(gameType => {
                         const stat = stats[gameType];
+                        const displayName = getGameDisplayName(gameType);
                         console.log('🎯 [마이페이지 프론트] ' + gameType + ' 통계:', stat)
                         return \`
                             <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
-                                <div class="text-sm opacity-90 mb-1">\${gameType}</div>
-                                <div class="text-2xl font-bold mb-2">\${stat.best_score}점</div>
-                                <div class="text-xs opacity-80">플레이: \${stat.play_count}회</div>
+                                <div class="text-sm opacity-90 mb-1">\${displayName}</div>
+                                <div class="text-2xl font-bold mb-2">\${stat.best_score.toLocaleString()}점</div>
+                                <div class="text-xs opacity-80">
+                                    플레이: \${stat.play_count}회 | 순위: \${stat.rank}위
+                                </div>
                             </div>
                         \`;
                     }).join('');
@@ -20788,12 +20805,13 @@ app.get('/mypage', optionalAuth, (c) => {
                 if (history.length > 0) {
                     gameHistory.innerHTML = history.map(game => {
                         console.log('🎮 [마이페이지 프론트] 게임 기록:', game)
+                        const displayName = getGameDisplayName(game.game_type);
                         return \`
                         <div class="border border-gray-200 rounded-lg p-4">
                             <div class="flex justify-between items-start">
                                 <div>
-                                    <h4 class="font-semibold text-gray-900">\${game.game_type}</h4>
-                                    <div class="text-2xl font-bold text-purple-600 mt-1">\${game.score}점</div>
+                                    <h4 class="font-semibold text-gray-900">\${displayName}</h4>
+                                    <div class="text-2xl font-bold text-purple-600 mt-1">\${game.score.toLocaleString()}점</div>
                                 </div>
                                 <div class="text-sm text-gray-500">\${new Date(game.played_at).toLocaleDateString('ko-KR')}</div>
                             </div>

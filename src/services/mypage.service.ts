@@ -375,7 +375,20 @@ export class MyPageService {
   async getGameStats(userId: number): Promise<Record<string, GameStats>> {
     console.log('🎮 [마이페이지] getGameStats 호출:', { userId })
     
-    const games = ['tetris', 'snake', '2048', 'minesweeper', 'sudoku']
+    // 사용자가 실제로 플레이한 게임 타입만 조회
+    const gamesResult = await this.db
+      .prepare(`
+        SELECT DISTINCT game_type
+        FROM user_game_scores
+        WHERE user_id = ?
+        ORDER BY game_type
+      `)
+      .bind(userId)
+      .all()
+    
+    const games = (gamesResult.results || []).map((row: any) => row.game_type)
+    console.log('🎯 [마이페이지] 사용자가 플레이한 게임 목록:', games)
+    
     const stats: Record<string, GameStats> = {}
 
     for (const gameType of games) {
