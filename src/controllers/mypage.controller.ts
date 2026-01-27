@@ -514,10 +514,13 @@ export class MyPageController {
       }
 
       const gameType = c.req.query('game_type')
+      const page = parseInt(c.req.query('page') || '1')
       const limit = parseInt(c.req.query('limit') || '20')
 
+      console.log('🎮 [Controller] getGameHistory:', { userId: user.id, gameType, page, limit })
+
       const service = new MyPageService(c.env.DB)
-      const history = await service.getGameHistory(user.id, gameType, limit)
+      const history = await service.getGameHistory(user.id, gameType, page, limit)
 
       return c.json({
         success: true,

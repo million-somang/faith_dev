@@ -5117,19 +5117,69 @@ app.post('/api/sudoku/score', async (c) => {
   }
   
   try {
-    const result = await DB.prepare(`
+    console.log('💾 [스도쿠] DB 저장 시작...')
+    
+    // 1. sudoku_scores 테이블에 저장 (기존)
+    const sudokuResult = await DB.prepare(`
       INSERT INTO sudoku_scores (difficulty, time, mistakes, player_name, user_id, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
     `).bind(difficulty, time, mistakes || 0, username, userId).run()
     
-    console.log('✅ 스도쿠 기록 저장 성공:', { difficulty, time, mistakes, username, userId })
+    console.log('✅ [스도쿠] sudoku_scores 테이블 저장 성공')
+    
+    // 2. user_game_scores 테이블에도 저장 (마이페이지 표시용)
+    // 점수 계산: 시간이 짧고 실수가 적을수록 높은 점수
+    // 점수 = 10000 - (시간초 * 10) - (실수 * 100)
+    // 난이도 가중치: easy=1.0, medium=1.5, hard=2.0
+    const difficultyMultiplier = difficulty === 'easy' ? 1.0 : difficulty === 'medium' ? 1.5 : 2.0
+    const baseScore = Math.max(0, 10000 - (time * 10) - (mistakes * 100))
+    const finalScore = Math.round(baseScore * difficultyMultiplier)
+    
+    console.log('📊 [스도쿠] 점수 계산:', { 
+      time, 
+      mistakes, 
+      difficulty, 
+      difficultyMultiplier, 
+      baseScore, 
+      finalScore 
+    })
+    
+    // game_data에 상세 정보 저장
+    const gameData = JSON.stringify({
+      difficulty,
+      time,
+      mistakes,
+      raw_score: baseScore,
+      multiplier: difficultyMultiplier
+    })
+    
+    const gameScoreResult = await DB.prepare(`
+      INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
+      VALUES (?, 'sudoku', ?, ?, datetime('now'))
+    `).bind(userId, finalScore, gameData).run()
+    
+    console.log('✅ [스도쿠] user_game_scores 테이블 저장 성공:', { 
+      userId, 
+      score: finalScore,
+      game_data: gameData
+    })
+    
+    console.log('✅ 스도쿠 기록 저장 완료:', { 
+      difficulty, 
+      time, 
+      mistakes, 
+      username, 
+      userId,
+      calculated_score: finalScore
+    })
     
     return c.json({
       success: true,
-      message: '기록이 저장되었습니다'
+      message: '기록이 저장되었습니다',
+      score: finalScore
     })
   } catch (error: any) {
-    console.error('❌ 기록 저장 오류:', error)
+    console.error('❌ [스도쿠] 기록 저장 오류:', error)
     return c.json({
       success: false,
       message: '기록 저장 중 오류가 발생했습니다: ' + error.message
@@ -20695,34 +20745,50 @@ app.get('/mypage', optionalAuth, (c) => {
         }
         
         async function loadGamesData() {
+            console.log('🎮 [마이페이지 프론트] 게임 데이터 로딩 시작...')
+            
             try {
+                console.log('📡 [마이페이지 프론트] API 요청: /api/user/games/stats')
                 const statsRes = await axios.get('/api/user/games/stats');
+                console.log('📦 [마이페이지 프론트] 통계 응답:', statsRes.data)
+                
                 const stats = statsRes.data.stats || {};
+                console.log('📊 [마이페이지 프론트] 파싱된 통계:', stats)
                 
                 const gameStats = document.getElementById('game-stats');
                 const statsKeys = Object.keys(stats);
                 
+                console.log('🔑 [마이페이지 프론트] 통계 키 목록:', statsKeys)
+                
                 if (statsKeys.length > 0) {
                     gameStats.innerHTML = statsKeys.map(gameType => {
                         const stat = stats[gameType];
+                        console.log('🎯 [마이페이지 프론트] ' + gameType + ' 통계:', stat)
                         return \`
                             <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-4 text-white">
                                 <div class="text-sm opacity-90 mb-1">\${gameType}</div>
-                                <div class="text-2xl font-bold mb-2">\${stat.best_score}</div>
+                                <div class="text-2xl font-bold mb-2">\${stat.best_score}점</div>
                                 <div class="text-xs opacity-80">플레이: \${stat.play_count}회</div>
                             </div>
                         \`;
                     }).join('');
                 } else {
+                    console.log('⚠️ [마이페이지 프론트] 통계 데이터 없음')
                     gameStats.innerHTML = '<div class="text-gray-500 text-sm col-span-2">게임 기록이 없습니다</div>';
                 }
                 
+                console.log('📡 [마이페이지 프론트] API 요청: /api/user/games/history')
                 const historyRes = await axios.get('/api/user/games/history?limit=10');
+                console.log('📦 [마이페이지 프론트] 히스토리 응답:', historyRes.data)
+                
                 const history = historyRes.data.history?.history || [];
+                console.log('📜 [마이페이지 프론트] 파싱된 히스토리:', history)
                 
                 const gameHistory = document.getElementById('game-history');
                 if (history.length > 0) {
-                    gameHistory.innerHTML = history.map(game => \`
+                    gameHistory.innerHTML = history.map(game => {
+                        console.log('🎮 [마이페이지 프론트] 게임 기록:', game)
+                        return \`
                         <div class="border border-gray-200 rounded-lg p-4">
                             <div class="flex justify-between items-start">
                                 <div>
@@ -20732,12 +20798,20 @@ app.get('/mypage', optionalAuth, (c) => {
                                 <div class="text-sm text-gray-500">\${new Date(game.played_at).toLocaleDateString('ko-KR')}</div>
                             </div>
                         </div>
-                    \`).join('');
+                    \`;
+                    }).join('');
                 } else {
+                    console.log('⚠️ [마이페이지 프론트] 히스토리 데이터 없음')
                     gameHistory.innerHTML = '<div class="text-gray-500 text-sm">플레이 기록이 없습니다</div>';
                 }
+                
+                console.log('✅ [마이페이지 프론트] 게임 데이터 로딩 완료')
             } catch (error) {
-                console.error('게임 데이터 로드 실패:', error);
+                console.error('❌ [마이페이지 프론트] 게임 데이터 로드 실패:', error);
+                if (error.response) {
+                    console.error('📡 [마이페이지 프론트] 응답 상태:', error.response.status);
+                    console.error('📦 [마이페이지 프론트] 응답 데이터:', error.response.data);
+                }
             }
         }
         

@@ -373,10 +373,14 @@ export class MyPageService {
   }
 
   async getGameStats(userId: number): Promise<Record<string, GameStats>> {
-    const games = ['tetris', 'snake', '2048', 'minesweeper']
+    console.log('🎮 [마이페이지] getGameStats 호출:', { userId })
+    
+    const games = ['tetris', 'snake', '2048', 'minesweeper', 'sudoku']
     const stats: Record<string, GameStats> = {}
 
     for (const gameType of games) {
+      console.log(`🔍 [마이페이지] ${gameType} 통계 조회 중...`)
+      
       const result = await this.db
         .prepare(`
           SELECT 
@@ -389,6 +393,8 @@ export class MyPageService {
         `)
         .bind(userId, gameType)
         .first()
+
+      console.log(`📊 [마이페이지] ${gameType} 결과:`, result)
 
       if (result && (result as any).play_count > 0) {
         const bestScore = (result as any).best_score
@@ -414,6 +420,8 @@ export class MyPageService {
         const totalPlayers = (rankResult as any)?.total_players || 1
         const percentile = ((rank / totalPlayers) * 100).toFixed(1)
 
+        console.log(`🏆 [마이페이지] ${gameType} 순위:`, { rank, totalPlayers, percentile })
+
         stats[gameType] = {
           best_score: bestScore,
           average_score: Math.round((result as any).average_score),
@@ -422,9 +430,12 @@ export class MyPageService {
           percentile: parseFloat(percentile),
           last_played: (result as any).last_played
         }
+      } else {
+        console.log(`⚠️ [마이페이지] ${gameType} 플레이 기록 없음`)
       }
     }
 
+    console.log('✅ [마이페이지] 전체 통계:', stats)
     return stats
   }
 
@@ -512,11 +523,15 @@ export class MyPageService {
     page: number = 1,
     limit: number = 10
   ): Promise<{ history: UserGameScore[], total: number }> {
+    console.log('📜 [마이페이지] getGameHistory 호출:', { userId, gameType, page, limit })
+    
     const offset = (page - 1) * limit
 
     const query = gameType
       ? `WHERE user_id = ? AND game_type = ?`
       : `WHERE user_id = ?`
+
+    console.log('🔍 [마이페이지] SQL 쿼리:', query)
 
     const [history, totalResult] = await Promise.all([
       this.db
@@ -534,6 +549,13 @@ export class MyPageService {
         .bind(...(gameType ? [userId, gameType] : [userId]))
         .first()
     ])
+
+    console.log('📊 [마이페이지] 히스토리 조회 결과:', {
+      count: history.results.length,
+      total: (totalResult as any)?.count || 0
+    })
+
+    console.log('🎮 [마이페이지] 히스토리 상세:', history.results)
 
     return {
       history: history.results as UserGameScore[],
