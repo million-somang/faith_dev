@@ -20748,10 +20748,7 @@ app.get('/mypage', optionalAuth, (c) => {
         function getGameDisplayName(gameType) {
             const gameNames = {
                 'sudoku': '스도쿠',
-                'number_guess': '숫자 맞추기',
-                'memory_match': '카드 매칭',
                 'tetris': '테트리스',
-                'snake': '스네이크',
                 '2048': '2048',
                 'minesweeper': '지뢰찾기'
             };
