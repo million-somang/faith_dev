@@ -145,8 +145,13 @@ export class MyPageService {
           SELECT 
             n.id,
             n.title,
+            n.summary,
             n.content,
             n.category,
+            n.link,
+            n.image_url,
+            n.publisher,
+            n.pub_date,
             n.created_at,
             CASE WHEN r.news_id IS NOT NULL THEN 1 ELSE 0 END as is_read,
             CASE WHEN b.news_id IS NOT NULL THEN 1 ELSE 0 END as is_bookmarked
@@ -155,8 +160,8 @@ export class MyPageService {
           LEFT JOIN user_news_bookmarks b ON n.id = b.news_id AND b.user_id = ?
           WHERE (
             n.title LIKE ? OR 
-            n.content LIKE ? OR
-            n.keywords LIKE ?
+            n.summary LIKE ? OR
+            n.content LIKE ?
           )
           ORDER BY n.created_at DESC
           LIMIT ? OFFSET ?
@@ -174,7 +179,7 @@ export class MyPageService {
       this.db
         .prepare(`
           SELECT COUNT(*) as count FROM news
-          WHERE title LIKE ? OR content LIKE ? OR keywords LIKE ?
+          WHERE title LIKE ? OR summary LIKE ? OR content LIKE ?
         `)
         .bind(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`)
         .first()
