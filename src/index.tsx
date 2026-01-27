@@ -24466,4 +24466,18 @@ app.get('/api/user/news/by-keyword', requireAuth, MyPageController.getNewsByKeyw
 // 뉴스 읽음 표시
 app.post('/api/user/news/read', requireAuth, MyPageController.markNewsAsRead)
 
+// 주식 관심 종목 관리
+app.post('/api/user/watchlist', requireAuth, MyPageController.addWatchlistStock)
+app.get('/api/user/watchlist', requireAuth, MyPageController.getWatchlistStocks)
+app.put('/api/user/watchlist/:stockId', requireAuth, MyPageController.updateWatchlistStock)
+app.delete('/api/user/watchlist/:stockId', requireAuth, MyPageController.deleteWatchlistStock)
+
+// 주식 알림 관리
+app.post('/api/user/watchlist/alerts', requireAuth, MyPageController.addStockAlert)
+app.get('/api/user/watchlist/alerts', requireAuth, MyPageController.getStockAlerts)
+app.delete('/api/user/watchlist/alerts/:alertId', requireAuth, MyPageController.deleteStockAlert)
+
+// 포트폴리오 통계
+app.get('/api/user/watchlist/stats', requireAuth, MyPageController.getWatchlistStats)
+
 export default app

@@ -232,4 +232,216 @@ export class MyPageController {
       throw error
     }
   }
+
+  // ===== 주식 관심 종목 =====
+
+  static async addWatchlistStock(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const { stock_symbol, stock_name, market_type, target_price, memo } = await c.req.json()
+      
+      if (!stock_symbol || !stock_name || !market_type) {
+        throw new AppError('종목 정보를 모두 입력해주세요', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.addWatchlistStock(
+        user.id, 
+        stock_symbol, 
+        stock_name, 
+        market_type, 
+        target_price, 
+        memo
+      )
+
+      logger.info('Stock added to watchlist', { userId: user.id, stockSymbol: stock_symbol })
+
+      return c.json({
+        success: true,
+        message: '관심 종목에 추가되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to add stock to watchlist', error)
+      throw error
+    }
+  }
+
+  static async getWatchlistStocks(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      const stocks = await service.getWatchlistStocks(user.id)
+
+      return c.json({
+        success: true,
+        stocks
+      })
+    } catch (error) {
+      logger.error('Failed to get watchlist stocks', error)
+      throw error
+    }
+  }
+
+  static async updateWatchlistStock(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const stockId = parseInt(c.req.param('stockId'))
+      if (isNaN(stockId)) {
+        throw new AppError('잘못된 종목 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const { target_price, memo } = await c.req.json()
+
+      const service = new MyPageService(c.env.DB)
+      await service.updateWatchlistStock(user.id, stockId, target_price, memo)
+
+      logger.info('Watchlist stock updated', { userId: user.id, stockId })
+
+      return c.json({
+        success: true,
+        message: '종목 정보가 수정되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to update watchlist stock', error)
+      throw error
+    }
+  }
+
+  static async deleteWatchlistStock(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const stockId = parseInt(c.req.param('stockId'))
+      if (isNaN(stockId)) {
+        throw new AppError('잘못된 종목 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.removeWatchlistStock(user.id, stockId)
+
+      logger.info('Stock removed from watchlist', { userId: user.id, stockId })
+
+      return c.json({
+        success: true,
+        message: '관심 종목에서 삭제되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to delete watchlist stock', error)
+      throw error
+    }
+  }
+
+  static async addStockAlert(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const { stock_symbol, alert_type, target_price } = await c.req.json()
+      
+      if (!stock_symbol || !alert_type || !target_price) {
+        throw new AppError('알림 정보를 모두 입력해주세요', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      if (!['above', 'below'].includes(alert_type)) {
+        throw new AppError('잘못된 알림 타입입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.addStockAlert(user.id, stock_symbol, alert_type, target_price)
+
+      logger.info('Stock alert added', { userId: user.id, stockSymbol: stock_symbol })
+
+      return c.json({
+        success: true,
+        message: '가격 알림이 설정되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to add stock alert', error)
+      throw error
+    }
+  }
+
+  static async getStockAlerts(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      const alerts = await service.getStockAlerts(user.id)
+
+      return c.json({
+        success: true,
+        alerts
+      })
+    } catch (error) {
+      logger.error('Failed to get stock alerts', error)
+      throw error
+    }
+  }
+
+  static async deleteStockAlert(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const alertId = parseInt(c.req.param('alertId'))
+      if (isNaN(alertId)) {
+        throw new AppError('잘못된 알림 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      await service.deleteStockAlert(user.id, alertId)
+
+      logger.info('Stock alert deleted', { userId: user.id, alertId })
+
+      return c.json({
+        success: true,
+        message: '알림이 삭제되었습니다'
+      })
+    } catch (error) {
+      logger.error('Failed to delete stock alert', error)
+      throw error
+    }
+  }
+
+  static async getWatchlistStats(c: Context<{ Bindings: Bindings }>) {
+    try {
+      const user = c.get('user')
+      if (!user) {
+        throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
+      }
+
+      const service = new MyPageService(c.env.DB)
+      const stats = await service.getWatchlistStats(user.id)
+
+      return c.json({
+        success: true,
+        stats
+      })
+    } catch (error) {
+      logger.error('Failed to get watchlist stats', error)
+      throw error
+    }
+  }
 }

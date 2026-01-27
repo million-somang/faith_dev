@@ -186,5 +186,143 @@ export class MyPageService {
     }
   }
 
-  // 이후 게임, 유틸, 주식 관련 메서드는 필요 시 추가 구현
+  // ===== 주식 관심 종목 관리 =====
+
+  async addWatchlistStock(
+    userId: number,
+    stockSymbol: string,
+    stockName: string,
+    marketType: string,
+    targetPrice?: number,
+    memo?: string
+  ): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO user_watchlist_stocks (
+          user_id, stock_symbol, stock_name, market_type, target_price, memo
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(user_id, stock_symbol) DO UPDATE 
+        SET target_price = excluded.target_price, memo = excluded.memo
+      `)
+      .bind(userId, stockSymbol, stockName, marketType, targetPrice, memo)
+      .run()
+  }
+
+  async getWatchlistStocks(userId: number): Promise<UserWatchlistStock[]> {
+    const result = await this.db
+      .prepare(`
+        SELECT 
+          id, user_id, stock_symbol, stock_name, 
+          market_type, target_price, memo, added_at
+        FROM user_watchlist_stocks
+        WHERE user_id = ?
+        ORDER BY added_at DESC
+      `)
+      .bind(userId)
+      .all()
+
+    return result.results as UserWatchlistStock[]
+  }
+
+  async updateWatchlistStock(
+    userId: number,
+    stockId: number,
+    targetPrice?: number,
+    memo?: string
+  ): Promise<void> {
+    await this.db
+      .prepare(`
+        UPDATE user_watchlist_stocks
+        SET target_price = ?, memo = ?
+        WHERE id = ? AND user_id = ?
+      `)
+      .bind(targetPrice, memo, stockId, userId)
+      .run()
+  }
+
+  async removeWatchlistStock(userId: number, stockId: number): Promise<void> {
+    await this.db
+      .prepare(`
+        DELETE FROM user_watchlist_stocks
+        WHERE id = ? AND user_id = ?
+      `)
+      .bind(stockId, userId)
+      .run()
+  }
+
+  // ===== 주식 알림 =====
+
+  async addStockAlert(
+    userId: number,
+    stockSymbol: string,
+    alertType: string,
+    targetPrice: number
+  ): Promise<void> {
+    await this.db
+      .prepare(`
+        INSERT INTO user_stock_alerts (
+          user_id, stock_symbol, alert_type, target_price
+        )
+        VALUES (?, ?, ?, ?)
+      `)
+      .bind(userId, stockSymbol, alertType, targetPrice)
+      .run()
+  }
+
+  async getStockAlerts(userId: number): Promise<StockAlert[]> {
+    const result = await this.db
+      .prepare(`
+        SELECT 
+          a.id, a.user_id, a.stock_symbol, w.stock_name,
+          a.alert_type, a.target_price, a.is_triggered, 
+          a.triggered_at, a.created_at
+        FROM user_stock_alerts a
+        LEFT JOIN user_watchlist_stocks w 
+          ON a.stock_symbol = w.stock_symbol AND a.user_id = w.user_id
+        WHERE a.user_id = ? AND a.is_triggered = 0
+        ORDER BY a.created_at DESC
+      `)
+      .bind(userId)
+      .all()
+
+    return result.results as StockAlert[]
+  }
+
+  async deleteStockAlert(userId: number, alertId: number): Promise<void> {
+    await this.db
+      .prepare(`
+        DELETE FROM user_stock_alerts
+        WHERE id = ? AND user_id = ?
+      `)
+      .bind(alertId, userId)
+      .run()
+  }
+
+  async getWatchlistStats(userId: number): Promise<WatchlistStats> {
+    const distributionResult = await this.db
+      .prepare(`
+        SELECT 
+          COUNT(*) as total_stocks,
+          SUM(CASE WHEN market_type = 'US' THEN 1 ELSE 0 END) as us_count,
+          SUM(CASE WHEN market_type = 'KR' THEN 1 ELSE 0 END) as kr_count
+        FROM user_watchlist_stocks
+        WHERE user_id = ?
+      `)
+      .bind(userId)
+      .first()
+
+    const dist = distributionResult as any
+
+    return {
+      total_stocks: dist?.total_stocks || 0,
+      market_distribution: {
+        US: dist?.us_count || 0,
+        KR: dist?.kr_count || 0
+      },
+      overall_change_percent: 0,
+      top_gainer: undefined,
+      top_loser: undefined
+    }
+  }
 }
