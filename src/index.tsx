@@ -23,6 +23,7 @@ import {
   validatePassword, 
   validateLength 
 } from './utils/validator'
+import { MyPageController } from './controllers/mypage.controller'
 import type { Bindings, Variables } from './types'
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
@@ -24446,5 +24447,23 @@ app.post('/api/auth/signup', async (c) => {
     }, 500)
   }
 })
+
+// ==================== MyPage API Routes ====================
+
+// 뉴스 키워드 구독 관리
+app.post('/api/user/keywords', requireAuth, MyPageController.addKeyword)
+app.get('/api/user/keywords', requireAuth, MyPageController.getKeywords)
+app.delete('/api/user/keywords/:keywordId', requireAuth, MyPageController.deleteKeyword)
+
+// 뉴스 북마크 관리
+app.post('/api/user/bookmarks', requireAuth, MyPageController.addBookmark)
+app.get('/api/user/bookmarks', requireAuth, MyPageController.getBookmarks)
+app.delete('/api/user/bookmarks/:newsId', requireAuth, MyPageController.deleteBookmark)
+
+// 키워드별 뉴스 조회
+app.get('/api/user/news/by-keyword', requireAuth, MyPageController.getNewsByKeyword)
+
+// 뉴스 읽음 표시
+app.post('/api/user/news/read', requireAuth, MyPageController.markNewsAsRead)
 
 export default app
