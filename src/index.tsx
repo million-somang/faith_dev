@@ -17627,6 +17627,7 @@ app.post('/api/keywords/subscribe', requireAuth, async (c) => {
     const user = c.get('user') as SessionUser
     const { keyword } = await c.req.json()
     const DB = getDB(c)
+    console.log('DEBUG keywords: DB타입:', typeof DB, 'DB.prepare타입:', typeof DB?.prepare)
     
     // 키워드 유효성 검사
     if (!keyword || keyword.trim().length === 0) {
@@ -17728,10 +17729,10 @@ app.get('/api/keywords', requireAuth, async (c) => {
     const DB = getDB(c)
     
     const { results } = await DB.prepare(`
-      SELECT id, keyword, created_at 
+      SELECT id, keyword, subscribed_at 
       FROM user_keywords 
       WHERE user_id = ? 
-      ORDER BY created_at DESC
+      ORDER BY subscribed_at DESC
     `).bind(user.id).all()
     
     return c.json({ success: true, keywords: results || [] })
