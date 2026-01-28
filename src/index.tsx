@@ -760,7 +760,7 @@ app.get('/', async (c) => {
           for (const item of newsItems) {
             try {
               await DB.prepare(`
-                INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+                INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
               `).bind(
                 item.category,
@@ -769,7 +769,7 @@ app.get('/', async (c) => {
                 item.link,
                 item.image_url,
                 item.publisher,
-                item.pub_date
+                item.published_at
               ).run()
             } catch (err) {
               // 중복 뉴스는 무시
@@ -7041,7 +7041,7 @@ app.get('/api/news', async (c) => {
       params.push(category)
     }
     
-    query += ' ORDER BY pub_date DESC, created_at DESC LIMIT ? OFFSET ?'
+    query += ' ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?'
     params.push(parseInt(limit), parseInt(offset))
     
     const result = await db.prepare(query).bind(...params).all()
@@ -7130,7 +7130,7 @@ app.post('/api/news', async (c) => {
     const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags
     
     const result = await db.prepare(`
-      INSERT INTO news (category, title, summary, link, image_url, publisher, pub_date, content, thumbnail, tags, author, source, source_url, description)
+      INSERT INTO news (category, title, summary, link, image_url, publisher, published_at, content, thumbnail, tags, author, source, source_url, description)
       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?)
     `).bind(
       category,
@@ -7282,7 +7282,7 @@ app.get('/api/news/search/by-keywords', async (c) => {
     const query = `
       SELECT * FROM news
       WHERE ${conditions}
-      ORDER BY pub_date DESC, created_at DESC
+      ORDER BY published_at DESC, created_at DESC
       LIMIT ?
     `
     params.push(parseInt(limit))
@@ -7341,7 +7341,7 @@ app.get('/api/stock/:ticker/news', async (c) => {
     const query = `
       SELECT * FROM news
       WHERE ${conditions}
-      ORDER BY pub_date DESC, created_at DESC
+      ORDER BY published_at DESC, created_at DESC
       LIMIT ?
     `
     params.push(parseInt(limit))
@@ -7715,7 +7715,7 @@ app.get('/admin/news', async (c) => {
 
                 container.innerHTML = news.map(item => {
                     const tags = item.tags ? JSON.parse(item.tags) : [];
-                    const date = new Date(item.pub_date || item.created_at);
+                    const date = new Date(item.published_at || item.created_at);
                     const dateStr = date.toLocaleString('ko-KR');
 
                     return '<div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">' +
@@ -9417,7 +9417,7 @@ app.get('/finance/stock/:ticker', (c) => {
                 if (data.success && data.news && data.news.length > 0) {
                     // 뉴스 렌더링
                     listEl.innerHTML = data.news.map(news => {
-                        const pubDate = new Date(news.pub_date || news.created_at);
+                        const pubDate = new Date(news.published_at || news.created_at);
                         const timeAgo = getTimeAgo(pubDate);
                         const categoryBadge = getCategoryBadge(news.category);
                         
@@ -12719,7 +12719,7 @@ app.get('/news', async (c) => {
         for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
           try {
             await DB.prepare(`
-              INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+              INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
               VALUES (?, ?, ?, ?, ?, ?, ?)
             `).bind(
               item.category,
@@ -12728,7 +12728,7 @@ app.get('/news', async (c) => {
               item.link,
               item.image_url,
               item.publisher,
-              item.pub_date
+              item.published_at
             ).run()
           } catch (err) {
             console.error('뉴스 저장 오류:', err)
@@ -13910,7 +13910,7 @@ app.get('/news', async (c) => {
                                     'data-news-link="' + escapeHtml(news.link) + '" ' +
                                     'data-news-category="' + escapeHtml(news.category) + '" ' +
                                     'data-news-publisher="' + publisherDisplay + '" ' +
-                                    'data-news-pubdate="' + escapeHtml(news.pub_date || news.created_at) + '">' +
+                                    'data-news-pubdate="' + escapeHtml(news.published_at || news.created_at) + '">' +
                                     '<i class="fas fa-bookmark"></i>' +
                                 '</button>' +
                                 '<button class="share-btn text-gray-400 hover:text-blue-500" ' +
@@ -16434,7 +16434,7 @@ app.post('/api/admin/collect-stock-news', async (c) => {
         await DB.prepare(`
           INSERT INTO news (
             category, title, description, content, link,
-            tags, author, source, source_url, pub_date,
+            tags, author, source, source_url, published_at,
             sentiment, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `).bind(
@@ -16447,7 +16447,7 @@ app.post('/api/admin/collect-stock-news', async (c) => {
           null,                       // author
           item.source,                // source
           item.link,                  // source_url
-          item.pubDate,               // pub_date
+          item.pubDate,               // published_at
           sentiment                   // sentiment
         ).run()
         
@@ -17407,7 +17407,7 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
         link: link.trim(),
         image_url: imageUrl,
         publisher: '구글 뉴스',
-        pub_date: pubDate,
+        published_at: pubDate,
       })
       
       if (items.length >= 20) break // 최대 20개
@@ -18130,7 +18130,7 @@ app.get('/api/news/fetch', async (c) => {
     for (const item of newsItems) {
       try {
         await DB.prepare(`
-          INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, pub_date)
+          INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `).bind(
           item.category,
@@ -18139,7 +18139,7 @@ app.get('/api/news/fetch', async (c) => {
           item.link,
           item.image_url,
           item.publisher,
-          item.pub_date
+          item.published_at
         ).run()
         savedCount++
       } catch (err) {
@@ -18351,7 +18351,7 @@ app.get('/news/:id', async (c) => {
                                 ${getCategoryName(news.category)}
                             </span>
                             <span class="text-sm text-gray-500">
-                                ${new Date(news.pub_date || news.created_at).toLocaleString('ko-KR', {
+                                ${new Date(news.published_at || news.created_at).toLocaleString('ko-KR', {
                                   year: 'numeric',
                                   month: 'long',
                                   day: 'numeric',
@@ -19470,7 +19470,7 @@ app.post('/api/bookmarks', async (c) => {
     }
     
     await DB.prepare(`
-      INSERT INTO bookmarks (user_id, news_title, news_link, news_category, news_source, news_pub_date)
+      INSERT INTO bookmarks (user_id, news_title, news_link, news_category, news_source, news_published_at)
       VALUES (?, ?, ?, ?, ?, ?)
     `).bind(userId, title, link, category, source, pubDate).run()
     
@@ -19590,7 +19590,7 @@ app.get('/api/news/search', async (c) => {
       params.push(category)
     }
     
-    sql += ' ORDER BY pub_date DESC LIMIT ? OFFSET ?'
+    sql += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
     params.push(limit, offset)
     
     const result = await DB.prepare(sql).bind(...params).all()
