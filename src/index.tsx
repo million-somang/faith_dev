@@ -13988,11 +13988,17 @@ app.get('/news', async (c) => {
             
             // ==================== 북마크/공유 버튼 이벤트 리스너 ====================
             function attachBookmarkAndShareListeners() {
+                console.log('[Bookmark] 이벤트 리스너 연결 중...');
+                
                 // 북마크 버튼 이벤트
-                document.querySelectorAll('.bookmark-btn').forEach(btn => {
+                const bookmarkBtns = document.querySelectorAll('.bookmark-btn');
+                console.log('[Bookmark] 북마크 버튼 개수:', bookmarkBtns.length);
+                
+                bookmarkBtns.forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation(); // 뉴스 카드 클릭 이벤트 방지
                         const newsId = this.getAttribute('data-news-id');
+                        console.log('[Bookmark] 버튼 클릭됨, newsId:', newsId);
                         toggleBookmark(newsId);
                     });
                 });
@@ -14042,21 +14048,31 @@ app.get('/news', async (c) => {
             }
             
             async function toggleBookmark(newsId) {
+                console.log('[Bookmark] toggleBookmark 호출, newsId:', newsId, 'userId:', userId);
+                
                 if (!userId) {
                     showToast('로그인이 필요합니다', 'warning');
                     return;
                 }
                 
                 const btn = document.querySelector('.bookmark-btn[data-news-id="' + newsId + '"]');
+                if (!btn) {
+                    console.error('[Bookmark] 버튼을 찾을 수 없음, newsId:', newsId);
+                    return;
+                }
+                
                 const isBookmarked = btn.classList.contains('bookmarked');
+                console.log('[Bookmark] 현재 상태:', isBookmarked ? '북마크됨' : '북마크 안됨');
                 
                 try {
                     if (isBookmarked) {
                         // 북마크 제거
+                        console.log('[Bookmark] 북마크 제거 시도...');
                         const response = await fetch('/api/bookmarks/' + newsId + '?userId=' + userId, {
                             method: 'DELETE'
                         });
                         const data = await response.json();
+                        console.log('[Bookmark] 제거 응답:', data);
                         
                         if (data.success) {
                             btn.classList.remove('bookmarked');
@@ -14064,6 +14080,7 @@ app.get('/news', async (c) => {
                         }
                     } else {
                         // 북마크 추가
+                        console.log('[Bookmark] 북마크 추가 시도...');
                         const response = await fetch('/api/bookmarks', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -14073,6 +14090,7 @@ app.get('/news', async (c) => {
                             })
                         });
                         const data = await response.json();
+                        console.log('[Bookmark] 추가 응답:', data);
                         
                         if (data.success) {
                             btn.classList.add('bookmarked');
