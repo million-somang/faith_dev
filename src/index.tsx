@@ -17883,11 +17883,10 @@ app.get('/api/news/hot', async (c) => {
     
     const { results } = await DB.prepare(`
       SELECT 
-        id, title, summary, link, image_url, category,
-        vote_up, vote_down, view_count, popularity_score,
-        ai_summary, sentiment
+        id, title, summary, link, source, category,
+        published_at, created_at
       FROM news 
-      ORDER BY popularity_score DESC, vote_up DESC
+      ORDER BY created_at DESC
       LIMIT ?
     `).bind(limit).all()
     
