@@ -7045,7 +7045,7 @@ app.get('/api/news', async (c) => {
     query += ' ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?'
     params.push(parseInt(limit), parseInt(offset))
     
-    const results = await db.prepare(query).bind(...params).all()
+    const { results } = await db.prepare(query).bind(...params).all()
     
     // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
     const newsWithStocks = await Promise.all(
