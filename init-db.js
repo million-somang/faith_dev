@@ -147,6 +147,16 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
+  -- 로그인 이력 테이블
+  CREATE TABLE IF NOT EXISTS login_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
   -- 인덱스 생성
   CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
   CREATE INDEX IF NOT EXISTS idx_sessions_session_id ON sessions(session_id);
@@ -155,6 +165,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
   CREATE INDEX IF NOT EXISTS idx_watchlist_user_id ON watchlist(user_id);
   CREATE INDEX IF NOT EXISTS idx_user_keywords_user_id ON user_keywords(user_id);
+  CREATE INDEX IF NOT EXISTS idx_login_history_user_id ON login_history(user_id);
 `);
 
 console.log('✅ 테이블 생성 완료!\n');
