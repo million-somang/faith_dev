@@ -127,10 +127,12 @@ export async function createSession(c: Context, userId: number): Promise<string>
     .run()
 
   // 쿠키 설정
+  // HTTP 환경에서는 secure: false, HTTPS 환경에서는 secure: true
+  const isHttps = c.req.url.startsWith('https://')
   setCookie(c, 'session_id', sessionId, {
     maxAge: 7 * 24 * 60 * 60, // 7일
     httpOnly: true,
-    secure: true,
+    secure: isHttps,
     sameSite: 'Lax',
     path: '/'
   })
