@@ -7086,15 +7086,9 @@ app.get('/api/news', async (c) => {
 })
 
 // 뉴스 상세 조회
-app.get('/api/news/:id', async (c) => {
+app.get('/api/news/:id{[0-9]+}', async (c) => {
   try {
     const id = c.req.param('id')
-    
-    // id가 숫자가 아니면 404 (hot, fetch 같은 다른 경로용)
-    if (!/^\d+$/.test(id)) {
-      return c.notFound()
-    }
-    
     const db = getDB(c)
     
     const result = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
