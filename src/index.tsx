@@ -19546,15 +19546,15 @@ app.get('/api/bookmarks/check', async (c) => {
   const DB = getDB(c)
   try {
     const userId = c.req.query('userId')
-    const link = c.req.query('link')
+    const newsId = c.req.query('link') // link 파라미터지만 실제로는 news_id
     
-    if (!userId || !link) {
+    if (!userId || !newsId) {
       return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
     }
     
     const result = await DB.prepare(
-      'SELECT id FROM bookmarks WHERE user_id = ? AND news_link = ?'
-    ).bind(userId, link).first()
+      'SELECT id FROM bookmarks WHERE user_id = ? AND news_id = ?'
+    ).bind(userId, newsId).first()
     
     return c.json({ 
       success: true, 
