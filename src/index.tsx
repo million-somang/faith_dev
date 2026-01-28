@@ -7044,11 +7044,11 @@ app.get('/api/news', async (c) => {
     query += ' ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?'
     params.push(parseInt(limit), parseInt(offset))
     
-    const result = await db.prepare(query).bind(...params).all()
+    const results = await db.prepare(query).bind(...params).all()
     
     // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
     const newsWithStocks = await Promise.all(
-      result.results.map(async (news: any) => {
+      results.map(async (news: any) => {
         // 제목, 설명, 태그에서 관련 종목 찾기
         const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
         const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
