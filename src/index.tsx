@@ -734,6 +734,7 @@ function getAdminNavigation(currentPage: string): string {
 // ==================== 메인 페이지 ====================
 app.get('/', async (c) => {
   const DB = getDB(c)
+  console.log('DEBUG: DB 타입:', typeof DB, 'DB.prepare 타입:', typeof DB?.prepare)
   
   // 자동 뉴스 가져오기 로직
   try {
@@ -755,24 +756,24 @@ app.get('/', async (c) => {
         const category = categories[i]
         try {
           const newsItems = await parseGoogleNewsRSS(category)
+          console.log(`DEBUG: ${category} 카테고리 뉴스 ${newsItems.length}개 가져옴`)
           
           // DB에 저장
           for (const item of newsItems) {
             try {
               await DB.prepare(`
-                INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
+                VALUES (?, ?, ?, ?, ?, ?)
               `).bind(
                 item.category,
                 item.title,
                 item.summary,
                 item.link,
-                item.image_url,
                 item.publisher,
                 item.published_at
               ).run()
             } catch (err) {
-              // 중복 뉴스는 무시
+              console.error('뉴스 저장 오류:', err.message, 'DB타입:', typeof DB, 'DB.prepare타입:', typeof DB?.prepare)
             }
           }
           
@@ -12719,14 +12720,13 @@ app.get('/news', async (c) => {
         for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
           try {
             await DB.prepare(`
-              INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
-              VALUES (?, ?, ?, ?, ?, ?, ?)
+              INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
+              VALUES (?, ?, ?, ?, ?, ?)
             `).bind(
               item.category,
               item.title,
               item.summary,
               item.link,
-              item.image_url,
               item.publisher,
               item.published_at
             ).run()
@@ -18130,14 +18130,13 @@ app.get('/api/news/fetch', async (c) => {
     for (const item of newsItems) {
       try {
         await DB.prepare(`
-          INSERT OR IGNORE INTO news (category, title, summary, link, image_url, publisher, published_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
+          INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
+          VALUES (?, ?, ?, ?, ?, ?)
         `).bind(
           item.category,
           item.title,
           item.summary,
           item.link,
-          item.image_url,
           item.publisher,
           item.published_at
         ).run()
