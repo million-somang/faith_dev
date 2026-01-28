@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from '@hono/node-server/serve-static'
+import { getDB } from './db/adapter'
 import { findRelatedStocks, getStockNameByTicker, getKeywordsByTicker } from './utils/stockMapper'
 import { fetchBatchStockData, type StockData } from './utils/stockDataFetcher'
 import { 
@@ -7030,7 +7031,7 @@ app.post('/api/poll/vote', async (c) => {
 app.get('/api/news', async (c) => {
   try {
     const { category, limit = '20', offset = '0' } = c.req.query()
-    const db = c.env.DB
+    const db = getDB(c)
     
     let query = 'SELECT * FROM news'
     const params: any[] = []
@@ -7087,7 +7088,7 @@ app.get('/api/news', async (c) => {
 app.get('/api/news/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const db = c.env.DB
+    const db = getDB(c)
     
     const result = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
     
@@ -7114,7 +7115,7 @@ app.get('/api/news/:id', async (c) => {
 // 뉴스 생성
 app.post('/api/news', async (c) => {
   try {
-    const db = c.env.DB
+    const db = getDB(c)
     const data = await c.req.json()
     
     const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
@@ -7165,7 +7166,7 @@ app.post('/api/news', async (c) => {
 app.put('/api/news/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const db = c.env.DB
+    const db = getDB(c)
     const data = await c.req.json()
     
     const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
@@ -7230,7 +7231,7 @@ app.put('/api/news/:id', async (c) => {
 app.delete('/api/news/:id', async (c) => {
   try {
     const id = c.req.param('id')
-    const db = c.env.DB
+    const db = getDB(c)
     
     const result = await db.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
     
@@ -7258,7 +7259,7 @@ app.delete('/api/news/:id', async (c) => {
 app.get('/api/news/search/by-keywords', async (c) => {
   try {
     const { keywords, limit = '5' } = c.req.query()
-    const db = c.env.DB
+    const db = getDB(c)
     
     if (!keywords) {
       return c.json({
@@ -7309,7 +7310,7 @@ app.get('/api/stock/:ticker/news', async (c) => {
   try {
     const ticker = c.req.param('ticker')
     const { limit = '5' } = c.req.query()
-    const db = c.env.DB
+    const db = getDB(c)
     
     // 티커로 종목명과 키워드 가져오기
     const stockName = getStockNameByTicker(ticker)
@@ -7367,7 +7368,7 @@ app.get('/api/stock/:ticker/news', async (c) => {
 app.post('/api/news/find-related-stocks', async (c) => {
   try {
     const { title, content, tags } = await c.req.json()
-    const db = c.env.DB
+    const db = getDB(c)
     
     // 텍스트 결합
     const combinedText = [
@@ -7450,7 +7451,7 @@ app.post('/api/news/find-related-stocks', async (c) => {
 app.get('/api/news/:id/related-stocks', async (c) => {
   try {
     const id = c.req.param('id')
-    const db = c.env.DB
+    const db = getDB(c)
     
     // 뉴스 조회
     const news = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
@@ -14571,13 +14572,13 @@ app.post('/api/tetris/score', async (c) => {
     console.log('🎮 [테트리스] 점수 저장 요청:', { user_id, score, lines, level })
     
     // 1. tetris_scores 테이블에 저장 (리더보드용)
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO tetris_scores (user_id, score) VALUES (?, ?)'
     ).bind(user_id, score).run()
     
     // 2. user_game_scores 테이블에도 저장 (마이페이지용)
     const gameData = JSON.stringify({ lines: lines || 0, level: level || 1 })
-    await c.env.DB.prepare(`
+    await DB.prepare(`
       INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
       VALUES (?, ?, ?, ?, datetime('now'))
     `).bind(user_id, 'tetris', score, gameData).run()
@@ -14595,7 +14596,7 @@ app.get('/api/tetris/highscore/:userId', async (c) => {
   try {
     const userId = c.req.param('userId')
     
-    const highScore = await c.env.DB.prepare(
+    const highScore = await DB.prepare(
       'SELECT MAX(score) as high_score FROM tetris_scores WHERE user_id = ?'
     ).bind(userId).first()
     
@@ -14612,7 +14613,7 @@ app.get('/api/tetris/highscore/:userId', async (c) => {
 // ==================== API: 테트리스 최고 점수 리스트 ====================
 app.get('/api/tetris/leaderboard', async (c) => {
   try {
-    const { results } = await c.env.DB.prepare(`
+    const { results } = await DB.prepare(`
       SELECT 
         t.id,
         t.score,
@@ -14641,7 +14642,7 @@ app.get('/api/sudoku/besttime/:userId/:difficulty', async (c) => {
     const userId = c.req.param('userId')
     const difficulty = c.req.param('difficulty')
     
-    const bestTime = await c.env.DB.prepare(
+    const bestTime = await DB.prepare(
       'SELECT MIN(time) as best_time FROM sudoku_scores WHERE user_id = ? AND difficulty = ?'
     ).bind(userId, difficulty).first()
     
@@ -14667,7 +14668,7 @@ app.post('/api/signup', async (c) => {
     }
     
     // 이메일 중복 체크
-    const existingUser = await c.env.DB.prepare(
+    const existingUser = await DB.prepare(
       'SELECT id FROM users WHERE email = ?'
     ).bind(email).first()
     
@@ -14676,19 +14677,19 @@ app.post('/api/signup', async (c) => {
     }
     
     // 회원 정보 저장 (실제로는 비밀번호를 해시화해야 함)
-    const result = await c.env.DB.prepare(
+    const result = await DB.prepare(
       'INSERT INTO users (email, password, name, phone, level, status) VALUES (?, ?, ?, ?, 1, "active")'
     ).bind(email, password, name, phone || null).run()
     
     const newUserId = result.meta.last_row_id
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(newUserId, 'signup', `신규 회원 가입: ${email}`).run()
     
     // 관리자 알림 생성
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
     ).bind('new_signup', '신규 회원 가입', `${name}(${email})님이 가입했습니다.`, 'normal').run()
     
@@ -14713,7 +14714,7 @@ app.post('/api/login', async (c) => {
     }
     
     // 사용자 조회 (role, level, status 포함)
-    const user = await c.env.DB.prepare(
+    const user = await DB.prepare(
       'SELECT id, email, name, phone, role, level, status FROM users WHERE email = ? AND password = ?'
     ).bind(email, password).first()
     
@@ -14731,19 +14732,19 @@ app.post('/api/login', async (c) => {
     }
     
     // 마지막 로그인 시간 업데이트
-    await c.env.DB.prepare(
+    await DB.prepare(
       'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(user.id).run()
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(user.id, 'login', `로그인: ${user.email}`).run()
     
     // 로그인 기록 저장
     const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
     const userAgent = c.req.header('user-agent') || 'unknown'
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
     ).bind(user.id, ipAddress, userAgent).run()
     
@@ -14792,7 +14793,7 @@ app.get('/api/user', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const user = await c.env.DB.prepare(
+    const user = await DB.prepare(
       'SELECT id, email, name, phone, created_at, last_login FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -14824,7 +14825,7 @@ app.get('/api/user/me', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const user = await c.env.DB.prepare(
+    const user = await DB.prepare(
       'SELECT id, email, name, phone, role, level, status, created_at, last_login FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -14864,7 +14865,7 @@ async function checkAdminAuth(c: any) {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const user = await c.env.DB.prepare(
+    const user = await DB.prepare(
       'SELECT id, email, name, role, level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -15799,7 +15800,7 @@ app.get('/api/admin/stats', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -15808,32 +15809,32 @@ app.get('/api/admin/stats', async (c) => {
     }
     
     // 전체 회원 수
-    const totalUsers = await c.env.DB.prepare(
+    const totalUsers = await DB.prepare(
       'SELECT COUNT(*) as count FROM users WHERE status != "deleted"'
     ).first()
     
     // 활성 회원 수
-    const activeUsers = await c.env.DB.prepare(
+    const activeUsers = await DB.prepare(
       'SELECT COUNT(*) as count FROM users WHERE status = "active"'
     ).first()
     
     // 정지 회원 수
-    const suspendedUsers = await c.env.DB.prepare(
+    const suspendedUsers = await DB.prepare(
       'SELECT COUNT(*) as count FROM users WHERE status = "suspended"'
     ).first()
     
     // 오늘 가입 회원
-    const todaySignups = await c.env.DB.prepare(
+    const todaySignups = await DB.prepare(
       'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = DATE("now")'
     ).first()
     
     // 등급별 분포
-    const levelDistribution = await c.env.DB.prepare(
+    const levelDistribution = await DB.prepare(
       'SELECT level, COUNT(*) as count FROM users WHERE status != "deleted" GROUP BY level ORDER BY level'
     ).all()
     
     // 최근 가입 회원 10명
-    const recentUsers = await c.env.DB.prepare(
+    const recentUsers = await DB.prepare(
       'SELECT id, email, name, level, created_at FROM users WHERE status != "deleted" ORDER BY created_at DESC LIMIT 10'
     ).all()
     
@@ -15864,7 +15865,7 @@ app.get('/api/admin/users', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -15899,7 +15900,7 @@ app.get('/api/admin/users', async (c) => {
     
     query += ' ORDER BY created_at DESC LIMIT 100'
     
-    const users = await c.env.DB.prepare(query).bind(...bindings).all()
+    const users = await DB.prepare(query).bind(...bindings).all()
     
     return c.json({
       success: true,
@@ -15923,7 +15924,7 @@ app.get('/api/admin/users/:id', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -15932,7 +15933,7 @@ app.get('/api/admin/users/:id', async (c) => {
     }
     
     const targetUserId = c.req.param('id')
-    const user = await c.env.DB.prepare(
+    const user = await DB.prepare(
       'SELECT id, email, name, phone, level, status, created_at, last_login FROM users WHERE id = ?'
     ).bind(targetUserId).first()
     
@@ -15962,7 +15963,7 @@ app.put('/api/admin/users/:id', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -15974,16 +15975,16 @@ app.put('/api/admin/users/:id', async (c) => {
     const { name, phone, level } = await c.req.json()
     
     // 대상 회원 정보 조회
-    const targetUser = await c.env.DB.prepare(
+    const targetUser = await DB.prepare(
       'SELECT email, name FROM users WHERE id = ?'
     ).bind(targetUserId).first()
     
-    await c.env.DB.prepare(
+    await DB.prepare(
       'UPDATE users SET name = ?, phone = ?, level = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(name, phone, level, targetUserId).run()
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(userId, 'admin_action', `회원 정보 수정: ${targetUser?.email}`).run()
     
@@ -16009,7 +16010,7 @@ app.patch('/api/admin/users/:id/status', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16025,22 +16026,22 @@ app.patch('/api/admin/users/:id/status', async (c) => {
     }
     
     // 대상 회원 정보 조회
-    const targetUser = await c.env.DB.prepare(
+    const targetUser = await DB.prepare(
       'SELECT email, name FROM users WHERE id = ?'
     ).bind(targetUserId).first()
     
-    await c.env.DB.prepare(
+    await DB.prepare(
       'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(status, targetUserId).run()
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(userId, 'admin_action', `회원 상태 변경: ${targetUser?.email} → ${status}`).run()
     
     // 정지 알림 생성
     if (status === 'suspended') {
-      await c.env.DB.prepare(
+      await DB.prepare(
         'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
       ).bind('user_suspended', '회원 정지', `${targetUser?.name}(${targetUser?.email})님의 계정이 정지되었습니다.`, 'high').run()
     }
@@ -16067,7 +16068,7 @@ app.delete('/api/admin/users/:id', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16078,22 +16079,22 @@ app.delete('/api/admin/users/:id', async (c) => {
     const targetUserId = c.req.param('id')
     
     // 대상 회원 정보 조회
-    const targetUser = await c.env.DB.prepare(
+    const targetUser = await DB.prepare(
       'SELECT email, name FROM users WHERE id = ?'
     ).bind(targetUserId).first()
     
     // 소프트 삭제
-    await c.env.DB.prepare(
+    await DB.prepare(
       'UPDATE users SET status = "deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?'
     ).bind(targetUserId).run()
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(userId, 'admin_action', `회원 삭제: ${targetUser?.email}`).run()
     
     // 삭제 알림 생성
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
     ).bind('user_deleted', '회원 삭제', `${targetUser?.name}(${targetUser?.email})님의 계정이 삭제되었습니다.`, 'high').run()
     
@@ -16119,7 +16120,7 @@ app.get('/api/admin/stats/trends', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16128,7 +16129,7 @@ app.get('/api/admin/stats/trends', async (c) => {
     }
     
     // 최근 30일 일별 가입자 수
-    const dailySignups = await c.env.DB.prepare(`
+    const dailySignups = await DB.prepare(`
       SELECT DATE(created_at) as date, COUNT(*) as count 
       FROM users 
       WHERE created_at >= DATE('now', '-30 days')
@@ -16137,7 +16138,7 @@ app.get('/api/admin/stats/trends', async (c) => {
     `).all()
     
     // 최근 12개월 월별 가입자 수
-    const monthlySignups = await c.env.DB.prepare(`
+    const monthlySignups = await DB.prepare(`
       SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count 
       FROM users 
       WHERE created_at >= DATE('now', '-12 months')
@@ -16146,7 +16147,7 @@ app.get('/api/admin/stats/trends', async (c) => {
     `).all()
     
     // 최근 30일 일별 로그인 활동
-    const dailyLogins = await c.env.DB.prepare(`
+    const dailyLogins = await DB.prepare(`
       SELECT DATE(created_at) as date, COUNT(*) as count 
       FROM activity_logs 
       WHERE action = 'login' AND created_at >= DATE('now', '-30 days')
@@ -16155,7 +16156,7 @@ app.get('/api/admin/stats/trends', async (c) => {
     `).all()
     
     // 등급별 활동 통계 (최근 30일)
-    const levelActivity = await c.env.DB.prepare(`
+    const levelActivity = await DB.prepare(`
       SELECT u.level, COUNT(al.id) as activity_count
       FROM users u
       LEFT JOIN activity_logs al ON u.id = al.user_id AND al.created_at >= DATE('now', '-30 days')
@@ -16189,7 +16190,7 @@ app.get('/api/admin/activity-logs', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16216,7 +16217,7 @@ app.get('/api/admin/activity-logs', async (c) => {
     query += ' ORDER BY al.created_at DESC LIMIT ?'
     bindings.push(limit)
     
-    const logs = await c.env.DB.prepare(query).bind(...bindings).all()
+    const logs = await DB.prepare(query).bind(...bindings).all()
     
     return c.json({
       success: true,
@@ -16240,7 +16241,7 @@ app.get('/api/admin/notifications', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16249,7 +16250,7 @@ app.get('/api/admin/notifications', async (c) => {
     }
     
     // 관리자용 알림 (target_user_id가 NULL이거나 현재 관리자)
-    const notifications = await c.env.DB.prepare(`
+    const notifications = await DB.prepare(`
       SELECT * FROM notifications
       WHERE (target_user_id IS NULL OR target_user_id = ?)
       ORDER BY created_at DESC
@@ -16257,7 +16258,7 @@ app.get('/api/admin/notifications', async (c) => {
     `).bind(userId).all()
     
     // 읽지 않은 알림 수
-    const unreadCount = await c.env.DB.prepare(`
+    const unreadCount = await DB.prepare(`
       SELECT COUNT(*) as count FROM notifications
       WHERE (target_user_id IS NULL OR target_user_id = ?) AND is_read = 0
     `).bind(userId).first()
@@ -16285,7 +16286,7 @@ app.patch('/api/admin/notifications/:id/read', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16295,7 +16296,7 @@ app.patch('/api/admin/notifications/:id/read', async (c) => {
     
     const notificationId = c.req.param('id')
     
-    await c.env.DB.prepare(
+    await DB.prepare(
       'UPDATE notifications SET is_read = 1 WHERE id = ?'
     ).bind(notificationId).run()
     
@@ -16321,7 +16322,7 @@ app.post('/api/admin/users/batch', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16356,10 +16357,10 @@ app.post('/api/admin/users/batch', async (c) => {
         return c.json({ success: false, message: '올바르지 않은 작업입니다.' }, 400)
     }
     
-    await c.env.DB.prepare(query).bind(...bindings).run()
+    await DB.prepare(query).bind(...bindings).run()
     
     // 활동 로그 기록
-    await c.env.DB.prepare(
+    await DB.prepare(
       'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
     ).bind(userId, 'admin_action', `일괄 처리: ${action} (${userIds.length}명)`).run()
     
@@ -16495,7 +16496,7 @@ app.get('/api/admin/users/export', async (c) => {
     const decoded = Buffer.from(token, 'base64').toString()
     const userId = decoded.split(':')[0]
     
-    const admin = await c.env.DB.prepare(
+    const admin = await DB.prepare(
       'SELECT level, status FROM users WHERE id = ?'
     ).bind(userId).first()
     
@@ -16503,7 +16504,7 @@ app.get('/api/admin/users/export', async (c) => {
       return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
     }
     
-    const users = await c.env.DB.prepare(`
+    const users = await DB.prepare(`
       SELECT id, email, name, phone, level, status, created_at, last_login
       FROM users
       WHERE status != 'deleted'
@@ -20520,7 +20521,7 @@ app.get('/api/mypage/login-history', async (c) => {
       return c.json({ success: false, message: '사용자 ID가 필요합니다.' }, 400)
     }
     
-    const result = await c.env.DB.prepare(`
+    const result = await DB.prepare(`
       SELECT id, login_time, ip_address, user_agent
       FROM login_history
       WHERE user_id = ?
@@ -24431,7 +24432,7 @@ app.post('/api/auth/login', async (c) => {
     }
 
     // 사용자 조회
-    const user = await c.env.DB
+    const user = await getDB(c)
       .prepare('SELECT * FROM users WHERE email = ?')
       .bind(email)
       .first()
@@ -24465,7 +24466,7 @@ app.post('/api/auth/login', async (c) => {
     await createSession(c, user.id as number)
 
     // 마지막 로그인 시간 업데이트
-    await c.env.DB
+    await getDB(c)
       .prepare('UPDATE users SET last_login = datetime("now") WHERE id = ?')
       .bind(user.id)
       .run()
@@ -24474,7 +24475,7 @@ app.post('/api/auth/login', async (c) => {
     const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown'
     const userAgent = c.req.header('User-Agent') || 'unknown'
     
-    await c.env.DB
+    await getDB(c)
       .prepare('INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)')
       .bind(user.id, ipAddress, userAgent)
       .run()
@@ -24547,8 +24548,11 @@ app.post('/api/auth/signup', async (c) => {
       }, 400)
     }
 
+    // 데이터베이스 어댑터 가져오기
+    const DB = getDB(c)
+
     // 중복 이메일 확인
-    const existingUser = await c.env.DB
+    const existingUser = await DB
       .prepare('SELECT id FROM users WHERE email = ?')
       .bind(email)
       .first()
@@ -24564,7 +24568,7 @@ app.post('/api/auth/signup', async (c) => {
     const hashedPassword = await hashPassword(password)
 
     // 사용자 생성
-    const result = await c.env.DB
+    const result = await DB
       .prepare(`
         INSERT INTO users (email, password, name, phone, level, status, role) 
         VALUES (?, ?, ?, ?, 1, 'active', 'user')
