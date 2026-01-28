@@ -733,7 +733,7 @@ function getAdminNavigation(currentPage: string): string {
 
 // ==================== 메인 페이지 ====================
 app.get('/', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   // 자동 뉴스 가져오기 로직
   try {
