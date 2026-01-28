@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { findRelatedStocks, getStockNameByTicker, getKeywordsByTicker } from './utils/stockMapper'
 import { fetchBatchStockData, type StockData } from './utils/stockDataFetcher'
 import { 
@@ -30,6 +31,13 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 // CORS 설정 (API 요청용)
 app.use('/api/*', cors())
+
+// 정적 파일 서빙 (Node.js 환경용)
+// Cloudflare Pages에서는 자동으로 처리되므로 조건부로 적용
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  // Node.js 환경에서만 정적 파일 서빙
+  app.use('/*', serveStatic({ root: './public' }))
+}
 
 // ==================== Breadcrumb 네비게이션 헬퍼 함수 ====================
 function getBreadcrumb(items: Array<{label: string, href?: string}>): string {
