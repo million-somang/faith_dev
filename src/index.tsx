@@ -13993,12 +13993,7 @@ app.get('/news', async (c) => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation(); // 뉴스 카드 클릭 이벤트 방지
                         const newsId = this.getAttribute('data-news-id');
-                        const title = this.getAttribute('data-news-title');
-                        const link = this.getAttribute('data-news-link');
-                        const category = this.getAttribute('data-news-category');
-                        const publisher = this.getAttribute('data-news-publisher');
-                        const pubDate = this.getAttribute('data-news-pubdate');
-                        toggleBookmark(newsId, title, link, category, publisher, pubDate);
+                        toggleBookmark(newsId);
                     });
                 });
                 
@@ -14046,7 +14041,7 @@ app.get('/news', async (c) => {
                 }
             }
             
-            async function toggleBookmark(newsId, title, link, category, source, pubDate) {
+            async function toggleBookmark(newsId) {
                 if (!userId) {
                     showToast('로그인이 필요합니다', 'warning');
                     return;
@@ -14074,11 +14069,7 @@ app.get('/news', async (c) => {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 userId: userId,
-                                title: title,
-                                link: link,
-                                category: category,
-                                source: source,
-                                pubDate: pubDate
+                                newsId: newsId
                             })
                         });
                         const data = await response.json();
@@ -19462,16 +19453,16 @@ app.post('/api/bookmarks', async (c) => {
   const DB = getDB(c)
   try {
     const body = await c.req.json()
-    const { userId, title, link, category, source, pubDate } = body
+    const { userId, newsId } = body
     
-    if (!userId || !title || !link || !category) {
+    if (!userId || !newsId) {
       return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
     }
     
     await DB.prepare(`
-      INSERT INTO bookmarks (user_id, news_title, news_link, news_category, news_source, news_published_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(userId, title, link, category, source, pubDate).run()
+      INSERT INTO bookmarks (user_id, news_id)
+      VALUES (?, ?)
+    `).bind(userId, newsId).run()
     
     return c.json({ success: true, message: '북마크에 추가되었습니다' })
   } catch (error: any) {
@@ -19521,18 +19512,18 @@ app.get('/api/bookmarks', async (c) => {
 })
 
 // 북마크 삭제
-app.delete('/api/bookmarks/:id', async (c) => {
+app.delete('/api/bookmarks/:newsId', async (c) => {
   const DB = getDB(c)
   try {
-    const bookmarkId = c.req.param('id')
+    const newsId = c.req.param('newsId')
     const userId = c.req.query('userId')
     
     if (!userId) {
       return c.json({ success: false, error: 'userId가 필요합니다' }, 400)
     }
     
-    await DB.prepare('DELETE FROM bookmarks WHERE id = ? AND user_id = ?')
-      .bind(bookmarkId, userId).run()
+    await DB.prepare('DELETE FROM bookmarks WHERE news_id = ? AND user_id = ?')
+      .bind(newsId, userId).run()
     
     return c.json({ success: true, message: '북마크가 삭제되었습니다' })
   } catch (error) {

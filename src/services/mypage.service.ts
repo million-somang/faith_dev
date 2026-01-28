@@ -155,7 +155,7 @@ export class MyPageService {
             CASE WHEN b.news_id IS NOT NULL THEN 1 ELSE 0 END as is_bookmarked
           FROM news n
           LEFT JOIN user_news_read r ON n.id = r.news_id AND r.user_id = ?
-          LEFT JOIN user_news_bookmarks b ON n.id = b.news_id AND b.user_id = ?
+          LEFT JOIN bookmarks b ON n.id = b.news_id AND b.user_id = ?
           WHERE (
             n.title LIKE ? OR 
             n.summary LIKE ? OR
