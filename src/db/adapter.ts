@@ -44,7 +44,8 @@ export const getDB = (c) => {
                 return stmt.get(...params);
               },
               all: async () => {
-                return stmt.all(...params);
+                const results = stmt.all(...params);
+                return { results };  // D1 호환 형식
               }
             };
           },
@@ -62,7 +63,8 @@ export const getDB = (c) => {
             return stmt.get();
           },
           all: async () => {
-            return stmt.all();
+            const results = stmt.all();
+            return { results };  // D1 호환 형식
           }
         };
       }
