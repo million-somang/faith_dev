@@ -24500,6 +24500,41 @@ app.post('/api/auth/login', async (c) => {
   }
 })
 
+// 세션 확인 API
+app.get('/api/auth/check', async (c) => {
+  try {
+    const user = await checkSession(c)
+    
+    if (!user) {
+      return c.json({ 
+        success: false,
+        loggedIn: false,
+        message: '로그인이 필요합니다'
+      })
+    }
+    
+    return c.json({ 
+      success: true,
+      loggedIn: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        level: user.level,
+        status: user.status
+      }
+    })
+  } catch (error) {
+    console.error('세션 확인 오류:', error)
+    return c.json({ 
+      success: false,
+      loggedIn: false,
+      message: '세션 확인 중 오류가 발생했습니다' 
+    }, 500)
+  }
+})
+
 // 로그아웃 API
 app.post('/api/auth/logout', async (c) => {
   try {
