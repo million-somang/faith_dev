@@ -107,7 +107,7 @@ export class MyPageService {
   async removeNewsBookmark(userId: number, newsId: number): Promise<void> {
     await this.db
       .prepare(`
-        DELETE FROM user_news_bookmarks
+        DELETE FROM bookmarks
         WHERE user_id = ? AND news_id = ?
       `)
       .bind(userId, newsId)
