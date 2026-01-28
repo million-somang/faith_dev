@@ -24501,7 +24501,8 @@ app.post('/api/auth/login', async (c) => {
 })
 
 // 세션 확인 API
-app.get('/api/auth/check', async (c) => {
+// 세션 확인 핸들러 (공통 로직)
+const handleAuthCheck = async (c: any) => {
   try {
     const user = await checkSession(c)
     
@@ -24533,7 +24534,13 @@ app.get('/api/auth/check', async (c) => {
       message: '세션 확인 중 오류가 발생했습니다' 
     }, 500)
   }
-})
+}
+
+// 세션 확인 API
+app.get('/api/auth/check', handleAuthCheck)
+
+// 세션 확인 API (별칭 - 프론트엔드 호환성)
+app.get('/api/auth/me', handleAuthCheck)
 
 // 로그아웃 API
 app.post('/api/auth/logout', async (c) => {
