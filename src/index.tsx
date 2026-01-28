@@ -17481,10 +17481,10 @@ async function summarizeWithGemini(title: string, summary: string): Promise<{ ai
 app.post('/api/news/:id/summarize', async (c) => {
   try {
     const { id } = c.req.param()
-    const { env } = c
+    const DB = getDB(c)
     
     // 뉴스 조회
-    const news = await env.DB.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
+    const news = await DB.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
     
     if (!news) {
       return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
@@ -17503,7 +17503,7 @@ app.post('/api/news/:id/summarize', async (c) => {
     const { aiSummary, sentiment } = await summarizeWithGemini(news.title, news.summary || '')
     
     // DB 업데이트
-    await env.DB.prepare(`
+    await DB.prepare(`
       UPDATE news 
       SET ai_summary = ?, sentiment = ?, ai_processed = 1 
       WHERE id = ?
@@ -17526,7 +17526,7 @@ app.post('/api/news/:id/vote', requireAuth, async (c) => {
     const user = c.get('user') as SessionUser
     const { id } = c.req.param()
     const { type } = await c.req.json() // 'up' or 'down'
-    const { env } = c
+    const DB = getDB(c)
     
     // 투표 타입 검증
     if (type !== 'up' && type !== 'down') {
@@ -17534,7 +17534,7 @@ app.post('/api/news/:id/vote', requireAuth, async (c) => {
     }
     
     // 중복 투표 체크
-    const existingVote = await env.DB.prepare(
+    const existingVote = await DB.prepare(
       'SELECT * FROM news_votes WHERE news_id = ? AND user_id = ?'
     ).bind(id, user.id).first()
     
@@ -17542,23 +17542,23 @@ app.post('/api/news/:id/vote', requireAuth, async (c) => {
     if (existingVote) {
       // 같은 타입이면 취소
       if (existingVote.vote_type === type) {
-        await env.DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+        await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
         
         // 카운트 감소
         const field = type === 'up' ? 'vote_up' : 'vote_down'
-        await env.DB.prepare(`UPDATE news SET ${field} = ${field} - 1 WHERE id = ?`).bind(id).run()
+        await DB.prepare(`UPDATE news SET ${field} = ${field} - 1 WHERE id = ?`).bind(id).run()
         
         return c.json({ success: true, action: 'cancelled', type })
       } else {
         // 다른 타입이면 변경
-        await env.DB.prepare(
+        await DB.prepare(
           'UPDATE news_votes SET vote_type = ? WHERE id = ?'
         ).bind(type, existingVote.id).run()
         
         // 기존 타입 감소, 새 타입 증가
         const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
         const newField = type === 'up' ? 'vote_up' : 'vote_down'
-        await env.DB.prepare(`
+        await DB.prepare(`
           UPDATE news 
           SET ${oldField} = ${oldField} - 1, ${newField} = ${newField} + 1 
           WHERE id = ?
@@ -17569,18 +17569,18 @@ app.post('/api/news/:id/vote', requireAuth, async (c) => {
     }
     
     // 새 투표 추가
-    await env.DB.prepare(`
+    await DB.prepare(`
       INSERT INTO news_votes (news_id, user_id, user_ip, vote_type)
       VALUES (?, ?, ?, ?)
     `).bind(id, userId, userIp, type).run()
     
     // 카운트 증가
     const field = type === 'up' ? 'vote_up' : 'vote_down'
-    await env.DB.prepare(`UPDATE news SET ${field} = ${field} + 1 WHERE id = ?`).bind(id).run()
+    await DB.prepare(`UPDATE news SET ${field} = ${field} + 1 WHERE id = ?`).bind(id).run()
     
     // 인기도 점수 업데이트 (up은 +2, down은 -1)
     const scoreChange = type === 'up' ? 2 : -1
-    await env.DB.prepare(`
+    await DB.prepare(`
       UPDATE news 
       SET popularity_score = popularity_score + ? 
       WHERE id = ?
@@ -17597,9 +17597,9 @@ app.post('/api/news/:id/vote', requireAuth, async (c) => {
 app.get('/api/news/:id/votes', async (c) => {
   try {
     const { id } = c.req.param()
-    const { env } = c
+    const DB = getDB(c)
     
-    const news = await env.DB.prepare(`
+    const news = await DB.prepare(`
       SELECT vote_up, vote_down, popularity_score 
       FROM news 
       WHERE id = ?
@@ -17626,7 +17626,7 @@ app.post('/api/keywords/subscribe', requireAuth, async (c) => {
   try {
     const user = c.get('user') as SessionUser
     const { keyword } = await c.req.json()
-    const { env } = c
+    const DB = getDB(c)
     
     // 키워드 유효성 검사
     if (!keyword || keyword.trim().length === 0) {
@@ -17639,7 +17639,7 @@ app.post('/api/keywords/subscribe', requireAuth, async (c) => {
     
     try {
       // 키워드 구독 추가 (중복 시 무시)
-      await env.DB.prepare(`
+      await DB.prepare(`
         INSERT INTO user_keywords (user_id, keyword)
         VALUES (?, ?)
       `).bind(user.id, keyword.trim()).run()
@@ -17662,9 +17662,9 @@ app.delete('/api/keywords/:id', requireAuth, async (c) => {
   try {
     const user = c.get('user') as SessionUser
     const id = c.req.param('id')
-    const { env } = c
+    const DB = getDB(c)
     
-    await env.DB.prepare(`
+    await DB.prepare(`
       DELETE FROM user_keywords 
       WHERE id = ? AND user_id = ?
     `).bind(parseInt(id), user.id).run()
@@ -17680,7 +17680,7 @@ app.delete('/api/keywords/:id', requireAuth, async (c) => {
 app.delete('/api/keywords/:keyword', async (c) => {
   try {
     const keyword = decodeURIComponent(c.req.param('keyword'))
-    const { env } = c
+    const DB = getDB(c)
     
     const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
     if (!authToken) {
@@ -17689,7 +17689,7 @@ app.delete('/api/keywords/:keyword', async (c) => {
     
     const userId = 1 // TODO: JWT에서 실제 user_id 추출
     
-    await env.DB.prepare(`
+    await DB.prepare(`
       DELETE FROM user_keywords 
       WHERE user_id = ? AND keyword = ?
     `).bind(userId, keyword).run()
@@ -17705,9 +17705,9 @@ app.delete('/api/keywords/:keyword', async (c) => {
 app.get('/api/keywords/my', requireAuth, async (c) => {
   try {
     const user = c.get('user') as SessionUser
-    const { env } = c
+    const DB = getDB(c)
     
-    const { results } = await env.DB.prepare(`
+    const { results } = await DB.prepare(`
       SELECT id, keyword, created_at 
       FROM user_keywords 
       WHERE user_id = ? 
@@ -17725,9 +17725,9 @@ app.get('/api/keywords/my', requireAuth, async (c) => {
 app.get('/api/keywords', requireAuth, async (c) => {
   try {
     const user = c.get('user') as SessionUser
-    const { env } = c
+    const DB = getDB(c)
     
-    const { results } = await env.DB.prepare(`
+    const { results } = await DB.prepare(`
       SELECT id, keyword, created_at 
       FROM user_keywords 
       WHERE user_id = ? 
@@ -17745,9 +17745,9 @@ app.get('/api/keywords', requireAuth, async (c) => {
 app.get('/api/news/keyword/:keyword', async (c) => {
   try {
     const keyword = decodeURIComponent(c.req.param('keyword'))
-    const { env } = c
+    const DB = getDB(c)
     
-    const { results } = await env.DB.prepare(`
+    const { results } = await DB.prepare(`
       SELECT * FROM news 
       WHERE title LIKE ? OR summary LIKE ?
       ORDER BY created_at DESC 
@@ -17766,17 +17766,17 @@ app.get('/api/news/keyword/:keyword', async (c) => {
 app.post('/api/news/:id/view', async (c) => {
   try {
     const newsId = c.req.param('id')
-    const { env } = c
+    const DB = getDB(c)
     
     // 조회수 증가
-    await env.DB.prepare(`
+    await DB.prepare(`
       UPDATE news 
       SET view_count = view_count + 1
       WHERE id = ?
     `).bind(newsId).run()
     
     // 업데이트된 조회수 조회
-    const newsData = await env.DB.prepare(
+    const newsData = await DB.prepare(
       'SELECT view_count FROM news WHERE id = ?'
     ).bind(newsId).first()
     
@@ -17793,7 +17793,7 @@ app.post('/api/news/:id/view', async (c) => {
 app.post('/api/news/vote', async (c) => {
   try {
     const { userId, newsId, voteType } = await c.req.json()
-    const { env } = c
+    const DB = getDB(c)
     
     // 입력 검증
     if (!userId || !newsId || !voteType) {
@@ -17805,7 +17805,7 @@ app.post('/api/news/vote', async (c) => {
     }
     
     // 기존 투표 확인
-    const existingVote = await env.DB.prepare(
+    const existingVote = await DB.prepare(
       'SELECT * FROM news_votes WHERE user_id = ? AND news_id = ?'
     ).bind(userId, newsId).first()
     
@@ -17814,11 +17814,11 @@ app.post('/api/news/vote', async (c) => {
       // 같은 타입이면 취소
       if (existingVote.vote_type === voteType) {
         // 투표 삭제
-        await env.DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+        await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
         
         // 카운트 감소
         const field = voteType === 'up' ? 'vote_up' : 'vote_down'
-        await env.DB.prepare(`
+        await DB.prepare(`
           UPDATE news 
           SET ${field} = ${field} - 1,
               popularity_score = vote_up - vote_down
@@ -17826,14 +17826,14 @@ app.post('/api/news/vote', async (c) => {
         `).bind(newsId).run()
       } else {
         // 다른 타입이면 변경
-        await env.DB.prepare(
+        await DB.prepare(
           'UPDATE news_votes SET vote_type = ? WHERE id = ?'
         ).bind(voteType, existingVote.id).run()
         
         // 카운트 업데이트
         const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
         const newField = voteType === 'up' ? 'vote_up' : 'vote_down'
-        await env.DB.prepare(`
+        await DB.prepare(`
           UPDATE news 
           SET ${oldField} = ${oldField} - 1,
               ${newField} = ${newField} + 1,
@@ -17843,13 +17843,13 @@ app.post('/api/news/vote', async (c) => {
       }
     } else {
       // 새 투표 추가
-      await env.DB.prepare(
+      await DB.prepare(
         'INSERT INTO news_votes (user_id, news_id, vote_type) VALUES (?, ?, ?)'
       ).bind(userId, newsId, voteType).run()
       
       // 카운트 증가
       const field = voteType === 'up' ? 'vote_up' : 'vote_down'
-      await env.DB.prepare(`
+      await DB.prepare(`
         UPDATE news 
         SET ${field} = ${field} + 1,
             popularity_score = vote_up - vote_down
@@ -17858,7 +17858,7 @@ app.post('/api/news/vote', async (c) => {
     }
     
     // 업데이트된 투표 수 조회
-    const newsData = await env.DB.prepare(
+    const newsData = await DB.prepare(
       'SELECT vote_up, vote_down, popularity_score FROM news WHERE id = ?'
     ).bind(newsId).first()
     
@@ -17877,10 +17877,10 @@ app.post('/api/news/vote', async (c) => {
 // ==================== 실시간 HOT 뉴스 API ====================
 app.get('/api/news/hot', async (c) => {
   try {
-    const { env } = c
+    const DB = getDB(c)
     const limit = parseInt(c.req.query('limit') || '10')
     
-    const { results } = await env.DB.prepare(`
+    const { results } = await DB.prepare(`
       SELECT 
         id, title, summary, link, image_url, category,
         vote_up, vote_down, view_count, popularity_score,
