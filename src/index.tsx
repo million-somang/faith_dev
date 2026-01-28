@@ -13211,7 +13211,7 @@ app.get('/news', async (c) => {
 
         <script>
             // ==================== 전역 변수 ====================
-            const userId = localStorage.getItem('user_id') || '1'; // 임시 사용자 ID
+            let userId = null; // 서버에서 가져올 사용자 ID
             let currentCategories = ['all']; // 선택된 카테고리들
             let shareNewsData = {}; // 공유할 뉴스 데이터
             let searchTimeout = null;
@@ -13219,6 +13219,26 @@ app.get('/news', async (c) => {
             let isLoading = false; // 로딩 중 플래그
             let hasMore = true; // 더 불러올 뉴스가 있는지
             const ITEMS_PER_PAGE = 12; // 페이지당 아이템 수
+            
+            // ==================== 사용자 정보 가져오기 ====================
+            async function fetchUserInfo() {
+                try {
+                    const response = await fetch('/api/auth/me');
+                    const data = await response.json();
+                    console.log('[News] 사용자 정보 조회:', data);
+                    
+                    if (data.success && data.user) {
+                        userId = data.user.id;
+                        console.log('[News] ✅ userId 설정:', userId, '- 이름:', data.user.name);
+                    } else {
+                        console.log('[News] ⚠️  로그인되지 않음');
+                        userId = null;
+                    }
+                } catch (error) {
+                    console.error('[News] ❌ 사용자 정보 조회 실패:', error);
+                    userId = null;
+                }
+            }
             
             // ==================== 토스트 알림 ====================
             function showToast(message, type = 'info') {
@@ -14227,7 +14247,8 @@ app.get('/news', async (c) => {
             });
             
             // ==================== 초기화 ====================
-            window.addEventListener('DOMContentLoaded', function() {
+            window.addEventListener('DOMContentLoaded', async function() {
+                await fetchUserInfo(); // 사용자 정보 먼저 가져오기
                 initSearchAndKeyword(); // 검색 및 키워드 입력 초기화
                 loadNews(true); // 초기 로드
                 loadHotNews(); // HOT 뉴스 로드
