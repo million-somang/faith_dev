@@ -20747,7 +20747,9 @@ app.get('/mypage', optionalAuth, (c) => {
         
         async function loadNewsData() {
             try {
+                console.log('[MyPage] 뉴스 데이터 로드 시작');
                 const keywordsRes = await axios.get('/api/user/keywords');
+                console.log('[MyPage] 키워드 응답:', keywordsRes.data);
                 const keywords = keywordsRes.data.keywords || [];
                 
                 const keywordsList = document.getElementById('keywords-list');
@@ -20761,7 +20763,9 @@ app.get('/mypage', optionalAuth, (c) => {
                     keywordsList.innerHTML = '<div class="text-gray-500 text-sm">구독 중인 키워드가 없습니다</div>';
                 }
                 
+                console.log('[MyPage] 북마크 조회 시작');
                 const bookmarksRes = await axios.get('/api/user/bookmarks?page=1&limit=10');
+                console.log('[MyPage] 북마크 응답:', bookmarksRes.data);
                 const bookmarks = bookmarksRes.data.bookmarks || [];
                 
                 const bookmarksList = document.getElementById('bookmarks-list');
@@ -20779,7 +20783,14 @@ app.get('/mypage', optionalAuth, (c) => {
                     bookmarksList.innerHTML = '<div class="text-gray-500 text-sm">북마크한 뉴스가 없습니다</div>';
                 }
             } catch (error) {
-                console.error('뉴스 데이터 로드 실패:', error);
+                console.error('[MyPage] 뉴스 데이터 로드 실패:', error);
+                console.error('[MyPage] 에러 상세:', error.response?.data || error.message);
+                
+                // 에러 메시지 표시
+                const bookmarksList = document.getElementById('bookmarks-list');
+                if (bookmarksList) {
+                    bookmarksList.innerHTML = '<div class="text-red-500 text-sm">북마크 로드 실패. 로그인이 필요합니다.</div>';
+                }
             }
         }
         
