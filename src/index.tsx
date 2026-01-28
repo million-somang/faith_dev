@@ -14191,7 +14191,7 @@ app.get('/news', async (c) => {
             
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', async function() {
-                console.log('[페이지] 📱 DOMContentLoaded - 병렬 로딩 시작');
+                console.log('[페이지] DOMContentLoaded - 병렬 로딩 시작');
                 const startTime = Date.now();
                 
                 // 1단계: UI 초기화 (즉시 실행 - 사용자 경험 개선)
@@ -14208,9 +14208,9 @@ app.get('/news', async (c) => {
                     loadKeywords()
                 ]).then(() => {
                     const loadTime = Date.now() - startTime;
-                    console.log(`[페이지] ✅ 모든 데이터 로딩 완료 (${loadTime}ms)`);
+                    console.log('[페이지] 모든 데이터 로딩 완료 (' + loadTime + 'ms)');
                 }).catch(err => {
-                    console.error('[페이지] ❌ 데이터 로딩 오류:', err);
+                    console.error('[페이지] 데이터 로딩 오류:', err);
                 });
             });
             
