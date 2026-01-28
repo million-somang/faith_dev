@@ -5021,7 +5021,7 @@ app.get('/game/simple/2048/play', (c) => {
 // API: 리더보드
 
 app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const difficulty = c.req.param('difficulty')
   
   try {
@@ -5054,7 +5054,7 @@ app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
 })
 
 app.post('/api/sudoku/score', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const { difficulty, time, mistakes } = await c.req.json()
   
   console.log('🎯 [스도쿠 점수 저장] API 호출됨')
@@ -6001,7 +6001,7 @@ app.get('/game/simple/minesweeper/play', (c) => {
 
 // 2048 점수 저장
 app.post('/api/2048/score', requireAuth, async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const user = c.get('user') as SessionUser
   const { score, max_tile } = await c.req.json()
   
@@ -6037,7 +6037,7 @@ app.post('/api/2048/score', requireAuth, async (c) => {
 
 // 2048 리더보드
 app.get('/api/2048/leaderboard', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     const result = await DB.prepare(`
@@ -6071,7 +6071,7 @@ app.get('/api/2048/leaderboard', async (c) => {
 
 // 지뢰찾기 점수 저장
 app.post('/api/minesweeper/score', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const { difficulty, time } = await c.req.json()
   
   // 쿠키에서 사용자 정보 가져오기 (스도쿠와 동일한 방식)
@@ -6149,7 +6149,7 @@ app.post('/api/minesweeper/score', async (c) => {
 
 // 지뢰찾기 리더보드
 app.get('/api/minesweeper/leaderboard/:difficulty', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const difficulty = c.req.param('difficulty')
   
   try {
@@ -12698,7 +12698,7 @@ app.get('/lifestyle/pyeong-calculator', (c) => {
 
 // ==================== 뉴스 페이지 ====================
 app.get('/news', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   // DB에서 뉴스 가져오기
   let newsFromDB: any[] = []
@@ -16376,7 +16376,7 @@ app.post('/api/admin/users/batch', async (c) => {
 
 // ==================== API: 주식 뉴스 자동 수집 ====================
 app.post('/api/admin/collect-stock-news', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     // Import functions (동적 import는 Workers에서 제한적이므로 인라인으로 구현)
@@ -18077,7 +18077,7 @@ app.post('/api/youtube/download', async (c) => {
 
 // 뉴스 가져오기 및 DB 저장
 app.get('/api/news/fetch', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const category = c.req.query('category') || 'general'
   
   try {
@@ -18215,7 +18215,7 @@ app.get('/news/redirect', async (c) => {
 
 // 뉴스 상세 페이지
 app.get('/news/:id', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const newsId = c.req.param('id')
   
   // 뉴스 조회
@@ -18491,7 +18491,7 @@ app.get('/news/:id', async (c) => {
 
 
 app.get('/api/news', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const category = c.req.query('category')
   const limit = parseInt(c.req.query('limit') || '20')
   const offset = parseInt(c.req.query('offset') || '0')
@@ -18547,7 +18547,7 @@ app.get('/api/news', async (c) => {
 
 // 뉴스 삭제 (관리자용)
 app.delete('/api/news/:id', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const id = c.req.param('id')
   
   try {
@@ -18562,7 +18562,7 @@ app.delete('/api/news/:id', async (c) => {
 // ==================== 뉴스 스케줄 설정 API ====================
 // 스케줄 설정 조회
 app.get('/api/news/schedule', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
@@ -18587,7 +18587,7 @@ app.get('/api/news/schedule', async (c) => {
 
 // 스케줄 설정 업데이트
 app.post('/api/news/schedule', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     const body = await c.req.json()
@@ -18652,7 +18652,7 @@ app.post('/api/news/schedule', async (c) => {
 
 // 스케줄 실행 기록 업데이트 (자동 실행 시 호출)
 app.post('/api/news/schedule/update-run', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     const now = new Date().toISOString()
@@ -18713,7 +18713,7 @@ app.post('/api/news/schedule/update-run', async (c) => {
 
 // ==================== 관리자 뉴스관리 페이지 ====================
 app.get('/admin/news', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   // DB에서 뉴스 통계만 가져오기 (전체 개수)
   let newsFromDB: any[] = []
@@ -19460,7 +19460,7 @@ app.get('/admin/news', async (c) => {
 // ==================== 북마크 API ====================
 // 북마크 추가
 app.post('/api/bookmarks', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   try {
     const body = await c.req.json()
     const { userId, title, link, category, source, pubDate } = body
@@ -19486,7 +19486,7 @@ app.post('/api/bookmarks', async (c) => {
 
 // 북마크 목록 조회
 app.get('/api/bookmarks', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   try {
     const userId = c.req.query('userId')
     const category = c.req.query('category')
@@ -19523,7 +19523,7 @@ app.get('/api/bookmarks', async (c) => {
 
 // 북마크 삭제
 app.delete('/api/bookmarks/:id', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   try {
     const bookmarkId = c.req.param('id')
     const userId = c.req.query('userId')
@@ -19544,7 +19544,7 @@ app.delete('/api/bookmarks/:id', async (c) => {
 
 // 북마크 확인 (특정 뉴스가 북마크되어 있는지)
 app.get('/api/bookmarks/check', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   try {
     const userId = c.req.query('userId')
     const link = c.req.query('link')
@@ -19570,7 +19570,7 @@ app.get('/api/bookmarks/check', async (c) => {
 
 // ==================== 뉴스 검색 API ====================
 app.get('/api/news/search', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   try {
     const query = c.req.query('q') || ''
     const category = c.req.query('category')
@@ -23547,7 +23547,7 @@ app.get('/lifestyle/base64-converter', (c) => {
 
 // D-Day API
 app.get('/api/dday/list', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const userId = c.get('userId') || null
   
   try {
@@ -23563,7 +23563,7 @@ app.get('/api/dday/list', async (c) => {
 })
 
 app.post('/api/dday/add', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const userId = c.get('userId') || null
   
   try {
@@ -23582,7 +23582,7 @@ app.post('/api/dday/add', async (c) => {
 })
 
 app.delete('/api/dday/:id', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const userId = c.get('userId') || null
   const id = c.req.param('id')
   
@@ -23763,7 +23763,7 @@ app.get('/shopping', (c) => {
 // ==================== 2048 게임 API ====================
 // 2048 점수 저장
 app.post('/api/game2048/score', requireAuth, async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   const user = c.get('user') as SessionUser
   const { score, highest_tile, moves } = await c.req.json()
   
@@ -23790,7 +23790,7 @@ app.post('/api/game2048/score', requireAuth, async (c) => {
 
 // 2048 리더보드
 app.get('/api/game2048/leaderboard', async (c) => {
-  const { DB } = c.env
+  const DB = getDB(c)
   
   try {
     const result = await DB.prepare(`
