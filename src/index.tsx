@@ -20748,6 +20748,11 @@ app.get('/mypage', optionalAuth, (c) => {
         async function loadNewsData() {
             try {
                 console.log('[MyPage] 뉴스 데이터 로드 시작');
+                
+                // 현재 로그인한 사용자 정보 확인
+                const authRes = await axios.get('/api/auth/me');
+                console.log('[MyPage] 현재 사용자:', authRes.data);
+                
                 const keywordsRes = await axios.get('/api/user/keywords');
                 console.log('[MyPage] 키워드 응답:', keywordsRes.data);
                 const keywords = keywordsRes.data.keywords || [];
