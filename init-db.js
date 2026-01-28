@@ -1,4 +1,4 @@
-const Database = require('better-sqlite3');
+import Database from 'better-sqlite3';
 const db = new Database('faith-portal.db');
 
 console.log('🔄 데이터베이스 초기화 시작...\n');
