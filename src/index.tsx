@@ -20765,14 +20765,24 @@ app.get('/mypage', optionalAuth, (c) => {
         
         async function loadNewsData() {
             try {
-                console.log('[MyPage] 뉴스 데이터 로드 시작');
+                console.log('[MyPage] ========== 북마크 로딩 시작 ==========');
                 
                 // 현재 로그인한 사용자 정보 확인
                 const authRes = await axios.get('/api/auth/me');
-                console.log('[MyPage] 현재 사용자:', authRes.data);
+                console.log('[MyPage] 1. 현재 사용자 정보:', authRes.data);
+                const currentUser = authRes.data.user;
                 
+                if (!currentUser) {
+                    console.error('[MyPage] ❌ 로그인되지 않은 상태');
+                    document.getElementById('bookmarks-list').innerHTML = '<div class="text-red-500 text-sm">로그인이 필요합니다</div>';
+                    return;
+                }
+                
+                console.log('[MyPage] ✅ 로그인 확인 - userId:', currentUser.id, 'name:', currentUser.name, 'email:', currentUser.email);
+                
+                // 키워드 조회
                 const keywordsRes = await axios.get('/api/user/keywords');
-                console.log('[MyPage] 키워드 응답:', keywordsRes.data);
+                console.log('[MyPage] 2. 키워드 응답:', keywordsRes.data);
                 const keywords = keywordsRes.data.keywords || [];
                 
                 const keywordsList = document.getElementById('keywords-list');
@@ -20786,14 +20796,21 @@ app.get('/mypage', optionalAuth, (c) => {
                     keywordsList.innerHTML = '<div class="text-gray-500 text-sm">구독 중인 키워드가 없습니다</div>';
                 }
                 
-                console.log('[MyPage] 북마크 조회 시작');
+                // 북마크 조회
+                console.log('[MyPage] 3. 북마크 조회 시작 - userId:', currentUser.id);
                 const bookmarksRes = await axios.get('/api/user/bookmarks?page=1&limit=10');
-                console.log('[MyPage] 북마크 응답:', bookmarksRes.data);
+                console.log('[MyPage] 4. 북마크 응답:', bookmarksRes.data);
+                console.log('[MyPage] 4-1. 북마크 개수:', bookmarksRes.data.total);
+                console.log('[MyPage] 4-2. 북마크 배열 길이:', bookmarksRes.data.bookmarks?.length);
+                
                 const bookmarks = bookmarksRes.data.bookmarks || [];
                 
                 const bookmarksList = document.getElementById('bookmarks-list');
                 if (bookmarks.length > 0) {
-                    bookmarksList.innerHTML = bookmarks.map(bm => \`
+                    console.log('[MyPage] ✅ 북마크 렌더링 중...', bookmarks.length, '개');
+                    bookmarksList.innerHTML = bookmarks.map((bm, idx) => {
+                        console.log('[MyPage] 북마크 #' + (idx+1) + ':', bm.title.substring(0, 30) + '...');
+                        return \`
                         <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                             <h4 class="font-semibold text-gray-900 mb-2">\${bm.title}</h4>
                             <div class="text-sm text-gray-500">
@@ -20801,18 +20818,25 @@ app.get('/mypage', optionalAuth, (c) => {
                                 \${new Date(bm.bookmarked_at).toLocaleDateString('ko-KR')}
                             </div>
                         </div>
-                    \`).join('');
+                    \`;
+                    }).join('');
+                    console.log('[MyPage] ✅ 북마크 렌더링 완료');
                 } else {
+                    console.log('[MyPage] ⚠️  북마크 없음');
                     bookmarksList.innerHTML = '<div class="text-gray-500 text-sm">북마크한 뉴스가 없습니다</div>';
                 }
+                
+                console.log('[MyPage] ========== 북마크 로딩 완료 ==========');
             } catch (error) {
-                console.error('[MyPage] 뉴스 데이터 로드 실패:', error);
-                console.error('[MyPage] 에러 상세:', error.response?.data || error.message);
+                console.error('[MyPage] ========== 에러 발생 ==========');
+                console.error('[MyPage] 에러 상세:', error);
+                console.error('[MyPage] 에러 응답:', error.response?.data);
+                console.error('[MyPage] 에러 상태:', error.response?.status);
                 
                 // 에러 메시지 표시
                 const bookmarksList = document.getElementById('bookmarks-list');
                 if (bookmarksList) {
-                    bookmarksList.innerHTML = '<div class="text-red-500 text-sm">북마크 로드 실패. 로그인이 필요합니다.</div>';
+                    bookmarksList.innerHTML = '<div class="text-red-500 text-sm">북마크 로드 실패: ' + (error.response?.data?.error || error.message) + '</div>';
                 }
             }
         }
