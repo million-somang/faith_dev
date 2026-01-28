@@ -386,6 +386,9 @@ export class MyPageService {
       .bind(userId)
       .all()
     
+    console.log('🔍 [마이페이지] DB 쿼리 결과:', gamesResult)
+    console.log('📊 [마이페이지] gamesResult.results:', gamesResult.results)
+    
     const games = (gamesResult.results || []).map((row: any) => row.game_type)
     console.log('🎯 [마이페이지] 사용자가 플레이한 게임 목록:', games)
     
