@@ -3,6 +3,7 @@
 // Date: 2026-01-26
 
 import { Context } from 'hono'
+import { getDB } from '../db/adapter'
 import { MyPageService } from '../services/mypage.service'
 import { AppError, ErrorCodes } from '../middleware/errors'
 import { logger } from '../middleware/logger'
@@ -24,7 +25,7 @@ export class MyPageController {
         throw new AppError('키워드를 입력해주세요', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.addKeywordSubscription(user.id, keyword.trim())
 
       logger.info('Keyword subscription added', { userId: user.id, keyword })
@@ -46,7 +47,7 @@ export class MyPageController {
         throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const keywords = await service.getKeywordSubscriptions(user.id)
 
       return c.json({
@@ -72,7 +73,7 @@ export class MyPageController {
         throw new AppError('잘못된 키워드 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.removeKeywordSubscription(user.id, keywordId)
 
       logger.info('Keyword subscription removed', { userId: user.id, keywordId })
@@ -102,7 +103,7 @@ export class MyPageController {
         throw new AppError('잘못된 뉴스 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.addNewsBookmark(user.id, news_id)
 
       logger.info('News bookmarked', { userId: user.id, newsId: news_id })
@@ -127,7 +128,7 @@ export class MyPageController {
       const page = parseInt(c.req.query('page') || '1')
       const limit = parseInt(c.req.query('limit') || '20')
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const { bookmarks, total } = await service.getNewsBookmarks(user.id, page, limit)
 
       return c.json({
@@ -156,7 +157,7 @@ export class MyPageController {
         throw new AppError('잘못된 뉴스 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.removeNewsBookmark(user.id, newsId)
 
       logger.info('News bookmark removed', { userId: user.id, newsId })
@@ -188,7 +189,7 @@ export class MyPageController {
       const page = parseInt(c.req.query('page') || '1')
       const limit = parseInt(c.req.query('limit') || '10')
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const { news, total } = await service.getNewsByKeyword(user.id, keyword, page, limit)
 
       return c.json({
@@ -220,7 +221,7 @@ export class MyPageController {
         throw new AppError('잘못된 뉴스 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.markNewsAsRead(user.id, news_id)
 
       return c.json({
@@ -248,7 +249,7 @@ export class MyPageController {
         throw new AppError('종목 정보를 모두 입력해주세요', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.addWatchlistStock(
         user.id, 
         stock_symbol, 
@@ -277,7 +278,7 @@ export class MyPageController {
         throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const stocks = await service.getWatchlistStocks(user.id)
 
       return c.json({
@@ -304,7 +305,7 @@ export class MyPageController {
 
       const { target_price, memo } = await c.req.json()
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.updateWatchlistStock(user.id, stockId, target_price, memo)
 
       logger.info('Watchlist stock updated', { userId: user.id, stockId })
@@ -331,7 +332,7 @@ export class MyPageController {
         throw new AppError('잘못된 종목 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.removeWatchlistStock(user.id, stockId)
 
       logger.info('Stock removed from watchlist', { userId: user.id, stockId })
@@ -363,7 +364,7 @@ export class MyPageController {
         throw new AppError('잘못된 알림 타입입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.addStockAlert(user.id, stock_symbol, alert_type, target_price)
 
       logger.info('Stock alert added', { userId: user.id, stockSymbol: stock_symbol })
@@ -385,7 +386,7 @@ export class MyPageController {
         throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const alerts = await service.getStockAlerts(user.id)
 
       return c.json({
@@ -410,7 +411,7 @@ export class MyPageController {
         throw new AppError('잘못된 알림 ID입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.deleteStockAlert(user.id, alertId)
 
       logger.info('Stock alert deleted', { userId: user.id, alertId })
@@ -432,7 +433,7 @@ export class MyPageController {
         throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const stats = await service.getWatchlistStats(user.id)
 
       return c.json({
@@ -462,7 +463,7 @@ export class MyPageController {
         throw new AppError('game_type과 score는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const rankInfo = await service.saveGameScore(
         user.id,
         game_type,
@@ -493,7 +494,7 @@ export class MyPageController {
 
       const gameType = c.req.query('game_type')
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const stats = await service.getGameStats(user.id, gameType)
 
       return c.json({
@@ -519,7 +520,7 @@ export class MyPageController {
 
       console.log('🎮 [Controller] getGameHistory:', { userId: user.id, gameType, page, limit })
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const history = await service.getGameHistory(user.id, gameType, page, limit)
 
       return c.json({
@@ -542,7 +543,7 @@ export class MyPageController {
 
       const limit = parseInt(c.req.query('limit') || '100')
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const leaderboard = await service.getGameLeaderboard(gameType, limit)
 
       return c.json({
@@ -573,7 +574,7 @@ export class MyPageController {
         throw new AppError('util_type과 settings는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.saveUtilSetting(
         user.id,
         util_type,  // settingKey
@@ -599,7 +600,7 @@ export class MyPageController {
         throw new AppError('Unauthorized', 401, ErrorCodes.UNAUTHORIZED)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const settings = await service.getUtilSettings(user.id)
 
       return c.json({
@@ -625,7 +626,7 @@ export class MyPageController {
         throw new AppError('util_type과 input_data는 필수입니다', 400, ErrorCodes.VALIDATION_ERROR)
       }
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.saveUtilHistory(
         user.id,
         util_type,
@@ -656,7 +657,7 @@ export class MyPageController {
       const page = parseInt(c.req.query('page') || '1')
       const limit = parseInt(c.req.query('limit') || '20')
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       const result = await service.getUtilHistory(user.id, utilType, page, limit)
 
       return c.json({
@@ -679,7 +680,7 @@ export class MyPageController {
 
       const historyId = parseInt(c.req.param('historyId'))
 
-      const service = new MyPageService(c.env.DB)
+      const service = new MyPageService(getDB(c))
       await service.deleteUtilHistory(user.id, historyId)
 
       logger.info('Util history deleted', { userId: user.id, historyId })

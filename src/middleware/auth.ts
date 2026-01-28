@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { getDB } from '../db/adapter'
 
 // 세션 사용자 타입 정의
 export interface SessionUser {
@@ -19,8 +20,10 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
       return null
     }
 
+    const DB = getDB(c)
+
     // DB에서 세션 조회
-    const session = await c.env.DB
+    const session = await DB
       .prepare('SELECT * FROM sessions WHERE session_id = ? AND expires_at > datetime("now")')
       .bind(sessionId)
       .first()
@@ -30,14 +33,14 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
     }
 
     // 사용자 정보 조회
-    const user = await c.env.DB
+    const user = await DB
       .prepare('SELECT id, email, name, role, level, status FROM users WHERE id = ? AND status = "active"')
       .bind(session.user_id)
       .first()
 
     if (!user) {
       // 세션은 있지만 사용자가 없거나 비활성화된 경우
-      await c.env.DB
+      await DB
         .prepare('DELETE FROM sessions WHERE session_id = ?')
         .bind(sessionId)
         .run()
@@ -115,8 +118,10 @@ export async function createSession(c: Context, userId: number): Promise<string>
   // 만료 시간: 7일 후
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
+  const DB = getDB(c)
+
   // DB에 세션 저장
-  await c.env.DB
+  await DB
     .prepare('INSERT INTO sessions (session_id, user_id, expires_at) VALUES (?, ?, ?)')
     .bind(sessionId, userId, expiresAt.toISOString())
     .run()
@@ -138,8 +143,10 @@ export async function deleteSession(c: Context): Promise<void> {
   const sessionId = getCookie(c, 'session_id')
   
   if (sessionId) {
+    const DB = getDB(c)
+    
     // DB에서 세션 삭제
-    await c.env.DB
+    await DB
       .prepare('DELETE FROM sessions WHERE session_id = ?')
       .bind(sessionId)
       .run()
