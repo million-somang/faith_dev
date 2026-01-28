@@ -17812,8 +17812,14 @@ app.post('/api/news/vote', async (c) => {
         const field = voteType === 'up' ? 'vote_up' : 'vote_down'
         await DB.prepare(`
           UPDATE news 
-          SET ${field} = ${field} - 1,
-              popularity_score = vote_up - vote_down
+          SET ${field} = ${field} - 1
+          WHERE id = ?
+        `).bind(newsId).run()
+        
+        // popularity_score 업데이트
+        await DB.prepare(`
+          UPDATE news 
+          SET popularity_score = vote_up - vote_down
           WHERE id = ?
         `).bind(newsId).run()
       } else {
@@ -17828,8 +17834,14 @@ app.post('/api/news/vote', async (c) => {
         await DB.prepare(`
           UPDATE news 
           SET ${oldField} = ${oldField} - 1,
-              ${newField} = ${newField} + 1,
-              popularity_score = vote_up - vote_down
+              ${newField} = ${newField} + 1
+          WHERE id = ?
+        `).bind(newsId).run()
+        
+        // popularity_score 업데이트
+        await DB.prepare(`
+          UPDATE news 
+          SET popularity_score = vote_up - vote_down
           WHERE id = ?
         `).bind(newsId).run()
       }
@@ -17843,8 +17855,14 @@ app.post('/api/news/vote', async (c) => {
       const field = voteType === 'up' ? 'vote_up' : 'vote_down'
       await DB.prepare(`
         UPDATE news 
-        SET ${field} = ${field} + 1,
-            popularity_score = vote_up - vote_down
+        SET ${field} = ${field} + 1
+        WHERE id = ?
+      `).bind(newsId).run()
+      
+      // popularity_score 업데이트
+      await DB.prepare(`
+        UPDATE news 
+        SET popularity_score = vote_up - vote_down
         WHERE id = ?
       `).bind(newsId).run()
     }
