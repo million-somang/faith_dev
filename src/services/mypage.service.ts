@@ -22,9 +22,8 @@ export class MyPageService {
   async addKeywordSubscription(userId: number, keyword: string): Promise<void> {
     await this.db
       .prepare(`
-        INSERT INTO user_keyword_subscriptions (user_id, keyword)
+        INSERT INTO user_keywords (user_id, keyword)
         VALUES (?, ?)
-        ON CONFLICT(user_id, keyword) DO NOTHING
       `)
       .bind(userId, keyword)
       .run()
@@ -33,10 +32,10 @@ export class MyPageService {
   async getKeywordSubscriptions(userId: number): Promise<UserKeywordSubscription[]> {
     const result = await this.db
       .prepare(`
-        SELECT id, user_id, keyword, created_at
-        FROM user_keyword_subscriptions
+        SELECT id, user_id, keyword, subscribed_at as created_at
+        FROM user_keywords
         WHERE user_id = ?
-        ORDER BY created_at DESC
+        ORDER BY subscribed_at DESC
       `)
       .bind(userId)
       .all()
@@ -47,7 +46,7 @@ export class MyPageService {
   async removeKeywordSubscription(userId: number, keywordId: number): Promise<void> {
     await this.db
       .prepare(`
-        DELETE FROM user_keyword_subscriptions
+        DELETE FROM user_keywords
         WHERE id = ? AND user_id = ?
       `)
       .bind(keywordId, userId)
@@ -59,9 +58,8 @@ export class MyPageService {
   async addNewsBookmark(userId: number, newsId: number): Promise<void> {
     await this.db
       .prepare(`
-        INSERT INTO user_news_bookmarks (user_id, news_id)
+        INSERT INTO bookmarks (user_id, news_id)
         VALUES (?, ?)
-        ON CONFLICT(user_id, news_id) DO NOTHING
       `)
       .bind(userId, newsId)
       .run()
@@ -82,20 +80,20 @@ export class MyPageService {
             b.user_id,
             b.news_id,
             n.title,
-            n.content,
+            n.summary,
             n.category,
             n.created_at,
-            b.created_at as bookmarked_at
-          FROM user_news_bookmarks b
+            b.bookmarked_at
+          FROM bookmarks b
           JOIN news n ON b.news_id = n.id
           WHERE b.user_id = ?
-          ORDER BY b.created_at DESC
+          ORDER BY b.bookmarked_at DESC
           LIMIT ? OFFSET ?
         `)
         .bind(userId, limit, offset)
         .all(),
       this.db
-        .prepare(`SELECT COUNT(*) as count FROM user_news_bookmarks WHERE user_id = ?`)
+        .prepare(`SELECT COUNT(*) as count FROM bookmarks WHERE user_id = ?`)
         .bind(userId)
         .first()
     ])
