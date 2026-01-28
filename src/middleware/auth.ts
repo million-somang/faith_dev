@@ -24,7 +24,7 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
 
     // DB에서 세션 조회
     const session = await DB
-      .prepare('SELECT * FROM sessions WHERE session_id = ? AND expires_at > datetime("now")')
+      .prepare("SELECT * FROM sessions WHERE session_id = ? AND expires_at > datetime('now')")
       .bind(sessionId)
       .first()
 
@@ -34,7 +34,7 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
 
     // 사용자 정보 조회
     const user = await DB
-      .prepare('SELECT id, email, name, role, level, status FROM users WHERE id = ? AND status = "active"')
+      .prepare("SELECT id, email, name, role, level, status FROM users WHERE id = ? AND status = 'active'")
       .bind(session.user_id)
       .first()
 

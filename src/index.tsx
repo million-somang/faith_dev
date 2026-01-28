@@ -24467,7 +24467,7 @@ app.post('/api/auth/login', async (c) => {
 
     // 마지막 로그인 시간 업데이트
     await getDB(c)
-      .prepare('UPDATE users SET last_login = datetime("now") WHERE id = ?')
+      .prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?")
       .bind(user.id)
       .run()
 
