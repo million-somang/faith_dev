@@ -71,6 +71,8 @@ export class MyPageService {
     limit: number = 20
   ): Promise<{ bookmarks: UserNewsBookmark[], total: number }> {
     const offset = (page - 1) * limit
+    
+    console.log('[MyPageService] getNewsBookmarks 호출:', { userId, page, limit, offset })
 
     const [bookmarks, totalResult] = await Promise.all([
       this.db
@@ -97,6 +99,10 @@ export class MyPageService {
         .bind(userId)
         .first()
     ])
+    
+    console.log('[MyPageService] bookmarks raw:', bookmarks)
+    console.log('[MyPageService] bookmarks.results:', bookmarks.results)
+    console.log('[MyPageService] totalResult:', totalResult)
 
     return {
       bookmarks: bookmarks.results as UserNewsBookmark[],
