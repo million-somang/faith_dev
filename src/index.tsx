@@ -734,65 +734,8 @@ function getAdminNavigation(currentPage: string): string {
 // ==================== 메인 페이지 ====================
 app.get('/', async (c) => {
   const DB = getDB(c)
-  console.log('DEBUG: DB 타입:', typeof DB, 'DB.prepare 타입:', typeof DB?.prepare)
   
-  // 자동 뉴스 가져오기 로직
-  try {
-    // 마지막 뉴스 가져온 시간 확인
-    const lastFetch = await DB.prepare('SELECT MAX(created_at) as last_time FROM news').first()
-    const lastFetchTime = lastFetch?.last_time
-    
-    // 마지막 뉴스가 없거나 1시간 이상 지났으면 뉴스 가져오기
-    const shouldFetch = !lastFetchTime || 
-      (new Date().getTime() - new Date(lastFetchTime).getTime()) > (60 * 60 * 1000)
-    
-    if (shouldFetch) {
-      console.log('자동으로 뉴스를 가져옵니다...')
-      
-      // 모든 카테고리에서 뉴스 가져오기
-      const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment', 'stock']
-      
-      for (let i = 0; i < categories.length; i++) {
-        const category = categories[i]
-        try {
-          const newsItems = await parseGoogleNewsRSS(category)
-          console.log(`DEBUG: ${category} 카테고리 뉴스 ${newsItems.length}개 가져옴`)
-          
-          // DB에 저장
-          for (const item of newsItems) {
-            try {
-              await DB.prepare(`
-                INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-              `).bind(
-                item.category,
-                item.title,
-                item.summary,
-                item.link,
-                item.publisher,
-                item.published_at
-              ).run()
-            } catch (err) {
-              console.error('뉴스 저장 오류:', err.message, 'DB타입:', typeof DB, 'DB.prepare타입:', typeof DB?.prepare)
-            }
-          }
-          
-          // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
-          if (i < categories.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 2000))
-          }
-        } catch (err) {
-          console.error(category + ' 카테고리 뉴스 가져오기 실패:', err)
-        }
-      }
-      
-      console.log('뉴스 가져오기 완료')
-    }
-  } catch (error) {
-    console.error('자동 뉴스 가져오기 오류:', error)
-  }
-  
-  // 최신 뉴스 5개 가져오기
+  // 최신 뉴스 5개 가져오기 (자동 수집 로직 제거)
   let latestNews: any[] = []
   try {
     const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 5').all()
@@ -14248,12 +14191,27 @@ app.get('/news', async (c) => {
             
             // ==================== 초기화 ====================
             window.addEventListener('DOMContentLoaded', async function() {
-                await fetchUserInfo(); // 사용자 정보 먼저 가져오기
-                initSearchAndKeyword(); // 검색 및 키워드 입력 초기화
-                loadNews(true); // 초기 로드
-                loadHotNews(); // HOT 뉴스 로드
-                loadKeywords(); // 키워드 로드
-                initScrollToTop(); // 맨 위로 버튼 초기화
+                console.log('[페이지] 📱 DOMContentLoaded - 병렬 로딩 시작');
+                const startTime = Date.now();
+                
+                // 1단계: UI 초기화 (즉시 실행 - 사용자 경험 개선)
+                initSearchAndKeyword();
+                initScrollToTop();
+                
+                // 2단계: 사용자 인증 (최우선 - 뉴스 로딩에 필요)
+                await fetchUserInfo();
+                
+                // 3단계: 데이터 병렬 로딩 (속도 개선)
+                Promise.all([
+                    loadNews(true),
+                    loadHotNews(),
+                    loadKeywords()
+                ]).then(() => {
+                    const loadTime = Date.now() - startTime;
+                    console.log(`[페이지] ✅ 모든 데이터 로딩 완료 (${loadTime}ms)`);
+                }).catch(err => {
+                    console.error('[페이지] ❌ 데이터 로딩 오류:', err);
+                });
             });
             
             // ==================== 맨 위로 버튼 ====================
@@ -18542,6 +18500,7 @@ app.get('/api/news', async (c) => {
   const category = c.req.query('category')
   const limit = parseInt(c.req.query('limit') || '20')
   const offset = parseInt(c.req.query('offset') || '0')
+  const includeStocks = c.req.query('includeStocks') === 'true' // 종목 정보 포함 여부
   
   try {
     let query = 'SELECT * FROM news'
@@ -18557,35 +18516,45 @@ app.get('/api/news', async (c) => {
     
     const { results } = await DB.prepare(query).bind(...params).all()
     
-    // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
-    const newsWithStocks = await Promise.all(
-      results.map(async (news: any) => {
-        // 제목, 설명, 태그에서 관련 종목 찾기
-        const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
-        const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
-        
-        if (relatedTickers.length === 0) {
+    // 성능 최적화: 종목 정보는 필요할 때만 조회
+    if (includeStocks) {
+      // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
+      const newsWithStocks = await Promise.all(
+        results.map(async (news: any) => {
+          // 제목, 설명, 태그에서 관련 종목 찾기
+          const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
+          const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
+          
+          if (relatedTickers.length === 0) {
+            return {
+              ...news,
+              relatedStocks: []
+            }
+          }
+          
+          // 관련 종목 시세 조회
+          const stockData = await fetchBatchStockData(relatedTickers)
+          
           return {
             ...news,
-            relatedStocks: []
+            relatedStocks: stockData
           }
-        }
-        
-        // 관련 종목 시세 조회
-        const stockData = await fetchBatchStockData(relatedTickers)
-        
-        return {
-          ...news,
-          relatedStocks: stockData
-        }
+        })
+      )
+      
+      return c.json({ 
+        success: true, 
+        news: newsWithStocks,
+        count: newsWithStocks.length 
       })
-    )
-    
-    return c.json({ 
-      success: true, 
-      news: newsWithStocks,
-      count: newsWithStocks.length 
-    })
+    } else {
+      // 종목 정보 없이 빠르게 응답
+      return c.json({ 
+        success: true, 
+        news: results,
+        count: results.length 
+      })
+    }
   } catch (error) {
     console.error('뉴스 조회 오류:', error)
     return c.json({ error: '뉴스 조회 실패' }, 500)
