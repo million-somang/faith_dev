@@ -85,11 +85,11 @@ export class MyPageService {
             n.summary,
             n.category,
             n.created_at,
-            b.bookmarked_at
+            b.created_at as bookmarked_at
           FROM bookmarks b
           JOIN news n ON b.news_id = n.id
           WHERE b.user_id = ?
-          ORDER BY b.bookmarked_at DESC
+          ORDER BY b.created_at DESC
           LIMIT ? OFFSET ?
         `)
         .bind(userId, limit, offset)
