@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'faith-portal',
-      script: 'tsx',
-      args: 'src/server.ts',
+      script: 'npm',
+      args: 'run start:prod',
       env: {
         NODE_ENV: 'production',
         PORT: 3000
