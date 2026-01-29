@@ -1490,44 +1490,44 @@ app.get('/game/simple', (c) => {
                             // 랭킹 데이터 로드
                             async function loadRankings() {
                                 try {
-                                    // 테트리스 랭킹
-                                    const tetrisRes = await fetch('/api/tetris/leaderboard');
-                                    const tetrisData = await tetrisRes.json();
+                                    // 통합 API 사용하여 모든 게임 랭킹 가져오기
+                                    const [tetrisRes, sudokuRes, game2048Res, minesweeperRes] = await Promise.all([
+                                        fetch('/api/games/leaderboard?game_type=tetris&limit=5'),
+                                        fetch('/api/games/leaderboard?game_type=sudoku&limit=5'),
+                                        fetch('/api/games/leaderboard?game_type=2048&limit=5'),
+                                        fetch('/api/games/leaderboard?game_type=minesweeper&limit=5')
+                                    ]);
                                     
-                                    if (tetrisData.success) {
-                                        displayTetrisRanking('tetris-ranking', tetrisData.leaderboard || []);
+                                    // 테트리스 랭킹
+                                    const tetrisData = await tetrisRes.json();
+                                    if (tetrisData.success && tetrisData.leaderboard) {
+                                        displayUnifiedRanking('tetris-ranking', tetrisData.leaderboard);
                                     } else {
-                                        document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                        document.getElementById('tetris-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
                                     }
                                     
-                                    // 스도쿠 랭킹 (쉬움 난이도)
-                                    const sudokuRes = await fetch('/api/sudoku/leaderboard/easy');
+                                    // 스도쿠 랭킹
                                     const sudokuData = await sudokuRes.json();
-                                    
-                                    if (sudokuData.success) {
-                                        displaySudokuRanking('sudoku-ranking', sudokuData.scores || []);
+                                    if (sudokuData.success && sudokuData.leaderboard) {
+                                        displayUnifiedRanking('sudoku-ranking', sudokuData.leaderboard);
                                     } else {
-                                        document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                        document.getElementById('sudoku-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
                                     }
                                     
                                     // 2048 랭킹
-                                    const game2048Res = await fetch('/api/2048/leaderboard');
                                     const game2048Data = await game2048Res.json();
-                                    
-                                    if (game2048Data.success) {
-                                        display2048Ranking('game2048-ranking', game2048Data.scores || []);
+                                    if (game2048Data.success && game2048Data.leaderboard) {
+                                        displayUnifiedRanking('game2048-ranking', game2048Data.leaderboard);
                                     } else {
-                                        document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                        document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
                                     }
                                     
-                                    // 지뢰찾기 랭킹 (초급)
-                                    const minesweeperRes = await fetch('/api/minesweeper/leaderboard/beginner');
+                                    // 지뢰찾기 랭킹
                                     const minesweeperData = await minesweeperRes.json();
-                                    
-                                    if (minesweeperData.success) {
-                                        displayMinesweeperRanking('minesweeper-ranking', minesweeperData.scores || []);
+                                    if (minesweeperData.success && minesweeperData.leaderboard) {
+                                        displayUnifiedRanking('minesweeper-ranking', minesweeperData.leaderboard);
                                     } else {
-                                        document.getElementById('minesweeper-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
+                                        document.getElementById('minesweeper-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
                                     }
                                 } catch (error) {
                                     console.error('랭킹 로드 실패:', error);
@@ -1536,6 +1536,30 @@ app.get('/game/simple', (c) => {
                                     document.getElementById('game2048-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                     document.getElementById('minesweeper-ranking').innerHTML = '<div class="text-white text-sm text-center py-4">랭킹을 불러올 수 없습니다</div>';
                                 }
+                            }
+                            
+                            // 통합 랭킹 표시 함수
+                            function displayUnifiedRanking(elementId, rankings) {
+                                const element = document.getElementById(elementId);
+                                if (!rankings || rankings.length === 0) {
+                                    element.innerHTML = '<div class="text-white text-sm text-center py-4">아직 기록이 없습니다</div>';
+                                    return;
+                                }
+                                
+                                const html = rankings.map((rank, index) => {
+                                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
+                                    const scoreText = rank.score.toLocaleString();
+                                    const username = rank.email ? rank.email.split('@')[0] : rank.name || '익명';
+                                    return `<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
+                                        <span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">${medal}</span>
+                                        <div class="flex-1 min-w-0 flex flex-col">
+                                            <span class="truncate font-medium text-xs opacity-80" title="${username}">${username}</span>
+                                            <span class="font-bold text-yellow-200 text-base">${scoreText}<span class="text-xs ml-1 opacity-80">점</span></span>
+                                        </div>
+                                    </div>`;
+                                }).join('');
+                                
+                                element.innerHTML = html;
                             }
                             
                             function displayTetrisRanking(elementId, rankings) {
@@ -5074,9 +5098,9 @@ app.post('/api/sudoku/score', async (c) => {
     
     // 1. sudoku_scores 테이블에 저장 (기존)
     const sudokuResult = await DB.prepare(`
-      INSERT INTO sudoku_scores (difficulty, time, mistakes, player_name, user_id, created_at)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).bind(difficulty, time, mistakes || 0, username, userId).run()
+      INSERT INTO sudoku_scores (user_id, difficulty, time, mistakes, created_at)
+      VALUES (?, ?, ?, ?, datetime('now'))
+    `).bind(userId, difficulty, time, mistakes || 0).run()
     
     console.log('✅ [스도쿠] sudoku_scores 테이블 저장 성공')
     
