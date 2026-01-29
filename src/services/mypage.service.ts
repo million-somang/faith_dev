@@ -32,10 +32,10 @@ export class MyPageService {
   async getKeywordSubscriptions(userId: number): Promise<UserKeywordSubscription[]> {
     const result = await this.db
       .prepare(`
-        SELECT id, user_id, keyword, subscribed_at as created_at
+        SELECT id, user_id, keyword, created_at
         FROM user_keywords
         WHERE user_id = ?
-        ORDER BY subscribed_at DESC
+        ORDER BY created_at DESC
       `)
       .bind(userId)
       .all()
