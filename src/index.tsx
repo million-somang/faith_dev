@@ -1302,6 +1302,100 @@ app.get('/', async (c) => {
 
         ${getCommonFooter()}
 
+        <!-- 베타 테스트 공지사항 모달 -->
+        <div id="betaNoticeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+                <!-- 모달 헤더 -->
+                <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
+                            <h3 class="text-xl font-bold text-white">베타 테스트 안내</h3>
+                        </div>
+                        <button onclick="closeBetaNotice()" class="text-white hover:text-gray-200 transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 모달 내용 -->
+                <div class="p-6">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-yellow-400 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-800 leading-relaxed">
+                                    현재 보시는 페이지는 홈페이지를 만들기 전에 <strong>베타테스트 중인 페이지</strong>입니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <p class="text-gray-700">일부 기능이 정상적으로 동작하지 않을 수 있습니다.</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <p class="text-gray-700">사용하시는 데 착오 없으시기 바랍니다.</p>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-green-500 mt-1"></i>
+                            <p class="text-gray-700">불편 사항이나 버그 발견 시 피드백 부탁드립니다.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button onclick="closeBetaNoticePermanently()" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors">
+                            <i class="fas fa-check mr-2"></i>다시 보지 않기
+                        </button>
+                        <button onclick="closeBetaNotice()" class="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-3 px-4 rounded-lg transition-all shadow-lg">
+                            <i class="fas fa-times-circle mr-2"></i>닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // 베타 공지사항 모달 제어
+            function closeBetaNotice() {
+                document.getElementById('betaNoticeModal').classList.add('hidden');
+            }
+            
+            function closeBetaNoticePermanently() {
+                localStorage.setItem('betaNoticeHidden', 'true');
+                closeBetaNotice();
+            }
+            
+            // 페이지 로드 시 모달 표시 (이전에 "다시 보지 않기"를 선택하지 않은 경우)
+            window.addEventListener('DOMContentLoaded', function() {
+                const isHidden = localStorage.getItem('betaNoticeHidden');
+                if (!isHidden) {
+                    setTimeout(function() {
+                        document.getElementById('betaNoticeModal').classList.remove('hidden');
+                    }, 500); // 0.5초 후 표시
+                }
+            });
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeBetaNotice();
+                }
+            });
+            
+            // 모달 배경 클릭 시 닫기
+            document.getElementById('betaNoticeModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeBetaNotice();
+                }
+            });
+        </script>
+
     </body>
     </html>
   `)
