@@ -11,6 +11,12 @@ pids
 *.seed
 *.pid.lock
 
+# Database files
+*.db
+*.db-*
+faith-portal.db
+faith-portal.db.backup*
+
 # dotenv environment variables file
 .env
 .dev.vars
