@@ -2280,6 +2280,7 @@ app.get('/game/simple/tetris/play', (c) => {
             let score = 0;
             let highScore = 0;
             let level = 1;
+            let lines = 0;
             let dropSpeed = 1000;
             let gameRunning = false;
             let gameInterval;
@@ -2440,6 +2441,7 @@ app.get('/game/simple/tetris/play', (c) => {
                     }
                 }
                 if (linesCleared > 0) {
+                    lines += linesCleared;
                     score += linesCleared * 10;
                     document.getElementById('score').textContent = score;
                     
@@ -2526,6 +2528,7 @@ app.get('/game/simple/tetris/play', (c) => {
             function startGame() {
                 board = Array(ROWS).fill().map(() => Array(COLS).fill(0));
                 score = 0;
+                lines = 0;
                 level = 1;
                 dropSpeed = 1000;
                 document.getElementById('score').textContent = 0;
