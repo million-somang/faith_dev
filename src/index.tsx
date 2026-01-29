@@ -1549,7 +1549,7 @@ app.get('/game/simple', (c) => {
                                 const html = rankings.map((rank, index) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
-                                    const username = rank.email ? rank.email.split('@')[0] : rank.name || '익명';
+                                    const username = rank.user_name || (rank.email ? rank.email.split('@')[0] : '익명');
                                     return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
                                         '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
                                         '<div class="flex-1 min-w-0 flex flex-col">' +
@@ -1572,7 +1572,7 @@ app.get('/game/simple', (c) => {
                                 const html = rankings.slice(0, 5).map((rank, index) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
-                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    const username = rank.user_name || (rank.email ? rank.email.split('@')[0] : '익명');
                                     return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
                                         '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
                                         '<div class="flex-1 min-w-0 flex flex-col">' +
@@ -1597,7 +1597,7 @@ app.get('/game/simple', (c) => {
                                     const minutes = Math.floor(rank.time / 60);
                                     const seconds = rank.time % 60;
                                     const timeText = minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
-                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    const username = rank.user_name || (rank.email ? rank.email.split('@')[0] : '익명');
                                     return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
                                         '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
                                         '<div class="flex-1 min-w-0 flex flex-col">' +
@@ -1620,7 +1620,7 @@ app.get('/game/simple', (c) => {
                                 const html = rankings.slice(0, 5).map((rank, index) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
-                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    const username = rank.user_name || (rank.email ? rank.email.split('@')[0] : '익명');
                                     return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
                                         '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
                                         '<div class="flex-1 min-w-0 flex flex-col">' +
@@ -1643,7 +1643,7 @@ app.get('/game/simple', (c) => {
                                 const html = rankings.slice(0, 5).map((rank, index) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const timeText = rank.time.toFixed(2);
-                                    const username = rank.email ? rank.email.split('@')[0] : '익명';
+                                    const username = rank.user_name || (rank.email ? rank.email.split('@')[0] : '익명');
                                     return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
                                         '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
                                         '<div class="flex-1 min-w-0 flex flex-col">' +
