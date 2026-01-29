@@ -1550,13 +1550,13 @@ app.get('/game/simple', (c) => {
                                     const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : (index + 1);
                                     const scoreText = rank.score.toLocaleString();
                                     const username = rank.email ? rank.email.split('@')[0] : rank.name || '익명';
-                                    return `<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">
-                                        <span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">${medal}</span>
-                                        <div class="flex-1 min-w-0 flex flex-col">
-                                            <span class="truncate font-medium text-xs opacity-80" title="${username}">${username}</span>
-                                            <span class="font-bold text-yellow-200 text-base">${scoreText}<span class="text-xs ml-1 opacity-80">점</span></span>
-                                        </div>
-                                    </div>`;
+                                    return '<div class="flex items-start gap-2 text-white text-sm py-2.5 px-3 hover:bg-white hover:bg-opacity-10 rounded-lg transition-all duration-200">' +
+                                        '<span class="flex-shrink-0 font-bold text-base w-7 text-center pt-0.5">' + medal + '</span>' +
+                                        '<div class="flex-1 min-w-0 flex flex-col">' +
+                                        '<span class="truncate font-medium text-xs opacity-80" title="' + username + '">' + username + '</span>' +
+                                        '<span class="font-bold text-yellow-200 text-base">' + scoreText + '<span class="text-xs ml-1 opacity-80">점</span></span>' +
+                                        '</div>' +
+                                        '</div>';
                                 }).join('');
                                 
                                 element.innerHTML = html;
