@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import { createRequire } from 'module';
+import { initializeDatabase } from './init';
 const require = createRequire(import.meta.url);
 
 // 환경 변수 로드
@@ -13,6 +14,13 @@ if (typeof process !== 'undefined' && process.versions && process.versions.node)
   const dbPath = process.env.DATABASE_PATH || './faith-portal.db';
   db = new Database(dbPath);
   console.log(`✅ SQLite 데이터베이스 연결: ${dbPath}`);
+  
+  // 데이터베이스 테이블 초기화 (마이그레이션 실행)
+  try {
+    initializeDatabase(db);
+  } catch (error) {
+    console.error('⚠️  데이터베이스 초기화 중 오류 (계속 진행):', error);
+  }
 }
 
 // D1과 호환되는 SQLite 어댑터
