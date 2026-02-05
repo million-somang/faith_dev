@@ -4,26 +4,26 @@ import { serveStatic } from '@hono/node-server/serve-static'
 import { getDB } from './db/adapter'
 import { findRelatedStocks, getStockNameByTicker, getKeywordsByTicker } from './utils/stockMapper'
 import { fetchBatchStockData, type StockData } from './utils/stockDataFetcher'
-import { 
-  checkSession, 
-  requireAuth, 
-  optionalAuth, 
-  requireAdmin, 
-  createSession, 
-  deleteSession, 
-  hashPassword, 
-  verifyPassword,
-  type SessionUser 
+import {
+    checkSession,
+    requireAuth,
+    optionalAuth,
+    requireAdmin,
+    createSession,
+    deleteSession,
+    hashPassword,
+    verifyPassword,
+    type SessionUser
 } from './middleware/auth'
 import { escapeHtml } from './utils/htmlEscape'
 import { getCategoryName, getCategoryColor, getTimeAgo } from './utils/formatter'
 import { logger } from './middleware/logger'
 import { AppError, ValidationError, ErrorCodes } from './middleware/errors'
-import { 
-  validateRequired, 
-  validateEmail, 
-  validatePassword, 
-  validateLength 
+import {
+    validateRequired,
+    validateEmail,
+    validatePassword,
+    validateLength
 } from './utils/validator'
 import { MyPageController } from './controllers/mypage.controller'
 import type { Bindings, Variables } from './types'
@@ -36,83 +36,83 @@ app.use('/api/*', cors())
 // 정적 파일 서빙 (Node.js 환경용)
 // Cloudflare Pages에서는 자동으로 처리되므로 조건부로 적용
 if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-  // Node.js 환경에서만 정적 파일 서빙
-  app.use('/*', serveStatic({ root: './public' }))
+    // Node.js 환경에서만 정적 파일 서빙
+    app.use('/*', serveStatic({ root: './public' }))
 }
 
 // ==================== Breadcrumb 네비게이션 헬퍼 함수 ====================
-function getBreadcrumb(items: Array<{label: string, href?: string}>): string {
-  let breadcrumbHtml = `
+function getBreadcrumb(items: Array<{ label: string, href?: string }>): string {
+    let breadcrumbHtml = `
     <nav class="bg-white border-b border-gray-100">
       <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
         <ol class="flex items-center space-x-2 text-sm">
   `
-  
-  items.forEach((item, index) => {
-    const isLast = index === items.length - 1
-    
-    if (isLast) {
-      // 마지막 항목 (현재 페이지)
-      breadcrumbHtml += `
+
+    items.forEach((item, index) => {
+        const isLast = index === items.length - 1
+
+        if (isLast) {
+            // 마지막 항목 (현재 페이지)
+            breadcrumbHtml += `
         <li class="flex items-center">
           <span class="text-gray-900 font-semibold">${item.label}</span>
         </li>
       `
-    } else {
-      // 링크 항목
-      breadcrumbHtml += `
+        } else {
+            // 링크 항목
+            breadcrumbHtml += `
         <li class="flex items-center">
           <a href="${item.href}" class="text-gray-500 hover:text-cyan-600 transition-colors">${item.label}</a>
           <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
         </li>
       `
-    }
-  })
-  
-  breadcrumbHtml += `
+        }
+    })
+
+    breadcrumbHtml += `
         </ol>
       </div>
     </nav>
   `
-  
-  return breadcrumbHtml
+
+    return breadcrumbHtml
 }
 
 // ==================== 게임 메뉴 헬퍼 함수 ====================
 function getGameMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/game/simple', label: '심플 게임', icon: 'fas fa-gamepad' },
-    { path: '/game/web', label: '웹게임', icon: 'fas fa-globe' },
-  ]
+    const menuItems = [
+        { path: '/game/simple', label: '심플 게임', icon: 'fas fa-gamepad' },
+        { path: '/game/web', label: '웹게임', icon: 'fas fa-globe' },
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage.startsWith(item.path)
-    const activeClass = isActive ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-700 hover:text-purple-600 hover:border-b-2 hover:border-purple-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage.startsWith(item.path)
+        const activeClass = isActive ? 'text-purple-600 border-b-2 border-purple-600' : 'text-gray-700 hover:text-purple-600 hover:border-b-2 hover:border-purple-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 심플 게임 사이드바 메뉴 ====================
 function getSimpleGameSidebar(currentPage: string): string {
-  const games = [
-    { path: '/game/simple/tetris', label: '테트리스', icon: 'fas fa-th' },
-    { path: '/game/simple/sudoku', label: '스도쿠', icon: 'fas fa-table' },
-    { path: '/game/simple/2048', label: '2048', icon: 'fas fa-th-large' },
-    { path: '/game/simple/minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb' },
-  ]
+    const games = [
+        { path: '/game/simple/tetris', label: '테트리스', icon: 'fas fa-th' },
+        { path: '/game/simple/sudoku', label: '스도쿠', icon: 'fas fa-table' },
+        { path: '/game/simple/2048', label: '2048', icon: 'fas fa-th-large' },
+        { path: '/game/simple/minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb' },
+    ]
 
-  let sidebarHtml = `
+    let sidebarHtml = `
     <aside class="lg:w-64 flex-shrink-0">
       <div class="bg-white rounded-xl shadow-lg p-4 sticky top-24">
         <h3 class="font-bold text-gray-800 mb-3 flex items-center">
@@ -121,168 +121,168 @@ function getSimpleGameSidebar(currentPage: string): string {
         </h3>
         <nav class="space-y-2">
   `
-  
-  for (const game of games) {
-    const isActive = currentPage === game.path
-    const activeClass = isActive 
-      ? 'bg-purple-50 text-purple-600 font-semibold' 
-      : 'hover:bg-purple-50 text-gray-700 hover:text-purple-600'
-    
-    sidebarHtml += `
+
+    for (const game of games) {
+        const isActive = currentPage === game.path
+        const activeClass = isActive
+            ? 'bg-purple-50 text-purple-600 font-semibold'
+            : 'hover:bg-purple-50 text-gray-700 hover:text-purple-600'
+
+        sidebarHtml += `
       <a href="${game.path}" class="block px-4 py-2 ${activeClass} rounded-lg transition-all">
         <i class="${game.icon} mr-2"></i>${game.label}
       </a>
     `
-  }
-  
-  sidebarHtml += `
+    }
+
+    sidebarHtml += `
         </nav>
       </div>
     </aside>
   `
-  
-  return sidebarHtml
+
+    return sidebarHtml
 }
 
 // ==================== 유틸리티 메뉴 헬퍼 함수 ====================
 function getLifestyleMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/lifestyle/calculator', label: '계산기', icon: 'fas fa-calculator' },
-    { path: '/lifestyle/youtube-download', label: '유튜브 다운로드', icon: 'fab fa-youtube' },
-    // 추가 메뉴는 여기에
-  ]
+    const menuItems = [
+        { path: '/lifestyle/calculator', label: '계산기', icon: 'fas fa-calculator' },
+        { path: '/lifestyle/youtube-download', label: '유튜브 다운로드', icon: 'fab fa-youtube' },
+        // 추가 메뉴는 여기에
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-cyan-600 border-b-2 border-cyan-600' : 'text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path
+        const activeClass = isActive ? 'text-cyan-600 border-b-2 border-cyan-600' : 'text-gray-700 hover:text-cyan-600 hover:border-b-2 hover:border-cyan-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2 ${item.icon.includes('youtube') ? 'text-red-500' : ''}"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 금융 메뉴 헬퍼 함수 ====================
 function getFinanceMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/finance', label: '주식', icon: 'fas fa-chart-line' },
-    { path: '/finance/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
-    { path: '/finance/banking', label: '은행', icon: 'fas fa-university' },
-  ]
+    const menuItems = [
+        { path: '/finance', label: '주식', icon: 'fas fa-chart-line' },
+        { path: '/finance/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
+        { path: '/finance/banking', label: '은행', icon: 'fas fa-university' },
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-700 hover:text-green-600 hover:border-b-2 hover:border-green-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path
+        const activeClass = isActive ? 'text-green-600 border-b-2 border-green-600' : 'text-gray-700 hover:text-green-600 hover:border-b-2 hover:border-green-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 엔터 메뉴 헬퍼 함수 ====================
 function getEntertainmentMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/entertainment/music', label: '음악', icon: 'fas fa-music' },
-    { path: '/entertainment/movie', label: '영화', icon: 'fas fa-film' },
-    { path: '/entertainment/celebrity', label: '연예인', icon: 'fas fa-star' },
-  ]
+    const menuItems = [
+        { path: '/entertainment/music', label: '음악', icon: 'fas fa-music' },
+        { path: '/entertainment/movie', label: '영화', icon: 'fas fa-film' },
+        { path: '/entertainment/celebrity', label: '연예인', icon: 'fas fa-star' },
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-700 hover:text-pink-600 hover:border-b-2 hover:border-pink-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path
+        const activeClass = isActive ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-700 hover:text-pink-600 hover:border-b-2 hover:border-pink-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 교육 메뉴 헬퍼 함수 ====================
 function getEducationMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/education/online', label: '온라인 강의', icon: 'fas fa-laptop' },
-    { path: '/education/language', label: '언어', icon: 'fas fa-language' },
-    { path: '/education/certificate', label: '자격증', icon: 'fas fa-certificate' },
-  ]
+    const menuItems = [
+        { path: '/education/online', label: '온라인 강의', icon: 'fas fa-laptop' },
+        { path: '/education/language', label: '언어', icon: 'fas fa-language' },
+        { path: '/education/certificate', label: '자격증', icon: 'fas fa-certificate' },
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:border-b-2 hover:border-indigo-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path
+        const activeClass = isActive ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-700 hover:text-indigo-600 hover:border-b-2 hover:border-indigo-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 쇼핑 메뉴 헬퍼 함수 ====================
 function getShoppingMenu(currentPage: string): string {
-  const menuItems = [
-    { path: '/shopping', label: '핫딜 랭킹', icon: 'fas fa-fire' },
-    { path: '/shopping/coupang', label: '쿠팡 핫딜', icon: 'fas fa-tags' },
-    { path: '/shopping/aliexpress', label: '알리 특가', icon: 'fas fa-globe' },
-  ]
+    const menuItems = [
+        { path: '/shopping', label: '핫딜 랭킹', icon: 'fas fa-fire' },
+        { path: '/shopping/coupang', label: '쿠팡 핫딜', icon: 'fas fa-tags' },
+        { path: '/shopping/aliexpress', label: '알리 특가', icon: 'fas fa-globe' },
+    ]
 
-  let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path
-    const activeClass = isActive ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-700 hover:text-orange-600 hover:border-b-2 hover:border-orange-600'
-    
-    menuHtml += `
+    let menuHtml = '<nav class="bg-white border-b border-gray-200 shadow-sm"><div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6"><div class="flex space-x-8 overflow-x-auto">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path
+        const activeClass = isActive ? 'text-orange-600 border-b-2 border-orange-600' : 'text-gray-700 hover:text-orange-600 hover:border-b-2 hover:border-orange-600'
+
+        menuHtml += `
       <a href="${item.path}" class="px-4 py-4 ${activeClass} whitespace-nowrap transition-all">
         <i class="${item.icon} mr-2"></i>
         ${item.label}
       </a>
     `
-  }
-  
-  menuHtml += '</div></div></nav>'
-  return menuHtml
+    }
+
+    menuHtml += '</div></div></nav>'
+    return menuHtml
 }
 
 // ==================== 공통 헤더 헬퍼 함수 ====================
 function getCommonHeader(sectionName: string = ''): string {
-  // 섹션명 표시 (메인 페이지가 아닐 때만)
-  const sectionLabel = sectionName ? `<span class="hidden sm:inline text-gray-700 text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
-  
-  // 메인 페이지는 sticky, 서브 페이지는 relative (Sticky 헤더가 대체)
-  const headerClass = sectionName ? 'bg-white backdrop-blur-md shadow-sm relative transition-shadow duration-300' : 'bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300'
-  
-  return `
+    // 섹션명 표시 (메인 페이지가 아닐 때만)
+    const sectionLabel = sectionName ? `<span class="hidden sm:inline text-gray-700 text-lg md:text-xl font-bold ml-2 md:ml-3">| ${sectionName}</span>` : ''
+
+    // 메인 페이지는 sticky, 서브 페이지는 relative (Sticky 헤더가 대체)
+    const headerClass = sectionName ? 'bg-white backdrop-blur-md shadow-sm relative transition-shadow duration-300' : 'bg-white backdrop-blur-md shadow-sm sticky top-0 z-50 transition-shadow duration-300'
+
+    return `
     <!-- 헤더 -->
     <header class="${headerClass}" id="main-header">
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 flex justify-between items-center">
@@ -391,7 +391,7 @@ function getCommonHeader(sectionName: string = ''): string {
 
 // ==================== Sticky 헤더 컴포넌트 ====================
 function getStickyHeader(): string {
-  return `
+    return `
     <!-- Sticky 헤더 (스크롤 시 표시) - Naver 스타일 -->
     <div id="sticky-header" class="fixed top-0 left-0 right-0 z-50 bg-white shadow-md transition-all duration-300 ease-in-out" style="transform: translateY(-100%);">
         <!-- 검색창 영역 -->
@@ -516,7 +516,7 @@ function getStickyHeader(): string {
 
 // ==================== 공통 인증 스크립트 헬퍼 함수 ====================
 function getCommonAuthScript(): string {
-  return `
+    return `
     <script>
       // 다크모드 초기화
       function initDarkMode() {
@@ -541,7 +541,7 @@ function getCommonAuthScript(): string {
 
 // ==================== 가입 유도 팝업 컴포넌트 ====================
 function getAuthPopupScript(): string {
-  return `
+    return `
     <script>
       window.showAuthPopup = function(options) {
         options = options || {};
@@ -616,7 +616,7 @@ function getAuthPopupScript(): string {
 
 // ==================== 공통 푸터 헬퍼 함수 ====================
 function getCommonFooter(): string {
-  return `
+    return `
     <!-- 푸터 -->
     <footer class="bg-gradient-to-r from-blue-900 to-blue-800 text-white mt-16 py-8">
         <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
@@ -673,25 +673,27 @@ function getCommonFooter(): string {
 
 // ==================== 관리자 네비게이션 헬퍼 함수 ====================
 function getAdminNavigation(currentPage: string): string {
-  const menuItems = [
-    { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt', shortLabel: '대시보드' },
-    { path: '/admin/users', label: '회원 관리', icon: 'fa-users', shortLabel: '회원' },
-    { path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', shortLabel: '컨텐츠', hasDropdown: true, dropdownItems: [
-      { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
-    ]},
-    { path: '/admin/stats', label: '통계', icon: 'fa-chart-line', shortLabel: '통계' },
-    { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
-    { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
-  ]
+    const menuItems = [
+        { path: '/admin', label: '대시보드', icon: 'fa-tachometer-alt', shortLabel: '대시보드' },
+        { path: '/admin/users', label: '회원 관리', icon: 'fa-users', shortLabel: '회원' },
+        {
+            path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', shortLabel: '컨텐츠', hasDropdown: true, dropdownItems: [
+                { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
+            ]
+        },
+        { path: '/admin/stats', label: '통계', icon: 'fa-chart-line', shortLabel: '통계' },
+        { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
+        { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
+    ]
 
-  let navHtml = '<div class="flex overflow-x-auto space-x-2 sm:space-x-4 lg:space-x-8 py-2 scrollbar-hide">'
-  
-  for (const item of menuItems) {
-    const isActive = currentPage === item.path || (item.dropdownItems && item.dropdownItems.some(sub => sub.path === currentPage))
-    const activeClass = isActive ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'
-    
-    if (item.hasDropdown) {
-      navHtml += `
+    let navHtml = '<div class="flex overflow-x-auto space-x-2 sm:space-x-4 lg:space-x-8 py-2 scrollbar-hide">'
+
+    for (const item of menuItems) {
+        const isActive = currentPage === item.path || (item.dropdownItems && item.dropdownItems.some(sub => sub.path === currentPage))
+        const activeClass = isActive ? 'text-blue-600 border-b-2 border-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'
+
+        if (item.hasDropdown) {
+            navHtml += `
         <div class="relative group flex-shrink-0">
           <button class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center text-sm sm:text-base whitespace-nowrap">
             <i class="fas ${item.icon} sm:mr-2"></i>
@@ -701,50 +703,50 @@ function getAdminNavigation(currentPage: string): string {
           </button>
           <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
       `
-      
-      for (const subItem of item.dropdownItems || []) {
-        const subActive = currentPage === subItem.path
-        navHtml += `
+
+            for (const subItem of item.dropdownItems || []) {
+                const subActive = currentPage === subItem.path
+                navHtml += `
             <a href="${subItem.path}" class="block px-4 py-3 ${subActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100 hover:text-blue-600'} text-sm sm:text-base">
               <i class="fas ${subItem.icon} mr-2"></i>
               ${subItem.label}
             </a>
         `
-      }
-      
-      navHtml += `
+            }
+
+            navHtml += `
           </div>
         </div>
       `
-    } else {
-      navHtml += `
+        } else {
+            navHtml += `
         <a href="${item.path}" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 ${activeClass} flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
           <i class="fas ${item.icon} sm:mr-2"></i>
           <span class="hidden sm:inline ml-1">${item.label}</span>
           <span class="sm:hidden ml-1">${item.shortLabel}</span>
         </a>
       `
+        }
     }
-  }
-  
-  navHtml += '</div>'
-  return navHtml
+
+    navHtml += '</div>'
+    return navHtml
 }
 
 // ==================== 메인 페이지 ====================
 app.get('/', async (c) => {
-  const DB = getDB(c)
-  
-  // 최신 뉴스 5개 가져오기 (자동 수집 로직 제거)
-  let latestNews: any[] = []
-  try {
-    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 5').all()
-    latestNews = results || []
-  } catch (error) {
-    console.error('뉴스 조회 오류:', error)
-  }
-  
-  return c.html(`
+    const DB = getDB(c)
+
+    // 최신 뉴스 5개 가져오기 (자동 수집 로직 제거)
+    let latestNews: any[] = []
+    try {
+        const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 5').all()
+        latestNews = results || []
+    } catch (error) {
+        console.error('뉴스 조회 오류:', error)
+    }
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -1075,11 +1077,11 @@ app.get('/', async (c) => {
 
             <!-- 제휴 배너 -->
             <section class="mb-8 max-w-6xl mx-auto px-4">
-                <div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                    <a href="https://link.coupang.com/a/dwChmy" target="_blank" rel="noopener noreferrer" referrerpolicy="unsafe-url" class="block p-4">
+                <div>
+                    <a href="https://link.coupang.com/a/dwChmy" target="_blank" rel="noopener noreferrer" referrerpolicy="unsafe-url" class="block">
                         <img src="https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90" 
                              alt="쿠팡 파트너스 배너" 
-                             class="w-full h-auto mx-auto"
+                             class="h-auto max-w-full"
                              style="max-width: 728px; max-height: 90px;">
                     </a>
                 </div>
@@ -1183,9 +1185,9 @@ app.get('/', async (c) => {
                     </h3>
                     <div class="space-y-2" id="latest-news">
                         ${latestNews.length > 0 ? latestNews.map((news, index) => {
-                          const timeAgo = getTimeAgo(news.created_at)
-                          const categoryColor = getCategoryColor(news.category)
-                          return `
+        const timeAgo = getTimeAgo(news.created_at)
+        const categoryColor = getCategoryColor(news.category)
+        return `
                             <div onclick="openNewsLink('${news.link}')" class="block hover:bg-gray-50 py-3 px-4 rounded-lg transition-all group border border-transparent hover:border-gray-200 cursor-pointer">
                                 <div class="flex items-start gap-3">
                                     <span class="rank-number flex-shrink-0 mt-1">${index + 1}</span>
@@ -1199,7 +1201,7 @@ app.get('/', async (c) => {
                                 </div>
                             </div>
                           `
-                        }).join('') : `
+    }).join('') : `
                             <div class="text-center py-12 text-gray-500">
                                 <i class="fas fa-newspaper text-5xl mb-4 text-gray-300"></i>
                                 <p class="font-medium">뉴스를 불러오는 중입니다...</p>
@@ -1404,12 +1406,12 @@ app.get('/', async (c) => {
 // ==================== 게임 페이지 ====================
 // 게임 메인 페이지 (심플 게임으로 리다이렉트)
 app.get('/game', (c) => {
-  return c.redirect('/game/simple')
+    return c.redirect('/game/simple')
 })
 
 // 심플 게임 페이지
 app.get('/game/simple', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -1441,10 +1443,10 @@ app.get('/game/simple', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '심플 게임' }
+    ])}
 
         ${getGameMenu('/game/simple')}
 
@@ -1766,7 +1768,7 @@ app.get('/game/simple', (c) => {
 
 // 웹게임 페이지
 app.get('/game/web', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -1797,10 +1799,10 @@ app.get('/game/web', (c) => {
         ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '웹게임'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '웹게임' }
+    ])}
 
         ${getGameMenu('/game/web')}
 
@@ -1833,7 +1835,7 @@ app.get('/game/web', (c) => {
 
 // 테트리스 정보 페이지
 app.get('/game/simple/tetris', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -1864,11 +1866,11 @@ app.get('/game/simple/tetris', (c) => {
         ${getCommonHeader('Game')}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임', href: '/game/simple'},
-          {label: '테트리스'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '심플 게임', href: '/game/simple' },
+        { label: '테트리스' }
+    ])}
 
         ${getGameMenu('/game/simple')}
 
@@ -2096,7 +2098,7 @@ app.get('/game/simple/tetris', (c) => {
 
 // 테트리스 게임 실행 페이지
 app.get('/game/simple/tetris/play', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -2694,7 +2696,7 @@ app.get('/game/simple/tetris/play', (c) => {
 
 // 스도쿠 랜딩 페이지
 app.get('/game/simple/sudoku', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -2749,11 +2751,11 @@ app.get('/game/simple/sudoku', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임', href: '/game/simple'},
-          {label: '스도쿠 챌린지'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '심플 게임', href: '/game/simple' },
+        { label: '스도쿠 챌린지' }
+    ])}
 
         ${getGameMenu('/game/simple')}
 
@@ -2997,8 +2999,8 @@ app.get('/game/simple/sudoku', (c) => {
 })
 // 스도쿠 게임 플레이 페이지 (완전히 새로운 구현)
 app.get('/game/simple/sudoku/play', (c) => {
-  const difficulty = c.req.query('difficulty') || 'easy';
-  return c.html(`
+    const difficulty = c.req.query('difficulty') || 'easy';
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -3609,7 +3611,7 @@ app.get('/game/simple/sudoku/play', (c) => {
                     
                     <!-- 숫자 패드 -->
                     <div class="number-pad">
-                        ${Array.from({length: 9}, (_, i) => `
+                        ${Array.from({ length: 9 }, (_, i) => `
                             <button class="number-btn" onclick="inputNumber(${i + 1})">${i + 1}</button>
                         `).join('')}
                     </div>
@@ -4225,7 +4227,7 @@ app.get('/game/simple/sudoku/play', (c) => {
 
 // 2048 메인 페이지
 app.get('/game/simple/2048', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -4256,11 +4258,11 @@ app.get('/game/simple/2048', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임', href: '/game/simple'},
-          {label: '2048'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '심플 게임', href: '/game/simple' },
+        { label: '2048' }
+    ])}
 
         ${getGameMenu('/game/simple')}
         
@@ -4426,7 +4428,7 @@ app.get('/game/simple/2048', (c) => {
 
 // 2048 플레이 페이지
 app.get('/game/simple/2048/play', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -5124,11 +5126,11 @@ app.get('/game/simple/2048/play', (c) => {
 // API: 리더보드
 
 app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
-  const DB = getDB(c)
-  const difficulty = c.req.param('difficulty')
-  
-  try {
-    const result = await DB.prepare(`
+    const DB = getDB(c)
+    const difficulty = c.req.param('difficulty')
+
+    try {
+        const result = await DB.prepare(`
       SELECT 
         s.player_name,
         s.time,
@@ -5141,169 +5143,169 @@ app.get('/api/sudoku/leaderboard/:difficulty', async (c) => {
       ORDER BY s.time ASC, s.mistakes ASC
       LIMIT 10
     `).bind(difficulty).all()
-    
-    return c.json({
-      success: true,
-      scores: result.results || []
-    })
-  } catch (error) {
-    console.error('리더보드 조회 오류:', error)
-    return c.json({
-      success: false,
-      message: '리더보드 조회 중 오류가 발생했습니다',
-      scores: []
-    })
-  }
+
+        return c.json({
+            success: true,
+            scores: result.results || []
+        })
+    } catch (error) {
+        console.error('리더보드 조회 오류:', error)
+        return c.json({
+            success: false,
+            message: '리더보드 조회 중 오류가 발생했습니다',
+            scores: []
+        })
+    }
 })
 
 app.post('/api/sudoku/score', async (c) => {
-  const DB = getDB(c)
-  const { difficulty, time, mistakes } = await c.req.json()
-  
-  console.log('🎯 [스도쿠 점수 저장] API 호출됨')
-  console.log('📦 [스도쿠] 받은 데이터:', { difficulty, time, mistakes })
-  
-  // 세션에서 사용자 정보 가져오기
-  const cookieHeader = c.req.header('Cookie')
-  console.log('🍪 [스도쿠] Cookie 헤더:', cookieHeader)
-  
-  let userId = null
-  let username = 'Anonymous'
-  
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=')
-      acc[key] = value
-      return acc
-    }, {} as Record<string, string>)
-    
-    console.log('🍪 [스도쿠] 파싱된 쿠키:', Object.keys(cookies))
-    
-    const sessionId = cookies.session_id
-    console.log('🔑 [스도쿠] Session ID:', sessionId ? '존재함' : '없음')
-    
-    if (sessionId) {
-      try {
-        // 세션에서 사용자 ID 조회
-        const session = await DB.prepare(`
+    const DB = getDB(c)
+    const { difficulty, time, mistakes } = await c.req.json()
+
+    console.log('🎯 [스도쿠 점수 저장] API 호출됨')
+    console.log('📦 [스도쿠] 받은 데이터:', { difficulty, time, mistakes })
+
+    // 세션에서 사용자 정보 가져오기
+    const cookieHeader = c.req.header('Cookie')
+    console.log('🍪 [스도쿠] Cookie 헤더:', cookieHeader)
+
+    let userId = null
+    let username = 'Anonymous'
+
+    if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            acc[key] = value
+            return acc
+        }, {} as Record<string, string>)
+
+        console.log('🍪 [스도쿠] 파싱된 쿠키:', Object.keys(cookies))
+
+        const sessionId = cookies.session_id
+        console.log('🔑 [스도쿠] Session ID:', sessionId ? '존재함' : '없음')
+
+        if (sessionId) {
+            try {
+                // 세션에서 사용자 ID 조회
+                const session = await DB.prepare(`
           SELECT user_id FROM sessions 
           WHERE session_id = ? AND expires_at > datetime('now')
         `).bind(sessionId).first() as { user_id: number } | null
-        
-        console.log('👤 [스도쿠] 세션 조회 결과:', session)
-        
-        if (session) {
-          userId = session.user_id
-          
-          // 사용자 정보 조회
-          const user = await DB.prepare('SELECT id, email, name FROM users WHERE id = ?')
-            .bind(userId).first() as { id: number, email: string, name: string } | null
-          
-          console.log('👤 [스도쿠] 사용자 정보:', user)
-          
-          if (user) {
-            username = user.name || user.email || 'Anonymous'
-            console.log('✅ [스도쿠] 사용자 인증 성공:', { userId, username })
-          }
+
+                console.log('👤 [스도쿠] 세션 조회 결과:', session)
+
+                if (session) {
+                    userId = session.user_id
+
+                    // 사용자 정보 조회
+                    const user = await DB.prepare('SELECT id, email, name FROM users WHERE id = ?')
+                        .bind(userId).first() as { id: number, email: string, name: string } | null
+
+                    console.log('👤 [스도쿠] 사용자 정보:', user)
+
+                    if (user) {
+                        username = user.name || user.email || 'Anonymous'
+                        console.log('✅ [스도쿠] 사용자 인증 성공:', { userId, username })
+                    }
+                } else {
+                    console.log('❌ [스도쿠] 세션이 만료되었거나 존재하지 않음')
+                }
+            } catch (e) {
+                console.error('❌ [스도쿠] 세션/사용자 조회 실패:', e)
+            }
         } else {
-          console.log('❌ [스도쿠] 세션이 만료되었거나 존재하지 않음')
+            console.log('⚠️ [스도쿠] session_id 쿠키가 없음')
         }
-      } catch (e) {
-        console.error('❌ [스도쿠] 세션/사용자 조회 실패:', e)
-      }
     } else {
-      console.log('⚠️ [스도쿠] session_id 쿠키가 없음')
+        console.log('⚠️ [스도쿠] Cookie 헤더가 없음')
     }
-  } else {
-    console.log('⚠️ [스도쿠] Cookie 헤더가 없음')
-  }
-  
-  // 로그인 안 된 경우 점수 저장 거부
-  if (!userId) {
-    console.log('❌ [스도쿠] 로그인되지 않음 - 점수 저장 거부')
-    return c.json({
-      success: false,
-      message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
-      requireLogin: true
-    }, 401)
-  }
-  
-  try {
-    console.log('💾 [스도쿠] DB 저장 시작...')
-    
-    // 1. sudoku_scores 테이블에 저장 (기존)
-    const sudokuResult = await DB.prepare(`
+
+    // 로그인 안 된 경우 점수 저장 거부
+    if (!userId) {
+        console.log('❌ [스도쿠] 로그인되지 않음 - 점수 저장 거부')
+        return c.json({
+            success: false,
+            message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
+            requireLogin: true
+        }, 401)
+    }
+
+    try {
+        console.log('💾 [스도쿠] DB 저장 시작...')
+
+        // 1. sudoku_scores 테이블에 저장 (기존)
+        const sudokuResult = await DB.prepare(`
       INSERT INTO sudoku_scores (user_id, difficulty, time, mistakes, created_at)
       VALUES (?, ?, ?, ?, datetime('now'))
     `).bind(userId, difficulty, time, mistakes || 0).run()
-    
-    console.log('✅ [스도쿠] sudoku_scores 테이블 저장 성공')
-    
-    // 2. user_game_scores 테이블에도 저장 (마이페이지 표시용)
-    // 점수 계산: 시간이 짧고 실수가 적을수록 높은 점수
-    // 점수 = 10000 - (시간초 * 10) - (실수 * 100)
-    // 난이도 가중치: easy=1.0, medium=1.5, hard=2.0
-    const difficultyMultiplier = difficulty === 'easy' ? 1.0 : difficulty === 'medium' ? 1.5 : 2.0
-    const baseScore = Math.max(0, 10000 - (time * 10) - (mistakes * 100))
-    const finalScore = Math.round(baseScore * difficultyMultiplier)
-    
-    console.log('📊 [스도쿠] 점수 계산:', { 
-      time, 
-      mistakes, 
-      difficulty, 
-      difficultyMultiplier, 
-      baseScore, 
-      finalScore 
-    })
-    
-    // game_data에 상세 정보 저장
-    const gameData = JSON.stringify({
-      difficulty,
-      time,
-      mistakes,
-      raw_score: baseScore,
-      multiplier: difficultyMultiplier
-    })
-    
-    const gameScoreResult = await DB.prepare(`
+
+        console.log('✅ [스도쿠] sudoku_scores 테이블 저장 성공')
+
+        // 2. user_game_scores 테이블에도 저장 (마이페이지 표시용)
+        // 점수 계산: 시간이 짧고 실수가 적을수록 높은 점수
+        // 점수 = 10000 - (시간초 * 10) - (실수 * 100)
+        // 난이도 가중치: easy=1.0, medium=1.5, hard=2.0
+        const difficultyMultiplier = difficulty === 'easy' ? 1.0 : difficulty === 'medium' ? 1.5 : 2.0
+        const baseScore = Math.max(0, 10000 - (time * 10) - (mistakes * 100))
+        const finalScore = Math.round(baseScore * difficultyMultiplier)
+
+        console.log('📊 [스도쿠] 점수 계산:', {
+            time,
+            mistakes,
+            difficulty,
+            difficultyMultiplier,
+            baseScore,
+            finalScore
+        })
+
+        // game_data에 상세 정보 저장
+        const gameData = JSON.stringify({
+            difficulty,
+            time,
+            mistakes,
+            raw_score: baseScore,
+            multiplier: difficultyMultiplier
+        })
+
+        const gameScoreResult = await DB.prepare(`
       INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
       VALUES (?, 'sudoku', ?, ?, datetime('now'))
     `).bind(userId, finalScore, gameData).run()
-    
-    console.log('✅ [스도쿠] user_game_scores 테이블 저장 성공:', { 
-      userId, 
-      score: finalScore,
-      game_data: gameData
-    })
-    
-    console.log('✅ 스도쿠 기록 저장 완료:', { 
-      difficulty, 
-      time, 
-      mistakes, 
-      username, 
-      userId,
-      calculated_score: finalScore
-    })
-    
-    return c.json({
-      success: true,
-      message: '기록이 저장되었습니다',
-      score: finalScore
-    })
-  } catch (error: any) {
-    console.error('❌ [스도쿠] 기록 저장 오류:', error)
-    return c.json({
-      success: false,
-      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
-    }, 500)
-  }
+
+        console.log('✅ [스도쿠] user_game_scores 테이블 저장 성공:', {
+            userId,
+            score: finalScore,
+            game_data: gameData
+        })
+
+        console.log('✅ 스도쿠 기록 저장 완료:', {
+            difficulty,
+            time,
+            mistakes,
+            username,
+            userId,
+            calculated_score: finalScore
+        })
+
+        return c.json({
+            success: true,
+            message: '기록이 저장되었습니다',
+            score: finalScore
+        })
+    } catch (error: any) {
+        console.error('❌ [스도쿠] 기록 저장 오류:', error)
+        return c.json({
+            success: false,
+            message: '기록 저장 중 오류가 발생했습니다: ' + error.message
+        }, 500)
+    }
 })
 
 // ==================== 지뢰찾기 게임 ====================
 
 // 지뢰찾기 메인 페이지
 app.get('/game/simple/minesweeper', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -5350,11 +5352,11 @@ app.get('/game/simple/minesweeper', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '게임', href: '/game'},
-          {label: '심플 게임', href: '/game/simple'},
-          {label: '지뢰찾기'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '게임', href: '/game' },
+        { label: '심플 게임', href: '/game/simple' },
+        { label: '지뢰찾기' }
+    ])}
 
         ${getGameMenu('/game/simple')}
         
@@ -5543,9 +5545,9 @@ app.get('/game/simple/minesweeper', (c) => {
 
 // 지뢰찾기 플레이 페이지
 app.get('/game/simple/minesweeper/play', (c) => {
-  const difficulty = c.req.query('difficulty') || 'beginner';
-  
-  return c.html(`
+    const difficulty = c.req.query('difficulty') || 'beginner';
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -6116,46 +6118,46 @@ app.get('/game/simple/minesweeper/play', (c) => {
 
 // 2048 점수 저장
 app.post('/api/2048/score', requireAuth, async (c) => {
-  const DB = getDB(c)
-  const user = c.get('user') as SessionUser
-  const { score, max_tile } = await c.req.json()
-  
-  console.log('🎮 [2048] 점수 저장 요청:', { user_id: user.id, score, max_tile })
-  
-  try {
-    // 1. game2048_scores 테이블에 저장 (리더보드용)
-    await DB.prepare(`
+    const DB = getDB(c)
+    const user = c.get('user') as SessionUser
+    const { score, max_tile } = await c.req.json()
+
+    console.log('🎮 [2048] 점수 저장 요청:', { user_id: user.id, score, max_tile })
+
+    try {
+        // 1. game2048_scores 테이블에 저장 (리더보드용)
+        await DB.prepare(`
       INSERT INTO game2048_scores (user_id, score, max_tile, created_at)
       VALUES (?, ?, ?, datetime('now'))
     `).bind(user.id, score, max_tile).run()
-    
-    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
-    const gameData = JSON.stringify({ max_tile: max_tile || 0 })
-    await DB.prepare(`
+
+        // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+        const gameData = JSON.stringify({ max_tile: max_tile || 0 })
+        await DB.prepare(`
       INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
       VALUES (?, ?, ?, ?, datetime('now'))
     `).bind(user.id, '2048', score, gameData).run()
-    
-    console.log('✅ [2048] 점수 저장 완료')
-    return c.json({
-      success: true,
-      message: '기록이 저장되었습니다'
-    })
-  } catch (error: any) {
-    console.error('❌ [2048] 점수 저장 오류:', error)
-    return c.json({
-      success: false,
-      message: '기록 저장 중 오류가 발생했습니다'
-    }, 500)
-  }
+
+        console.log('✅ [2048] 점수 저장 완료')
+        return c.json({
+            success: true,
+            message: '기록이 저장되었습니다'
+        })
+    } catch (error: any) {
+        console.error('❌ [2048] 점수 저장 오류:', error)
+        return c.json({
+            success: false,
+            message: '기록 저장 중 오류가 발생했습니다'
+        }, 500)
+    }
 })
 
 // 2048 리더보드
 app.get('/api/2048/leaderboard', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    const result = await DB.prepare(`
+    const DB = getDB(c)
+
+    try {
+        const result = await DB.prepare(`
       SELECT 
         g.id,
         g.score,
@@ -6167,108 +6169,108 @@ app.get('/api/2048/leaderboard', async (c) => {
       ORDER BY g.score DESC, g.created_at ASC
       LIMIT 50
     `).all()
-    
-    return c.json({
-      success: true,
-      scores: result.results || []
-    })
-  } catch (error: any) {
-    console.error('2048 리더보드 조회 오류:', error)
-    return c.json({
-      success: false,
-      message: '리더보드 조회 중 오류가 발생했습니다',
-      scores: []
-    }, 500)
-  }
+
+        return c.json({
+            success: true,
+            scores: result.results || []
+        })
+    } catch (error: any) {
+        console.error('2048 리더보드 조회 오류:', error)
+        return c.json({
+            success: false,
+            message: '리더보드 조회 중 오류가 발생했습니다',
+            scores: []
+        }, 500)
+    }
 })
 
 // ==================== 지뢰찾기 API ====================
 
 // 지뢰찾기 점수 저장
 app.post('/api/minesweeper/score', async (c) => {
-  const DB = getDB(c)
-  const { difficulty, time } = await c.req.json()
-  
-  // 쿠키에서 사용자 정보 가져오기 (스도쿠와 동일한 방식)
-  const cookieHeader = c.req.header('Cookie')
-  let userId = null
-  let sessionId = null
-  
-  console.log('🎮 [지뢰찾기] 점수 저장 요청:', { difficulty, time })
-  console.log('🍪 [지뢰찾기] 쿠키 헤더:', cookieHeader)
-  
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=')
-      acc[key] = value
-      return acc
-    }, {} as Record<string, string>)
-    
-    sessionId = cookies.session_id
-    console.log('🔑 [지뢰찾기] 세션 ID:', sessionId)
-  }
-  
-  // 세션에서 사용자 ID 조회
-  if (sessionId) {
-    const session = await DB.prepare(`
+    const DB = getDB(c)
+    const { difficulty, time } = await c.req.json()
+
+    // 쿠키에서 사용자 정보 가져오기 (스도쿠와 동일한 방식)
+    const cookieHeader = c.req.header('Cookie')
+    let userId = null
+    let sessionId = null
+
+    console.log('🎮 [지뢰찾기] 점수 저장 요청:', { difficulty, time })
+    console.log('🍪 [지뢰찾기] 쿠키 헤더:', cookieHeader)
+
+    if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            acc[key] = value
+            return acc
+        }, {} as Record<string, string>)
+
+        sessionId = cookies.session_id
+        console.log('🔑 [지뢰찾기] 세션 ID:', sessionId)
+    }
+
+    // 세션에서 사용자 ID 조회
+    if (sessionId) {
+        const session = await DB.prepare(`
       SELECT user_id FROM sessions WHERE session_id = ? AND expires_at > datetime('now')
     `).bind(sessionId).first() as any
-    
-    if (session) {
-      userId = session.user_id
-      console.log('✅ [지뢰찾기] 사용자 인증 성공:', userId)
-    } else {
-      console.warn('⚠️ [지뢰찾기] 세션 없음 또는 만료')
+
+        if (session) {
+            userId = session.user_id
+            console.log('✅ [지뢰찾기] 사용자 인증 성공:', userId)
+        } else {
+            console.warn('⚠️ [지뢰찾기] 세션 없음 또는 만료')
+        }
     }
-  }
-  
-  if (!userId) {
-    console.warn('⚠️ [지뢰찾기] 로그인 필요')
-    return c.json({
-      success: false,
-      message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
-      requireLogin: true
-    }, 401)
-  }
-  
-  try {
-    // 1. minesweeper_scores 테이블에 저장 (리더보드용)
-    await DB.prepare(`
+
+    if (!userId) {
+        console.warn('⚠️ [지뢰찾기] 로그인 필요')
+        return c.json({
+            success: false,
+            message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
+            requireLogin: true
+        }, 401)
+    }
+
+    try {
+        // 1. minesweeper_scores 테이블에 저장 (리더보드용)
+        await DB.prepare(`
       INSERT INTO minesweeper_scores (user_id, difficulty, time, created_at)
       VALUES (?, ?, ?, datetime('now'))
     `).bind(userId, difficulty, time).run()
-    
-    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
-    // 지뢰찾기는 시간이 짧을수록 좋으므로 점수 계산: 10000 - (time * 10)
-    const score = Math.max(0, 10000 - (time * 10))
-    const gameData = JSON.stringify({ difficulty, time })
-    await DB.prepare(`
+
+        // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+        // 지뢰찾기는 시간이 짧을수록 좋으므로 점수 계산: 10000 - (time * 10)
+        const score = Math.max(0, 10000 - (time * 10))
+        const gameData = JSON.stringify({ difficulty, time })
+        await DB.prepare(`
       INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
       VALUES (?, ?, ?, ?, datetime('now'))
     `).bind(userId, 'minesweeper', score, gameData).run()
-    
-    console.log('✅ [지뢰찾기] 점수 저장 완료:', { userId, difficulty, time, score })
-    return c.json({
-      success: true,
-      message: '기록이 저장되었습니다',
-      score
-    })
-  } catch (error: any) {
-    console.error('❌ [지뢰찾기] 점수 저장 오류:', error)
-    return c.json({
-      success: false,
-      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
-    }, 500)
-  }
+
+        console.log('✅ [지뢰찾기] 점수 저장 완료:', { userId, difficulty, time, score })
+        return c.json({
+            success: true,
+            message: '기록이 저장되었습니다',
+            score
+        })
+    } catch (error: any) {
+        console.error('❌ [지뢰찾기] 점수 저장 오류:', error)
+        return c.json({
+            success: false,
+            message: '기록 저장 중 오류가 발생했습니다: ' + error.message
+        }, 500)
+    }
 })
 
 // 지뢰찾기 리더보드
 app.get('/api/minesweeper/leaderboard/:difficulty', async (c) => {
-  const DB = getDB(c)
-  const difficulty = c.req.param('difficulty')
-  
-  try {
-    const result = await DB.prepare(`
+    const DB = getDB(c)
+    const difficulty = c.req.param('difficulty')
+
+    try {
+        const result = await DB.prepare(`
       SELECT 
         m.id,
         m.time,
@@ -6280,23 +6282,23 @@ app.get('/api/minesweeper/leaderboard/:difficulty', async (c) => {
       ORDER BY m.time ASC
       LIMIT 50
     `).bind(difficulty).all()
-    
-    return c.json({
-      success: true,
-      scores: result.results || []
-    })
-  } catch (error: any) {
-    console.error('지뢰찾기 리더보드 조회 오류:', error)
-    return c.json({
-      success: false,
-      message: '리더보드 조회 중 오류가 발생했습니다',
-      scores: []
-    }, 500)
-  }
+
+        return c.json({
+            success: true,
+            scores: result.results || []
+        })
+    } catch (error: any) {
+        console.error('지뢰찾기 리더보드 조회 오류:', error)
+        return c.json({
+            success: false,
+            message: '리더보드 조회 중 오류가 발생했습니다',
+            scores: []
+        }, 500)
+    }
 })
 
 app.get('/lifestyle', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -6328,9 +6330,9 @@ app.get('/lifestyle', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -6652,643 +6654,643 @@ app.get('/lifestyle', (c) => {
 // ==================== 금융 페이지 (주식 메인) ====================
 // MOCK 데이터 - 주요 지수 (백업용)
 const MOCK_INDICES = [
-  { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
-  { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down' },
-  { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63, status: 'up' }
+    { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
+    { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down' },
+    { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63, status: 'up' }
 ]
 
 // MOCK 데이터 - 인기 종목 (백업용)
 const MOCK_POPULAR_STOCKS = [
-  { rank: 1, ticker: '005930.KS', name: '삼성전자', price: 72500, change: 1200, rate: 1.68, status: 'up' },
-  { rank: 2, ticker: 'NVDA', name: 'NVIDIA', price: 495.50, change: -8.30, rate: -1.65, status: 'down' },
-  { rank: 3, ticker: 'TSLA', name: '테슬라', price: 242.84, change: 5.12, rate: 2.15, status: 'up' },
-  { rank: 4, ticker: '000660.KS', name: 'SK하이닉스', price: 168000, change: 3500, rate: 2.13, status: 'up' },
-  { rank: 5, ticker: 'AAPL', name: '애플', price: 185.64, change: -2.15, rate: -1.14, status: 'down' }
+    { rank: 1, ticker: '005930.KS', name: '삼성전자', price: 72500, change: 1200, rate: 1.68, status: 'up' },
+    { rank: 2, ticker: 'NVDA', name: 'NVIDIA', price: 495.50, change: -8.30, rate: -1.65, status: 'down' },
+    { rank: 3, ticker: 'TSLA', name: '테슬라', price: 242.84, change: 5.12, rate: 2.15, status: 'up' },
+    { rank: 4, ticker: '000660.KS', name: 'SK하이닉스', price: 168000, change: 3500, rate: 2.13, status: 'up' },
+    { rank: 5, ticker: 'AAPL', name: '애플', price: 185.64, change: -2.15, rate: -1.14, status: 'down' }
 ]
 
 // MOCK 데이터 - 차트용 (1개월 데이터)
 const generateMockChartData = (basePrice: number) => {
-  const data = []
-  const today = new Date()
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-    const randomChange = (Math.random() - 0.5) * basePrice * 0.05
-    const price = Math.round((basePrice + randomChange) * 100) / 100
-    data.push({
-      date: date.toISOString().split('T')[0],
-      price: price
-    })
-  }
-  return data
+    const data = []
+    const today = new Date()
+    for (let i = 30; i >= 0; i--) {
+        const date = new Date(today)
+        date.setDate(date.getDate() - i)
+        const randomChange = (Math.random() - 0.5) * basePrice * 0.05
+        const price = Math.round((basePrice + randomChange) * 100) / 100
+        data.push({
+            date: date.toISOString().split('T')[0],
+            price: price
+        })
+    }
+    return data
 }
 
 // ==================== 실시간 주식 데이터 API ====================
 
 // Yahoo Finance API를 통한 실시간 주식 데이터 가져오기
 app.get('/api/stock/quote/:symbol', async (c) => {
-  const symbol = c.req.param('symbol')
-  
-  try {
-    // Yahoo Finance API (무료)
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+    const symbol = c.req.param('symbol')
+
+    try {
+        // Yahoo Finance API (무료)
+        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        if (data.chart?.result?.[0]) {
+            const result = data.chart.result[0]
+            const meta = result.meta
+
+            const currentPrice = meta.regularMarketPrice || meta.previousClose
+            const previousClose = meta.chartPreviousClose || meta.previousClose
+            const change = currentPrice - previousClose
+            const changePercent = (change / previousClose) * 100
+
+            return c.json({
+                success: true,
+                symbol: symbol,
+                name: meta.symbol || symbol,
+                price: currentPrice,
+                change: change,
+                changePercent: changePercent,
+                status: change >= 0 ? 'up' : 'down',
+                currency: meta.currency,
+                timestamp: meta.regularMarketTime
+            })
+        }
+
+        throw new Error('No data available')
+    } catch (error) {
+        console.error(`Stock API Error for ${symbol}:`, error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch stock data',
+            symbol: symbol,
+            error: error.message
+        }, 500)
     }
-    
-    const data = await response.json()
-    
-    if (data.chart?.result?.[0]) {
-      const result = data.chart.result[0]
-      const meta = result.meta
-      
-      const currentPrice = meta.regularMarketPrice || meta.previousClose
-      const previousClose = meta.chartPreviousClose || meta.previousClose
-      const change = currentPrice - previousClose
-      const changePercent = (change / previousClose) * 100
-      
-      return c.json({
-        success: true,
-        symbol: symbol,
-        name: meta.symbol || symbol,
-        price: currentPrice,
-        change: change,
-        changePercent: changePercent,
-        status: change >= 0 ? 'up' : 'down',
-        currency: meta.currency,
-        timestamp: meta.regularMarketTime
-      })
-    }
-    
-    throw new Error('No data available')
-  } catch (error) {
-    console.error(`Stock API Error for ${symbol}:`, error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch stock data',
-      symbol: symbol,
-      error: error.message
-    }, 500)
-  }
 })
 
 // 여러 종목 동시 조회
 app.get('/api/stocks/quotes', async (c) => {
-  const symbols = c.req.query('symbols')?.split(',') || []
-  
-  if (symbols.length === 0) {
-    return c.json({
-      success: false,
-      message: 'No symbols provided'
-    }, 400)
-  }
-  
-  try {
-    const promises = symbols.map(async (symbol) => {
-      try {
-        const trimmedSymbol = symbol.trim()
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${trimmedSymbol}?interval=1d&range=1d`
-        const response = await fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
+    const symbols = c.req.query('symbols')?.split(',') || []
+
+    if (symbols.length === 0) {
+        return c.json({
+            success: false,
+            message: 'No symbols provided'
+        }, 400)
+    }
+
+    try {
+        const promises = symbols.map(async (symbol) => {
+            try {
+                const trimmedSymbol = symbol.trim()
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${trimmedSymbol}?interval=1d&range=1d`
+                const response = await fetch(url, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                })
+
+                if (!response.ok) {
+                    console.error(`HTTP ${response.status} for ${trimmedSymbol}`)
+                    return null
+                }
+
+                const data = await response.json()
+
+                if (data.chart?.result?.[0]) {
+                    const result = data.chart.result[0]
+                    const meta = result.meta
+
+                    const currentPrice = meta.regularMarketPrice || meta.previousClose
+                    const previousClose = meta.chartPreviousClose || meta.previousClose
+                    const change = currentPrice - previousClose
+                    const changePercent = (change / previousClose) * 100
+
+                    return {
+                        symbol: trimmedSymbol,
+                        name: meta.symbol || trimmedSymbol,
+                        price: currentPrice,
+                        change: change,
+                        changePercent: changePercent,
+                        status: change >= 0 ? 'up' : 'down'
+                    }
+                }
+                return null
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error)
+                return null
+            }
         })
-        
-        if (!response.ok) {
-          console.error(`HTTP ${response.status} for ${trimmedSymbol}`)
-          return null
-        }
-        
-        const data = await response.json()
-        
-        if (data.chart?.result?.[0]) {
-          const result = data.chart.result[0]
-          const meta = result.meta
-          
-          const currentPrice = meta.regularMarketPrice || meta.previousClose
-          const previousClose = meta.chartPreviousClose || meta.previousClose
-          const change = currentPrice - previousClose
-          const changePercent = (change / previousClose) * 100
-          
-          return {
-            symbol: trimmedSymbol,
-            name: meta.symbol || trimmedSymbol,
-            price: currentPrice,
-            change: change,
-            changePercent: changePercent,
-            status: change >= 0 ? 'up' : 'down'
-          }
-        }
-        return null
-      } catch (error) {
-        console.error(`Error fetching ${symbol}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(promises)
-    const validResults = results.filter(r => r !== null)
-    
-    return c.json({
-      success: true,
-      count: validResults.length,
-      stocks: validResults
-    })
-  } catch (error) {
-    console.error('Stocks API Error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch stocks data'
-    }, 500)
-  }
+
+        const results = await Promise.all(promises)
+        const validResults = results.filter(r => r !== null)
+
+        return c.json({
+            success: true,
+            count: validResults.length,
+            stocks: validResults
+        })
+    } catch (error) {
+        console.error('Stocks API Error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch stocks data'
+        }, 500)
+    }
 })
 
 // 미국 주요 주식 4대장 API
 app.get('/api/us-stocks/major', async (c) => {
-  const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
-  const nameMap = {
-    'AAPL': '애플',
-    'TSLA': '테슬라', 
-    'NVDA': '엔비디아',
-    'MSFT': '마이크로소프트'
-  }
-  
-  try {
-    const promises = symbols.map(async (symbol) => {
-      try {
-        // 현재가 조회
-        const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
-        const quoteResponse = await fetch(quoteUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        })
-        
-        if (!quoteResponse.ok) return null
-        
-        const quoteData = await quoteResponse.json()
-        
-        if (quoteData.chart?.result?.[0]) {
-          const result = quoteData.chart.result[0]
-          const meta = result.meta
-          
-          const currentPrice = meta.regularMarketPrice || meta.previousClose
-          const previousClose = meta.chartPreviousClose || meta.previousClose
-          const change = currentPrice - previousClose
-          const changePercent = (change / previousClose) * 100
-          
-          // 1개월 차트 데이터 조회
-          const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`
-          const chartResponse = await fetch(chartUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-          })
-          
-          let chartData = []
-          if (chartResponse.ok) {
-            const chartJson = await chartResponse.json()
-            if (chartJson.chart?.result?.[0]) {
-              const timestamps = chartJson.chart.result[0].timestamp || []
-              const closes = chartJson.chart.result[0].indicators?.quote?.[0]?.close || []
-              
-              chartData = timestamps.slice(-30).map((ts, idx) => ({
-                date: new Date(ts * 1000).toISOString().split('T')[0],
-                price: closes[idx] || 0
-              })).filter(d => d.price > 0)
+    const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT']
+    const nameMap = {
+        'AAPL': '애플',
+        'TSLA': '테슬라',
+        'NVDA': '엔비디아',
+        'MSFT': '마이크로소프트'
+    }
+
+    try {
+        const promises = symbols.map(async (symbol) => {
+            try {
+                // 현재가 조회
+                const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+                const quoteResponse = await fetch(quoteUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                })
+
+                if (!quoteResponse.ok) return null
+
+                const quoteData = await quoteResponse.json()
+
+                if (quoteData.chart?.result?.[0]) {
+                    const result = quoteData.chart.result[0]
+                    const meta = result.meta
+
+                    const currentPrice = meta.regularMarketPrice || meta.previousClose
+                    const previousClose = meta.chartPreviousClose || meta.previousClose
+                    const change = currentPrice - previousClose
+                    const changePercent = (change / previousClose) * 100
+
+                    // 1개월 차트 데이터 조회
+                    const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`
+                    const chartResponse = await fetch(chartUrl, {
+                        headers: { 'User-Agent': 'Mozilla/5.0' }
+                    })
+
+                    let chartData = []
+                    if (chartResponse.ok) {
+                        const chartJson = await chartResponse.json()
+                        if (chartJson.chart?.result?.[0]) {
+                            const timestamps = chartJson.chart.result[0].timestamp || []
+                            const closes = chartJson.chart.result[0].indicators?.quote?.[0]?.close || []
+
+                            chartData = timestamps.slice(-30).map((ts, idx) => ({
+                                date: new Date(ts * 1000).toISOString().split('T')[0],
+                                price: closes[idx] || 0
+                            })).filter(d => d.price > 0)
+                        }
+                    }
+
+                    return {
+                        symbol: symbol,
+                        name: nameMap[symbol] || symbol,
+                        fullName: meta.longName || meta.shortName || symbol,
+                        price: currentPrice,
+                        change: change,
+                        changePercent: changePercent,
+                        status: change >= 0 ? 'up' : 'down',
+                        chartData: chartData
+                    }
+                }
+                return null
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error)
+                return null
             }
-          }
-          
-          return {
-            symbol: symbol,
-            name: nameMap[symbol] || symbol,
-            fullName: meta.longName || meta.shortName || symbol,
-            price: currentPrice,
-            change: change,
-            changePercent: changePercent,
-            status: change >= 0 ? 'up' : 'down',
-            chartData: chartData
-          }
-        }
-        return null
-      } catch (error) {
-        console.error(`Error fetching ${symbol}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(promises)
-    const validResults = results.filter(r => r !== null)
-    
-    return c.json({
-      success: true,
-      count: validResults.length,
-      stocks: validResults
-    })
-  } catch (error) {
-    console.error('US Stocks API Error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch US stocks data'
-    }, 500)
-  }
+        })
+
+        const results = await Promise.all(promises)
+        const validResults = results.filter(r => r !== null)
+
+        return c.json({
+            success: true,
+            count: validResults.length,
+            stocks: validResults
+        })
+    } catch (error) {
+        console.error('US Stocks API Error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch US stocks data'
+        }, 500)
+    }
 })
 
 // 한국 대표 주식 4대장 API
 app.get('/api/kr-stocks/major', async (c) => {
-  const symbols = ['005930.KS', '000660.KS', '373220.KS', '035420.KS']
-  const nameMap = {
-    '005930.KS': '삼성전자',
-    '000660.KS': 'SK하이닉스', 
-    '373220.KS': 'LG에너지솔루션',
-    '035420.KS': 'NAVER'
-  }
-  
-  try {
-    const promises = symbols.map(async (symbol) => {
-      try {
-        // 현재가 조회
-        const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
-        const quoteResponse = await fetch(quoteUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
-        })
-        
-        if (!quoteResponse.ok) return null
-        
-        const quoteData = await quoteResponse.json()
-        
-        if (quoteData.chart?.result?.[0]) {
-          const result = quoteData.chart.result[0]
-          const meta = result.meta
-          
-          const currentPrice = meta.regularMarketPrice || meta.previousClose
-          const previousClose = meta.chartPreviousClose || meta.previousClose
-          const change = currentPrice - previousClose
-          const changePercent = (change / previousClose) * 100
-          
-          // 1개월 차트 데이터 조회
-          const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`
-          const chartResponse = await fetch(chartUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0' }
-          })
-          
-          let chartData = []
-          if (chartResponse.ok) {
-            const chartJson = await chartResponse.json()
-            if (chartJson.chart?.result?.[0]) {
-              const timestamps = chartJson.chart.result[0].timestamp || []
-              const closes = chartJson.chart.result[0].indicators?.quote?.[0]?.close || []
-              
-              chartData = timestamps.slice(-30).map((ts, idx) => ({
-                date: new Date(ts * 1000).toISOString().split('T')[0],
-                price: closes[idx] || 0
-              })).filter(d => d.price > 0)
+    const symbols = ['005930.KS', '000660.KS', '373220.KS', '035420.KS']
+    const nameMap = {
+        '005930.KS': '삼성전자',
+        '000660.KS': 'SK하이닉스',
+        '373220.KS': 'LG에너지솔루션',
+        '035420.KS': 'NAVER'
+    }
+
+    try {
+        const promises = symbols.map(async (symbol) => {
+            try {
+                // 현재가 조회
+                const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`
+                const quoteResponse = await fetch(quoteUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                })
+
+                if (!quoteResponse.ok) return null
+
+                const quoteData = await quoteResponse.json()
+
+                if (quoteData.chart?.result?.[0]) {
+                    const result = quoteData.chart.result[0]
+                    const meta = result.meta
+
+                    const currentPrice = meta.regularMarketPrice || meta.previousClose
+                    const previousClose = meta.chartPreviousClose || meta.previousClose
+                    const change = currentPrice - previousClose
+                    const changePercent = (change / previousClose) * 100
+
+                    // 1개월 차트 데이터 조회
+                    const chartUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`
+                    const chartResponse = await fetch(chartUrl, {
+                        headers: { 'User-Agent': 'Mozilla/5.0' }
+                    })
+
+                    let chartData = []
+                    if (chartResponse.ok) {
+                        const chartJson = await chartResponse.json()
+                        if (chartJson.chart?.result?.[0]) {
+                            const timestamps = chartJson.chart.result[0].timestamp || []
+                            const closes = chartJson.chart.result[0].indicators?.quote?.[0]?.close || []
+
+                            chartData = timestamps.slice(-30).map((ts, idx) => ({
+                                date: new Date(ts * 1000).toISOString().split('T')[0],
+                                price: closes[idx] || 0
+                            })).filter(d => d.price > 0)
+                        }
+                    }
+
+                    return {
+                        symbol: symbol,
+                        name: nameMap[symbol] || symbol,
+                        fullName: meta.longName || meta.shortName || symbol,
+                        price: Math.round(currentPrice), // 한국 주식은 정수로
+                        change: Math.round(change),
+                        changePercent: changePercent,
+                        status: change >= 0 ? 'up' : 'down',
+                        chartData: chartData
+                    }
+                }
+                return null
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error)
+                return null
             }
-          }
-          
-          return {
-            symbol: symbol,
-            name: nameMap[symbol] || symbol,
-            fullName: meta.longName || meta.shortName || symbol,
-            price: Math.round(currentPrice), // 한국 주식은 정수로
-            change: Math.round(change),
-            changePercent: changePercent,
-            status: change >= 0 ? 'up' : 'down',
-            chartData: chartData
-          }
-        }
-        return null
-      } catch (error) {
-        console.error(`Error fetching ${symbol}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(promises)
-    const validResults = results.filter(r => r !== null)
-    
-    return c.json({
-      success: true,
-      count: validResults.length,
-      stocks: validResults
-    })
-  } catch (error) {
-    console.error('KR Stocks API Error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch KR stocks data'
-    }, 500)
-  }
+        })
+
+        const results = await Promise.all(promises)
+        const validResults = results.filter(r => r !== null)
+
+        return c.json({
+            success: true,
+            count: validResults.length,
+            stocks: validResults
+        })
+    } catch (error) {
+        console.error('KR Stocks API Error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch KR stocks data'
+        }, 500)
+    }
 })
 
 // 환율 & 원자재 & 코인 API
 app.get('/api/macro-indicators', async (c) => {
-  const indicators = [
-    { symbol: 'KRW=X', name: '달러/원', type: 'currency', icon: '💵' },
-    { symbol: 'BTC-KRW', name: '비트코인', type: 'crypto', icon: '₿' },
-    { symbol: 'GC=F', name: '금 선물', type: 'commodity', icon: '🥇' },
-    { symbol: 'CL=F', name: 'WTI 유가', type: 'commodity', icon: '🛢️' }
-  ]
-  
-  try {
-    const promises = indicators.map(async (indicator) => {
-      try {
-        const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${indicator.symbol}?interval=1d&range=1d`
-        const response = await fetch(quoteUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+    const indicators = [
+        { symbol: 'KRW=X', name: '달러/원', type: 'currency', icon: '💵' },
+        { symbol: 'BTC-KRW', name: '비트코인', type: 'crypto', icon: '₿' },
+        { symbol: 'GC=F', name: '금 선물', type: 'commodity', icon: '🥇' },
+        { symbol: 'CL=F', name: 'WTI 유가', type: 'commodity', icon: '🛢️' }
+    ]
+
+    try {
+        const promises = indicators.map(async (indicator) => {
+            try {
+                const quoteUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${indicator.symbol}?interval=1d&range=1d`
+                const response = await fetch(quoteUrl, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                })
+
+                if (!response.ok) return null
+
+                const data = await response.json()
+
+                if (data.chart?.result?.[0]) {
+                    const result = data.chart.result[0]
+                    const meta = result.meta
+
+                    const currentPrice = meta.regularMarketPrice || meta.previousClose
+                    const previousClose = meta.chartPreviousClose || meta.previousClose
+                    const change = currentPrice - previousClose
+                    const changePercent = (change / previousClose) * 100
+
+                    return {
+                        symbol: indicator.symbol,
+                        name: indicator.name,
+                        type: indicator.type,
+                        icon: indicator.icon,
+                        price: currentPrice,
+                        change: change,
+                        changePercent: changePercent,
+                        status: change >= 0 ? 'up' : 'down'
+                    }
+                }
+
+                return null
+            } catch (error) {
+                console.error(`Error fetching ${indicator.symbol}:`, error)
+                return null
+            }
         })
-        
-        if (!response.ok) return null
-        
-        const data = await response.json()
-        
-        if (data.chart?.result?.[0]) {
-          const result = data.chart.result[0]
-          const meta = result.meta
-          
-          const currentPrice = meta.regularMarketPrice || meta.previousClose
-          const previousClose = meta.chartPreviousClose || meta.previousClose
-          const change = currentPrice - previousClose
-          const changePercent = (change / previousClose) * 100
-          
-          return {
-            symbol: indicator.symbol,
-            name: indicator.name,
-            type: indicator.type,
-            icon: indicator.icon,
-            price: currentPrice,
-            change: change,
-            changePercent: changePercent,
-            status: change >= 0 ? 'up' : 'down'
-          }
-        }
-        
-        return null
-      } catch (error) {
-        console.error(`Error fetching ${indicator.symbol}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(promises)
-    const validResults = results.filter(r => r !== null)
-    
-    return c.json({
-      success: true,
-      count: validResults.length,
-      indicators: validResults
-    })
-  } catch (error) {
-    console.error('Macro Indicators API Error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch macro indicators data'
-    }, 500)
-  }
+
+        const results = await Promise.all(promises)
+        const validResults = results.filter(r => r !== null)
+
+        return c.json({
+            success: true,
+            count: validResults.length,
+            indicators: validResults
+        })
+    } catch (error) {
+        console.error('Macro Indicators API Error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch macro indicators data'
+        }, 500)
+    }
 })
 
 // 실시간 급상승/급하락 랭킹 API
 app.get('/api/market-movers/:type', async (c) => {
-  const type = c.req.param('type') // 'gainers', 'losers', 'actives'
-  
-  const screenerMap = {
-    'gainers': 'day_gainers',
-    'losers': 'day_losers', 
-    'actives': 'most_actives'
-  }
-  
-  const screnerId = screenerMap[type]
-  if (!screnerId) {
-    return c.json({ success: false, message: 'Invalid type' }, 400)
-  }
-  
-  try {
-    // Yahoo Finance Screener API 사용
-    const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?scrIds=${screnerId}&count=5`
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    })
-    
-    if (!response.ok) {
-      return c.json({ success: false, message: 'Failed to fetch data' }, 500)
+    const type = c.req.param('type') // 'gainers', 'losers', 'actives'
+
+    const screenerMap = {
+        'gainers': 'day_gainers',
+        'losers': 'day_losers',
+        'actives': 'most_actives'
     }
-    
-    const data = await response.json()
-    
-    if (data.finance?.result?.[0]?.quotes) {
-      const quotes = data.finance.result[0].quotes.slice(0, 5)
-      
-      const stocks = quotes.map(quote => ({
-        symbol: quote.symbol,
-        name: quote.shortName || quote.longName || quote.symbol,
-        price: quote.regularMarketPrice,
-        change: quote.regularMarketChange,
-        changePercent: quote.regularMarketChangePercent,
-        volume: quote.regularMarketVolume,
-        status: quote.regularMarketChange >= 0 ? 'up' : 'down'
-      }))
-      
-      return c.json({
-        success: true,
-        type: type,
-        count: stocks.length,
-        stocks: stocks
-      })
+
+    const screnerId = screenerMap[type]
+    if (!screnerId) {
+        return c.json({ success: false, message: 'Invalid type' }, 400)
     }
-    
-    return c.json({ success: false, message: 'No data available' }, 404)
-  } catch (error) {
-    console.error(`Market Movers API Error (${type}):`, error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch market movers data'
-    }, 500)
-  }
+
+    try {
+        // Yahoo Finance Screener API 사용
+        const url = `https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?scrIds=${screnerId}&count=5`
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0' }
+        })
+
+        if (!response.ok) {
+            return c.json({ success: false, message: 'Failed to fetch data' }, 500)
+        }
+
+        const data = await response.json()
+
+        if (data.finance?.result?.[0]?.quotes) {
+            const quotes = data.finance.result[0].quotes.slice(0, 5)
+
+            const stocks = quotes.map(quote => ({
+                symbol: quote.symbol,
+                name: quote.shortName || quote.longName || quote.symbol,
+                price: quote.regularMarketPrice,
+                change: quote.regularMarketChange,
+                changePercent: quote.regularMarketChangePercent,
+                volume: quote.regularMarketVolume,
+                status: quote.regularMarketChange >= 0 ? 'up' : 'down'
+            }))
+
+            return c.json({
+                success: true,
+                type: type,
+                count: stocks.length,
+                stocks: stocks
+            })
+        }
+
+        return c.json({ success: false, message: 'No data available' }, 404)
+    } catch (error) {
+        console.error(`Market Movers API Error (${type}):`, error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch market movers data'
+        }, 500)
+    }
 })
 
 // 투자자 심리 투표 API
 app.get('/api/poll/sentiment', async (c) => {
-  // 실제로는 데이터베이스에서 가져오지만, 여기서는 간단히 mock 데이터 반환
-  return c.json({
-    success: true,
-    poll: {
-      question: '오늘 코스피, 오를까 내릴까?',
-      bullVotes: 127,
-      bearVotes: 83,
-      totalVotes: 210,
-      bullPercent: 60.5,
-      bearPercent: 39.5
-    }
-  })
+    // 실제로는 데이터베이스에서 가져오지만, 여기서는 간단히 mock 데이터 반환
+    return c.json({
+        success: true,
+        poll: {
+            question: '오늘 코스피, 오를까 내릴까?',
+            bullVotes: 127,
+            bearVotes: 83,
+            totalVotes: 210,
+            bullPercent: 60.5,
+            bearPercent: 39.5
+        }
+    })
 })
 
 app.post('/api/poll/vote', async (c) => {
-  const body = await c.req.json()
-  const { vote } = body // 'bull' or 'bear'
-  
-  if (!vote || !['bull', 'bear'].includes(vote)) {
-    return c.json({ success: false, message: 'Invalid vote' }, 400)
-  }
-  
-  // 실제로는 데이터베이스에 저장하지만, 여기서는 성공 응답만 반환
-  return c.json({
-    success: true,
-    vote: vote,
-    message: 'Vote recorded successfully'
-  })
+    const body = await c.req.json()
+    const { vote } = body // 'bull' or 'bear'
+
+    if (!vote || !['bull', 'bear'].includes(vote)) {
+        return c.json({ success: false, message: 'Invalid vote' }, 400)
+    }
+
+    // 실제로는 데이터베이스에 저장하지만, 여기서는 성공 응답만 반환
+    return c.json({
+        success: true,
+        vote: vote,
+        message: 'Vote recorded successfully'
+    })
 })
 
 // ==================== 뉴스 CRUD API ====================
 
 // 뉴스 목록 조회
 app.get('/api/news', async (c) => {
-  try {
-    const { category, limit = '20', offset = '0' } = c.req.query()
-    const db = getDB(c)
-    
-    let query = 'SELECT * FROM news'
-    const params: any[] = []
-    
-    if (category && category !== 'all') {
-      query += ' WHERE category = ?'
-      params.push(category)
+    try {
+        const { category, limit = '20', offset = '0' } = c.req.query()
+        const db = getDB(c)
+
+        let query = 'SELECT * FROM news'
+        const params: any[] = []
+
+        if (category && category !== 'all') {
+            query += ' WHERE category = ?'
+            params.push(category)
+        }
+
+        query += ' ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?'
+        params.push(parseInt(limit), parseInt(offset))
+
+        const { results } = await db.prepare(query).bind(...params).all()
+
+        // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
+        const newsWithStocks = await Promise.all(
+            results.map(async (news: any) => {
+                // 제목, 설명, 태그에서 관련 종목 찾기
+                const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
+                const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
+
+                if (relatedTickers.length === 0) {
+                    return {
+                        ...news,
+                        relatedStocks: []
+                    }
+                }
+
+                // 관련 종목 시세 조회
+                const stockData = await fetchBatchStockData(relatedTickers)
+
+                return {
+                    ...news,
+                    relatedStocks: stockData
+                }
+            })
+        )
+
+        return c.json({
+            success: true,
+            count: newsWithStocks.length,
+            news: newsWithStocks
+        })
+    } catch (error) {
+        console.error('News list API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch news'
+        }, 500)
     }
-    
-    query += ' ORDER BY published_at DESC, created_at DESC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), parseInt(offset))
-    
-    const { results } = await db.prepare(query).bind(...params).all()
-    
-    // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
-    const newsWithStocks = await Promise.all(
-      results.map(async (news: any) => {
-        // 제목, 설명, 태그에서 관련 종목 찾기
-        const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
-        const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
-        
-        if (relatedTickers.length === 0) {
-          return {
-            ...news,
-            relatedStocks: []
-          }
-        }
-        
-        // 관련 종목 시세 조회
-        const stockData = await fetchBatchStockData(relatedTickers)
-        
-        return {
-          ...news,
-          relatedStocks: stockData
-        }
-      })
-    )
-    
-    return c.json({
-      success: true,
-      count: newsWithStocks.length,
-      news: newsWithStocks
-    })
-  } catch (error) {
-    console.error('News list API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch news'
-    }, 500)
-  }
 })
 
 // 뉴스 상세 조회
 app.get('/api/news/:id{[0-9]+}', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const db = getDB(c)
-    
-    const result = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
-    
-    if (!result) {
-      return c.json({
-        success: false,
-        message: 'News not found'
-      }, 404)
+    try {
+        const id = c.req.param('id')
+        const db = getDB(c)
+
+        const result = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
+
+        if (!result) {
+            return c.json({
+                success: false,
+                message: 'News not found'
+            }, 404)
+        }
+
+        return c.json({
+            success: true,
+            news: result
+        })
+    } catch (error) {
+        console.error('News detail API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch news'
+        }, 500)
     }
-    
-    return c.json({
-      success: true,
-      news: result
-    })
-  } catch (error) {
-    console.error('News detail API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch news'
-    }, 500)
-  }
 })
 
 // 뉴스 생성
 app.post('/api/news', async (c) => {
-  try {
-    const db = getDB(c)
-    const data = await c.req.json()
-    
-    const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
-    
-    if (!category || !title || !link) {
-      return c.json({
-        success: false,
-        message: 'Required fields: category, title, link'
-      }, 400)
-    }
-    
-    const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags
-    
-    const result = await db.prepare(`
+    try {
+        const db = getDB(c)
+        const data = await c.req.json()
+
+        const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
+
+        if (!category || !title || !link) {
+            return c.json({
+                success: false,
+                message: 'Required fields: category, title, link'
+            }, 400)
+        }
+
+        const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags
+
+        const result = await db.prepare(`
       INSERT INTO news (category, title, summary, link, image_url, publisher, published_at, content, thumbnail, tags, author, source, source_url, description)
       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      category,
-      title,
-      summary || '',
-      link,
-      image_url || thumbnail || '',
-      publisher || source || '',
-      content || '',
-      thumbnail || image_url || '',
-      tagsJson || '[]',
-      author || '',
-      source || publisher || '',
-      source_url || link,
-      description || summary || ''
-    ).run()
-    
-    return c.json({
-      success: true,
-      id: result.meta.last_row_id,
-      message: 'News created successfully'
-    })
-  } catch (error) {
-    console.error('News create API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to create news'
-    }, 500)
-  }
+            category,
+            title,
+            summary || '',
+            link,
+            image_url || thumbnail || '',
+            publisher || source || '',
+            content || '',
+            thumbnail || image_url || '',
+            tagsJson || '[]',
+            author || '',
+            source || publisher || '',
+            source_url || link,
+            description || summary || ''
+        ).run()
+
+        return c.json({
+            success: true,
+            id: result.meta.last_row_id,
+            message: 'News created successfully'
+        })
+    } catch (error) {
+        console.error('News create API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to create news'
+        }, 500)
+    }
 })
 
 // 뉴스 수정
 app.put('/api/news/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const db = getDB(c)
-    const data = await c.req.json()
-    
-    const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
-    
-    const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags
-    
-    const result = await db.prepare(`
+    try {
+        const id = c.req.param('id')
+        const db = getDB(c)
+        const data = await c.req.json()
+
+        const { category, title, summary, link, image_url, publisher, content, thumbnail, tags, author, source, source_url, description } = data
+
+        const tagsJson = Array.isArray(tags) ? JSON.stringify(tags) : tags
+
+        const result = await db.prepare(`
       UPDATE news SET
         category = ?,
         title = ?,
@@ -7306,368 +7308,368 @@ app.put('/api/news/:id', async (c) => {
         updated_at = datetime('now')
       WHERE id = ?
     `).bind(
-      category,
-      title,
-      summary || '',
-      link,
-      image_url || thumbnail || '',
-      publisher || source || '',
-      content || '',
-      thumbnail || image_url || '',
-      tagsJson || '[]',
-      author || '',
-      source || publisher || '',
-      source_url || link,
-      description || summary || '',
-      id
-    ).run()
-    
-    if (result.meta.changes === 0) {
-      return c.json({
-        success: false,
-        message: 'News not found'
-      }, 404)
+            category,
+            title,
+            summary || '',
+            link,
+            image_url || thumbnail || '',
+            publisher || source || '',
+            content || '',
+            thumbnail || image_url || '',
+            tagsJson || '[]',
+            author || '',
+            source || publisher || '',
+            source_url || link,
+            description || summary || '',
+            id
+        ).run()
+
+        if (result.meta.changes === 0) {
+            return c.json({
+                success: false,
+                message: 'News not found'
+            }, 404)
+        }
+
+        return c.json({
+            success: true,
+            message: 'News updated successfully'
+        })
+    } catch (error) {
+        console.error('News update API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to update news'
+        }, 500)
     }
-    
-    return c.json({
-      success: true,
-      message: 'News updated successfully'
-    })
-  } catch (error) {
-    console.error('News update API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to update news'
-    }, 500)
-  }
 })
 
 // 뉴스 삭제
 app.delete('/api/news/:id', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const db = getDB(c)
-    
-    const result = await db.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
-    
-    if (result.meta.changes === 0) {
-      return c.json({
-        success: false,
-        message: 'News not found'
-      }, 404)
+    try {
+        const id = c.req.param('id')
+        const db = getDB(c)
+
+        const result = await db.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
+
+        if (result.meta.changes === 0) {
+            return c.json({
+                success: false,
+                message: 'News not found'
+            }, 404)
+        }
+
+        return c.json({
+            success: true,
+            message: 'News deleted successfully'
+        })
+    } catch (error) {
+        console.error('News delete API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to delete news'
+        }, 500)
     }
-    
-    return c.json({
-      success: true,
-      message: 'News deleted successfully'
-    })
-  } catch (error) {
-    console.error('News delete API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to delete news'
-    }, 500)
-  }
 })
 
 // 종목별 관련 뉴스 검색 (Full-text search)
 app.get('/api/news/search/by-keywords', async (c) => {
-  try {
-    const { keywords, limit = '5' } = c.req.query()
-    const db = getDB(c)
-    
-    if (!keywords) {
-      return c.json({
-        success: false,
-        message: 'Keywords parameter required'
-      }, 400)
-    }
-    
-    // 키워드를 배열로 변환
-    const keywordArray = keywords.split(',').map(k => k.trim())
-    
-    // 각 키워드로 LIKE 검색
-    const conditions = keywordArray.map(() => '(title LIKE ? OR description LIKE ? OR content LIKE ? OR tags LIKE ?)').join(' OR ')
-    const params: any[] = []
-    keywordArray.forEach(keyword => {
-      const pattern = '%' + keyword + '%'
-      params.push(pattern, pattern, pattern, pattern)
-    })
-    
-    const query = `
+    try {
+        const { keywords, limit = '5' } = c.req.query()
+        const db = getDB(c)
+
+        if (!keywords) {
+            return c.json({
+                success: false,
+                message: 'Keywords parameter required'
+            }, 400)
+        }
+
+        // 키워드를 배열로 변환
+        const keywordArray = keywords.split(',').map(k => k.trim())
+
+        // 각 키워드로 LIKE 검색
+        const conditions = keywordArray.map(() => '(title LIKE ? OR description LIKE ? OR content LIKE ? OR tags LIKE ?)').join(' OR ')
+        const params: any[] = []
+        keywordArray.forEach(keyword => {
+            const pattern = '%' + keyword + '%'
+            params.push(pattern, pattern, pattern, pattern)
+        })
+
+        const query = `
       SELECT * FROM news
       WHERE ${conditions}
       ORDER BY published_at DESC, created_at DESC
       LIMIT ?
     `
-    params.push(parseInt(limit))
-    
-    const result = await db.prepare(query).bind(...params).all()
-    
-    return c.json({
-      success: true,
-      count: result.results.length,
-      news: result.results
-    })
-  } catch (error) {
-    console.error('News search API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to search news'
-    }, 500)
-  }
+        params.push(parseInt(limit))
+
+        const result = await db.prepare(query).bind(...params).all()
+
+        return c.json({
+            success: true,
+            count: result.results.length,
+            news: result.results
+        })
+    } catch (error) {
+        console.error('News search API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to search news'
+        }, 500)
+    }
 })
 
 // ==================== 종목-뉴스 연동 API ====================
 
 // 종목별 관련 뉴스 조회 (주식 상세 페이지용)
 app.get('/api/stock/:ticker/news', async (c) => {
-  try {
-    const ticker = c.req.param('ticker')
-    const { limit = '5' } = c.req.query()
-    const db = getDB(c)
-    
-    // 티커로 종목명과 키워드 가져오기
-    const stockName = getStockNameByTicker(ticker)
-    const keywords = getKeywordsByTicker(ticker)
-    
-    if (!stockName || keywords.length === 0) {
-      return c.json({
-        success: false,
-        message: 'Invalid ticker or no keywords found',
-        ticker,
-        stockName: null,
-        count: 0,
-        news: []
-      }, 400)
-    }
-    
-    // 각 키워드로 LIKE 검색
-    const conditions = keywords.map(() => 
-      '(title LIKE ? OR description LIKE ? OR content LIKE ? OR tags LIKE ?)'
-    ).join(' OR ')
-    
-    const params: any[] = []
-    keywords.forEach(keyword => {
-      const pattern = '%' + keyword + '%'
-      params.push(pattern, pattern, pattern, pattern)
-    })
-    
-    const query = `
+    try {
+        const ticker = c.req.param('ticker')
+        const { limit = '5' } = c.req.query()
+        const db = getDB(c)
+
+        // 티커로 종목명과 키워드 가져오기
+        const stockName = getStockNameByTicker(ticker)
+        const keywords = getKeywordsByTicker(ticker)
+
+        if (!stockName || keywords.length === 0) {
+            return c.json({
+                success: false,
+                message: 'Invalid ticker or no keywords found',
+                ticker,
+                stockName: null,
+                count: 0,
+                news: []
+            }, 400)
+        }
+
+        // 각 키워드로 LIKE 검색
+        const conditions = keywords.map(() =>
+            '(title LIKE ? OR description LIKE ? OR content LIKE ? OR tags LIKE ?)'
+        ).join(' OR ')
+
+        const params: any[] = []
+        keywords.forEach(keyword => {
+            const pattern = '%' + keyword + '%'
+            params.push(pattern, pattern, pattern, pattern)
+        })
+
+        const query = `
       SELECT * FROM news
       WHERE ${conditions}
       ORDER BY published_at DESC, created_at DESC
       LIMIT ?
     `
-    params.push(parseInt(limit))
-    
-    const result = await db.prepare(query).bind(...params).all()
-    
-    return c.json({
-      success: true,
-      ticker,
-      stockName,
-      count: result.results.length,
-      news: result.results
-    })
-  } catch (error) {
-    console.error('Stock news API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to fetch stock news'
-    }, 500)
-  }
+        params.push(parseInt(limit))
+
+        const result = await db.prepare(query).bind(...params).all()
+
+        return c.json({
+            success: true,
+            ticker,
+            stockName,
+            count: result.results.length,
+            news: result.results
+        })
+    } catch (error) {
+        console.error('Stock news API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to fetch stock news'
+        }, 500)
+    }
 })
 
 // 뉴스 기사로 관련 종목 찾기 (뉴스 상세 페이지용)
 app.post('/api/news/find-related-stocks', async (c) => {
-  try {
-    const { title, content, tags } = await c.req.json()
-    const db = getDB(c)
-    
-    // 텍스트 결합
-    const combinedText = [
-      title || '',
-      content || '',
-      ...(Array.isArray(tags) ? tags : (tags ? [tags] : []))
-    ].join(' ')
-    
-    // 관련 종목 찾기 (최대 2개)
-    const tickers = findRelatedStocks(combinedText, 2)
-    
-    if (tickers.length === 0) {
-      return c.json({
-        success: true,
-        stocks: [],
-        message: 'No related stocks found'
-      })
-    }
-    
-    // 각 종목의 실시간 시세 조회
-    const stockPromises = tickers.map(async (ticker) => {
-      try {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+    try {
+        const { title, content, tags } = await c.req.json()
+        const db = getDB(c)
+
+        // 텍스트 결합
+        const combinedText = [
+            title || '',
+            content || '',
+            ...(Array.isArray(tags) ? tags : (tags ? [tags] : []))
+        ].join(' ')
+
+        // 관련 종목 찾기 (최대 2개)
+        const tickers = findRelatedStocks(combinedText, 2)
+
+        if (tickers.length === 0) {
+            return c.json({
+                success: true,
+                stocks: [],
+                message: 'No related stocks found'
+            })
+        }
+
+        // 각 종목의 실시간 시세 조회
+        const stockPromises = tickers.map(async (ticker) => {
+            try {
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                })
+
+                if (!response.ok) {
+                    return null
+                }
+
+                const data = await response.json()
+
+                if (!data?.chart?.result?.[0]) {
+                    return null
+                }
+
+                const result = data.chart.result[0]
+                const meta = result.meta
+
+                const currentPrice = meta.regularMarketPrice || meta.previousClose
+                const previousClose = meta.chartPreviousClose || meta.previousClose
+                const change = currentPrice - previousClose
+                const changePercent = (change / previousClose) * 100
+
+                return {
+                    ticker,
+                    name: getStockNameByTicker(ticker),
+                    price: currentPrice,
+                    change,
+                    changePercent,
+                    status: change >= 0 ? 'up' : 'down',
+                    marketState: meta.marketState || 'REGULAR',
+                    currency: meta.currency
+                }
+            } catch (error) {
+                console.error(`Failed to fetch ${ticker}:`, error)
+                return null
+            }
         })
-        
-        if (!response.ok) {
-          return null
-        }
-        
-        const data = await response.json()
-        
-        if (!data?.chart?.result?.[0]) {
-          return null
-        }
-        
-        const result = data.chart.result[0]
-        const meta = result.meta
-        
-        const currentPrice = meta.regularMarketPrice || meta.previousClose
-        const previousClose = meta.chartPreviousClose || meta.previousClose
-        const change = currentPrice - previousClose
-        const changePercent = (change / previousClose) * 100
-        
-        return {
-          ticker,
-          name: getStockNameByTicker(ticker),
-          price: currentPrice,
-          change,
-          changePercent,
-          status: change >= 0 ? 'up' : 'down',
-          marketState: meta.marketState || 'REGULAR',
-          currency: meta.currency
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${ticker}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(stockPromises)
-    const validStocks = results.filter(s => s !== null)
-    
-    return c.json({
-      success: true,
-      count: validStocks.length,
-      stocks: validStocks
-    })
-  } catch (error) {
-    console.error('Related stocks API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to find related stocks'
-    }, 500)
-  }
+
+        const results = await Promise.all(stockPromises)
+        const validStocks = results.filter(s => s !== null)
+
+        return c.json({
+            success: true,
+            count: validStocks.length,
+            stocks: validStocks
+        })
+    } catch (error) {
+        console.error('Related stocks API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to find related stocks'
+        }, 500)
+    }
 })
 
 // 뉴스 ID로 관련 종목 찾기
 app.get('/api/news/:id/related-stocks', async (c) => {
-  try {
-    const id = c.req.param('id')
-    const db = getDB(c)
-    
-    // 뉴스 조회
-    const news = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
-    
-    if (!news) {
-      return c.json({
-        success: false,
-        message: 'News not found'
-      }, 404)
-    }
-    
-    // 태그 파싱
-    let tags = []
     try {
-      tags = news.tags ? JSON.parse(news.tags as string) : []
-    } catch (e) {
-      tags = []
-    }
-    
-    // 텍스트 결합
-    const combinedText = [
-      news.title,
-      news.description || '',
-      news.content || '',
-      ...tags
-    ].join(' ')
-    
-    // 관련 종목 찾기
-    const tickers = findRelatedStocks(combinedText, 2)
-    
-    if (tickers.length === 0) {
-      return c.json({
-        success: true,
-        stocks: [],
-        message: 'No related stocks found'
-      })
-    }
-    
-    // 각 종목의 실시간 시세 조회
-    const stockPromises = tickers.map(async (ticker) => {
-      try {
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
-        const response = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0' }
+        const id = c.req.param('id')
+        const db = getDB(c)
+
+        // 뉴스 조회
+        const news = await db.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
+
+        if (!news) {
+            return c.json({
+                success: false,
+                message: 'News not found'
+            }, 404)
+        }
+
+        // 태그 파싱
+        let tags = []
+        try {
+            tags = news.tags ? JSON.parse(news.tags as string) : []
+        } catch (e) {
+            tags = []
+        }
+
+        // 텍스트 결합
+        const combinedText = [
+            news.title,
+            news.description || '',
+            news.content || '',
+            ...tags
+        ].join(' ')
+
+        // 관련 종목 찾기
+        const tickers = findRelatedStocks(combinedText, 2)
+
+        if (tickers.length === 0) {
+            return c.json({
+                success: true,
+                stocks: [],
+                message: 'No related stocks found'
+            })
+        }
+
+        // 각 종목의 실시간 시세 조회
+        const stockPromises = tickers.map(async (ticker) => {
+            try {
+                const url = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`
+                const response = await fetch(url, {
+                    headers: { 'User-Agent': 'Mozilla/5.0' }
+                })
+
+                if (!response.ok) {
+                    return null
+                }
+
+                const data = await response.json()
+
+                if (!data?.chart?.result?.[0]) {
+                    return null
+                }
+
+                const result = data.chart.result[0]
+                const meta = result.meta
+
+                const currentPrice = meta.regularMarketPrice || meta.previousClose
+                const previousClose = meta.chartPreviousClose || meta.previousClose
+                const change = currentPrice - previousClose
+                const changePercent = (change / previousClose) * 100
+
+                return {
+                    ticker,
+                    name: getStockNameByTicker(ticker),
+                    price: currentPrice,
+                    change,
+                    changePercent,
+                    status: change >= 0 ? 'up' : 'down',
+                    marketState: meta.marketState || 'REGULAR',
+                    currency: meta.currency
+                }
+            } catch (error) {
+                console.error(`Failed to fetch ${ticker}:`, error)
+                return null
+            }
         })
-        
-        if (!response.ok) {
-          return null
-        }
-        
-        const data = await response.json()
-        
-        if (!data?.chart?.result?.[0]) {
-          return null
-        }
-        
-        const result = data.chart.result[0]
-        const meta = result.meta
-        
-        const currentPrice = meta.regularMarketPrice || meta.previousClose
-        const previousClose = meta.chartPreviousClose || meta.previousClose
-        const change = currentPrice - previousClose
-        const changePercent = (change / previousClose) * 100
-        
-        return {
-          ticker,
-          name: getStockNameByTicker(ticker),
-          price: currentPrice,
-          change,
-          changePercent,
-          status: change >= 0 ? 'up' : 'down',
-          marketState: meta.marketState || 'REGULAR',
-          currency: meta.currency
-        }
-      } catch (error) {
-        console.error(`Failed to fetch ${ticker}:`, error)
-        return null
-      }
-    })
-    
-    const results = await Promise.all(stockPromises)
-    const validStocks = results.filter(s => s !== null)
-    
-    return c.json({
-      success: true,
-      count: validStocks.length,
-      stocks: validStocks
-    })
-  } catch (error) {
-    console.error('News related stocks API error:', error)
-    return c.json({
-      success: false,
-      message: 'Failed to find related stocks'
-    }, 500)
-  }
+
+        const results = await Promise.all(stockPromises)
+        const validStocks = results.filter(s => s !== null)
+
+        return c.json({
+            success: true,
+            count: validStocks.length,
+            stocks: validStocks
+        })
+    } catch (error) {
+        console.error('News related stocks API error:', error)
+        return c.json({
+            success: false,
+            message: 'Failed to find related stocks'
+        }, 500)
+    }
 })
 
 // ==================== 뉴스 관리 페이지 ====================
 
 app.get('/admin/news', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -7994,7 +7996,7 @@ app.get('/admin/news', async (c) => {
 })
 
 app.get('/finance', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -8027,9 +8029,9 @@ app.get('/finance', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '금융'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '금융' }
+    ])}
 
         ${getFinanceMenu('/finance')}
 
@@ -8054,7 +8056,7 @@ app.get('/finance', (c) => {
                             </span>
                         </div>
                         <div class="index-price stock-number text-2xl font-bold text-gray-900 mb-1">
-                            ${index.value.toLocaleString('ko-KR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            ${index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         <div class="index-change stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} text-sm font-medium">
                             ${index.status === 'up' ? '▲' : '▼'} ${Math.abs(index.change).toFixed(2)} (${index.rate > 0 ? '+' : ''}${index.rate.toFixed(2)}%)
@@ -8077,7 +8079,7 @@ app.get('/finance', (c) => {
                 
                 <div id="kr-stocks-widget" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Loading skeleton -->
-                    ${[1,2,3,4].map(() => `
+                    ${[1, 2, 3, 4].map(() => `
                         <div class="stock-skeleton bg-white rounded-lg shadow-sm p-4 animate-pulse">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="h-4 bg-gray-200 rounded w-20"></div>
@@ -8103,7 +8105,7 @@ app.get('/finance', (c) => {
                 
                 <div id="us-stocks-widget" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Loading skeleton -->
-                    ${[1,2,3,4].map(() => `
+                    ${[1, 2, 3, 4].map(() => `
                         <div class="stock-skeleton bg-white rounded-lg shadow-sm p-4 animate-pulse">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="h-4 bg-gray-200 rounded w-20"></div>
@@ -8131,7 +8133,7 @@ app.get('/finance', (c) => {
                 
                 <div id="macro-indicators-widget" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Loading skeleton -->
-                    ${[1,2,3,4].map(() => `
+                    ${[1, 2, 3, 4].map(() => `
                         <div class="bg-white rounded-lg shadow-sm p-4 animate-pulse">
                             <div class="flex items-center justify-between mb-3">
                                 <div class="h-5 bg-gray-200 rounded w-24"></div>
@@ -8172,7 +8174,7 @@ app.get('/finance', (c) => {
                     <div id="market-movers-content">
                         <!-- Loading skeleton -->
                         <div class="space-y-3">
-                            ${[1,2,3,4,5].map(() => `
+                            ${[1, 2, 3, 4, 5].map(() => `
                                 <div class="flex items-center justify-between p-3 animate-pulse">
                                     <div class="flex items-center gap-3 flex-1">
                                         <div class="h-6 w-6 bg-gray-200 rounded-full"></div>
@@ -8266,12 +8268,11 @@ app.get('/finance', (c) => {
                             <a href="/finance/stock/${stock.ticker}" class="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200" data-stock-ticker="${stock.ticker}">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-3 flex-1">
-                                        <span class="flex items-center justify-center w-8 h-8 rounded-full ${
-                                            stock.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
-                                            stock.rank === 2 ? 'bg-gray-100 text-gray-700' :
-                                            stock.rank === 3 ? 'bg-orange-100 text-orange-700' :
-                                            'bg-blue-50 text-blue-600'
-                                        } font-bold text-sm">
+                                        <span class="flex items-center justify-center w-8 h-8 rounded-full ${stock.rank === 1 ? 'bg-yellow-100 text-yellow-700' :
+            stock.rank === 2 ? 'bg-gray-100 text-gray-700' :
+                stock.rank === 3 ? 'bg-orange-100 text-orange-700' :
+                    'bg-blue-50 text-blue-600'
+        } font-bold text-sm">
                                             ${stock.rank}
                                         </span>
                                         <div class="flex-1 min-w-0">
@@ -9175,22 +9176,22 @@ app.get('/finance', (c) => {
 
 // 주식 상세 페이지
 app.get('/finance/stock/:ticker', (c) => {
-  const ticker = c.req.param('ticker')
-  
-  // 해당 종목 찾기
-  const stock = MOCK_POPULAR_STOCKS.find(s => s.ticker === ticker) || {
-    ticker: ticker,
-    name: ticker,
-    price: 50000,
-    change: 0,
-    rate: 0,
-    status: 'flat'
-  }
+    const ticker = c.req.param('ticker')
 
-  // 차트 데이터 생성
-  const chartData = generateMockChartData(stock.price)
+    // 해당 종목 찾기
+    const stock = MOCK_POPULAR_STOCKS.find(s => s.ticker === ticker) || {
+        ticker: ticker,
+        name: ticker,
+        price: 50000,
+        change: 0,
+        rate: 0,
+        status: 'flat'
+    }
 
-  return c.html(`
+    // 차트 데이터 생성
+    const chartData = generateMockChartData(stock.price)
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -9229,10 +9230,10 @@ app.get('/finance/stock/:ticker', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '금융', href: '/finance'},
-          {label: stock.name}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '금융', href: '/finance' },
+        { label: stock.name }
+    ])}
 
         ${getFinanceMenu('/finance')}
 
@@ -9605,7 +9606,7 @@ app.get('/finance/stock/:ticker', (c) => {
 
 // ==================== 환율 페이지 ====================
 app.get('/finance/exchange', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -9647,10 +9648,10 @@ app.get('/finance/exchange', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '금융', href: '/finance'},
-          {label: '환율'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '금융', href: '/finance' },
+        { label: '환율' }
+    ])}
 
         <main class="max-w-7xl mx-auto px-4 py-8">
             <!-- 1. 스마트 환율 계산기 -->
@@ -9733,7 +9734,7 @@ app.get('/finance/exchange', (c) => {
                 
                 <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6" id="currency-cards">
                     <!-- 로딩 스켈레톤 -->
-                    ${[1,2,3,4].map(() => `
+                    ${[1, 2, 3, 4].map(() => `
                         <div class="bg-white rounded-2xl shadow-md p-6 animate-pulse">
                             <div class="h-12 bg-gray-200 rounded mb-4"></div>
                             <div class="h-8 bg-gray-200 rounded mb-2"></div>
@@ -10036,7 +10037,7 @@ app.get('/finance/exchange', (c) => {
 
 // ==================== 엔터 페이지 ====================
 app.get('/entertainment', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -10067,9 +10068,9 @@ app.get('/entertainment', (c) => {
         ${getCommonHeader('Entertainment')}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '엔터'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '엔터' }
+    ])}
 
         ${getEntertainmentMenu('/entertainment')}
 
@@ -10141,7 +10142,7 @@ app.get('/entertainment', (c) => {
 
 // ==================== 교육 페이지 ====================
 app.get('/education', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -10172,9 +10173,9 @@ app.get('/education', (c) => {
         ${getCommonHeader('Education')}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '교육'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '교육' }
+    ])}
 
         ${getEducationMenu('/education')}
 
@@ -10246,7 +10247,7 @@ app.get('/education', (c) => {
 
 // ==================== 계산기 페이지 ====================
 app.get('/lifestyle/calculator', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -10386,10 +10387,10 @@ app.get('/lifestyle/calculator', (c) => {
         ${getCommonHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: '계산기'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: '계산기' }
+    ])}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle/calculator')}
@@ -11337,7 +11338,7 @@ app.get('/lifestyle/calculator', (c) => {
 
 // ==================== 글자수 & 맞춤법 검사기 ====================
 app.get('/lifestyle/text-checker', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -11416,10 +11417,10 @@ app.get('/lifestyle/text-checker', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: '글자수 & 맞춤법'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: '글자수 & 맞춤법' }
+    ])}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 pb-24 lg:pb-8">
             <!-- Header -->
@@ -11848,7 +11849,7 @@ app.get('/lifestyle/text-checker', (c) => {
 
 // ==================== 유튜브 다운로드 페이지 ====================
 app.get('/lifestyle/youtube-download', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -11879,10 +11880,10 @@ app.get('/lifestyle/youtube-download', (c) => {
         ${getCommonHeader('Lifestyle')}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: '유튜브 다운로드'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: '유튜브 다운로드' }
+    ])}
 
         <!-- 서브 메뉴 -->
         ${getLifestyleMenu('/lifestyle/youtube-download')}
@@ -12295,7 +12296,7 @@ app.get('/lifestyle/youtube-download', (c) => {
 
 // ==================== 스마트 부동산 평수 계산기 ====================
 app.get('/lifestyle/pyeong-calculator', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -12337,10 +12338,10 @@ app.get('/lifestyle/pyeong-calculator', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: '평수 계산기'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: '평수 계산기' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
@@ -12813,56 +12814,56 @@ app.get('/lifestyle/pyeong-calculator', (c) => {
 
 // ==================== 뉴스 페이지 ====================
 app.get('/news', async (c) => {
-  const DB = getDB(c)
-  
-  // DB에서 뉴스 가져오기
-  let newsFromDB: any[] = []
-  try {
-    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
-    newsFromDB = results || []
-  } catch (error) {
-    console.error('뉴스 조회 오류:', error)
-  }
-  
-  // DB에 뉴스가 없으면 RSS에서 자동으로 가져오기
-  if (newsFromDB.length === 0) {
+    const DB = getDB(c)
+
+    // DB에서 뉴스 가져오기
+    let newsFromDB: any[] = []
     try {
-      const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment', 'stock']
-      for (let i = 0; i < categories.length; i++) {
-        const category = categories[i]
-        const newsItems = await parseGoogleNewsRSS(category)
-        for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
-          try {
-            await DB.prepare(`
+        const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
+        newsFromDB = results || []
+    } catch (error) {
+        console.error('뉴스 조회 오류:', error)
+    }
+
+    // DB에 뉴스가 없으면 RSS에서 자동으로 가져오기
+    if (newsFromDB.length === 0) {
+        try {
+            const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment', 'stock']
+            for (let i = 0; i < categories.length; i++) {
+                const category = categories[i]
+                const newsItems = await parseGoogleNewsRSS(category)
+                for (const item of newsItems.slice(0, 5)) { // 카테고리당 5개
+                    try {
+                        await DB.prepare(`
               INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
               VALUES (?, ?, ?, ?, ?, ?)
             `).bind(
-              item.category,
-              item.title,
-              item.summary,
-              item.link,
-              item.publisher,
-              item.published_at
-            ).run()
-          } catch (err) {
-            console.error('뉴스 저장 오류:', err)
-          }
-        }
-        
-        // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
-        if (i < categories.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 2000))
-        }
-      }
-      // 다시 조회
-      const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
-      newsFromDB = results || []
-    } catch (error) {
-      console.error('RSS 뉴스 가져오기 오류:', error)
-    }
-  }
+                            item.category,
+                            item.title,
+                            item.summary,
+                            item.link,
+                            item.publisher,
+                            item.published_at
+                        ).run()
+                    } catch (err) {
+                        console.error('뉴스 저장 오류:', err)
+                    }
+                }
 
-  return c.html(`
+                // 구글 Rate Limit 회피: 카테고리 간 2초 지연 (마지막 카테고리 제외)
+                if (i < categories.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 2000))
+                }
+            }
+            // 다시 조회
+            const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 20').all()
+            newsFromDB = results || []
+        } catch (error) {
+            console.error('RSS 뉴스 가져오기 오류:', error)
+        }
+    }
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -13053,9 +13054,9 @@ app.get('/news', async (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '뉴스'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '뉴스' }
+    ])}
 
         <!-- 메인 컨텐츠: 3단 레이아웃 (PC) / 1단 레이아웃 (모바일) -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
@@ -14424,7 +14425,7 @@ app.get('/news', async (c) => {
 
 // ==================== 북마크 페이지 ====================
 app.get('/bookmarks', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -14516,9 +14517,9 @@ app.get('/bookmarks', (c) => {
         ${getCommonHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '북마크'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '북마크' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6 sm:py-8">
@@ -14721,110 +14722,110 @@ app.get('/bookmarks', (c) => {
 
 // ==================== API: 테트리스 최고 점수 저장 ====================
 app.post('/api/tetris/score', async (c) => {
-  const DB = getDB(c)
-  const { score, lines, level } = await c.req.json()
-  
-  // 세션에서 사용자 정보 가져오기
-  const cookieHeader = c.req.header('Cookie')
-  let userId = null
-  
-  console.log('🎮 [테트리스] 점수 저장 요청:', { score, lines, level })
-  console.log('🍪 [테트리스] Cookie 헤더:', cookieHeader)
-  
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-      const [key, value] = cookie.trim().split('=')
-      acc[key] = value
-      return acc
-    }, {} as Record<string, string>)
-    
-    const sessionId = cookies.session_id
-    console.log('🔑 [테트리스] Session ID:', sessionId ? '존재함' : '없음')
-    
-    if (sessionId) {
-      try {
-        // 세션에서 사용자 ID 조회
-        const session = await DB.prepare(`
+    const DB = getDB(c)
+    const { score, lines, level } = await c.req.json()
+
+    // 세션에서 사용자 정보 가져오기
+    const cookieHeader = c.req.header('Cookie')
+    let userId = null
+
+    console.log('🎮 [테트리스] 점수 저장 요청:', { score, lines, level })
+    console.log('🍪 [테트리스] Cookie 헤더:', cookieHeader)
+
+    if (cookieHeader) {
+        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=')
+            acc[key] = value
+            return acc
+        }, {} as Record<string, string>)
+
+        const sessionId = cookies.session_id
+        console.log('🔑 [테트리스] Session ID:', sessionId ? '존재함' : '없음')
+
+        if (sessionId) {
+            try {
+                // 세션에서 사용자 ID 조회
+                const session = await DB.prepare(`
           SELECT user_id FROM sessions 
           WHERE session_id = ? AND expires_at > datetime('now')
         `).bind(sessionId).first() as { user_id: number } | null
-        
-        console.log('👤 [테트리스] 세션 조회 결과:', session)
-        
-        if (session) {
-          userId = session.user_id
-          console.log('✅ [테트리스] 사용자 인증 성공:', userId)
-        } else {
-          console.log('❌ [테트리스] 세션이 만료되었거나 존재하지 않음')
+
+                console.log('👤 [테트리스] 세션 조회 결과:', session)
+
+                if (session) {
+                    userId = session.user_id
+                    console.log('✅ [테트리스] 사용자 인증 성공:', userId)
+                } else {
+                    console.log('❌ [테트리스] 세션이 만료되었거나 존재하지 않음')
+                }
+            } catch (e) {
+                console.error('❌ [테트리스] 세션 조회 실패:', e)
+            }
         }
-      } catch (e) {
-        console.error('❌ [테트리스] 세션 조회 실패:', e)
-      }
     }
-  }
-  
-  // 로그인 안 된 경우 점수 저장 거부
-  if (!userId) {
-    console.log('❌ [테트리스] 로그인되지 않음 - 점수 저장 거부')
-    return c.json({
-      success: false,
-      message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
-      requireLogin: true
-    }, 401)
-  }
-  
-  if (score === undefined) {
-    return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
-  }
-  
-  try {
-    console.log('💾 [테트리스] DB 저장 시작...')
-    
-    // 1. tetris_scores 테이블에 저장 (리더보드용)
-    await DB.prepare(
-      'INSERT INTO tetris_scores (user_id, score) VALUES (?, ?)'
-    ).bind(userId, score).run()
-    
-    console.log('✅ [테트리스] tetris_scores 테이블 저장 성공')
-    
-    // 2. user_game_scores 테이블에도 저장 (마이페이지용)
-    const gameData = JSON.stringify({ lines: lines || 0, level: level || 1 })
-    await DB.prepare(`
+
+    // 로그인 안 된 경우 점수 저장 거부
+    if (!userId) {
+        console.log('❌ [테트리스] 로그인되지 않음 - 점수 저장 거부')
+        return c.json({
+            success: false,
+            message: '로그인이 필요합니다. 점수를 저장하려면 로그인해주세요.',
+            requireLogin: true
+        }, 401)
+    }
+
+    if (score === undefined) {
+        return c.json({ success: false, message: '유효하지 않은 데이터입니다.' }, 400)
+    }
+
+    try {
+        console.log('💾 [테트리스] DB 저장 시작...')
+
+        // 1. tetris_scores 테이블에 저장 (리더보드용)
+        await DB.prepare(
+            'INSERT INTO tetris_scores (user_id, score) VALUES (?, ?)'
+        ).bind(userId, score).run()
+
+        console.log('✅ [테트리스] tetris_scores 테이블 저장 성공')
+
+        // 2. user_game_scores 테이블에도 저장 (마이페이지용)
+        const gameData = JSON.stringify({ lines: lines || 0, level: level || 1 })
+        await DB.prepare(`
       INSERT INTO user_game_scores (user_id, game_type, score, game_data, played_at)
       VALUES (?, ?, ?, ?, datetime('now'))
     `).bind(userId, 'tetris', score, gameData).run()
-    
-    console.log('✅ [테트리스] user_game_scores 테이블 저장 성공')
-    return c.json({ success: true, message: '기록이 저장되었습니다', score })
-  } catch (error) {
-    console.error('❌ [테트리스] 점수 저장 오류:', error)
-    return c.json({ success: false, message: '점수 저장 중 오류가 발생했습니다.' }, 500)
-  }
+
+        console.log('✅ [테트리스] user_game_scores 테이블 저장 성공')
+        return c.json({ success: true, message: '기록이 저장되었습니다', score })
+    } catch (error) {
+        console.error('❌ [테트리스] 점수 저장 오류:', error)
+        return c.json({ success: false, message: '점수 저장 중 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 테트리스 최고 점수 조회 ====================
 app.get('/api/tetris/highscore/:userId', async (c) => {
-  try {
-    const userId = c.req.param('userId')
-    
-    const highScore = await DB.prepare(
-      'SELECT MAX(score) as high_score FROM tetris_scores WHERE user_id = ?'
-    ).bind(userId).first()
-    
-    return c.json({ 
-      success: true, 
-      highScore: highScore?.high_score || 0 
-    })
-  } catch (error) {
-    console.error('테트리스 최고 점수 조회 오류:', error)
-    return c.json({ success: false, message: '최고 점수 조회 중 오류가 발생했습니다.' }, 500)
-  }
+    try {
+        const userId = c.req.param('userId')
+
+        const highScore = await DB.prepare(
+            'SELECT MAX(score) as high_score FROM tetris_scores WHERE user_id = ?'
+        ).bind(userId).first()
+
+        return c.json({
+            success: true,
+            highScore: highScore?.high_score || 0
+        })
+    } catch (error) {
+        console.error('테트리스 최고 점수 조회 오류:', error)
+        return c.json({ success: false, message: '최고 점수 조회 중 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 테트리스 최고 점수 리스트 ====================
 app.get('/api/tetris/leaderboard', async (c) => {
-  try {
-    const { results } = await DB.prepare(`
+    try {
+        const { results } = await DB.prepare(`
       SELECT 
         t.id,
         t.score,
@@ -14835,265 +14836,265 @@ app.get('/api/tetris/leaderboard', async (c) => {
       ORDER BY t.score DESC
       LIMIT 10
     `).all()
-    
-    return c.json({ 
-      success: true, 
-      leaderboard: results || [] 
-    })
-  } catch (error) {
-    console.error('테트리스 리더보드 조회 오류:', error)
-    return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
-  }
+
+        return c.json({
+            success: true,
+            leaderboard: results || []
+        })
+    } catch (error) {
+        console.error('테트리스 리더보드 조회 오류:', error)
+        return c.json({ success: false, message: '리더보드 조회 중 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 스도쿠 기록 저장 ====================
 // ==================== API: 스도쿠 최고 기록 조회 ====================
 app.get('/api/sudoku/besttime/:userId/:difficulty', async (c) => {
-  try {
-    const userId = c.req.param('userId')
-    const difficulty = c.req.param('difficulty')
-    
-    const bestTime = await DB.prepare(
-      'SELECT MIN(time) as best_time FROM sudoku_scores WHERE user_id = ? AND difficulty = ?'
-    ).bind(userId, difficulty).first()
-    
-    return c.json({ 
-      success: true, 
-      bestTime: bestTime?.best_time || 0 
-    })
-  } catch (error) {
-    console.error('스도쿠 최고 기록 조회 오류:', error)
-    return c.json({ success: false, message: '최고 기록 조회 중 오류가 발생했습니다.' }, 500)
-  }
+    try {
+        const userId = c.req.param('userId')
+        const difficulty = c.req.param('difficulty')
+
+        const bestTime = await DB.prepare(
+            'SELECT MIN(time) as best_time FROM sudoku_scores WHERE user_id = ? AND difficulty = ?'
+        ).bind(userId, difficulty).first()
+
+        return c.json({
+            success: true,
+            bestTime: bestTime?.best_time || 0
+        })
+    } catch (error) {
+        console.error('스도쿠 최고 기록 조회 오류:', error)
+        return c.json({ success: false, message: '최고 기록 조회 중 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 스도쿠 리더보드 ====================
 // ==================== API: 회원가입 ====================
 app.post('/api/signup', async (c) => {
-  try {
-    const { email, password, name, phone } = await c.req.json()
-    
-    // 입력 검증
-    if (!email || !password || !name) {
-      return c.json({ success: false, message: '필수 항목을 모두 입력해주세요.' }, 400)
+    try {
+        const { email, password, name, phone } = await c.req.json()
+
+        // 입력 검증
+        if (!email || !password || !name) {
+            return c.json({ success: false, message: '필수 항목을 모두 입력해주세요.' }, 400)
+        }
+
+        // 이메일 중복 체크
+        const existingUser = await DB.prepare(
+            'SELECT id FROM users WHERE email = ?'
+        ).bind(email).first()
+
+        if (existingUser) {
+            return c.json({ success: false, message: '이미 사용 중인 이메일입니다.' }, 400)
+        }
+
+        // 회원 정보 저장 (실제로는 비밀번호를 해시화해야 함)
+        const result = await DB.prepare(
+            'INSERT INTO users (email, password, name, phone, level, status) VALUES (?, ?, ?, ?, 1, "active")'
+        ).bind(email, password, name, phone || null).run()
+
+        const newUserId = result.meta.last_row_id
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(newUserId, 'signup', `신규 회원 가입: ${email}`).run()
+
+        // 관리자 알림 생성
+        await DB.prepare(
+            'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+        ).bind('new_signup', '신규 회원 가입', `${name}(${email})님이 가입했습니다.`, 'normal').run()
+
+        return c.json({
+            success: true,
+            message: '회원가입이 완료되었습니다.',
+            userId: newUserId
+        })
+    } catch (error) {
+        console.error('Signup error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    // 이메일 중복 체크
-    const existingUser = await DB.prepare(
-      'SELECT id FROM users WHERE email = ?'
-    ).bind(email).first()
-    
-    if (existingUser) {
-      return c.json({ success: false, message: '이미 사용 중인 이메일입니다.' }, 400)
-    }
-    
-    // 회원 정보 저장 (실제로는 비밀번호를 해시화해야 함)
-    const result = await DB.prepare(
-      'INSERT INTO users (email, password, name, phone, level, status) VALUES (?, ?, ?, ?, 1, "active")'
-    ).bind(email, password, name, phone || null).run()
-    
-    const newUserId = result.meta.last_row_id
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(newUserId, 'signup', `신규 회원 가입: ${email}`).run()
-    
-    // 관리자 알림 생성
-    await DB.prepare(
-      'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
-    ).bind('new_signup', '신규 회원 가입', `${name}(${email})님이 가입했습니다.`, 'normal').run()
-    
-    return c.json({
-      success: true,
-      message: '회원가입이 완료되었습니다.',
-      userId: newUserId
-    })
-  } catch (error) {
-    console.error('Signup error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 로그인 ====================
 app.post('/api/login', async (c) => {
-  try {
-    const { email, password } = await c.req.json()
-    
-    if (!email || !password) {
-      return c.json({ success: false, message: '이메일과 비밀번호를 입력해주세요.' }, 400)
+    try {
+        const { email, password } = await c.req.json()
+
+        if (!email || !password) {
+            return c.json({ success: false, message: '이메일과 비밀번호를 입력해주세요.' }, 400)
+        }
+
+        // 사용자 조회 (role, level, status 포함)
+        const user = await DB.prepare(
+            'SELECT id, email, name, phone, role, level, status FROM users WHERE email = ? AND password = ?'
+        ).bind(email, password).first()
+
+        if (!user) {
+            return c.json({ success: false, message: '이메일 또는 비밀번호가 일치하지 않습니다.' }, 401)
+        }
+
+        // 계정 정지 체크
+        if (user.status === 'suspended') {
+            return c.json({ success: false, message: '정지된 계정입니다. 관리자에게 문의하세요.' }, 403)
+        }
+
+        if (user.status === 'deleted') {
+            return c.json({ success: false, message: '삭제된 계정입니다.' }, 403)
+        }
+
+        // 마지막 로그인 시간 업데이트
+        await DB.prepare(
+            'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(user.id).run()
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(user.id, 'login', `로그인: ${user.email}`).run()
+
+        // 로그인 기록 저장
+        const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+        const userAgent = c.req.header('user-agent') || 'unknown'
+        await DB.prepare(
+            'INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
+        ).bind(user.id, ipAddress, userAgent).run()
+
+        // 간단한 토큰 생성 (실제로는 JWT 등을 사용해야 함)
+        const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
+
+        // 응답 생성
+        const response = c.json({
+            success: true,
+            message: '로그인 성공',
+            token: token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                phone: user.phone,
+                role: user.role || 'user',
+                level: user.level,
+                status: user.status
+            }
+        })
+
+        // 쿠키 설정 (응답 헤더에 추가)
+        response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
+        response.headers.append('Set-Cookie', `user_name=${encodeURIComponent(user.name)}; Path=/; Max-Age=86400; SameSite=Lax`)
+        response.headers.append('Set-Cookie', `auth_token=${token}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
+
+        return response
+    } catch (error) {
+        console.error('Login error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    // 사용자 조회 (role, level, status 포함)
-    const user = await DB.prepare(
-      'SELECT id, email, name, phone, role, level, status FROM users WHERE email = ? AND password = ?'
-    ).bind(email, password).first()
-    
-    if (!user) {
-      return c.json({ success: false, message: '이메일 또는 비밀번호가 일치하지 않습니다.' }, 401)
-    }
-    
-    // 계정 정지 체크
-    if (user.status === 'suspended') {
-      return c.json({ success: false, message: '정지된 계정입니다. 관리자에게 문의하세요.' }, 403)
-    }
-    
-    if (user.status === 'deleted') {
-      return c.json({ success: false, message: '삭제된 계정입니다.' }, 403)
-    }
-    
-    // 마지막 로그인 시간 업데이트
-    await DB.prepare(
-      'UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(user.id).run()
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(user.id, 'login', `로그인: ${user.email}`).run()
-    
-    // 로그인 기록 저장
-    const ipAddress = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
-    const userAgent = c.req.header('user-agent') || 'unknown'
-    await DB.prepare(
-      'INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)'
-    ).bind(user.id, ipAddress, userAgent).run()
-    
-    // 간단한 토큰 생성 (실제로는 JWT 등을 사용해야 함)
-    const token = Buffer.from(`${user.id}:${Date.now()}`).toString('base64')
-    
-    // 응답 생성
-    const response = c.json({
-      success: true,
-      message: '로그인 성공',
-      token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        role: user.role || 'user',
-        level: user.level,
-        status: user.status
-      }
-    })
-    
-    // 쿠키 설정 (응답 헤더에 추가)
-    response.headers.set('Set-Cookie', `user_id=${user.id}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
-    response.headers.append('Set-Cookie', `user_name=${encodeURIComponent(user.name)}; Path=/; Max-Age=86400; SameSite=Lax`)
-    response.headers.append('Set-Cookie', `auth_token=${token}; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax`)
-    
-    return response
-  } catch (error) {
-    console.error('Login error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 사용자 정보 조회 ====================
 app.get('/api/user', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        // 간단한 토큰 검증 (실제로는 JWT 검증 필요)
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const user = await DB.prepare(
+            'SELECT id, email, name, phone, created_at, last_login FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!user) {
+            return c.json({ success: false, message: '사용자를 찾을 수 없습니다.' }, 404)
+        }
+
+        return c.json({
+            success: true,
+            user: user
+        })
+    } catch (error) {
+        console.error('User info error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    // 간단한 토큰 검증 (실제로는 JWT 검증 필요)
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const user = await DB.prepare(
-      'SELECT id, email, name, phone, created_at, last_login FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!user) {
-      return c.json({ success: false, message: '사용자를 찾을 수 없습니다.' }, 404)
-    }
-    
-    return c.json({
-      success: true,
-      user: user
-    })
-  } catch (error) {
-    console.error('User info error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 현재 사용자 정보 (role 포함) ====================
 app.get('/api/user/me', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        // 토큰 검증
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const user = await DB.prepare(
+            'SELECT id, email, name, phone, role, level, status, created_at, last_login FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!user) {
+            return c.json({ success: false, message: '사용자를 찾을 수 없습니다.' }, 404)
+        }
+
+        return c.json({
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                phone: user.phone,
+                role: user.role || 'user',
+                level: user.level,
+                status: user.status,
+                created_at: user.created_at,
+                last_login: user.last_login
+            }
+        })
+    } catch (error) {
+        console.error('User me error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    // 토큰 검증
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const user = await DB.prepare(
-      'SELECT id, email, name, phone, role, level, status, created_at, last_login FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!user) {
-      return c.json({ success: false, message: '사용자를 찾을 수 없습니다.' }, 404)
-    }
-    
-    return c.json({
-      success: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        phone: user.phone,
-        role: user.role || 'user',
-        level: user.level,
-        status: user.status,
-        created_at: user.created_at,
-        last_login: user.last_login
-      }
-    })
-  } catch (error) {
-    console.error('User me error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== 관리자 권한 체크 함수 ====================
 async function checkAdminAuth(c: any) {
-  const token = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1]
-  
-  if (!token) {
-    return null
-  }
-  
-  try {
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const user = await DB.prepare(
-      'SELECT id, email, name, role, level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
-    if (user && (user.role === 'admin' || user.level >= 6) && user.status === 'active') {
-      return user
+    const token = c.req.header('Cookie')?.match(/auth_token=([^;]+)/)?.[1]
+
+    if (!token) {
+        return null
     }
-  } catch (error) {
-    console.error('Admin auth error:', error)
-  }
-  
-  return null
+
+    try {
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const user = await DB.prepare(
+            'SELECT id, email, name, role, level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+        if (user && (user.role === 'admin' || user.level >= 6) && user.status === 'active') {
+            return user
+        }
+    } catch (error) {
+        console.error('Admin auth error:', error)
+    }
+
+    return null
 }
 
 // ==================== 관리자 대시보드 페이지 ====================
 app.get('/admin', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -15152,9 +15153,9 @@ app.get('/admin', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -15354,7 +15355,7 @@ app.get('/admin', async (c) => {
 
 // ==================== 회원 관리 페이지 ====================
 app.get('/admin/users', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -15414,10 +15415,10 @@ app.get('/admin/users', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자', href: '/admin'},
-          {label: '회원 관리'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자', href: '/admin' },
+        { label: '회원 관리' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -16001,373 +16002,373 @@ app.get('/admin/users', async (c) => {
 
 // ==================== API: 관리자 통계 ====================
 app.get('/api/admin/stats', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        // 전체 회원 수
+        const totalUsers = await DB.prepare(
+            'SELECT COUNT(*) as count FROM users WHERE status != "deleted"'
+        ).first()
+
+        // 활성 회원 수
+        const activeUsers = await DB.prepare(
+            'SELECT COUNT(*) as count FROM users WHERE status = "active"'
+        ).first()
+
+        // 정지 회원 수
+        const suspendedUsers = await DB.prepare(
+            'SELECT COUNT(*) as count FROM users WHERE status = "suspended"'
+        ).first()
+
+        // 오늘 가입 회원
+        const todaySignups = await DB.prepare(
+            'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = DATE("now")'
+        ).first()
+
+        // 등급별 분포
+        const levelDistribution = await DB.prepare(
+            'SELECT level, COUNT(*) as count FROM users WHERE status != "deleted" GROUP BY level ORDER BY level'
+        ).all()
+
+        // 최근 가입 회원 10명
+        const recentUsers = await DB.prepare(
+            'SELECT id, email, name, level, created_at FROM users WHERE status != "deleted" ORDER BY created_at DESC LIMIT 10'
+        ).all()
+
+        return c.json({
+            success: true,
+            totalUsers: totalUsers.count,
+            activeUsers: activeUsers.count,
+            suspendedUsers: suspendedUsers.count,
+            todaySignups: todaySignups.count,
+            levelDistribution: levelDistribution.results,
+            recentUsers: recentUsers.results
+        })
+    } catch (error) {
+        console.error('Admin stats error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    // 전체 회원 수
-    const totalUsers = await DB.prepare(
-      'SELECT COUNT(*) as count FROM users WHERE status != "deleted"'
-    ).first()
-    
-    // 활성 회원 수
-    const activeUsers = await DB.prepare(
-      'SELECT COUNT(*) as count FROM users WHERE status = "active"'
-    ).first()
-    
-    // 정지 회원 수
-    const suspendedUsers = await DB.prepare(
-      'SELECT COUNT(*) as count FROM users WHERE status = "suspended"'
-    ).first()
-    
-    // 오늘 가입 회원
-    const todaySignups = await DB.prepare(
-      'SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = DATE("now")'
-    ).first()
-    
-    // 등급별 분포
-    const levelDistribution = await DB.prepare(
-      'SELECT level, COUNT(*) as count FROM users WHERE status != "deleted" GROUP BY level ORDER BY level'
-    ).all()
-    
-    // 최근 가입 회원 10명
-    const recentUsers = await DB.prepare(
-      'SELECT id, email, name, level, created_at FROM users WHERE status != "deleted" ORDER BY created_at DESC LIMIT 10'
-    ).all()
-    
-    return c.json({
-      success: true,
-      totalUsers: totalUsers.count,
-      activeUsers: activeUsers.count,
-      suspendedUsers: suspendedUsers.count,
-      todaySignups: todaySignups.count,
-      levelDistribution: levelDistribution.results,
-      recentUsers: recentUsers.results
-    })
-  } catch (error) {
-    console.error('Admin stats error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 목록 조회 ====================
 app.get('/api/admin/users', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        // 검색 파라미터
+        const search = c.req.query('search') || ''
+        const level = c.req.query('level') || ''
+        const status = c.req.query('status') || ''
+
+        let query = 'SELECT id, email, name, phone, level, status, created_at FROM users WHERE 1=1'
+        const bindings = []
+
+        if (search) {
+            query += ' AND (email LIKE ? OR name LIKE ?)'
+            bindings.push(`%${search}%`, `%${search}%`)
+        }
+
+        if (level) {
+            query += ' AND level = ?'
+            bindings.push(parseInt(level))
+        }
+
+        if (status) {
+            query += ' AND status = ?'
+            bindings.push(status)
+        } else {
+            query += ' AND status != "deleted"'
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT 100'
+
+        const users = await DB.prepare(query).bind(...bindings).all()
+
+        return c.json({
+            success: true,
+            users: users.results
+        })
+    } catch (error) {
+        console.error('Admin users list error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    // 검색 파라미터
-    const search = c.req.query('search') || ''
-    const level = c.req.query('level') || ''
-    const status = c.req.query('status') || ''
-    
-    let query = 'SELECT id, email, name, phone, level, status, created_at FROM users WHERE 1=1'
-    const bindings = []
-    
-    if (search) {
-      query += ' AND (email LIKE ? OR name LIKE ?)'
-      bindings.push(`%${search}%`, `%${search}%`)
-    }
-    
-    if (level) {
-      query += ' AND level = ?'
-      bindings.push(parseInt(level))
-    }
-    
-    if (status) {
-      query += ' AND status = ?'
-      bindings.push(status)
-    } else {
-      query += ' AND status != "deleted"'
-    }
-    
-    query += ' ORDER BY created_at DESC LIMIT 100'
-    
-    const users = await DB.prepare(query).bind(...bindings).all()
-    
-    return c.json({
-      success: true,
-      users: users.results
-    })
-  } catch (error) {
-    console.error('Admin users list error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 상세 조회 ====================
 app.get('/api/admin/users/:id', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const targetUserId = c.req.param('id')
+        const user = await DB.prepare(
+            'SELECT id, email, name, phone, level, status, created_at, last_login FROM users WHERE id = ?'
+        ).bind(targetUserId).first()
+
+        if (!user) {
+            return c.json({ success: false, message: '회원을 찾을 수 없습니다.' }, 404)
+        }
+
+        return c.json({
+            success: true,
+            user: user
+        })
+    } catch (error) {
+        console.error('Admin user detail error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const targetUserId = c.req.param('id')
-    const user = await DB.prepare(
-      'SELECT id, email, name, phone, level, status, created_at, last_login FROM users WHERE id = ?'
-    ).bind(targetUserId).first()
-    
-    if (!user) {
-      return c.json({ success: false, message: '회원을 찾을 수 없습니다.' }, 404)
-    }
-    
-    return c.json({
-      success: true,
-      user: user
-    })
-  } catch (error) {
-    console.error('Admin user detail error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 정보 수정 ====================
 app.put('/api/admin/users/:id', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const targetUserId = c.req.param('id')
+        const { name, phone, level } = await c.req.json()
+
+        // 대상 회원 정보 조회
+        const targetUser = await DB.prepare(
+            'SELECT email, name FROM users WHERE id = ?'
+        ).bind(targetUserId).first()
+
+        await DB.prepare(
+            'UPDATE users SET name = ?, phone = ?, level = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(name, phone, level, targetUserId).run()
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(userId, 'admin_action', `회원 정보 수정: ${targetUser?.email}`).run()
+
+        return c.json({
+            success: true,
+            message: '회원 정보가 수정되었습니다.'
+        })
+    } catch (error) {
+        console.error('Admin user update error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const targetUserId = c.req.param('id')
-    const { name, phone, level } = await c.req.json()
-    
-    // 대상 회원 정보 조회
-    const targetUser = await DB.prepare(
-      'SELECT email, name FROM users WHERE id = ?'
-    ).bind(targetUserId).first()
-    
-    await DB.prepare(
-      'UPDATE users SET name = ?, phone = ?, level = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(name, phone, level, targetUserId).run()
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(userId, 'admin_action', `회원 정보 수정: ${targetUser?.email}`).run()
-    
-    return c.json({
-      success: true,
-      message: '회원 정보가 수정되었습니다.'
-    })
-  } catch (error) {
-    console.error('Admin user update error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 상태 변경 (정지/해제) ====================
 app.patch('/api/admin/users/:id/status', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const targetUserId = c.req.param('id')
+        const { status } = await c.req.json()
+
+        if (!['active', 'suspended'].includes(status)) {
+            return c.json({ success: false, message: '올바르지 않은 상태입니다.' }, 400)
+        }
+
+        // 대상 회원 정보 조회
+        const targetUser = await DB.prepare(
+            'SELECT email, name FROM users WHERE id = ?'
+        ).bind(targetUserId).first()
+
+        await DB.prepare(
+            'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(status, targetUserId).run()
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(userId, 'admin_action', `회원 상태 변경: ${targetUser?.email} → ${status}`).run()
+
+        // 정지 알림 생성
+        if (status === 'suspended') {
+            await DB.prepare(
+                'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+            ).bind('user_suspended', '회원 정지', `${targetUser?.name}(${targetUser?.email})님의 계정이 정지되었습니다.`, 'high').run()
+        }
+
+        return c.json({
+            success: true,
+            message: '회원 상태가 변경되었습니다.'
+        })
+    } catch (error) {
+        console.error('Admin user status error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const targetUserId = c.req.param('id')
-    const { status } = await c.req.json()
-    
-    if (!['active', 'suspended'].includes(status)) {
-      return c.json({ success: false, message: '올바르지 않은 상태입니다.' }, 400)
-    }
-    
-    // 대상 회원 정보 조회
-    const targetUser = await DB.prepare(
-      'SELECT email, name FROM users WHERE id = ?'
-    ).bind(targetUserId).first()
-    
-    await DB.prepare(
-      'UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(status, targetUserId).run()
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(userId, 'admin_action', `회원 상태 변경: ${targetUser?.email} → ${status}`).run()
-    
-    // 정지 알림 생성
-    if (status === 'suspended') {
-      await DB.prepare(
-        'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
-      ).bind('user_suspended', '회원 정지', `${targetUser?.name}(${targetUser?.email})님의 계정이 정지되었습니다.`, 'high').run()
-    }
-    
-    return c.json({
-      success: true,
-      message: '회원 상태가 변경되었습니다.'
-    })
-  } catch (error) {
-    console.error('Admin user status error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 삭제 ====================
 app.delete('/api/admin/users/:id', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const targetUserId = c.req.param('id')
+
+        // 대상 회원 정보 조회
+        const targetUser = await DB.prepare(
+            'SELECT email, name FROM users WHERE id = ?'
+        ).bind(targetUserId).first()
+
+        // 소프트 삭제
+        await DB.prepare(
+            'UPDATE users SET status = "deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?'
+        ).bind(targetUserId).run()
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(userId, 'admin_action', `회원 삭제: ${targetUser?.email}`).run()
+
+        // 삭제 알림 생성
+        await DB.prepare(
+            'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
+        ).bind('user_deleted', '회원 삭제', `${targetUser?.name}(${targetUser?.email})님의 계정이 삭제되었습니다.`, 'high').run()
+
+        return c.json({
+            success: true,
+            message: '회원이 삭제되었습니다.'
+        })
+    } catch (error) {
+        console.error('Admin user delete error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const targetUserId = c.req.param('id')
-    
-    // 대상 회원 정보 조회
-    const targetUser = await DB.prepare(
-      'SELECT email, name FROM users WHERE id = ?'
-    ).bind(targetUserId).first()
-    
-    // 소프트 삭제
-    await DB.prepare(
-      'UPDATE users SET status = "deleted", updated_at = CURRENT_TIMESTAMP WHERE id = ?'
-    ).bind(targetUserId).run()
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(userId, 'admin_action', `회원 삭제: ${targetUser?.email}`).run()
-    
-    // 삭제 알림 생성
-    await DB.prepare(
-      'INSERT INTO notifications (type, title, message, priority) VALUES (?, ?, ?, ?)'
-    ).bind('user_deleted', '회원 삭제', `${targetUser?.name}(${targetUser?.email})님의 계정이 삭제되었습니다.`, 'high').run()
-    
-    return c.json({
-      success: true,
-      message: '회원이 삭제되었습니다.'
-    })
-  } catch (error) {
-    console.error('Admin user delete error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 고급 통계 (일별/월별 추세) ====================
 app.get('/api/admin/stats/trends', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    // 최근 30일 일별 가입자 수
-    const dailySignups = await DB.prepare(`
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        // 최근 30일 일별 가입자 수
+        const dailySignups = await DB.prepare(`
       SELECT DATE(created_at) as date, COUNT(*) as count 
       FROM users 
       WHERE created_at >= DATE('now', '-30 days')
       GROUP BY DATE(created_at)
       ORDER BY date
     `).all()
-    
-    // 최근 12개월 월별 가입자 수
-    const monthlySignups = await DB.prepare(`
+
+        // 최근 12개월 월별 가입자 수
+        const monthlySignups = await DB.prepare(`
       SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count 
       FROM users 
       WHERE created_at >= DATE('now', '-12 months')
       GROUP BY strftime('%Y-%m', created_at)
       ORDER BY month
     `).all()
-    
-    // 최근 30일 일별 로그인 활동
-    const dailyLogins = await DB.prepare(`
+
+        // 최근 30일 일별 로그인 활동
+        const dailyLogins = await DB.prepare(`
       SELECT DATE(created_at) as date, COUNT(*) as count 
       FROM activity_logs 
       WHERE action = 'login' AND created_at >= DATE('now', '-30 days')
       GROUP BY DATE(created_at)
       ORDER BY date
     `).all()
-    
-    // 등급별 활동 통계 (최근 30일)
-    const levelActivity = await DB.prepare(`
+
+        // 등급별 활동 통계 (최근 30일)
+        const levelActivity = await DB.prepare(`
       SELECT u.level, COUNT(al.id) as activity_count
       FROM users u
       LEFT JOIN activity_logs al ON u.id = al.user_id AND al.created_at >= DATE('now', '-30 days')
@@ -16375,396 +16376,396 @@ app.get('/api/admin/stats/trends', async (c) => {
       GROUP BY u.level
       ORDER BY u.level
     `).all()
-    
-    return c.json({
-      success: true,
-      dailySignups: dailySignups.results,
-      monthlySignups: monthlySignups.results,
-      dailyLogins: dailyLogins.results,
-      levelActivity: levelActivity.results
-    })
-  } catch (error) {
-    console.error('Admin trends error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
+
+        return c.json({
+            success: true,
+            dailySignups: dailySignups.results,
+            monthlySignups: monthlySignups.results,
+            dailyLogins: dailyLogins.results,
+            levelActivity: levelActivity.results
+        })
+    } catch (error) {
+        console.error('Admin trends error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 활동 로그 조회 ====================
 app.get('/api/admin/activity-logs', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const limit = parseInt(c.req.query('limit') || '50')
-    const action = c.req.query('action') || ''
-    
-    let query = `
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const limit = parseInt(c.req.query('limit') || '50')
+        const action = c.req.query('action') || ''
+
+        let query = `
       SELECT al.*, u.email, u.name 
       FROM activity_logs al
       LEFT JOIN users u ON al.user_id = u.id
       WHERE 1=1
     `
-    const bindings = []
-    
-    if (action) {
-      query += ' AND al.action = ?'
-      bindings.push(action)
+        const bindings = []
+
+        if (action) {
+            query += ' AND al.action = ?'
+            bindings.push(action)
+        }
+
+        query += ' ORDER BY al.created_at DESC LIMIT ?'
+        bindings.push(limit)
+
+        const logs = await DB.prepare(query).bind(...bindings).all()
+
+        return c.json({
+            success: true,
+            logs: logs.results
+        })
+    } catch (error) {
+        console.error('Admin activity logs error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    query += ' ORDER BY al.created_at DESC LIMIT ?'
-    bindings.push(limit)
-    
-    const logs = await DB.prepare(query).bind(...bindings).all()
-    
-    return c.json({
-      success: true,
-      logs: logs.results
-    })
-  } catch (error) {
-    console.error('Admin activity logs error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 알림 목록 조회 ====================
 app.get('/api/admin/notifications', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    // 관리자용 알림 (target_user_id가 NULL이거나 현재 관리자)
-    const notifications = await DB.prepare(`
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        // 관리자용 알림 (target_user_id가 NULL이거나 현재 관리자)
+        const notifications = await DB.prepare(`
       SELECT * FROM notifications
       WHERE (target_user_id IS NULL OR target_user_id = ?)
       ORDER BY created_at DESC
       LIMIT 50
     `).bind(userId).all()
-    
-    // 읽지 않은 알림 수
-    const unreadCount = await DB.prepare(`
+
+        // 읽지 않은 알림 수
+        const unreadCount = await DB.prepare(`
       SELECT COUNT(*) as count FROM notifications
       WHERE (target_user_id IS NULL OR target_user_id = ?) AND is_read = 0
     `).bind(userId).first()
-    
-    return c.json({
-      success: true,
-      notifications: notifications.results,
-      unreadCount: unreadCount.count
-    })
-  } catch (error) {
-    console.error('Admin notifications error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
+
+        return c.json({
+            success: true,
+            notifications: notifications.results,
+            unreadCount: unreadCount.count
+        })
+    } catch (error) {
+        console.error('Admin notifications error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
+    }
 })
 
 // ==================== API: 알림 읽음 처리 ====================
 app.patch('/api/admin/notifications/:id/read', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const notificationId = c.req.param('id')
+
+        await DB.prepare(
+            'UPDATE notifications SET is_read = 1 WHERE id = ?'
+        ).bind(notificationId).run()
+
+        return c.json({
+            success: true,
+            message: '알림이 읽음 처리되었습니다.'
+        })
+    } catch (error) {
+        console.error('Admin notification read error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const notificationId = c.req.param('id')
-    
-    await DB.prepare(
-      'UPDATE notifications SET is_read = 1 WHERE id = ?'
-    ).bind(notificationId).run()
-    
-    return c.json({
-      success: true,
-      message: '알림이 읽음 처리되었습니다.'
-    })
-  } catch (error) {
-    console.error('Admin notification read error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 회원 일괄 처리 ====================
 app.post('/api/admin/users/batch', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        // 일괄 처리는 레벨 8 이상만 가능
+        if (!admin || admin.level < 8 || admin.status !== 'active') {
+            return c.json({ success: false, message: '플래티넘 관리자 이상의 권한이 필요합니다.' }, 403)
+        }
+
+        const { action, userIds, value } = await c.req.json()
+
+        if (!action || !userIds || !Array.isArray(userIds)) {
+            return c.json({ success: false, message: '올바르지 않은 요청입니다.' }, 400)
+        }
+
+        let query = ''
+        let bindings = []
+
+        switch (action) {
+            case 'change_level':
+                query = `UPDATE users SET level = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+                bindings = [value, ...userIds]
+                break
+            case 'change_status':
+                query = `UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+                bindings = [value, ...userIds]
+                break
+            case 'delete':
+                query = `UPDATE users SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
+                bindings = userIds
+                break
+            default:
+                return c.json({ success: false, message: '올바르지 않은 작업입니다.' }, 400)
+        }
+
+        await DB.prepare(query).bind(...bindings).run()
+
+        // 활동 로그 기록
+        await DB.prepare(
+            'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
+        ).bind(userId, 'admin_action', `일괄 처리: ${action} (${userIds.length}명)`).run()
+
+        return c.json({
+            success: true,
+            message: `${userIds.length}명의 회원이 일괄 처리되었습니다.`
+        })
+    } catch (error) {
+        console.error('Admin batch action error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    // 일괄 처리는 레벨 8 이상만 가능
-    if (!admin || admin.level < 8 || admin.status !== 'active') {
-      return c.json({ success: false, message: '플래티넘 관리자 이상의 권한이 필요합니다.' }, 403)
-    }
-    
-    const { action, userIds, value } = await c.req.json()
-    
-    if (!action || !userIds || !Array.isArray(userIds)) {
-      return c.json({ success: false, message: '올바르지 않은 요청입니다.' }, 400)
-    }
-    
-    let query = ''
-    let bindings = []
-    
-    switch (action) {
-      case 'change_level':
-        query = `UPDATE users SET level = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
-        bindings = [value, ...userIds]
-        break
-      case 'change_status':
-        query = `UPDATE users SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
-        bindings = [value, ...userIds]
-        break
-      case 'delete':
-        query = `UPDATE users SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id IN (${userIds.map(() => '?').join(',')})`
-        bindings = userIds
-        break
-      default:
-        return c.json({ success: false, message: '올바르지 않은 작업입니다.' }, 400)
-    }
-    
-    await DB.prepare(query).bind(...bindings).run()
-    
-    // 활동 로그 기록
-    await DB.prepare(
-      'INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)'
-    ).bind(userId, 'admin_action', `일괄 처리: ${action} (${userIds.length}명)`).run()
-    
-    return c.json({
-      success: true,
-      message: `${userIds.length}명의 회원이 일괄 처리되었습니다.`
-    })
-  } catch (error) {
-    console.error('Admin batch action error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== API: 주식 뉴스 자동 수집 ====================
 app.post('/api/admin/collect-stock-news', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    // Import functions (동적 import는 Workers에서 제한적이므로 인라인으로 구현)
-    const { 
-      fetchMultipleRSS, 
-      getStockNewsRSSUrls 
-    } = await import('./utils/stockNewsCollector')
-    
-    const { 
-      extractRelatedTickers, 
-      extractKeywords,
-      analyzeSentiment
-    } = await import('./utils/stockNewsFilter')
-    
-    console.log('주식 뉴스 수집 시작...')
-    
-    // RSS URL 목록 가져오기
-    const rssUrls = getStockNewsRSSUrls()
-    console.log(`수집 대상 RSS: ${rssUrls.length}개`)
-    
-    // RSS 수집 (1초 간격)
-    const items = await fetchMultipleRSS(rssUrls, 1000)
-    console.log(`수집된 뉴스: ${items.length}건`)
-    
-    let savedCount = 0
-    let duplicateCount = 0
-    let errorCount = 0
-    
-    // 각 뉴스 저장
-    for (const item of items) {
-      try {
-        // 중복 체크
-        const existing = await DB.prepare(
-          'SELECT id FROM news WHERE link = ?'
-        ).bind(item.link).first()
-        
-        if (existing) {
-          duplicateCount++
-          continue
-        }
-        
-        // 관련 종목 추출
-        const tickers = extractRelatedTickers(item.title, item.summary)
-        
-        // 키워드 추출
-        const keywords = extractKeywords(item.title)
-        
-        // 감성 분석
-        const sentiment = analyzeSentiment(item.title)
-        
-        // 태그 조합 (종목 + 키워드)
-        const tags = [...tickers, ...keywords].join(',')
-        
-        // DB 저장
-        await DB.prepare(`
+    const DB = getDB(c)
+
+    try {
+        // Import functions (동적 import는 Workers에서 제한적이므로 인라인으로 구현)
+        const {
+            fetchMultipleRSS,
+            getStockNewsRSSUrls
+        } = await import('./utils/stockNewsCollector')
+
+        const {
+            extractRelatedTickers,
+            extractKeywords,
+            analyzeSentiment
+        } = await import('./utils/stockNewsFilter')
+
+        console.log('주식 뉴스 수집 시작...')
+
+        // RSS URL 목록 가져오기
+        const rssUrls = getStockNewsRSSUrls()
+        console.log(`수집 대상 RSS: ${rssUrls.length}개`)
+
+        // RSS 수집 (1초 간격)
+        const items = await fetchMultipleRSS(rssUrls, 1000)
+        console.log(`수집된 뉴스: ${items.length}건`)
+
+        let savedCount = 0
+        let duplicateCount = 0
+        let errorCount = 0
+
+        // 각 뉴스 저장
+        for (const item of items) {
+            try {
+                // 중복 체크
+                const existing = await DB.prepare(
+                    'SELECT id FROM news WHERE link = ?'
+                ).bind(item.link).first()
+
+                if (existing) {
+                    duplicateCount++
+                    continue
+                }
+
+                // 관련 종목 추출
+                const tickers = extractRelatedTickers(item.title, item.summary)
+
+                // 키워드 추출
+                const keywords = extractKeywords(item.title)
+
+                // 감성 분석
+                const sentiment = analyzeSentiment(item.title)
+
+                // 태그 조합 (종목 + 키워드)
+                const tags = [...tickers, ...keywords].join(',')
+
+                // DB 저장
+                await DB.prepare(`
           INSERT INTO news (
             category, title, description, content, link,
             tags, author, source, source_url, published_at,
             sentiment, created_at
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
         `).bind(
-          'stock',                    // category
-          item.title,                 // title
-          item.summary,               // description
-          null,                       // content (저작권 준수: 본문 수집 안함)
-          item.link,                  // link
-          tags,                       // tags
-          null,                       // author
-          item.source,                // source
-          item.link,                  // source_url
-          item.pubDate,               // published_at
-          sentiment                   // sentiment
-        ).run()
-        
-        savedCount++
-        
-      } catch (error) {
-        console.error(`뉴스 저장 실패: ${item.title}`, error)
-        errorCount++
-      }
+                    'stock',                    // category
+                    item.title,                 // title
+                    item.summary,               // description
+                    null,                       // content (저작권 준수: 본문 수집 안함)
+                    item.link,                  // link
+                    tags,                       // tags
+                    null,                       // author
+                    item.source,                // source
+                    item.link,                  // source_url
+                    item.pubDate,               // published_at
+                    sentiment                   // sentiment
+                ).run()
+
+                savedCount++
+
+            } catch (error) {
+                console.error(`뉴스 저장 실패: ${item.title}`, error)
+                errorCount++
+            }
+        }
+
+        const result = {
+            success: true,
+            message: '주식 뉴스 수집 완료',
+            stats: {
+                total: items.length,
+                saved: savedCount,
+                duplicate: duplicateCount,
+                error: errorCount
+            }
+        }
+
+        console.log('수집 결과:', result)
+
+        return c.json(result)
+
+    } catch (error) {
+        console.error('주식 뉴스 수집 오류:', error)
+        return c.json({
+            success: false,
+            message: '뉴스 수집 중 오류가 발생했습니다.',
+            error: error instanceof Error ? error.message : String(error)
+        }, 500)
     }
-    
-    const result = {
-      success: true,
-      message: '주식 뉴스 수집 완료',
-      stats: {
-        total: items.length,
-        saved: savedCount,
-        duplicate: duplicateCount,
-        error: errorCount
-      }
-    }
-    
-    console.log('수집 결과:', result)
-    
-    return c.json(result)
-    
-  } catch (error) {
-    console.error('주식 뉴스 수집 오류:', error)
-    return c.json({
-      success: false,
-      message: '뉴스 수집 중 오류가 발생했습니다.',
-      error: error instanceof Error ? error.message : String(error)
-    }, 500)
-  }
 })
 
 // ==================== API: CSV 내보내기 ====================
 app.get('/api/admin/users/export', async (c) => {
-  try {
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) {
-      return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    const decoded = Buffer.from(token, 'base64').toString()
-    const userId = decoded.split(':')[0]
-    
-    const admin = await DB.prepare(
-      'SELECT level, status FROM users WHERE id = ?'
-    ).bind(userId).first()
-    
-    if (!admin || admin.level < 6 || admin.status !== 'active') {
-      return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
-    }
-    
-    const users = await DB.prepare(`
+    try {
+        const authHeader = c.req.header('Authorization')
+        if (!authHeader) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
+        }
+
+        const token = authHeader.replace('Bearer ', '')
+        const decoded = Buffer.from(token, 'base64').toString()
+        const userId = decoded.split(':')[0]
+
+        const admin = await DB.prepare(
+            'SELECT level, status FROM users WHERE id = ?'
+        ).bind(userId).first()
+
+        if (!admin || admin.level < 6 || admin.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
+        }
+
+        const users = await DB.prepare(`
       SELECT id, email, name, phone, level, status, created_at, last_login
       FROM users
       WHERE status != 'deleted'
       ORDER BY created_at DESC
     `).all()
-    
-    // CSV 생성
-    let csv = 'ID,이메일,이름,휴대전화,등급,상태,가입일,최근로그인\n'
-    for (const user of users.results) {
-      csv += `${user.id},"${user.email}","${user.name}","${user.phone || ''}",${user.level},"${user.status}","${user.created_at}","${user.last_login || ''}"\n`
+
+        // CSV 생성
+        let csv = 'ID,이메일,이름,휴대전화,등급,상태,가입일,최근로그인\n'
+        for (const user of users.results) {
+            csv += `${user.id},"${user.email}","${user.name}","${user.phone || ''}",${user.level},"${user.status}","${user.created_at}","${user.last_login || ''}"\n`
+        }
+
+        return new Response(csv, {
+            headers: {
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="users_${new Date().toISOString().split('T')[0]}.csv"`
+            }
+        })
+    } catch (error) {
+        console.error('Admin export error:', error)
+        return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
     }
-    
-    return new Response(csv, {
-      headers: {
-        'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': `attachment; filename="users_${new Date().toISOString().split('T')[0]}.csv"`
-      }
-    })
-  } catch (error) {
-    console.error('Admin export error:', error)
-    return c.json({ success: false, message: '서버 오류가 발생했습니다.' }, 500)
-  }
 })
 
 // ==================== 활동 로그 기록 헬퍼 함수 ====================
 async function logActivity(db: any, userId: number | null, action: string, description: string, ip?: string) {
-  try {
-    await db.prepare(
-      'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, ?, ?, ?)'
-    ).bind(userId, action, description, ip || null).run()
-  } catch (error) {
-    console.error('Log activity error:', error)
-  }
+    try {
+        await db.prepare(
+            'INSERT INTO activity_logs (user_id, action, description, ip_address) VALUES (?, ?, ?, ?)'
+        ).bind(userId, action, description, ip || null).run()
+    } catch (error) {
+        console.error('Log activity error:', error)
+    }
 }
 
 // ==================== 알림 생성 헬퍼 함수 ====================
 async function createNotification(db: any, type: string, title: string, message: string, targetUserId?: number, priority: string = 'normal') {
-  try {
-    await db.prepare(
-      'INSERT INTO notifications (type, title, message, target_user_id, priority) VALUES (?, ?, ?, ?, ?)'
-    ).bind(type, title, message, targetUserId || null, priority).run()
-  } catch (error) {
-    console.error('Create notification error:', error)
-  }
+    try {
+        await db.prepare(
+            'INSERT INTO notifications (type, title, message, target_user_id, priority) VALUES (?, ?, ?, ?, ?)'
+        ).bind(type, title, message, targetUserId || null, priority).run()
+    } catch (error) {
+        console.error('Create notification error:', error)
+    }
 }
 
 // ==================== 통계 대시보드 페이지 (고급) ====================
 app.get('/admin/stats', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -16823,10 +16824,10 @@ app.get('/admin/stats', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자', href: '/admin'},
-          {label: '통계'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자', href: '/admin' },
+        { label: '통계' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -17047,7 +17048,7 @@ app.get('/admin/stats', async (c) => {
 
 // ==================== 활동 로그 페이지 ====================
 app.get('/admin/logs', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -17105,10 +17106,10 @@ app.get('/admin/logs', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자', href: '/admin'},
-          {label: '활동 로그'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자', href: '/admin' },
+        { label: '활동 로그' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -17267,7 +17268,7 @@ app.get('/admin/logs', async (c) => {
 
 // ==================== 알림 센터 페이지 ====================
 app.get('/admin/notifications', async (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -17325,10 +17326,10 @@ app.get('/admin/notifications', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자', href: '/admin'},
-          {label: '알림 센터'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자', href: '/admin' },
+        { label: '알림 센터' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -17491,153 +17492,153 @@ app.get('/admin/notifications', async (c) => {
 
 // ==================== RSS 피드 파싱 유틸리티 ====================
 async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> {
-  const rssUrls: Record<string, string> = {
-    'general': 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko',
-    'politics': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFZ4ZERBU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
-    'economy': 'https://news.google.com/rss/topics/CAAqIggKIhxDQkFTRHdvSkwyMHZNR2RtY0hNekVnSnJieWdBUAE?hl=ko&gl=KR&ceid=KR:ko',
-    'tech': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRGRqTVhZU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
-    'sports': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp1ZEdvU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
-    'entertainment': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNREpxYW5RU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
-  }
+    const rssUrls: Record<string, string> = {
+        'general': 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko',
+        'politics': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFZ4ZERBU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'economy': 'https://news.google.com/rss/topics/CAAqIggKIhxDQkFTRHdvSkwyMHZNR2RtY0hNekVnSnJieWdBUAE?hl=ko&gl=KR&ceid=KR:ko',
+        'tech': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRGRqTVhZU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'sports': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp1ZEdvU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'entertainment': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNREpxYW5RU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+    }
 
-  const url = rssUrls[category] || rssUrls['general']
-  
-  // HTML 엔티티 디코딩 함수
-  function decodeHtmlEntities(text: string): string {
-    const entities: Record<string, string> = {
-      '&lt;': '<',
-      '&gt;': '>',
-      '&amp;': '&',
-      '&quot;': '"',
-      '&#39;': "'",
-      '&apos;': "'",
-      '&nbsp;': ' ',
-      '&copy;': '©',
-      '&reg;': '®',
-      '&trade;': '™',
-      '&hellip;': '...',
-      '&mdash;': '—',
-      '&ndash;': '–',
-      '&bull;': '•',
-      '&middot;': '·',
-      '&lsquo;': '\u2018',
-      '&rsquo;': '\u2019',
-      '&ldquo;': '\u201C',
-      '&rdquo;': '\u201D',
-    }
-    return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || '')
-  }
-  
-  try {
-    // 구글 차단 방지: User-Agent, Referer 헤더 추가
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-        'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Referer': 'https://news.google.com/',
-        'Cache-Control': 'no-cache',
-      },
-    })
-    
-    if (!response.ok) {
-      console.error(`RSS fetch failed: ${response.status} ${response.statusText}`)
-      return []
-    }
-    
-    const text = await response.text()
-    
-    // XML 파싱 (간단한 정규식 기반)
-    const items: any[] = []
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g
-    let match
-    
-    while ((match = itemRegex.exec(text)) !== null) {
-      const itemContent = match[1]
-      
-      const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || 
-                    itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
-      let link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
-      const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
-      let description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
-                        itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
-      
-      // Google News RSS의 link는 리다이렉트 URL이지만 실제 기사로 자동 리디렉션됨
-      // source 태그의 url 속성에는 도메인만 있으므로 사용하지 않음
-      // link를 그대로 사용 (Google News 리다이렉트 → 실제 기사)
-      
-      // HTML 엔티티 디코딩
-      description = decodeHtmlEntities(description)
-      
-      // 이미지 URL 추출 (여러 패턴 시도)
-      const categoryImages: Record<string, string> = {
-        'general': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=300&fit=crop',
-        'politics': 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=300&fit=crop',
-        'economy': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
-        'tech': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop',
-        'sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
-        'entertainment': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=300&fit=crop',
-      }
-      
-      let imageUrl = categoryImages[category] || categoryImages['general']
-      
-      // 패턴 1: <img src="...">
-      let imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/)
-      if (imgMatch && imgMatch[1]) {
-        imageUrl = imgMatch[1]
-      } else {
-        // 패턴 2: url(...) in style
-        imgMatch = description.match(/url\(["']?([^"')]+)["']?\)/)
-        if (imgMatch && imgMatch[1]) {
-          imageUrl = imgMatch[1]
+    const url = rssUrls[category] || rssUrls['general']
+
+    // HTML 엔티티 디코딩 함수
+    function decodeHtmlEntities(text: string): string {
+        const entities: Record<string, string> = {
+            '&lt;': '<',
+            '&gt;': '>',
+            '&amp;': '&',
+            '&quot;': '"',
+            '&#39;': "'",
+            '&apos;': "'",
+            '&nbsp;': ' ',
+            '&copy;': '©',
+            '&reg;': '®',
+            '&trade;': '™',
+            '&hellip;': '...',
+            '&mdash;': '—',
+            '&ndash;': '–',
+            '&bull;': '•',
+            '&middot;': '·',
+            '&lsquo;': '\u2018',
+            '&rsquo;': '\u2019',
+            '&ldquo;': '\u201C',
+            '&rdquo;': '\u201D',
         }
-      }
-      
-      // HTML 태그 완전 제거하여 요약문 생성
-      let summary = description
-        .replace(/<[^>]*>/g, '')  // HTML 태그 제거
-        .replace(/&nbsp;/g, ' ')  // &nbsp; 제거
-        .replace(/&[#\w]+;/g, '') // 남은 HTML 엔티티 제거
-        .replace(/\s+/g, ' ')      // 공백 정리
-        .trim()
-        .substring(0, 150)
-      
-      // 요약문이 너무 짧으면 제목 사용
-      if (summary.length < 20) {
-        summary = title.substring(0, 150)
-      }
-      
-      if (summary.length > 0 && summary.length < 150) {
-        summary += '...'
-      }
-      
-      items.push({
-        category,
-        title: title.trim(),
-        summary: summary || '뉴스 요약이 없습니다.',
-        link: link.trim(),
-        image_url: imageUrl,
-        publisher: '구글 뉴스',
-        published_at: pubDate,
-      })
-      
-      if (items.length >= 20) break // 최대 20개
+        return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || '')
     }
-    
-    return items
-  } catch (error) {
-    console.error('RSS 파싱 오류:', error)
-    return []
-  }
+
+    try {
+        // 구글 차단 방지: User-Agent, Referer 헤더 추가
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                'Referer': 'https://news.google.com/',
+                'Cache-Control': 'no-cache',
+            },
+        })
+
+        if (!response.ok) {
+            console.error(`RSS fetch failed: ${response.status} ${response.statusText}`)
+            return []
+        }
+
+        const text = await response.text()
+
+        // XML 파싱 (간단한 정규식 기반)
+        const items: any[] = []
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g
+        let match
+
+        while ((match = itemRegex.exec(text)) !== null) {
+            const itemContent = match[1]
+
+            const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] ||
+                itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
+            let link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
+            const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
+            let description = itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] ||
+                itemContent.match(/<description>(.*?)<\/description>/)?.[1] || ''
+
+            // Google News RSS의 link는 리다이렉트 URL이지만 실제 기사로 자동 리디렉션됨
+            // source 태그의 url 속성에는 도메인만 있으므로 사용하지 않음
+            // link를 그대로 사용 (Google News 리다이렉트 → 실제 기사)
+
+            // HTML 엔티티 디코딩
+            description = decodeHtmlEntities(description)
+
+            // 이미지 URL 추출 (여러 패턴 시도)
+            const categoryImages: Record<string, string> = {
+                'general': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400&h=300&fit=crop',
+                'politics': 'https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=400&h=300&fit=crop',
+                'economy': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=400&h=300&fit=crop',
+                'tech': 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop',
+                'sports': 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=300&fit=crop',
+                'entertainment': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=400&h=300&fit=crop',
+            }
+
+            let imageUrl = categoryImages[category] || categoryImages['general']
+
+            // 패턴 1: <img src="...">
+            let imgMatch = description.match(/<img[^>]+src=["']([^"']+)["']/)
+            if (imgMatch && imgMatch[1]) {
+                imageUrl = imgMatch[1]
+            } else {
+                // 패턴 2: url(...) in style
+                imgMatch = description.match(/url\(["']?([^"')]+)["']?\)/)
+                if (imgMatch && imgMatch[1]) {
+                    imageUrl = imgMatch[1]
+                }
+            }
+
+            // HTML 태그 완전 제거하여 요약문 생성
+            let summary = description
+                .replace(/<[^>]*>/g, '')  // HTML 태그 제거
+                .replace(/&nbsp;/g, ' ')  // &nbsp; 제거
+                .replace(/&[#\w]+;/g, '') // 남은 HTML 엔티티 제거
+                .replace(/\s+/g, ' ')      // 공백 정리
+                .trim()
+                .substring(0, 150)
+
+            // 요약문이 너무 짧으면 제목 사용
+            if (summary.length < 20) {
+                summary = title.substring(0, 150)
+            }
+
+            if (summary.length > 0 && summary.length < 150) {
+                summary += '...'
+            }
+
+            items.push({
+                category,
+                title: title.trim(),
+                summary: summary || '뉴스 요약이 없습니다.',
+                link: link.trim(),
+                image_url: imageUrl,
+                publisher: '구글 뉴스',
+                published_at: pubDate,
+            })
+
+            if (items.length >= 20) break // 최대 20개
+        }
+
+        return items
+    } catch (error) {
+        console.error('RSS 파싱 오류:', error)
+        return []
+    }
 }
 
 // ==================== Gemini AI 요약 및 감정 분석 함수 ====================
 async function summarizeWithGemini(title: string, summary: string): Promise<{ aiSummary: string, sentiment: string }> {
-  try {
-    // Gemini API 키 확인
-    const GEMINI_API_KEY = 'AIzaSyBKN3R7vG_L7RpQhxO8uZUTL-vfZGx0234' // 실제 API 키로 교체 필요
-    
-    const prompt = `다음 뉴스를 3줄로 요약하고 감정을 분석해주세요.
+    try {
+        // Gemini API 키 확인
+        const GEMINI_API_KEY = 'AIzaSyBKN3R7vG_L7RpQhxO8uZUTL-vfZGx0234' // 실제 API 키로 교체 필요
+
+        const prompt = `다음 뉴스를 3줄로 요약하고 감정을 분석해주세요.
 
 제목: ${title}
 내용: ${summary}
@@ -17646,471 +17647,471 @@ async function summarizeWithGemini(title: string, summary: string): Promise<{ ai
 요약: [3줄 요약]
 감정: [positive/negative/neutral 중 하나]`
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }]
-      })
-    })
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }]
+            })
+        })
 
-    if (!response.ok) {
-      console.error('Gemini API 호출 실패:', response.status, response.statusText)
-      return {
-        aiSummary: summary.substring(0, 150) + '...',
-        sentiment: 'neutral'
-      }
-    }
+        if (!response.ok) {
+            console.error('Gemini API 호출 실패:', response.status, response.statusText)
+            return {
+                aiSummary: summary.substring(0, 150) + '...',
+                sentiment: 'neutral'
+            }
+        }
 
-    const data = await response.json()
-    const text = data.candidates[0]?.content?.parts[0]?.text || ''
-    
-    // 응답 파싱
-    const summaryMatch = text.match(/요약:\s*(.+?)(?=\n감정:|$)/s)
-    const sentimentMatch = text.match(/감정:\s*(positive|negative|neutral)/i)
-    
-    const aiSummary = summaryMatch ? summaryMatch[1].trim() : summary.substring(0, 150) + '...'
-    const sentiment = sentimentMatch ? sentimentMatch[1].toLowerCase() : 'neutral'
-    
-    return { aiSummary, sentiment }
-  } catch (error) {
-    console.error('Gemini AI 오류:', error)
-    return {
-      aiSummary: summary.substring(0, 150) + '...',
-      sentiment: 'neutral'
+        const data = await response.json()
+        const text = data.candidates[0]?.content?.parts[0]?.text || ''
+
+        // 응답 파싱
+        const summaryMatch = text.match(/요약:\s*(.+?)(?=\n감정:|$)/s)
+        const sentimentMatch = text.match(/감정:\s*(positive|negative|neutral)/i)
+
+        const aiSummary = summaryMatch ? summaryMatch[1].trim() : summary.substring(0, 150) + '...'
+        const sentiment = sentimentMatch ? sentimentMatch[1].toLowerCase() : 'neutral'
+
+        return { aiSummary, sentiment }
+    } catch (error) {
+        console.error('Gemini AI 오류:', error)
+        return {
+            aiSummary: summary.substring(0, 150) + '...',
+            sentiment: 'neutral'
+        }
     }
-  }
 }
 
 // ==================== 뉴스 AI 요약 API ====================
 app.post('/api/news/:id/summarize', async (c) => {
-  try {
-    const { id } = c.req.param()
-    const DB = getDB(c)
-    
-    // 뉴스 조회
-    const news = await DB.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
-    
-    if (!news) {
-      return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
-    }
-    
-    // 이미 AI 처리된 경우
-    if (news.ai_processed) {
-      return c.json({ 
-        success: true, 
-        ai_summary: news.ai_summary,
-        sentiment: news.sentiment
-      })
-    }
-    
-    // Gemini AI로 요약 및 감정 분석
-    const { aiSummary, sentiment } = await summarizeWithGemini(news.title, news.summary || '')
-    
-    // DB 업데이트
-    await DB.prepare(`
+    try {
+        const { id } = c.req.param()
+        const DB = getDB(c)
+
+        // 뉴스 조회
+        const news = await DB.prepare('SELECT * FROM news WHERE id = ?').bind(id).first()
+
+        if (!news) {
+            return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
+        }
+
+        // 이미 AI 처리된 경우
+        if (news.ai_processed) {
+            return c.json({
+                success: true,
+                ai_summary: news.ai_summary,
+                sentiment: news.sentiment
+            })
+        }
+
+        // Gemini AI로 요약 및 감정 분석
+        const { aiSummary, sentiment } = await summarizeWithGemini(news.title, news.summary || '')
+
+        // DB 업데이트
+        await DB.prepare(`
       UPDATE news 
       SET ai_summary = ?, sentiment = ?, ai_processed = 1 
       WHERE id = ?
     `).bind(aiSummary, sentiment, id).run()
-    
-    return c.json({ 
-      success: true, 
-      ai_summary: aiSummary,
-      sentiment: sentiment
-    })
-  } catch (error) {
-    console.error('뉴스 요약 오류:', error)
-    return c.json({ success: false, error: '요약 생성 실패' }, 500)
-  }
+
+        return c.json({
+            success: true,
+            ai_summary: aiSummary,
+            sentiment: sentiment
+        })
+    } catch (error) {
+        console.error('뉴스 요약 오류:', error)
+        return c.json({ success: false, error: '요약 생성 실패' }, 500)
+    }
 })
 
 // ==================== 투표 시스템 API ====================
 app.post('/api/news/:id/vote', requireAuth, async (c) => {
-  try {
-    const user = c.get('user') as SessionUser
-    const { id } = c.req.param()
-    const { type } = await c.req.json() // 'up' or 'down'
-    const DB = getDB(c)
-    
-    // 투표 타입 검증
-    if (type !== 'up' && type !== 'down') {
-      return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
-    }
-    
-    // 중복 투표 체크
-    const existingVote = await DB.prepare(
-      'SELECT * FROM news_votes WHERE news_id = ? AND user_id = ?'
-    ).bind(id, user.id).first()
-    
-    // 이미 투표한 경우
-    if (existingVote) {
-      // 같은 타입이면 취소
-      if (existingVote.vote_type === type) {
-        await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
-        
-        // 카운트 감소
-        const field = type === 'up' ? 'vote_up' : 'vote_down'
-        await DB.prepare(`UPDATE news SET ${field} = ${field} - 1 WHERE id = ?`).bind(id).run()
-        
-        return c.json({ success: true, action: 'cancelled', type })
-      } else {
-        // 다른 타입이면 변경
-        await DB.prepare(
-          'UPDATE news_votes SET vote_type = ? WHERE id = ?'
-        ).bind(type, existingVote.id).run()
-        
-        // 기존 타입 감소, 새 타입 증가
-        const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
-        const newField = type === 'up' ? 'vote_up' : 'vote_down'
-        await DB.prepare(`
+    try {
+        const user = c.get('user') as SessionUser
+        const { id } = c.req.param()
+        const { type } = await c.req.json() // 'up' or 'down'
+        const DB = getDB(c)
+
+        // 투표 타입 검증
+        if (type !== 'up' && type !== 'down') {
+            return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
+        }
+
+        // 중복 투표 체크
+        const existingVote = await DB.prepare(
+            'SELECT * FROM news_votes WHERE news_id = ? AND user_id = ?'
+        ).bind(id, user.id).first()
+
+        // 이미 투표한 경우
+        if (existingVote) {
+            // 같은 타입이면 취소
+            if (existingVote.vote_type === type) {
+                await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+
+                // 카운트 감소
+                const field = type === 'up' ? 'vote_up' : 'vote_down'
+                await DB.prepare(`UPDATE news SET ${field} = ${field} - 1 WHERE id = ?`).bind(id).run()
+
+                return c.json({ success: true, action: 'cancelled', type })
+            } else {
+                // 다른 타입이면 변경
+                await DB.prepare(
+                    'UPDATE news_votes SET vote_type = ? WHERE id = ?'
+                ).bind(type, existingVote.id).run()
+
+                // 기존 타입 감소, 새 타입 증가
+                const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
+                const newField = type === 'up' ? 'vote_up' : 'vote_down'
+                await DB.prepare(`
           UPDATE news 
           SET ${oldField} = ${oldField} - 1, ${newField} = ${newField} + 1 
           WHERE id = ?
         `).bind(id).run()
-        
-        return c.json({ success: true, action: 'changed', type })
-      }
-    }
-    
-    // 새 투표 추가
-    await DB.prepare(`
+
+                return c.json({ success: true, action: 'changed', type })
+            }
+        }
+
+        // 새 투표 추가
+        await DB.prepare(`
       INSERT INTO news_votes (news_id, user_id, user_ip, vote_type)
       VALUES (?, ?, ?, ?)
     `).bind(id, userId, userIp, type).run()
-    
-    // 카운트 증가
-    const field = type === 'up' ? 'vote_up' : 'vote_down'
-    await DB.prepare(`UPDATE news SET ${field} = ${field} + 1 WHERE id = ?`).bind(id).run()
-    
-    // 인기도 점수 업데이트 (up은 +2, down은 -1)
-    const scoreChange = type === 'up' ? 2 : -1
-    await DB.prepare(`
+
+        // 카운트 증가
+        const field = type === 'up' ? 'vote_up' : 'vote_down'
+        await DB.prepare(`UPDATE news SET ${field} = ${field} + 1 WHERE id = ?`).bind(id).run()
+
+        // 인기도 점수 업데이트 (up은 +2, down은 -1)
+        const scoreChange = type === 'up' ? 2 : -1
+        await DB.prepare(`
       UPDATE news 
       SET popularity_score = popularity_score + ? 
       WHERE id = ?
     `).bind(scoreChange, id).run()
-    
-    return c.json({ success: true, action: 'voted', type })
-  } catch (error) {
-    console.error('투표 처리 오류:', error)
-    return c.json({ success: false, error: '투표 처리 실패' }, 500)
-  }
+
+        return c.json({ success: true, action: 'voted', type })
+    } catch (error) {
+        console.error('투표 처리 오류:', error)
+        return c.json({ success: false, error: '투표 처리 실패' }, 500)
+    }
 })
 
 // ==================== 뉴스 투표 현황 조회 API ====================
 app.get('/api/news/:id/votes', async (c) => {
-  try {
-    const { id } = c.req.param()
-    const DB = getDB(c)
-    
-    const news = await DB.prepare(`
+    try {
+        const { id } = c.req.param()
+        const DB = getDB(c)
+
+        const news = await DB.prepare(`
       SELECT vote_up, vote_down, popularity_score 
       FROM news 
       WHERE id = ?
     `).bind(id).first()
-    
-    if (!news) {
-      return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
+
+        if (!news) {
+            return c.json({ success: false, error: '뉴스를 찾을 수 없습니다' }, 404)
+        }
+
+        return c.json({
+            success: true,
+            vote_up: news.vote_up || 0,
+            vote_down: news.vote_down || 0,
+            popularity_score: news.popularity_score || 0
+        })
+    } catch (error) {
+        console.error('투표 조회 오류:', error)
+        return c.json({ success: false, error: '투표 조회 실패' }, 500)
     }
-    
-    return c.json({
-      success: true,
-      vote_up: news.vote_up || 0,
-      vote_down: news.vote_down || 0,
-      popularity_score: news.popularity_score || 0
-    })
-  } catch (error) {
-    console.error('투표 조회 오류:', error)
-    return c.json({ success: false, error: '투표 조회 실패' }, 500)
-  }
 })
 
 // ==================== 키워드 구독 시스템 API ====================
 app.post('/api/keywords/subscribe', requireAuth, async (c) => {
-  try {
-    const user = c.get('user') as SessionUser
-    const { keyword } = await c.req.json()
-    const DB = getDB(c)
-    console.log('DEBUG keywords: DB타입:', typeof DB, 'DB.prepare타입:', typeof DB?.prepare)
-    
-    // 키워드 유효성 검사
-    if (!keyword || keyword.trim().length === 0) {
-      return c.json({ success: false, error: '키워드를 입력해주세요' }, 400)
-    }
-    
-    if (keyword.length > 50) {
-      return c.json({ success: false, error: '키워드는 50자 이내로 입력해주세요' }, 400)
-    }
-    
     try {
-      // 키워드 구독 추가 (중복 시 무시)
-      await DB.prepare(`
+        const user = c.get('user') as SessionUser
+        const { keyword } = await c.req.json()
+        const DB = getDB(c)
+        console.log('DEBUG keywords: DB타입:', typeof DB, 'DB.prepare타입:', typeof DB?.prepare)
+
+        // 키워드 유효성 검사
+        if (!keyword || keyword.trim().length === 0) {
+            return c.json({ success: false, error: '키워드를 입력해주세요' }, 400)
+        }
+
+        if (keyword.length > 50) {
+            return c.json({ success: false, error: '키워드는 50자 이내로 입력해주세요' }, 400)
+        }
+
+        try {
+            // 키워드 구독 추가 (중복 시 무시)
+            await DB.prepare(`
         INSERT INTO user_keywords (user_id, keyword)
         VALUES (?, ?)
       `).bind(user.id, keyword.trim()).run()
-      
-      return c.json({ success: true, keyword: keyword.trim() })
-    } catch (err: any) {
-      if (err.message?.includes('UNIQUE constraint failed')) {
-        return c.json({ success: false, error: '이미 구독 중인 키워드입니다' }, 400)
-      }
-      throw err
+
+            return c.json({ success: true, keyword: keyword.trim() })
+        } catch (err: any) {
+            if (err.message?.includes('UNIQUE constraint failed')) {
+                return c.json({ success: false, error: '이미 구독 중인 키워드입니다' }, 400)
+            }
+            throw err
+        }
+    } catch (error) {
+        console.error('키워드 구독 오류:', error)
+        return c.json({ success: false, error: '키워드 구독 실패' }, 500)
     }
-  } catch (error) {
-    console.error('키워드 구독 오류:', error)
-    return c.json({ success: false, error: '키워드 구독 실패' }, 500)
-  }
 })
 
 // ==================== 키워드 구독 취소 API ====================
 app.delete('/api/keywords/:id', requireAuth, async (c) => {
-  try {
-    const user = c.get('user') as SessionUser
-    const id = c.req.param('id')
-    const DB = getDB(c)
-    
-    await DB.prepare(`
+    try {
+        const user = c.get('user') as SessionUser
+        const id = c.req.param('id')
+        const DB = getDB(c)
+
+        await DB.prepare(`
       DELETE FROM user_keywords 
       WHERE id = ? AND user_id = ?
     `).bind(parseInt(id), user.id).run()
-    
-    return c.json({ success: true })
-  } catch (error) {
-    console.error('키워드 구독 취소 오류:', error)
-    return c.json({ success: false, error: '구독 취소 실패' }, 500)
-  }
+
+        return c.json({ success: true })
+    } catch (error) {
+        console.error('키워드 구독 취소 오류:', error)
+        return c.json({ success: false, error: '구독 취소 실패' }, 500)
+    }
 })
 
 // DELETE by keyword (legacy)
 app.delete('/api/keywords/:keyword', async (c) => {
-  try {
-    const keyword = decodeURIComponent(c.req.param('keyword'))
-    const DB = getDB(c)
-    
-    const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
-    if (!authToken) {
-      return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
-    }
-    
-    const userId = 1 // TODO: JWT에서 실제 user_id 추출
-    
-    await DB.prepare(`
+    try {
+        const keyword = decodeURIComponent(c.req.param('keyword'))
+        const DB = getDB(c)
+
+        const authToken = c.req.header('Authorization')?.replace('Bearer ', '')
+        if (!authToken) {
+            return c.json({ success: false, error: '로그인이 필요합니다' }, 401)
+        }
+
+        const userId = 1 // TODO: JWT에서 실제 user_id 추출
+
+        await DB.prepare(`
       DELETE FROM user_keywords 
       WHERE user_id = ? AND keyword = ?
     `).bind(userId, keyword).run()
-    
-    return c.json({ success: true })
-  } catch (error) {
-    console.error('키워드 구독 취소 오류:', error)
-    return c.json({ success: false, error: '구독 취소 실패' }, 500)
-  }
+
+        return c.json({ success: true })
+    } catch (error) {
+        console.error('키워드 구독 취소 오류:', error)
+        return c.json({ success: false, error: '구독 취소 실패' }, 500)
+    }
 })
 
 // ==================== 내 키워드 목록 조회 API ====================
 app.get('/api/keywords/my', requireAuth, async (c) => {
-  try {
-    const user = c.get('user') as SessionUser
-    const DB = getDB(c)
-    
-    const { results } = await DB.prepare(`
+    try {
+        const user = c.get('user') as SessionUser
+        const DB = getDB(c)
+
+        const { results } = await DB.prepare(`
       SELECT id, keyword, created_at 
       FROM user_keywords 
       WHERE user_id = ? 
       ORDER BY created_at DESC
     `).bind(user.id).all()
-    
-    return c.json({ success: true, keywords: results || [] })
-  } catch (error) {
-    console.error('키워드 목록 조회 오류:', error)
-    return c.json({ success: false, error: '목록 조회 실패' }, 500)
-  }
+
+        return c.json({ success: true, keywords: results || [] })
+    } catch (error) {
+        console.error('키워드 목록 조회 오류:', error)
+        return c.json({ success: false, error: '목록 조회 실패' }, 500)
+    }
 })
 
 // ==================== 키워드 목록 조회 API (userId 파라미터) ====================
 app.get('/api/keywords', requireAuth, async (c) => {
-  try {
-    const user = c.get('user') as SessionUser
-    const DB = getDB(c)
-    
-    const { results } = await DB.prepare(`
+    try {
+        const user = c.get('user') as SessionUser
+        const DB = getDB(c)
+
+        const { results } = await DB.prepare(`
       SELECT id, keyword, subscribed_at 
       FROM user_keywords 
       WHERE user_id = ? 
       ORDER BY subscribed_at DESC
     `).bind(user.id).all()
-    
-    return c.json({ success: true, keywords: results || [] })
-  } catch (error) {
-    console.error('키워드 목록 조회 오류:', error)
-    return c.json({ success: false, error: '목록 조회 실패' }, 500)
-  }
+
+        return c.json({ success: true, keywords: results || [] })
+    } catch (error) {
+        console.error('키워드 목록 조회 오류:', error)
+        return c.json({ success: false, error: '목록 조회 실패' }, 500)
+    }
 })
 
 // ==================== 키워드별 뉴스 조회 API ====================
 app.get('/api/news/keyword/:keyword', async (c) => {
-  try {
-    const keyword = decodeURIComponent(c.req.param('keyword'))
-    const DB = getDB(c)
-    
-    const { results } = await DB.prepare(`
+    try {
+        const keyword = decodeURIComponent(c.req.param('keyword'))
+        const DB = getDB(c)
+
+        const { results } = await DB.prepare(`
       SELECT * FROM news 
       WHERE title LIKE ? OR summary LIKE ?
       ORDER BY created_at DESC 
       LIMIT 50
     `).bind(`%${keyword}%`, `%${keyword}%`).all()
-    
-    return c.json({ success: true, news: results || [], keyword })
-  } catch (error) {
-    console.error('키워드 뉴스 조회 오류:', error)
-    return c.json({ success: false, error: '뉴스 조회 실패' }, 500)
-  }
+
+        return c.json({ success: true, news: results || [], keyword })
+    } catch (error) {
+        console.error('키워드 뉴스 조회 오류:', error)
+        return c.json({ success: false, error: '뉴스 조회 실패' }, 500)
+    }
 })
 
 // ==================== 투표 API ====================
 // 조회수 증가 API
 app.post('/api/news/:id/view', async (c) => {
-  try {
-    const newsId = c.req.param('id')
-    const DB = getDB(c)
-    
-    // 조회수 증가
-    await DB.prepare(`
+    try {
+        const newsId = c.req.param('id')
+        const DB = getDB(c)
+
+        // 조회수 증가
+        await DB.prepare(`
       UPDATE news 
       SET view_count = view_count + 1
       WHERE id = ?
     `).bind(newsId).run()
-    
-    // 업데이트된 조회수 조회
-    const newsData = await DB.prepare(
-      'SELECT view_count FROM news WHERE id = ?'
-    ).bind(newsId).first()
-    
-    return c.json({
-      success: true,
-      view_count: newsData?.view_count || 0
-    })
-  } catch (error) {
-    console.error('조회수 증가 오류:', error)
-    return c.json({ success: false, error: '조회수 증가 실패' }, 500)
-  }
+
+        // 업데이트된 조회수 조회
+        const newsData = await DB.prepare(
+            'SELECT view_count FROM news WHERE id = ?'
+        ).bind(newsId).first()
+
+        return c.json({
+            success: true,
+            view_count: newsData?.view_count || 0
+        })
+    } catch (error) {
+        console.error('조회수 증가 오류:', error)
+        return c.json({ success: false, error: '조회수 증가 실패' }, 500)
+    }
 })
 
 app.post('/api/news/vote', async (c) => {
-  try {
-    const { userId, newsId, voteType } = await c.req.json()
-    const DB = getDB(c)
-    
-    // 입력 검증
-    if (!userId || !newsId || !voteType) {
-      return c.json({ success: false, error: '필수 파라미터가 누락되었습니다' }, 400)
-    }
-    
-    if (voteType !== 'up' && voteType !== 'down') {
-      return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
-    }
-    
-    // 기존 투표 확인
-    const existingVote = await DB.prepare(
-      'SELECT * FROM news_votes WHERE user_id = ? AND news_id = ?'
-    ).bind(userId, newsId).first()
-    
-    // 기존 투표가 있으면 업데이트, 없으면 삽입
-    if (existingVote) {
-      // 같은 타입이면 취소
-      if (existingVote.vote_type === voteType) {
-        // 투표 삭제
-        await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
-        
-        // 카운트 감소
-        const field = voteType === 'up' ? 'vote_up' : 'vote_down'
-        await DB.prepare(`
+    try {
+        const { userId, newsId, voteType } = await c.req.json()
+        const DB = getDB(c)
+
+        // 입력 검증
+        if (!userId || !newsId || !voteType) {
+            return c.json({ success: false, error: '필수 파라미터가 누락되었습니다' }, 400)
+        }
+
+        if (voteType !== 'up' && voteType !== 'down') {
+            return c.json({ success: false, error: '잘못된 투표 타입입니다' }, 400)
+        }
+
+        // 기존 투표 확인
+        const existingVote = await DB.prepare(
+            'SELECT * FROM news_votes WHERE user_id = ? AND news_id = ?'
+        ).bind(userId, newsId).first()
+
+        // 기존 투표가 있으면 업데이트, 없으면 삽입
+        if (existingVote) {
+            // 같은 타입이면 취소
+            if (existingVote.vote_type === voteType) {
+                // 투표 삭제
+                await DB.prepare('DELETE FROM news_votes WHERE id = ?').bind(existingVote.id).run()
+
+                // 카운트 감소
+                const field = voteType === 'up' ? 'vote_up' : 'vote_down'
+                await DB.prepare(`
           UPDATE news 
           SET ${field} = ${field} - 1
           WHERE id = ?
         `).bind(newsId).run()
-        
-        // popularity_score 업데이트
-        await DB.prepare(`
+
+                // popularity_score 업데이트
+                await DB.prepare(`
           UPDATE news 
           SET popularity_score = vote_up - vote_down
           WHERE id = ?
         `).bind(newsId).run()
-      } else {
-        // 다른 타입이면 변경
-        await DB.prepare(
-          'UPDATE news_votes SET vote_type = ? WHERE id = ?'
-        ).bind(voteType, existingVote.id).run()
-        
-        // 카운트 업데이트
-        const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
-        const newField = voteType === 'up' ? 'vote_up' : 'vote_down'
-        await DB.prepare(`
+            } else {
+                // 다른 타입이면 변경
+                await DB.prepare(
+                    'UPDATE news_votes SET vote_type = ? WHERE id = ?'
+                ).bind(voteType, existingVote.id).run()
+
+                // 카운트 업데이트
+                const oldField = existingVote.vote_type === 'up' ? 'vote_up' : 'vote_down'
+                const newField = voteType === 'up' ? 'vote_up' : 'vote_down'
+                await DB.prepare(`
           UPDATE news 
           SET ${oldField} = ${oldField} - 1,
               ${newField} = ${newField} + 1
           WHERE id = ?
         `).bind(newsId).run()
-        
-        // popularity_score 업데이트
-        await DB.prepare(`
+
+                // popularity_score 업데이트
+                await DB.prepare(`
           UPDATE news 
           SET popularity_score = vote_up - vote_down
           WHERE id = ?
         `).bind(newsId).run()
-      }
-    } else {
-      // 새 투표 추가
-      await DB.prepare(
-        'INSERT INTO news_votes (user_id, news_id, vote_type) VALUES (?, ?, ?)'
-      ).bind(userId, newsId, voteType).run()
-      
-      // 카운트 증가
-      const field = voteType === 'up' ? 'vote_up' : 'vote_down'
-      await DB.prepare(`
+            }
+        } else {
+            // 새 투표 추가
+            await DB.prepare(
+                'INSERT INTO news_votes (user_id, news_id, vote_type) VALUES (?, ?, ?)'
+            ).bind(userId, newsId, voteType).run()
+
+            // 카운트 증가
+            const field = voteType === 'up' ? 'vote_up' : 'vote_down'
+            await DB.prepare(`
         UPDATE news 
         SET ${field} = ${field} + 1
         WHERE id = ?
       `).bind(newsId).run()
-      
-      // popularity_score 업데이트
-      await DB.prepare(`
+
+            // popularity_score 업데이트
+            await DB.prepare(`
         UPDATE news 
         SET popularity_score = vote_up - vote_down
         WHERE id = ?
       `).bind(newsId).run()
+        }
+
+        // 업데이트된 투표 수 조회
+        const newsData = await DB.prepare(
+            'SELECT vote_up, vote_down, popularity_score FROM news WHERE id = ?'
+        ).bind(newsId).first()
+
+        return c.json({
+            success: true,
+            vote_up: newsData.vote_up,
+            vote_down: newsData.vote_down,
+            popularity_score: newsData.popularity_score
+        })
+    } catch (error) {
+        console.error('투표 처리 오류:', error)
+        return c.json({ success: false, error: '투표 처리 실패' }, 500)
     }
-    
-    // 업데이트된 투표 수 조회
-    const newsData = await DB.prepare(
-      'SELECT vote_up, vote_down, popularity_score FROM news WHERE id = ?'
-    ).bind(newsId).first()
-    
-    return c.json({
-      success: true,
-      vote_up: newsData.vote_up,
-      vote_down: newsData.vote_down,
-      popularity_score: newsData.popularity_score
-    })
-  } catch (error) {
-    console.error('투표 처리 오류:', error)
-    return c.json({ success: false, error: '투표 처리 실패' }, 500)
-  }
 })
 
 // ==================== 실시간 HOT 뉴스 API ====================
 app.get('/api/news/hot', async (c) => {
-  try {
-    const DB = getDB(c)
-    const limit = parseInt(c.req.query('limit') || '10')
-    
-    const { results } = await DB.prepare(`
+    try {
+        const DB = getDB(c)
+        const limit = parseInt(c.req.query('limit') || '10')
+
+        const { results } = await DB.prepare(`
       SELECT 
         id, title, summary, link, source, category,
         published_at, created_at
@@ -18118,346 +18119,346 @@ app.get('/api/news/hot', async (c) => {
       ORDER BY created_at DESC
       LIMIT ?
     `).bind(limit).all()
-    
-    return c.json({ success: true, news: results || [] })
-  } catch (error) {
-    console.error('HOT 뉴스 조회 오류:', error)
-    return c.json({ success: false, error: 'HOT 뉴스 조회 실패' }, 500)
-  }
+
+        return c.json({ success: true, news: results || [] })
+    } catch (error) {
+        console.error('HOT 뉴스 조회 오류:', error)
+        return c.json({ success: false, error: 'HOT 뉴스 조회 실패' }, 500)
+    }
 })
 
 // ==================== 유튜브 다운로드 API ====================
 app.post('/api/youtube/download', async (c) => {
-  try {
-    const body = await c.req.json()
-    const { url, quality } = body
-    
-    // URL 검증
-    if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
-      return c.json({ success: false, error: '올바른 유튜브 URL을 입력해주세요' }, 400)
-    }
-    
-    // 비디오 ID 추출
-    let videoId = ''
-    if (url.includes('youtube.com/watch?v=')) {
-      videoId = url.split('v=')[1]?.split('&')[0]
-    } else if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1]?.split('?')[0]
-    }
-    
-    if (!videoId) {
-      return c.json({ success: false, error: '비디오 ID를 찾을 수 없습니다' }, 400)
-    }
-    
-    // 1단계: YouTube oEmbed API로 비디오 정보 가져오기
-    let videoInfo: any = null
     try {
-      const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
-      const oembedResponse = await fetch(oembedUrl)
-      
-      if (oembedResponse.ok) {
-        videoInfo = await oembedResponse.json()
-      }
-    } catch (error) {
-      console.error('비디오 정보 조회 실패:', error)
-    }
-    
-    // 2단계: 여러 다운로드 API 시도
-    // 방법 1: YouTube 내부 API로 스트림 정보 추출
-    try {
-      // YouTube의 내부 API를 사용하여 스트림 정보 가져오기
-      const ytApiUrl = `https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`
-      const ytApiResponse = await fetch(ytApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        body: JSON.stringify({
-          context: {
-            client: {
-              clientName: 'WEB',
-              clientVersion: '2.20240101.00.00'
+        const body = await c.req.json()
+        const { url, quality } = body
+
+        // URL 검증
+        if (!url || (!url.includes('youtube.com') && !url.includes('youtu.be'))) {
+            return c.json({ success: false, error: '올바른 유튜브 URL을 입력해주세요' }, 400)
+        }
+
+        // 비디오 ID 추출
+        let videoId = ''
+        if (url.includes('youtube.com/watch?v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0]
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0]
+        }
+
+        if (!videoId) {
+            return c.json({ success: false, error: '비디오 ID를 찾을 수 없습니다' }, 400)
+        }
+
+        // 1단계: YouTube oEmbed API로 비디오 정보 가져오기
+        let videoInfo: any = null
+        try {
+            const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
+            const oembedResponse = await fetch(oembedUrl)
+
+            if (oembedResponse.ok) {
+                videoInfo = await oembedResponse.json()
             }
-          },
-          videoId: videoId
-        })
-      })
-      
-      if (ytApiResponse.ok) {
-        const ytData = await ytApiResponse.json()
-        
-        // 스트리밍 데이터 추출
-        const streamingData = ytData?.streamingData
-        if (streamingData && streamingData.formats) {
-          // 요청된 화질에 맞는 포맷 찾기
-          const qualityMap: Record<string, number> = {
-            '4K': 2160,
-            '1440p': 1440,
-            '1080p': 1080,
-            '720p': 720,
-            '480p': 480,
-            '360p': 360
-          }
-          
-          const targetHeight = qualityMap[quality] || 720
-          
-          // 가장 가까운 화질의 포맷 찾기
-          let bestFormat = streamingData.formats[0]
-          let minDiff = Math.abs((bestFormat.height || 0) - targetHeight)
-          
-          for (const format of streamingData.formats) {
-            if (format.mimeType?.includes('video/mp4') && format.url) {
-              const diff = Math.abs((format.height || 0) - targetHeight)
-              if (diff < minDiff) {
-                minDiff = diff
-                bestFormat = format
-              }
-            }
-          }
-          
-          if (bestFormat && bestFormat.url) {
-            // 성공 응답
-            return c.json({
-              success: true,
-              downloadUrl: bestFormat.url,
-              videoInfo: {
-                title: videoInfo?.title || ytData?.videoDetails?.title || '제목 없음',
-                author: videoInfo?.author_name || ytData?.videoDetails?.author || '알 수 없음',
-                thumbnail: videoInfo?.thumbnail_url || ytData?.videoDetails?.thumbnail?.thumbnails?.[0]?.url || '',
-                videoId: videoId,
-                duration: ytData?.videoDetails?.lengthSeconds || '0'
-              },
-              quality: bestFormat.qualityLabel || quality,
-              actualHeight: bestFormat.height,
-              message: '다운로드 준비 완료'
+        } catch (error) {
+            console.error('비디오 정보 조회 실패:', error)
+        }
+
+        // 2단계: 여러 다운로드 API 시도
+        // 방법 1: YouTube 내부 API로 스트림 정보 추출
+        try {
+            // YouTube의 내부 API를 사용하여 스트림 정보 가져오기
+            const ytApiUrl = `https://www.youtube.com/youtubei/v1/player?key=AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8`
+            const ytApiResponse = await fetch(ytApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                },
+                body: JSON.stringify({
+                    context: {
+                        client: {
+                            clientName: 'WEB',
+                            clientVersion: '2.20240101.00.00'
+                        }
+                    },
+                    videoId: videoId
+                })
             })
-          }
+
+            if (ytApiResponse.ok) {
+                const ytData = await ytApiResponse.json()
+
+                // 스트리밍 데이터 추출
+                const streamingData = ytData?.streamingData
+                if (streamingData && streamingData.formats) {
+                    // 요청된 화질에 맞는 포맷 찾기
+                    const qualityMap: Record<string, number> = {
+                        '4K': 2160,
+                        '1440p': 1440,
+                        '1080p': 1080,
+                        '720p': 720,
+                        '480p': 480,
+                        '360p': 360
+                    }
+
+                    const targetHeight = qualityMap[quality] || 720
+
+                    // 가장 가까운 화질의 포맷 찾기
+                    let bestFormat = streamingData.formats[0]
+                    let minDiff = Math.abs((bestFormat.height || 0) - targetHeight)
+
+                    for (const format of streamingData.formats) {
+                        if (format.mimeType?.includes('video/mp4') && format.url) {
+                            const diff = Math.abs((format.height || 0) - targetHeight)
+                            if (diff < minDiff) {
+                                minDiff = diff
+                                bestFormat = format
+                            }
+                        }
+                    }
+
+                    if (bestFormat && bestFormat.url) {
+                        // 성공 응답
+                        return c.json({
+                            success: true,
+                            downloadUrl: bestFormat.url,
+                            videoInfo: {
+                                title: videoInfo?.title || ytData?.videoDetails?.title || '제목 없음',
+                                author: videoInfo?.author_name || ytData?.videoDetails?.author || '알 수 없음',
+                                thumbnail: videoInfo?.thumbnail_url || ytData?.videoDetails?.thumbnail?.thumbnails?.[0]?.url || '',
+                                videoId: videoId,
+                                duration: ytData?.videoDetails?.lengthSeconds || '0'
+                            },
+                            quality: bestFormat.qualityLabel || quality,
+                            actualHeight: bestFormat.height,
+                            message: '다운로드 준비 완료'
+                        })
+                    }
+                }
+            }
+
+            // 방법 2: 실패 시 외부 다운로드 서비스로 리다이렉트
+            // 여러 무료 다운로드 서비스 제공
+            const downloadServices = [
+                {
+                    name: 'Y2Mate',
+                    url: `https://www.y2mate.com/youtube/${videoId}`,
+                    description: '인기 있는 YouTube 다운로더'
+                },
+                {
+                    name: 'SaveFrom.net',
+                    url: `https://en.savefrom.net/#url=${encodeURIComponent(url)}`,
+                    description: '빠르고 간단한 다운로드'
+                },
+                {
+                    name: '9Convert',
+                    url: `https://9convert.com/en60/youtube-downloader?url=${encodeURIComponent(url)}`,
+                    description: 'HD 품질 다운로드 지원'
+                },
+                {
+                    name: 'YTmp3',
+                    url: `https://ytmp3.nu/youtube-to-mp4/?url=${encodeURIComponent(url)}`,
+                    description: 'MP4/MP3 변환 지원'
+                }
+            ]
+
+            return c.json({
+                success: false,
+                errorType: 'REDIRECT_REQUIRED',
+                error: '직접 다운로드가 현재 제한되어 있습니다',
+                message: '아래 서비스 중 하나를 사용하여 다운로드해주세요',
+                videoInfo: {
+                    title: videoInfo?.title || '제목 없음',
+                    author: videoInfo?.author_name || '알 수 없음',
+                    thumbnail: videoInfo?.thumbnail_url || '',
+                    videoId: videoId
+                },
+                downloadServices: downloadServices,
+                alternativeMethod: {
+                    title: '브라우저 확장 프로그램 사용',
+                    description: 'Video DownloadHelper, SaveFrom.net Helper 등의 브라우저 확장 프로그램을 설치하면 더 편리하게 다운로드할 수 있습니다.',
+                    chromeExtension: 'https://chrome.google.com/webstore/search/youtube%20downloader',
+                    firefoxExtension: 'https://addons.mozilla.org/ko/firefox/search/?q=youtube+downloader'
+                }
+            })
+
+        } catch (error) {
+            console.error('다운로드 처리 오류:', error)
+
+            return c.json({
+                success: false,
+                error: '다운로드 처리 중 오류가 발생했습니다',
+                message: error instanceof Error ? error.message : '알 수 없는 오류',
+                videoInfo: videoInfo
+            }, 500)
         }
-      }
-      
-      // 방법 2: 실패 시 외부 다운로드 서비스로 리다이렉트
-      // 여러 무료 다운로드 서비스 제공
-      const downloadServices = [
-        {
-          name: 'Y2Mate',
-          url: `https://www.y2mate.com/youtube/${videoId}`,
-          description: '인기 있는 YouTube 다운로더'
-        },
-        {
-          name: 'SaveFrom.net',
-          url: `https://en.savefrom.net/#url=${encodeURIComponent(url)}`,
-          description: '빠르고 간단한 다운로드'
-        },
-        {
-          name: '9Convert',
-          url: `https://9convert.com/en60/youtube-downloader?url=${encodeURIComponent(url)}`,
-          description: 'HD 품질 다운로드 지원'
-        },
-        {
-          name: 'YTmp3',
-          url: `https://ytmp3.nu/youtube-to-mp4/?url=${encodeURIComponent(url)}`,
-          description: 'MP4/MP3 변환 지원'
-        }
-      ]
-      
-      return c.json({
-        success: false,
-        errorType: 'REDIRECT_REQUIRED',
-        error: '직접 다운로드가 현재 제한되어 있습니다',
-        message: '아래 서비스 중 하나를 사용하여 다운로드해주세요',
-        videoInfo: {
-          title: videoInfo?.title || '제목 없음',
-          author: videoInfo?.author_name || '알 수 없음',
-          thumbnail: videoInfo?.thumbnail_url || '',
-          videoId: videoId
-        },
-        downloadServices: downloadServices,
-        alternativeMethod: {
-          title: '브라우저 확장 프로그램 사용',
-          description: 'Video DownloadHelper, SaveFrom.net Helper 등의 브라우저 확장 프로그램을 설치하면 더 편리하게 다운로드할 수 있습니다.',
-          chromeExtension: 'https://chrome.google.com/webstore/search/youtube%20downloader',
-          firefoxExtension: 'https://addons.mozilla.org/ko/firefox/search/?q=youtube+downloader'
-        }
-      })
-      
+
     } catch (error) {
-      console.error('다운로드 처리 오류:', error)
-      
-      return c.json({
-        success: false,
-        error: '다운로드 처리 중 오류가 발생했습니다',
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
-        videoInfo: videoInfo
-      }, 500)
+        console.error('YouTube 다운로드 오류:', error)
+        return c.json({
+            success: false,
+            error: '서버 오류가 발생했습니다',
+            message: error instanceof Error ? error.message : '알 수 없는 오류'
+        }, 500)
     }
-    
-  } catch (error) {
-    console.error('YouTube 다운로드 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: '서버 오류가 발생했습니다',
-      message: error instanceof Error ? error.message : '알 수 없는 오류'
-    }, 500)
-  }
 })
 
 // ==================== 뉴스 API ====================
 
 // 뉴스 가져오기 및 DB 저장
 app.get('/api/news/fetch', async (c) => {
-  const DB = getDB(c)
-  const category = c.req.query('category') || 'general'
-  
-  try {
-    // RSS에서 뉴스 가져오기 (최대 3번 재시도)
-    let newsItems: any[] = []
-    let retryCount = 0
-    const maxRetries = 3
-    
-    while (retryCount < maxRetries && newsItems.length === 0) {
-      try {
-        newsItems = await parseGoogleNewsRSS(category)
-        if (newsItems.length > 0) break
-      } catch (err) {
-        console.error(`뉴스 가져오기 시도 ${retryCount + 1}/${maxRetries} 실패:`, err)
-      }
-      retryCount++
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)) // 재시도 대기
-      }
-    }
-    
-    if (newsItems.length === 0) {
-      // DB에서 기존 뉴스 가져오기 (fallback)
-      const { results } = await DB.prepare(`
+    const DB = getDB(c)
+    const category = c.req.query('category') || 'general'
+
+    try {
+        // RSS에서 뉴스 가져오기 (최대 3번 재시도)
+        let newsItems: any[] = []
+        let retryCount = 0
+        const maxRetries = 3
+
+        while (retryCount < maxRetries && newsItems.length === 0) {
+            try {
+                newsItems = await parseGoogleNewsRSS(category)
+                if (newsItems.length > 0) break
+            } catch (err) {
+                console.error(`뉴스 가져오기 시도 ${retryCount + 1}/${maxRetries} 실패:`, err)
+            }
+            retryCount++
+            if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)) // 재시도 대기
+            }
+        }
+
+        if (newsItems.length === 0) {
+            // DB에서 기존 뉴스 가져오기 (fallback)
+            const { results } = await DB.prepare(`
         SELECT * FROM news 
         WHERE category = ? 
         ORDER BY created_at DESC 
         LIMIT 20
       `).bind(category).all()
-      
-      if (results && results.length > 0) {
-        return c.json({ 
-          success: true, 
-          fetched: 0,
-          saved: 0,
-          cached: results.length,
-          message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
-          fallback: true
-        })
-      }
-      
-      return c.json({ 
-        error: '뉴스를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.',
-        fallback: false
-      }, 503)
-    }
-    
-    // DB에 저장 (중복 방지)
-    let savedCount = 0
-    for (const item of newsItems) {
-      try {
-        await DB.prepare(`
+
+            if (results && results.length > 0) {
+                return c.json({
+                    success: true,
+                    fetched: 0,
+                    saved: 0,
+                    cached: results.length,
+                    message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
+                    fallback: true
+                })
+            }
+
+            return c.json({
+                error: '뉴스를 가져올 수 없습니다. 잠시 후 다시 시도해주세요.',
+                fallback: false
+            }, 503)
+        }
+
+        // DB에 저장 (중복 방지)
+        let savedCount = 0
+        for (const item of newsItems) {
+            try {
+                await DB.prepare(`
           INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at)
           VALUES (?, ?, ?, ?, ?, ?)
         `).bind(
-          item.category,
-          item.title,
-          item.summary,
-          item.link,
-          item.publisher,
-          item.published_at
-        ).run()
-        savedCount++
-      } catch (err) {
-        console.error('뉴스 저장 오류:', err)
-      }
-    }
-    
-    return c.json({ 
-      success: true, 
-      fetched: newsItems.length,
-      saved: savedCount,
-      message: `${savedCount}개의 새 뉴스를 저장했습니다.`,
-      fallback: false
-    })
-  } catch (error) {
-    console.error('뉴스 가져오기 오류:', error)
-    
-    // DB에서 기존 뉴스 가져오기 (fallback)
-    try {
-      const { results } = await DB.prepare(`
+                    item.category,
+                    item.title,
+                    item.summary,
+                    item.link,
+                    item.publisher,
+                    item.published_at
+                ).run()
+                savedCount++
+            } catch (err) {
+                console.error('뉴스 저장 오류:', err)
+            }
+        }
+
+        return c.json({
+            success: true,
+            fetched: newsItems.length,
+            saved: savedCount,
+            message: `${savedCount}개의 새 뉴스를 저장했습니다.`,
+            fallback: false
+        })
+    } catch (error) {
+        console.error('뉴스 가져오기 오류:', error)
+
+        // DB에서 기존 뉴스 가져오기 (fallback)
+        try {
+            const { results } = await DB.prepare(`
         SELECT * FROM news 
         WHERE category = ? 
         ORDER BY created_at DESC 
         LIMIT 20
       `).bind(category).all()
-      
-      if (results && results.length > 0) {
-        return c.json({ 
-          success: true, 
-          fetched: 0,
-          saved: 0,
-          cached: results.length,
-          message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
-          fallback: true
-        })
-      }
-    } catch (dbErr) {
-      console.error('DB fallback 오류:', dbErr)
+
+            if (results && results.length > 0) {
+                return c.json({
+                    success: true,
+                    fetched: 0,
+                    saved: 0,
+                    cached: results.length,
+                    message: '최신 뉴스를 가져올 수 없어 캐시된 뉴스를 표시합니다.',
+                    fallback: true
+                })
+            }
+        } catch (dbErr) {
+            console.error('DB fallback 오류:', dbErr)
+        }
+
+        return c.json({
+            error: '뉴스 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
+            fallback: false
+        }, 503)
     }
-    
-    return c.json({ 
-      error: '뉴스 서비스에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.',
-      fallback: false
-    }, 503)
-  }
 })
 
 // 저장된 뉴스 목록 조회
 // API: 뉴스 리다이렉트 프록시 (Google News 차단 우회)
 app.get('/news/redirect', async (c) => {
-  const url = c.req.query('url')
-  
-  if (!url) {
-    return c.text('URL이 필요합니다', 400)
-  }
-  
-  try {
-    // Google News URL을 fetch하여 최종 redirect URL을 얻음
-    const response = await fetch(url, {
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    })
-    
-    // 최종 URL로 리다이렉트
-    return c.redirect(response.url, 302)
-  } catch (error) {
-    console.error('뉴스 리다이렉트 오류:', error)
-    return c.text('뉴스를 불러올 수 없습니다', 500)
-  }
+    const url = c.req.query('url')
+
+    if (!url) {
+        return c.text('URL이 필요합니다', 400)
+    }
+
+    try {
+        // Google News URL을 fetch하여 최종 redirect URL을 얻음
+        const response = await fetch(url, {
+            redirect: 'follow',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        })
+
+        // 최종 URL로 리다이렉트
+        return c.redirect(response.url, 302)
+    } catch (error) {
+        console.error('뉴스 리다이렉트 오류:', error)
+        return c.text('뉴스를 불러올 수 없습니다', 500)
+    }
 })
 
 // 뉴스 상세 페이지
 app.get('/news/:id', async (c) => {
-  const DB = getDB(c)
-  const newsId = c.req.param('id')
-  
-  // 뉴스 조회
-  let news: any = null
-  try {
-    const { results } = await DB.prepare('SELECT * FROM news WHERE id = ?').bind(newsId).all()
-    news = results?.[0]
-  } catch (error) {
-    console.error('뉴스 조회 오류:', error)
-  }
-  
-  // 뉴스가 없으면 404
-  if (!news) {
-    return c.html(`
+    const DB = getDB(c)
+    const newsId = c.req.param('id')
+
+    // 뉴스 조회
+    let news: any = null
+    try {
+        const { results } = await DB.prepare('SELECT * FROM news WHERE id = ?').bind(newsId).all()
+        news = results?.[0]
+    } catch (error) {
+        console.error('뉴스 조회 오류:', error)
+    }
+
+    // 뉴스가 없으면 404
+    if (!news) {
+        return c.html(`
       <!DOCTYPE html>
       <html lang="ko">
       <head>
@@ -18474,14 +18475,14 @@ app.get('/news/:id', async (c) => {
       </body>
       </html>
     `, 404)
-  }
-  
-  // 관련 종목 추출 및 시세 조회
-  const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
-  const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
-  const relatedStocks = await fetchBatchStockData(relatedTickers)
-  
-  return c.html(`
+    }
+
+    // 관련 종목 추출 및 시세 조회
+    const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
+    const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
+    const relatedStocks = await fetchBatchStockData(relatedTickers)
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -18563,10 +18564,10 @@ app.get('/news/:id', async (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '뉴스', href: '/news'},
-          {label: news.title}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '뉴스', href: '/news' },
+        { label: news.title }
+    ])}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <div class="lg:flex lg:gap-8">
@@ -18580,12 +18581,12 @@ app.get('/news/:id', async (c) => {
                             </span>
                             <span class="text-sm text-gray-500">
                                 ${new Date(news.published_at || news.created_at).toLocaleString('ko-KR', {
-                                  year: 'numeric',
-                                  month: 'long',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })}
                             </span>
                         </div>
                         
@@ -18640,9 +18641,9 @@ app.get('/news/:id', async (c) => {
                             태그
                         </h3>
                         <div class="flex flex-wrap gap-2">
-                            ${news.tags.split(',').map((tag: string) => 
-                                `<span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition">#${tag.trim()}</span>`
-                            ).join('')}
+                            ${news.tags.split(',').map((tag: string) =>
+        `<span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition">#${tag.trim()}</span>`
+    ).join('')}
                         </div>
                     </div>
                     ` : ''}
@@ -18658,17 +18659,17 @@ app.get('/news/:id', async (c) => {
                             </h3>
                             
                             ${relatedStocks.length > 0 ? relatedStocks.map((stock: any) => {
-                                const isKorean = stock.ticker.includes('.KS') || stock.ticker.includes('.KQ')
-                                const priceText = isKorean 
-                                    ? '₩' + Math.round(stock.price).toLocaleString('ko-KR')
-                                    : '$' + stock.price.toFixed(2)
-                                const changeText = isKorean
-                                    ? (stock.change >= 0 ? '+' : '') + Math.round(stock.change).toLocaleString('ko-KR') + '원'
-                                    : (stock.change >= 0 ? '+' : '') + '$' + Math.abs(stock.change).toFixed(2)
-                                const statusClass = stock.status === 'up' ? 'stock-up' : stock.status === 'down' ? 'stock-down' : 'stock-flat'
-                                const arrow = stock.status === 'up' ? '▲' : stock.status === 'down' ? '▼' : '━'
-                                
-                                return `
+        const isKorean = stock.ticker.includes('.KS') || stock.ticker.includes('.KQ')
+        const priceText = isKorean
+            ? '₩' + Math.round(stock.price).toLocaleString('ko-KR')
+            : '$' + stock.price.toFixed(2)
+        const changeText = isKorean
+            ? (stock.change >= 0 ? '+' : '') + Math.round(stock.change).toLocaleString('ko-KR') + '원'
+            : (stock.change >= 0 ? '+' : '') + '$' + Math.abs(stock.change).toFixed(2)
+        const statusClass = stock.status === 'up' ? 'stock-up' : stock.status === 'down' ? 'stock-down' : 'stock-flat'
+        const arrow = stock.status === 'up' ? '▲' : stock.status === 'down' ? '▼' : '━'
+
+        return `
                                 <div class="stock-card rounded-lg p-5 hover:shadow-md transition mb-4">
                                     <div class="font-bold text-gray-900 text-xl mb-1">${escapeHtml(stock.name)}</div>
                                     <div class="text-xs text-gray-500 mb-4">${stock.ticker}</div>
@@ -18689,7 +18690,7 @@ app.get('/news/:id', async (c) => {
                                     </a>
                                 </div>
                                 `
-                            }).join('') : `
+    }).join('') : `
                             <div class="text-center py-8">
                                 <i class="fas fa-chart-pie text-gray-300 text-5xl mb-4"></i>
                                 <p class="text-gray-500 mb-2">관련 종목 정보가 없습니다.</p>
@@ -18719,149 +18720,149 @@ app.get('/news/:id', async (c) => {
 
 
 app.get('/api/news', async (c) => {
-  const DB = getDB(c)
-  const category = c.req.query('category')
-  const limit = parseInt(c.req.query('limit') || '20')
-  const offset = parseInt(c.req.query('offset') || '0')
-  const includeStocks = c.req.query('includeStocks') === 'true' // 종목 정보 포함 여부
-  
-  try {
-    let query = 'SELECT * FROM news'
-    const params: any[] = []
-    
-    if (category && category !== 'all') {
-      query += ' WHERE category = ?'
-      params.push(category)
+    const DB = getDB(c)
+    const category = c.req.query('category')
+    const limit = parseInt(c.req.query('limit') || '20')
+    const offset = parseInt(c.req.query('offset') || '0')
+    const includeStocks = c.req.query('includeStocks') === 'true' // 종목 정보 포함 여부
+
+    try {
+        let query = 'SELECT * FROM news'
+        const params: any[] = []
+
+        if (category && category !== 'all') {
+            query += ' WHERE category = ?'
+            params.push(category)
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+        params.push(limit, offset)
+
+        const { results } = await DB.prepare(query).bind(...params).all()
+
+        // 성능 최적화: 종목 정보는 필요할 때만 조회
+        if (includeStocks) {
+            // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
+            const newsWithStocks = await Promise.all(
+                results.map(async (news: any) => {
+                    // 제목, 설명, 태그에서 관련 종목 찾기
+                    const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
+                    const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
+
+                    if (relatedTickers.length === 0) {
+                        return {
+                            ...news,
+                            relatedStocks: []
+                        }
+                    }
+
+                    // 관련 종목 시세 조회
+                    const stockData = await fetchBatchStockData(relatedTickers)
+
+                    return {
+                        ...news,
+                        relatedStocks: stockData
+                    }
+                })
+            )
+
+            return c.json({
+                success: true,
+                news: newsWithStocks,
+                count: newsWithStocks.length
+            })
+        } else {
+            // 종목 정보 없이 빠르게 응답
+            return c.json({
+                success: true,
+                news: results,
+                count: results.length
+            })
+        }
+    } catch (error) {
+        console.error('뉴스 조회 오류:', error)
+        return c.json({ error: '뉴스 조회 실패' }, 500)
     }
-    
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(limit, offset)
-    
-    const { results } = await DB.prepare(query).bind(...params).all()
-    
-    // 성능 최적화: 종목 정보는 필요할 때만 조회
-    if (includeStocks) {
-      // 각 뉴스에 대해 관련 종목 추출 및 시세 조회
-      const newsWithStocks = await Promise.all(
-        results.map(async (news: any) => {
-          // 제목, 설명, 태그에서 관련 종목 찾기
-          const searchText = `${news.title || ''} ${news.description || ''} ${news.tags || ''}`
-          const relatedTickers = findRelatedStocks(searchText, 3) // 최대 3개
-          
-          if (relatedTickers.length === 0) {
-            return {
-              ...news,
-              relatedStocks: []
-            }
-          }
-          
-          // 관련 종목 시세 조회
-          const stockData = await fetchBatchStockData(relatedTickers)
-          
-          return {
-            ...news,
-            relatedStocks: stockData
-          }
-        })
-      )
-      
-      return c.json({ 
-        success: true, 
-        news: newsWithStocks,
-        count: newsWithStocks.length 
-      })
-    } else {
-      // 종목 정보 없이 빠르게 응답
-      return c.json({ 
-        success: true, 
-        news: results,
-        count: results.length 
-      })
-    }
-  } catch (error) {
-    console.error('뉴스 조회 오류:', error)
-    return c.json({ error: '뉴스 조회 실패' }, 500)
-  }
 })
 
 // 뉴스 삭제 (관리자용)
 app.delete('/api/news/:id', async (c) => {
-  const DB = getDB(c)
-  const id = c.req.param('id')
-  
-  try {
-    await DB.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
-    return c.json({ success: true, message: '뉴스가 삭제되었습니다.' })
-  } catch (error) {
-    console.error('뉴스 삭제 오류:', error)
-    return c.json({ error: '뉴스 삭제 실패' }, 500)
-  }
+    const DB = getDB(c)
+    const id = c.req.param('id')
+
+    try {
+        await DB.prepare('DELETE FROM news WHERE id = ?').bind(id).run()
+        return c.json({ success: true, message: '뉴스가 삭제되었습니다.' })
+    } catch (error) {
+        console.error('뉴스 삭제 오류:', error)
+        return c.json({ error: '뉴스 삭제 실패' }, 500)
+    }
 })
 
 // ==================== 뉴스 스케줄 설정 API ====================
 // 스케줄 설정 조회
 app.get('/api/news/schedule', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
-    const schedule = results?.[0] || {
-      enabled: 1,
-      schedule_type: 'hourly',
-      schedule_time: null,
-      interval_hours: 1,
-      last_run: null,
-      next_run: null
+    const DB = getDB(c)
+
+    try {
+        const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
+        const schedule = results?.[0] || {
+            enabled: 1,
+            schedule_type: 'hourly',
+            schedule_time: null,
+            interval_hours: 1,
+            last_run: null,
+            next_run: null
+        }
+
+        return c.json({
+            success: true,
+            schedule
+        })
+    } catch (error) {
+        console.error('스케줄 설정 조회 오류:', error)
+        return c.json({ error: '스케줄 설정 조회 실패' }, 500)
     }
-    
-    return c.json({ 
-      success: true, 
-      schedule 
-    })
-  } catch (error) {
-    console.error('스케줄 설정 조회 오류:', error)
-    return c.json({ error: '스케줄 설정 조회 실패' }, 500)
-  }
 })
 
 // 스케줄 설정 업데이트
 app.post('/api/news/schedule', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    const body = await c.req.json()
-    const { enabled, schedule_type, schedule_time, interval_hours } = body
-    
-    // 다음 실행 시간 계산
-    let next_run = null
-    const now = new Date()
-    
-    if (enabled) {
-      if (schedule_type === 'hourly') {
-        const hours = interval_hours || 1
-        next_run = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
-      } else if (schedule_type === 'daily' && schedule_time) {
-        // schedule_time 형식: "HH:mm" (한국 시간 기준)
-        const [hours, minutes] = schedule_time.split(':').map(Number)
-        
-        // 현재 한국 시간 구하기 (UTC+9)
-        const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
-        
-        // 오늘 날짜의 지정된 시간 (한국 시간)
-        const nextRun = new Date(koreaTime)
-        nextRun.setHours(hours, minutes, 0, 0)
-        
-        // 오늘 시간이 지났으면 내일로 설정
-        if (nextRun <= koreaTime) {
-          nextRun.setDate(nextRun.getDate() + 1)
+    const DB = getDB(c)
+
+    try {
+        const body = await c.req.json()
+        const { enabled, schedule_type, schedule_time, interval_hours } = body
+
+        // 다음 실행 시간 계산
+        let next_run = null
+        const now = new Date()
+
+        if (enabled) {
+            if (schedule_type === 'hourly') {
+                const hours = interval_hours || 1
+                next_run = new Date(now.getTime() + hours * 60 * 60 * 1000).toISOString()
+            } else if (schedule_type === 'daily' && schedule_time) {
+                // schedule_time 형식: "HH:mm" (한국 시간 기준)
+                const [hours, minutes] = schedule_time.split(':').map(Number)
+
+                // 현재 한국 시간 구하기 (UTC+9)
+                const koreaTime = new Date(now.getTime() + (9 * 60 * 60 * 1000))
+
+                // 오늘 날짜의 지정된 시간 (한국 시간)
+                const nextRun = new Date(koreaTime)
+                nextRun.setHours(hours, minutes, 0, 0)
+
+                // 오늘 시간이 지났으면 내일로 설정
+                if (nextRun <= koreaTime) {
+                    nextRun.setDate(nextRun.getDate() + 1)
+                }
+
+                // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
+                next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
+            }
         }
-        
-        // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
-        next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
-      }
-    }
-    
-    await DB.prepare(`
+
+        await DB.prepare(`
       UPDATE news_schedule 
       SET enabled = ?, 
           schedule_type = ?, 
@@ -18871,105 +18872,105 @@ app.post('/api/news/schedule', async (c) => {
           updated_at = CURRENT_TIMESTAMP
       WHERE id = 1
     `).bind(
-      enabled ? 1 : 0,
-      schedule_type,
-      schedule_time,
-      interval_hours,
-      next_run
-    ).run()
-    
-    return c.json({ 
-      success: true, 
-      message: '스케줄 설정이 업데이트되었습니다.',
-      next_run 
-    })
-  } catch (error) {
-    console.error('스케줄 설정 업데이트 오류:', error)
-    return c.json({ error: '스케줄 설정 업데이트 실패' }, 500)
-  }
+            enabled ? 1 : 0,
+            schedule_type,
+            schedule_time,
+            interval_hours,
+            next_run
+        ).run()
+
+        return c.json({
+            success: true,
+            message: '스케줄 설정이 업데이트되었습니다.',
+            next_run
+        })
+    } catch (error) {
+        console.error('스케줄 설정 업데이트 오류:', error)
+        return c.json({ error: '스케줄 설정 업데이트 실패' }, 500)
+    }
 })
 
 // 스케줄 실행 기록 업데이트 (자동 실행 시 호출)
 app.post('/api/news/schedule/update-run', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    const now = new Date().toISOString()
-    
-    // last_run 업데이트
-    await DB.prepare(`
+    const DB = getDB(c)
+
+    try {
+        const now = new Date().toISOString()
+
+        // last_run 업데이트
+        await DB.prepare(`
       UPDATE news_schedule 
       SET last_run = ?,
           updated_at = CURRENT_TIMESTAMP
       WHERE id = 1
     `).bind(now).run()
-    
-    // 현재 설정 가져와서 next_run 재계산
-    const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
-    const schedule = results?.[0]
-    
-    if (schedule && schedule.enabled) {
-      let next_run = null
-      const currentTime = new Date()
-      
-      if (schedule.schedule_type === 'hourly') {
-        const hours = schedule.interval_hours || 1
-        next_run = new Date(currentTime.getTime() + hours * 60 * 60 * 1000).toISOString()
-      } else if (schedule.schedule_type === 'daily' && schedule.schedule_time) {
-        const [hours, minutes] = schedule.schedule_time.split(':').map(Number)
-        
-        // 현재 한국 시간 구하기 (UTC+9)
-        const koreaTime = new Date(currentTime.getTime() + (9 * 60 * 60 * 1000))
-        
-        // 다음날 지정된 시간 (한국 시간)
-        const nextRun = new Date(koreaTime)
-        nextRun.setDate(nextRun.getDate() + 1) // 다음 날
-        nextRun.setHours(hours, minutes, 0, 0)
-        
-        // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
-        next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
-      }
-      
-      if (next_run) {
-        await DB.prepare(`
+
+        // 현재 설정 가져와서 next_run 재계산
+        const { results } = await DB.prepare('SELECT * FROM news_schedule WHERE id = 1').all()
+        const schedule = results?.[0]
+
+        if (schedule && schedule.enabled) {
+            let next_run = null
+            const currentTime = new Date()
+
+            if (schedule.schedule_type === 'hourly') {
+                const hours = schedule.interval_hours || 1
+                next_run = new Date(currentTime.getTime() + hours * 60 * 60 * 1000).toISOString()
+            } else if (schedule.schedule_type === 'daily' && schedule.schedule_time) {
+                const [hours, minutes] = schedule.schedule_time.split(':').map(Number)
+
+                // 현재 한국 시간 구하기 (UTC+9)
+                const koreaTime = new Date(currentTime.getTime() + (9 * 60 * 60 * 1000))
+
+                // 다음날 지정된 시간 (한국 시간)
+                const nextRun = new Date(koreaTime)
+                nextRun.setDate(nextRun.getDate() + 1) // 다음 날
+                nextRun.setHours(hours, minutes, 0, 0)
+
+                // UTC 시간으로 변환하여 저장 (한국 시간 - 9시간)
+                next_run = new Date(nextRun.getTime() - (9 * 60 * 60 * 1000)).toISOString()
+            }
+
+            if (next_run) {
+                await DB.prepare(`
           UPDATE news_schedule 
           SET next_run = ?,
               updated_at = CURRENT_TIMESTAMP
           WHERE id = 1
         `).bind(next_run).run()
-      }
+            }
+        }
+
+        return c.json({
+            success: true,
+            message: '실행 기록이 업데이트되었습니다.'
+        })
+    } catch (error) {
+        console.error('실행 기록 업데이트 오류:', error)
+        return c.json({ error: '실행 기록 업데이트 실패' }, 500)
     }
-    
-    return c.json({ 
-      success: true, 
-      message: '실행 기록이 업데이트되었습니다.' 
-    })
-  } catch (error) {
-    console.error('실행 기록 업데이트 오류:', error)
-    return c.json({ error: '실행 기록 업데이트 실패' }, 500)
-  }
 })
 
 // ==================== 관리자 뉴스관리 페이지 ====================
 app.get('/admin/news', async (c) => {
-  const DB = getDB(c)
-  
-  // DB에서 뉴스 통계만 가져오기 (전체 개수)
-  let newsFromDB: any[] = []
-  let totalCount = 0
-  try {
-    // 전체 개수 조회
-    const countResult = await DB.prepare('SELECT COUNT(*) as total FROM news').first()
-    totalCount = countResult?.total || 0
-    
-    // 초기 50개만 가져오기
-    const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 50').all()
-    newsFromDB = results || []
-  } catch (error) {
-    console.error('뉴스 조회 오류:', error)
-  }
-  
-  return c.html(`
+    const DB = getDB(c)
+
+    // DB에서 뉴스 통계만 가져오기 (전체 개수)
+    let newsFromDB: any[] = []
+    let totalCount = 0
+    try {
+        // 전체 개수 조회
+        const countResult = await DB.prepare('SELECT COUNT(*) as total FROM news').first()
+        totalCount = countResult?.total || 0
+
+        // 초기 50개만 가져오기
+        const { results } = await DB.prepare('SELECT * FROM news ORDER BY created_at DESC LIMIT 50').all()
+        newsFromDB = results || []
+    } catch (error) {
+        console.error('뉴스 조회 오류:', error)
+    }
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -19027,10 +19028,10 @@ app.get('/admin/news', async (c) => {
         </nav>
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '관리자', href: '/admin'},
-          {label: '뉴스 관리'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '관리자', href: '/admin' },
+        { label: '뉴스 관리' }
+    ])}
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
@@ -19699,313 +19700,313 @@ app.get('/admin/news', async (c) => {
 // ==================== 북마크 API ====================
 // 북마크 추가
 app.post('/api/bookmarks', async (c) => {
-  const DB = getDB(c)
-  try {
-    const body = await c.req.json()
-    const { userId, newsId } = body
-    
-    if (!userId || !newsId) {
-      return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
-    }
-    
-    await DB.prepare(`
+    const DB = getDB(c)
+    try {
+        const body = await c.req.json()
+        const { userId, newsId } = body
+
+        if (!userId || !newsId) {
+            return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
+        }
+
+        await DB.prepare(`
       INSERT INTO bookmarks (user_id, news_id)
       VALUES (?, ?)
     `).bind(userId, newsId).run()
-    
-    return c.json({ success: true, message: '북마크에 추가되었습니다' })
-  } catch (error: any) {
-    if (error.message?.includes('UNIQUE constraint failed')) {
-      return c.json({ success: false, error: '이미 북마크에 추가된 뉴스입니다' }, 400)
+
+        return c.json({ success: true, message: '북마크에 추가되었습니다' })
+    } catch (error: any) {
+        if (error.message?.includes('UNIQUE constraint failed')) {
+            return c.json({ success: false, error: '이미 북마크에 추가된 뉴스입니다' }, 400)
+        }
+        console.error('북마크 추가 오류:', error)
+        return c.json({ success: false, error: '북마크 추가 실패' }, 500)
     }
-    console.error('북마크 추가 오류:', error)
-    return c.json({ success: false, error: '북마크 추가 실패' }, 500)
-  }
 })
 
 // 북마크 목록 조회
 app.get('/api/bookmarks', async (c) => {
-  const DB = getDB(c)
-  try {
-    const userId = c.req.query('userId')
-    const category = c.req.query('category')
-    const limit = parseInt(c.req.query('limit') || '50')
-    const offset = parseInt(c.req.query('offset') || '0')
-    
-    if (!userId) {
-      return c.json({ success: false, error: 'userId가 필요합니다' }, 400)
+    const DB = getDB(c)
+    try {
+        const userId = c.req.query('userId')
+        const category = c.req.query('category')
+        const limit = parseInt(c.req.query('limit') || '50')
+        const offset = parseInt(c.req.query('offset') || '0')
+
+        if (!userId) {
+            return c.json({ success: false, error: 'userId가 필요합니다' }, 400)
+        }
+
+        let query = 'SELECT * FROM bookmarks WHERE user_id = ?'
+        const params: any[] = [userId]
+
+        if (category && category !== 'all') {
+            query += ' AND news_category = ?'
+            params.push(category)
+        }
+
+        query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
+        params.push(limit, offset)
+
+        const result = await DB.prepare(query).bind(...params).all()
+
+        return c.json({
+            success: true,
+            bookmarks: result.results || [],
+            count: result.results?.length || 0
+        })
+    } catch (error) {
+        console.error('북마크 조회 오류:', error)
+        return c.json({ success: false, error: '북마크 조회 실패' }, 500)
     }
-    
-    let query = 'SELECT * FROM bookmarks WHERE user_id = ?'
-    const params: any[] = [userId]
-    
-    if (category && category !== 'all') {
-      query += ' AND news_category = ?'
-      params.push(category)
-    }
-    
-    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    params.push(limit, offset)
-    
-    const result = await DB.prepare(query).bind(...params).all()
-    
-    return c.json({ 
-      success: true, 
-      bookmarks: result.results || [],
-      count: result.results?.length || 0
-    })
-  } catch (error) {
-    console.error('북마크 조회 오류:', error)
-    return c.json({ success: false, error: '북마크 조회 실패' }, 500)
-  }
 })
 
 // 북마크 삭제
 app.delete('/api/bookmarks/:newsId', async (c) => {
-  const DB = getDB(c)
-  try {
-    const newsId = c.req.param('newsId')
-    const userId = c.req.query('userId')
-    
-    if (!userId) {
-      return c.json({ success: false, error: 'userId가 필요합니다' }, 400)
+    const DB = getDB(c)
+    try {
+        const newsId = c.req.param('newsId')
+        const userId = c.req.query('userId')
+
+        if (!userId) {
+            return c.json({ success: false, error: 'userId가 필요합니다' }, 400)
+        }
+
+        await DB.prepare('DELETE FROM bookmarks WHERE news_id = ? AND user_id = ?')
+            .bind(newsId, userId).run()
+
+        return c.json({ success: true, message: '북마크가 삭제되었습니다' })
+    } catch (error) {
+        console.error('북마크 삭제 오류:', error)
+        return c.json({ success: false, error: '북마크 삭제 실패' }, 500)
     }
-    
-    await DB.prepare('DELETE FROM bookmarks WHERE news_id = ? AND user_id = ?')
-      .bind(newsId, userId).run()
-    
-    return c.json({ success: true, message: '북마크가 삭제되었습니다' })
-  } catch (error) {
-    console.error('북마크 삭제 오류:', error)
-    return c.json({ success: false, error: '북마크 삭제 실패' }, 500)
-  }
 })
 
 // 북마크 확인 (특정 뉴스가 북마크되어 있는지)
 app.get('/api/bookmarks/check', async (c) => {
-  const DB = getDB(c)
-  try {
-    const userId = c.req.query('userId')
-    const newsId = c.req.query('link') // link 파라미터지만 실제로는 news_id
-    
-    if (!userId || !newsId) {
-      return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
+    const DB = getDB(c)
+    try {
+        const userId = c.req.query('userId')
+        const newsId = c.req.query('link') // link 파라미터지만 실제로는 news_id
+
+        if (!userId || !newsId) {
+            return c.json({ success: false, error: '필수 정보가 누락되었습니다' }, 400)
+        }
+
+        const result = await DB.prepare(
+            'SELECT id FROM bookmarks WHERE user_id = ? AND news_id = ?'
+        ).bind(userId, newsId).first()
+
+        return c.json({
+            success: true,
+            bookmarked: !!result,
+            bookmarkId: result?.id || null
+        })
+    } catch (error) {
+        console.error('북마크 확인 오류:', error)
+        return c.json({ success: false, error: '북마크 확인 실패' }, 500)
     }
-    
-    const result = await DB.prepare(
-      'SELECT id FROM bookmarks WHERE user_id = ? AND news_id = ?'
-    ).bind(userId, newsId).first()
-    
-    return c.json({ 
-      success: true, 
-      bookmarked: !!result,
-      bookmarkId: result?.id || null
-    })
-  } catch (error) {
-    console.error('북마크 확인 오류:', error)
-    return c.json({ success: false, error: '북마크 확인 실패' }, 500)
-  }
 })
 
 // ==================== 뉴스 검색 API ====================
 app.get('/api/news/search', async (c) => {
-  const DB = getDB(c)
-  try {
-    const query = c.req.query('q') || ''
-    const category = c.req.query('category')
-    const limit = parseInt(c.req.query('limit') || '50')
-    const offset = parseInt(c.req.query('offset') || '0')
-    
-    if (!query || query.trim().length === 0) {
-      return c.json({ success: false, error: '검색어를 입력해주세요' }, 400)
+    const DB = getDB(c)
+    try {
+        const query = c.req.query('q') || ''
+        const category = c.req.query('category')
+        const limit = parseInt(c.req.query('limit') || '50')
+        const offset = parseInt(c.req.query('offset') || '0')
+
+        if (!query || query.trim().length === 0) {
+            return c.json({ success: false, error: '검색어를 입력해주세요' }, 400)
+        }
+
+        let sql = `SELECT * FROM news WHERE (title LIKE ? OR summary LIKE ?)`
+        const searchTerm = `%${query.trim()}%`
+        const params: any[] = [searchTerm, searchTerm]
+
+        if (category && category !== 'all') {
+            sql += ' AND category = ?'
+            params.push(category)
+        }
+
+        sql += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
+        params.push(limit, offset)
+
+        const result = await DB.prepare(sql).bind(...params).all()
+
+        return c.json({
+            success: true,
+            news: result.results || [],
+            count: result.results?.length || 0,
+            query: query.trim()
+        })
+    } catch (error) {
+        console.error('뉴스 검색 오류:', error)
+        return c.json({ success: false, error: '뉴스 검색 실패' }, 500)
     }
-    
-    let sql = `SELECT * FROM news WHERE (title LIKE ? OR summary LIKE ?)`
-    const searchTerm = `%${query.trim()}%`
-    const params: any[] = [searchTerm, searchTerm]
-    
-    if (category && category !== 'all') {
-      sql += ' AND category = ?'
-      params.push(category)
-    }
-    
-    sql += ' ORDER BY published_at DESC LIMIT ? OFFSET ?'
-    params.push(limit, offset)
-    
-    const result = await DB.prepare(sql).bind(...params).all()
-    
-    return c.json({ 
-      success: true, 
-      news: result.results || [],
-      count: result.results?.length || 0,
-      query: query.trim()
-    })
-  } catch (error) {
-    console.error('뉴스 검색 오류:', error)
-    return c.json({ success: false, error: '뉴스 검색 실패' }, 500)
-  }
 })
 
 // ==================== Figma API 연동 ====================
 // Figma 파일 정보 가져오기
 app.get('/api/figma/file/:fileKey', async (c) => {
-  const { FIGMA_ACCESS_TOKEN } = c.env
-  const fileKey = c.req.param('fileKey')
-  
-  if (!FIGMA_ACCESS_TOKEN) {
-    return c.json({ 
-      success: false, 
-      error: 'Figma Access Token이 설정되지 않았습니다. .dev.vars 파일을 확인하세요.' 
-    }, 500)
-  }
-  
-  try {
-    const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
-      headers: {
-        'X-Figma-Token': FIGMA_ACCESS_TOKEN
-      }
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Figma API 오류:', response.status, errorData)
-      return c.json({ 
-        success: false, 
-        error: `Figma API 오류: ${response.status}`,
-        details: errorData
-      }, response.status)
+    const { FIGMA_ACCESS_TOKEN } = c.env
+    const fileKey = c.req.param('fileKey')
+
+    if (!FIGMA_ACCESS_TOKEN) {
+        return c.json({
+            success: false,
+            error: 'Figma Access Token이 설정되지 않았습니다. .dev.vars 파일을 확인하세요.'
+        }, 500)
     }
-    
-    const data = await response.json()
-    return c.json({ 
-      success: true, 
-      data 
-    })
-  } catch (error) {
-    console.error('Figma 파일 가져오기 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: error.message || '파일 가져오기 실패' 
-    }, 500)
-  }
+
+    try {
+        const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
+            headers: {
+                'X-Figma-Token': FIGMA_ACCESS_TOKEN
+            }
+        })
+
+        if (!response.ok) {
+            const errorData = await response.text()
+            console.error('Figma API 오류:', response.status, errorData)
+            return c.json({
+                success: false,
+                error: `Figma API 오류: ${response.status}`,
+                details: errorData
+            }, response.status)
+        }
+
+        const data = await response.json()
+        return c.json({
+            success: true,
+            data
+        })
+    } catch (error) {
+        console.error('Figma 파일 가져오기 오류:', error)
+        return c.json({
+            success: false,
+            error: error.message || '파일 가져오기 실패'
+        }, 500)
+    }
 })
 
 // Figma 이미지 렌더링 (PNG/SVG)
 app.get('/api/figma/images/:fileKey', async (c) => {
-  const { FIGMA_ACCESS_TOKEN } = c.env
-  const fileKey = c.req.param('fileKey')
-  const nodeIds = c.req.query('ids') // 쉼표로 구분된 노드 ID들
-  const format = c.req.query('format') || 'png' // png, jpg, svg, pdf
-  const scale = c.req.query('scale') || '1' // 1, 2, 3, 4
-  
-  if (!FIGMA_ACCESS_TOKEN) {
-    return c.json({ 
-      success: false, 
-      error: 'Figma Access Token이 설정되지 않았습니다.' 
-    }, 500)
-  }
-  
-  if (!nodeIds) {
-    return c.json({ 
-      success: false, 
-      error: 'Node IDs를 제공해야 합니다. (예: ?ids=1:2,1:3)' 
-    }, 400)
-  }
-  
-  try {
-    const url = new URL(`https://api.figma.com/v1/images/${fileKey}`)
-    url.searchParams.set('ids', nodeIds)
-    url.searchParams.set('format', format)
-    url.searchParams.set('scale', scale)
-    
-    const response = await fetch(url.toString(), {
-      headers: {
-        'X-Figma-Token': FIGMA_ACCESS_TOKEN
-      }
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.text()
-      return c.json({ 
-        success: false, 
-        error: `Figma API 오류: ${response.status}`,
-        details: errorData
-      }, response.status)
+    const { FIGMA_ACCESS_TOKEN } = c.env
+    const fileKey = c.req.param('fileKey')
+    const nodeIds = c.req.query('ids') // 쉼표로 구분된 노드 ID들
+    const format = c.req.query('format') || 'png' // png, jpg, svg, pdf
+    const scale = c.req.query('scale') || '1' // 1, 2, 3, 4
+
+    if (!FIGMA_ACCESS_TOKEN) {
+        return c.json({
+            success: false,
+            error: 'Figma Access Token이 설정되지 않았습니다.'
+        }, 500)
     }
-    
-    const data = await response.json()
-    return c.json({ 
-      success: true, 
-      images: data.images,
-      metadata: {
-        format,
-        scale,
-        nodeIds: nodeIds.split(',')
-      }
-    })
-  } catch (error) {
-    console.error('Figma 이미지 렌더링 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: error.message || '이미지 렌더링 실패' 
-    }, 500)
-  }
+
+    if (!nodeIds) {
+        return c.json({
+            success: false,
+            error: 'Node IDs를 제공해야 합니다. (예: ?ids=1:2,1:3)'
+        }, 400)
+    }
+
+    try {
+        const url = new URL(`https://api.figma.com/v1/images/${fileKey}`)
+        url.searchParams.set('ids', nodeIds)
+        url.searchParams.set('format', format)
+        url.searchParams.set('scale', scale)
+
+        const response = await fetch(url.toString(), {
+            headers: {
+                'X-Figma-Token': FIGMA_ACCESS_TOKEN
+            }
+        })
+
+        if (!response.ok) {
+            const errorData = await response.text()
+            return c.json({
+                success: false,
+                error: `Figma API 오류: ${response.status}`,
+                details: errorData
+            }, response.status)
+        }
+
+        const data = await response.json()
+        return c.json({
+            success: true,
+            images: data.images,
+            metadata: {
+                format,
+                scale,
+                nodeIds: nodeIds.split(',')
+            }
+        })
+    } catch (error) {
+        console.error('Figma 이미지 렌더링 오류:', error)
+        return c.json({
+            success: false,
+            error: error.message || '이미지 렌더링 실패'
+        }, 500)
+    }
 })
 
 // Figma 스타일 가져오기 (디자인 토큰)
 app.get('/api/figma/styles/:fileKey', async (c) => {
-  const { FIGMA_ACCESS_TOKEN } = c.env
-  const fileKey = c.req.param('fileKey')
-  
-  if (!FIGMA_ACCESS_TOKEN) {
-    return c.json({ 
-      success: false, 
-      error: 'Figma Access Token이 설정되지 않았습니다.' 
-    }, 500)
-  }
-  
-  try {
-    // 먼저 파일 정보를 가져와서 스타일 분석
-    const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
-      headers: {
-        'X-Figma-Token': FIGMA_ACCESS_TOKEN
-      }
-    })
-    
-    if (!response.ok) {
-      return c.json({ 
-        success: false, 
-        error: `Figma API 오류: ${response.status}` 
-      }, response.status)
+    const { FIGMA_ACCESS_TOKEN } = c.env
+    const fileKey = c.req.param('fileKey')
+
+    if (!FIGMA_ACCESS_TOKEN) {
+        return c.json({
+            success: false,
+            error: 'Figma Access Token이 설정되지 않았습니다.'
+        }, 500)
     }
-    
-    const fileData = await response.json()
-    
-    // 스타일 정보 추출 (색상, 텍스트 스타일 등)
-    const styles = {
-      colors: fileData.styles?.fills || {},
-      textStyles: fileData.styles?.text || {},
-      effectStyles: fileData.styles?.effects || {}
+
+    try {
+        // 먼저 파일 정보를 가져와서 스타일 분석
+        const response = await fetch(`https://api.figma.com/v1/files/${fileKey}`, {
+            headers: {
+                'X-Figma-Token': FIGMA_ACCESS_TOKEN
+            }
+        })
+
+        if (!response.ok) {
+            return c.json({
+                success: false,
+                error: `Figma API 오류: ${response.status}`
+            }, response.status)
+        }
+
+        const fileData = await response.json()
+
+        // 스타일 정보 추출 (색상, 텍스트 스타일 등)
+        const styles = {
+            colors: fileData.styles?.fills || {},
+            textStyles: fileData.styles?.text || {},
+            effectStyles: fileData.styles?.effects || {}
+        }
+
+        return c.json({
+            success: true,
+            styles,
+            fileName: fileData.name,
+            lastModified: fileData.lastModified
+        })
+    } catch (error) {
+        console.error('Figma 스타일 가져오기 오류:', error)
+        return c.json({
+            success: false,
+            error: error.message || '스타일 가져오기 실패'
+        }, 500)
     }
-    
-    return c.json({ 
-      success: true, 
-      styles,
-      fileName: fileData.name,
-      lastModified: fileData.lastModified
-    })
-  } catch (error) {
-    console.error('Figma 스타일 가져오기 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: error.message || '스타일 가져오기 실패' 
-    }, 500)
-  }
 })
 
 // Figma 연동 테스트 페이지
 app.get('/figma-test', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -20177,210 +20178,210 @@ app.get('/figma-test', (c) => {
 // ==================== Puppeteer API 연동 ====================
 // 스크린샷 캡처
 app.get('/api/puppeteer/screenshot', async (c) => {
-  try {
-    const url = c.req.query('url')
-    const fullPage = c.req.query('fullPage') === 'true'
-    const format = c.req.query('format') || 'png'
-    const width = parseInt(c.req.query('width') || '1920')
-    const height = parseInt(c.req.query('height') || '1080')
-    
-    if (!url) {
-      return c.json({ 
-        success: false, 
-        error: 'URL parameter is required' 
-      }, 400)
-    }
-    
-    // Browserless.io API 토큰 가져오기
-    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
-    
-    if (!token || token === 'demo_token_for_testing') {
-      return c.json({
-        success: false,
-        error: 'BROWSERLESS_API_TOKEN not configured',
-        message: '실제 Browserless.io API 토큰을 설정해주세요',
-        guide: {
-          step1: 'https://www.browserless.io 에서 가입',
-          step2: 'API 키 발급',
-          step3: '.dev.vars 파일에 BROWSERLESS_API_TOKEN 설정',
-          step4: '서버 재시작'
-        }
-      }, 401)
-    }
-    
     try {
-      // Browserless.io Screenshot API 호출
-      const browserlessUrl = `https://chrome.browserless.io/screenshot?token=${token}`
-      
-      const response = await fetch(browserlessUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        body: JSON.stringify({
-          url: url,
-          options: {
-            fullPage: fullPage,
-            type: format,
-            encoding: 'base64'
-          },
-          viewport: {
-            width: width,
-            height: height
-          }
-        })
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        return c.json({
-          success: false,
-          error: 'Browserless.io API error',
-          status: response.status,
-          details: errorText
-        }, response.status)
-      }
-      
-      // Base64 이미지 데이터
-      const screenshotBase64 = await response.text()
-      
-      // Base64를 바이너리로 변환
-      const screenshotBuffer = Uint8Array.from(atob(screenshotBase64), c => c.charCodeAt(0))
-      
-      return new Response(screenshotBuffer, {
-        headers: {
-          'Content-Type': `image/${format}`,
-          'Cache-Control': 'public, max-age=3600',
-          'X-Screenshot-URL': url
+        const url = c.req.query('url')
+        const fullPage = c.req.query('fullPage') === 'true'
+        const format = c.req.query('format') || 'png'
+        const width = parseInt(c.req.query('width') || '1920')
+        const height = parseInt(c.req.query('height') || '1080')
+
+        if (!url) {
+            return c.json({
+                success: false,
+                error: 'URL parameter is required'
+            }, 400)
         }
-      })
-    } catch (apiError: any) {
-      return c.json({
-        success: false,
-        error: 'Failed to capture screenshot',
-        message: apiError.message
-      }, 500)
+
+        // Browserless.io API 토큰 가져오기
+        const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
+
+        if (!token || token === 'demo_token_for_testing') {
+            return c.json({
+                success: false,
+                error: 'BROWSERLESS_API_TOKEN not configured',
+                message: '실제 Browserless.io API 토큰을 설정해주세요',
+                guide: {
+                    step1: 'https://www.browserless.io 에서 가입',
+                    step2: 'API 키 발급',
+                    step3: '.dev.vars 파일에 BROWSERLESS_API_TOKEN 설정',
+                    step4: '서버 재시작'
+                }
+            }, 401)
+        }
+
+        try {
+            // Browserless.io Screenshot API 호출
+            const browserlessUrl = `https://chrome.browserless.io/screenshot?token=${token}`
+
+            const response = await fetch(browserlessUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify({
+                    url: url,
+                    options: {
+                        fullPage: fullPage,
+                        type: format,
+                        encoding: 'base64'
+                    },
+                    viewport: {
+                        width: width,
+                        height: height
+                    }
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                return c.json({
+                    success: false,
+                    error: 'Browserless.io API error',
+                    status: response.status,
+                    details: errorText
+                }, response.status)
+            }
+
+            // Base64 이미지 데이터
+            const screenshotBase64 = await response.text()
+
+            // Base64를 바이너리로 변환
+            const screenshotBuffer = Uint8Array.from(atob(screenshotBase64), c => c.charCodeAt(0))
+
+            return new Response(screenshotBuffer, {
+                headers: {
+                    'Content-Type': `image/${format}`,
+                    'Cache-Control': 'public, max-age=3600',
+                    'X-Screenshot-URL': url
+                }
+            })
+        } catch (apiError: any) {
+            return c.json({
+                success: false,
+                error: 'Failed to capture screenshot',
+                message: apiError.message
+            }, 500)
+        }
+    } catch (error: any) {
+        return c.json({
+            success: false,
+            error: error.message
+        }, 500)
     }
-  } catch (error: any) {
-    return c.json({ 
-      success: false, 
-      error: error.message 
-    }, 500)
-  }
 })
 
 // PDF 생성
 app.get('/api/puppeteer/pdf', async (c) => {
-  try {
-    const url = c.req.query('url')
-    const format = c.req.query('format') || 'A4'
-    const landscape = c.req.query('landscape') === 'true'
-    
-    if (!url) {
-      return c.json({ 
-        success: false, 
-        error: 'URL parameter is required' 
-      }, 400)
-    }
-    
-    // Browserless.io API 토큰 가져오기
-    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
-    
-    if (!token || token === 'demo_token_for_testing') {
-      return c.json({
-        success: false,
-        error: 'BROWSERLESS_API_TOKEN not configured',
-        message: '실제 Browserless.io API 토큰을 설정해주세요'
-      }, 401)
-    }
-    
     try {
-      // Browserless.io PDF API 호출
-      const browserlessUrl = `https://chrome.browserless.io/pdf?token=${token}`
-      
-      const response = await fetch(browserlessUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        body: JSON.stringify({
-          url: url,
-          options: {
-            format: format,
-            landscape: landscape,
-            printBackground: true,
-            preferCSSPageSize: false
-          }
-        })
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        return c.json({
-          success: false,
-          error: 'Browserless.io API error',
-          status: response.status,
-          details: errorText
-        }, response.status)
-      }
-      
-      // PDF 바이너리 데이터
-      const pdfBuffer = await response.arrayBuffer()
-      
-      return new Response(pdfBuffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="page-${Date.now()}.pdf"`,
-          'Cache-Control': 'public, max-age=3600',
-          'X-PDF-URL': url
+        const url = c.req.query('url')
+        const format = c.req.query('format') || 'A4'
+        const landscape = c.req.query('landscape') === 'true'
+
+        if (!url) {
+            return c.json({
+                success: false,
+                error: 'URL parameter is required'
+            }, 400)
         }
-      })
-    } catch (apiError: any) {
-      return c.json({
-        success: false,
-        error: 'Failed to generate PDF',
-        message: apiError.message
-      }, 500)
+
+        // Browserless.io API 토큰 가져오기
+        const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
+
+        if (!token || token === 'demo_token_for_testing') {
+            return c.json({
+                success: false,
+                error: 'BROWSERLESS_API_TOKEN not configured',
+                message: '실제 Browserless.io API 토큰을 설정해주세요'
+            }, 401)
+        }
+
+        try {
+            // Browserless.io PDF API 호출
+            const browserlessUrl = `https://chrome.browserless.io/pdf?token=${token}`
+
+            const response = await fetch(browserlessUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify({
+                    url: url,
+                    options: {
+                        format: format,
+                        landscape: landscape,
+                        printBackground: true,
+                        preferCSSPageSize: false
+                    }
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                return c.json({
+                    success: false,
+                    error: 'Browserless.io API error',
+                    status: response.status,
+                    details: errorText
+                }, response.status)
+            }
+
+            // PDF 바이너리 데이터
+            const pdfBuffer = await response.arrayBuffer()
+
+            return new Response(pdfBuffer, {
+                headers: {
+                    'Content-Type': 'application/pdf',
+                    'Content-Disposition': `attachment; filename="page-${Date.now()}.pdf"`,
+                    'Cache-Control': 'public, max-age=3600',
+                    'X-PDF-URL': url
+                }
+            })
+        } catch (apiError: any) {
+            return c.json({
+                success: false,
+                error: 'Failed to generate PDF',
+                message: apiError.message
+            }, 500)
+        }
+    } catch (error: any) {
+        return c.json({
+            success: false,
+            error: error.message
+        }, 500)
     }
-  } catch (error: any) {
-    return c.json({ 
-      success: false, 
-      error: error.message 
-    }, 500)
-  }
 })
 
 // 웹 스크래핑
 app.post('/api/puppeteer/scrape', async (c) => {
-  try {
-    const { url, selector, waitForSelector, waitTime } = await c.req.json()
-    
-    if (!url) {
-      return c.json({ 
-        success: false, 
-        error: 'URL is required' 
-      }, 400)
-    }
-    
-    // Browserless.io API 토큰 가져오기
-    const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
-    
-    if (!token || token === 'demo_token_for_testing') {
-      return c.json({
-        success: false,
-        error: 'BROWSERLESS_API_TOKEN not configured',
-        message: '실제 Browserless.io API 토큰을 설정해주세요'
-      }, 401)
-    }
-    
     try {
-      // Browserless.io Scrape API 호출
-      const browserlessUrl = `https://chrome.browserless.io/scrape?token=${token}`
-      
-      // 스크래핑 함수 (브라우저 컨텍스트에서 실행됨)
-      const scrapeFunction = `
+        const { url, selector, waitForSelector, waitTime } = await c.req.json()
+
+        if (!url) {
+            return c.json({
+                success: false,
+                error: 'URL is required'
+            }, 400)
+        }
+
+        // Browserless.io API 토큰 가져오기
+        const token = c.env?.BROWSERLESS_API_TOKEN || process.env.BROWSERLESS_API_TOKEN
+
+        if (!token || token === 'demo_token_for_testing') {
+            return c.json({
+                success: false,
+                error: 'BROWSERLESS_API_TOKEN not configured',
+                message: '실제 Browserless.io API 토큰을 설정해주세요'
+            }, 401)
+        }
+
+        try {
+            // Browserless.io Scrape API 호출
+            const browserlessUrl = `https://chrome.browserless.io/scrape?token=${token}`
+
+            // 스크래핑 함수 (브라우저 컨텍스트에서 실행됨)
+            const scrapeFunction = `
         async () => {
           ${waitForSelector ? `await page.waitForSelector('${waitForSelector}', { timeout: 10000 });` : ''}
           ${waitTime ? `await new Promise(r => setTimeout(r, ${waitTime}));` : ''}
@@ -20406,61 +20407,61 @@ app.post('/api/puppeteer/scrape', async (c) => {
           return data;
         }
       `
-      
-      const response = await fetch(browserlessUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        body: JSON.stringify({
-          url: url,
-          elements: [
-            {
-              selector: selector || 'body'
+
+            const response = await fetch(browserlessUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache'
+                },
+                body: JSON.stringify({
+                    url: url,
+                    elements: [
+                        {
+                            selector: selector || 'body'
+                        }
+                    ],
+                    gotoOptions: {
+                        waitUntil: 'networkidle2'
+                    }
+                })
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                return c.json({
+                    success: false,
+                    error: 'Browserless.io API error',
+                    status: response.status,
+                    details: errorText
+                }, response.status)
             }
-          ],
-          gotoOptions: {
-            waitUntil: 'networkidle2'
-          }
-        })
-      })
-      
-      if (!response.ok) {
-        const errorText = await response.text()
+
+            const scrapedData = await response.json()
+
+            return c.json({
+                success: true,
+                data: scrapedData,
+                timestamp: new Date().toISOString()
+            })
+        } catch (apiError: any) {
+            return c.json({
+                success: false,
+                error: 'Failed to scrape webpage',
+                message: apiError.message
+            }, 500)
+        }
+    } catch (error: any) {
         return c.json({
-          success: false,
-          error: 'Browserless.io API error',
-          status: response.status,
-          details: errorText
-        }, response.status)
-      }
-      
-      const scrapedData = await response.json()
-      
-      return c.json({
-        success: true,
-        data: scrapedData,
-        timestamp: new Date().toISOString()
-      })
-    } catch (apiError: any) {
-      return c.json({
-        success: false,
-        error: 'Failed to scrape webpage',
-        message: apiError.message
-      }, 500)
+            success: false,
+            error: error.message
+        }, 500)
     }
-  } catch (error: any) {
-    return c.json({ 
-      success: false, 
-      error: error.message 
-    }, 500)
-  }
 })
 
 // Puppeteer 연동 테스트 페이지
 app.get('/puppeteer-test', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -20753,33 +20754,33 @@ app.get('/puppeteer-test', (c) => {
 
 // 로그인 기록 조회
 app.get('/api/mypage/login-history', async (c) => {
-  try {
-    const userId = c.req.query('userId')
-    
-    if (!userId) {
-      return c.json({ success: false, message: '사용자 ID가 필요합니다.' }, 400)
-    }
-    
-    const result = await DB.prepare(`
+    try {
+        const userId = c.req.query('userId')
+
+        if (!userId) {
+            return c.json({ success: false, message: '사용자 ID가 필요합니다.' }, 400)
+        }
+
+        const result = await DB.prepare(`
       SELECT id, login_time, ip_address, user_agent
       FROM login_history
       WHERE user_id = ?
       ORDER BY login_time DESC
       LIMIT 50
     `).bind(userId).all()
-    
-    return c.json({ success: true, history: result.results || [] })
-  } catch (error) {
-    console.error('로그인 기록 조회 오류:', error)
-    return c.json({ success: false, error: '로그인 기록 조회 실패' }, 500)
-  }
+
+        return c.json({ success: true, history: result.results || [] })
+    } catch (error) {
+        console.error('로그인 기록 조회 오류:', error)
+        return c.json({ success: false, error: '로그인 기록 조회 실패' }, 500)
+    }
 })
 
 // ==================== 마이페이지 ====================
 app.get('/mypage', optionalAuth, (c) => {
-  const user = c.get('user')
-  
-  return c.html(`
+    const user = c.get('user')
+
+    return c.html(`
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -21233,7 +21234,7 @@ app.get('/mypage', optionalAuth, (c) => {
 
 // ==================== 스마트 한국 나이 계산기 ====================
 app.get('/lifestyle/age-calculator', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -21278,10 +21279,10 @@ app.get('/lifestyle/age-calculator', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: '한국 나이 계산기'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: '한국 나이 계산기' }
+    ])}
 
         <main class="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 py-6 space-y-6">
             <!-- 페이지 헤더 -->
@@ -21325,7 +21326,7 @@ app.get('/lifestyle/age-calculator', (c) => {
                             class="w-full px-4 py-3 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
                         >
                             <option value="">선택</option>
-                            ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">${i+1}월</option>`).join('')}
+                            ${Array.from({ length: 12 }, (_, i) => `<option value="${i + 1}">${i + 1}월</option>`).join('')}
                         </select>
                     </div>
                     <div>
@@ -21335,7 +21336,7 @@ app.get('/lifestyle/age-calculator', (c) => {
                             class="w-full px-4 py-3 text-lg font-semibold border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
                         >
                             <option value="">선택</option>
-                            ${Array.from({length: 31}, (_, i) => `<option value="${i+1}">${i+1}일</option>`).join('')}
+                            ${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}">${i + 1}일</option>`).join('')}
                         </select>
                     </div>
                 </div>
@@ -21737,7 +21738,7 @@ app.get('/lifestyle/age-calculator', (c) => {
 
 // ==================== 감성 D-Day 매니저 ====================
 app.get('/lifestyle/dday-calculator', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -21807,10 +21808,10 @@ app.get('/lifestyle/dday-calculator', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: 'D-Day 매니저'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: 'D-Day 매니저' }
+    ])}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
             <!-- 페이지 헤더 -->
@@ -22401,7 +22402,7 @@ app.get('/lifestyle/dday-calculator', (c) => {
 
 // ==================== Pro JSON Studio (Developer Tool) ====================
 app.get('/lifestyle/json-formatter', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -22703,10 +22704,10 @@ app.get('/lifestyle/json-formatter', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: 'JSON Studio'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: 'JSON Studio' }
+    ])}
 
         <!-- Toolbar -->
         <div class="toolbar">
@@ -23176,7 +23177,7 @@ app.get('/lifestyle/json-formatter', (c) => {
 
 // ==================== Secret Base64 Converter (Developer Tool) ====================
 app.get('/lifestyle/base64-converter', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -23445,10 +23446,10 @@ app.get('/lifestyle/base64-converter', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '유틸리티', href: '/lifestyle'},
-          {label: 'Base64 변환'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '유틸리티', href: '/lifestyle' },
+        { label: 'Base64 변환' }
+    ])}
 
         <!-- Mode Tabs -->
         <div class="mode-tabs">
@@ -23826,183 +23827,183 @@ app.get('/lifestyle/base64-converter', (c) => {
 
 // D-Day API
 app.get('/api/dday/list', async (c) => {
-  const DB = getDB(c)
-  const userId = c.get('userId') || null
-  
-  try {
-    const { results } = await DB.prepare(
-      'SELECT * FROM dday WHERE user_id = ? ORDER BY target_date ASC'
-    ).bind(userId).all()
-    
-    return c.json({ success: true, ddays: results || [] })
-  } catch (error) {
-    console.error('D-Day 조회 오류:', error)
-    return c.json({ success: false, error: 'D-Day 조회 실패' }, 500)
-  }
+    const DB = getDB(c)
+    const userId = c.get('userId') || null
+
+    try {
+        const { results } = await DB.prepare(
+            'SELECT * FROM dday WHERE user_id = ? ORDER BY target_date ASC'
+        ).bind(userId).all()
+
+        return c.json({ success: true, ddays: results || [] })
+    } catch (error) {
+        console.error('D-Day 조회 오류:', error)
+        return c.json({ success: false, error: 'D-Day 조회 실패' }, 500)
+    }
 })
 
 app.post('/api/dday/add', async (c) => {
-  const DB = getDB(c)
-  const userId = c.get('userId') || null
-  
-  try {
-    const body = await c.req.json()
-    const { title, targetDate, mode, isAnniversary, color, emoji } = body
-    
-    const result = await DB.prepare(
-      'INSERT INTO dday (user_id, title, target_date, mode, is_anniversary, color, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(userId, title, targetDate, mode, isAnniversary ? 1 : 0, color, emoji).run()
-    
-    return c.json({ success: true, id: result.meta.last_row_id })
-  } catch (error) {
-    console.error('D-Day 추가 오류:', error)
-    return c.json({ success: false, error: 'D-Day 추가 실패' }, 500)
-  }
+    const DB = getDB(c)
+    const userId = c.get('userId') || null
+
+    try {
+        const body = await c.req.json()
+        const { title, targetDate, mode, isAnniversary, color, emoji } = body
+
+        const result = await DB.prepare(
+            'INSERT INTO dday (user_id, title, target_date, mode, is_anniversary, color, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(userId, title, targetDate, mode, isAnniversary ? 1 : 0, color, emoji).run()
+
+        return c.json({ success: true, id: result.meta.last_row_id })
+    } catch (error) {
+        console.error('D-Day 추가 오류:', error)
+        return c.json({ success: false, error: 'D-Day 추가 실패' }, 500)
+    }
 })
 
 app.delete('/api/dday/:id', async (c) => {
-  const DB = getDB(c)
-  const userId = c.get('userId') || null
-  const id = c.req.param('id')
-  
-  try {
-    await DB.prepare(
-      'DELETE FROM dday WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
-    ).bind(id, userId).run()
-    
-    return c.json({ success: true })
-  } catch (error) {
-    console.error('D-Day 삭제 오류:', error)
-    return c.json({ success: false, error: 'D-Day 삭제 실패' }, 500)
-  }
+    const DB = getDB(c)
+    const userId = c.get('userId') || null
+    const id = c.req.param('id')
+
+    try {
+        await DB.prepare(
+            'DELETE FROM dday WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
+        ).bind(id, userId).run()
+
+        return c.json({ success: true })
+    } catch (error) {
+        console.error('D-Day 삭제 오류:', error)
+        return c.json({ success: false, error: 'D-Day 삭제 실패' }, 500)
+    }
 })
 
 // ==================== 쇼핑 API ====================
 // Mock 쿠팡 핫딜 데이터 API
 app.get('/api/shopping/hotdeals', (c) => {
-  // 실제로는 쿠팡 파트너스 API를 호출해야 하지만, 
-  // 여기서는 Mock 데이터로 시연
-  const hotDeals = [
-    {
-      id: 1,
-      title: '[특가] 삼성 갤럭시 버즈2 프로 무선 이어폰',
-      originalPrice: 289000,
-      salePrice: 149000,
-      discountRate: 48,
-      image: 'https://via.placeholder.com/300x300/667eea/ffffff?text=Galaxy+Buds2+Pro',
-      link: 'https://www.coupang.com',
-      rating: 4.8,
-      reviewCount: 15234,
-      category: '전자제품',
-      platform: 'coupang',
-      badge: '로켓배송'
-    },
-    {
-      id: 2,
-      title: '[오늘만] 나이키 에어맥스 런닝화 - 신상 출시',
-      originalPrice: 159000,
-      salePrice: 89000,
-      discountRate: 44,
-      image: 'https://via.placeholder.com/300x300/f093fb/ffffff?text=Nike+Air+Max',
-      link: 'https://www.coupang.com',
-      rating: 4.7,
-      reviewCount: 8921,
-      category: '패션',
-      platform: 'coupang',
-      badge: '무료배송'
-    },
-    {
-      id: 3,
-      title: 'LG 그램 17인치 노트북 초경량 (1.35kg)',
-      originalPrice: 2590000,
-      salePrice: 1990000,
-      discountRate: 23,
-      image: 'https://via.placeholder.com/300x300/4facfe/ffffff?text=LG+Gram+17',
-      link: 'https://www.coupang.com',
-      rating: 4.9,
-      reviewCount: 3456,
-      category: '전자제품',
-      platform: 'coupang',
-      badge: '로켓배송'
-    },
-    {
-      id: 4,
-      title: '[1+1] 프리미엄 와이드 모니터 27인치 QHD',
-      originalPrice: 349000,
-      salePrice: 249000,
-      discountRate: 29,
-      image: 'https://via.placeholder.com/300x300/00d2ff/ffffff?text=Monitor+27',
-      link: 'https://www.coupang.com',
-      rating: 4.6,
-      reviewCount: 12890,
-      category: '전자제품',
-      platform: 'coupang',
-      badge: '오늘출발'
-    },
-    {
-      id: 5,
-      title: '코스트코 인기 1위 프로틴 보충제 5kg 대용량',
-      originalPrice: 129000,
-      salePrice: 69000,
-      discountRate: 47,
-      image: 'https://via.placeholder.com/300x300/feca57/ffffff?text=Protein+5kg',
-      link: 'https://www.coupang.com',
-      rating: 4.8,
-      reviewCount: 28934,
-      category: '식품',
-      platform: 'coupang',
-      badge: '베스트'
-    },
-    {
-      id: 6,
-      title: '다이슨 V15 무선청소기 최신형 + 사은품 증정',
-      originalPrice: 1390000,
-      salePrice: 999000,
-      discountRate: 28,
-      image: 'https://via.placeholder.com/300x300/ee5a6f/ffffff?text=Dyson+V15',
-      link: 'https://www.coupang.com',
-      rating: 4.9,
-      reviewCount: 5632,
-      category: '생활가전',
-      platform: 'coupang',
-      badge: '로켓직구'
-    },
-    {
-      id: 7,
-      title: 'Apple 에어팟 프로 2세대 USB-C 정품',
-      originalPrice: 359000,
-      salePrice: 289000,
-      discountRate: 19,
-      image: 'https://via.placeholder.com/300x300/764ba2/ffffff?text=AirPods+Pro+2',
-      link: 'https://www.coupang.com',
-      rating: 5.0,
-      reviewCount: 9821,
-      category: '전자제품',
-      platform: 'coupang',
-      badge: '로켓배송'
-    },
-    {
-      id: 8,
-      title: '[타임특가] 샤오미 공기청정기 4 프로 미세먼지',
-      originalPrice: 529000,
-      salePrice: 329000,
-      discountRate: 38,
-      image: 'https://via.placeholder.com/300x300/48dbfb/ffffff?text=Xiaomi+Air+4',
-      link: 'https://www.coupang.com',
-      rating: 4.7,
-      reviewCount: 7234,
-      category: '생활가전',
-      platform: 'coupang',
-      badge: '타임특가'
-    },
-  ]
+    // 실제로는 쿠팡 파트너스 API를 호출해야 하지만, 
+    // 여기서는 Mock 데이터로 시연
+    const hotDeals = [
+        {
+            id: 1,
+            title: '[특가] 삼성 갤럭시 버즈2 프로 무선 이어폰',
+            originalPrice: 289000,
+            salePrice: 149000,
+            discountRate: 48,
+            image: 'https://via.placeholder.com/300x300/667eea/ffffff?text=Galaxy+Buds2+Pro',
+            link: 'https://www.coupang.com',
+            rating: 4.8,
+            reviewCount: 15234,
+            category: '전자제품',
+            platform: 'coupang',
+            badge: '로켓배송'
+        },
+        {
+            id: 2,
+            title: '[오늘만] 나이키 에어맥스 런닝화 - 신상 출시',
+            originalPrice: 159000,
+            salePrice: 89000,
+            discountRate: 44,
+            image: 'https://via.placeholder.com/300x300/f093fb/ffffff?text=Nike+Air+Max',
+            link: 'https://www.coupang.com',
+            rating: 4.7,
+            reviewCount: 8921,
+            category: '패션',
+            platform: 'coupang',
+            badge: '무료배송'
+        },
+        {
+            id: 3,
+            title: 'LG 그램 17인치 노트북 초경량 (1.35kg)',
+            originalPrice: 2590000,
+            salePrice: 1990000,
+            discountRate: 23,
+            image: 'https://via.placeholder.com/300x300/4facfe/ffffff?text=LG+Gram+17',
+            link: 'https://www.coupang.com',
+            rating: 4.9,
+            reviewCount: 3456,
+            category: '전자제품',
+            platform: 'coupang',
+            badge: '로켓배송'
+        },
+        {
+            id: 4,
+            title: '[1+1] 프리미엄 와이드 모니터 27인치 QHD',
+            originalPrice: 349000,
+            salePrice: 249000,
+            discountRate: 29,
+            image: 'https://via.placeholder.com/300x300/00d2ff/ffffff?text=Monitor+27',
+            link: 'https://www.coupang.com',
+            rating: 4.6,
+            reviewCount: 12890,
+            category: '전자제품',
+            platform: 'coupang',
+            badge: '오늘출발'
+        },
+        {
+            id: 5,
+            title: '코스트코 인기 1위 프로틴 보충제 5kg 대용량',
+            originalPrice: 129000,
+            salePrice: 69000,
+            discountRate: 47,
+            image: 'https://via.placeholder.com/300x300/feca57/ffffff?text=Protein+5kg',
+            link: 'https://www.coupang.com',
+            rating: 4.8,
+            reviewCount: 28934,
+            category: '식품',
+            platform: 'coupang',
+            badge: '베스트'
+        },
+        {
+            id: 6,
+            title: '다이슨 V15 무선청소기 최신형 + 사은품 증정',
+            originalPrice: 1390000,
+            salePrice: 999000,
+            discountRate: 28,
+            image: 'https://via.placeholder.com/300x300/ee5a6f/ffffff?text=Dyson+V15',
+            link: 'https://www.coupang.com',
+            rating: 4.9,
+            reviewCount: 5632,
+            category: '생활가전',
+            platform: 'coupang',
+            badge: '로켓직구'
+        },
+        {
+            id: 7,
+            title: 'Apple 에어팟 프로 2세대 USB-C 정품',
+            originalPrice: 359000,
+            salePrice: 289000,
+            discountRate: 19,
+            image: 'https://via.placeholder.com/300x300/764ba2/ffffff?text=AirPods+Pro+2',
+            link: 'https://www.coupang.com',
+            rating: 5.0,
+            reviewCount: 9821,
+            category: '전자제품',
+            platform: 'coupang',
+            badge: '로켓배송'
+        },
+        {
+            id: 8,
+            title: '[타임특가] 샤오미 공기청정기 4 프로 미세먼지',
+            originalPrice: 529000,
+            salePrice: 329000,
+            discountRate: 38,
+            image: 'https://via.placeholder.com/300x300/48dbfb/ffffff?text=Xiaomi+Air+4',
+            link: 'https://www.coupang.com',
+            rating: 4.7,
+            reviewCount: 7234,
+            category: '생활가전',
+            platform: 'coupang',
+            badge: '타임특가'
+        },
+    ]
 
-  return c.json(hotDeals)
+    return c.json(hotDeals)
 })
 
 // ==================== 쇼핑 메인 페이지 ====================
 app.get('/shopping', (c) => {
-  return c.html(`
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
     <head>
@@ -24017,9 +24018,9 @@ app.get('/shopping', (c) => {
         ${getStickyHeader()}
         
         ${getBreadcrumb([
-          {label: '홈', href: '/'},
-          {label: '쇼핑', href: '/shopping'}
-        ])}
+        { label: '홈', href: '/' },
+        { label: '쇼핑', href: '/shopping' }
+    ])}
 
         <main class="max-w-7xl mx-auto px-4 py-8">
             <div class="text-center py-20">
@@ -24042,37 +24043,37 @@ app.get('/shopping', (c) => {
 // ==================== 2048 게임 API ====================
 // 2048 점수 저장
 app.post('/api/game2048/score', requireAuth, async (c) => {
-  const DB = getDB(c)
-  const user = c.get('user') as SessionUser
-  const { score, highest_tile, moves } = await c.req.json()
-  
-  try {
-    const result = await DB.prepare(`
+    const DB = getDB(c)
+    const user = c.get('user') as SessionUser
+    const { score, highest_tile, moves } = await c.req.json()
+
+    try {
+        const result = await DB.prepare(`
       INSERT INTO game2048_scores (score, highest_tile, moves, player_name, user_id, created_at)
       VALUES (?, ?, ?, ?, ?, datetime('now'))
     `).bind(score, highest_tile, moves, user.name, user.id).run()
-    
-    console.log('✅ 2048 기록 저장 성공:', { score, highest_tile, moves, username: user.name, userId: user.id })
-    
-    return c.json({
-      success: true,
-      message: '기록이 저장되었습니다'
-    })
-  } catch (error: any) {
-    console.error('❌ 2048 기록 저장 오류:', error)
-    return c.json({
-      success: false,
-      message: '기록 저장 중 오류가 발생했습니다: ' + error.message
-    }, 500)
-  }
+
+        console.log('✅ 2048 기록 저장 성공:', { score, highest_tile, moves, username: user.name, userId: user.id })
+
+        return c.json({
+            success: true,
+            message: '기록이 저장되었습니다'
+        })
+    } catch (error: any) {
+        console.error('❌ 2048 기록 저장 오류:', error)
+        return c.json({
+            success: false,
+            message: '기록 저장 중 오류가 발생했습니다: ' + error.message
+        }, 500)
+    }
 })
 
 // 2048 리더보드
 app.get('/api/game2048/leaderboard', async (c) => {
-  const DB = getDB(c)
-  
-  try {
-    const result = await DB.prepare(`
+    const DB = getDB(c)
+
+    try {
+        const result = await DB.prepare(`
       SELECT 
         g.score,
         g.highest_tile,
@@ -24084,93 +24085,93 @@ app.get('/api/game2048/leaderboard', async (c) => {
       ORDER BY g.score DESC, g.created_at ASC
       LIMIT 10
     `).all()
-    
-    return c.json({
-      success: true,
-      scores: result.results || []
-    })
-  } catch (error) {
-    console.error('2048 리더보드 조회 오류:', error)
-    return c.json({
-      success: false,
-      message: '리더보드 조회 중 오류가 발생했습니다',
-      scores: []
-    })
-  }
+
+        return c.json({
+            success: true,
+            scores: result.results || []
+        })
+    } catch (error) {
+        console.error('2048 리더보드 조회 오류:', error)
+        return c.json({
+            success: false,
+            message: '리더보드 조회 중 오류가 발생했습니다',
+            scores: []
+        })
+    }
 })
 
 // ==================== 환율 API ====================
 // GET /api/exchange/rates - 전체 환율 정보 조회
 app.get('/api/exchange/rates', async (c) => {
-  try {
-    const { getMockExchangeRates } = await import('./utils/exchangeRateProvider')
-    const rates = getMockExchangeRates()
-    
-    return c.json({
-      success: true,
-      rates,
-      timestamp: new Date().toISOString(),
-      note: '매매기준율 기준 / 실제 환전 시 수수료가 추가될 수 있습니다.'
-    })
-  } catch (error) {
-    console.error('환율 정보 조회 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: '환율 정보 조회 실패' 
-    }, 500)
-  }
+    try {
+        const { getMockExchangeRates } = await import('./utils/exchangeRateProvider')
+        const rates = getMockExchangeRates()
+
+        return c.json({
+            success: true,
+            rates,
+            timestamp: new Date().toISOString(),
+            note: '매매기준율 기준 / 실제 환전 시 수수료가 추가될 수 있습니다.'
+        })
+    } catch (error) {
+        console.error('환율 정보 조회 오류:', error)
+        return c.json({
+            success: false,
+            error: '환율 정보 조회 실패'
+        }, 500)
+    }
 })
 
 // GET /api/exchange/convert?from=USD&to=KRW&amount=100
 app.get('/api/exchange/convert', async (c) => {
-  const from = c.req.query('from') || 'USD'
-  const to = c.req.query('to') || 'KRW'
-  const amountStr = c.req.query('amount') || '1'
-  const amount = parseFloat(amountStr)
-  
-  if (isNaN(amount) || amount <= 0) {
-    return c.json({
-      success: false,
-      error: '유효하지 않은 금액입니다.'
-    }, 400)
-  }
-  
-  try {
-    const { convertCurrency, getMockExchangeRates } = await import('./utils/exchangeRateProvider')
-    const rates = getMockExchangeRates()
-    
-    const result = convertCurrency(from, to, amount)
-    
-    // 환율 정보
-    const fromRate = from === 'KRW' ? 1 : rates[from]?.rate || 1
-    const toRate = to === 'KRW' ? 1 : rates[to]?.rate || 1
-    const exchangeRate = fromRate / toRate
-    
-    return c.json({
-      success: true,
-      from,
-      to,
-      amount,
-      result: Math.round(result * 100) / 100,
-      rate: Math.round(exchangeRate * 10000) / 10000,
-      timestamp: new Date().toISOString()
-    })
-  } catch (error) {
-    console.error('환율 계산 오류:', error)
-    return c.json({ 
-      success: false, 
-      error: '환율 계산 실패' 
-    }, 500)
-  }
+    const from = c.req.query('from') || 'USD'
+    const to = c.req.query('to') || 'KRW'
+    const amountStr = c.req.query('amount') || '1'
+    const amount = parseFloat(amountStr)
+
+    if (isNaN(amount) || amount <= 0) {
+        return c.json({
+            success: false,
+            error: '유효하지 않은 금액입니다.'
+        }, 400)
+    }
+
+    try {
+        const { convertCurrency, getMockExchangeRates } = await import('./utils/exchangeRateProvider')
+        const rates = getMockExchangeRates()
+
+        const result = convertCurrency(from, to, amount)
+
+        // 환율 정보
+        const fromRate = from === 'KRW' ? 1 : rates[from]?.rate || 1
+        const toRate = to === 'KRW' ? 1 : rates[to]?.rate || 1
+        const exchangeRate = fromRate / toRate
+
+        return c.json({
+            success: true,
+            from,
+            to,
+            amount,
+            result: Math.round(result * 100) / 100,
+            rate: Math.round(exchangeRate * 10000) / 10000,
+            timestamp: new Date().toISOString()
+        })
+    } catch (error) {
+        console.error('환율 계산 오류:', error)
+        return c.json({
+            success: false,
+            error: '환율 계산 실패'
+        }, 500)
+    }
 })
 
 // ==================== 로그인/회원가입 페이지 ====================
 
 // 로그인 페이지
 app.get('/login', async (c) => {
-  const redirect = c.req.query('redirect') || '/'
-  
-  return c.html(`
+    const redirect = c.req.query('redirect') || '/'
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -24367,9 +24368,9 @@ app.get('/login', async (c) => {
 
 // 회원가입 페이지
 app.get('/signup', async (c) => {
-  const redirect = c.req.query('redirect') || '/'
-  
-  return c.html(`
+    const redirect = c.req.query('redirect') || '/'
+
+    return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
     <head>
@@ -24666,153 +24667,153 @@ app.get('/signup', async (c) => {
 
 // 회원 정보 조회 API
 app.get('/api/auth/me', async (c) => {
-  try {
-    const user = await checkSession(c)
-    
-    if (!user) {
-      return c.json({ 
-        success: true, 
-        loggedIn: false,
-        user: null
-      })
-    }
+    try {
+        const user = await checkSession(c)
 
-    return c.json({ 
-      success: true, 
-      loggedIn: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        level: user.level
-      }
-    })
-  } catch (error) {
-    console.error('사용자 정보 조회 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '사용자 정보 조회 실패' 
-    }, 500)
-  }
+        if (!user) {
+            return c.json({
+                success: true,
+                loggedIn: false,
+                user: null
+            })
+        }
+
+        return c.json({
+            success: true,
+            loggedIn: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                level: user.level
+            }
+        })
+    } catch (error) {
+        console.error('사용자 정보 조회 오류:', error)
+        return c.json({
+            success: false,
+            message: '사용자 정보 조회 실패'
+        }, 500)
+    }
 })
 
 // 로그인 API
 app.post('/api/auth/login', async (c) => {
-  try {
-    const { email, password } = await c.req.json()
+    try {
+        const { email, password } = await c.req.json()
 
-    // 입력 검증
-    if (!email || !password) {
-      return c.json({ 
-        success: false, 
-        message: '이메일과 비밀번호를 입력해주세요' 
-      }, 400)
+        // 입력 검증
+        if (!email || !password) {
+            return c.json({
+                success: false,
+                message: '이메일과 비밀번호를 입력해주세요'
+            }, 400)
+        }
+
+        // 사용자 조회
+        const user = await getDB(c)
+            .prepare('SELECT * FROM users WHERE email = ?')
+            .bind(email)
+            .first()
+
+        if (!user) {
+            return c.json({
+                success: false,
+                message: '이메일 또는 비밀번호가 올바르지 않습니다'
+            }, 401)
+        }
+
+        // 계정 상태 확인
+        if (user.status !== 'active') {
+            return c.json({
+                success: false,
+                message: '비활성화된 계정입니다. 관리자에게 문의하세요'
+            }, 403)
+        }
+
+        // 비밀번호 검증
+        const isValid = await verifyPassword(password, user.password as string)
+
+        if (!isValid) {
+            return c.json({
+                success: false,
+                message: '이메일 또는 비밀번호가 올바르지 않습니다'
+            }, 401)
+        }
+
+        // 세션 생성
+        await createSession(c, user.id as number)
+
+        // 마지막 로그인 시간 업데이트
+        await getDB(c)
+            .prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?")
+            .bind(user.id)
+            .run()
+
+        // 로그인 기록 저장
+        const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown'
+        const userAgent = c.req.header('User-Agent') || 'unknown'
+
+        await getDB(c)
+            .prepare('INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)')
+            .bind(user.id, ipAddress, userAgent)
+            .run()
+
+        return c.json({
+            success: true,
+            message: '로그인 성공',
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                level: user.level
+            }
+        })
+    } catch (error) {
+        console.error('로그인 오류:', error)
+        return c.json({
+            success: false,
+            message: '로그인 처리 중 오류가 발생했습니다'
+        }, 500)
     }
-
-    // 사용자 조회
-    const user = await getDB(c)
-      .prepare('SELECT * FROM users WHERE email = ?')
-      .bind(email)
-      .first()
-
-    if (!user) {
-      return c.json({ 
-        success: false, 
-        message: '이메일 또는 비밀번호가 올바르지 않습니다' 
-      }, 401)
-    }
-
-    // 계정 상태 확인
-    if (user.status !== 'active') {
-      return c.json({ 
-        success: false, 
-        message: '비활성화된 계정입니다. 관리자에게 문의하세요' 
-      }, 403)
-    }
-
-    // 비밀번호 검증
-    const isValid = await verifyPassword(password, user.password as string)
-
-    if (!isValid) {
-      return c.json({ 
-        success: false, 
-        message: '이메일 또는 비밀번호가 올바르지 않습니다' 
-      }, 401)
-    }
-
-    // 세션 생성
-    await createSession(c, user.id as number)
-
-    // 마지막 로그인 시간 업데이트
-    await getDB(c)
-      .prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?")
-      .bind(user.id)
-      .run()
-
-    // 로그인 기록 저장
-    const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown'
-    const userAgent = c.req.header('User-Agent') || 'unknown'
-    
-    await getDB(c)
-      .prepare('INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)')
-      .bind(user.id, ipAddress, userAgent)
-      .run()
-
-    return c.json({ 
-      success: true,
-      message: '로그인 성공',
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        level: user.level
-      }
-    })
-  } catch (error) {
-    console.error('로그인 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '로그인 처리 중 오류가 발생했습니다' 
-    }, 500)
-  }
 })
 
 // 세션 확인 API
 // 세션 확인 핸들러 (공통 로직)
 const handleAuthCheck = async (c: any) => {
-  try {
-    const user = await checkSession(c)
-    
-    if (!user) {
-      return c.json({ 
-        success: false,
-        loggedIn: false,
-        message: '로그인이 필요합니다'
-      })
+    try {
+        const user = await checkSession(c)
+
+        if (!user) {
+            return c.json({
+                success: false,
+                loggedIn: false,
+                message: '로그인이 필요합니다'
+            })
+        }
+
+        return c.json({
+            success: true,
+            loggedIn: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                level: user.level,
+                status: user.status
+            }
+        })
+    } catch (error) {
+        console.error('세션 확인 오류:', error)
+        return c.json({
+            success: false,
+            loggedIn: false,
+            message: '세션 확인 중 오류가 발생했습니다'
+        }, 500)
     }
-    
-    return c.json({ 
-      success: true,
-      loggedIn: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        level: user.level,
-        status: user.status
-      }
-    })
-  } catch (error) {
-    console.error('세션 확인 오류:', error)
-    return c.json({ 
-      success: false,
-      loggedIn: false,
-      message: '세션 확인 중 오류가 발생했습니다' 
-    }, 500)
-  }
 }
 
 // 세션 확인 API
@@ -24823,102 +24824,102 @@ app.get('/api/auth/me', handleAuthCheck)
 
 // 로그아웃 API
 app.post('/api/auth/logout', async (c) => {
-  try {
-    await deleteSession(c)
-    
-    return c.json({ 
-      success: true,
-      message: '로그아웃 성공'
-    })
-  } catch (error) {
-    console.error('로그아웃 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '로그아웃 처리 중 오류가 발생했습니다' 
-    }, 500)
-  }
+    try {
+        await deleteSession(c)
+
+        return c.json({
+            success: true,
+            message: '로그아웃 성공'
+        })
+    } catch (error) {
+        console.error('로그아웃 오류:', error)
+        return c.json({
+            success: false,
+            message: '로그아웃 처리 중 오류가 발생했습니다'
+        }, 500)
+    }
 })
 
 // 회원가입 API
 app.post('/api/auth/signup', async (c) => {
-  try {
-    const { email, password, name, phone } = await c.req.json()
+    try {
+        const { email, password, name, phone } = await c.req.json()
 
-    // 입력 검증
-    if (!email || !password || !name) {
-      return c.json({ 
-        success: false, 
-        message: '필수 항목을 모두 입력해주세요' 
-      }, 400)
-    }
+        // 입력 검증
+        if (!email || !password || !name) {
+            return c.json({
+                success: false,
+                message: '필수 항목을 모두 입력해주세요'
+            }, 400)
+        }
 
-    // 이메일 형식 검증
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return c.json({ 
-        success: false, 
-        message: '올바른 이메일 형식이 아닙니다' 
-      }, 400)
-    }
+        // 이메일 형식 검증
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(email)) {
+            return c.json({
+                success: false,
+                message: '올바른 이메일 형식이 아닙니다'
+            }, 400)
+        }
 
-    // 비밀번호 길이 검증
-    if (password.length < 6) {
-      return c.json({ 
-        success: false, 
-        message: '비밀번호는 최소 6자 이상이어야 합니다' 
-      }, 400)
-    }
+        // 비밀번호 길이 검증
+        if (password.length < 6) {
+            return c.json({
+                success: false,
+                message: '비밀번호는 최소 6자 이상이어야 합니다'
+            }, 400)
+        }
 
-    // 데이터베이스 어댑터 가져오기
-    const DB = getDB(c)
+        // 데이터베이스 어댑터 가져오기
+        const DB = getDB(c)
 
-    // 중복 이메일 확인
-    const existingUser = await DB
-      .prepare('SELECT id FROM users WHERE email = ?')
-      .bind(email)
-      .first()
+        // 중복 이메일 확인
+        const existingUser = await DB
+            .prepare('SELECT id FROM users WHERE email = ?')
+            .bind(email)
+            .first()
 
-    if (existingUser) {
-      return c.json({ 
-        success: false, 
-        message: '이미 사용 중인 이메일입니다' 
-      }, 409)
-    }
+        if (existingUser) {
+            return c.json({
+                success: false,
+                message: '이미 사용 중인 이메일입니다'
+            }, 409)
+        }
 
-    // 비밀번호 해싱
-    const hashedPassword = await hashPassword(password)
+        // 비밀번호 해싱
+        const hashedPassword = await hashPassword(password)
 
-    // 사용자 생성
-    const result = await DB
-      .prepare(`
+        // 사용자 생성
+        const result = await DB
+            .prepare(`
         INSERT INTO users (email, password, name, phone, level, status, role) 
         VALUES (?, ?, ?, ?, 1, 'active', 'user')
       `)
-      .bind(email, hashedPassword, name, phone || null)
-      .run()
+            .bind(email, hashedPassword, name, phone || null)
+            .run()
 
-    // 자동 로그인 (세션 생성)
-    const userId = result.meta.last_row_id as number
-    await createSession(c, userId)
+        // 자동 로그인 (세션 생성)
+        const userId = result.meta.last_row_id as number
+        await createSession(c, userId)
 
-    return c.json({ 
-      success: true,
-      message: '회원가입 성공',
-      user: {
-        id: userId,
-        email,
-        name,
-        role: 'user',
-        level: 1
-      }
-    })
-  } catch (error) {
-    console.error('회원가입 오류:', error)
-    return c.json({ 
-      success: false, 
-      message: '회원가입 처리 중 오류가 발생했습니다' 
-    }, 500)
-  }
+        return c.json({
+            success: true,
+            message: '회원가입 성공',
+            user: {
+                id: userId,
+                email,
+                name,
+                role: 'user',
+                level: 1
+            }
+        })
+    } catch (error) {
+        console.error('회원가입 오류:', error)
+        return c.json({
+            success: false,
+            message: '회원가입 처리 중 오류가 발생했습니다'
+        }, 500)
+    }
 })
 
 // ==================== MyPage API Routes ====================
