@@ -1075,189 +1075,252 @@ app.get('/', async (c) => {
                 </div>
             </nav>
 
-            <!-- 제휴 배너 -->
-            <section class="mb-8 max-w-6xl mx-auto px-4">
-                <div>
-                    <a href="https://link.coupang.com/a/dwChmy" target="_blank" rel="noopener noreferrer" referrerpolicy="unsafe-url" class="block">
-                        <img src="https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90" 
-                             alt="쿠팡 파트너스 배너" 
-                             class="h-auto max-w-full"
-                             style="max-width: 728px; max-height: 90px;">
-                    </a>
-                </div>
-            </section>
-
-            <!-- 날씨 위젯 -->
-            <section class="mb-8 max-w-6xl mx-auto px-4">
-                <div class="weather-widget p-5">
-                    <div class="flex items-center justify-between">
-                        <!-- 현재 날씨 -->
-                        <div class="flex items-center gap-4">
-                            <div class="text-4xl" id="weather-icon">
-                                <i class="fas fa-cloud-sun text-blue-400"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-baseline gap-2">
-                                    <span class="text-3xl font-bold text-gray-900" id="weather-temp">1.3°</span>
-                                    <span class="text-base text-gray-600 font-normal">비</span>
-                                </div>
-                                <div class="text-sm text-gray-500 mt-1 font-normal" id="weather-location">서울</div>
-                            </div>
-                        </div>
-                        
-                        <!-- 미세먼지/초미세먼지 -->
-                        <div class="flex gap-4 sm:gap-8">
-                            <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1.5 font-medium">미세</div>
-                                <div class="text-base font-bold">
-                                    <span class="text-blue-600">좋음</span>
-                                </div>
-                            </div>
-                            <div class="text-center">
-                                <div class="text-xs text-gray-500 mb-1.5 font-medium">초미세</div>
-                                <div class="text-base font-bold">
-                                    <span class="text-blue-600">좋음</span>
-                                </div>
-                            </div>
-                        </div>
+            <!-- 메인 2컬럼 레이아웃 -->
+            <div class="flex flex-col md:flex-row gap-8 mb-12">
+                <!-- 왼쪽 컬럼: 배너, 날씨, 뉴스 -->
+                <div style="width: 728px; flex-shrink: 0;">
+                    <!-- 제휴 배너 -->
+                    <div class="mb-4">
+                        <a href="https://link.coupang.com/a/dwChmy" target="_blank" rel="noopener noreferrer" referrerpolicy="unsafe-url" class="block">
+                            <img src="https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90" 
+                                 alt="쿠팡 파트너스 배너" 
+                                 class="h-auto max-w-full"
+                                 style="max-width: 728px; max-height: 90px;">
+                        </a>
                     </div>
-                </div>
-            </section>
 
-            <script>
-                // 날씨 API 호출 (OpenWeatherMap 무료 API 사용 가능)
-                async function loadWeather() {
-                    try {
-                        // Geolocation으로 현재 위치 가져오기
-                        if (navigator.geolocation) {
-                            navigator.geolocation.getCurrentPosition(async (position) => {
-                                const lat = position.coords.latitude;
-                                const lon = position.coords.longitude;
-                                
-                                // 날씨 아이콘 매핑
-                                const weatherIcons = {
-                                    'Clear': 'fa-sun text-yellow-400',
-                                    'Clouds': 'fa-cloud text-gray-400',
-                                    'Rain': 'fa-cloud-rain text-blue-500',
-                                    'Snow': 'fa-snowflake text-blue-200',
-                                    'Drizzle': 'fa-cloud-rain text-blue-400',
-                                    'Thunderstorm': 'fa-bolt text-yellow-600',
-                                    'Mist': 'fa-smog text-gray-400',
-                                    'Fog': 'fa-smog text-gray-400'
-                                };
-                                
-                                // 간단한 날씨 표시 (실제로는 API 호출 필요)
-                                const weatherDesc = ['비', '맑음', '흐림', '눈'][Math.floor(Math.random() * 4)];
-                                const temp = (Math.random() * 20 - 5).toFixed(1);
-                                
-                                document.getElementById('weather-temp').textContent = temp + '°';
-                                
-                                // 날씨 아이콘 업데이트
-                                const iconClasses = weatherDesc === '비' ? 'fa-cloud-rain text-blue-500' :
-                                                   weatherDesc === '맑음' ? 'fa-sun text-yellow-400' :
-                                                   weatherDesc === '흐림' ? 'fa-cloud text-gray-400' :
-                                                   'fa-snowflake text-blue-200';
-                                                   
-                                document.getElementById('weather-icon').innerHTML = '<i class="fas ' + iconClasses + '"></i>';
-                            }, (error) => {
-                                console.log('위치 정보를 가져올 수 없습니다:', error);
-                            });
-                        }
-                    } catch (error) {
-                        console.error('날씨 정보 로드 실패:', error);
-                    }
-                }
-                
-                // 페이지 로드 시 날씨 정보 가져오기
-                loadWeather();
-            </script>
-
-            <!-- 뉴스 & 트렌드 섹션 -->
-            <div class="grid md:grid-cols-2 gap-8 mb-12">
-                <!-- 실시간 뉴스 -->
-                <div class="content-card p-8">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
-                            <i class="fas fa-newspaper text-white text-lg"></i>
-                        </div>
-                        <span>실시간 뉴스</span>
-                        <span class="ml-3 text-xs bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1.5 rounded-full pulse-animation font-bold shadow-lg">LIVE</span>
-                    </h3>
-                    <div class="space-y-2" id="latest-news">
-                        ${latestNews.length > 0 ? latestNews.map((news, index) => {
-        const timeAgo = getTimeAgo(news.created_at)
-        const categoryColor = getCategoryColor(news.category)
-        return `
-                            <div onclick="openNewsLink('${news.link}')" class="block hover:bg-gray-50 py-3 px-4 rounded-lg transition-all group border border-transparent hover:border-gray-200 cursor-pointer">
-                                <div class="flex items-start gap-3">
-                                    <span class="rank-number flex-shrink-0 mt-1">${index + 1}</span>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="badge ${categoryColor}">${getCategoryName(news.category)}</span>
-                                            <span class="text-gray-500 text-xs font-bold flex-shrink-0">${timeAgo}</span>
-                                        </div>
-                                        <p class="text-gray-900 group-hover:text-blue-600 font-semibold text-sm leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
+                    <!-- 날씨 위젯 -->
+                    <div class="weather-widget p-5 mb-4">
+                        <div class="flex items-center justify-between">
+                            <!-- 현재 날씨 -->
+                            <div class="flex items-center gap-4">
+                                <div class="text-4xl" id="weather-icon">
+                                    <i class="fas fa-cloud-sun text-blue-400"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-3xl font-bold text-gray-900" id="weather-temp">1.3°</span>
+                                        <span class="text-base text-gray-600 font-normal">비</span>
+                                    </div>
+                                    <div class="text-sm text-gray-500 mt-1 font-normal" id="weather-location">서울</div>
+                                </div>
+                            </div>
+                            
+                            <!-- 미세먼지/초미세먼지 -->
+                            <div class="flex gap-4 sm:gap-8">
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-500 mb-1.5 font-medium">미세</div>
+                                    <div class="text-base font-bold">
+                                        <span class="text-blue-600">좋음</span>
+                                    </div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-xs text-gray-500 mb-1.5 font-medium">초미세</div>
+                                    <div class="text-base font-bold">
+                                        <span class="text-blue-600">좋음</span>
                                     </div>
                                 </div>
                             </div>
-                          `
+                        </div>
+                    </div>
+
+                    <!-- 실시간 뉴스 -->
+                    <div class="content-card p-8">
+                        <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
+                                <i class="fas fa-newspaper text-white text-lg"></i>
+                            </div>
+                            <span>실시간 뉴스</span>
+                            <span class="ml-3 text-xs bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1.5 rounded-full pulse-animation font-bold shadow-lg">LIVE</span>
+                        </h3>
+                        <div class="space-y-2" id="latest-news">
+                            ${latestNews.length > 0 ? latestNews.map((news, index) => {
+        const timeAgo = getTimeAgo(news.created_at)
+        const categoryColor = getCategoryColor(news.category)
+        return `
+                                <div onclick="openNewsLink('${news.link}')" class="block hover:bg-gray-50 py-3 px-4 rounded-lg transition-all group border border-transparent hover:border-gray-200 cursor-pointer">
+                                    <div class="flex items-start gap-3">
+                                        <span class="rank-number flex-shrink-0 mt-1">${index + 1}</span>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span class="badge ${categoryColor}">${getCategoryName(news.category)}</span>
+                                                <span class="text-gray-500 text-xs font-bold flex-shrink-0">${timeAgo}</span>
+                                            </div>
+                                            <p class="text-gray-900 group-hover:text-blue-600 font-semibold text-sm leading-snug line-clamp-2">${escapeHtml(news.title)}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                              `
     }).join('') : `
-                            <div class="text-center py-12 text-gray-500">
-                                <i class="fas fa-newspaper text-5xl mb-4 text-gray-300"></i>
-                                <p class="font-medium">뉴스를 불러오는 중입니다...</p>
-                                <a href="/news" class="mt-4 inline-block text-blue-700 hover:text-blue-800 font-bold">
-                                    뉴스 페이지로 이동 →
+                                <div class="text-center py-12 text-gray-500">
+                                    <i class="fas fa-newspaper text-5xl mb-4 text-gray-300"></i>
+                                    <p class="font-medium">뉴스를 불러오는 중입니다...</p>
+                                    <a href="/news" class="mt-4 inline-block text-blue-700 hover:text-blue-800 font-bold">
+                                        뉴스 페이지로 이동 →
+                                    </a>
+                                </div>
+                            `}
+                        </div>
+                        ${latestNews.length > 0 ? `
+                            <div class="mt-8 text-center">
+                                <a href="/news" class="inline-flex items-center px-8 py-3 accent-orange text-white rounded-xl hover:shadow-xl transition-all accent-orange-hover font-bold shine">
+                                    <span>더 많은 뉴스 보기</span>
+                                    <i class="fas fa-arrow-right ml-2"></i>
                                 </a>
                             </div>
-                        `}
+                        ` : ''}
                     </div>
-                    ${latestNews.length > 0 ? `
-                        <div class="mt-8 text-center">
-                            <a href="/news" class="inline-flex items-center px-8 py-3 accent-orange text-white rounded-xl hover:shadow-xl transition-all accent-orange-hover font-bold shine">
-                                <span>더 많은 뉴스 보기</span>
-                                <i class="fas fa-arrow-right ml-2"></i>
-                            </a>
-                        </div>
-                    ` : ''}
                 </div>
 
-                <!-- 트렌드 토픽 -->
-                <div class="content-card p-8">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-3">
-                            <i class="fas fa-chart-line text-white text-lg"></i>
+                <!-- 오른쪽 컬럼: 마이페이지 카드 + 실시간 트렌드 -->
+                <div class="flex-1 flex flex-col gap-4">
+                    <!-- 마이페이지 카드 -->
+                    <div class="content-card p-6" id="mypage-widget">
+                        <!-- 로딩 상태 -->
+                        <div id="mypage-loading" class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
                         </div>
-                        <span>실시간 트렌드</span>
-                        <span class="ml-3 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-3 py-1.5 rounded-full pulse-animation font-bold shadow-lg">HOT</span>
-                    </h3>
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between py-3 px-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200">
-                            <div class="flex items-center">
-                                <span class="rank-number mr-4">1</span>
-                                <span class="text-gray-900 font-semibold">인공지능 기술</span>
+                        
+                        <!-- 로그인 상태 (기본 숨김) -->
+                        <div id="mypage-logged-in" class="hidden">
+                            <div class="flex items-start gap-4 mb-4">
+                                <!-- 프로필 이미지 -->
+                                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-user text-white text-2xl"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span id="mypage-username" class="text-lg font-bold text-gray-900">사용자</span>
+                                        <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">회원</span>
+                                    </div>
+                                    <p id="mypage-email" class="text-sm text-gray-500 truncate">user@example.com</p>
+                                    <div class="flex items-center gap-3 mt-2 text-sm">
+                                        <span class="text-gray-600"><i class="fas fa-bookmark text-yellow-500 mr-1"></i>북마크 <span id="mypage-bookmarks" class="font-bold text-gray-900">0</span></span>
+                                    </div>
+                                </div>
+                                <button onclick="logout()" class="text-sm text-gray-500 hover:text-red-500 transition-colors px-3 py-1 border border-gray-300 rounded-lg hover:border-red-300">
+                                    <i class="fas fa-sign-out-alt mr-1"></i>로그아웃
+                                </button>
                             </div>
-                            <i class="fas fa-arrow-up text-green-500 text-sm"></i>
+                            <!-- 퀵 메뉴 -->
+                            <div class="grid grid-cols-4 gap-2 pt-4 border-t border-gray-100">
+                                <a href="/mypage" class="text-center py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-user-circle text-blue-500 text-lg mb-1"></i>
+                                    <p class="text-xs text-gray-600 font-medium">마이페이지</p>
+                                </a>
+                                <a href="/bookmarks" class="text-center py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-bookmark text-yellow-500 text-lg mb-1"></i>
+                                    <p class="text-xs text-gray-600 font-medium">북마크</p>
+                                </a>
+                                <a href="/game/simple" class="text-center py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-gamepad text-purple-500 text-lg mb-1"></i>
+                                    <p class="text-xs text-gray-600 font-medium">게임</p>
+                                </a>
+                                <a href="/news" class="text-center py-2 hover:bg-gray-50 rounded-lg transition-colors">
+                                    <i class="fas fa-newspaper text-blue-500 text-lg mb-1"></i>
+                                    <p class="text-xs text-gray-600 font-medium">뉴스</p>
+                                </a>
+                            </div>
                         </div>
-                        <div class="flex items-center justify-between py-3 px-4 hover:bg-gray-50 rounded-lg transition-all border border-transparent hover:border-gray-200">
-                            <div class="flex items-center">
-                                <span class="rank-number mr-3">2</span>
-                                <span class="text-gray-900 font-semibold">날씨 정보</span>
+                        
+                        <!-- 로그아웃 상태 (기본 숨김) -->
+                        <div id="mypage-logged-out" class="hidden">
+                            <div class="text-center py-4">
+                                <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                                    <i class="fas fa-user text-gray-400 text-3xl"></i>
+                                </div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-2">Faith Portal에 오신 것을 환영합니다</h3>
+                                <p class="text-sm text-gray-500 mb-4">로그인하고 더 많은 서비스를 이용하세요</p>
+                                <div class="flex gap-3 justify-center">
+                                    <a href="/login" class="px-6 py-2.5 bg-white border-2 border-green-500 text-green-600 rounded-lg font-bold hover:bg-green-50 transition-colors">
+                                        <i class="fas fa-sign-in-alt mr-1"></i>로그인
+                                    </a>
+                                    <a href="/signup" class="px-6 py-2.5 bg-green-500 text-white rounded-lg font-bold hover:bg-green-600 transition-colors shadow-lg">
+                                        <i class="fas fa-user-plus mr-1"></i>회원가입
+                                    </a>
+                                </div>
                             </div>
-                            <i class="fas fa-arrow-up text-green-500 text-sm"></i>
                         </div>
-                        <div class="flex items-center justify-between py-3 px-3 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-200">
-                            <div class="flex items-center">
-                                <span class="rank-number mr-3">3</span>
-                                <span class="text-gray-900 font-semibold">맛집 추천</span>
+                    </div>
+                    
+                    <script>
+                        // 마이페이지 위젯 상태 업데이트
+                        async function updateMypageWidget() {
+                            try {
+                                const response = await fetch('/api/auth/me', { credentials: 'include' });
+                                const data = await response.json();
+                                
+                                document.getElementById('mypage-loading').classList.add('hidden');
+                                
+                                if (data.loggedIn && data.user) {
+                                    document.getElementById('mypage-logged-in').classList.remove('hidden');
+                                    document.getElementById('mypage-logged-out').classList.add('hidden');
+                                    document.getElementById('mypage-username').textContent = data.user.name + '님';
+                                    document.getElementById('mypage-email').textContent = data.user.email || '';
+                                    
+                                    // 북마크 수 가져오기
+                                    try {
+                                        const bookmarkRes = await fetch('/api/bookmarks?userId=' + data.user.id);
+                                        const bookmarkData = await bookmarkRes.json();
+                                        if (bookmarkData.success) {
+                                            document.getElementById('mypage-bookmarks').textContent = bookmarkData.bookmarks?.length || 0;
+                                        }
+                                    } catch (e) {
+                                        console.log('북마크 수 조회 실패');
+                                    }
+                                } else {
+                                    document.getElementById('mypage-logged-in').classList.add('hidden');
+                                    document.getElementById('mypage-logged-out').classList.remove('hidden');
+                                }
+                            } catch (error) {
+                                console.error('마이페이지 위젯 오류:', error);
+                                document.getElementById('mypage-loading').classList.add('hidden');
+                                document.getElementById('mypage-logged-out').classList.remove('hidden');
+                            }
+                        }
+                        
+                        // 페이지 로드 시 실행
+                        updateMypageWidget();
+                    </script>
+
+                    <!-- 실시간 트렌드 -->
+                    <div class="content-card p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mr-2">
+                                <i class="fas fa-chart-line text-white text-sm"></i>
                             </div>
-                            <i class="fas fa-minus text-gray-400 text-sm"></i>
-                        </div>
-                        <div class="flex items-center justify-between py-3 px-3 hover:bg-gray-50 rounded-lg transition border border-transparent hover:border-gray-200">
-                            <div class="flex items-center">
-                                <span class="rank-number mr-3">4</span>
-                                <span class="text-gray-900 font-semibold">여행 정보</span>
+                            <span>실시간 트렌드</span>
+                            <span class="ml-2 text-xs bg-gradient-to-r from-orange-500 to-red-500 text-white px-2 py-1 rounded-full pulse-animation font-bold">HOT</span>
+                        </h3>
+                        <div class="space-y-1">
+                            <div class="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-lg transition-all">
+                                <div class="flex items-center">
+                                    <span class="rank-number mr-3 text-sm">1</span>
+                                    <span class="text-gray-900 font-medium text-sm">인공지능 기술</span>
+                                </div>
+                                <i class="fas fa-arrow-up text-green-500 text-xs"></i>
                             </div>
-                            <i class="fas fa-arrow-down text-red-500 text-sm"></i>
+                            <div class="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-lg transition-all">
+                                <div class="flex items-center">
+                                    <span class="rank-number mr-3 text-sm">2</span>
+                                    <span class="text-gray-900 font-medium text-sm">날씨 정보</span>
+                                </div>
+                                <i class="fas fa-arrow-up text-green-500 text-xs"></i>
+                            </div>
+                            <div class="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-lg transition-all">
+                                <div class="flex items-center">
+                                    <span class="rank-number mr-3 text-sm">3</span>
+                                    <span class="text-gray-900 font-medium text-sm">맛집 추천</span>
+                                </div>
+                                <i class="fas fa-minus text-gray-400 text-xs"></i>
+                            </div>
+                            <div class="flex items-center justify-between py-2 px-3 hover:bg-gray-50 rounded-lg transition-all">
+                                <div class="flex items-center">
+                                    <span class="rank-number mr-3 text-sm">4</span>
+                                    <span class="text-gray-900 font-medium text-sm">여행 정보</span>
+                                </div>
+                                <i class="fas fa-arrow-down text-red-500 text-xs"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
