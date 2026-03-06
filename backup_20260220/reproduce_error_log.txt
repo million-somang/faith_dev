@@ -1,0 +1,2067 @@
+﻿1. 愿由ъ옄 濡쒓렇???쒕룄...
+濡쒓렇???깃났. ?좏겙: undefined
+荑좏궎 ?ㅼ젙?? session_id=0f0e877f-219a-49ca-b352-a976b2de3c93; Max-Age=604800; Path=/; HttpOnly; SameSite=Lax
+2. ?댁뒪 愿由ъ옄 ?섏씠吏 ?붿껌 (/admin/news)...
+?묐떟 ?곹깭 肄붾뱶: 200
+node.exe : ?섏씠吏 濡쒕뱶 ?깃났.
+위치 C:\Program Files\nodejs\npx.ps1:29 문자:3
++   & $NODE_EXE $NPX_CLI_JS $args
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: 
+    (?섏씠吏 濡쒕뱶 ?깃났.:String) [], RemoteExce  
+  ption
+    + FullyQualifiedErrorId : NativeCommand 
+   Error
+ 
+HTML ?꾩껜 湲몄씠: 167051
+
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>?댁뒪愿由?- Faith Portal</title>
+        <script>
+            // Global Error Handler
+            window.onerror = function(msg, url, line, col, error) {
+                console.error("Global Error:", msg, url, line, col, error);
+                return false;
+            };
+
+            // Tailwind CDN 寃쎄퀬 ?꾪꽣留?(媛쒕컻 ?섍꼍??
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    if (args[0] && typeof args[0] === 'string' && 
+                        args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                        return; // Tailwind CDN 寃쎄퀬 臾댁떆
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+        </script>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .faith-blue { background-color: #1E40AF; }
+            .faith-blue-hover:hover { background-color: #1E3A8A; }
+        </style>
+    </head>
+    <body class="bg-gray-100">
+        <!-- 愿由ъ옄 ?ㅻ뜑 -->
+        <header class="faith-blue text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-2xl font-bold">Faith Portal</a>
+                        <span class="text-sm bg-yellow-500 text-gray-900 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-crown mr-1"></i>
+                            愿由ъ옄
+                        </span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <span id="admin-name" class="text-sm"></span>
+                        <a href="/" class="text-sm hover:text-blue-200">
+                            <i class="fas fa-home mr-1"></i>
+                            硫붿씤?쇰줈
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ?ㅻ퉬寃뚯씠??-->
+        <nav class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
+                <div class="flex flex-wrap items-center space-x-2 sm:space-x-4 lg:space-x-8 py-2">
+        <a href="/admin" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-gray-700 hover:text-blue-600 flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas fa-tachometer-alt sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">??쒕낫??/span>
+          <span class="sm:hidden ml-1">??쒕낫??/span>
+        </a>
+      
+        <a href="/admin/users" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-gray-700 hover:text-blue-600 flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas fa-users sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">?뚯썝 愿由?/span>
+          <span class="sm:hidden ml-1">?뚯썝</span>
+        </a>
+      
+        <div class="relative group flex-shrink-0">
+          <button class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-blue-600 border-b-2 border-blue-600 font-medium flex items-center text-sm sm:text-base whitespace-nowrap">
+            <i class="fas fa-folder sm:mr-2"></i>
+            <span class="hidden sm:inline ml-1">而⑦뀗痢좉?由?/span>
+            <span class="sm:hidden ml-1">而⑦뀗痢?/span>
+            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+          </button>
+          <div class="hidden group-hover:block absolute top-full left-0 bg-white shadow-lg rounded-b-lg z-10 min-w-[160px]">
+      
+            <a href="/admin/news" class="block px-4 py-3 bg-blue-50 text-blue-600 font-medium text-sm sm:text-base">
+              <i class="fas fa-newspaper mr-2"></i>
+              ?댁뒪愿由?            </a>
+        
+          </div>
+        </div>
+      
+        <a href="/admin/stats" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-gray-700 hover:text-blue-600 flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas fa-chart-line sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">?듦퀎</span>
+          <span class="sm:hidden ml-1">?듦퀎</span>
+        </a>
+      
+        <a href="/admin/logs" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-gray-700 hover:text-blue-600 flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas fa-clipboard-list sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">?쒕룞 濡쒓렇</span>
+          <span class="sm:hidden ml-1">濡쒓렇</span>
+        </a>
+      
+        <a href="/admin/notifications" class="px-2 sm:px-3 lg:px-4 py-3 sm:py-4 text-gray-700 hover:text-blue-600 flex items-center flex-shrink-0 text-sm sm:text-base whitespace-nowrap">
+          <i class="fas fa-bell sm:mr-2"></i>
+          <span class="hidden sm:inline ml-1">?뚮┝ ?쇳꽣</span>
+          <span class="sm:hidden ml-1">?뚮┝</span>
+        </a>
+      </div>
+            </div>
+        </nav>
+        
+        
+    <nav class="bg-white border-b border-gray-100">
+      <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-3">
+        <ol class="flex items-center space-x-2 text-sm">
+  
+        <li class="flex items-center">
+          <a href="/" class="text-gray-500 hover:text-cyan-600 transition-colors">??/a>
+          <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+        </li>
+      
+        <li class="flex items-center">
+          <a href="/admin" class="text-gray-500 hover:text-cyan-600 transition-colors">愿由ъ옄</a>
+          <i class="fas fa-chevron-right text-gray-400 text-xs mx-2"></i>
+        </li>
+      
+        <li class="flex items-center">
+          <span class="text-gray-900 font-semibold">?댁뒪 愿由?/span>
+        </li>
+      
+        </ol>
+      </div>
+    </nav>
+  
+
+        <!-- 硫붿씤 而⑦뀗痢?-->
+        <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <!-- ?섏씠吏 ??댄? 諛??≪뀡 -->
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-newspaper text-blue-600 mr-2"></i>
+                        ?댁뒪愿由?                    </h2>
+                    <p class="text-sm text-gray-600 mt-1">??λ맂 ?댁뒪瑜?愿由ы븯怨????댁뒪瑜?媛?몄삱 ???덉뒿?덈떎.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="collectStockNews(event)" class="px-6 py-3 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        二쇱떇 ?댁뒪 ?먮룞?섏쭛
+                    </button>
+                    <button onclick="fetchAllNews(event)" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        ?꾩껜 移댄뀒怨좊━ ?댁뒪 媛?몄삤湲?                    </button>
+                </div>
+            </div>
+
+            <!-- ?듦퀎 移대뱶 -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">?꾩껜 ?댁뒪</p>
+                            <p class="text-2xl font-bold text-gray-800" id="total-count">164342</p>
+                        </div>
+                        <i class="fas fa-newspaper text-3xl text-blue-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">?쒖떆???댁뒪</p>
+                            <p class="text-2xl font-bold text-purple-600" id="loaded-count">50</p>
+                        </div>
+                        <i class="fas fa-list text-3xl text-purple-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">?꾩옱 ?꾪꽣</p>
+                            <p class="text-2xl font-bold text-green-600" id="filter-status">?꾩껜</p>
+                        </div>
+                        <i class="fas fa-filter text-3xl text-green-500"></i>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-gray-500 text-sm">濡쒕뵫 ?곹깭</p>
+                            <p class="text-2xl font-bold text-indigo-600" id="loading-status">?湲?/p>
+                        </div>
+                        <i class="fas fa-spinner text-3xl text-indigo-500" id="loading-icon"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ?먮룞 ?댁뒪 媛?몄삤湲??ㅼ?以??ㅼ젙 -->
+            <div class="bg-white rounded-lg shadow p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        <i class="fas fa-clock text-blue-600 mr-2"></i>
+                        ?먮룞 ?댁뒪 媛?몄삤湲??ㅼ젙
+                    </h3>
+                    <div class="flex items-center space-x-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="schedule-enabled" class="sr-only peer" onchange="toggleSchedule()">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                            <span class="ml-3 text-sm font-medium text-gray-700">?쒖꽦??/span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="schedule-settings" class="space-y-4">
+                    <!-- ?ㅼ?以?????좏깮 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-alt mr-1"></i>
+                            ?ㅼ?以????                        </label>
+                        <div class="flex space-x-4">
+                            <label class="flex items-center">
+                                <input type="radio" name="schedule-type" value="hourly" checked onchange="updateScheduleType()" class="mr-2">
+                                <span class="text-sm text-gray-700">?쒓컙 媛꾧꺽</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="schedule-type" value="daily" onchange="updateScheduleType()" class="mr-2">
+                                <span class="text-sm text-gray-700">留ㅼ씪 吏???쒓컙</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ?쒓컙 媛꾧꺽 ?ㅼ젙 (hourly) -->
+                    <div id="hourly-settings">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-hourglass-half mr-1"></i>
+                            媛?몄삤湲?媛꾧꺽 (?쒓컙)
+                        </label>
+                        <select id="interval-hours" class="px-4 py-2 border border-gray-300 rounded-lg w-full md:w-64">
+                            <option value="1">1?쒓컙留덈떎</option>
+                            <option value="2">2?쒓컙留덈떎</option>
+                            <option value="3">3?쒓컙留덈떎</option>
+                            <option value="6">6?쒓컙留덈떎</option>
+                            <option value="12">12?쒓컙留덈떎</option>
+                            <option value="24">24?쒓컙留덈떎</option>
+                        </select>
+                    </div>
+
+                    <!-- 吏???쒓컙 ?ㅼ젙 (daily) -->
+                    <div id="daily-settings" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            留ㅼ씪 媛?몄삱 ?쒓컙
+                        </label>
+                        <input type="time" id="schedule-time" class="px-4 py-2 border border-gray-300 rounded-lg w-full md:w-64" value="09:00">
+                    </div>
+
+                    <!-- ?ㅽ뻾 ?뺣낫 -->
+                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">留덉?留??ㅽ뻾:</span>
+                            <span id="last-run" class="text-sm font-medium text-gray-800">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-600">?ㅼ쓬 ?ㅽ뻾 ?덉젙:</span>
+                            <span id="next-run" class="text-sm font-medium text-blue-600">-</span>
+                        </div>
+                    </div>
+
+                    <!-- ???踰꾪듉 -->
+                    <div class="flex justify-end">
+                        <button onclick="saveSchedule()" class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium hover:shadow-lg transition-all">
+                            <i class="fas fa-save mr-2"></i>
+                            ?ㅼ젙 ???                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ?댁뒪 紐⑸줉 ?뚯씠釉?-->
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="p-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-gray-800">?댁뒪 紐⑸줉 (臾댄븳 ?ㅽ겕濡?</h3>
+                        <div class="flex items-center space-x-2">
+                            <select id="category-filter" onchange="filterNews()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="all">?꾩껜 移댄뀒怨좊━</option>
+                                <option value="general">?쇰컲</option>
+                                <option value="politics">?뺤튂</option>
+                                <option value="economy">寃쎌젣</option>
+                                <option value="tech">湲곗닠</option>
+                                <option value="sports">?ㅽ룷痢?/option>
+                                <option value="entertainment">?곗삁</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto" id="news-container" style="max-height: 600px; overflow-y: auto;">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">移댄뀒怨좊━</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?쒕ぉ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">諛쒗뻾??/th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">諛쒗뻾??/th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">?≪뀡</th>
+                            </tr>
+                        </thead>
+                        <tbody id="news-table" class="bg-white divide-y divide-gray-200">
+                            
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164243</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxOREZIRGxTRFNjMHkwSFRaWXhNX3pSYkZlaDBVelF3cnh3Yk02N2g5NnZDeW4zNmllZi1NeWR0cEljWnFLX0VwRE5xUElydDdpbmlkZkdRV2YwZXdEWUM1ZDY2ckdNbzVlQnV2UmlFY2FLQkN4eEt4S2xsSWtTYVFfNzR2SGZXTG04%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? &#039;肄붿뒪??5600&#039; 二쇱떇?쒖옣 ?쒗솢.. 利앷텒二?&#039;遺덇린??#039; - 湲濡쒕쾶?댁퐫?몃?
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxOREZIRGxTRFNjMHkwSFRaWXhNX3pSYkZlaDBVelF3cnh3Yk02N2g5NnZDeW4zNmllZi1NeWR0cEljWnFLX0VwRE5xUElydDdpbmlkZkdRV2YwZXdEWUM1ZDY2ckdNbzVlQnV2UmlFY2FLQkN4eEt4S2xsSWtTYVFfNzR2SGZXTG04%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164243)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164244</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxONXUzSDZUYnNtTUN6QW55Wm00Y0xKd05hYVVqWkZXejlIWXB6dW5JMmZOa0l2Um41dm95TkZackhMM2xDWGxhZkZsTFpyWTBGbzNRNXdJR0t0STBpell3SFdUeDRCMUM4TWV1SmhPRmdZanhFd3FpNkRULVFIa0pmNA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            2025??4遺꾧린 ?ㅼ쟻 ?뱀쭠二?2??12??諛쒗몴) - ?ㅼ씠踰??꾨━誘몄뾼肄섑뀗痢?                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxONXUzSDZUYnNtTUN6QW55Wm00Y0xKd05hYVVqWkZXejlIWXB6dW5JMmZOa0l2Um41dm95TkZackhMM2xDWGxhZkZsTFpyWTBGbzNRNXdJR0t0STBpell3SFdUeDRCMUM4TWV1SmhPRmdZanhFd3FpNkRULVFIa0pmNA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164244)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164245</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxOSFo2ejQ4b2hZLVlFSVc2RXVWLUtTbHJmZWlTNHhiZVI1cU9BekhtUVBkbVhFZmIyOHhnbHRxS04yZVRaYlBYX3JuRG40N2w1Mm8xRzJyUnk3ZDI4VEdGN2VyTURSeDhjRU1ORjdSMlNMcGp5WkkzUmczUHFJNURNYlNJci14eFVJ0gGcAUFVX3lxTFBlM3hjZjNJd3lUUnZaa2ZKbVBUWUUzbFVXellRUzZ5ejdENVhJY2FTYU42ak56TG1DMjRCWGJ0amJfeGIyeDN2Y3lnc05NejZURDJobDBzNWs5UERzQW1NYU5LLXQxWFZ1WGxNb0M5aXRVMEhQYVZuZ3hkdGhiYnZMSnBHMEtRcHEtWi1oMnpDM1VrdHh4UjlFQl9WWg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?뺣━留ㅻℓ 泥ル궇 40000% 湲됰벑???쒖씪諛붿씠?ㅲ?＜?앸퀝???섑븳 ?섏갑?쒋?- 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxOSFo2ejQ4b2hZLVlFSVc2RXVWLUtTbHJmZWlTNHhiZVI1cU9BekhtUVBkbVhFZmIyOHhnbHRxS04yZVRaYlBYX3JuRG40N2w1Mm8xRzJyUnk3ZDI4VEdGN2VyTURSeDhjRU1ORjdSMlNMcGp5WkkzUmczUHFJNURNYlNJci14eFVJ0gGcAUFVX3lxTFBlM3hjZjNJd3lUUnZaa2ZKbVBUWUUzbFVXellRUzZ5ejdENVhJY2FTYU42ak56TG1DMjRCWGJ0amJfeGIyeDN2Y3lnc05NejZURDJobDBzNWs5UERzQW1NYU5LLXQxWFZ1WGxNb0M5aXRVMEhQYVZuZ3hkdGhiYnZMSnBHMEtRcHEtWi1oMnpDM1VrdHh4UjlFQl9WWg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164245)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164246</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTE8zQUhYRUNtUEF5SkFIUWZxVWk5NDdBcWJ5YVBXSVV3Yk1kdFEwVVNwUVBrVjBTOXlKc25LYUpldDJzMHlpeFpCMFBwLWFvSzJMYnk5T3VMU1VkUHFCcHBfWHVlT04yU1lldWVn%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ??댁?-?? 二쇱떇 ?대낫?쒓났 怨꾩빟 ?뺤젙 怨듭떆??媛뺤꽭 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTE8zQUhYRUNtUEF5SkFIUWZxVWk5NDdBcWJ5YVBXSVV3Yk1kdFEwVVNwUVBrVjBTOXlKc25LYUpldDJzMHlpeFpCMFBwLWFvSzJMYnk5T3VMU1VkUHFCcHBfWHVlT04yU1lldWVn%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164246)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164247</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE9Tc0p2cHF4WklHYjhwZGNDdHhmWHNneFZiZUFUNTE0eFlyRnZZYlkyZXQtRHVZZkZUWXpWWkM3eFFHVkN3TlhQOWhwekdRbS0yMkhycWpacXhsZ9IBWEFVX3lxTE4tVkw0R25wNkJKdS10RXczdmZqWktSbjZwTFA3WTc0cy00NjZPd3djMHpYZDBRSjdlV2FIeWp2Q2ZnanZHTkk3WjMtbUJpRkFPUjRJSHh3ZEU%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?ㅺ??됲떚肄붿뒪硫뷀떛, 二쇱떇蹂묓빀 寃곗젙??訝?- ?꾩＜寃쎌젣
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE9Tc0p2cHF4WklHYjhwZGNDdHhmWHNneFZiZUFUNTE0eFlyRnZZYlkyZXQtRHVZZkZUWXpWWkM3eFFHVkN3TlhQOWhwekdRbS0yMkhycWpacXhsZ9IBWEFVX3lxTE4tVkw0R25wNkJKdS10RXczdmZqWktSbjZwTFA3WTc0cy00NjZPd3djMHpYZDBRSjdlV2FIeWp2Q2ZnanZHTkk3WjMtbUJpRkFPUjRJSHh3ZEU%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164247)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164248</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE5icF9jaktfS0tGVUk1Y3RnVVJKMkRsY0V6YVhrNkwtREJKZExWUUlLcUgxVndKR0l4d3ZOY2FNOTlPV1BjejVLMW9SNHVfbzJzeUhnUW12MjY2clnSAWBBVV95cUxPN2dFaXFBRkhfN0s5MTZCcm9tUnFTVkkzVWpnS3JQZlZRRmRlb25ydGhMeEZ3V2tOOGJ5Uld6emcyZDVaWVdNem52Z0g0N3JIdEM1X1dFTTdGUzNScVRudUk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 肄붿뒪???뚭퀬 肄붿뒪??諛怨졻?텋?μ뿉 利앷텒二?&#039;遺덇린??#039; - ?고빀?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE5icF9jaktfS0tGVUk1Y3RnVVJKMkRsY0V6YVhrNkwtREJKZExWUUlLcUgxVndKR0l4d3ZOY2FNOTlPV1BjejVLMW9SNHVfbzJzeUhnUW12MjY2clnSAWBBVV95cUxPN2dFaXFBRkhfN0s5MTZCcm9tUnFTVkkzVWpnS3JQZlZRRmRlb25ydGhMeEZ3V2tOOGJ5Uld6emcyZDVaWVdNem52Z0g0N3JIdEM1X1dFTTdGUzNScVRudUk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164248)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164249</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE5TZW1DMmpISFRHUnVQR2JySElWY0NRZjhWWmpvbUQxNDVBdUpkRU9oWHEySjVuODh1VF9YUE10LXdhZWZ2VGI2QmdTeDV3anF2SDNUMFFlTk1VUdIBX0FVX3lxTE0xWkI1XzVuSXVmU3ExN1pBdHNVS2JpZVZtXzBhZXpnRThGRjk3UDRXa3FydlB6SVExSzM5OC11cHpIQ09PT0FXM201Z01pMnpHYkk1U1VEaFBJcHptWEZZ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            ?섑듅吏뺤＜??湲곗궗濡?二쇨? ?꾩썙 110?듭썝 梨숆릿 ?꾩쭅 湲곗옄 援ъ냽 - 寃쏀뼢?좊Ц
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE5TZW1DMmpISFRHUnVQR2JySElWY0NRZjhWWmpvbUQxNDVBdUpkRU9oWHEySjVuODh1VF9YUE10LXdhZWZ2VGI2QmdTeDV3anF2SDNUMFFlTk1VUdIBX0FVX3lxTE0xWkI1XzVuSXVmU3ExN1pBdHNVS2JpZVZtXzBhZXpnRThGRjk3UDRXa3FydlB6SVExSzM5OC11cHpIQ09PT0FXM201Z01pMnpHYkk1U1VEaFBJcHptWEZZ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164249)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164250</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiaEFVX3lxTE1idFhIZmVmSExiWllJTGFzT3NQX0xzdmZ3RFcwUlRzdEg2ZndwLTIwbzBNRG95VExjUWRLZDV2X0YyemFra0hPYjQxQnM1X1pJdndzMTJSRGt4VjV3ZGItMHU2SlV6SnM4%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 鍮꾩긽?μ＜???대낫 ?異??쇰?쨌쨌쨌SK利앷텒, 7%? ?쎌꽭 - ?뱀깋寃쎌젣?좊Ц
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiaEFVX3lxTE1idFhIZmVmSExiWllJTGFzT3NQX0xzdmZ3RFcwUlRzdEg2ZndwLTIwbzBNRG95VExjUWRLZDV2X0YyemFra0hPYjQxQnM1X1pJdndzMTJSRGt4VjV3ZGItMHU2SlV6SnM4%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164250)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164251</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMib0FVX3lxTE1keGk0VU8wRl9GbVI2UnNHN3UwMFp6V0lkY3NvUjV2NXc5c2JfRkVRT2F4QVhtOHN3M3k1eFZsQ0dJWDNMTG9hTVRGSy1wajY1eWxmVjJ0XzJ2U0ZrNnhBSElSR0hZWGRiUmtwcXhEZ9IBc0FVX3lxTE1TMi1HSXpLMVNKWmwzUF92VC1SV3dhVGdMMEd4aVRRQVFQZTkwNnFyMzc3UmFmT0FTZEs1U3BJQUFKSWxrUkZxYlZHU0oxMU9HQ2lTZ1Rjc3czdDBnT2loODE2Nm9yV1lYMlJoZXZXRXRyMDQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?대줈?? ?쇱꽦?≫떚釉뚯옄?곗슫??二쇱떇 痍⑤뱷 ?뚯떇??&#039;?곹븳媛&#039; - ?댁뒪?띿뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMib0FVX3lxTE1keGk0VU8wRl9GbVI2UnNHN3UwMFp6V0lkY3NvUjV2NXc5c2JfRkVRT2F4QVhtOHN3M3k1eFZsQ0dJWDNMTG9hTVRGSy1wajY1eWxmVjJ0XzJ2U0ZrNnhBSElSR0hZWGRiUmtwcXhEZ9IBc0FVX3lxTE1TMi1HSXpLMVNKWmwzUF92VC1SV3dhVGdMMEd4aVRRQVFQZTkwNnFyMzc3UmFmT0FTZEs1U3BJQUFKSWxrUkZxYlZHU0oxMU9HQ2lTZ1Rjc3czdDBnT2loODE2Nm9yV1lYMlJoZXZXRXRyMDQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164251)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164252</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxObUVreFg2OVVKbFNJdGxPZHpjQkxBV2ZBSXgteEhXU0cwNWt0WnBwU09QN3k3bFBUbDVpYlZPaXlublZHZjdyNGdXa1lqcFFZN0czX0MtaUo0ejVJX1d3Rk9PTjdMTDBXU3hDdW5QeDlaT3lhYTNETi1vSGxlNV9NcA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            2025??4遺꾧린 ?ㅼ쟻 ?뱀쭠二?2??5??諛쒗몴) - ?ㅼ씠踰??꾨━誘몄뾼肄섑뀗痢?                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxObUVreFg2OVVKbFNJdGxPZHpjQkxBV2ZBSXgteEhXU0cwNWt0WnBwU09QN3k3bFBUbDVpYlZPaXlublZHZjdyNGdXa1lqcFFZN0czX0MtaUo0ejVJX1d3Rk9PTjdMTDBXU3hDdW5QeDlaT3lhYTNETi1vSGxlNV9NcA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164252)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164253</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1naEo0dHQxSGt0TVhiRXp5Z3k4Z0Y3WmxMSUVmYnlGOFl6LVBPZ3AtVGhqM0NjM3o0cWg1a0dQZnlRQWU0TTFpZWREN3ZNdmFFMFBURFpEOFpIME4zVGJLcGVOMXdpZVRBQ0k1Tg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?ㅺ??됲떚肄붿뒪硫뷀떛, 二쇱떇蹂묓빀 寃곗젙???곹븳媛 吏곹뻾 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1naEo0dHQxSGt0TVhiRXp5Z3k4Z0Y3WmxMSUVmYnlGOFl6LVBPZ3AtVGhqM0NjM3o0cWg1a0dQZnlRQWU0TTFpZWREN3ZNdmFFMFBURFpEOFpIME4zVGJLcGVOMXdpZVRBQ0k1Tg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164253)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164254</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE93eXNMYURaSXZfV2V5aHhNVkJTV0Jmd3lic0d3bDBGTTU1aWxyRUoweHlWV29LWG1KOEc5SHhOU1RrYnJwbXVvZFA3aktjU3ZpS0Z2STFpbkNBUdIBWEFVX3lxTE1YRDI4S29TaVZmdjVCZGJWZmNlWXluOG9BNFZVeTQ5UG5oZ052NXhJcjNHTGRHc25pTGJJTjN2MHBoZzhLaWh5Tks0eDRLMlJfcTRuMWRSMlM%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?곸옣?먯? ?쇳븳 ?뚮몢, 二쇱떇 嫄곕옒 ?ш컻 泥ル궇 訝?- ?꾩＜寃쎌젣
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiWkFVX3lxTE93eXNMYURaSXZfV2V5aHhNVkJTV0Jmd3lic0d3bDBGTTU1aWxyRUoweHlWV29LWG1KOEc5SHhOU1RrYnJwbXVvZFA3aktjU3ZpS0Z2STFpbkNBUdIBWEFVX3lxTE1YRDI4S29TaVZmdjVCZGJWZmNlWXluOG9BNFZVeTQ5UG5oZ052NXhJcjNHTGRHc25pTGJJTjN2MHBoZzhLaWh5Tks0eDRLMlJfcTRuMWRSMlM%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164254)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164255</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQS3JTNGs5cVNmc2F5N1pIbUd2Nmw1SThGOUJtYU9naGV5dXFsRkpVS3VBT2F5TUl6dlhhZ3dfYWVFSGJQRXZpVUt5T01pSm9VMUZlMjFoVGhiQjBFWGNFX3NpLXlEeW4wYS1VS1NhQ2Nua3FDWThxNG02RTZ2NFJCeWYxR1R0bmNn0gGcAUFVX3lxTE5iNm9rNmhvQ1ZoeDF5bG5FYkVMSzhfVlp6M2lIcU16WVRMeTRWOC1EaTIyTURTbFFyLUJwZDFkOS1GdDNacXNoZ2UzRlB3R0pQd2xhMlRaeGZzc1FDdjBaNkd4WG9kbzYxZGg2dlF4UE5OVGY3SEdINlY0aHVWMWM4RThqMVdOQjU4bzRPRVc0WDdzQnY5NGRUQVhHSg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 鍮꾩긽?μ궗 二쇱떇 ?대낫 1500???異?遺???쇰??쪺K利앷텒 7% 湲됰씫 - 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQS3JTNGs5cVNmc2F5N1pIbUd2Nmw1SThGOUJtYU9naGV5dXFsRkpVS3VBT2F5TUl6dlhhZ3dfYWVFSGJQRXZpVUt5T01pSm9VMUZlMjFoVGhiQjBFWGNFX3NpLXlEeW4wYS1VS1NhQ2Nua3FDWThxNG02RTZ2NFJCeWYxR1R0bmNn0gGcAUFVX3lxTE5iNm9rNmhvQ1ZoeDF5bG5FYkVMSzhfVlp6M2lIcU16WVRMeTRWOC1EaTIyTURTbFFyLUJwZDFkOS1GdDNacXNoZ2UzRlB3R0pQd2xhMlRaeGZzc1FDdjBaNkd4WG9kbzYxZGg2dlF4UE5OVGY3SEdINlY0aHVWMWM4RThqMVdOQjU4bzRPRVc0WDdzQnY5NGRUQVhHSg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164255)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164256</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTFBiMGNYUnZDcVlSeWVKUUdVZTRTR24waktlTS0yXzZSNllzd1RVaVlkX1EwZFBOV3JwenpWMkFLMjFKajVDN0xjRURhRnNub3UzUFdJOVh4RUFqdVHSAWBBVV95cUxQN3kyUFptNk5iVjUxNEZiQkJMOW5HWExqeG9pdHdnTmFDM0dCRXJxQTF2cTZETm4zc0NJejM4MzdBM1oxM19FM2JWNjNOMVhNMldCcGxnUmdXS01uZUF3S3c%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            ?뱀쭠二?湲곗궗濡?二쇨? ?꾩썙 111?듭썝 轅爰썩?쟾吏?湲곗옄 ???곷컻 - ?고빀?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTFBiMGNYUnZDcVlSeWVKUUdVZTRTR24waktlTS0yXzZSNllzd1RVaVlkX1EwZFBOV3JwenpWMkFLMjFKajVDN0xjRURhRnNub3UzUFdJOVh4RUFqdVHSAWBBVV95cUxQN3kyUFptNk5iVjUxNEZiQkJMOW5HWExqeG9pdHdnTmFDM0dCRXJxQTF2cTZETm4zc0NJejM4MzdBM1oxM19FM2JWNjNOMVhNMldCcGxnUmdXS01uZUF3S3c%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164256)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164257</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQSmMwRi1TajZma2VKRTFKWTVkZ21FTXBGcHBKR1paZVFCMHFEZFViZ190U1N1RzFlbENSQU9WU1ZuSHpIMVd6RnZtaVE1R0tyUkdrSDZ1SnpEWURYZC1DYnVCaHpuaDljalRVSXk5QWxWazZ6RVFGMHp6akczRmk0eGdOMjUyQUhG%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?쇱젙?ㅼ뾽, 1? 5 二쇱떇遺꾪븷 寃곗젙 ?뚯떇??&#039;?곹븳媛&#039; - 湲濡쒕쾶?댁퐫?몃?
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQSmMwRi1TajZma2VKRTFKWTVkZ21FTXBGcHBKR1paZVFCMHFEZFViZ190U1N1RzFlbENSQU9WU1ZuSHpIMVd6RnZtaVE1R0tyUkdrSDZ1SnpEWURYZC1DYnVCaHpuaDljalRVSXk5QWxWazZ6RVFGMHp6akczRmk0eGdOMjUyQUhG%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164257)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164258</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxQOVF1bzFhVDhCRXRuTFNZU3lIbjEtV3FyRGlYQUVQb3BwUXh3dk16UkF1cmlqbVZobDRTNUx0ZmRvSm9WMHh6SnNad2pQNWltVnRsTHkxSkc3QXhYQkpRTEdsajZHWVNrMFR1WDBmamRiWlNOVGZhQUNKOU5jRkx6OQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            2025??4遺꾧린 ?ㅼ쟻 ?뱀쭠二?1??29??諛쒗몴) - ?ㅼ씠踰??꾨━誘몄뾼肄섑뀗痢?                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxQOVF1bzFhVDhCRXRuTFNZU3lIbjEtV3FyRGlYQUVQb3BwUXh3dk16UkF1cmlqbVZobDRTNUx0ZmRvSm9WMHh6SnNad2pQNWltVnRsTHkxSkc3QXhYQkpRTEdsajZHWVNrMFR1WDBmamRiWlNOVGZhQUNKOU5jRkx6OQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164258)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164259</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE9kckFOQThXOEFLbnN1aXlndjFqcHMwWXlrOFNtTTRadTRkdHJIVWJsb2dCX2V5UDhQcU1HTVU5X0dsaGE4NVpKZzdZenJzU1ZGYnZXd2EwT0FKcTRsSnRIUk1JVHdMcXBmSE05bQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?먯퐫蹂쇳듃, ?먯궗二?431留뚯＜ ?뚭컖 寃곗젙??27%? 湲됰벑 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE9kckFOQThXOEFLbnN1aXlndjFqcHMwWXlrOFNtTTRadTRkdHJIVWJsb2dCX2V5UDhQcU1HTVU5X0dsaGE4NVpKZzdZenJzU1ZGYnZXd2EwT0FKcTRsSnRIUk1JVHdMcXBmSE05bQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164259)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164260</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQdXJyVUpsb29QcV9Zck9uRVo2UTM3dUZ5bFlMSnJVZzYtX19xQVRjLXZ3NV9MMzgybjF4VThQV2JhRGJoUk1MTklmQUhHTGh1TkpYT2tlMmhfLVpNVmE2VGQ4RHN0bURJQVYtOS0tWlJzNVcwNXUweEFDa3N3VEpaU0xEbEgtUUFS0gGcAUFVX3lxTE11VlYyRVhaZVNmVXptM3VwcERBUUhyN1ZzVzhMREV4U3lUQy0tZ3FoWU0yc05PRkFhU2swU1JUNzFQem91cEJUYmdvU25XdlRBNTFnd2pIRXVEaDNETlNSa2dRcW03YmRtb2xoWWxLLTQ0WTJTOEpSV2wteUxFeTJ1RS1fcE5Qby1LMDlhTkoxOGFDNGtyNjdCUWt2bg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 1??嫄곕옒?湲?1000議??뚰뙆??利앹떆 ?좊━??遺덊???利앷텒??- 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQdXJyVUpsb29QcV9Zck9uRVo2UTM3dUZ5bFlMSnJVZzYtX19xQVRjLXZ3NV9MMzgybjF4VThQV2JhRGJoUk1MTklmQUhHTGh1TkpYT2tlMmhfLVpNVmE2VGQ4RHN0bURJQVYtOS0tWlJzNVcwNXUweEFDa3N3VEpaU0xEbEgtUUFS0gGcAUFVX3lxTE11VlYyRVhaZVNmVXptM3VwcERBUUhyN1ZzVzhMREV4U3lUQy0tZ3FoWU0yc05PRkFhU2swU1JUNzFQem91cEJUYmdvU25XdlRBNTFnd2pIRXVEaDNETlNSa2dRcW03YmRtb2xoWWxLLTQ0WTJTOEpSV2wteUxFeTJ1RS1fcE5Qby1LMDlhTkoxOGFDNGtyNjdCUWt2bg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164260)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164261</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTFBhXzZCeHdXbEtKZHZsWDB0bFhfRGpNdktYdlVtUzUxZHRrR3BHa3FzblNLZVI0SllzUkRWZDBpNmZuS2tEalhMbVZSbnh3OVlCZW0tcklaalBQcWvSAWBBVV95cUxOWFpITkM1dGdHOE9XYWljNC0td0UxYXlrNUpvR2Fpemx3VTN2ZTlldWtxRmlVYzBtZU5UUGlYa2NKWE5iRnVNdDFScEV3T2E1WXVSc2hOX0hwNUJDZGJUZDQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? SK?ㅽ섏뼱, ?먰쉶??SK?섏씠?됱뒪 ?먯궗二??뚭컖???μ쨷 ?좉퀬媛 - ?고빀?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTFBhXzZCeHdXbEtKZHZsWDB0bFhfRGpNdktYdlVtUzUxZHRrR3BHa3FzblNLZVI0SllzUkRWZDBpNmZuS2tEalhMbVZSbnh3OVlCZW0tcklaalBQcWvSAWBBVV95cUxOWFpITkM1dGdHOE9XYWljNC0td0UxYXlrNUpvR2Fpemx3VTN2ZTlldWtxRmlVYzBtZU5UUGlYa2NKWE5iRnVNdDFScEV3T2E1WXVSc2hOX0hwNUJDZGJUZDQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164261)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164262</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxNUWs1MVZpZ09GRFMxQTQ1VE5CbGFpdnZUTW5PZFJuRmhvc2JXM1FPcXFid2xrcE1Md3lQSk9VTnFZbDNsbFhmNWFrNlVaUDNqZlA2Q2dSUG1Fd2tnekVSTUIyeTZ0Zzk3TTBfRm9UcFNFVS1DX0ltUmYyVF9yaDVteg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            2025??4遺꾧린 ?ㅼ쟻 ?뱀쭠二?1??28??諛쒗몴) - ?ㅼ씠踰??꾨━誘몄뾼肄섑뀗痢?                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxNUWs1MVZpZ09GRFMxQTQ1VE5CbGFpdnZUTW5PZFJuRmhvc2JXM1FPcXFid2xrcE1Md3lQSk9VTnFZbDNsbFhmNWFrNlVaUDNqZlA2Q2dSUG1Fd2tnekVSTUIyeTZ0Zzk3TTBfRm9UcFNFVS1DX0ltUmYyVF9yaDVteg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164262)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164263</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTFBwUWRYVVhhUldTU2NmZVIyN0lvbEtwNWVrdVJjcFhoTHRZYmlEQmJYand3Uk8wYTUtV2JLVTNmdDFrYVNqd0FpOFExWHdmblhSLUliU1l1VzhES2cwS3BCUktLeVhfcFh2dU1PSg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?꾨?吏?먰봽??⑹뒪, 吏諛곌뎄議?媛쒗렪 ?④낵 湲곕?...利앷텒媛 紐⑺몴媛 ????곹뼢??湲됰벑 - ??대뱶寃쎌젣
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTFBwUWRYVVhhUldTU2NmZVIyN0lvbEtwNWVrdVJjcFhoTHRZYmlEQmJYand3Uk8wYTUtV2JLVTNmdDFrYVNqd0FpOFExWHdmblhSLUliU1l1VzhES2cwS3BCUktLeVhfcFh2dU1PSg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164263)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164264</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMihgFBVV95cUxNN1hpblFlQkRtOTU3bXctZ2oxVG1fc3A0TXd1MmxrUTFNZGFMb2JidkFTQmlxNFhwY3FETUJ6M3hkdmZxai1XLUozc0o0MlFLZUdLYmFiM1lRSWYyVXFibVRGNzFWT0ZOanVBaTgzZnVtZThKa2xPcFRETjhKMU8tTldtN0djQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?쇱꽦臾쇱궛, ?띾씪??二쇱떇 ?꾨웾 ?댁옱?⑹뿉 利앹뿬 ?뚯떇??&#039;湲됰벑&#039; - 湲濡쒕쾶?댁퐫?몃?
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMihgFBVV95cUxNN1hpblFlQkRtOTU3bXctZ2oxVG1fc3A0TXd1MmxrUTFNZGFMb2JidkFTQmlxNFhwY3FETUJ6M3hkdmZxai1XLUozc0o0MlFLZUdLYmFiM1lRSWYyVXFibVRGNzFWT0ZOanVBaTgzZnVtZThKa2xPcFRETjhKMU8tTldtN0djQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164264)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164265</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE52N2FYNUprcXlpSUtERHBxWE9LRm41aEljc1JJUENQWVZQTUhieUdoQVA0dWJCb1JYbDljTkN4eHRzVWYtaE1ZNk5GSE1YWEJhQXlKVk5nVDhCeFNFc0dGZVpFVFJOZk9zeUI5OA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            湲곗옄??二쇱떇 ?섏? 留덈옱?붾땲???섑듅吏뺤＜??二쇱쓽蹂? - ?댁뒪??                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE52N2FYNUprcXlpSUtERHBxWE9LRm41aEljc1JJUENQWVZQTUhieUdoQVA0dWJCb1JYbDljTkN4eHRzVWYtaE1ZNk5GSE1YWEJhQXlKVk5nVDhCeFNFc0dGZVpFVFJOZk9zeUI5OA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164265)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164266</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE1aYUcwTFJjYjI5bVAta0JJdWJlQ3BxN3NBdk5WaUVYVHJ5MURzZTJjMkkzM0hLRnJINzkyUjRTZEFHQXFOd3NHbU80cHc0SVhUa1RmZldVUVc2bzTSAWBBVV95cUxQT0Vla29meEc0YTRpbDR1MlhUc043a1hpZkQtaDhiN2VoQVpQcGtBMjh6RjZBSUNYblUtMTZaTDVwMkZreEpEU29KbTVlOTBYaTNDTlpVbzFQT0NoblAweGY%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 濡쒖뒪?? ?먯쭊?곹룓 ?꾪븳 怨듦컻留ㅼ닔???곹븳媛 留덇컧(醫낇빀) - ?고빀?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE1aYUcwTFJjYjI5bVAta0JJdWJlQ3BxN3NBdk5WaUVYVHJ5MURzZTJjMkkzM0hLRnJINzkyUjRTZEFHQXFOd3NHbU80cHc0SVhUa1RmZldVUVc2bzTSAWBBVV95cUxQT0Vla29meEc0YTRpbDR1MlhUc043a1hpZkQtaDhiN2VoQVpQcGtBMjh6RjZBSUNYblUtMTZaTDVwMkZreEpEU29KbTVlOTBYaTNDTlpVbzFQT0NoblAweGY%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164266)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164267</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxPQm5nT09qZDhJZkZuY3JPYnJxblcyN1RMR3ZyeTZnOFhwdm1MZEF5bXNmTVZKZVZfbUJDRG1RR1JuaDhCeG1WYmpkV3RpUDFLQVlwVURoOGlTVm9jZEQxTE9Ccl9KajktcmZtX3N5RGlYOTc0QzdVYlVIOEJFUmw4Rg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            2025??4遺꾧린 ?ㅼ쟻 ?뱀쭠二?1??19~23??諛쒗몴) - ?ㅼ씠踰??꾨━誘몄뾼肄섑뀗痢?                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMigAFBVV95cUxPQm5nT09qZDhJZkZuY3JPYnJxblcyN1RMR3ZyeTZnOFhwdm1MZEF5bXNmTVZKZVZfbUJDRG1RR1JuaDhCeG1WYmpkV3RpUDFLQVlwVURoOGlTVm9jZEQxTE9Ccl9KajktcmZtX3N5RGlYOTc0QzdVYlVIOEJFUmw4Rg%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164267)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164268</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE9Lc3ZOSjdfTzhXM25IX25xY0kwMk5JT3c2NTNCSXQxemF3UTE2ckstdE9WSGc2ajFvd2JKb2xvaC1FZXhnaDZzQUtQdERNanB5dWxuMXdoNzZTdFk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            ?섑듅吏뺤＜ 湲곗궗???곕뒗 湲곗옄?ㅼ씠 ?섏씤?β숈쓣 ???댁쑀 - KBS ?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE9Lc3ZOSjdfTzhXM25IX25xY0kwMk5JT3c2NTNCSXQxemF3UTE2ckstdE9WSGc2ajFvd2JKb2xvaC1FZXhnaDZzQUtQdERNanB5dWxuMXdoNzZTdFk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164268)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164269</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiVEFVX3lxTE5sTFBXTUpYbmdCYVA4OGpRSmR5NlpBa2NIY2g5R0hlVmFmWnI2OFB0NkFKYVBXTVJkUk4tdkROUmM0VGxPNTRNX2xYaktsRVNtb3QwLQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? KCC, ?쇱꽦臾쇱궛 吏遺??좊룞??媛?μ꽦??12% 媛뺤꽭 - ?댄닾?곗씠
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiVEFVX3lxTE5sTFBXTUpYbmdCYVA4OGpRSmR5NlpBa2NIY2g5R0hlVmFmWnI2OFB0NkFKYVBXTVJkUk4tdkROUmM0VGxPNTRNX2xYaktsRVNtb3QwLQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164269)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164270</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQYUFyQUFpMWlZbFZyM3NkdTR6MjdyZ2pfcEVnRHdYRC1IY0RnOFM5SU1hdF9zbzA0TDZHaUZ4blR3NU81S2c5NkhjamlQdHNyZ1hwdHBvQlBpcUNXYmpCVzZiT3ZOOU50czU4Yjd3dWc5QWh2a3JoSGs0cU4tSlhTUWRRSGh3SW5Y%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 利앷텒二? 二쇱떇 ?묐룄?뚮뱷??湲곗? ??0?듭썝???좎? 媛?μ꽦 &#039;媛뺤꽭&#039; - 湲濡쒕쾶?댁퐫?몃?
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQYUFyQUFpMWlZbFZyM3NkdTR6MjdyZ2pfcEVnRHdYRC1IY0RnOFM5SU1hdF9zbzA0TDZHaUZ4blR3NU81S2c5NkhjamlQdHNyZ1hwdHBvQlBpcUNXYmpCVzZiT3ZOOU50czU4Yjd3dWc5QWh2a3JoSGs0cU4tSlhTUWRRSGh3SW5Y%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164270)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164271</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1ieG5WVk5KQzJLOWFDWFI0ODhveG4zcWVzYld2ay1zUW1RcWpYSjgwTUxDNWVmd3U0NUdpblk2THJ6dk5hc0twQWhCeW1KZHpHZTU2ZjVweFkzVU9EWmVVenNlWkVRLUo0TFZPONIBcEFVX3lxTE1CbElVeEc2TEFGSFJGdExncXdNd3ZQV0ZWWEpmMmJZdmc2akFfZ2x3N3R0LWs2OWp2SE9KUFpENnRINUxvZlo4LWw3ek9GUU1zazNFRHFDMF82UEFCV2NldHZlNjFnN1dwRmRraEdHdmc%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?쇱젙?ㅼ뾽, 二쇱떇遺꾪븷 怨듭떆 ??4嫄곕옒???곗냽 ?곹븳媛 - ceodaily.co.kr
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1ieG5WVk5KQzJLOWFDWFI0ODhveG4zcWVzYld2ay1zUW1RcWpYSjgwTUxDNWVmd3U0NUdpblk2THJ6dk5hc0twQWhCeW1KZHpHZTU2ZjVweFkzVU9EWmVVenNlWkVRLUo0TFZPONIBcEFVX3lxTE1CbElVeEc2TEFGSFJGdExncXdNd3ZQV0ZWWEpmMmJZdmc2akFfZ2x3N3R0LWs2OWp2SE9KUFpENnRINUxvZlo4LWw3ek9GUU1zazNFRHFDMF82UEFCV2NldHZlNjFnN1dwRmRraEdHdmc%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164271)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164272</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiXkFVX3lxTE5QdUJxSDB5RVh5dmFJZWhxREJJV1B2QnU0YXR0Mk9xQWJNS0h2elBNMjRuRFF1aGdCZFpleWxCWFpqSF9tbmk4SEZQN25aT0lHNXA1dXlvM1lpTlBKNFE%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [N2 ?뱀쭠二? ?몄쥌?붾젅肄? ?꾨?李⑥쬆沅?二쇱떇 泥섎텇???곹븳媛 - ?댁뒪?щ뜲??                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiXkFVX3lxTE5QdUJxSDB5RVh5dmFJZWhxREJJV1B2QnU0YXR0Mk9xQWJNS0h2elBNMjRuRFF1aGdCZFpleWxCWFpqSF9tbmk4SEZQN25aT0lHNXA1dXlvM1lpTlBKNFE%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164272)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164273</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTFBKNWN4LTZGYWh3eGR1bVRFU1ptNE5qcjVvMk1KMHZocU1zeU95Y0JjYVpnRnlMWUFOQ3UxMkJkbkhtVWw2Q0lkRlBWb28tYngycWF0QS1PTWt3WGxXMTJ5Zi1USHdQU29fLTRaNQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? CSA肄붿뒪誘? ??쒖씠???댁엫 ??二쇱떇 蹂닿퀬 ?섎Т ?댁젣 ??二쇨? ?곸듅??- 諛붿씠?ㅽ??꾩쫰
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTFBKNWN4LTZGYWh3eGR1bVRFU1ptNE5qcjVvMk1KMHZocU1zeU95Y0JjYVpnRnlMWUFOQ3UxMkJkbkhtVWw2Q0lkRlBWb28tYngycWF0QS1PTWt3WGxXMTJ5Zi1USHdQU29fLTRaNQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164273)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164274</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMib0FVX3lxTFA5UnBVdF9wYmZkQ0Nybmg0WU9PTjlSVVlKU3AwbzQwOWpWUk9STEJLY08wSEFRV1FUZkhWM2hYaF82ajlacEdaaGdBcm9GUm1CVDc4a3lCUmtNNnBsTHdNZHIyc01MSlpTdjBuYTEzMNIBc0FVX3lxTE1pbU9IaFgzU19zU3huUjlmaURhaXpIU0ZudEE3bGVSdllwVU5JVGRGVnNMOXpsdDhBM3d4QUVmSHMwb3lIaF93YjRwTFpqNHE5UjVHNjZoakVZRTdhQ0tTT1FZMUpyRTFEUjliR3FIb1kxb0U%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? SK利앷텒, 鍮꾩긽?μ궗 二쇱떇 ?대낫 1500???異??쇰???7% &#039;湲됰씫&#039; - ?댁뒪?띿뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMib0FVX3lxTFA5UnBVdF9wYmZkQ0Nybmg0WU9PTjlSVVlKU3AwbzQwOWpWUk9STEJLY08wSEFRV1FUZkhWM2hYaF82ajlacEdaaGdBcm9GUm1CVDc4a3lCUmtNNnBsTHdNZHIyc01MSlpTdjBuYTEzMNIBc0FVX3lxTE1pbU9IaFgzU19zU3huUjlmaURhaXpIU0ZudEE3bGVSdllwVU5JVGRGVnNMOXpsdDhBM3d4QUVmSHMwb3lIaF93YjRwTFpqNHE5UjVHNjZoakVZRTdhQ0tTT1FZMUpyRTFEUjliR3FIb1kxb0U%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164274)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164275</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTFBBS1kwenZuOFpPWUVwWDdFaWhZNy00aF95b3JNOTlmNlQtdDBrQi10SEh5R2ZHWjloTTc2d2tKOVhTSGtsZVBWTk4yaU5kYlRrbFNqb3JrZkxwRVE3am9CaUZZci1HOERTTkpZ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 吏꾩썝?앸챸怨쇳븰, 理쒕?二쇱＜ 痢?吏遺??뺣━?먮룄 二쇨? 媛뺤꽭 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTFBBS1kwenZuOFpPWUVwWDdFaWhZNy00aF95b3JNOTlmNlQtdDBrQi10SEh5R2ZHWjloTTc2d2tKOVhTSGtsZVBWTk4yaU5kYlRrbFNqb3JrZkxwRVE3am9CaUZZci1HOERTTkpZ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164275)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164276</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE03SHFPODdfaFdCM0NVMl9kRnV3VnROWDFOaElPRWVvU2hrcUhRRHQ2cWZ4bk1JNXFNV2hiY3dyWHVkMm1qVGpxTHh1U2FlMHBPemVHS3o5b3YyaVU%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            二쇱떇?쇰줈 1?꾩뿉 5?듈?렇 ?섍린?먥숇뱾???щ뒗 ?몄긽 - KBS ?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiW0FVX3lxTE03SHFPODdfaFdCM0NVMl9kRnV3VnROWDFOaElPRWVvU2hrcUhRRHQ2cWZ4bk1JNXFNV2hiY3dyWHVkMm1qVGpxTHh1U2FlMHBPemVHS3o5b3YyaVU%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164276)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164277</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMicEFVX3lxTE9QcEJ1Z2JoR1k3UnZZWk9sakhRTzdJQV9MN3hpSHRMendFM29uZ05MX2VrR0VkOFlQRjZlZ2tqOEJJRGlhUkpqNDVjWlpyc1l1d1BocjFMMkhiZU1TQzFoX2I1YjVHQVM5Z0M1VnRkRU8%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            ?섑듅吏뺤＜??湲곗궗濡?二쇨? ?щ젮 111??踰??꾩쭅 湲곗옄, 援ъ냽 ?≪튂 - 誘몃뵒?댁삤??                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMicEFVX3lxTE9QcEJ1Z2JoR1k3UnZZWk9sakhRTzdJQV9MN3hpSHRMendFM29uZ05MX2VrR0VkOFlQRjZlZ2tqOEJJRGlhUkpqNDVjWlpyc1l1d1BocjFMMkhiZU1TQzFoX2I1YjVHQVM5Z0M1VnRkRU8%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164277)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164278</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibkFVX3lxTE1xbldZWkE4ZFpibW8wY1BzSl9oc2Vqa2w5NEtkZW0yckxieUF3eEdod1pzcUdSQ01CcDJKTlNUaWhzcmRqOFA5QjQ1Nlo2NDRGLWI5ZlFHWHBHdUNXcjBCVkNjUHVTUFlISVNnUWlR%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 濡쒖뒪?? ?먯쭊?곹룓 ?꾪븳 怨듦컻留ㅼ닔 ??&#039;訝?#039; 湲곕줉 - ?꾧뎅留ㅼ씪?좊Ц
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibkFVX3lxTE1xbldZWkE4ZFpibW8wY1BzSl9oc2Vqa2w5NEtkZW0yckxieUF3eEdod1pzcUdSQ01CcDJKTlNUaWhzcmRqOFA5QjQ1Nlo2NDRGLWI5ZlFHWHBHdUNXcjBCVkNjUHVTUFlISVNnUWlR%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164278)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164279</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMihwFBVV95cUxOcGtCMGgxQWg0RFBGNWhEQTZrYVMydlN2Tm1vY3VzV0doaUdqX1laWXU5d2FEVzM5Tkh4WTBxY1dyaTJ5b25PTmVKMzQ2WmlIVU92WkJPa09xZ2w1Q1hQcTJLZlZkOXN4NWRkeGZncDdaeHhCNEJqc2d5SmFremZNRnRhQV9OY2vSAZsBQVVfeXFMUHdZV1FNNlBjR0ktSzVYRFBna2o2ZElma051bnpKT0tGSTE1VlV1VjN5WUtOLW5MTC14UHBYcnZndmdCRlk3d2ZNWURPekIyRDhvc1BPT2dCT2kxWFB0aXFNaXlTWXNQaUpNeDAya1lMVHJOMnZtcVFtT1U2YnV5Mk9GQUE5aktBSXVJUUdtTXpNWWRJR0hyaWxXekk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?띾씪?? ?댁옱???뚯옣??二쇱떇 利앹뿬???쇱꽦臾쇱궛 7% 湲됰벑 - 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMihwFBVV95cUxOcGtCMGgxQWg0RFBGNWhEQTZrYVMydlN2Tm1vY3VzV0doaUdqX1laWXU5d2FEVzM5Tkh4WTBxY1dyaTJ5b25PTmVKMzQ2WmlIVU92WkJPa09xZ2w1Q1hQcTJLZlZkOXN4NWRkeGZncDdaeHhCNEJqc2d5SmFremZNRnRhQV9OY2vSAZsBQVVfeXFMUHdZV1FNNlBjR0ktSzVYRFBna2o2ZElma051bnpKT0tGSTE1VlV1VjN5WUtOLW5MTC14UHBYcnZndmdCRlk3d2ZNWURPekIyRDhvc1BPT2dCT2kxWFB0aXFNaXlTWXNQaUpNeDAya1lMVHJOMnZtcVFtT1U2YnV5Mk9GQUE5aktBSXVJUUdtTXpNWWRJR0hyaWxXekk%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164279)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164280</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxNTTk5YVhPZ18wRm5Lb2JYMXBvRzNOaUxROGJqa2ZWbEpBYVAyNnJ3SndCdllmUWpOSUg2Smk5UUVUeUJWczdGVTNHbVJpTUZhOFFqamFnY09XQUVsWVJIcTZSN3QxYVo5OWFZempBazlUeHFIbEdqX0gzUm1mc2o0NDFQcU9GZHJD0gGcAUFVX3lxTFBoNVFlY0xtV21uWHNYUEhydVd0RW1CWkNjZmhTNjRVc3VlT1VJaDlQOG5iUnpWYVhPZmhOMVlKd2V5MFZacFAxS2JicUpJODc5bHc5dnppVkJKQmY3RDVvRi11MkdQVHJHWVg3Qmg1RmgzRTRpS0gyRzRPcDdXTHlRZmFRTW5ZSjZvT09RbzdSNkh5VFlDMmxMR0F6MA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 肄붿삤濡깅え鍮뚮━?곌렇猷? ?곹룓 ?욌몢怨?14% 湲됰씫 - 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxNTTk5YVhPZ18wRm5Lb2JYMXBvRzNOaUxROGJqa2ZWbEpBYVAyNnJ3SndCdllmUWpOSUg2Smk5UUVUeUJWczdGVTNHbVJpTUZhOFFqamFnY09XQUVsWVJIcTZSN3QxYVo5OWFZempBazlUeHFIbEdqX0gzUm1mc2o0NDFQcU9GZHJD0gGcAUFVX3lxTFBoNVFlY0xtV21uWHNYUEhydVd0RW1CWkNjZmhTNjRVc3VlT1VJaDlQOG5iUnpWYVhPZmhOMVlKd2V5MFZacFAxS2JicUpJODc5bHc5dnppVkJKQmY3RDVvRi11MkdQVHJHWVg3Qmg1RmgzRTRpS0gyRzRPcDdXTHlRZmFRTW5ZSjZvT09RbzdSNkh5VFlDMmxMR0F6MA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164280)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164281</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQTG04MHViM1JRN2Vxa1cxSkN2ZFFxeVFwR1lsWnhyS1ZvVlV4Z0dCZ3o2SHE3ZFNvVkNfOTBBbEc2ZnlUWTVMdHBFY2R1RUJOb1p3bDA1Sk5PSHRaWmFYZnhpd1JXeVB4U09LZHgyOVY5Vzc3c1ZrbWZtaGQ3ZTI4X3hHQk8tNFB00gGcAUFVX3lxTE5vRmNBVzdOSVRsNGxldGI3WkFzb3V4Zm5SNUVVSURZUm1vbGt3U2M0UlA5XzU1MmVSMmtlWTlQbHdEOVBXdmpUQTNHblI5VmhiZDQxWXlncFB1ajI4SW1FZ1NNZWJEYTdHZGZ3Rl9fQmw1R2gtUE5rYTJ1dnRjV2hROUphbndBU3lrMGlOSnc3UU9VekNuT29STEtQSQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 獰?愿蹂??섑븳援?감 愿??15%??寃뚯옱 ?뚯떇?먥?쁽?李㉱룻쁽?紐⑤퉬???곸듅 - 議곗꽑鍮꾩쫰 - Chosunbiz
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiiAFBVV95cUxQTG04MHViM1JRN2Vxa1cxSkN2ZFFxeVFwR1lsWnhyS1ZvVlV4Z0dCZ3o2SHE3ZFNvVkNfOTBBbEc2ZnlUWTVMdHBFY2R1RUJOb1p3bDA1Sk5PSHRaWmFYZnhpd1JXeVB4U09LZHgyOVY5Vzc3c1ZrbWZtaGQ3ZTI4X3hHQk8tNFB00gGcAUFVX3lxTE5vRmNBVzdOSVRsNGxldGI3WkFzb3V4Zm5SNUVVSURZUm1vbGt3U2M0UlA5XzU1MmVSMmtlWTlQbHdEOVBXdmpUQTNHblI5VmhiZDQxWXlncFB1ajI4SW1FZ1NNZWJEYTdHZGZ3Rl9fQmw1R2gtUE5rYTJ1dnRjV2hROUphbndBU3lrMGlOSnc3UU9VekNuT29STEtQSQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164281)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164282</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1JRUhXLXNUTHRYWGtsOUI4RFVVaWVGVFBaRWRqRExfaklBNmJmSnprYjdYM1NRblpQU1pJOXNwQV9RTkRFd2k0eVZmUmtHTjk0eHhHWFFnakJaQ0RYSHVEN2ItRnB1ZUQ5cVNkaA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?대줈?? ?쇱꽦?≫떚釉뚯옄?곗슫??5% ?ъ옄???곹븳媛 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1JRUhXLXNUTHRYWGtsOUI4RFVVaWVGVFBaRWRqRExfaklBNmJmSnprYjdYM1NRblpQU1pJOXNwQV9RTkRFd2k0eVZmUmtHTjk0eHhHWFFnakJaQ0RYSHVEN2ItRnB1ZUQ5cVNkaA%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164282)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164283</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiXkFVX3lxTFAwak5pclBFX0ltSVYyVUZ6WFZiVVdVLWFlNm1iZUYwM3JRZ1BKaGstcktCa2JmemdBa0loaGJGbzVaMVZPMVNqdkluaExCWlBuSDFkOGNpV0xhZUNvd3c%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [N2 ?뱀쭠二? 而댄닾?? ?먭린二쇱떇 ?뚭컖 寃곗젙 怨듭떆??二쇨? ?곸듅??- ?댁뒪?щ뜲??                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiXkFVX3lxTFAwak5pclBFX0ltSVYyVUZ6WFZiVVdVLWFlNm1iZUYwM3JRZ1BKaGstcktCa2JmemdBa0loaGJGbzVaMVZPMVNqdkluaExCWlBuSDFkOGNpV0xhZUNvd3c%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164283)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164284</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTFBReEFuSDdBSlE1WnBUeWxjdXVaTWtDU3Q3MkZ0S1JHejdFNUt4bFNLU1BqMnlkVFZMbU5VOVRyeXk1Z1pvUG1QMndSc1U0NGc5RTY3MWpuVU5idk5FT3JOX0p5aW1RTGNqalh3%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?쇱젙?ㅼ뾽, 二쇱떇遺꾪븷 寃곗젙???댄? ?곗냽 ?곹븳媛 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTFBReEFuSDdBSlE1WnBUeWxjdXVaTWtDU3Q3MkZ0S1JHejdFNUt4bFNLU1BqMnlkVFZMbU5VOVRyeXk1Z1pvUG1QMndSc1U0NGc5RTY3MWpuVU5idk5FT3JOX0p5aW1RTGNqalh3%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164284)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164285</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1Ba3pRT0Y2bXZNYUN4eXdwYmprY2k4cEdQTHl5ZEtzOU1tUHpLWkp4TzBZbnplNmdBS2JFRnpPTG80cERSUm9wX1pzdDFlRmU5am5oRjJzNVlfVU5nU2lEWTluRDhzTDJGRFA2dw%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?쒗솕?ъ옄利앷텒, ?쒕꽕?대쾭???먮굹臾?吏遺????섍꺼???깆옣 踰좏똿??媛?곸옄???섑삙 湲곕? - ??대뱶寃쎌젣
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMibEFVX3lxTE1Ba3pRT0Y2bXZNYUN4eXdwYmprY2k4cEdQTHl5ZEtzOU1tUHpLWkp4TzBZbnplNmdBS2JFRnpPTG80cERSUm9wX1pzdDFlRmU5am5oRjJzNVlfVU5nU2lEWTluRDhzTDJGRFA2dw%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164285)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164286</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTE90a011a0wxdTJIRER1cmdacm5mQkxFNHBZMFoxeG8yYVJOT3hXMUl0OU1KaHNKTjdnWnAxOTk4em5xN1hEeFpKMnJNQ1VMUHlFdTlKMUdvTnNjek9TUlBrZG1QSE0zVFE0c2ZF%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?뚰듃, ?곸옣 ?댄썑 ?ъ옄 ?섏슂 紐곕━硫??곹븳媛 - ?쒖슱??댁뼱
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMia0FVX3lxTE90a011a0wxdTJIRER1cmdacm5mQkxFNHBZMFoxeG8yYVJOT3hXMUl0OU1KaHNKTjdnWnAxOTk4em5xN1hEeFpKMnJNQ1VMUHlFdTlKMUdvTnNjek9TUlBrZG1QSE0zVFE0c2ZF%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164286)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164287</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMidEFVX3lxTE1xeFl3LVpDV2RtTVVRcEtDS24yM0ZtemtCOXpYZmYwZWZWSFFZOVNyOGlfMXlQQTU1LXhYUW9TNHRQQVpCZWlMS3ZwMXpEN2ZLcnVGUTN1dEIxMU9JQ2Y4a2RyWGxZTWYxVWF4STFQNTdlV2Zr0gF0QVVfeXFMUHNHUjNkQzR0a3Q0VGJrblFVZEg1dXhlSXRjVUgzXzJ0U2RIVDZWdWpiWUROU1YwWTlCSGNSdmRha0hUOWJkZ3NFTlN2SHVYZ3Vqd3BnQmsxQ3QwWl9hQTl5RDNGdzV0S2xMdzBqeUNkbFJVWXo%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            ?뱀쭠二?湲곗궗濡?二쇨? ?꾩썙 111????轅爰썩μ쟾吏?湲곗옄 ???곷컻 - MBC ?댁뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMidEFVX3lxTE1xeFl3LVpDV2RtTVVRcEtDS24yM0ZtemtCOXpYZmYwZWZWSFFZOVNyOGlfMXlQQTU1LXhYUW9TNHRQQVpCZWlMS3ZwMXpEN2ZLcnVGUTN1dEIxMU9JQ2Y4a2RyWGxZTWYxVWF4STFQNTdlV2Zr0gF0QVVfeXFMUHNHUjNkQzR0a3Q0VGJrblFVZEg1dXhlSXRjVUgzXzJ0U2RIVDZWdWpiWUROU1YwWTlCSGNSdmRha0hUOWJkZ3NFTlN2SHVYZ3Vqd3BnQmsxQ3QwWl9hQTl5RDNGdzV0S2xMdzBqeUNkbFJVWXo%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164287)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164288</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiTkFVX3lxTE9ZZXFneHU0MjhDcDRkNlVmeUtnYTdobk04UHN0cGo2bDdrcVhuNEtFYzFCLVVEeEVndDBTMHNDNlk2THRVb2NKUThzTTZPdw%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [ET?뱀쭠二? &#039;?먯쭊 ?곹룓 紐⑹쟻 怨듦컻留ㅼ닔&#039; 濡쒖뒪?? 二쇨? ?곹븳媛 吏곹뻾 - etnews.com
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiTkFVX3lxTE9ZZXFneHU0MjhDcDRkNlVmeUtnYTdobk04UHN0cGo2bDdrcVhuNEtFYzFCLVVEeEVndDBTMHNDNlk2THRVb2NKUThzTTZPdw%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164288)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164289</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiVEFVX3lxTE5GTV9aR3Fvb1hVTjQycnlNTGVfdFFkRzk0S19yN2lmd0JHZUxudl8xU2JkcG5Xd1R0NEh6V1pKbzNLQkM3ZlJkeVo4R3JVY1ZrUnkxRQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? 諭낇겕?⑥뼱湲濡쒕쾶, ?먮굹臾??ㅼ씠踰?怨꾩뿴?ъ? ?ш큵??二쇱떇援먰솚 異붿쭊 ?뚯떇???곸듅??- ?댄닾?곗씠
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiVEFVX3lxTE5GTV9aR3Fvb1hVTjQycnlNTGVfdFFkRzk0S19yN2lmd0JHZUxudl8xU2JkcG5Xd1R0NEh6V1pKbzNLQkM3ZlJkeVo4R3JVY1ZrUnkxRQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164289)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164290</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiY0FVX3lxTFB2RzN3Nk5FclVrYVFtMmZhbnpKdVVXc2c5OUl3SFEyR1JTWFd0QVNRQkI1M1pPMlFBZ3F4M005WEQ0RWgxUkpLRW82dWtUVE9TOGhVekliYS1seXFlUmstcXktQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? ?띾씪??二쇱떇 泥섎텇???쇱꽦?꾩옄 ??珥덈컲 ?쎌꽭 - 議곗꽭湲덉쑖?좊Ц
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiY0FVX3lxTFB2RzN3Nk5FclVrYVFtMmZhbnpKdVVXc2c5OUl3SFEyR1JTWFd0QVNRQkI1M1pPMlFBZ3F4M005WEQ0RWgxUkpLRW82dWtUVE9TOGhVekliYS1seXFlUmstcXktQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164290)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164291</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiTkFVX3lxTE96VnJNbld5c2JKU0RHWXZPM2FYNURCNk9XcGVqUFpIcDB2X2RKaDVjNUN4NHZMTlFtWEdvMEVXck1CeXJUQnN3ZkdlSGUtQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [ET?뱀쭠二? ?ㅼ씠踰? ?낅퉬???덉쓣源뚢??ш큵??二쇱떇援먰솚 蹂대룄??二쇨? 9%??- etnews.com
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiTkFVX3lxTE96VnJNbld5c2JKU0RHWXZPM2FYNURCNk9XcGVqUFpIcDB2X2RKaDVjNUN4NHZMTlFtWEdvMEVXck1CeXJUQnN3ZkdlSGUtQQ%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164291)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <tr data-category="stock" class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">164292</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                                            stock
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">
+                                        <span data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiakFVX3lxTFBocUVqRFV3OGxnTmZIMWk2YzJ5OUVjNUZ2SXhkaXBzMTBxMHNWTFlMN3o2WVZGdGl3bmptWWtEUnpPQ2llZG90RWIwanR0eGRTZDNsV2dGWmFNbEFYOTlnV1R4TkxuM3Z6V1E%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="hover:text-blue-600 cursor-pointer">
+                                            [?뱀쭠二? &#039;?먰쉶???몄엯&#039; 肄붿삤濡깅え鍮뚮━?곌렇猷? 5?곗냽 訝듏력력룻닾?먯옄 二쇱쓽蹂?- ?쒖슱?뚯씠?몄뒪
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">援ш? ?댁뒪</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">2026. 2. 19.</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button data-link="https%3A%2F%2Fnews.google.com%2Frss%2Farticles%2FCBMiakFVX3lxTFBocUVqRFV3OGxnTmZIMWk2YzJ5OUVjNUZ2SXhkaXBzMTBxMHNWTFlMN3o2WVZGdGl3bmptWWtEUnpPQ2llZG90RWIwanR0eGRTZDNsV2dGWmFNbEFYOTlnV1R4TkxuM3Z6V1E%3Foc%3D5" onclick="openNewsLink(this.getAttribute('data-link'))" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            蹂닿린
+                                        </button>
+                                        <button onclick="deleteNews(164292)" class="text-red-600 hover:text-red-900">
+                                            <i class="fas fa-trash mr-1"></i>
+                                            ??젣
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                        </tbody>
+                    </table>
+                    
+                    <!-- 濡쒕뵫 ?몃뵒耳?댄꽣 -->
+                    <div id="loading-indicator" class="hidden text-center py-4">
+                        <i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i>
+                        <p class="text-sm text-gray-600 mt-2">??留롮? ?댁뒪瑜?遺덈윭?ㅻ뒗 以?..</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            // ?ы띁: HTML ?댁뒪耳?댄봽 (?꾩뿭 ?뺤쓽)
+            const escapeHtml = (text) => {
+                if (!text) return '';
+                const map = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                };
+                return text.toString().replace(/[&<>"']/g, (char) => map[char]);
+            };
+
+            // ?댁뒪 留곹겕 ?닿린 (Referrer ?놁씠)
+            function openNewsLink(url) {
+                console.log('[openNewsLink] ?ㅽ뻾 - ?먮낯 URL:', url);
+                const proxyUrl = '/news/redirect?url=' + encodeURIComponent(url);
+                window.open(proxyUrl, '_blank', 'noopener,noreferrer');
+            }
+            
+            // 濡쒓렇???뺤씤 諛?沅뚰븳 寃利?            const token = localStorage.getItem('auth_token');
+            const userEmail = localStorage.getItem('user_email');
+            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
+            
+            if (!token || userLevel < 6) {
+                alert('愿由ъ옄 沅뚰븳???꾩슂?⑸땲??');
+                location.href = '/';
+            }
+            
+            if (userEmail) {
+                document.getElementById('admin-name').textContent = userEmail + ' (?덈꺼 ' + userLevel + ')';
+            }
+            
+            // ==================== 臾댄븳 ?ㅽ겕濡?愿??蹂??====================
+            let currentOffset = 50; // ?대? 50媛?濡쒕뱶??            let isLoading = false;
+            let hasMore = true;
+            let currentCategory = 'all';
+            const loadLimit = 50; // ??踰덉뿉 50媛쒖뵫 濡쒕뱶
+            
+            // 臾댄븳 ?ㅽ겕濡??ㅼ젙
+            const newsContainer = document.getElementById('news-container');
+            if (newsContainer) {
+                console.log('臾댄븳 ?ㅽ겕濡??대깽??由ъ뒪???깅줉??);
+                newsContainer.addEventListener('scroll', function() {
+                    const scrollHeight = newsContainer.scrollHeight;
+                    const scrollTop = newsContainer.scrollTop;
+                    const clientHeight = newsContainer.clientHeight;
+                    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+                    
+                    console.log('?ㅽ겕濡??대깽??', {
+                        scrollHeight,
+                        scrollTop,
+                        clientHeight,
+                        distanceFromBottom,
+                        isLoading,
+                        hasMore
+                    });
+                    
+                    if (isLoading || !hasMore) {
+                        console.log('濡쒕뵫 以묒씠嫄곕굹 ???댁긽 ?놁쓬');
+                        return;
+                    }
+                    
+                    // ?ㅽ겕濡ㅼ씠 ?앹뿉??200px ?대궡濡?媛源뚯썙吏硫?濡쒕뱶
+                    if (distanceFromBottom <= 200) {
+                        console.log('異붽? 濡쒕뱶 ?쒖옉!');
+                        loadMoreNews();
+                    }
+                });
+            } else {
+                console.error('news-container瑜?李얠쓣 ???놁뒿?덈떎!');
+            }
+            
+            // ??留롮? ?댁뒪 濡쒕뱶
+            async function loadMoreNews() {
+                if (isLoading || !hasMore) {
+                    console.log('loadMoreNews 以묐떒:', { isLoading, hasMore });
+                    return;
+                }
+                
+                console.log('loadMoreNews ?쒖옉:', { currentOffset, currentCategory });
+                isLoading = true;
+                document.getElementById('loading-indicator').classList.remove('hidden');
+                document.getElementById('loading-status').textContent = '濡쒕뵫以?;
+                
+                try {
+                    const url = '/api/news?category=' + currentCategory + '&limit=' + loadLimit + '&offset=' + currentOffset;
+                    console.log('API ?붿껌:', url);
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    console.log('API ?묐떟:', data);
+                    
+                    if (data.success && data.news && data.news.length > 0) {
+                        const newsTable = document.getElementById('news-table');
+                        
+                        data.news.forEach(news => {
+                            const row = document.createElement('tr');
+                            row.setAttribute('data-category', news.category);
+                            row.className = 'hover:bg-gray-50';
+                            
+                            
+                            // ?섏쐞 ?명솚?깆쓣 ?꾪빐 esc 蹂꾩묶 ?좎?
+                            const esc = escapeHtml;
+
+                            row.innerHTML = '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' + news.id + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap">' +
+                                    '<span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">' +
+                                        esc(news.category) +
+                                    '</span>' +
+                                '</td>' +
+                                '<td class="px-6 py-4 text-sm text-gray-900 max-w-md truncate">' +
+                                    '<span data-link="' + encodeURIComponent(news.link).replace(/'/g, '%27') + '" onclick="openNewsLink(this.getAttribute(\'data-link\'))" class="hover:text-blue-600 cursor-pointer">' +
+                                        esc(news.title) +
+                                    '</span>' +
+                                '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + (esc(news.publisher) || '援ш? ?댁뒪') + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">' + new Date(news.created_at).toLocaleDateString('ko-KR') + '</td>' +
+                                '<td class="px-6 py-4 whitespace-nowrap text-sm font-medium">' +
+                                    '<button data-link="' + encodeURIComponent(news.link).replace(/'/g, '%27') + '" onclick="openNewsLink(this.getAttribute(\'data-link\'))" class="text-blue-600 hover:text-blue-900 mr-3">' +
+                                        '<i class="fas fa-external-link-alt mr-1"></i>' +
+                                        '蹂닿린' +
+                                    '</button>' +
+                                    '<button onclick="deleteNews(' + news.id + ')" class="text-red-600 hover:text-red-900">' +
+                                        '<i class="fas fa-trash mr-1"></i>' +
+                                        '??젣' +
+                                    '</button>' +
+                                '</td>';
+                            newsTable.appendChild(row);
+                        });
+                        
+                        currentOffset += data.news.length;
+                        document.getElementById('loaded-count').textContent = document.querySelectorAll('#news-table tr').length;
+                        
+                        // 50媛쒕낫???곴쾶 濡쒕뱶?섎㈃ ???댁긽 ?놁쓬
+                        if (data.news.length < loadLimit) {
+                            hasMore = false;
+                            document.getElementById('loading-status').textContent = '?꾨즺';
+                        } else {
+                            document.getElementById('loading-status').textContent = '?湲?;
+                        }
+                    } else {
+                        hasMore = false;
+                        document.getElementById('loading-status').textContent = '?꾨즺';
+                    }
+                } catch (error) {
+                    console.error('?댁뒪 濡쒕뱶 ?ㅻ쪟:', error);
+                    document.getElementById('loading-status').textContent = '?ㅻ쪟';
+                } finally {
+                    isLoading = false;
+                    document.getElementById('loading-indicator').classList.add('hidden');
+                }
+            }
+            
+            // ?꾩껜 ?댁뒪 媛?몄삤湲?            async function fetchAllNews(event) {
+                const btn = event ? event.target : null;
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>媛?몄삤??以?..';
+                }
+                
+                const categories = ['general', 'politics', 'economy', 'tech', 'sports', 'entertainment', 'stock'];
+                let totalFetched = 0;
+                
+                for (const category of categories) {
+                    try {
+                        const response = await fetch('/api/news/fetch?category=' + category);
+                        const data = await response.json();
+                        if (data.success) {
+                            totalFetched += data.saved;
+                        }
+                    } catch (error) {
+                        console.error('?댁뒪 媛?몄삤湲??ㅻ쪟:', error);
+                    }
+                }
+                
+                alert(totalFetched + '媛쒖쓽 ???댁뒪瑜?媛?몄솕?듬땲??');
+                location.reload();
+            }
+            
+            // 二쇱떇 ?댁뒪 ?먮룞 ?섏쭛
+            async function collectStockNews(event) {
+                const btn = event ? event.target : null;
+                let originalText = '';
+                if (btn) {
+                    originalText = btn.innerHTML;
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>?섏쭛 以?..';
+                }
+                
+                try {
+                    const response = await fetch('/api/admin/collect-stock-news', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const stats = data.stats;
+                        const message = 
+                            '二쇱떇 ?댁뒪 ?섏쭛 ?꾨즺!\n\n' +
+                            '?뱤 ?섏쭛 ?듦퀎:\n' +
+                            '- ?꾩껜: ' + stats.total + '嫄?n' +
+                            '- ?좉퇋 ??? ' + stats.saved + '嫄?n' +
+                            '- 以묐났 ?쒖쇅: ' + stats.duplicate + '嫄?n' +
+                            (stats.error > 0 ? '- ?ㅻ쪟: ' + stats.error + '嫄?n' : '');
+                        
+                        alert(message);
+                        location.reload();
+                    } else {
+                        alert('?섏쭛 ?ㅽ뙣: ' + (data.message || data.error || '?????녿뒗 ?ㅻ쪟'));
+                    }
+                } catch (error) {
+                    console.error('二쇱떇 ?댁뒪 ?섏쭛 ?ㅻ쪟:', error);
+                    alert('?섏쭛 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            }
+            
+            // ?댁뒪 ??젣
+            async function deleteNews(id) {
+                if (!confirm('???댁뒪瑜???젣?섏떆寃좎뒿?덇퉴?')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/news/' + id, {
+                        method: 'DELETE'
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('?댁뒪媛 ??젣?섏뿀?듬땲??');
+                        location.reload();
+                    } else {
+                        alert('??젣 ?ㅽ뙣: ' + (data.error || '?????녿뒗 ?ㅻ쪟'));
+                    }
+                } catch (error) {
+                    console.error('?댁뒪 ??젣 ?ㅻ쪟:', error);
+                    alert('??젣 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+                }
+            }
+            
+            // 移댄뀒怨좊━ ?꾪꽣 (臾댄븳 ?ㅽ겕濡??ъ꽕??
+            async function filterNews() {
+                const category = document.getElementById('category-filter').value;
+                currentCategory = category;
+                currentOffset = 0;
+                hasMore = true;
+                
+                // ?뚯씠釉?珥덇린??                document.getElementById('news-table').innerHTML = '';
+                document.getElementById('loaded-count').textContent = '0';
+                document.getElementById('filter-status').textContent = category === 'all' ? '?꾩껜' : category;
+                
+                // 泥?50媛?濡쒕뱶
+                await loadMoreNews();
+            }
+            
+            // ==================== ?ㅼ?以??ㅼ젙 愿???⑥닔 ====================
+            let autoFetchInterval = null;
+            
+            // ?ㅼ?以??ㅼ젙 濡쒕뱶
+            async function loadSchedule() {
+                console.log('[News Scheduler] ?ㅼ?以?濡쒕뱶 ?쒖옉...');
+                try {
+                    const response = await fetch('/api/news/schedule');
+                    const data = await response.json();
+                    console.log('[News Scheduler] ?곗씠???섏떊:', data);
+                    
+                    if (data.success && data.schedule) {
+                        const schedule = data.schedule;
+                        
+                        // ?쒖꽦???곹깭
+                        const enabledEl = document.getElementById('schedule-enabled');
+                        if (enabledEl) enabledEl.checked = schedule.enabled === 1;
+                        
+                        // ?ㅼ?以????                        const scheduleType = schedule.schedule_type || 'hourly';
+                        const typeRadio = document.querySelector('input[name="schedule-type"][value="' + scheduleType + '"]');
+                        if (typeRadio) typeRadio.checked = true;
+                        
+                        // 媛꾧꺽 (hourly)
+                        const intervalEl = document.getElementById('interval-hours');
+                        if (intervalEl && schedule.interval_hours) {
+                            intervalEl.value = schedule.interval_hours;
+                        }
+                        
+                        // ?쒓컙 (daily)
+                        const timeEl = document.getElementById('schedule-time');
+                        if (timeEl && schedule.schedule_time) {
+                            timeEl.value = schedule.schedule_time;
+                        }
+                        
+                        // ?ㅽ뻾 ?뺣낫 ?낅뜲?댄듃 ?⑥닔 ?몄텧
+                        updateDisplayTimes(schedule.last_run, schedule.next_run);
+                        
+                        // UI ?쒖떆 ?꾪솚
+                        updateScheduleType();
+                        
+                        // ?먮룞 ?ㅽ뻾 紐⑤땲?곕쭅 ?쒖옉
+                        if (schedule.enabled === 1) {
+                            startAutoFetch();
+                        }
+                    }
+                } catch (error) {
+                    console.error('[News Scheduler] 濡쒕뱶 ?ㅻ쪟:', error);
+                }
+            }
+
+            // ?ㅽ뻾 ?쒓컙 ?쒖떆 ?낅뜲?댄듃 ?ы띁
+            function updateDisplayTimes(lastRun, nextRun) {
+                console.log('[News Scheduler] ?쒖떆 ?쒓컙 ?낅뜲?댄듃:', { lastRun, nextRun });
+                
+                const lastRunEl = document.getElementById('last-run');
+                const nextRunEl = document.getElementById('next-run');
+                
+                if (lastRunEl) {
+                    lastRunEl.textContent = lastRun ? new Date(lastRun).toLocaleString('ko-KR') : '?뺣낫 ?놁쓬';
+                }
+                
+                if (nextRunEl) {
+                    nextRunEl.textContent = nextRun ? new Date(nextRun).toLocaleString('ko-KR') : '?湲?以?;
+                }
+            }
+            
+            // ?ㅼ?以??쒖꽦??鍮꾪솢?깊솕
+            function toggleSchedule() {
+                const enabled = document.getElementById('schedule-enabled').checked;
+                const settings = document.getElementById('schedule-settings');
+                
+                if (enabled) {
+                    settings.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    settings.classList.add('opacity-50', 'pointer-events-none');
+                    stopAutoFetch();
+                }
+            }
+            
+            // ?ㅼ?以????蹂寃?            function updateScheduleType() {
+                const scheduleType = document.querySelector('input[name="schedule-type"]:checked').value;
+                const hourlySettings = document.getElementById('hourly-settings');
+                const dailySettings = document.getElementById('daily-settings');
+                
+                if (scheduleType === 'hourly') {
+                    hourlySettings.classList.remove('hidden');
+                    dailySettings.classList.add('hidden');
+                } else {
+                    hourlySettings.classList.add('hidden');
+                    dailySettings.classList.remove('hidden');
+                }
+            }
+            
+            // ?ㅼ?以????            async function saveSchedule() {
+                console.log('[News Scheduler] ?ㅼ젙 ????쒕룄...');
+                const enabled = document.getElementById('schedule-enabled').checked;
+                const scheduleType = document.querySelector('input[name="schedule-type"]:checked').value;
+                const intervalHours = parseInt(document.getElementById('interval-hours').value);
+                const scheduleTime = document.getElementById('schedule-time').value;
+                
+                const data = {
+                    enabled: enabled ? 1 : 0,
+                    schedule_type: scheduleType,
+                    interval_hours: intervalHours,
+                    schedule_time: scheduleTime
+                };
+                
+                try {
+                    const response = await fetch('/api/news/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    const result = await response.json();
+                    console.log('[News Scheduler] ????묐떟:', result);
+                    
+                    if (result.success) {
+                        alert('?ㅼ?以??ㅼ젙????λ릺?덉뒿?덈떎.');
+                        
+                        // ?붾㈃ ?쒓컙 ?뺣낫 利됱떆 媛깆떊
+                        const lastRunText = document.getElementById('last-run').textContent;
+                        updateDisplayTimes(lastRunText === '-' ? null : lastRunText, result.next_run);
+                        
+                        // ?먮룞 ?ㅽ뻾 ?ъ꽕??                        stopAutoFetch();
+                        if (enabled) {
+                            startAutoFetch();
+                        }
+                    } else {
+                        alert('????ㅽ뙣: ' + (result.error || '?????녿뒗 ?ㅻ쪟'));
+                    }
+                } catch (error) {
+                    console.error('[News Scheduler] ????ㅻ쪟:', error);
+                    alert('???以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+                }
+            }
+            
+            // ?먮룞 ?댁뒪 媛?몄삤湲??쒖옉 (?곹깭 紐⑤땲?곕쭅)
+            function startAutoFetch() {
+                // 湲곗〈 interval ?뺣━
+                stopAutoFetch();
+                
+                // 30珥덈쭏???ㅼ?以?諛??ㅽ뻾 寃곌낵 泥댄겕
+                autoFetchInterval = setInterval(async () => {
+                    try {
+                        const response = await fetch('/api/news/schedule');
+                        const data = await response.json();
+                        
+                        if (data.success && data.schedule) {
+                            const schedule = data.schedule;
+                            updateDisplayTimes(schedule.last_run, schedule.next_run);
+                            
+                            if (schedule.enabled !== 1) {
+                                stopAutoFetch();
+                            }
+                        }
+                    } catch (error) {
+                        console.error('[News Scheduler] ?먮룞 泥댄겕 ?ㅻ쪟:', error);
+                    }
+                }, 30000);
+                
+                console.log('?댁뒪 ?섏쭛 ?곹깭 紐⑤땲?곕쭅???쒖옉?섏뿀?듬땲??');
+            }
+            
+            // ?먮룞 ?댁뒪 媛?몄삤湲?以묒?
+            function stopAutoFetch() {
+                if (autoFetchInterval) {
+                    clearInterval(autoFetchInterval);
+                    autoFetchInterval = null;
+                    console.log('?먮룞 ?댁뒪 媛?몄삤湲곌? 以묒??섏뿀?듬땲??');
+                }
+            }
+            
+            // ?섏씠吏 濡쒕뱶 ???ㅼ?以??ㅼ젙 濡쒕뱶
+            loadSchedule();
+        </script>
+    </body>
+    </html>
+  

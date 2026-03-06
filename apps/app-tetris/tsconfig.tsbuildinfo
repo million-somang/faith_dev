@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/constants.ts","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/gameboard.tsx","./src/components/infopanel.tsx","./src/components/leaderboard.tsx","./src/components/mobilecontrols.tsx","./src/components/nextpiecepreview.tsx","./src/hooks/usetetris.ts"],"version":"5.9.3"}

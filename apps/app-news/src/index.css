@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+@layer base {
+    * {
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        letter-spacing: -0.02em;
+    }
+
+    body {
+        @apply bg-[#f5f6f7] min-h-screen text-gray-900;
+    }
+}
+
+@layer components {
+    .header-gradient {
+        background: linear-gradient(135deg, #03c75a 0%, #059b44 50%, #03c75a 100%);
+        background-size: 200% 100%;
+        animation: headerShift 10s ease-in-out infinite;
+    }
+
+    .content-card {
+        @apply bg-white rounded-xl border border-[#e4e8eb] shadow-sm transition-all duration-200;
+    }
+
+    .content-card:hover {
+        @apply border-[#c9cdd2];
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-shadow {
+        @apply bg-white border-2 border-[#03c75a] rounded-[40px] transition-all duration-200;
+    }
+
+    .search-shadow:hover {
+        @apply border-[#02b350];
+        box-shadow: 0 2px 8px rgba(3, 199, 90, 0.15);
+    }
+
+    .search-shadow:focus-within {
+        @apply border-[#02b350];
+        box-shadow: 0 2px 12px rgba(3, 199, 90, 0.2);
+    }
+
+    .badge {
+        @apply inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold transition-all duration-200;
+    }
+
+    .rank-number {
+        @apply font-bold text-lg text-[#03c75a] transition-all;
+    }
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}

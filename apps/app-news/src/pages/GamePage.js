@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { Header, Footer, Card } from '@faithportal/ui';
+export default function GamePage() {
+    return (_jsxs("div", { className: "flex flex-col min-h-screen", children: [_jsx(Header, {}), _jsx("main", { className: "flex-1 max-w-6xl mx-auto px-4 py-12 w-full", children: _jsxs(Card, { className: "p-12 text-center", children: [_jsx("div", { className: "w-20 h-20 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto mb-6", children: _jsx("i", { className: "fas fa-gamepad text-4xl" }) }), _jsx("h1", { className: "text-3xl font-bold text-gray-900 mb-4", children: "\uAC8C\uC784 \uC874" }), _jsx("p", { className: "text-gray-500 mb-8", children: "\uB2E4\uC591\uD55C \uBBF8\uB2C8 \uAC8C\uC784\uACFC \uC810\uC218 \uC21C\uC704\uB97C \uD655\uC778\uD558\uC138\uC694. (\uC900\uBE44 \uC911\uC778 \uD398\uC774\uC9C0\uC785\uB2C8\uB2E4)" }), _jsx("a", { href: "/", className: "px-8 py-3 bg-brand-green text-white rounded-lg font-bold hover:bg-brand-green-hover transition-colors inline-block", children: "\uD648\uC73C\uB85C \uB3CC\uC544\uAC00\uAE30" })] }) }), _jsx(Footer, {})] }));
+}

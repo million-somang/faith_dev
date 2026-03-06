@@ -1,0 +1,1 @@
+Schema log error: no such table: information_schema.columns

@@ -1,0 +1,23 @@
+{
+    "name": "@faithportal/api-server",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "tsx watch src/server.ts",
+        "build": "tsc",
+        "start": "node dist/server.js"
+    },
+    "dependencies": {
+        "@faithportal/core-utils": "*",
+        "@faithportal/database": "*",
+        "@hono/node-server": "^1.19.9",
+        "better-sqlite3": "^12.6.2",
+        "dotenv": "^17.2.3",
+        "hono": "^4.10.3"
+    },
+    "devDependencies": {
+        "tsx": "^4.21.0",
+        "typescript": "^5.0.0"
+    }
+}

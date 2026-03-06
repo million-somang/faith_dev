@@ -1,0 +1,27 @@
+/* iOS 바운스 억제 */
+html, body {
+  overscroll-behavior-y: none;
+}
+
+/* 텍스트/이미지 길게 누르기 방지 */
+* {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+/* 입력 폼 텍스트 선택 허용 */
+input, textarea {
+  user-select: auto;
+}
+
+/* iOS Safari 폼 줌인 방지 */
+input, select, textarea {
+  font-size: 16px !important;
+}
+
+/* 스크롤 가능 영역 */
+.mini-app-content {
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}

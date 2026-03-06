@@ -1,0 +1,1287 @@
+# Faith Portal - 믿음의 포탈 사이트
+
+## 프로젝트 개요
+- **프로젝트명**: Faith Portal (믿음의 포탈)
+- **목표**: 풀스택 포탈 사이트 구현 (검색, 회원관리, 관리자 시스템)
+- **브랜드 컬러**: Deep Navy (#1e3a8a ~ #1e40af) ✨NEW REDESIGN
+- **강조 컬러**: Warm Orange (#f97316 ~ #fb923c)
+- **디자인 테마**: 깔끔하고 현대적인 화이트 기반 디자인
+  - 배경: 연한 회색 (#F5F7FA)
+  - 헤더: 화이트 배경 (스크롤 시 그림자 효과)
+  - 푸터: Deep Navy 그라디언트
+  - 검색창: 캡슐형 디자인 (border-radius: 50px)
+  - 카드: 둥근 모서리 + 그림자 효과
+  - 배지: 소프트 컬러 배경 + 세련된 타이포그래피
+- **폰트**: Pretendard (자간 -0.02em)
+- **기술 스택**: Hono + TypeScript + Cloudflare D1 + TailwindCSS + Chart.js
+- **반응형 디자인**: ✅ 모든 페이지 모바일/태블릿/데스크톱 지원
+- **컴포넌트 아키텍처**: ✨NEW
+  - `getCommonHeader()`: 공통 헤더 컴포넌트
+  - `getStickyHeader()`: Sticky 헤더 컴포넌트 (모든 페이지 적용)
+  - `getCommonFooter()`: 공통 푸터 컴포넌트
+  - `getCommonAuthScript()`: 인증 스크립트 컴포넌트
+  - `getAdminNavigation()`: 관리자 네비게이션 컴포넌트
+
+## 주요 기능
+
+### ✅ 완료된 기능
+
+#### 1. 사용자 기능
+- **메인 페이지** ✨REDESIGNED
+  - Faith Portal 브랜드 검색 UI
+  - **현대적이고 고급스러운 디자인** ✨NEW
+    - 헤더: 화이트 배경, 스크롤 시 그림자 강화 효과
+    - 푸터: Deep Navy 그라디언트 (blue-900 → blue-800)
+    - 배경: 연한 회색 (#F5F7FA) - 눈의 피로 최소화
+    - 검색창: 캡슐형 디자인 (50px 둥근 모서리) + 드롭 그림자
+    - 퀵 메뉴: 통일된 회색 원형 아이콘 + 포인트 컬러
+    - 카드: 화이트 배경 + 16px 둥근 모서리 + 부드러운 그림자
+    - 배지: 소프트 컬러 배경 + 세미볼드 타이포그래피
+    - 순위 숫자: 그라디언트 텍스트 (Navy → Blue)
+    - 버튼: Deep Navy 및 Orange 그라디언트
+  - 바로가기 링크 (메일, 카페, 블로그, 쇼핑, 뉴스)
+  - **실시간 뉴스 섹션** ✨UPDATE
+    - 가독성 최적화 (큰 제목, 진한 색상, 넉넉한 간격)
+    - 2줄 제목 표시로 더 많은 정보 제공
+    - 명확한 카테고리 배지 및 시간 표시
+  - 로그인 상태 표시
+  - 관리자 메뉴 표시 (Lv.6 이상)
+
+- **뉴스 페이지** ✨NEW ✨REDESIGNED
+  - Google RSS 뉴스 통합
+  - **3단 레이아웃 개편** ✨MAJOR UPDATE
+    - **PC 화면**: 왼쪽(키워드 구독) + 중앙(뉴스 피드) + 오른쪽(HOT 이슈)
+    - **모바일**: 1단 레이아웃 (HOT → 뉴스 → 키워드 순서)
+    - 반응형 디자인: Tailwind CSS lg 브레이크포인트 활용
+  - **AI 요약 + 감성분석** ✨NEW
+    - AI 요약 보라색 배경 박스 표시
+    - 감성 아이콘 (😊긍정, 😐중립, 😞부정)
+    - 원본 요약 폴백
+  - **투표 시스템** ✨NEW
+    - 좋아요/싫어요 버튼 (UP/DOWN)
+    - 실시간 투표 수 업데이트
+    - 호버 애니메이션 및 클릭 피드백
+  - **실시간 HOT 이슈** ✨NEW
+    - 인기순 TOP 10 뉴스 (투표수 + 조회수 기준)
+    - 상위 3개 빨간색 강조
+    - 실시간 업데이트
+  - **키워드 구독 시스템** ✨NEW
+    - 키워드 추가/삭제 (Enter 키 지원)
+    - 사용자별 키워드 관리
+    - 구독 키워드 목록 표시
+  - 카테고리별 필터링 (전체, 일반, 정치, 경제, IT/과학, 스포츠, 엔터테인먼트)
+  - 실시간 뉴스 업데이트
+  - HTML 이스케이프 처리로 안전한 컨텐츠 표시
+  - 외부 링크로 뉴스 원문 연결
+  - 조회수 표시
+  - **검색 기능** ✨NEW
+    - 실시간 검색 (디바운스 적용)
+    - 제목 및 요약 전체 검색
+    - 카테고리 필터와 조합 가능
+  - **다중 카테고리 필터링** ✨NEW
+    - 여러 카테고리 동시 선택 가능
+    - 필터 상태 시각적 표시
+    - 필터 초기화 버튼
+  - **북마크 기능** ✨NEW
+    - 뉴스 북마크 저장/삭제
+    - 사용자별 북마크 관리
+    - 북마크 상태 실시간 표시
+  - **공유 기능** ✨NEW
+    - SNS 공유 (카카오톡, 페이스북, 트위터)
+    - 링크 복사 (클립보드)
+    - 공유 모달 UI
+  - **다크 모드** ✨NEW
+    - 라이트/다크 테마 토글
+    - localStorage 저장
+    - 부드러운 전환 애니메이션
+  - **UI/UX 개선** ✨NEW
+    - 로딩 스피너
+    - 토스트 알림 (성공/오류/정보/경고)
+    - 애니메이션 효과
+
+- **북마크 페이지** ✨NEW
+  - 사용자별 북마크 목록
+  - 카테고리별 필터링
+  - 북마크 삭제 기능
+  - 뉴스 원문 링크
+  - 다크 모드 지원
+
+- **회원가입 기능** ✨UPDATED
+  - 이메일 중복 체크
+  - 필수 정보: 이메일, 비밀번호, 이름
+  - 선택 정보: 휴대전화
+  - 비밀번호 확인 검증
+  - 비밀번호 해싱 (SHA-256)
+  - D1 데이터베이스 저장
+  - 자동 로그인 (세션 생성)
+  - 자동 활동 로그 기록
+  - 신규 가입 알림 생성
+
+- **로그인 기능** ✨UPDATED
+  - 이메일/비밀번호 인증
+  - **세션 기반 인증** (쿠키)
+  - 계정 상태 체크 (활성/정지/삭제)
+  - 마지막 로그인 시간 기록
+  - 로그인 기록 저장 (IP, User-Agent)
+  - 로그인 활동 로그 기록
+  - 관리자 자동 리다이렉트
+  - 로그아웃 기능 (세션 삭제)
+  - **헤더 로그인 상태 표시** (사용자 이름 표시)
+
+#### 2. 관리자 기능 (Lv.6 이상)
+
+##### 회원 등급 시스템 (10단계)
+- **Lv.1**: 일반 회원 (기본)
+- **Lv.2**: 정회원
+- **Lv.3**: 우수회원
+- **Lv.4**: VIP 회원
+- **Lv.5**: VVIP 회원
+- **Lv.6**: 실버 관리자 (관리자 권한 시작)
+- **Lv.7**: 골드 관리자
+- **Lv.8**: 플래티넘 관리자 (일괄 처리 권한)
+- **Lv.9**: 마스터 관리자
+- **Lv.10**: 슈퍼바이저 (최고 관리자)
+
+##### 관리자 대시보드 (`/admin`)
+- **통계 카드**
+  - 전체 회원 수
+  - 활성 회원 수
+  - 정지 회원 수
+  - 오늘 가입한 회원 수
+  
+- **등급별 회원 분포 차트** (Chart.js 사용)
+- **최근 가입 회원 10명 리스트**
+
+##### 회원 관리 페이지 (`/admin/users`)
+- **검색 및 필터**
+  - 이메일/이름으로 검색
+  - 등급별 필터 (1~10등급)
+  - 상태별 필터 (활성/정지/삭제)
+  
+- **회원 목록 표시**
+  - ID, 이메일, 이름, 휴대전화
+  - 등급 배지 표시
+  - 상태 배지 표시
+  - 가입일
+  
+- **회원 관리 기능**
+  - ✏️ 수정: 이름, 휴대전화, 등급 변경
+  - 🚫 정지/해제: 계정 정지 및 해제
+  - 🗑️ 삭제: 소프트 삭제 (실제 데이터는 유지)
+  - 모든 작업은 활동 로그 및 알림 자동 생성
+
+##### 통계 대시보드 페이지 (`/admin/stats`) ✨NEW
+- **일별/월별 추세 그래프** (Chart.js)
+  - 최근 30일 일별 가입자 추세 (Line Chart)
+  - 최근 12개월 월별 가입자 추세 (Bar Chart)
+  - 최근 30일 일별 로그인 활동 (Line Chart)
+  - 등급별 활동 통계 (Bar Chart)
+- **실시간 데이터 시각화**
+
+##### 활동 로그 페이지 (`/admin/logs`) ✨NEW
+- **필터링 UI**
+  - 액션 타입별 필터 (로그인/회원가입/관리자 작업)
+  - 표시 개수 선택 (50/100/200개)
+- **실시간 로그 스트리밍**
+  - 자동 새로고침 토글 (5초 간격)
+  - 타입별 색상 배지
+  - 사용자 정보 및 IP 주소 표시
+  - 시간순 정렬
+
+##### 알림 센터 페이지 (`/admin/notifications`) ✨NEW
+- **알림 목록 UI**
+  - 전체/읽지않음/읽음 필터 토글
+  - 우선순위 배지 표시 (일반/높음)
+  - 타입별 색상 구분
+- **읽음/읽지 않음 토글**
+  - 클릭하여 읽음 처리
+  - 읽지 않은 알림 강조 표시
+- **실시간 알림 푸시**
+  - 자동 새로고침 (5초 간격)
+  - 신규 회원 가입, 회원 정지/삭제 시 자동 알림 생성
+
+##### 배치 작업 UI (`/admin/users` 페이지 통합) ✨NEW
+- **체크박스로 회원 선택**
+  - 개별 회원 선택
+  - 전체 선택/해제 기능
+  - 선택된 회원 수 표시
+- **일괄 처리 드롭다운**
+  - 등급 변경 (선택한 회원들의 등급을 일괄 변경)
+  - 상태 변경 (active/suspended/deleted로 일괄 변경)
+  - 일괄 삭제 (여러 회원 한 번에 삭제)
+- **CSV 내보내기 버튼**
+  - 전체 회원 데이터 CSV 다운로드
+  - ID, 이메일, 이름, 휴대전화, 등급, 상태, 가입일, 최근로그인 포함
+  - 파일명: `users_YYYY-MM-DD.csv`
+
+##### 뉴스 관리 페이지 (`/admin/news`) ✨NEW
+- **뉴스 통계 카드**
+  - 전체 뉴스 수 (DB 총 개수)
+  - 표시된 뉴스 수 (현재 로드된 개수)
+  - 현재 필터 상태
+  - 로딩 상태 표시
+- **자동 뉴스 가져오기 스케줄 설정** ✨NEW
+  - 활성화/비활성화 토글
+  - 스케줄 타입 선택:
+    - **시간 간격**: 1/2/3/6/12/24시간마다 자동 수집
+    - **매일 지정 시간**: 특정 시간에 자동 수집 (한국 시간 기준)
+  - 실행 정보 표시 (마지막 실행, 다음 실행 예정)
+  - 설정 저장 및 자동 실행
+- **뉴스 목록 관리 (무한 스크롤)** ✨UPDATE
+  - 초기 50개 로드 후 스크롤 시 자동 로드
+  - 카테고리별 필터링 (필터별 무한 스크롤 지원)
+  - 고정된 테이블 헤더
+  - 뉴스 상세 정보 표시 (ID, 카테고리, 제목, 발행사, 발행일)
+  - 개별 뉴스 삭제
+  - 외부 링크로 원문 보기
+  - 로딩 인디케이터 (스피너 + 진행 메시지)
+- **수동 뉴스 가져오기**
+  - 전체 카테고리 뉴스 한번에 가져오기
+
+## 현재 기능 URI
+
+### 웹 페이지
+- **메인 페이지**: `GET /`
+- **로그인 페이지**: `GET /login`
+- **회원가입 페이지**: `GET /signup`
+- **뉴스 페이지**: `GET /news` ✨NEW
+- **북마크 페이지**: `GET /bookmarks` ✨NEW
+- **마이페이지**: `GET /mypage` ✨NEW (2026-01-27)
+- **관리자 대시보드**: `GET /admin` (Lv.6 이상)
+- **회원 관리**: `GET /admin/users` (Lv.6 이상)
+- **뉴스 관리**: `GET /admin/news` (Lv.6 이상) ✨NEW
+- **통계 대시보드**: `GET /admin/stats` (Lv.6 이상) ✨NEW
+- **활동 로그**: `GET /admin/logs` (Lv.6 이상) ✨NEW
+- **알림 센터**: `GET /admin/notifications` (Lv.6 이상) ✨NEW
+
+### 사용자 API ✨UPDATED
+- **회원가입**: `POST /api/auth/signup`
+  - Body: `{ email, password, name, phone? }`
+  - Response: `{ success, message, user: { id, email, name, role, level } }`
+  - 자동 로그인 (세션 쿠키 설정)
+  
+- **로그인**: `POST /api/auth/login`
+  - Body: `{ email, password }`
+  - Response: `{ success, message, user: { id, email, name, role, level } }`
+  - 세션 쿠키 설정 (HttpOnly, Secure, SameSite=Lax, 7일 만료)
+  - 로그인 기록 저장 (IP, User-Agent)
+  
+- **로그아웃**: `POST /api/auth/logout`
+  - Response: `{ success, message }`
+  - 세션 삭제 및 쿠키 제거
+
+- **사용자 정보 조회**: `GET /api/auth/me`
+  - Cookie: `session_id` (자동)
+  - Response: `{ success, loggedIn, user? }`
+
+### 관리자 API (Lv.6 이상)
+
+#### 통계 API
+- **기본 통계**: `GET /api/admin/stats`
+  - Response: 전체/활성/정지 회원 수, 오늘 가입자, 등급별 분포, 최근 가입 회원
+  
+- **고급 통계**: `GET /api/admin/stats/trends`
+  - Response: 일별/월별 가입 추세, 로그인 활동, 등급별 활동
+
+#### 회원 관리 API
+- **회원 목록**: `GET /api/admin/users?search=&level=&status=`
+- **회원 상세**: `GET /api/admin/users/:id`
+- **회원 수정**: `PUT /api/admin/users/:id`
+- **회원 상태 변경**: `PATCH /api/admin/users/:id/status`
+- **회원 삭제**: `DELETE /api/admin/users/:id`
+
+#### 고급 기능 API
+- **활동 로그**: `GET /api/admin/activity-logs?limit=50&action=`
+- **알림 목록**: `GET /api/admin/notifications`
+- **알림 읽음 처리**: `PATCH /api/admin/notifications/:id/read`
+- **일괄 처리** (Lv.8 이상): `POST /api/admin/users/batch`
+  - Body: `{ action: 'change_level'|'change_status'|'delete', userIds: [], value? }`
+- **CSV 내보내기**: `GET /api/admin/users/export`
+
+#### 뉴스 API ✨NEW
+- **뉴스 목록 조회**: `GET /api/news?category=&limit=20&offset=0`
+  - Query: `category` (all/general/politics/economy/tech/sports/entertainment), `limit` (기본 20), `offset` (페이지네이션)
+  - Response: `{ success, news, count }`
+- **뉴스 검색**: `GET /api/news/search?q=검색어&category=` ✨NEW
+  - Query: `q` (검색어), `category` (선택), `limit`, `offset`
+  - Response: `{ success, news, count, query }`
+- **뉴스 가져오기**: `GET /api/news/fetch?category=general`
+  - Query: `category` (RSS에서 뉴스 가져와 DB에 저장)
+  - Response: `{ success, fetched, saved, message }`
+- **HOT 뉴스 조회**: `GET /api/news/hot?limit=10` ✨NEW
+  - Query: `limit` (기본 10개)
+  - Response: `{ success, news }` - 인기순 정렬 (popularity_score DESC)
+- **뉴스 투표**: `POST /api/news/vote` ✨NEW
+  - Body: `{ userId, newsId, voteType: 'up'|'down' }`
+  - Response: `{ success, vote_up, vote_down, popularity_score }`
+- **뉴스 삭제**: `DELETE /api/news/:id` (관리자 전용)
+- **스케줄 설정 조회**: `GET /api/news/schedule`
+  - Response: `{ success, schedule }`
+- **스케줄 설정 업데이트**: `POST /api/news/schedule`
+  - Body: `{ enabled, schedule_type, schedule_time, interval_hours }`
+  - Response: `{ success, message, next_run }`
+- **스케줄 실행 기록 업데이트**: `POST /api/news/schedule/update-run`
+  - 자동 실행 시 호출되어 last_run 및 next_run 업데이트
+
+#### 키워드 구독 API ✨NEW
+- **키워드 구독 추가**: `POST /api/keywords/subscribe`
+  - Body: `{ userId, keyword }`
+  - Response: `{ success, message }`
+- **키워드 목록 조회**: `GET /api/keywords?userId=`
+  - Query: `userId` (필수)
+  - Response: `{ success, keywords }`
+- **키워드 삭제**: `DELETE /api/keywords/:id`
+  - Body: `{ userId }`
+  - Response: `{ success, message }`
+
+#### 북마크 API ✨NEW
+- **북마크 추가**: `POST /api/bookmarks`
+  - Body: `{ userId, title, link, category, source, pubDate }`
+  - Response: `{ success, message }`
+- **북마크 목록**: `GET /api/bookmarks?userId=&category=&limit=50&offset=0`
+  - Query: `userId` (필수), `category` (선택), `limit`, `offset`
+  - Response: `{ success, bookmarks, count }`
+- **북마크 삭제**: `DELETE /api/bookmarks/:id?userId=`
+  - Query: `userId` (필수)
+  - Response: `{ success, message }`
+- **북마크 확인**: `GET /api/bookmarks/check?userId=&link=`
+  - Query: `userId`, `link` (필수)
+  - Response: `{ success, bookmarked, bookmarkId }`
+
+#### 마이페이지 API ✨NEW (2026-01-27)
+
+##### 뉴스 관련 (8개)
+- `POST /api/user/keywords` - 키워드 구독 추가
+- `GET /api/user/keywords` - 키워드 목록 조회
+- `DELETE /api/user/keywords/:keywordId` - 키워드 삭제
+- `GET /api/user/news/by-keyword` - 키워드별 뉴스 조회 (페이지네이션)
+- `POST /api/user/bookmarks` - 북마크 추가
+- `GET /api/user/bookmarks` - 북마크 목록 조회
+- `DELETE /api/user/bookmarks/:bookmarkId` - 북마크 삭제
+- `POST /api/user/news/:newsId/read` - 뉴스 읽음 처리
+
+##### 주식 관련 (8개)
+- `POST /api/user/watchlist` - 관심 종목 추가
+- `GET /api/user/watchlist` - 관심 종목 목록
+- `PUT /api/user/watchlist/:stockId` - 관심 종목 수정
+- `DELETE /api/user/watchlist/:stockId` - 관심 종목 삭제
+- `POST /api/user/watchlist/alerts` - 주가 알림 추가
+- `GET /api/user/watchlist/alerts` - 주가 알림 목록
+- `DELETE /api/user/watchlist/alerts/:alertId` - 주가 알림 삭제
+- `GET /api/user/watchlist/stats` - 포트폴리오 통계
+
+##### 게임 관련 (4개)
+- `POST /api/user/games/scores` - 게임 점수 저장
+- `GET /api/user/games/stats` - 게임 통계 조회
+- `GET /api/user/games/history` - 게임 히스토리 (페이지네이션)
+- `GET /api/games/leaderboard` - 게임 리더보드 (공개)
+
+##### 유틸리티 관련 (5개)
+- `POST /api/user/utils/settings` - 유틸리티 설정 저장
+- `GET /api/user/utils/settings` - 유틸리티 설정 조회
+- `POST /api/user/utils/history` - 유틸리티 히스토리 저장
+- `GET /api/user/utils/history` - 유틸리티 히스토리 조회 (페이지네이션)
+- `DELETE /api/user/utils/history/:historyId` - 히스토리 삭제
+
+## 배포 URL
+- **로컬 개발**: https://3000-igqqzgkeu63c4u9ihulwt-c81df28e.sandbox.novita.ai
+- **마이페이지**: https://3000-igqqzgkeu63c4u9ihulwt-c81df28e.sandbox.novita.ai/mypage
+- **프로덕션**: (배포 후 업데이트 예정)
+
+## 데이터 모델
+
+### Users 테이블
+```sql
+CREATE TABLE users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,              -- SHA-256 해시
+  name TEXT NOT NULL,
+  phone TEXT,
+  level INTEGER DEFAULT 1,             -- 회원 등급 (1~10)
+  status TEXT DEFAULT 'active',        -- 상태 (active/suspended/deleted)
+  role TEXT DEFAULT 'user',            -- 역할 (user/admin)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  last_login DATETIME,
+  updated_at DATETIME
+);
+```
+
+### Sessions 테이블 ✨NEW
+```sql
+CREATE TABLE sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id TEXT UNIQUE NOT NULL,     -- UUID 세션 ID
+  user_id INTEGER NOT NULL,
+  expires_at DATETIME NOT NULL,        -- 만료 시간 (7일)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- 인덱스
+CREATE INDEX idx_sessions_session_id ON sessions(session_id);
+CREATE INDEX idx_sessions_user_id ON sessions(user_id);
+CREATE INDEX idx_sessions_expires_at ON sessions(expires_at);
+```
+
+### Login History 테이블 ✨NEW
+```sql
+CREATE TABLE login_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### Activity Logs 테이블
+```sql
+CREATE TABLE activity_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER,
+  action TEXT NOT NULL,             -- 'login', 'signup', 'admin_action' 등
+  description TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### Notifications 테이블
+```sql
+CREATE TABLE notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL,               -- 'new_signup', 'user_suspended' 등
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  target_user_id INTEGER,           -- NULL이면 전체 관리자
+  is_read INTEGER DEFAULT 0,
+  priority TEXT DEFAULT 'normal',   -- 'normal', 'high'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (target_user_id) REFERENCES users(id)
+);
+```
+
+### News 테이블 ✨NEW ✨UPDATED
+```sql
+CREATE TABLE news (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,           -- 'general', 'politics', 'economy', 'tech', 'sports', 'entertainment'
+  title TEXT NOT NULL,
+  summary TEXT,
+  link TEXT NOT NULL UNIQUE,        -- 뉴스 원문 링크 (중복 방지)
+  image_url TEXT,
+  publisher TEXT,
+  pub_date TEXT,
+  -- AI 필드 ✨NEW
+  ai_summary TEXT,                  -- Gemini AI 생성 요약
+  sentiment TEXT,                   -- positive/neutral/negative
+  ai_processed INTEGER DEFAULT 0,   -- AI 처리 완료 여부
+  -- 투표 및 통계 필드 ✨NEW
+  vote_up INTEGER DEFAULT 0,        -- 좋아요 수
+  vote_down INTEGER DEFAULT 0,      -- 싫어요 수
+  view_count INTEGER DEFAULT 0,     -- 조회수
+  comment_count INTEGER DEFAULT 0,  -- 댓글 수 (추후 확장)
+  popularity_score INTEGER DEFAULT 0, -- 인기도 점수 (vote_up - vote_down)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### User Keywords 테이블 ✨NEW
+```sql
+CREATE TABLE user_keywords (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  keyword TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, keyword),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### News Votes 테이블 ✨NEW
+```sql
+CREATE TABLE news_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  vote_type TEXT NOT NULL,          -- 'up' or 'down'
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id),
+  FOREIGN KEY (news_id) REFERENCES news(id)
+);
+```
+
+### News Schedule 테이블 ✨NEW
+```sql
+CREATE TABLE news_schedule (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  enabled INTEGER DEFAULT 1,        -- 1: 활성화, 0: 비활성화
+  schedule_type TEXT DEFAULT 'hourly', -- 'hourly', 'daily', 'custom'
+  schedule_time TEXT,               -- HH:mm 형식 (daily용, 한국 시간 기준)
+  interval_hours INTEGER DEFAULT 1, -- hourly용 간격 (시간 단위)
+  last_run DATETIME,                -- 마지막 실행 시간
+  next_run DATETIME,                -- 다음 실행 예정 시간 (UTC로 저장)
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Bookmarks 테이블 ✨NEW
+```sql
+CREATE TABLE bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_title TEXT NOT NULL,
+  news_link TEXT NOT NULL,
+  news_category TEXT NOT NULL,
+  news_source TEXT,
+  news_pub_date TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_link)
+);
+```
+
+### 마이페이지 테이블 (8개) ✨NEW (2026-01-27)
+
+#### User Keyword Subscriptions
+```sql
+CREATE TABLE user_keyword_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  keyword TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, keyword),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User News Bookmarks
+```sql
+CREATE TABLE user_news_bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User News Read
+```sql
+CREATE TABLE user_news_read (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  news_id INTEGER NOT NULL,
+  read_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, news_id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Watchlist Stocks
+```sql
+CREATE TABLE user_watchlist_stocks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  stock_symbol TEXT NOT NULL,
+  stock_name TEXT NOT NULL,
+  market_type TEXT NOT NULL,
+  target_price REAL,
+  memo TEXT,
+  added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, stock_symbol),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Stock Alerts
+```sql
+CREATE TABLE user_stock_alerts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  stock_symbol TEXT NOT NULL,
+  alert_type TEXT NOT NULL,
+  target_price REAL NOT NULL,
+  is_active INTEGER DEFAULT 1,
+  triggered_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Game Scores
+```sql
+CREATE TABLE user_game_scores (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  game_type TEXT NOT NULL,
+  score INTEGER NOT NULL,
+  game_data TEXT,
+  played_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Util Settings
+```sql
+CREATE TABLE user_util_settings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  setting_key TEXT NOT NULL,
+  setting_value TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id, setting_key),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+#### User Util History
+```sql
+CREATE TABLE user_util_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  util_type TEXT NOT NULL,
+  input_data TEXT NOT NULL,
+  result_data TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+## 스토리지 서비스
+- **Cloudflare D1**: SQLite 기반 회원 정보, 활동 로그, 알림, 뉴스, 스케줄 설정, 북마크, **마이페이지 데이터 (8 테이블)** 저장
+- **로컬 개발**: `.wrangler/state/v3/d1` (자동 생성)
+- **외부 API**: Google News RSS (뉴스 데이터 소스)
+
+## 테스트 계정
+- **슈퍼바이저 계정**
+  - 이메일: test@example.com
+  - 비밀번호: test1234
+  - 등급: Lv.10 (슈퍼바이저)
+  - 권한: 모든 관리자 기능 사용 가능
+
+## 사용 가이드
+
+### 사용자 기능
+
+#### 1. 회원가입
+1. 메인 페이지에서 "회원가입" 버튼 클릭
+2. 이메일, 비밀번호, 이름 입력
+3. 회원가입 완료 후 자동으로 로그인 페이지로 이동
+4. 가입 시 자동으로 Lv.1 (일반 회원)으로 설정
+
+#### 2. 로그인
+1. 메인 페이지에서 "로그인" 버튼 클릭
+2. 이메일과 비밀번호 입력
+3. 로그인 성공 시:
+   - 일반 회원 (Lv.1~5): 메인 페이지로 이동
+   - 관리자 (Lv.6~10): 관리자 대시보드로 자동 이동
+4. 상단에 사용자 이메일 및 관리자 버튼 표시
+
+### 관리자 기능
+
+#### 1. 관리자 대시보드 접근
+1. 슈퍼바이저 계정으로 로그인 (test@example.com / test1234)
+2. 자동으로 `/admin` 대시보드로 이동
+3. 또는 메인 페이지에서 "관리자" 버튼 클릭
+
+#### 2. 대시보드 사용
+- 통계 카드에서 전체/활성/정지 회원 수 확인
+- 등급별 회원 분포 차트 확인
+- 최근 가입 회원 10명 확인
+
+#### 3. 회원 관리
+1. 네비게이션에서 "회원 관리" 클릭
+2. 검색 필터 사용:
+   - 이메일/이름 검색
+   - 등급별 필터 (1~10)
+   - 상태별 필터 (활성/정지/삭제)
+3. 회원 클릭하여 상세보기:
+   - 기본 정보 (ID, 이메일, 이름, 휴대전화)
+   - 등급 변경 (드롭다운)
+   - 계정 상태 및 가입일/최근로그인
+   - **변경사항 저장**: 이름, 휴대전화, 등급 변경
+   - **정지/해제 버튼**: 계정 정지 또는 해제
+   - **삭제 버튼**: 계정 삭제 (소프트 삭제)
+
+#### 4. 배치 작업 (회원 관리 페이지) ✨NEW
+1. 회원 목록에서 체크박스로 여러 회원 선택
+2. "전체 선택" 체크박스로 모든 회원 선택/해제
+3. 일괄 작업 드롭다운 선택:
+   - **등급 변경**: 선택한 회원들의 등급 일괄 변경
+   - **상태 변경**: active/suspended/deleted로 일괄 변경
+   - **삭제**: 선택한 회원들 일괄 삭제
+4. CSV 내보내기 버튼 클릭하여 전체 회원 데이터 다운로드
+
+#### 5. 통계 대시보드 ✨NEW
+1. 네비게이션에서 "통계" 클릭
+2. 4개 차트 확인:
+   - **일별 가입자 추세**: 최근 30일 Line Chart
+   - **월별 가입자 추세**: 최근 12개월 Bar Chart
+   - **일별 로그인 활동**: 최근 30일 Line Chart
+   - **등급별 활동 통계**: 최근 30일 Bar Chart
+
+#### 6. 활동 로그 ✨NEW
+1. 네비게이션에서 "활동 로그" 클릭
+2. 필터 설정:
+   - **타입 필터**: 전체/로그인/회원가입/관리자 작업
+   - **표시 개수**: 50/100/200개
+3. 자동 새로고침 토글 (5초 간격)
+4. 로그 테이블에서 사용자 활동 추적
+
+#### 7. 알림 센터 ✨NEW
+1. 네비게이션에서 "알림 센터" 클릭
+2. 필터 버튼:
+   - **전체**: 모든 알림
+   - **읽지않음**: 읽지 않은 알림만
+   - **읽음**: 읽은 알림만
+3. 알림 클릭하여 읽음 처리
+4. 자동 새로고침 (5초 간격)으로 실시간 알림 확인
+
+#### 8. 뉴스 관리 ✨NEW
+1. 네비게이션에서 "컨텐츠관리 > 뉴스관리" 클릭
+2. 자동 뉴스 가져오기 설정:
+   - **활성화 토글**: 자동 실행 켜기/끄기
+   - **스케줄 타입 선택**:
+     - 시간 간격: 1/2/3/6/12/24시간마다
+     - 매일 지정 시간: 매일 특정 시간 (예: 오전 9시)
+   - **설정 저장**: 다음 실행 시간 자동 계산
+3. 실행 정보 확인:
+   - 마지막 실행 시간
+   - 다음 실행 예정 시간 (한국 시간으로 표시)
+4. 수동 뉴스 가져오기:
+   - "전체 카테고리 뉴스 가져오기" 버튼 클릭
+   - 6개 카테고리 뉴스 일괄 수집
+5. 뉴스 목록 관리 (무한 스크롤):
+   - 초기 50개 표시
+   - 스크롤을 아래로 내리면 자동으로 50개씩 추가 로드
+   - 카테고리별 필터링 (필터 변경 시 자동 재로드)
+   - 개별 뉴스 삭제
+   - 원문 링크로 확인
+   - 실시간 통계 업데이트 (전체/표시된 개수)
+
+## 권한 체계
+
+### 등급별 권한
+- **Lv.1~5 (일반 회원)**: 포탈 사용 권한만
+- **Lv.6 (실버 관리자)**: 기본 관리자 기능, 통계 조회, 회원 조회/수정/정지/삭제, CSV 내보내기
+- **Lv.7 (골드 관리자)**: Lv.6 권한 + 추가 관리 기능
+- **Lv.8 (플래티넘 관리자)**: Lv.7 권한 + 일괄 처리 권한
+- **Lv.9 (마스터 관리자)**: Lv.8 권한 + 고급 설정
+- **Lv.10 (슈퍼바이저)**: 모든 권한 + 다른 관리자 관리
+
+### 상태별 제한
+- **active**: 정상 사용 가능
+- **suspended**: 로그인 차단 (관리자가 정지)
+- **deleted**: 완전 차단 (소프트 삭제)
+
+## 로컬 개발 환경
+
+### 필수 요구사항
+- Node.js 18+
+- npm 또는 pnpm
+
+### 설치 및 실행
+```bash
+# 의존성 설치
+npm install
+
+# 데이터베이스 마이그레이션 (3개 파일)
+npm run db:migrate:local
+
+# 테스트 데이터 삽입
+npm run db:seed
+
+# 빌드
+npm run build
+
+# 개발 서버 실행 (PM2)
+pm2 start ecosystem.config.cjs
+
+# 서버 상태 확인
+pm2 status
+
+# 로그 확인
+pm2 logs --nostream
+```
+
+### 데이터베이스 관리
+```bash
+# 로컬 DB 초기화
+npm run db:reset
+
+# 로컬 DB 콘솔
+npm run db:console:local
+
+# 프로덕션 마이그레이션
+npm run db:migrate:prod
+```
+
+## 배포
+
+### Cloudflare Pages 배포
+```bash
+# 프로덕션 빌드 및 배포
+npm run deploy:prod
+
+# 또는 수동 배포
+npm run build
+npx wrangler pages deploy dist --project-name webapp
+```
+
+### 환경 변수 설정
+```bash
+# Cloudflare API 토큰 설정 필요
+# Deploy 탭에서 API 키 설정 후 배포 가능
+```
+
+## 프로젝트 구조
+```
+webapp/
+├── src/
+│   ├── index.tsx          # 메인 애플리케이션 (약 3200줄)
+│   │                      # - 사용자 페이지 (메인, 로그인, 회원가입, 뉴스)
+│   │                      # - 관리자 페이지 (대시보드, 회원관리, 뉴스관리, 통계, 로그, 알림)
+│   │                      # - 모든 API 엔드포인트
+│   │                      # - 배치 작업 UI 및 CSV 내보내기
+│   └── renderer.tsx       # JSX 렌더러
+├── migrations/            # D1 데이터베이스 마이그레이션
+│   ├── 0001_create_users_table.sql
+│   ├── 0002_add_user_level_and_status.sql
+│   ├── 0003_add_activity_logs_and_notifications.sql
+│   ├── 0001_create_news_table.sql
+│   └── 0002_create_news_schedule_table.sql
+├── public/
+│   └── static/
+│       └── style.css      # 커스텀 반응형 CSS
+├── dist/                  # 빌드 출력 (자동 생성)
+├── .wrangler/             # Wrangler 로컬 상태 (자동 생성)
+│   └── state/v3/d1/       # 로컬 SQLite 데이터베이스
+├── ecosystem.config.cjs   # PM2 설정
+├── wrangler.jsonc         # Cloudflare 설정
+├── package.json           # 프로젝트 의존성
+├── seed.sql               # 테스트 데이터
+├── README.md              # 프로젝트 문서
+└── RESPONSIVE_GUIDE.md    # 반응형 디자인 가이드
+```
+
+## 헤더 인증 상태 일관성 ✨중요
+
+### 문제 상황
+페이지마다 헤더가 다르게 보이거나, 로그인했는데도 "로그인/회원가입" 버튼이 보이는 문제가 있었습니다.
+
+### 해결 방법
+모든 페이지에서 **반드시 이 순서를 지켜야 합니다**:
+
+```typescript
+<body class="..." id="html-root">
+    ${getCommonAuthScript()}  // 1️⃣ 인증 스크립트 먼저
+    ${getCommonHeader('섹션명')}  // 2️⃣ 헤더
+    ${getStickyHeader()}  // 3️⃣ Sticky 헤더
+    
+    <!-- 페이지 콘텐츠 -->
+    
+    ${getCommonFooter()}  // 마지막에 푸터만
+    // ❌ getCommonAuthScript()는 여기 있으면 안됨!
+</body>
+```
+
+### 적용된 페이지
+- ✅ D-Day 매니저 (`/lifestyle/dday-calculator`)
+- ✅ 평수 계산기 (`/lifestyle/pyeong-calculator`)
+- ✅ 나이 계산기 (`/lifestyle/age-calculator`)
+
+**자세한 내용**: `HEADER_AUTH_GUIDELINES.md` 참고
+
+## 디자인 시스템
+
+### 브랜드 컬러
+- **Primary Blue**: #1E40AF (faith-blue)
+- **Dark Blue**: #1E3A8A (hover state)
+- **Admin Badge**: #EAB308 (노란색 왕관)
+- **Status Colors**:
+  - Green: 활성 (active)
+  - Orange: 정지 (suspended)
+  - Red: 삭제 (deleted)
+
+### 컴포넌트
+- **배지 (Badges)**: 등급, 상태 표시
+- **모달 (Modals)**: 회원 수정
+- **차트 (Charts)**: Chart.js 막대 그래프
+- **테이블 (Tables)**: 회원 목록, 활동 로그
+
+## 기술 스택 상세
+
+### 백엔드
+- **Hono**: 경량 웹 프레임워크 (Express와 유사)
+- **Cloudflare Workers**: 엣지 런타임
+- **Cloudflare D1**: SQLite 기반 데이터베이스
+
+### 프론트엔드
+- **TailwindCSS**: 유틸리티 CSS 프레임워크 (반응형 디자인)
+- **Font Awesome**: 아이콘
+- **Axios**: HTTP 클라이언트
+- **Chart.js**: 데이터 시각화
+- **커스텀 CSS**: 추가 반응형 스타일 (`public/static/style.css`)
+
+### 개발 도구
+- **TypeScript**: 타입 안전성
+- **Vite**: 빌드 도구
+- **Wrangler**: Cloudflare 개발 CLI
+- **PM2**: 프로세스 관리
+
+### 반응형 디자인
+- **모바일 우선**: Mobile-first 접근 방식
+- **브레이크포인트**: sm(640px), md(768px), lg(1024px), xl(1280px)
+- **터치 최적화**: 최소 44x44px 터치 영역
+- **자세한 내용**: `RESPONSIVE_GUIDE.md` 참고
+
+## 보안 고려사항
+
+### 현재 구현된 보안
+- ✅ 비밀번호 해싱 (SHA-256)
+- ✅ 세션 기반 인증 (HttpOnly 쿠키)
+- ✅ 세션 만료 (7일)
+- ✅ 이메일 중복 체크
+- ✅ 비밀번호 최소 길이 (6자)
+- ✅ 이메일 형식 검증
+- ✅ 계정 상태 체크 (정지/삭제 계정 로그인 차단)
+- ✅ 관리자 권한 체크 (모든 관리자 API에 적용)
+- ✅ 등급별 권한 분리
+- ✅ 로그인 기록 (IP 주소, User-Agent)
+- ✅ 활동 로그 기록 (감사 추적)
+- ✅ 소프트 삭제 (데이터 복구 가능)
+
+### 추가 필요 보안
+- ⚠️ 비밀번호 강도 검증 강화
+- ⚠️ CSRF 보호
+- ⚠️ Rate Limiting (로그인 시도 제한)
+- ⚠️ XSS 방어 강화
+
+## 성능 최적화
+
+### 현재 최적화
+- ✅ 인덱스 (이메일, 등급, 상태, 생성일, 활동 로그)
+- ✅ 쿼리 최적화 (필요한 컬럼만 조회)
+- ✅ 제한된 결과 수 (페이지네이션 준비)
+
+### 추가 최적화 가능
+- 페이지네이션 구현
+- 캐싱 (KV Storage 활용)
+- CDN 활용
+
+## 배포 상태
+- **플랫폼**: Cloudflare Pages
+- **상태**: ✅ 로컬 개발 완료 / ⏳ 프로덕션 배포 대기
+- **브랜드**: Faith Portal (파란색 테마)
+- **마지막 업데이트**: 2025-11-01
+
+## 주요 업데이트 이력
+- **2025-10-28**: 초기 프로젝트 생성, 기본 사용자 기능
+- **2025-10-28**: 브랜딩 변경 (NAVER → Faith Portal, 초록색 → 파란색)
+- **2025-10-28**: 관리자 시스템 구현 (10단계 등급, 대시보드, 회원관리)
+- **2025-11-01**: 고급 관리자 기능 (통계 고도화, 권한 세분화, 알림 시스템, 배치 작업, CSV 내보내기)
+- **2025-11-01**: 4대 관리자 페이지 완성 ✨
+  - 통계 대시보드 (4개 Chart.js 그래프)
+  - 활동 로그 페이지 (필터링, 실시간 스트리밍)
+  - 알림 센터 (읽음/읽지않음 토글, 실시간 푸시)
+  - 배치 작업 UI (회원 선택, 일괄 처리, CSV 내보내기)
+- **2025-11-05**: 뉴스 서비스 구현 ✨NEW
+  - Google RSS 뉴스 통합 (6개 카테고리)
+  - 뉴스 페이지 (카테고리별 필터링, 반응형 디자인)
+  - 관리자 뉴스 관리 페이지
+  - 자동 뉴스 가져오기 스케줄 시스템
+    - 시간 간격 모드 (1~24시간)
+    - 매일 지정 시간 모드 (한국 시간 기준)
+    - 시간대 자동 변환 (KST ↔ UTC)
+    - 클라이언트 측 자동 실행 (1분마다 체크)
+  - **뉴스 가독성 전면 개선** ✨UPDATE
+    - 메인 페이지 실시간 뉴스: 큰 제목(base), 2줄 표시, 진한 색상, 넉넉한 간격
+    - 뉴스 페이지 대폭 개선:
+      - 중복 콘텐츠 완전 제거 (요약 섹션 삭제)
+      - 제목 중심 디자인 (2xl 크기, 3줄 표시)
+      - 3열 그리드 레이아웃 (더 큰 카드)
+      - 넉넉한 여백과 간격
+      - 깔끔하고 읽기 쉬운 UI
+  - **관리자 뉴스 관리 무한 스크롤** ✨UPDATE
+    - 초기 50개만 로드 (빠른 초기 로딩)
+    - 스크롤 시 자동 50개씩 추가 로드
+    - 카테고리 필터별 무한 스크롤 지원
+    - 실시간 통계 및 로딩 상태 표시
+- **2025-11-06**: 반응형 디자인 전체 적용 ✨NEW
+  - 공통 반응형 스타일시트 작성
+  - 반응형 디자인 가이드 문서 (RESPONSIVE_GUIDE.md)
+  - 모든 페이지 모바일/태블릿/데스크톱 지원
+  - 모바일 우선 접근 방식
+  - 터치 친화적 UI (최소 44x44px)
+  - Tailwind CSS 반응형 유틸리티 활용
+- **2025-11-06**: 뉴스 고급 기능 전체 적용 ✨NEW
+  - **검색 기능**: 실시간 검색 (디바운스), 제목/요약 검색, 카테고리 조합
+  - **다중 카테고리 필터**: 여러 카테고리 동시 선택, 시각적 상태 표시
+  - **북마크 시스템**: 사용자별 북마크 저장/삭제, 북마크 페이지, 북마크 상태 표시
+  - **공유 기능**: SNS 공유 (카카오톡/페이스북/트위터), 링크 복사, 공유 모달
+  - **다크 모드**: 라이트/다크 테마 토글, localStorage 저장, 부드러운 전환
+  - **UI/UX 개선**: 로딩 스피너, 토스트 알림 (4가지 타입), 애니메이션
+  - **데이터베이스**: 북마크 테이블 추가, 마이그레이션 완료
+- **2025-12-08**: 전면 디자인 리뉴얼 ✨MAJOR REDESIGN
+  - **컬러 팔레트 재정의**
+    - 하늘색(Cyan) → Deep Navy (#1e3a8a) 메인 컬러로 변경
+    - Warm Orange (#f97316) 강조 컬러 추가
+    - 배경: 화이트 → 연한 회색 (#F5F7FA)로 변경하여 눈의 피로 감소
+  - **헤더 개편**
+    - 하늘색 배경 → 화이트 배경으로 변경
+    - 스크롤 시 그림자 강화 효과 추가
+    - 로고와 메뉴의 대비 개선
+  - **검색창 개선**
+    - 이미 적용된 캡슐형 디자인 유지 (border-radius: 50px)
+    - 드롭 그림자 효과로 입체감 강화
+    - 검색 버튼: Deep Navy 그라디언트 적용
+  - **퀵 메뉴 통일**
+    - 아이콘 배경: 통일된 회색 원형
+    - 아이콘 자체: 각 카테고리별 포인트 컬러 유지
+    - 간격 최적화로 가독성 향상
+  - **카드 UI 개선**
+    - 둥근 모서리 (16px) + 부드러운 그림자
+    - 실시간 뉴스 & 트렌드: content-card 클래스 적용
+    - 호버 효과: 그림자 강화 + 살짝 들어올림
+  - **배지 및 순위 디자인**
+    - 배지: 소프트 컬러 배경 + 세미볼드 폰트
+    - 순위 숫자: Navy → Blue 그라디언트 텍스트
+    - 카테고리 태그: 괄호 제거, 배지 스타일로 통일
+  - **타이포그래피**
+    - Pretendard 폰트 적용 (이미 적용됨)
+    - 자간: -0.02em로 정돈된 느낌
+    - 타이틀: font-bold (700) + 큰 사이즈
+    - 본문: font-semibold (600)
+    - 보조 텍스트: font-medium (500)
+  - **푸터 개편**
+    - 하늘색 → Deep Navy 그라디언트 (blue-900 → blue-800)
+    - 텍스트: 연한 blue 계열로 조화
+  - **버튼 스타일**
+    - "더 많은 뉴스 보기": Orange 그라디언트
+    - "회원가입", "로그아웃": Navy 그라디언트
+    - 모든 버튼: 세미볼드 폰트 + 그림자 효과
+- **2025-12-15**: 뉴스 페이지 3단 레이아웃 개편 완료 ✨MAJOR REDESIGN
+  - **3단 레이아웃 구조**
+    - 왼쪽 사이드바 (240px): 키워드 구독 위젯
+    - 중앙 영역 (가변): AI 요약 + 투표 버튼 뉴스 피드
+    - 오른쪽 사이드바 (320px): 실시간 HOT 이슈
+  - **키워드 구독 시스템**
+    - 키워드 입력 및 추가 (Enter 키 지원)
+    - 구독 키워드 목록 표시
+    - 키워드 삭제 기능
+    - API 연동: /api/keywords (GET, POST, DELETE)
+  - **AI 요약 + 감성분석**
+    - AI 요약이 있는 경우 보라색 배경 박스로 표시
+    - 감성 아이콘 표시 (😊긍정, 😐중립, 😞부정)
+    - AI 요약이 없으면 원본 요약 표시
+  - **투표 시스템**
+    - 좋아요/싫어요 버튼 (UP/DOWN)
+    - 실시간 투표 수 업데이트
+    - API 연동: /api/news/vote (POST)
+    - 호버 애니메이션 및 클릭 피드백
+  - **실시간 HOT 이슈**
+    - 인기순 TOP 10 뉴스 표시
+    - 상위 3개는 빨간색 강조
+    - 투표수 + 조회수 표시
+    - API 연동: /api/news/hot (GET)
+  - **반응형 디자인**
+    - PC (lg 이상): 3단 레이아웃
+    - 모바일: 1단 레이아웃 (순서: HOT → 뉴스 → 키워드)
+    - 왼쪽 사이드바는 모바일에서 숨김
+    - Tailwind CSS 반응형 유틸리티 활용
+  - **데이터베이스**
+    - news 테이블: ai_summary, sentiment, vote_up, vote_down, view_count 필드 추가
+    - user_keywords 테이블: 사용자별 키워드 구독
+    - news_votes 테이블: 사용자별 투표 기록
+- **2026-01-27**: 마이페이지 시스템 구현 완료 ✨NEW
+  - **Week 1 백엔드 API 구현 (25개 엔드포인트)**
+    - 데이터베이스 마이그레이션 (8개 테이블)
+    - 뉴스 관련 API (8개): 키워드 구독, 북마크, 읽음 처리
+    - 주식 관련 API (8개): 관심 종목, 주가 알림, 포트폴리오 통계
+    - 게임 관련 API (4개): 점수 저장, 통계, 히스토리, 리더보드
+    - 유틸리티 관련 API (5개): 설정 저장, 히스토리 관리
+  - **프런트엔드 UI 통합**
+    - 4개 섹션 사이드바 네비게이션 (뉴스/주식/게임/유틸)
+    - 비동기 데이터 로딩 (Axios)
+    - Tailwind CSS + FontAwesome 아이콘
+    - 실시간 API 데이터 표시
+  - **통합 테스트**
+    - 자동화 테스트 스크립트 (test_api_integration.sh)
+    - 11/12 테스트 통과 (91.7%)
+  - **버그 수정**
+    - 키워드별 뉴스 조회 API 수정 (keywords 컬럼 → summary 컬럼)
+    - JSON 직렬화 문제 해결
+  - **문서화**
+    - WEEK1_SUMMARY.md: Week 1 백엔드 완료 요약
+    - MYPAGE_IMPLEMENTATION_COMPLETE.md: 마이페이지 구현 완료
+    - API_FIX_SUMMARY.md: API 수정 내역
+    - FINAL_PROJECT_REPORT.md: 최종 프로젝트 보고서
+
+## 🎨 Figma API 연동
+
+### 개요
+Faith Portal은 Figma REST API를 통해 디자인 파일과 직접 연동됩니다.
+
+### 주요 기능
+1. **디자인 파일 정보 가져오기**
+   - Figma 파일의 전체 구조 조회
+   - 컴포넌트, 스타일, 레이어 정보 접근
+
+2. **이미지 렌더링**
+   - 특정 노드를 PNG/JPG/SVG/PDF로 렌더링
+   - 스케일 조정 가능 (1x~4x)
+   - 아이콘, 로고 등 에셋 자동 내보내기
+
+3. **디자인 토큰 추출**
+   - 색상, 텍스트 스타일, 효과 정보 추출
+   - CSS 변수로 자동 변환 가능
+
+### API 엔드포인트
+- `GET /api/figma/file/:fileKey` - 파일 정보
+- `GET /api/figma/images/:fileKey` - 이미지 렌더링
+- `GET /api/figma/styles/:fileKey` - 디자인 토큰
+- `GET /figma-test` - 테스트 인터페이스
+
+### 설정 방법
+1. Figma Personal Access Token 발급
+2. `.dev.vars` 파일에 토큰 추가
+3. 개발 서버 재시작
+4. `/figma-test` 페이지에서 테스트
+
+자세한 내용은 `FIGMA_INTEGRATION.md` 참고
+
+### 사용 사례
+- ✅ 디자인 시스템 토큰 자동 동기화
+- ✅ 에셋 자동 내보내기 및 최적화
+- ✅ 디자인-코드 간 일관성 유지
+- ✅ 프로토타입 임베딩
+
+## 🤖 Puppeteer MCP 연동 (Browserless.io) ✅
+
+### 개요
+Faith Portal에 **Browserless.io 기반 Puppeteer 연동이 완료**되었습니다. 웹 스크래핑, PDF 생성, 스크린샷 캡처 등의 브라우저 자동화 기능을 실제로 사용할 수 있습니다.
+
+### ✅ 구현 완료 기능
+
+#### 1. **웹페이지 스크린샷 캡처**
+```bash
+GET /api/puppeteer/screenshot?url=https://example.com&fullPage=true
+```
+- 전체 페이지 또는 뷰포트 캡처
+- PNG, JPEG 형식 지원
+- 커스텀 해상도 설정 가능
+- 캡처된 이미지 즉시 표시 및 다운로드
+
+#### 2. **PDF 생성**
+```bash
+GET /api/puppeteer/pdf?url=https://example.com&format=A4&landscape=false
+```
+- 웹페이지를 PDF로 변환
+- A4, Letter 등 다양한 용지 크기
+- 세로/가로 모드 선택
+- 자동 다운로드 기능
+
+#### 3. **웹 스크래핑**
+```bash
+POST /api/puppeteer/scrape
+Content-Type: application/json
+
+{
+  "url": "https://example.com",
+  "selector": ".article-title",
+  "waitForSelector": ".content",
+  "waitTime": 2000
+}
+```
+- CSS Selector 기반 데이터 추출
+- 동적 콘텐츠 대기 지원
+- JSON 형식 결과 반환
+- 제목, 텍스트, HTML, 속성 추출
+
+### 🚀 빠른 시작
+
+#### 1단계: Browserless.io 가입 (무료)
+1. https://www.browserless.io 접속
+2. Sign Up - 무료 계정 생성 (월 1,000 요청)
+3. Dashboard > API Keys > 토큰 복사
+
+#### 2단계: 환경 변수 설정
+```bash
+# .dev.vars 파일 수정
+BROWSERLESS_API_TOKEN=your_actual_token_here
+```
+
+#### 3단계: 서버 재시작
+```bash
+npm run build && pm2 restart webapp
+```
+
+#### 4단계: 테스트
+브라우저에서 테스트 인터페이스 접속:
+```
+http://localhost:3000/puppeteer-test
+```
+
+### 💡 실제 사용 예시
+
+#### 뉴스 사이트 스크래핑
+```bash
+curl -X POST "http://localhost:3000/api/puppeteer/scrape" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://news.ycombinator.com",
+    "selector": ".titleline a"
+  }'
+```
+
+#### 웹페이지 PDF 아카이빙
+```bash
+curl "http://localhost:3000/api/puppeteer/pdf?url=https://github.com" \
+  -o github-archive.pdf
+```
+
+#### 소셜 미디어 미리보기 이미지
+```bash
+curl "http://localhost:3000/api/puppeteer/screenshot?url=https://example.com&width=1200&height=630" \
+  -o og-image.png
+```
+
+### 📊 API 상태
+
+| 기능 | 상태 | 엔드포인트 |
+|------|------|-----------|
+| 스크린샷 | ✅ 완료 | `GET /api/puppeteer/screenshot` |
+| PDF 생성 | ✅ 완료 | `GET /api/puppeteer/pdf` |
+| 웹 스크래핑 | ✅ 완료 | `POST /api/puppeteer/scrape` |
+| 테스트 UI | ✅ 완료 | `GET /puppeteer-test` |
+
+### 🎯 사용 사례
+- ✅ **뉴스 콘텐츠 자동 수집**: 외부 뉴스 사이트 스크래핑
+- ✅ **웹페이지 아카이빙**: 중요 페이지 PDF 저장
+- ✅ **SEO 최적화**: 소셜 미디어 공유 이미지 생성
+- ✅ **품질 보증**: E2E 테스트 스크린샷 자동화
+- ✅ **경쟁사 분석**: 동적 웹사이트 데이터 모니터링
+
+### 🔒 보안
+- API 토큰은 환경 변수로 안전하게 관리
+- `.dev.vars` 파일은 `.gitignore`에 포함
+- 프로덕션은 Cloudflare Secrets 사용
+
+### 📚 자세한 문서
+- `PUPPETEER_INTEGRATION.md` - 전체 가이드 및 API 레퍼런스
+- Browserless.io Docs: https://docs.browserless.io/
+
+## 라이선스
+MIT License
+
+## 문의 및 지원
+- GitHub Issues를 통해 버그 리포트 및 기능 제안
+- Pull Request 환영합니다!

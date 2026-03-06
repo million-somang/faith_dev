@@ -1,0 +1,89 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    letter-spacing: -0.02em;
+}
+
+body {
+    background-color: #f5f6f7;
+    min-height: 100vh;
+    color: #111827;
+}
+
+@layer components {
+    .header-gradient {
+        background: linear-gradient(135deg, #03c75a 0%, #059b44 50%, #03c75a 100%);
+        background-size: 200% 100%;
+        animation: headerShift 10s ease-in-out infinite;
+    }
+
+    .content-card {
+        background-color: white;
+        border-radius: 0.75rem;
+        border: 1px solid #e4e8eb;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        transition-property: all;
+        transition-duration: 200ms;
+    }
+
+    .content-card:hover {
+        border-color: #c9cdd2;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .search-shadow {
+        background-color: white;
+        border: 2px solid #03c75a;
+        border-radius: 40px;
+        transition-property: all;
+        transition-duration: 200ms;
+    }
+
+    .search-shadow:hover {
+        border-color: #02b350;
+        box-shadow: 0 2px 8px rgba(3, 199, 90, 0.15);
+    }
+
+    .search-shadow:focus-within {
+        border-color: #02b350;
+        box-shadow: 0 2px 12px rgba(3, 199, 90, 0.2);
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        padding-top: 0.125rem;
+        padding-bottom: 0.125rem;
+        border-radius: 0.25rem;
+        font-size: 11px;
+        font-weight: 700;
+        transition-property: all;
+        transition-duration: 200ms;
+    }
+
+    .rank-number {
+        font-weight: 700;
+        font-size: 1.125rem;
+        line-height: 1.75rem;
+        color: #03c75a;
+        transition-property: all;
+    }
+}
+
+/* Hide scrollbar but keep functionality */
+.hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+    display: none;
+}
