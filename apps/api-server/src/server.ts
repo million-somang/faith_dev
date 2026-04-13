@@ -60,12 +60,19 @@ app.route('/', tetrisRoutes);
 import { gameRoutes } from './routes/game.routes.js';
 app.route('/', gameRoutes);
 
-// Use PORT from env or default to 4000
-const port = parseInt(process.env.PORT || '4000', 10);
+import { ddayRoutes } from './routes/dday.routes.js';
+app.route('/', ddayRoutes);
+
+import { financeRoutes } from './routes/finance.routes.js';
+app.route('/', financeRoutes);
+
+// Use PORT from env or default to 4200
+const port = parseInt(process.env.PORT || '4200', 10);
 
 console.log(`Server is running on port ${port} - watch trigger 6`);
 
 serve({
     fetch: app.fetch,
-    port
+    port,
+    hostname: '0.0.0.0'
 });

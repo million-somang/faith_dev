@@ -9,7 +9,8 @@ const port = Number(process.env.PORT || 5000)
 // Node.js 서버로 실행
 serve({
   fetch: app.fetch,
-  port: port
+  port: port,
+  hostname: '0.0.0.0'
 })
 
 console.log(`✅ Faith Portal Server is running on http://localhost:${port}`)
