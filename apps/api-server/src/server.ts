@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { serveStatic } from '@hono/node-server/serve-static';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { pool } from '@faithportal/database';
@@ -22,9 +23,7 @@ app.use('*', cors({
 
 app.use('*', errorHandler);
 
-app.get('/', (c) => {
-    return c.text('FaithPortal API Server is running');
-});
+// Base route skipped in favor of static SPA
 
 // Consistent health check
 app.get('/health', async (c) => {
@@ -65,6 +64,10 @@ app.route('/', ddayRoutes);
 
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);
+
+// Serve frontend SPA (Fallback for all non-API routes)
+app.use('/*', serveStatic({ root: './apps/main-portal/dist' }));
+app.get('*', serveStatic({ path: './apps/main-portal/dist/index.html' }));
 
 // Use PORT from env or default to 4200
 const port = parseInt(process.env.PORT || '4200', 10);
