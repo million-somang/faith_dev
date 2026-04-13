@@ -76,15 +76,14 @@ function HomePage() {
                     <div className="w-full lg:w-[728px] shrink-0 flex flex-col gap-8">
                         {/* Coupang Banner */}
                         <div className="w-full flex justify-center">
-                            <iframe 
+                            <img 
                                 src="https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90" 
                                 width="728" 
                                 height="90" 
-                                frameBorder="0" 
-                                scrolling="no" 
-                                referrerPolicy="unsafe-url"
-                                className="max-w-full"
-                            ></iframe>
+                                alt="쿠팡 특가"
+                                className="max-w-full cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => alert('해당 배너의 클릭 이동 링크(https://link.coupang.com/a/...)를 설정해주세요!')}
+                            />
                         </div>
 
                         {/* News Section */}
