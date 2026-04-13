@@ -72,8 +72,22 @@ function HomePage() {
 
                 {/* 2-Column Layout */}
                 <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left Column: News */}
-                    <div className="w-full lg:w-[728px] shrink-0">
+                    {/* Left Column: News & Banner */}
+                    <div className="w-full lg:w-[728px] shrink-0 flex flex-col gap-8">
+                        {/* Coupang Banner */}
+                        <div className="w-full flex justify-center">
+                            <iframe 
+                                src="https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90" 
+                                width="728" 
+                                height="90" 
+                                frameBorder="0" 
+                                scrolling="no" 
+                                referrerPolicy="unsafe-url"
+                                className="max-w-full"
+                            ></iframe>
+                        </div>
+
+                        {/* News Section */}
                         <Card className="p-8">
                             <div className="flex items-center justify-between mb-6">
                                 <h3 className="text-2xl font-bold text-gray-900 flex items-center">
