@@ -51,80 +51,83 @@ export default function DateCalc() {
     };
 
     return (
-        <div id="calc-date" className="calculator-container">
-            <div className="max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">날짜 계산기</h3>
+        <section id="calc-date" aria-label="날짜 계산기">
+            <div className="nm-form-container">
+                <h3 className="nm-form-title">
+                    <i className="fas fa-calendar-alt" aria-hidden="true"></i>
+                    날짜 계산기
+                </h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">시작 날짜</label>
-                        <input type="date" value={start} onChange={e => setStart(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <label htmlFor="date-start" className="nm-label">시작 날짜</label>
+                        <input id="date-start" type="date" value={start} onChange={e => setStart(e.target.value)} className="nm-input" aria-label="시작 날짜 입력" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">종료 날짜</label>
-                        <input type="date" value={end} onChange={e => setEnd(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <label htmlFor="date-end" className="nm-label">종료 날짜</label>
+                        <input id="date-end" type="date" value={end} onChange={e => setEnd(e.target.value)} className="nm-input" aria-label="종료 날짜 입력" />
                     </div>
-                    <button onClick={calculateDiff} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
-                        <i className="fas fa-calculator mr-2"></i>날짜 차이 계산
+                    <button onClick={calculateDiff} className="nm-submit-btn" aria-label="날짜 차이 계산하기">
+                        <i className="fas fa-calculator" aria-hidden="true"></i>날짜 차이 계산
                     </button>
                     {diffResult && (
-                        <div>
-                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                                <h4 className="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">총 일수:</span>
-                                        <span className="font-bold text-blue-600">{diffResult.days.toLocaleString()}일</span>
+                        <div role="region" aria-label="날짜 차이 결과">
+                            <div className="nm-result-card">
+                                <h4 className="nm-result-title">계산 결과</h4>
+                                <div className="space-y-1">
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">총 일수:</span>
+                                        <span className="nm-result-value nm-result-value-accent">{diffResult.days.toLocaleString()}일</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">주 단위:</span>
-                                        <span className="font-bold text-gray-800">{diffResult.weeks.toLocaleString()}주</span>
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">주 단위:</span>
+                                        <span className="nm-result-value nm-result-value-dark">{diffResult.weeks.toLocaleString()}주</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">월 단위:</span>
-                                        <span className="font-bold text-gray-800">{diffResult.months.toLocaleString()}개월</span>
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">월 단위:</span>
+                                        <span className="nm-result-value nm-result-value-dark">{diffResult.months.toLocaleString()}개월</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">년 단위:</span>
-                                        <span className="font-bold text-gray-800">{diffResult.years.toLocaleString()}년</span>
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">년 단위:</span>
+                                        <span className="nm-result-value nm-result-value-dark">{diffResult.years.toLocaleString()}년</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <hr className="my-6" />
+                    <hr className="nm-divider" />
 
-                    <h4 className="font-bold text-gray-800 mb-3">날짜 더하기/빼기</h4>
+                    <h4 className="nm-sub-title">날짜 더하기/빼기</h4>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">기준 날짜</label>
-                        <input type="date" value={base} onChange={e => setBase(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <label htmlFor="date-base" className="nm-label">기준 날짜</label>
+                        <input id="date-base" type="date" value={base} onChange={e => setBase(e.target.value)} className="nm-input" aria-label="기준 날짜 입력" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">일수</label>
-                            <input type="number" value={addDays} onChange={e => setAddDays(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                            <label htmlFor="date-days" className="nm-label">일수</label>
+                            <input id="date-days" type="number" value={addDays} onChange={e => setAddDays(Number(e.target.value))} className="nm-input" aria-label="더하거나 뺄 일수 입력" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">연산</label>
-                            <select value={operation} onChange={e => setOperation(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label htmlFor="date-op" className="nm-label">연산</label>
+                            <select id="date-op" value={operation} onChange={e => setOperation(e.target.value)} className="nm-select" aria-label="연산 방식 선택">
                                 <option value="add">더하기 (+)</option>
                                 <option value="subtract">빼기 (-)</option>
                             </select>
                         </div>
                     </div>
-                    <button onClick={calculateAdd} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg transition">
-                        <i className="fas fa-calculator mr-2"></i>날짜 계산하기
+                    <button onClick={calculateAdd} className="nm-submit-btn nm-submit-btn-green" aria-label="날짜 더하기 빼기 계산하기">
+                        <i className="fas fa-calculator" aria-hidden="true"></i>날짜 계산하기
                     </button>
                     {addResult && (
-                        <div>
-                            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                                <h4 className="font-bold text-lg mb-2 text-gray-800">결과 날짜</h4>
-                                <div className="text-2xl font-bold text-green-600">{addResult}</div>
+                        <div role="region" aria-label="날짜 더하기빼기 결과">
+                            <div className="nm-result-card nm-result-card-green">
+                                <h4 className="nm-result-title">결과 날짜</h4>
+                                <div className="nm-result-big" style={{ color: 'var(--success)' }}>{addResult}</div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

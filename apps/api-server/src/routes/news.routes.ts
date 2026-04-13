@@ -125,8 +125,8 @@ news.get('/api/news/search', async (c) => {
     }
 });
 
-// GET /api/news/:id - Get news detail
-news.get('/api/news/:id', async (c) => {
+// GET /api/news/:id - Get news detail (숫자 ID만 매칭)
+news.get('/api/news/:id{[0-9]+}', async (c) => {
     const id = c.req.param('id');
     try {
         const result = await pool.query('SELECT * FROM news WHERE id = $1', [id]);

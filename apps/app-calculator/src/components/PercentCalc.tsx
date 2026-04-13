@@ -34,65 +34,67 @@ export default function PercentCalc() {
     };
 
     return (
-        <div id="calc-percentage" className="calculator-container">
-            <div className="max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">백분율 계산기</h3>
+        <section id="calc-percentage" aria-label="백분율 계산기">
+            <div className="nm-form-container">
+                <h3 className="nm-form-title">
+                    <i className="fas fa-percent" aria-hidden="true"></i>
+                    백분율 계산기
+                </h3>
 
                 {/* 1. A는 B의 몇 % */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <h4 className="font-bold text-gray-800 mb-3">A는 B의 몇 %?</h4>
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                        <input type="number" value={valA1} onChange={e => setValA1(Number(e.target.value))} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="A 값" />
-                        <input type="number" value={valB1} onChange={e => setValB1(Number(e.target.value))} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="B 값" />
+                <div className="nm-sub-card">
+                    <h4 className="nm-sub-title">A는 B의 몇 %?</h4>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        <input type="number" value={valA1} onChange={e => setValA1(Number(e.target.value))} className="nm-input" placeholder="A 값" aria-label="A 값 입력" />
+                        <input type="number" value={valB1} onChange={e => setValB1(Number(e.target.value))} className="nm-input" placeholder="B 값" aria-label="B 값 입력" />
                     </div>
-                    <button onClick={calc1} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">계산하기</button>
+                    <button onClick={calc1} className="nm-submit-btn" aria-label="A는 B의 몇 퍼센트인지 계산">계산하기</button>
                     {res1 && (
-                        <div className="mt-3 bg-blue-100 p-3 rounded text-center">
-                            <span className="text-2xl font-bold text-blue-600">{res1}</span>
+                        <div className="nm-inline-result" role="status" aria-label="백분율 결과">
+                            <span className="nm-result-value nm-result-value-accent text-xl font-bold">{res1}</span>
                         </div>
                     )}
                 </div>
 
                 {/* 2. A의 B%는? */}
-                <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <h4 className="font-bold text-gray-800 mb-3">A의 B%는?</h4>
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                        <input type="number" value={valA2} onChange={e => setValA2(Number(e.target.value))} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="A 값" />
-                        <input type="number" value={valB2} onChange={e => setValB2(Number(e.target.value))} className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="B %" />
+                <div className="nm-sub-card">
+                    <h4 className="nm-sub-title">A의 B%는?</h4>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                        <input type="number" value={valA2} onChange={e => setValA2(Number(e.target.value))} className="nm-input" placeholder="A 값" aria-label="A 값 입력" />
+                        <input type="number" value={valB2} onChange={e => setValB2(Number(e.target.value))} className="nm-input" placeholder="B %" aria-label="B 퍼센트 입력" />
                     </div>
-                    <button onClick={calc2} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">계산하기</button>
+                    <button onClick={calc2} className="nm-submit-btn" aria-label="A의 B퍼센트 값 계산">계산하기</button>
                     {res2 && (
-                        <div className="mt-3 bg-blue-100 p-3 rounded text-center">
-                            <span className="text-2xl font-bold text-blue-600">{res2}</span>
+                        <div className="nm-inline-result" role="status" aria-label="백분율 값 결과">
+                            <span className="nm-result-value nm-result-value-accent text-xl font-bold">{res2}</span>
                         </div>
                     )}
                 </div>
 
-                {/* 3. 증감률 기 */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                    <h4 className="font-bold text-gray-800 mb-3">증가/감소율 구하기</h4>
-                    <div className="grid grid-cols-2 gap-4 mb-3">
+                {/* 3. 증감률 계산 */}
+                <div className="nm-sub-card">
+                    <h4 className="nm-sub-title">증가/감소율 구하기</h4>
+                    <div className="grid grid-cols-2 gap-3 mb-3">
                         <div>
-                            <label className="block text-xs text-gray-600 mb-1">원래 값</label>
-                            <input type="number" value={valOrig} onChange={e => setValOrig(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="원래 값" />
+                            <label htmlFor="pct-orig" className="nm-label">원래 값</label>
+                            <input id="pct-orig" type="number" value={valOrig} onChange={e => setValOrig(Number(e.target.value))} className="nm-input" placeholder="원래 값" aria-label="원래 값 입력" />
                         </div>
                         <div>
-                            <label className="block text-xs text-gray-600 mb-1">바뀐 값</label>
-                            <input type="number" value={valNew} onChange={e => setValNew(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="바뀐 값" />
+                            <label htmlFor="pct-new" className="nm-label">바뀐 값</label>
+                            <input id="pct-new" type="number" value={valNew} onChange={e => setValNew(Number(e.target.value))} className="nm-input" placeholder="바뀐 값" aria-label="바뀐 값 입력" />
                         </div>
                     </div>
-                    <button onClick={calc3} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 rounded-lg transition">계산하기</button>
+                    <button onClick={calc3} className="nm-submit-btn" aria-label="증감률 계산하기">계산하기</button>
                     {res3 && (
-                        <div className="mt-3 bg-blue-100 p-3 rounded">
+                        <div className="nm-inline-result" role="status" aria-label="증감률 결과">
                             <div className="text-center">
-                                <span className="text-2xl font-bold text-blue-600">{res3.value}</span>
+                                <span className="nm-result-value nm-result-value-accent text-xl font-bold">{res3.value}</span>
                             </div>
-                            <div className="text-sm text-gray-600 text-center mt-2">{res3.desc}</div>
+                            <div className="text-sm text-center mt-1" style={{ color: 'var(--text-muted)' }}>{res3.desc}</div>
                         </div>
                     )}
                 </div>
-
             </div>
-        </div>
+        </section>
     );
 }

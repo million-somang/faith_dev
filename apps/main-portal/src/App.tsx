@@ -179,7 +179,7 @@ function HomePage() {
 
 function AdminRedirect() {
     useEffect(() => {
-        window.location.href = 'http://localhost:4000/admin?t=' + Date.now();
+        window.location.href = 'http://localhost:4200/admin?t=' + Date.now();
     }, []);
     return <div className="min-h-screen flex items-center justify-center">관리자 페이지로 이동 중입니다...</div>;
 }

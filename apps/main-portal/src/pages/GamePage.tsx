@@ -22,11 +22,15 @@ const GAME_TABS: GameTab[] = [
     { id: 'all', label: '통합 랭킹', icon: 'fas fa-crown', apiUrl: '/api/games/leaderboard/all' },
     { id: 'tetris', label: '테트리스', icon: 'fas fa-th', apiUrl: '/api/games/tetris/leaderboard' },
     { id: 'sudoku', label: '스도쿠', icon: 'fas fa-table-cells', apiUrl: '/api/games/sudoku/leaderboard' },
+    { id: '2048', label: '2048', icon: 'fas fa-grip', apiUrl: '/api/games/2048/leaderboard' },
+    { id: 'minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb', apiUrl: '/api/games/minesweeper/leaderboard' },
 ];
 
 const GAME_LABEL_MAP: Record<string, string> = {
     tetris: '테트리스',
     sudoku: '스도쿠',
+    '2048': '2048',
+    minesweeper: '지뢰찾기',
 };
 
 export default function GamePage() {
@@ -38,17 +42,28 @@ export default function GamePage() {
     const [loading, setLoading] = useState(true);
 
     const fetchScores = useCallback(async (tabId?: string) => {
-        const tab = GAME_TABS.find(t => t.id === (tabId || activeTab));
+        const currentTabId = tabId || activeTab;
+        const tab = GAME_TABS.find(t => t.id === currentTabId);
         if (!tab) return;
 
         setLoading(true);
         try {
             const res = await axios.get(tab.apiUrl);
             if (res.data.success) {
-                setLeaderboard(res.data.leaderboard);
+                // API별로 응답 필드가 다름: leaderboard 또는 scores
+                const rawData = res.data.leaderboard || res.data.scores || [];
+                // 데이터 정규화: 각 게임의 필드 구조가 다르므로 통합 형식으로 변환
+                const normalized: ScoreEntry[] = rawData.map((d: Record<string, unknown>) => ({
+                    email: (d.email as string) || '비회원',
+                    score: (d.score as number) ?? (d.time ? Math.max(0, 10000 - (d.time as number) * 10) : 0),
+                    created_at: (d.created_at as string) || '',
+                    game_id: (d.game_id as string) || currentTabId,
+                }));
+                setLeaderboard(normalized);
             }
         } catch (error) {
             console.error('점수 로딩 오류:', error);
+            setLeaderboard([]);
         } finally {
             setLoading(false);
         }
@@ -112,6 +127,20 @@ export default function GamePage() {
                                     <i className="fas fa-table-cells text-3xl mb-3 text-violet-500 group-hover:rotate-12 transition-transform"></i>
                                     <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-violet-700 transition-colors">스도쿠</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">빈 칸에 숫자를 채워 9×9 퍼즐을 완성하세요!</p>
+                                </button>
+
+                                <button onClick={() => launchApp('/app/2048/', 'app-2048')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-cyan-50 hover:border-cyan-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
+                                    <i className="fas fa-grip text-3xl mb-3 text-cyan-500 group-hover:rotate-12 transition-transform"></i>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-cyan-700 transition-colors">2048 챌린지</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">같은 숫자를 합쳐 2048 타일을 만들어보세요!</p>
+                                </button>
+
+                                <button onClick={() => launchApp('/app/minesweeper/', 'app-minesweeper')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-red-50 hover:border-red-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
+                                    <i className="fas fa-bomb text-3xl mb-3 text-red-500 group-hover:rotate-12 transition-transform"></i>
+                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
                                 </button>
                             </div>
                         </div>

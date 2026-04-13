@@ -10,9 +10,11 @@ interface MiniAppButtonProps {
     url: string;
     requireAuth?: boolean;
     isLoggedIn?: boolean;
+    /** 모달로 열어야 하는 앱인 경우 이 콜백을 전달 */
+    onModalOpen?: (url: string, title: string) => void;
 }
 
-export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title, url, requireAuth, isLoggedIn }) => {
+export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title, url, requireAuth, isLoggedIn, onModalOpen }) => {
     const { launchApp } = useAppLauncher();
 
     const handleClick = async () => {
@@ -22,19 +24,22 @@ export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title
             return;
         }
 
-        // localStorage에 앱 사용 횟수 기록 (자주 쓰는 앱 표시용)
+        // localStorage에 앱 사용 횟수 기록 (자주 쓰는 앱 표시용 - 로컬 폴백)
         recordAppUsage(appId);
 
         try {
-            // DB 실행 로그 기록
-            if (appId !== 'app-calculator') {
-                await axios.post(`/api/mini-apps/${appId}/log`, { action_type: 'LAUNCH' });
-            }
+            // DB 실행 로그 기록 (서버 영구 저장)
+            await axios.post(`/api/mini-apps/${appId}/log`, { action_type: 'LAUNCH' });
         } catch (e) {
             console.error('Failed to log app launch', e);
         }
 
-        launchApp(url, appId);
+        // 모달 콜백이 있으면 모달로 열기, 없으면 기존 팝업 방식
+        if (onModalOpen) {
+            onModalOpen(url, title);
+        } else {
+            launchApp(url, appId);
+        }
     };
 
     return (

@@ -18,6 +18,26 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
     }
 });
 
+// 자주 쓰는 앱 목록 (실행 로그 기반, 서버 영구 저장)
+miniappRoutes.get('/api/mini-apps/frequent', async (c) => {
+    const DB = getDB(c);
+    try {
+        const apps = await DB.prepare(`
+            SELECT m.*, COUNT(l.id) as launch_count
+            FROM mini_apps m
+            INNER JOIN mini_app_logs l ON m.id = l.mini_app_id
+            WHERE m.status = 'active' AND l.action_type = 'LAUNCH'
+            GROUP BY m.id
+            ORDER BY launch_count DESC
+            LIMIT 5
+        `).all();
+        return c.json({ success: true, apps: apps.results });
+    } catch (error) {
+        console.error('Frequent Apps API Error:', error);
+        return c.json({ success: true, apps: [] });
+    }
+});
+
 // 미니앱 실행 로그 기록
 miniappRoutes.post('/api/mini-apps/:id/log', async (c) => {
     const DB = getDB(c);

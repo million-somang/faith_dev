@@ -102,17 +102,17 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     );
 };
 
-export const Header = ({ user, onLogout }: { user?: any, onLogout?: () => void } = {}) => (
+export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => (
     <>
         <header className="header-gradient text-white py-1">
             <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-10">
                 <div className="flex items-center gap-4">
-                    <a href="/" className="font-black text-xl tracking-tighter hover:opacity-90 transition-opacity">FaithPortal</a>
+                    <a href={`${baseUrl}/`} className="font-black text-xl tracking-tighter hover:opacity-90 transition-opacity">FaithPortal</a>
                     <nav className="hidden sm:flex gap-4 text-xs font-bold">
-                        <a href="/news" className="hover:text-green-100 uppercase">News</a>
-                        <a href="/lifestyle" className="hover:text-green-100 uppercase">Utility</a>
-                        <a href="/finance" className="hover:text-green-100 uppercase">Finance</a>
-                        <a href="/game" className="hover:text-green-100 uppercase">Games</a>
+                        <a href={`${baseUrl}/news`} className="hover:text-green-100 uppercase">News</a>
+                        <a href={`${baseUrl}/lifestyle`} className="hover:text-green-100 uppercase">Utility</a>
+                        <a href={`${baseUrl}/finance`} className="hover:text-green-100 uppercase">Finance</a>
+                        <a href={`${baseUrl}/game`} className="hover:text-green-100 uppercase">Games</a>
                     </nav>
                 </div>
                 <div className="flex items-center gap-3">
@@ -120,15 +120,15 @@ export const Header = ({ user, onLogout }: { user?: any, onLogout?: () => void }
                         <>
                             <span className="text-xs font-bold">{user.name}님</span>
                             <div className="w-[1px] h-3 bg-white/30"></div>
-                            <a href="/mypage" className="text-xs font-bold hover:text-green-100 transition-colors">마이페이지</a>
+                            <a href={`${baseUrl}/mypage`} className="text-xs font-bold hover:text-green-100 transition-colors">마이페이지</a>
                             <div className="w-[1px] h-3 bg-white/30"></div>
                             <button onClick={onLogout} className="text-xs font-bold hover:text-green-100 transition-colors">로그아웃</button>
                         </>
                     ) : (
                         <>
-                            <a href="/login" className="text-xs font-bold hover:text-green-100 transition-colors">로그인</a>
+                            <a href={`${baseUrl}/login`} className="text-xs font-bold hover:text-green-100 transition-colors">로그인</a>
                             <div className="w-[1px] h-3 bg-white/30"></div>
-                            <a href="/signup" className="text-xs font-bold hover:text-green-100 transition-colors">회원가입</a>
+                            <a href={`${baseUrl}/signup`} className="text-xs font-bold hover:text-green-100 transition-colors">회원가입</a>
                         </>
                     )}
                 </div>
@@ -162,7 +162,7 @@ export const QuickMenu = () => (
     </nav>
 );
 
-export const Footer = () => (
+export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => (
     <footer className="bg-white border-t border-gray-200 mt-20 py-12">
         <div className="max-w-6xl mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
@@ -176,9 +176,9 @@ export const Footer = () => (
                     <div>
                         <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스</h4>
                         <ul className="space-y-2 text-sm text-gray-500">
-                            <li><a href="/news" className="hover:text-brand-green transition-colors">뉴스</a></li>
-                            <li><a href="/lifestyle" className="hover:text-brand-green transition-colors">유틸리티</a></li>
-                            <li><a href="/finance" className="hover:text-brand-green transition-colors">금융</a></li>
+                            <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">뉴스</a></li>
+                            <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">유틸리티</a></li>
+                            <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융</a></li>
                         </ul>
                     </div>
                 </div>

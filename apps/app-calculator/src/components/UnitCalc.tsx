@@ -44,53 +44,56 @@ export default function UnitCalc() {
     };
 
     return (
-        <div id="calc-unit" className="calculator-container">
-            <div className="max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">단위 변환 계산기</h3>
+        <section id="calc-unit" aria-label="단위 변환 계산기">
+            <div className="nm-form-container">
+                <h3 className="nm-form-title">
+                    <i className="fas fa-exchange-alt" aria-hidden="true"></i>
+                    단위 변환 계산기
+                </h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">변환 종류</label>
-                        <select value={unitType} onChange={e => setUnitType(e.target.value as keyof typeof UNIT_TYPES)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <label htmlFor="unit-type" className="nm-label">변환 종류</label>
+                        <select id="unit-type" value={unitType} onChange={e => setUnitType(e.target.value as keyof typeof UNIT_TYPES)} className="nm-select" aria-label="변환 종류 선택">
                             {Object.entries(UNIT_TYPES).map(([key, val]) => (
                                 <option key={key} value={key}>{val.title}</option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">변환할 값</label>
-                        <input type="number" value={value} onChange={e => setValue(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" />
+                        <label htmlFor="unit-value" className="nm-label">변환할 값</label>
+                        <input id="unit-value" type="number" value={value} onChange={e => setValue(Number(e.target.value))} className="nm-input" step="0.01" aria-label="변환할 값 입력" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">원래 단위</label>
-                            <select value={fromUnit} onChange={e => setFromUnit(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label htmlFor="unit-from" className="nm-label">원래 단위</label>
+                            <select id="unit-from" value={fromUnit} onChange={e => setFromUnit(e.target.value)} className="nm-select" aria-label="원래 단위 선택">
                                 {Object.keys(typeConfig.units).map(k => (
                                     <option key={k} value={k}>{k}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">변환할 단위</label>
-                            <select value={toUnit} onChange={e => setToUnit(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label htmlFor="unit-to" className="nm-label">변환할 단위</label>
+                            <select id="unit-to" value={toUnit} onChange={e => setToUnit(e.target.value)} className="nm-select" aria-label="변환할 단위 선택">
                                 {Object.keys(typeConfig.units).map(k => (
                                     <option key={k} value={k}>{k}</option>
                                 ))}
                             </select>
                         </div>
                     </div>
-                    <button onClick={calculate} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
-                        <i className="fas fa-calculator mr-2"></i>변환하기
+                    <button onClick={calculate} className="nm-submit-btn" aria-label="단위 변환하기">
+                        <i className="fas fa-calculator" aria-hidden="true"></i>변환하기
                     </button>
                     {result && (
-                        <div>
-                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                                <h4 className="font-bold text-lg mb-2 text-gray-800">변환 결과</h4>
-                                <div className="text-2xl font-bold text-blue-600">{result}</div>
+                        <div role="region" aria-label="단위 변환 결과">
+                            <div className="nm-result-card">
+                                <h4 className="nm-result-title">변환 결과</h4>
+                                <div className="nm-result-big">{result}</div>
                             </div>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

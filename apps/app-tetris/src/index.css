@@ -1,14 +1,17 @@
 @import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
-@theme {
+:root {
   --color-brand-green: #1a5c40;
   --color-brand-green-hover: #144933;
 }
 
 @layer base {
   body {
-    @apply antialiased text-slate-800 bg-slate-50;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1e293b;
+    background-color: #f8fafc;
     margin: 0;
     padding: 0;
     box-sizing: border-box;

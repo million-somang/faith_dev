@@ -2288,11 +2288,99 @@ adminUi.get('/admin/notifications', async (c) => {
 
 
 
-
 // ==================== 뉴스 API ====================
 
-// 뉴스 가져오기 및 DB 저장
+// Google News RSS 파싱 함수
+function decodeHtmlEntities(text: string): string {
+    const entities: Record<string, string> = {
+        '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&#39;': "'", '&apos;': "'",
+        '&nbsp;': ' ', '&copy;': '©', '&reg;': '®', '&trade;': '™', '&hellip;': '...',
+        '&mdash;': '—', '&ndash;': '–', '&bull;': '•', '&middot;': '·',
+    }
+    return text.replace(/&[#\w]+;/g, (entity) => entities[entity] || '')
+}
 
+async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> {
+    const rssUrls: Record<string, string> = {
+        'general': 'https://news.google.com/rss?hl=ko&gl=KR&ceid=KR:ko',
+        'politics': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFZ4ZERBU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'economy': 'https://news.google.com/rss/topics/CAAqIggKIhxDQkFTRHdvSkwyMHZNR2RtY0hNekVnSnJieWdBUAE?hl=ko&gl=KR&ceid=KR:ko',
+        'tech': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRGRqTVhZU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'sports': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNRFp1ZEdvU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+        'entertainment': 'https://news.google.com/rss/topics/CAAqIQgKIhtDQkFTRGdvSUwyMHZNREpxYW5RU0FtdHZLQUFQAQ?hl=ko&gl=KR&ceid=KR:ko',
+    }
+    const url = rssUrls[category] || rssUrls['general']
+
+    try {
+        const response = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Accept': 'application/rss+xml, text/xml, application/xml', 'Referer': 'https://news.google.com/' },
+        })
+        if (!response.ok) {
+            console.error(`RSS fetch failed: ${response.status} ${response.statusText}`)
+            return []
+        }
+        const text = await response.text()
+        const items: any[] = []
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g
+        let match
+        while ((match = itemRegex.exec(text)) !== null) {
+            const itemContent = match[1]
+            const title = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1] || itemContent.match(/<title>(.*?)<\/title>/)?.[1] || ''
+            const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
+            const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
+            const description = decodeHtmlEntities(itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] || itemContent.match(/<description>(.*?)<\/description>/)?.[1] || '')
+            const summary = description.replace(/<[^>]*>/g, '').trim().substring(0, 150)
+            items.push({ category, title: title.trim(), summary: summary || title, link: link.trim(), publisher: '구글 뉴스', published_at: pubDate })
+            if (items.length >= 20) break
+        }
+        console.log(`[parseGoogleNewsRSS] category=${category}, items=${items.length}`)
+        return items
+    } catch (error) {
+        console.error(`RSS 파싱 오류 (${category}):`, error)
+        return []
+    }
+}
+
+// 뉴스 가져오기 및 DB 저장
+adminUi.get('/api/news/fetch', async (c) => {
+    const DB = getDB(c)
+    const category = c.req.query('category') || 'general'
+
+    try {
+        let newsItems: any[] = []
+        let retryCount = 0
+        const maxRetries = 3
+
+        while (retryCount < maxRetries && newsItems.length === 0) {
+            try {
+                newsItems = await parseGoogleNewsRSS(category)
+                if (newsItems.length > 0) break
+            } catch (err) {
+                console.error(`뉴스 가져오기 시도 ${retryCount + 1}/${maxRetries} 실패:`, err)
+            }
+            retryCount++
+            if (retryCount < maxRetries) await new Promise(resolve => setTimeout(resolve, 1000 * retryCount))
+        }
+
+        if (newsItems.length === 0) {
+            return c.json({ success: true, fetched: 0, saved: 0, message: '뉴스를 가져올 수 없습니다.' })
+        }
+
+        let savedCount = 0
+        for (const item of newsItems) {
+            try {
+                await DB.prepare(`INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at) VALUES (?, ?, ?, ?, ?, ?)`)
+                    .bind(item.category, item.title, item.summary, item.link, item.publisher, item.published_at).run()
+                savedCount++
+            } catch (err) { console.error('뉴스 저장 오류:', err) }
+        }
+
+        return c.json({ success: true, fetched: newsItems.length, saved: savedCount, message: `${savedCount}개의 새 뉴스를 저장했습니다.` })
+    } catch (error) {
+        console.error('뉴스 가져오기 오류:', error)
+        return c.json({ success: false, error: '뉴스 서비스에 일시적인 문제가 발생했습니다.' }, 503)
+    }
+})
 
 // 저장된 뉴스 목록 조회
 // API: 뉴스 리다이렉트 프록시 (Google News 차단 우회)

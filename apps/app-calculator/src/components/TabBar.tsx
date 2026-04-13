@@ -16,18 +16,20 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
     ];
 
     return (
-        <div className="flex flex-wrap justify-center gap-1.5 mb-4 border-b pb-2">
+        <nav className="calc-tab-bar" role="tablist" aria-label="계산기 종류 선택">
             {tabs.map(tab => (
                 <button
                     key={tab.id}
                     onClick={() => onTabChange(tab.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap flex items-center ${activeTab === tab.id ? 'bg-blue-500 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                    role="tab"
+                    aria-selected={activeTab === tab.id}
+                    aria-controls={`calc-${tab.id}`}
+                    className={`calc-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                 >
-                    <i className={`fas ${tab.icon} mr-1.5`}></i>
+                    <i className={`fas ${tab.icon}`} aria-hidden="true"></i>
                     {tab.label}
                 </button>
             ))}
-        </div>
+        </nav>
     );
 }

@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+/* ===== Dark theme variables ===== */
+:root {
+  --bg-primary: #1e1e1e;
+  --bg-secondary: #252526;
+  --bg-tertiary: #2d2d30;
+  --border-color: #3e3e42;
+  --text-primary: #d4d4d4;
+  --text-secondary: #858585;
+  --accent-blue: #007acc;
+  --accent-green: #4ec9b0;
+  --error-red: #f48771;
+  --success-green: #89d185;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  overflow: hidden;
+}
+
+/* ===== Monaco Editor 컨테이너 ===== */
+.editor-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* ===== Tree view ===== */
+.tree-node {
+  margin-left: 20px;
+}
+
+.tree-key {
+  color: var(--accent-green);
+  cursor: pointer;
+}
+
+.tree-key:hover {
+  text-decoration: underline;
+}
+
+.tree-value-string { color: #ce9178; }
+.tree-value-number { color: #b5cea8; }
+.tree-value-boolean { color: #569cd6; }
+.tree-value-null { color: #858585; }
+
+.tree-toggle {
+  cursor: pointer;
+  color: var(--text-secondary);
+  margin-right: 4px;
+  user-select: none;
+}
+
+/* ===== Code view ===== */
+.code-view {
+  font-family: 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+  color: var(--text-primary);
+}
+
+/* ===== Panel divider ===== */
+.panel-divider {
+  width: 4px;
+  background: var(--border-color);
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.panel-divider:hover {
+  background: var(--accent-blue);
+}
+
+/* ===== 반응형 ===== */
+@media (max-width: 768px) {
+  .split-panel {
+    flex-direction: column !important;
+  }
+
+  .panel-divider {
+    width: 100% !important;
+    height: 4px;
+    cursor: row-resize;
+  }
+}

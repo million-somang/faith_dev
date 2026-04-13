@@ -478,7 +478,7 @@ export class MyPageController {
             }
             const limit = parseInt(c.req.query('limit') || '100');
             const service = new MyPageService(getDB(c));
-            const leaderboard = await service.getGameLeaderboard(gameType, limit);
+            const leaderboard = await service.getGameLeaderboard(gameType === 'all' ? undefined : gameType, limit);
             return c.json({
                 success: true,
                 game_type: gameType,

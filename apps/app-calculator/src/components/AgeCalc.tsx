@@ -43,37 +43,40 @@ export default function AgeCalc() {
     };
 
     return (
-        <div id="calc-age" className="calculator-container">
-            <div className="max-w-2xl mx-auto">
-                <h3 className="text-xl font-bold mb-4 text-gray-800">나이 계산기</h3>
+        <section id="calc-age" aria-label="나이 계산기">
+            <div className="nm-form-container">
+                <h3 className="nm-form-title">
+                    <i className="fas fa-birthday-cake" aria-hidden="true"></i>
+                    나이 계산기
+                </h3>
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">생년월일</label>
-                        <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <label htmlFor="age-birthdate" className="nm-label">생년월일</label>
+                        <input id="age-birthdate" type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="nm-input" aria-label="생년월일 입력" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">기준 날짜 (선택사항)</label>
-                        <input type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                        <label htmlFor="age-target" className="nm-label">기준 날짜 (선택사항)</label>
+                        <input id="age-target" type="date" value={targetDate} onChange={e => setTargetDate(e.target.value)} className="nm-input" aria-label="기준 날짜 입력 (선택사항)" />
                     </div>
-                    <button onClick={calculate} className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-lg transition">
-                        <i className="fas fa-calculator mr-2"></i>계산하기
+                    <button onClick={calculate} className="nm-submit-btn" aria-label="나이 계산하기">
+                        <i className="fas fa-calculator" aria-hidden="true"></i>계산하기
                     </button>
                     {result && (
-                        <div>
-                            <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
-                                <h4 className="font-bold text-lg mb-3 text-gray-800">계산 결과</h4>
-                                <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">만 나이:</span>
-                                        <span className="font-bold text-blue-600">{result.full}</span>
+                        <div role="region" aria-label="나이 계산 결과">
+                            <div className="nm-result-card">
+                                <h4 className="nm-result-title">계산 결과</h4>
+                                <div className="space-y-1">
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">만 나이:</span>
+                                        <span className="nm-result-value nm-result-value-accent">{result.full}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">총 일수:</span>
-                                        <span className="font-bold text-gray-800">{result.days.toLocaleString()}일</span>
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">총 일수:</span>
+                                        <span className="nm-result-value nm-result-value-dark">{result.days.toLocaleString()}일</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">다음 생일까지:</span>
-                                        <span className="font-bold text-green-600">{result.nextBirthdayDays}일 후</span>
+                                    <div className="nm-result-row">
+                                        <span className="nm-result-label">다음 생일까지:</span>
+                                        <span className="nm-result-value nm-result-value-success">{result.nextBirthdayDays}일 후</span>
                                     </div>
                                 </div>
                             </div>
@@ -81,6 +84,6 @@ export default function AgeCalc() {
                     )}
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

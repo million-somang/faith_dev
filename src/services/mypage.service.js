@@ -517,24 +517,27 @@ export class MyPageService {
         };
     }
     async getGameLeaderboard(gameType, limit = 100) {
-        // For D1, we need to use a different approach since RANK() window function may not be fully supported
-        // We'll calculate rank programmatically
+        const whereClause = gameType ? 'WHERE gs.game_type = ?' : '';
+        const bindParams = gameType ? [gameType, limit] : [limit];
         const result = await this.db
             .prepare(`
         SELECT 
           gs.id, 
           gs.user_id, 
+          gs.game_type as game_id,
           u.name as user_name, 
+          u.email,
           MAX(gs.score) as score,
-          MAX(gs.played_at) as played_at
+          MAX(gs.played_at) as played_at,
+          MAX(gs.created_at) as created_at
         FROM user_game_scores gs
         LEFT JOIN users u ON gs.user_id = u.id
-        WHERE gs.game_type = ?
-        GROUP BY gs.user_id
+        ${whereClause}
+        GROUP BY gs.user_id${gameType ? '' : ', gs.game_type'}
         ORDER BY score DESC
         LIMIT ?
       `)
-            .bind(gameType, limit)
+            .bind(...bindParams)
             .all();
         // Add rank to each entry
         const leaderboard = result.results.map((entry, index) => ({

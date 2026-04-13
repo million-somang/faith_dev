@@ -1,0 +1,1 @@
+{"root":["./src/app.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/components/gameboard.tsx","./src/components/gameovermodal.tsx","./src/components/scoredisplay.tsx","./src/components/winmodal.tsx","./src/hooks/usegame2048.ts"],"version":"5.9.3"}

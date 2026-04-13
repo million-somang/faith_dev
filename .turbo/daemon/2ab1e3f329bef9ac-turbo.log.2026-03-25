@@ -1,0 +1,14 @@
+2026-03-25T08:54:08.243137Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T08:54:08.868294Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T13:54:09.814062Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T13:54:10.521842Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:01:12.885693Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:01:13.182030Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:04:55.736396Z  WARN get_package_file_hashes{include_default_files=true telemetry=None}: turborepo_scm::package_deps: git hashing failed for AnchoredSystemPath("apps\\finance") with resource error: Git error on C:\project\faithportal\apps\finance\src\desktop.ini: could not find 'C:\project\faithportal\apps\finance\src\desktop.ini' to open: 지정된 파일을 찾을 수 없습니다.
+; class=Os (2); code=NotFound (-3)
+2026-03-25T14:05:18.119682Z  WARN get_package_file_hashes{include_default_files=true telemetry=None}: turborepo_scm::package_deps: git hashing failed for AnchoredSystemPath("apps\\app-2048") with resource error: Git error on C:\project\faithportal\apps\app-2048\src\desktop.ini: could not find 'C:\project\faithportal\apps\app-2048\src\desktop.ini' to open: 지정된 파일을 찾을 수 없습니다.
+; class=Os (2); code=NotFound (-3)
+2026-03-25T14:05:55.403269Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:05:55.876776Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:23:41.047630Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
+2026-03-25T14:23:41.468704Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
