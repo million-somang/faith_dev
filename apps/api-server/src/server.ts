@@ -82,6 +82,13 @@ miniApps.forEach(appName => {
     app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
+// Finance app 정적 파일 서빙
+app.use('/finance/*', serveStatic({
+    root: './apps/finance/dist',
+    rewriteRequestPath: (path) => path.replace(/^\/finance/, '')
+}));
+app.get('/finance', serveStatic({ path: './apps/finance/dist/index.html' }));
+
 // Serve frontend SPA (Fallback for all non-API routes)
 app.use('/*', serveStatic({ root: './apps/main-portal/dist' }));
 app.get('*', serveStatic({ path: './apps/main-portal/dist/index.html' }));
