@@ -47,7 +47,7 @@ export default function UtilityPage() {
         axios.get('/api/mini-apps/frequent')
             .then(res => {
                 if (res.data.success) {
-                    setFrequentApps(res.data.apps);
+                    setFrequentApps(res.data.apps.filter((app: MiniApp) => app.category !== 'game'));
                 }
             })
             .catch(err => console.error('Failed to load frequent apps:', err));
@@ -102,7 +102,7 @@ export default function UtilityPage() {
     }, []);
 
     const filteredApps = selectedCategory === 'all'
-        ? apps
+        ? apps.filter(app => app.category !== 'game')
         : apps.filter(app => app.category === selectedCategory);
 
     // 실제 앱이 존재하는 카테고리만 표시
