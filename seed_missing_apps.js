@@ -3,6 +3,10 @@ import Database from 'better-sqlite3';
 const db = new Database('faith-portal.db');
 
 const appsToSeed = [
+    { name: '테트리스', slug: 'tetris', icon_url: 'fas fa-gamepad', description: '고전 블록 맞추기 게임', app_url: '/app/tetris/', category: 'game', sort_order: 10 },
+    { name: '2048', slug: '2048', icon_url: 'fas fa-th', description: '숫자 2048 만들기 퍼즐', app_url: '/app/2048/', category: 'game', sort_order: 11 },
+    { name: '스도쿠', slug: 'sudoku', icon_url: 'fas fa-border-all', description: '논리 숫자 퍼즐', app_url: '/app/sudoku/', category: 'game', sort_order: 12 },
+    { name: '지뢰찾기', slug: 'minesweeper', icon_url: 'fas fa-bomb', description: '지뢰 피하기 게임', app_url: '/app/minesweeper/', category: 'game', sort_order: 13 },
     { name: '나이 계산기', slug: 'age-calc', icon_url: 'fas fa-birthday-cake', description: '만 나이, 연 나이 계산', app_url: '/app/age-calc/', category: 'calc', sort_order: 20 },
     { name: '디데이 계산기', slug: 'dday-calc', icon_url: 'fas fa-calendar-alt', description: '기념일 디데이 계산', app_url: '/app/dday-calc/', category: 'calc', sort_order: 21 },
     { name: '평수 계산기', slug: 'pyeong-calc', icon_url: 'fas fa-ruler-combined', description: '평수 ↔ 제곱미터 변환', app_url: '/app/pyeong-calc/', category: 'calc', sort_order: 22 },
