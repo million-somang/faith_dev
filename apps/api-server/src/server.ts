@@ -65,6 +65,23 @@ app.route('/', ddayRoutes);
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);
 
+const miniApps = [
+    'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
+    '2048', 'minesweeper', 'age-calc', 'dday-calc', 'json-formatter',
+    'base64-converter', 'svg-converter', 'news'
+];
+
+miniApps.forEach(appName => {
+    const basePath = `/app/${appName}`;
+    const distPath = `./apps/app-${appName}/dist`;
+    
+    app.use(`${basePath}/*`, serveStatic({ 
+        root: distPath,
+        rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
+    }));
+    app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
+});
+
 // Serve frontend SPA (Fallback for all non-API routes)
 app.use('/*', serveStatic({ root: './apps/main-portal/dist' }));
 app.get('*', serveStatic({ path: './apps/main-portal/dist/index.html' }));
