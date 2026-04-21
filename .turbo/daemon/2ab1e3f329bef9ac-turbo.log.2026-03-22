@@ -1,6 +1,0 @@
-2026-03-22T13:29:32.569575Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
-2026-03-22T13:29:33.377433Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
-2026-03-22T13:29:40.714636Z  WARN get_package_file_hashes{include_default_files=true telemetry=None}: turborepo_scm::package_deps: git hashing failed for AnchoredSystemPath("apps\\main-portal") with resource error: Git error on C:\project\faithportal\apps\main-portal\vite.config.ts.timestamp-1774186180219-b457fc5f14553.mjs: could not find 'C:\project\faithportal\apps\main-portal\vite.config.ts.timestamp-1774186180219-b457fc5f14553.mjs' to open: 지정된 파일을 찾을 수 없습니다.
-; class=Os (2); code=NotFound (-3)
-2026-03-22T13:29:40.792890Z  WARN get_package_file_hashes{include_default_files=true telemetry=None}: turborepo_scm::package_deps: git hashing failed for AnchoredSystemPath("apps\\app-news") with resource error: Git error on C:\project\faithportal\apps\app-news\vite.config.ts.timestamp-1774186180309-121b91ae0d85e.mjs: could not find 'C:\project\faithportal\apps\app-news\vite.config.ts.timestamp-1774186180309-121b91ae0d85e.mjs' to open: 지정된 파일을 찾을 수 없습니다.
-; class=Os (2); code=NotFound (-3)

@@ -1,4 +1,0 @@
-2026-02-28T14:17:58.356689Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
-2026-02-28T14:17:58.901988Z  WARN daemon_server: turborepo_lib::commands::daemon: daemon already running
-2026-02-28T14:18:10.849979Z  WARN get_package_file_hashes{include_default_files=true telemetry=None}: turborepo_scm::package_deps: git hashing failed for AnchoredSystemPath("apps\\main-portal") with resource error: Git error on C:\project\faithportal\apps\main-portal\vite.config.ts.timestamp-1772288290654-f88d02b70959c.mjs: could not find 'C:\project\faithportal\apps\main-portal\vite.config.ts.timestamp-1772288290654-f88d02b70959c.mjs' to open: 지정된 파일을 찾을 수 없습니다.
-; class=Os (2); code=NotFound (-3)
