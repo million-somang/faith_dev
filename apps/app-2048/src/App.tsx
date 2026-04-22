@@ -93,12 +93,18 @@ function App() {
                 score: finalScore,
                 metadata: { max_tile: getMaxTile(grid) },
             }, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-                },
+                withCredentials: true,
             });
             // 포털에 점수 업데이트 알림
             sendToPortal('MISSION_CLEAR');
+            // 부모 윈도우에 점수 갱신 알림
+            const targetWindow = window.opener || (window.parent !== window ? window.parent : null);
+            if (targetWindow) {
+                targetWindow.postMessage(
+                    { type: 'GAME_SCORE_UPDATED', gameId: '2048', score: finalScore },
+                    '*'
+                );
+            }
         } catch (error) {
             console.error('점수 저장 실패:', error);
         }
