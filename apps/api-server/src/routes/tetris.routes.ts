@@ -19,6 +19,15 @@ tetrisRoutes.post('/api/tetris/score', requireAuth, async (c) => {
             .bind(user.id, score, lines, level)
             .run();
 
+        // 통합 game_scores 테이블에도 동시 저장
+        try {
+            await DB.prepare("INSERT INTO game_scores (game_id, user_id, score, metadata) VALUES (?, ?, ?, ?)")
+                .bind('tetris', user.id, score, JSON.stringify({ lines, level }))
+                .run();
+        } catch (e) {
+            console.warn('[Tetris] game_scores 동시 저장 실패 (무시):', e);
+        }
+
         console.log('[Tetris] Score saved successfully!');
         return c.json({ success: true });
     } catch (error: any) {

@@ -37,14 +37,33 @@ gameRoutes.get('/api/games/:gameId/leaderboard', async (c) => {
     const gameId = c.req.param('gameId');
 
     try {
-        const result = await DB.prepare(`
-            SELECT g.score, u.email, g.created_at, g.metadata
-            FROM game_scores g
-            JOIN users u ON g.user_id = u.id
-            WHERE g.game_id = ?
-            ORDER BY g.score DESC
-            LIMIT 10
-        `).bind(gameId).all();
+        let result;
+        if (gameId === 'tetris') {
+            // 테트리스는 tetris_scores + game_scores 양쪽에서 합쳐서 조회
+            result = await DB.prepare(`
+                SELECT score, email, created_at, metadata FROM (
+                    SELECT g.score, u.email, g.created_at, g.metadata
+                    FROM game_scores g
+                    JOIN users u ON g.user_id = u.id
+                    WHERE g.game_id = 'tetris'
+                    UNION ALL
+                    SELECT t.score, u.email, t.created_at, NULL as metadata
+                    FROM tetris_scores t
+                    JOIN users u ON t.user_id = u.id
+                ) combined
+                ORDER BY score DESC
+                LIMIT 10
+            `).all();
+        } else {
+            result = await DB.prepare(`
+                SELECT g.score, u.email, g.created_at, g.metadata
+                FROM game_scores g
+                JOIN users u ON g.user_id = u.id
+                WHERE g.game_id = ?
+                ORDER BY g.score DESC
+                LIMIT 10
+            `).bind(gameId).all();
+        }
 
         return c.json({ success: true, leaderboard: result.results || [] });
     } catch (error) {
@@ -53,16 +72,22 @@ gameRoutes.get('/api/games/:gameId/leaderboard', async (c) => {
     }
 });
 
-// 통합 리더보드 (전체 게임, 각 유저의 각 게임별 최고점만 추출 후 합산 TOP 10)
+// 통합 리더보드 (game_scores + tetris_scores 합산 TOP 10)
 gameRoutes.get('/api/games/leaderboard/all', async (c) => {
     const DB = getDB(c);
 
     try {
         const result = await DB.prepare(`
-            SELECT g.score, u.email, g.game_id, g.created_at
-            FROM game_scores g
-            JOIN users u ON g.user_id = u.id
-            ORDER BY g.score DESC
+            SELECT score, email, game_id, created_at FROM (
+                SELECT g.score, u.email, g.game_id, g.created_at
+                FROM game_scores g
+                JOIN users u ON g.user_id = u.id
+                UNION ALL
+                SELECT t.score, u.email, 'tetris' as game_id, t.created_at
+                FROM tetris_scores t
+                JOIN users u ON t.user_id = u.id
+            ) combined
+            ORDER BY score DESC
             LIMIT 10
         `).all();
 
