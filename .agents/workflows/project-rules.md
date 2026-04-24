@@ -30,3 +30,42 @@ description: 프로젝트 규칙 및 코딩 표준 참조
 
 4. 서버 실행 시 반드시 `/start-server` 워크플로우를 따를 것
    (포트 매핑, 프로세스 정리, 실행 확인 절차 포함)
+
+## SEO 필수 규칙
+
+새 페이지나 컴포넌트를 만들 때 반드시 아래 SEO 규칙을 적용합니다.
+
+### 페이지 생성 시 필수 사항
+1. **`PageSEO` 컴포넌트 사용**: 모든 페이지 컴포넌트의 return 최상단에 `PageSEO`를 배치
+   ```tsx
+   import { PageSEO } from '../components/PageSEO';
+   // ...
+   return (
+       <div>
+           <PageSEO
+               title="페이지 제목"
+               description="페이지 설명 (160자 이내)"
+               path="/url-path"
+           />
+           {/* 나머지 컨텐츠 */}
+       </div>
+   );
+   ```
+
+2. **시맨틱 HTML 태그 사용**:
+   - 각 페이지에 `<h1>` 하나만 사용
+   - `<main>`, `<article>`, `<section>`, `<nav>`, `<aside>` 적절히 사용
+   - 이미지에 반드시 의미 있는 `alt` 속성 추가
+   - 링크에 적절한 `aria-label` 추가
+
+3. **JSON-LD 구조화 데이터**: 뉴스, 게임, 도구 등 콘텐츠 페이지에는 `jsonLd` prop 활용
+
+### 새 라우트 추가 시
+- `/api/`, `/admin/`, `/app/` 경로가 아닌 **공개 페이지**는 `sitemap.xml`에 자동 포함되도록 `server.ts`의 `staticPages` 배열에 추가
+- `robots.txt`에서 차단할 경로가 있으면 `Disallow` 규칙 추가
+
+### SEO 관련 파일 위치
+- 공통 SEO 컴포넌트: `apps/main-portal/src/components/PageSEO.tsx`
+- 기본 메타 태그: `apps/main-portal/index.html`
+- robots.txt + sitemap.xml + 뉴스 메타 주입: `apps/api-server/src/server.ts`
+- 사이트 URL 설정: `server.ts`의 `SITE_URL` 상수
