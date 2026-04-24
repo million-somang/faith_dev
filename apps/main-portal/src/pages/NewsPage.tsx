@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { Header, Footer, Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { PageSEO } from '../components/PageSEO';
 
 const API_BASE_URL = '';
 
@@ -261,6 +262,11 @@ export default function NewsPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
+            <PageSEO
+                title="실시간 뉴스"
+                description="실시간으로 업데이트되는 최신 뉴스를 카테고리별로 확인하세요. 정치, 경제, IT/과학, 스포츠, 엔터테인먼트 뉴스 모음."
+                path="/news"
+            />
             <Header user={user} onLogout={logout} />
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">

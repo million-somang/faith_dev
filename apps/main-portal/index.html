@@ -4,12 +4,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FaithPortal</title>
+  
+  <!-- SEO 기본 -->
+  <title>FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털</title>
+  <meta name="description" content="FaithLink에서 최신 실시간 뉴스, 재미있는 미니게임(테트리스, 스도쿠, 2048), 유용한 생활 계산기를 한곳에서 이용하세요." />
+  <meta name="keywords" content="뉴스,미니게임,테트리스,스도쿠,2048,계산기,생활도구,포털" />
+  <meta name="author" content="FaithLink" />
+  <meta name="theme-color" content="#03c75a" />
+  
+  <!-- Canonical -->
+  <link rel="canonical" href="https://faithlink.my/" />
+  
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="FaithLink" />
+  <meta property="og:title" content="FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털" />
+  <meta property="og:description" content="FaithLink에서 최신 실시간 뉴스, 재미있는 미니게임, 유용한 생활 계산기를 한곳에서 이용하세요." />
+  <meta property="og:url" content="https://faithlink.my/" />
+  <meta property="og:locale" content="ko_KR" />
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털" />
+  <meta name="twitter:description" content="최신 뉴스, 미니게임, 생활도구를 한곳에서." />
+  
+  <!-- Google Search Console 인증 (등록 후 교체) -->
+  <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE" /> -->
+  
+  <!-- Naver Search Advisor 인증 (등록 후 교체) -->
+  <!-- <meta name="naver-site-verification" content="YOUR_VERIFICATION_CODE" /> -->
+
+  <!-- Preconnect for performance -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  
   <!-- Icon Fonts -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <!-- Fonts -->
   <link rel="stylesheet"
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <!-- JSON-LD 구조화 데이터 -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "FaithLink",
+    "url": "https://faithlink.my",
+    "description": "실시간 뉴스, 미니게임, 생활도구 통합 포털",
+    "inLanguage": "ko",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://faithlink.my/news?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
 </head>
 
 <body>
@@ -17,4 +67,4 @@
   <script type="module" src="/src/main.tsx"></script>
 </body>
 
-</html>
+</html>

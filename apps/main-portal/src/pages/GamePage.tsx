@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { useAppLauncher } from '../hooks/useAppLauncher';
+import { PageSEO } from '../components/PageSEO';
 
 interface ScoreEntry {
     email: string;
@@ -102,6 +103,11 @@ export default function GamePage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
+            <PageSEO
+                title="미니게임 - 테트리스, 스도쿠, 2048, 지뢰찾기"
+                description="테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 즐겨보세요. 명예의 전당에 도전하세요!"
+                path="/game"
+            />
             <Header user={user} onLogout={logout} />
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
                 <div className="text-center mb-14">

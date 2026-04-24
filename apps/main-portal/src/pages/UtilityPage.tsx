@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Header, Footer, Card } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { MiniAppButton } from '../components/MiniAppButton';
+import { PageSEO } from '../components/PageSEO';
 import axios from 'axios';
 
 interface MiniApp {
@@ -126,6 +127,11 @@ export default function UtilityPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
+            <PageSEO
+                title="생활도구 - 계산기, 변환기, 텍스트 도구"
+                description="만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음."
+                path="/lifestyle"
+            />
             <Header user={user} onLogout={logout} />
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
                 <Card className="p-8">

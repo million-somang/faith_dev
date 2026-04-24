@@ -4,6 +4,7 @@ import { Header, Footer, Card, Button } from '@faithportal/ui';
 import { getCategoryName, getCategoryColor, getTimeAgo } from '@faithportal/core-utils';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { PageSEO } from '../components/PageSEO';
 
 const API_BASE_URL = '';
 
@@ -100,6 +101,21 @@ export default function NewsDetailPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
+            {news && (
+                <PageSEO
+                    title={`${news.title} - FaithLink 뉴스`}
+                    description={(news.content || news.summary || '').replace(/<[^>]*>/g, '').substring(0, 160)}
+                    path={`/news/${id}`}
+                    type="article"
+                    jsonLd={{
+                        '@context': 'https://schema.org',
+                        '@type': 'NewsArticle',
+                        headline: news.title,
+                        datePublished: news.published_at || news.created_at,
+                        publisher: { '@type': 'Organization', name: 'FaithLink' },
+                    }}
+                />
+            )}
             <Header user={user} onLogout={logout} />
 
             <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">

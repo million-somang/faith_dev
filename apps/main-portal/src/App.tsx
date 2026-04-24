@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer, QuickMenu } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from './context/AuthContext';
+import { PageSEO } from './components/PageSEO';
 
 import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
@@ -44,6 +45,11 @@ function HomePage() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+            <PageSEO
+                title="FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털"
+                description="FaithLink에서 최신 실시간 뉴스, 재미있는 미니게임(테트리스, 스도쿠, 2048), 유용한 생활 계산기를 한곳에서 이용하세요."
+                path="/"
+            />
             <Header user={user} onLogout={logout} />
 
             {/* 메인 비주얼 영역 */}
