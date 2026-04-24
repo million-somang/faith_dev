@@ -3197,11 +3197,11 @@ adminUi.get('/admin/mini-apps', async (c) => {
         <!-- 네비게이션 -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-                \${getAdminNavigation('/admin/mini-apps')}
+                ${getAdminNavigation('/admin/mini-apps')}
             </div>
         </nav>
 
-        \${getBreadcrumb([
+        ${getBreadcrumb([
             { label: '홈', href: '/' },
             { label: '관리자', href: '/admin' },
             { label: '미니앱 관리' }
