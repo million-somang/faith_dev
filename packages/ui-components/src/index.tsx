@@ -162,35 +162,81 @@ export const QuickMenu = () => (
     </nav>
 );
 
-export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => (
-    <footer className="bg-white border-t border-gray-200 mt-20 py-12">
-        <div className="max-w-6xl mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
-                <div>
-                    <h2 className="text-xl font-black text-gray-900 mb-4">FaithPortal</h2>
-                    <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
-                        세상의 모든 정보를 하나로 묶는 믿음의 포털. 더 나은 내일을 위해 매일 성장합니다.
-                    </p>
+export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
+    const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+
+    React.useEffect(() => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            e.preventDefault();
+            setDeferredPrompt(e);
+        };
+        window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    }, []);
+
+    const handleInstallClick = async () => {
+        if (!deferredPrompt) {
+            alert('현재 브라우저에서는 자체 설치 메뉴를 사용해야 하거나 이미 앱이 설치되어 있습니다.\n\n📱안드로이드(크롬): 메뉴 > "홈 화면에 추가"\n🍎아이폰(사파리): 하단 공유 탭 > "홈 화면에 추가"\n\n버튼을 직접 찾아 눌러주세요!');
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            setDeferredPrompt(null);
+        }
+    };
+
+    return (
+        <footer className="bg-white border-t border-gray-200 mt-20 py-12">
+            <div className="max-w-6xl mx-auto px-4">
+                
+                {/* 앱 설치 버튼 (명시적으로 추가) */}
+                <div className="mb-10 p-6 bg-green-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-green-100 shadow-sm">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-brand-green">
+                            <i className="fas fa-mobile-alt text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-gray-900 text-lg">FaithPortal 앱 설치하기</h3>
+                            <p className="text-sm text-gray-600">바탕화면에 아이콘을 추가하고 더 빠르고 편리하게 접속하세요!</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={handleInstallClick}
+                        className="w-full sm:w-auto px-6 py-3 bg-brand-green hover:bg-brand-green-hover text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                    >
+                        <i className="fas fa-download"></i>
+                        <span>홈 화면에 추가 (설치)</span>
+                    </button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+
+                <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
                     <div>
-                        <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스</h4>
-                        <ul className="space-y-2 text-sm text-gray-500">
-                            <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">뉴스</a></li>
-                            <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">유틸리티</a></li>
-                            <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융</a></li>
-                        </ul>
+                        <h2 className="text-xl font-black text-gray-900 mb-4">FaithPortal</h2>
+                        <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
+                            세상의 모든 정보를 하나로 묶는 믿음의 포털. 더 나은 내일을 위해 매일 성장합니다.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+                        <div>
+                            <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스</h4>
+                            <ul className="space-y-2 text-sm text-gray-500">
+                                <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">뉴스</a></li>
+                                <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">유틸리티</a></li>
+                                <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div className="pt-8 border-t border-gray-100 flex flex-col sm:row items-center justify-between gap-4">
+                    <p className="text-xs text-gray-400">© 2026 FaithPortal. All rights reserved.</p>
+                    <div className="flex gap-4 text-gray-400 text-sm">
+                        <a href="#" className="hover:text-gray-600"><i className="fab fa-facebook"></i></a>
+                        <a href="#" className="hover:text-gray-600"><i className="fab fa-twitter"></i></a>
+                        <a href="#" className="hover:text-gray-600"><i className="fab fa-instagram"></i></a>
                     </div>
                 </div>
             </div>
-            <div className="pt-8 border-t border-gray-100 flex flex-col sm:row items-center justify-between gap-4">
-                <p className="text-xs text-gray-400">© 2026 FaithPortal. All rights reserved.</p>
-                <div className="flex gap-4 text-gray-400 text-sm">
-                    <a href="#" className="hover:text-gray-600"><i className="fab fa-facebook"></i></a>
-                    <a href="#" className="hover:text-gray-600"><i className="fab fa-twitter"></i></a>
-                    <a href="#" className="hover:text-gray-600"><i className="fab fa-instagram"></i></a>
-                </div>
-            </div>
-        </div>
-    </footer>
-);
+        </footer>
+    );
+};
