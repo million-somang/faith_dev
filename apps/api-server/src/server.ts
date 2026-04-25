@@ -50,6 +50,9 @@ app.route('/', adminRoutes);
 import { adminUi } from './routes/admin-ui.js';
 app.route('/', adminUi);
 
+import { adminStatsUi } from './routes/admin-stats-ui.js';
+app.route('/', adminStatsUi);
+
 import { miniappRoutes } from './routes/miniapp.routes.js';
 app.route('/', miniappRoutes);
 
@@ -61,6 +64,9 @@ app.route('/', gameRoutes);
 
 import { ddayRoutes } from './routes/dday.routes.js';
 app.route('/', ddayRoutes);
+
+import { analyticsRoutes } from './routes/analytics.routes.js';
+app.route('/', analyticsRoutes);
 
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);

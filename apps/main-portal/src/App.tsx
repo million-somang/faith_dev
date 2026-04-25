@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer, QuickMenu } from '@faithportal/ui';
 import axios from 'axios';
@@ -204,8 +205,17 @@ function AdminRedirect() {
     return <div className="min-h-screen flex items-center justify-center">관리자 페이지로 이동 중입니다...</div>;
 }
 
+// 페이지뷰 트래킹 훅
+function usePageTracking() {
+    const location = useLocation();
+    useEffect(() => {
+        trackPageView(location.pathname);
+    }, [location.pathname]);
+}
+
 function App() {
     console.log('App rendering...');
+    usePageTracking();
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
