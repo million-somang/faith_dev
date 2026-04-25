@@ -59,7 +59,8 @@ export async function createSession(c: Context, userId: number): Promise<string>
     setCookie(c, 'session_id', sessionId, {
         maxAge: 7 * 24 * 60 * 60,
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        // 임시로 HTTPS 강제 제거: HTTP 접속 환경에서도 로그인이 유지되도록 함
+        secure: false, 
         sameSite: 'Lax',
         path: '/'
     })
