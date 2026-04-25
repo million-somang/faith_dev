@@ -200,7 +200,11 @@ function HomePage() {
 
 function AdminRedirect() {
     useEffect(() => {
-        window.location.href = 'http://localhost:4200/admin?t=' + Date.now();
+        const isDev = window.location.port === '5000';
+        const adminUrl = isDev
+            ? 'http://localhost:4200/admin?t=' + Date.now()
+            : '/admin?t=' + Date.now();
+        window.location.href = adminUrl;
     }, []);
     return <div className="min-h-screen flex items-center justify-center">관리자 페이지로 이동 중입니다...</div>;
 }

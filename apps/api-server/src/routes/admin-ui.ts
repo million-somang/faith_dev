@@ -678,12 +678,12 @@ adminUi.get('/admin', async (c) => {
                             window.location.reload();
                         } else {
                             alert('관리자 권한이 필요합니다.');
-                            window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                         }
                     })
                     .catch(() => {
                         alert('관리자 권한이 필요합니다.');
-                        window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                     });
             } else
 
@@ -1068,12 +1068,12 @@ adminUi.get('/admin/users', async (c) => {
                             window.location.reload();
                         } else {
                             alert('관리자 권한이 필요합니다.');
-                            window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                         }
                     })
                     .catch(() => {
                         alert('관리자 권한이 필요합니다.');
-                        window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                     });
             } else
 
@@ -1635,12 +1635,12 @@ adminUi.get('/admin/logs', async (c) => {
                             window.location.reload();
                         } else {
                             alert('관리자 권한이 필요합니다.');
-                            window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                         }
                     })
                     .catch(() => {
                         alert('관리자 권한이 필요합니다.');
-                        window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                     });
             } else
 
@@ -1848,12 +1848,12 @@ adminUi.get('/admin/notifications', async (c) => {
                             window.location.reload();
                         } else {
                             alert('관리자 권한이 필요합니다.');
-                            window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                         }
                     })
                     .catch(() => {
                         alert('관리자 권한이 필요합니다.');
-                        window.location.href = 'http://localhost:5000/login?redirect=' + encodeURIComponent(window.location.pathname);
+                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
                     });
             } else
 
