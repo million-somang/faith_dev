@@ -1,7 +1,21 @@
 import { Hono } from 'hono'
 import { getAdminNavigation, getBreadcrumb } from './admin-ui.js'
+import { checkSession } from '../middleware/auth.js'
 
 export const adminStatsUi = new Hono()
+
+// 서버사이드 관리자 인증 미들웨어
+adminStatsUi.use('/admin/stats', async (c, next) => {
+    try {
+        const user = await checkSession(c);
+        if (!user || (user.role !== 'admin' && user.level < 6)) {
+            return c.redirect('/login?redirect=' + encodeURIComponent(c.req.path));
+        }
+    } catch (e) {
+        return c.redirect('/login?redirect=' + encodeURIComponent(c.req.path));
+    }
+    await next();
+});
 
 adminStatsUi.get('/admin/stats', async (c) => {
     return c.html(`
@@ -177,22 +191,23 @@ adminStatsUi.get('/admin/stats', async (c) => {
             let referrersChartInstance = null;
             let devicesChartInstance = null;
 
+            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
             const authToken = localStorage.getItem('auth_token');
+            if (!authToken || authToken === 'true') {
+                fetch('/api/auth/me', { credentials: 'include' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.loggedIn) {
+                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
+                            localStorage.setItem('user_email', data.user.email);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                        }
+                    }).catch(() => {});
+            }
+            
             const userRole = localStorage.getItem('user_role') || 'user';
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-
-            if (!authToken || authToken === 'true' || (userRole !== 'admin' && userLevel < 6)) {
-                fetch('/api/auth/me', { credentials: 'include' })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d.loggedIn && (d.user.role === 'admin' || d.user.level >= 6)) {
-                            localStorage.setItem('auth_token', btoa(d.user.id + ':faith'));
-                            localStorage.setItem('user_role', d.user.role);
-                            localStorage.setItem('user_level', d.user.level);
-                            location.reload();
-                        } else { alert('관리자 권한이 필요합니다.'); location.href = '/login'; }
-                    }).catch(() => { alert('관리자 권한이 필요합니다.'); location.href = '/login'; });
-            }
 
             document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
 

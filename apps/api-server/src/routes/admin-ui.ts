@@ -3,8 +3,23 @@ import * as fs from 'fs';
 import { getDB } from '../db/adapter.js';
 import { escapeHtml } from '../utils/htmlEscape.js';
 import { getCategoryName, getCategoryColor, getTimeAgo } from '../utils/formatter.js';
+import { checkSession } from '../middleware/auth.js';
 
 export const adminUi = new Hono();
+
+// 서버사이드 관리자 인증 미들웨어 - 모든 /admin/* 요청에 적용
+adminUi.use('/admin/*', async (c, next) => {
+    try {
+        const user = await checkSession(c);
+        if (!user || (user.role !== 'admin' && user.level < 6)) {
+            // 로그인 페이지로 리다이렉트
+            return c.redirect('/login?redirect=' + encodeURIComponent(c.req.path));
+        }
+    } catch (e) {
+        return c.redirect('/login?redirect=' + encodeURIComponent(c.req.path));
+    }
+    await next();
+});
 
 // ==================== UI 컴포넌트 / 레이아웃 헬퍼 ====================
 // src/index.tsx에서 추출된 공통 UI 함수들
@@ -659,33 +674,21 @@ adminUi.get('/admin', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // 인증 체크
-            const userRole = localStorage.getItem('user_role') || 'user';
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
             const authToken = localStorage.getItem('auth_token');
-            if (!authToken || authToken === 'true' || (userRole !== 'admin' && userLevel < 6)) {
-                // Async fallback sync
+            if (!authToken || authToken === 'true') {
                 fetch('/api/auth/me', { credentials: 'include' })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.loggedIn && (data.user.role === 'admin' || data.user.level >= 6)) {
+                        if (data.loggedIn) {
                             localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
                             localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role);
-                            localStorage.setItem('user_level', data.user.level);
-                            window.location.reload();
-                        } else {
-                            alert('관리자 권한이 필요합니다.');
-                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                            document.getElementById('admin-name').textContent = data.user.email;
                         }
-                    })
-                    .catch(() => {
-                        alert('관리자 권한이 필요합니다.');
-                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-                    });
-            } else
+                    }).catch(() => {});
+            }
 
             // 관리자 정보 표시
             document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
@@ -1048,34 +1051,22 @@ adminUi.get('/admin/users', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // 인증 체크
-            const userRole = localStorage.getItem('user_role') || 'user';
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
             const authToken = localStorage.getItem('auth_token');
             const token = authToken;
-            if (!authToken || authToken === 'true' || (userRole !== 'admin' && userLevel < 6)) {
-                // Async fallback sync
+            if (!authToken || authToken === 'true') {
                 fetch('/api/auth/me', { credentials: 'include' })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.loggedIn && (data.user.role === 'admin' || data.user.level >= 6)) {
+                        if (data.loggedIn) {
                             localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
                             localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role);
-                            localStorage.setItem('user_level', data.user.level);
-                            window.location.reload();
-                        } else {
-                            alert('관리자 권한이 필요합니다.');
-                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                            document.getElementById('admin-name').textContent = data.user.email;
                         }
-                    })
-                    .catch(() => {
-                        alert('관리자 권한이 필요합니다.');
-                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-                    });
-            } else
+                    }).catch(() => {});
+            }
 
             document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
 
@@ -1616,33 +1607,22 @@ adminUi.get('/admin/logs', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // 인증 체크
-            const userRole = localStorage.getItem('user_role') || 'user';
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
             const authToken = localStorage.getItem('auth_token');
-            if (!authToken || authToken === 'true' || (userRole !== 'admin' && userLevel < 6)) {
-                // Async fallback sync
+            const token = authToken;
+            if (!authToken || authToken === 'true') {
                 fetch('/api/auth/me', { credentials: 'include' })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.loggedIn && (data.user.role === 'admin' || data.user.level >= 6)) {
+                        if (data.loggedIn) {
                             localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
                             localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role);
-                            localStorage.setItem('user_level', data.user.level);
-                            window.location.reload();
-                        } else {
-                            alert('관리자 권한이 필요합니다.');
-                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                            document.getElementById('admin-name').textContent = data.user.email;
                         }
-                    })
-                    .catch(() => {
-                        alert('관리자 권한이 필요합니다.');
-                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-                    });
-            } else
+                    }).catch(() => {});
+            }
 
             document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
 
@@ -1829,33 +1809,22 @@ adminUi.get('/admin/notifications', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // 인증 체크
-            const userRole = localStorage.getItem('user_role') || 'user';
-            const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            // 관리자 권한 체크 (role = 'admin' 또는 level >= 6)
+            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
             const authToken = localStorage.getItem('auth_token');
-            if (!authToken || authToken === 'true' || (userRole !== 'admin' && userLevel < 6)) {
-                // Async fallback sync
+            const token = authToken;
+            if (!authToken || authToken === 'true') {
                 fetch('/api/auth/me', { credentials: 'include' })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.loggedIn && (data.user.role === 'admin' || data.user.level >= 6)) {
+                        if (data.loggedIn) {
                             localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
                             localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role);
-                            localStorage.setItem('user_level', data.user.level);
-                            window.location.reload();
-                        } else {
-                            alert('관리자 권한이 필요합니다.');
-                            window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                            document.getElementById('admin-name').textContent = data.user.email;
                         }
-                    })
-                    .catch(() => {
-                        alert('관리자 권한이 필요합니다.');
-                        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
-                    });
-            } else
+                    }).catch(() => {});
+            }
 
             document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
 
@@ -2437,15 +2406,15 @@ adminUi.get('/admin/news', async (c) => {
                 window.open(proxyUrl, '_blank', 'noopener,noreferrer');
             }
             
-            // 로그인 확인 및 권한 검증
-            const token = localStorage.getItem('auth_token');
+            // 인증 정보 동기화 (서버사이드 인증 완료)
+            const authToken = localStorage.getItem('auth_token');
+            if (!authToken || authToken === 'true') {
+                fetch('/api/auth/me', { credentials: 'include' }).then(res => res.json()).then(data => {
+                    if (data.loggedIn) { localStorage.setItem('auth_token', btoa(data.user.id + ':faith')); localStorage.setItem('user_email', data.user.email); localStorage.setItem('user_role', data.user.role || 'user'); localStorage.setItem('user_level', String(data.user.level || 0)); if (document.getElementById('admin-name')) document.getElementById('admin-name').textContent = data.user.email + ' (레벨 ' + data.user.level + ')'; }
+                }).catch(() => {});
+            }
             const userEmail = localStorage.getItem('user_email');
             const userLevel = parseInt(localStorage.getItem('user_level') || '0');
-            
-            if (!token || userLevel < 6) {
-                alert('관리자 권한이 필요합니다.');
-                location.href = '/';
-            }
             
             if (userEmail) {
                 document.getElementById('admin-name').textContent = userEmail + ' (레벨 ' + userLevel + ')';
