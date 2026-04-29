@@ -126,6 +126,13 @@ app.get('/', async (c) => {
         <title>Faith Portal - 믿음의 포탈</title>
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
         <link rel="alternate icon" href="/favicon.ico">
+        <!-- PWA 필수 설정 -->
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="페이스링크" />
+        <meta name="theme-color" content="#03c75a" />
+        <link rel="apple-touch-icon" href="/logo-192.png" />
         <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
         <script>
             // Tailwind CDN 경고 필터링 (개발 환경용)
@@ -841,6 +848,27 @@ app.get('/', async (c) => {
                     closeBetaNotice();
                 }
             });
+        </script>
+
+        <!-- PWA: 서비스 워커 등록 & 글로벌 설치 프롬프트 캐처 -->
+        <script>
+            // 글로벌 beforeinstallprompt 캐처 (React 마운트 전에 이벤트가 발생해도 놓치지 않도록)
+            window.deferredPrompt = null;
+            window.addEventListener('beforeinstallprompt', function(e) {
+                e.preventDefault();
+                window.deferredPrompt = e;
+            });
+
+            // 서비스 워커 등록
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                        console.log('SW registered:', registration);
+                    }).catch(function(err) {
+                        console.log('SW registration failed:', err);
+                    });
+                });
+            }
         </script>
 
     </body>
