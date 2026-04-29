@@ -198,12 +198,27 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 
     const handleInstallClick = async () => {
         if (isInstalled) {
-            alert('이미 페이스링크 앱이 기기에 설치되어 있습니다.');
+            alert('이미 페이스링크 앱이 기기에 설치되어 있습니다.\n바탕화면에서 아이콘을 찾아 실행해 보세요.');
             return;
         }
 
         if (!deferredPrompt) {
-            alert('현재 브라우저에서는 자체 설치 메뉴를 사용해야 하거나 이미 앱이 설치되어 있습니다.\n\n📱안드로이드(크롬): 메뉴 > "홈 화면에 추가"\n🍎아이폰(사파리): 하단 공유 탭 > "홈 화면에 추가"\n\n버튼을 직접 찾아 눌러주세요!');
+            // deferredPrompt가 없다는 것은 iOS 사파리이거나, 아직 이벤트가 발생하지 않았거나, 지원하지 않는 브라우저(카카오톡 인앱 등)임.
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            const isIOS = /iphone|ipad|ipod/.test(userAgent);
+            const isKakao = userAgent.includes('kakaotalk');
+            const isNaver = userAgent.includes('naver');
+
+            if (isKakao || isNaver) {
+                alert('⚠️ 카카오톡/네이버 브라우저에서는 앱 설치가 지원되지 않습니다.\n\n우측 하단(또는 상단)의 [⋮] 버튼을 눌러 "다른 브라우저로 열기(크롬/사파리)"를 선택한 후 설치해주세요!');
+                return;
+            }
+
+            if (isIOS) {
+                alert('🍎 아이폰(Safari) 설치 안내\n\n아이폰은 자동으로 설치창이 뜨지 않습니다.\n화면 맨 아래의 [공유] 아이콘(가운데 네모 위 화살표)을 누른 후, 메뉴를 위로 올려서 [홈 화면에 추가]를 직접 눌러주세요!');
+            } else {
+                alert('📱 안드로이드 설치 안내\n\n자동 설치창을 띄울 수 없는 환경입니다.\n브라우저 우측 상단의 [⋮] 메뉴를 누른 후 [홈 화면에 추가] 또는 [앱 설치]를 직접 선택해주세요!');
+            }
             return;
         }
 
@@ -213,7 +228,6 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
         
         if (outcome === 'accepted') {
             setDeferredPrompt(null);
-            // appinstalled 이벤트가 발생하여 상태가 업데이트됨
         } else {
             setIsInstalling(false);
         }
