@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faithportal-v2';
+const CACHE_NAME = 'faithportal-v3';
 const urlsToCache = [
   '/',
   '/manifest.json',
