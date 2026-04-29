@@ -164,25 +164,58 @@ export const QuickMenu = () => (
 
 export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
     const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+    const [isInstalled, setIsInstalled] = React.useState(false);
+    const [isInstalling, setIsInstalling] = React.useState(false);
 
     React.useEffect(() => {
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
+            setIsInstalled(true);
+        }
+
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e);
+            setIsInstalled(false);
         };
+        
+        const handleAppInstalled = () => {
+            setIsInstalling(false);
+            setIsInstalled(true);
+            setTimeout(() => {
+                alert('설치가 완료되었습니다!');
+            }, 500);
+        };
+
         window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-        return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.addEventListener('appinstalled', handleAppInstalled);
+        
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+            window.removeEventListener('appinstalled', handleAppInstalled);
+        };
     }, []);
 
     const handleInstallClick = async () => {
+        if (isInstalled) {
+            alert('이미 페이스링크 앱이 기기에 설치되어 있습니다.');
+            return;
+        }
+
         if (!deferredPrompt) {
             alert('현재 브라우저에서는 자체 설치 메뉴를 사용해야 하거나 이미 앱이 설치되어 있습니다.\n\n📱안드로이드(크롬): 메뉴 > "홈 화면에 추가"\n🍎아이폰(사파리): 하단 공유 탭 > "홈 화면에 추가"\n\n버튼을 직접 찾아 눌러주세요!');
             return;
         }
+
+        setIsInstalling(true);
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
+        
         if (outcome === 'accepted') {
             setDeferredPrompt(null);
+            // appinstalled 이벤트가 발생하여 상태가 업데이트됨
+        } else {
+            setIsInstalling(false);
         }
     };
 
@@ -194,19 +227,31 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                 <div className="mb-10 p-6 bg-green-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-green-100 shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-brand-green">
-                            <i className="fas fa-mobile-alt text-2xl"></i>
+                            {isInstalled ? <i className="fas fa-check-circle text-2xl"></i> : <i className="fas fa-mobile-alt text-2xl"></i>}
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 text-lg">FaithPortal 앱 설치하기</h3>
-                            <p className="text-sm text-gray-600">바탕화면에 아이콘을 추가하고 더 빠르고 편리하게 접속하세요!</p>
+                            <h3 className="font-bold text-gray-900 text-lg">페이스링크 앱 설치하기</h3>
+                            <p className="text-sm text-gray-600">
+                                {isInstalled ? '이미 페이스링크 앱이 기기에 설치되어 있습니다.' : '바탕화면에 아이콘을 추가하고 더 빠르고 편리하게 접속하세요!'}
+                            </p>
                         </div>
                     </div>
                     <button 
                         onClick={handleInstallClick}
-                        className="w-full sm:w-auto px-6 py-3 bg-brand-green hover:bg-brand-green-hover text-white font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2"
+                        disabled={isInstalled || isInstalling}
+                        className={`w-full sm:w-auto px-6 py-3 font-bold rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 ${
+                            isInstalled 
+                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                : 'bg-brand-green hover:bg-brand-green-hover text-white'
+                        }`}
                     >
-                        <i className="fas fa-download"></i>
-                        <span>홈 화면에 추가 (설치)</span>
+                        {isInstalling ? (
+                            <><i className="fas fa-spinner fa-spin"></i><span>설치 진행 중...</span></>
+                        ) : isInstalled ? (
+                            <><i className="fas fa-check"></i><span>설치 완료됨</span></>
+                        ) : (
+                            <><i className="fas fa-download"></i><span>홈 화면에 추가 (설치)</span></>
+                        )}
                     </button>
                 </div>
 
