@@ -173,8 +173,14 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
             setIsInstalled(true);
         }
 
+        // 이미 글로벌에서 잡힌 prompt가 있다면 가져오기
+        if ((window as any).deferredPrompt) {
+            setDeferredPrompt((window as any).deferredPrompt);
+        }
+
         const handleBeforeInstallPrompt = (e: Event) => {
             e.preventDefault();
+            (window as any).deferredPrompt = e;
             setDeferredPrompt(e);
             setIsInstalled(false);
         };
@@ -182,6 +188,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
         const handleAppInstalled = () => {
             setIsInstalling(false);
             setIsInstalled(true);
+            (window as any).deferredPrompt = null;
             setTimeout(() => {
                 alert('설치가 완료되었습니다!');
             }, 500);

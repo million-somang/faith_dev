@@ -80,6 +80,14 @@
       cookie_flags: 'SameSite=None;Secure'
     });
   </script>
+
+  <script>
+    window.deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+    });
+  </script>
 </head>
 
 <body>
