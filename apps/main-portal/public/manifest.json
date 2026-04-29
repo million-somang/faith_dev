@@ -3,6 +3,7 @@
   "short_name": "FaithPortal",
   "description": "실시간 뉴스, 미니게임, 생활도구 통합 포털",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#03c75a",
