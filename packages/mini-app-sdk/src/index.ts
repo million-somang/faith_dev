@@ -1,3 +1,4 @@
-export * from './MiniAppLayout.js';
-export * from './useAuth.js';
-export * from './usePortalMessenger.js';
+export * from './MiniAppLayout';
+export * from './useAuth';
+export * from './usePortalMessenger';
+export * from './components/MiniAppCommunity';

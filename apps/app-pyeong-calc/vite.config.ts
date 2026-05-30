@@ -17,7 +17,8 @@ export default defineConfig({
         }
     },
     optimizeDeps: {
-        include: ['lucide-react', '@faithportal/mini-app-sdk']
+        exclude: ['@faithportal/mini-app-sdk'],
+        include: ['lucide-react']
     },
     resolve: {
         dedupe: ['react', 'react-dom']

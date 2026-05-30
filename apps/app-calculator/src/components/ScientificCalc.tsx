@@ -1,7 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+declare global {
+    interface Document {
+        parentKeyboardCallback?: ((key: string) => void) | null;
+    }
+}
 
 export default function ScientificCalc() {
     const [expression, setExpression] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 최신 상태를 담아둘 Ref 정의 (클로저 현상 원천 차단)
+    const stateRef = useRef({ expression, append: (val: string) => {}, calculate: () => {}, backspace: () => {}, clear: () => {} });
 
     const append = (val: string) => setExpression(prev => prev + val);
     const clear = () => setExpression('');
@@ -30,17 +40,139 @@ export default function ScientificCalc() {
     };
 
     const calculate = () => {
+        console.log('[CHILD] ScientificCalc calculate executing. current expression:', stateRef.current.expression);
         try {
-            const expr = expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/\^/g, '**');
+            const expr = stateRef.current.expression.replace(/×/g, '*').replace(/÷/g, '/').replace(/\^/g, '**');
+            console.log('[CHILD] ScientificCalc calculate raw eval expression:', expr);
             const result = eval(expr);
+            console.log('[CHILD] ScientificCalc calculate success result:', result);
             setExpression(result.toString());
         } catch (e) {
+            console.error('[CHILD] ScientificCalc calculate error:', e);
             alert('올바른 수식을 입력해주세요');
         }
     };
 
+    // 매 렌더링 시마다 최신 상태 및 함수를 Ref에 동기화
+    stateRef.current = { expression, append, calculate, backspace, clear };
+
+    useEffect(() => {
+        const focusContainer = () => {
+            window.focus();
+            if (containerRef.current) {
+                containerRef.current.focus();
+            }
+            window.parent.postMessage({ type: 'CALCULATOR_READY' }, '*');
+        };
+
+        // DOM 페인팅 타이밍 꼬임을 방지하기 위해 setTimeout 지연 포커스 기동
+        const timer = setTimeout(focusContainer, 50);
+
+        // 사용자가 계산기 화면을 클릭할 때마다 언제든 포커스를 강제로 다시 주입하여 물리 키패드 응답성 영구 유지
+        window.addEventListener('click', focusContainer);
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            console.log('[CHILD] ScientificCalc handleKeyDown received key:', e.key);
+            // 다른 입력 필드(input, textarea 등)에 포커스가 잡힌 경우 키보드 입력을 무시합니다.
+            const activeEl = document.activeElement;
+            if (activeEl && (
+                activeEl.tagName === 'INPUT' || 
+                activeEl.tagName === 'SELECT' || 
+                activeEl.tagName === 'TEXTAREA' ||
+                activeEl.getAttribute('contenteditable') === 'true'
+            )) {
+                return;
+            }
+
+            const key = e.key;
+            const current = stateRef.current;
+
+            if (key >= '0' && key <= '9') {
+                e.preventDefault();
+                current.append(key);
+            } else if (key === '.') {
+                e.preventDefault();
+                current.append('.');
+            } else if (key === '+') {
+                e.preventDefault();
+                current.append('+');
+            } else if (key === '-') {
+                e.preventDefault();
+                current.append('-');
+            } else if (key === '*') {
+                e.preventDefault();
+                current.append('×');
+            } else if (key === '/') {
+                e.preventDefault();
+                current.append('÷');
+            } else if (key === '^') {
+                e.preventDefault();
+                current.append('^');
+            } else if (key === '(') {
+                e.preventDefault();
+                current.append('(');
+            } else if (key === ')') {
+                e.preventDefault();
+                current.append(')');
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                current.calculate();
+            } else if (key === 'Backspace') {
+                e.preventDefault();
+                current.backspace();
+            } else if (key === 'Escape' || key === 'Delete') {
+                e.preventDefault();
+                current.clear();
+            }
+        };
+
+        // 전역 물리 키보드 릴레이 콜백 등록 (document 레벨 싱글톤 공유)
+        const myCallback = (key: string) => {
+            console.log('[CHILD CALLBACK] ScientificCalc parentKeyboardCallback executing key:', key);
+            const current = stateRef.current;
+            if (key >= '0' && key <= '9') {
+                current.append(key);
+            } else if (key === '.') {
+                current.append('.');
+            } else if (key === '+') {
+                current.append('+');
+            } else if (key === '-') {
+                current.append('-');
+            } else if (key === '*') {
+                current.append('×');
+            } else if (key === '/') {
+                current.append('÷');
+            } else if (key === '^') {
+                current.append('^');
+            } else if (key === '(') {
+                current.append('(');
+            } else if (key === ')') {
+                current.append(')');
+            } else if (key === 'Enter' || key === '=') {
+                current.calculate();
+            } else if (key === 'Backspace') {
+                current.backspace();
+            } else if (key === 'Escape' || key === 'Delete') {
+                current.clear();
+            }
+        };
+
+        document.parentKeyboardCallback = myCallback;
+        console.log('[CHILD] ScientificCalc parentKeyboardCallback successfully bound to document. Current callback is function:', typeof document.parentKeyboardCallback === 'function');
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            clearTimeout(timer);
+            if (document.parentKeyboardCallback === myCallback) {
+                document.parentKeyboardCallback = null;
+            }
+            window.removeEventListener('click', focusContainer);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, []); // 의존성 배열을 완전히 비워 1회만 등록되게 조치
+
     return (
-        <div id="calc-scientific" className="calculator-container">
+        <div id="calc-scientific" ref={containerRef} tabIndex={0} style={{ outline: 'none' }} className="calculator-container">
             <div className="max-w-md sm:max-w-lg lg:max-w-xl mx-auto bg-gray-200 p-2 sm:p-6 rounded-2xl shadow-2xl" style={{ background: 'linear-gradient(145deg, #e5e7eb, #d1d5db)' }}>
                 <div id="scientific-display" className="calculator-display" style={{ marginBottom: '2rem' }}>
                     {expression || '0'}

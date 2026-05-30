@@ -1,4 +1,11 @@
 @import "tailwindcss";
+@source "../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../packages/mini-app-sdk/src/**/*.ts";
+
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 (포털 모달 헤더와 중복 방지) */
+#root > div > header {
+  display: none !important;
+}
 
 /* ========================================
    FaithPortal Design System — Neumorphism
@@ -57,6 +64,7 @@ html, body, #root {
   font-family: var(--font-main);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden; /* 가로 스크롤바만 원천 차단하여 레이아웃 안정성 확보 */
 }
 
 @layer utilities {
@@ -70,36 +78,97 @@ html, body, #root {
 }
 
 /* ========================================
-   로딩 스크린
+   로딩 스크린 (첨부 이미지 전면 모사)
    ======================================== */
-body:has(.loading-screen),
-#root:has(.loading-screen),
-#root:has(.loading-screen) > *,
-.mini-app-content:has(.loading-screen) {
-  background: var(--nm-bg) !important;
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100vh !important; /* 모달 내 flex 찌그러짐에 구애받지 않고 강제로 세로 전체 팽창 */
+  min-height: 100vh !important;
+  background: #eef1f6;
+  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+  overflow: hidden !important; /* 스크롤바 노출 전면 불허 */
 }
 
-.loading-screen {
+/* 상단 보라색 헤더 */
+.loading-header {
+  height: 56px;
+  background: #5d5fef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loading-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.loading-header-title i {
+  font-size: 1.1rem;
+}
+
+.loading-header-close {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.loading-header-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 로딩 본체 */
+.loading-body {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
   flex: 1;
+  padding: 1.5rem; /* 세로 밀림 짤림을 완벽 차단하기 위해 콤팩트 패딩 조정 */
   width: 100%;
-  min-height: calc(100dvh - 3.5rem);
-  background: var(--nm-bg);
-  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+  gap: 1rem; /* 요소들 간의 정돈된 균형 간격 확보 */
 }
 
-.loading-icon {
-  width: 140px;
-  height: 140px;
+/* 중앙 로고 아이콘 서클 (흰색 외곽 링 + 보라/청록 빛 글로우) */
+.loading-icon-wrapper {
+  width: 190px;
+  height: 190px;
+  background: #ffffff;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: loadingFloat 2s ease-in-out infinite;
-  margin-bottom: 1.5rem;
+  box-shadow: 
+    0 20px 40px rgba(93, 95, 239, 0.16),
+    0 4px 10px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.2rem; /* 2.2rem에서 1.2rem으로 대폭 축소 */
+  animation: loadingFloat 3s ease-in-out infinite;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .loading-logo-img {
@@ -107,38 +176,142 @@ body:has(.loading-screen),
   height: 100%;
   object-fit: contain;
   border-radius: 50%;
-  filter: drop-shadow(0 8px 24px rgba(99, 102, 241, 0.25));
 }
 
+/* 타이틀 및 서브타이틀 */
 .loading-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: var(--text-primary);
+  color: #101e35;
   margin: 0 0 0.5rem;
   letter-spacing: -0.03em;
+  text-align: center;
 }
 
 .loading-subtitle {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-  margin: 0 0 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #8a9bb0;
+  margin: 0 0 1.2rem; /* 2.2rem에서 1.2rem으로 대폭 축소 */
+  text-align: center;
+  letter-spacing: -0.01em;
 }
 
+/* 로딩 도트 스피너 */
 .loading-spinner {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-bottom: 1.5rem; /* 3.5rem에서 1.5rem으로 과감하게 다이어트 */
 }
 
 .spinner-dot {
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
+  width: 12px;
+  height: 12px;
+  background: #9b9cff;
   border-radius: 50%;
   animation: dotBounce 1.2s ease-in-out infinite;
 }
 
 .spinner-dot:nth-child(2) { animation-delay: 0.15s; }
 .spinner-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* 로딩 스크린 활성화 시 부모 스크롤 영역의 overflow를 hidden으로 강제 고정하여 수직 스크롤바에 따른 가로 밀림/짤림 현상 원천 방지 */
+.mini-app-content:has(.loading-screen) {
+  overflow: hidden !important;
+}
+
+/* 하단 광고 배너 */
+.loading-ad-banner {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeIn 0.8s ease-out both;
+  animation-delay: 0.2s;
+  box-sizing: border-box;
+}
+
+/* 480px 이하 모바일 및 모달 컴팩트 환경을 위한 정교한 뷰포트 피팅 스케일링 */
+@media (max-width: 480px) {
+  .loading-icon-wrapper {
+    width: 130px !important; /* 로고 크기를 130px로 더욱 콤팩트하게 슬림화 */
+    height: 130px !important;
+    margin-bottom: 1rem !important;
+  }
+  .loading-title {
+    font-size: 1.35rem !important;
+  }
+  .loading-subtitle {
+    font-size: 0.85rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .loading-spinner {
+    margin-bottom: 1.2rem !important;
+  }
+  .loading-ad-banner {
+    max-width: 92% !important; /* 가변 너비를 92%로 감싸 좌우 대칭 패딩 유지 */
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+  .ad-placeholder {
+    padding: 0.8rem 1rem !important;
+    min-height: 60px !important;
+  }
+}
+
+.ad-placeholder {
+  width: 92%; /* 부모 너비를 넘지 않도록 가변 너비 부여 */
+  margin: 0 auto; /* 완벽 정중앙 대칭 마진 확보 */
+  background: #e8edf3;
+  border-radius: 1.1rem;
+  padding: 1.2rem;
+  box-shadow:
+    inset 1px 1px 3px rgba(0, 0, 0, 0.05),
+    inset -1px -1px 3px rgba(255, 255, 255, 0.6),
+    0 4px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 76px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-sizing: border-box;
+}
+
+.ad-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #8e9cae;
+  padding: 3px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #8e9cae;
+  letter-spacing: -0.02em;
+}
+
+/* 애니메이션 */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loadingFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
 
 /* ========================================
    메인 레이아웃
@@ -1322,3 +1495,151 @@ body:has(.loading-screen),
     margin-top: 1.5rem;
   }
 }
+
+/* ========================================
+   AEO & SEO 전용 콘텐츠 스타일
+   ======================================== */
+.aeo-formula-section {
+  background: var(--nm-bg-light);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin: 1.5rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    inset 2px 2px 5px var(--nm-shadow-inset-dark),
+    inset -2px -2px 5px var(--nm-shadow-inset-light);
+}
+
+.aeo-formula-section h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.formula-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+}
+
+.formula-box {
+  background: #ffffff;
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  text-align: center;
+  box-shadow: 
+    2px 2px 6px rgba(0, 0, 0, 0.04),
+    -2px -2px 6px rgba(255, 255, 255, 0.8);
+  margin-bottom: 1rem;
+}
+
+.formula-box code {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+}
+
+.formula-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.formula-legend li strong {
+  color: var(--text-primary);
+}
+
+/* FAQ 콘텐츠 보강 */
+.faq-content {
+  padding: 0.5rem 0.25rem 1rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.faq-content p {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+.faq-content ul {
+  padding-left: 1.25rem;
+  margin-bottom: 0;
+}
+
+.faq-content li {
+  margin-bottom: 0.5rem;
+}
+
+/* AEO 전용 비만 판정 기준 테이블 */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: var(--radius-md);
+  box-shadow: 
+    3px 3px 8px var(--nm-shadow-dark),
+    -3px -3px 8px var(--nm-shadow-light);
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.aeo-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.aeo-table th {
+  background: #eff2f6;
+  color: var(--text-primary);
+  font-weight: 700;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.aeo-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  color: var(--text-secondary);
+}
+
+.aeo-table tr:last-child td {
+  border-bottom: none;
+}
+
+.aeo-table .highlight-row {
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.aeo-table .highlight-row td {
+  font-weight: 600;
+}
+
+/* 배지 시스템 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.badge-blue { background: #3b82f6; }
+.badge-green { background: #10b981; }
+.badge-yellow { background: #f59e0b; color: #1e293b; }
+.badge-orange-light { background: #fb923c; }
+.badge-orange { background: #f97316; }
+.badge-red { background: #ef4444; }

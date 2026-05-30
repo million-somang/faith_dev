@@ -30,7 +30,7 @@ const CATEGORIES: CategoryInfo[] = [
 ];
 
 /** 모달로 열어야 하는 앱의 slug 목록 */
-const MODAL_APP_SLUGS = ['calculator'];
+const MODAL_APP_SLUGS = ['calculator', 'text-checker', 'pyeong-calc'];
 
 export default function UtilityPage() {
     const { user, logout } = useAuth();
@@ -83,10 +83,73 @@ export default function UtilityPage() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [modalOpen]);
 
+    // 모달이 오픈될 때 자동으로 iframe 엘리먼트와 그 내부 Window에 포커스를 집행하여 물리 키보드/키패드가 즉시 동작하도록 보장
+    useEffect(() => {
+        if (modalOpen) {
+            const timer = setTimeout(() => {
+                const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
+                if (iframe) {
+                    iframe.focus();
+                    iframe.contentWindow?.focus();
+                }
+            }, 150); // DOM 페인팅 대기 후 완벽 집행
+            return () => clearTimeout(timer);
+        }
+    }, [modalOpen]);
+
+    // 자식 계산기로부터 로딩 완료/상태 변경 신호를 받아 포커스를 확실히 iframe에 집행
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data && (e.data.type === 'CALCULATOR_READY' || e.data.type === 'MINI_APP_READY')) {
+                const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
+                if (iframe) {
+                    iframe.focus();
+                    iframe.contentWindow?.focus();
+                }
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    // 모달이 열려 있을 때 부모 창에서 발생하는 모든 keydown 이벤트를 가로채어 자식 iframe으로 릴레이 전송
+    useEffect(() => {
+        if (!modalOpen) return;
+
+        const handleGlobalKeyDown = (e: KeyboardEvent) => {
+            console.log('[PARENT] caught keydown relaying key:', e.key);
+            const activeEl = document.activeElement;
+            if (activeEl && (
+                activeEl.tagName === 'INPUT' ||
+                activeEl.tagName === 'SELECT' ||
+                activeEl.tagName === 'TEXTAREA'
+            )) {
+                return;
+            }
+
+            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
+            if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({
+                    type: 'PARENT_KEYBOARD_EVENT',
+                    key: e.key,
+                    code: e.code,
+                    shiftKey: e.shiftKey,
+                    ctrlKey: e.ctrlKey,
+                    altKey: e.altKey,
+                    metaKey: e.metaKey
+                }, '*');
+            }
+        };
+
+        window.addEventListener('keydown', handleGlobalKeyDown);
+        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    }, [modalOpen]);
+
     const getDevUrl = (app: MiniApp): string => {
         if (!import.meta.env.DEV) return app.app_url;
         if (app.app_url.includes('calculator')) return 'http://localhost:5019/app/calculator/';
         if (app.app_url.includes('text-checker')) return 'http://localhost:5011/app/text-checker/';
+        if (app.app_url.includes('pyeong-calc')) return 'http://localhost:5014/app/pyeong-calc/';
         return app.app_url;
     };
 
@@ -217,7 +280,14 @@ export default function UtilityPage() {
                 >
                     <div
                         className="mini-app-modal-container"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
+                            if (iframe) {
+                                iframe.focus();
+                                iframe.contentWindow?.focus();
+                            }
+                        }}
                     >
                         {/* 모달 헤더 */}
                         <div className="mini-app-modal-header">
@@ -235,6 +305,7 @@ export default function UtilityPage() {
                         </div>
                         {/* iframe 콘텐츠 */}
                         <iframe
+                            key={modalUrl}
                             src={modalUrl}
                             className="mini-app-modal-iframe"
                             title={modalTitle}

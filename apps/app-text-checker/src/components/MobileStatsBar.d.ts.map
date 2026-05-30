@@ -1,1 +1,0 @@
-{"version":3,"file":"MobileStatsBar.d.ts","sourceRoot":"","sources":["MobileStatsBar.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,SAAS,EAAE,MAAM,uBAAuB,CAAC;AAEvD,UAAU,mBAAmB;IACzB,KAAK,EAAE,SAAS,CAAC;IACjB,eAAe,EAAE,MAAM,IAAI,CAAC;CAC/B;AAED,MAAM,CAAC,OAAO,UAAU,cAAc,CAAC,EAAE,KAAK,EAAE,eAAe,EAAE,EAAE,mBAAmB,2CA2BrF"}

@@ -1,143 +1,263 @@
 @import "tailwindcss";
+@source "../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../packages/mini-app-sdk/src/**/*.ts";
 
 @layer utilities {
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
-
   .hide-scrollbar {
     -ms-overflow-style: none;
-    /* IE and Edge */
     scrollbar-width: none;
-    /* Firefox */
   }
 }
 
-/* 계산기 전체 스타일 */
-.calculator-container {
-  background: linear-gradient(145deg, #f0f0f0, #ffffff);
-  border-radius: 20px;
-  padding: 1.5rem;
+/* ========================================
+   공통 리셋 및 폰트 설정
+   ======================================== */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* 버튼 기본 스타일 */
-.calculator-btn {
-  @apply text-gray-800 font-bold transition-all;
-  aspect-ratio: 1 / 1;
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 (포털 모달 헤더와 중복 방지) */
+#root > div > header {
+  display: none !important;
+}
+
+/* ========================================
+   로딩 스크린 (프리미엄 정중앙 정렬)
+   ======================================== */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdf4 100%);
+  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.loading-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 1.2rem;
+}
+
+/* 중앙 로고 아이콘 서클 (흰색 외곽 링 + 연두색 빛 글로우) */
+.loading-icon-wrapper {
+  width: 160px;
+  height: 160px;
+  background: #ffffff;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(145deg, #ffffff, #e8e8e8);
-  border-radius: 15px;
-  border: 2px solid #d1d1d1;
-  cursor: pointer;
+  box-shadow: 
+    0 20px 40px rgba(16, 185, 129, 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.02);
+  margin-bottom: 1.5rem;
+  animation: loadingFloat 3s ease-in-out infinite;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
-.calculator-btn:hover {
-  background: linear-gradient(145deg, #f8f8f8, #e0e0e0);
-  transform: translateY(-1px);
+.loading-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #064e3b;
+  margin: 0;
+  letter-spacing: -0.03em;
+  text-align: center;
 }
 
-.calculator-btn:active {
-  transform: translateY(0);
+.loading-subtitle {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #047857;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.01em;
 }
 
-/* 반응형 버튼 크기 */
-@media (max-width: 640px) {
-  .calculator-btn {
-    font-size: 1rem;
-    min-height: 44px;
-    aspect-ratio: auto;
-  }
-
-  .calculator-display {
-    font-size: 1.5rem !important;
-    padding: 0.75rem !important;
-    min-height: 50px !important;
-  }
+/* 로딩 도트 스피너 */
+.loading-spinner {
+  display: flex;
+  gap: 10px;
+  margin: 1rem 0;
 }
 
-@media (min-width: 641px) and (max-width: 1024px) {
-  .calculator-btn {
-    font-size: 1.1rem;
-    min-height: 55px;
-  }
-
-  .calculator-display {
-    font-size: 1.75rem !important;
-    padding: 1rem !important;
-    min-height: 60px !important;
-  }
+.spinner-dot {
+  width: 12px;
+  height: 12px;
+  background: #34d399;
+  border-radius: 50%;
+  animation: dotBounce 1.2s ease-in-out infinite;
 }
 
-@media (min-width: 1025px) {
-  .calculator-btn {
-    font-size: 1.25rem;
-    min-height: 60px;
-  }
+.spinner-dot:nth-child(2) { animation-delay: 0.15s; }
+.spinner-dot:nth-child(3) { animation-delay: 0.3s; }
 
-  .calculator-display {
-    font-size: 2rem !important;
-    padding: 1.25rem !important;
-    min-height: 70px !important;
-  }
+/* 하단 브랜드 광고 배너 */
+.loading-ad-banner {
+  width: 100%;
+  max-width: 460px;
+  animation: fadeIn 0.8s ease-out both;
+  animation-delay: 0.15s;
+  box-sizing: border-box;
+  margin-top: 0.5rem;
 }
 
-.calculator-btn-operator {
-  background: linear-gradient(145deg, #60a5fa, #3b82f6) !important;
-  color: white !important;
-  border: 2px solid #2563eb !important;
+.ad-placeholder {
+  width: 100%;
+  margin: 0 auto;
+  background: #f8fafc;
+  border-radius: 1.25rem;
+  padding: 1rem 1.2rem;
+  box-shadow:
+    inset 1px 1px 3px rgba(0, 0, 0, 0.02),
+    0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 70px;
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
 }
 
-.calculator-btn-operator:hover {
-  background: linear-gradient(145deg, #3b82f6, #2563eb) !important;
-  transform: translateY(-1px);
-}
-
-.calculator-btn-operator:active {
-  transform: translateY(0);
-}
-
-.calculator-btn-equal {
-  background: linear-gradient(145deg, #34d399, #10b981) !important;
-  color: white !important;
-  border: 2px solid #059669 !important;
-}
-
-.calculator-btn-equal:hover {
-  background: linear-gradient(145deg, #10b981, #059669) !important;
-  transform: translateY(-1px);
-}
-
-.calculator-btn-equal:active {
-  transform: translateY(0);
-}
-
-.calculator-btn-clear {
-  background: linear-gradient(145deg, #f87171, #ef4444) !important;
-  color: white !important;
-  border: 2px solid #dc2626 !important;
-}
-
-.calculator-btn-clear:hover {
-  background: linear-gradient(145deg, #ef4444, #dc2626) !important;
-  transform: translateY(-1px);
-}
-
-.calculator-btn-clear:active {
-  transform: translateY(0);
-}
-
-.tab-active {
-  @apply bg-blue-500 text-white;
-}
-
-.calculator-display {
-  @apply text-right font-mono mb-8 break-all;
-  background: linear-gradient(145deg, #1f2937, #374151);
-  color: #10b981;
-  border-radius: 12px;
-  border: 2px solid #4b5563;
-  font-weight: 600;
+.ad-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 4px 8px;
+  border-radius: 5px;
   letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ad-text {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: -0.02em;
+}
+
+/* 하단 브랜드 슬로건 안내 배너 */
+.loading-info-banner {
+  width: 100%;
+  max-width: 460px;
+  animation: fadeIn 0.8s ease-out both;
+  animation-delay: 0.25s;
+  box-sizing: border-box;
+}
+
+.info-placeholder {
+  width: 100%;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 1.25rem;
+  padding: 1rem 1.2rem;
+  box-shadow:
+    0 10px 15px -3px rgba(16, 185, 129, 0.05),
+    0 4px 6px -2px rgba(16, 185, 129, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 70px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  box-sizing: border-box;
+}
+
+.info-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #10b981;
+  padding: 4px 8px;
+  border-radius: 5px;
+  letter-spacing: 0.03em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.info-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #047857;
+  letter-spacing: -0.01em;
+}
+
+/* ========================================
+   애니메이션 키프레임
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loadingFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* ========================================
+   모바일 & 콤팩트 환경 정교한 뷰포트 피팅
+   ======================================== */
+@media (max-width: 480px) {
+  .loading-body {
+    padding: 1rem !important;
+    gap: 0.6rem !important;
+  }
+  .loading-icon-wrapper {
+    width: 110px !important;
+    height: 110px !important;
+    margin-bottom: 0.4rem !important;
+  }
+  .loading-title {
+    font-size: 1.3rem !important;
+  }
+  .loading-subtitle {
+    font-size: 0.8rem !important;
+  }
+  .loading-spinner {
+    margin: 0.4rem 0 !important;
+  }
+  .loading-ad-banner, .loading-info-banner {
+    max-width: 96% !important;
+    margin-top: 0.4rem !important;
+  }
+  .ad-placeholder, .info-placeholder {
+    padding: 0.6rem 0.8rem !important;
+    min-height: 54px !important;
+  }
+  .ad-text, .info-text {
+    font-size: 0.75rem !important;
+  }
 }

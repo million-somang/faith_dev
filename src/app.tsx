@@ -5653,7 +5653,7 @@ app.get('/lifestyle', (c) => {
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6">
                 <!-- 다기능 계산기 -->
                 <!-- 다기능 계산기 -->
-                <a href="/lifestyle/calculator" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="life">
+                <a href="/app/calculator/" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="life">
                     <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-2 sm:mb-4 mx-auto sm:mx-0">
                         <i class="fas fa-calculator text-lg sm:text-2xl text-white"></i>
                     </div>
@@ -5666,7 +5666,7 @@ app.get('/lifestyle', (c) => {
 
                 <!-- 글자수 세기 & 맞춤법 검사기 -->
                 <!-- 글자수 세기 & 맞춤법 검사기 -->
-                <a href="/lifestyle/text-checker" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="work">
+                <a href="/app/text-checker/" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="work">
                     <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-2 sm:mb-4 mx-auto sm:mx-0">
                         <i class="fas fa-spell-check text-lg sm:text-2xl text-white"></i>
                     </div>
@@ -5679,7 +5679,7 @@ app.get('/lifestyle', (c) => {
 
                 <!-- 평수 계산기 -->
                 <!-- 평수 계산기 -->
-                <a href="/lifestyle/pyeong-calculator" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="life">
+                <a href="/app/pyeong-calc/" class="utility-card bg-white rounded-xl shadow-lg p-3 sm:p-6 hover:shadow-xl transition-all cursor-pointer block" data-category="life">
                     <div class="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center mb-2 sm:mb-4 mx-auto sm:mx-0">
                         <i class="fas fa-home text-lg sm:text-2xl text-white"></i>
                     </div>
@@ -8239,6 +8239,7 @@ app.get('/education', (c) => {
 
 // ==================== 계산기 페이지 ====================
 app.get('/lifestyle/calculator', (c) => {
+    return c.redirect('/app/calculator/');
     return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
@@ -9335,6 +9336,7 @@ app.get('/lifestyle/calculator', (c) => {
 
 // ==================== 글자수 & 맞춤법 검사기 ====================
 app.get('/lifestyle/text-checker', (c) => {
+    return c.redirect('/app/text-checker/');
     return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">
@@ -9848,6 +9850,7 @@ app.get('/lifestyle/text-checker', (c) => {
 
 // ==================== 스마트 부동산 평수 계산기 ====================
 app.get('/lifestyle/pyeong-calculator', (c) => {
+    return c.redirect('/app/pyeong-calc/');
     return c.html(`
     <!DOCTYPE html>
     <html lang="ko" id="html-root">

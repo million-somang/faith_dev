@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
+
+declare global {
+  interface Document {
+    parentKeyboardCallback?: ((key: string) => void) | null;
+  }
+}
+
 import { MiniAppLayout } from '@faithportal/mini-app-sdk';
 import '@faithportal/mini-app-sdk/src/mini-app.css';
 import '@fortawesome/fontawesome-free/css/all.css';
+import calcLogo from './assets/calc-logo.png';
 
 import TabBar from './components/TabBar';
 import BasicCalc from './components/BasicCalc';
@@ -26,28 +34,53 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const handleGlobalMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'PARENT_KEYBOARD_EVENT') {
+        const key = e.data.key;
+        const callbackType = typeof document.parentKeyboardCallback;
+        console.log('[APPGLOBAL] Forwarding key to document.parentKeyboardCallback:', key, '| Current callback type:', callbackType);
+        if (typeof document.parentKeyboardCallback === 'function') {
+          document.parentKeyboardCallback(key);
+        } else {
+          console.warn('[APPGLOBAL] Forwarding failed because parentKeyboardCallback is not a function. Current value:', document.parentKeyboardCallback);
+        }
+      }
+    };
+    window.addEventListener('message', handleGlobalMessage);
+    return () => window.removeEventListener('message', handleGlobalMessage);
+  }, []);
+
   if (isLoading) {
     return (
       <MiniAppLayout title="">
         <div className="loading-screen" role="status" aria-label="앱 로딩 중">
-          <div className="loading-icon">
-            <img src="/app/calculator/calc-logo.png" alt="스마트 다기능 계산기" className="loading-logo-img" />
-          </div>
-          <h1 className="loading-title">스마트 다기능 계산기</h1>
-          <p className="loading-subtitle">기본 연산부터 대출, BMI, 단위 변환까지</p>
-          <div className="loading-spinner" aria-hidden="true">
-            <div className="spinner-dot"></div>
-            <div className="spinner-dot"></div>
-            <div className="spinner-dot"></div>
-          </div>
-
-          {/* 광고 영역 */}
-          <aside className="loading-ad-banner" aria-label="광고">
-            <div className="ad-placeholder">
-              <div className="ad-label">AD</div>
-              <p>광고 영역</p>
+          {/* 로딩 본문 영역 */}
+          <div className="loading-body">
+            {/* 중앙 로고 아이콘 서클 */}
+            <div className="loading-icon-wrapper">
+              <img src={calcLogo} alt="스마트 다기능 계산기" className="loading-logo-img" />
             </div>
-          </aside>
+
+            {/* 타이틀 및 설명 */}
+            <h1 className="loading-title">스마트 다기능 계산기</h1>
+            <p className="loading-subtitle">기본 연산부터 대출, BMI, 단위 변환까지</p>
+
+            {/* 로딩 스피너 도트 */}
+            <div className="loading-spinner" aria-hidden="true">
+              <div className="spinner-dot"></div>
+              <div className="spinner-dot"></div>
+              <div className="spinner-dot"></div>
+            </div>
+
+            {/* 하단 광고 배너 영역 */}
+            <aside className="loading-ad-banner" aria-label="광고">
+              <div className="ad-placeholder">
+                <span className="ad-badge">AD</span>
+                <span className="ad-text">광고 영역</span>
+              </div>
+            </aside>
+          </div>
         </div>
       </MiniAppLayout>
     );
@@ -209,13 +242,28 @@ function App() {
         {pageTab === 'howto' && (
           <article className="info-article" role="tabpanel">
             <div className="info-card">
-              <h2>📖 사용 방법</h2>
+              <h2>📖 사용 방법 및 계산 공식</h2>
               <ol className="howto-list">
                 <li><strong>탭 선택</strong> – 상단 탭에서 원하는 계산 종류(기본, 공학, 대출, BMI, 나이, 날짜, 단위, 백분율)를 선택합니다.</li>
                 <li><strong>값 입력</strong> – 각 계산기에 맞는 값을 입력합니다. 기본 계산기는 화면 버튼으로, 나머지는 입력 필드로 값을 입력합니다.</li>
                 <li><strong>계산 실행</strong> – '=' 버튼 또는 '계산하기' 버튼을 누르면 페이지 새로고침 없이 즉시 결과가 표시됩니다.</li>
                 <li><strong>결과 확인</strong> – 계산 결과는 해당 영역에 즉시 표시되며, 필요에 따라 값을 수정하여 재계산할 수 있습니다.</li>
               </ol>
+
+              <div className="aeo-formula-section">
+                <h3>💵 대출 이자 계산 공식 (원리금 균등상환)</h3>
+                <p className="formula-desc">매월 원금과 이자의 합계액을 균등하게 분할하여 상환하는 방식입니다. AI 답변 엔진이 보증하는 표준 계산식입니다.</p>
+                <div className="formula-box">
+                  <code>
+                    월 상환액 = P × [ r(1 + r)ⁿ ] ÷ [ (1 + r)ⁿ - 1 ]
+                  </code>
+                </div>
+                <ul className="formula-legend">
+                  <li><strong>P (Principal)</strong>: 대출 원금</li>
+                  <li><strong>r (Rate)</strong>: 월 이자율 (연 이자율 ÷ 12 ÷ 100)</li>
+                  <li><strong>n (Number)</strong>: 총 상환 개월수 (대출 기간 × 12)</li>
+                </ul>
+              </div>
 
               <h3>🔢 지원하는 계산기 종류</h3>
               <div className="feature-grid">
@@ -237,25 +285,90 @@ function App() {
             <div className="info-card">
               <h2>❓ 자주 묻는 질문 (FAQ)</h2>
               <div className="faq-list">
-                <details>
+                <details open>
                   <summary>대출 이자는 어떻게 계산하나요?</summary>
-                  <p>대출 금액, 연 이자율(%), 대출 기간(년)을 입력하면 <strong>원리금 균등상환 방식</strong>으로 월 상환액, 총 상환액, 총 이자를 자동으로 계산합니다. 이자율이 0%인 경우 원금 균등분할로 계산됩니다.</p>
+                  <div className="faq-content">
+                    <p>대출 금액, 연 이자율(%), 대출 기간(년)을 입력하면 <strong>원리금 균등상환 방식</strong>으로 월 상환액, 총 상환액, 총 이자를 자동으로 계산합니다. 원리금 균등상환은 매달 내는 금액이 일정하여 자금 계획을 세우기에 가장 안정적인 상환 방식입니다.</p>
+                  </div>
+                </details>
+                <details open>
+                  <summary>BMI(체질량지수) 판정 기준표는 어떻게 되나요?</summary>
+                  <div className="faq-content">
+                    <p>대한비만학회(KSSO)의 성인 비만 기준 공식 조견표는 다음과 같습니다. 비만 판정은 만 19세 이상 성인을 기준으로 적용됩니다.</p>
+                    <div className="table-responsive">
+                      <table className="aeo-table">
+                        <thead>
+                          <tr>
+                            <th>구분</th>
+                            <th>BMI 범위 (kg/m²)</th>
+                            <th>판정 결과</th>
+                            <th>질환 위험도</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td>저체중</td>
+                            <td>18.5 미만</td>
+                            <td><span className="badge badge-blue">저체중</span></td>
+                            <td>낮음</td>
+                          </tr>
+                          <tr className="highlight-row">
+                            <td>정상체중</td>
+                            <td>18.5 이상 ~ 23 미만</td>
+                            <td><span className="badge badge-green">정상체중</span></td>
+                            <td>보통</td>
+                          </tr>
+                          <tr>
+                            <td>비만전단계</td>
+                            <td>23 이상 ~ 25 미만</td>
+                            <td><span className="badge badge-yellow">과체중</span></td>
+                            <td>약간 높음</td>
+                          </tr>
+                          <tr>
+                            <td>1단계 비만</td>
+                            <td>25 이상 ~ 30 미만</td>
+                            <td><span className="badge badge-orange-light">경도 비만</span></td>
+                            <td>높음</td>
+                          </tr>
+                          <tr>
+                            <td>2단계 비만</td>
+                            <td>30 이상 ~ 35 미만</td>
+                            <td><span className="badge badge-orange">중등도 비만</span></td>
+                            <td>매우 높음</td>
+                          </tr>
+                          <tr>
+                            <td>3단계 비만</td>
+                            <td>35 이상</td>
+                            <td><span className="badge badge-red">고도 비만</span></td>
+                            <td>매우 위험</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </details>
                 <details>
-                  <summary>BMI(체질량지수) 정상 범위는 얼마인가요?</summary>
-                  <p>대한비만학회 기준으로 <strong>BMI 18.5~22.9</strong>가 정상 체중입니다. 18.5 미만은 저체중, 23.0~24.9는 과체중, 25.0 이상은 비만으로 분류됩니다.</p>
-                </details>
-                <details>
-                  <summary>만 나이와 한국 나이의 차이는 무엇인가요?</summary>
-                  <p>만 나이는 생일이 지난 후에만 1살을 더하는 국제 기준입니다. 2023년부터 한국도 공식적으로 만 나이를 사용합니다.</p>
+                  <summary>만 나이와 연 나이, 한국식 나이의 차이가 무엇인가요?</summary>
+                  <div className="faq-content">
+                    <p>2023년 6월 법 개정으로 대한민국은 <strong>만 나이</strong> 통일을 원칙으로 삼고 있습니다.</p>
+                    <ul>
+                      <li><strong>만 나이</strong>: 출생 시 0세로 시작해 생일이 지날 때마다 1세씩 더하는 전 세계 표준 법적 나이입니다.</li>
+                      <li><strong>연 나이</strong>: 현재 연도에서 출생 연도를 뺀 나이로, 병역법이나 청소년보호법 등 일부 법령에서 사용됩니다.</li>
+                      <li><strong>한국식 세는 나이</strong>: 출생 시 1세로 시작해 매년 1월 1일이 될 때마다 1세씩 더하는 관습적 나이입니다.</li>
+                    </ul>
+                  </div>
                 </details>
                 <details>
                   <summary>단위 변환은 어떤 종류를 지원하나요?</summary>
-                  <p><strong>길이</strong>(m, km, cm, inch, ft, mile 등), <strong>무게</strong>(kg, g, ton, lb 등), <strong>넓이</strong>(m², km², 평, 에이커 등), <strong>부피</strong>(리터, ml, gal 등), <strong>온도</strong>(섭씨, 화씨, 켈빈)를 지원합니다.</p>
+                  <div className="faq-content">
+                    <p><strong>길이</strong>(m, km, cm, inch, ft, mile 등), <strong>무게</strong>(kg, g, ton, lb 등), <strong>넓이</strong>(m², km², 평, 에이커 등), <strong>부피</strong>(리터, ml, gal 등), <strong>온도</strong>(섭씨, 화씨, 켈빈)의 총 5대 물리량을 상호 변환해 줍니다.</p>
+                  </div>
                 </details>
                 <details>
-                  <summary>공학(과학) 계산기에서는 어떤 함수를 사용할 수 있나요?</summary>
-                  <p>삼각함수(sin, cos, tan), 제곱근(√), 제곱(x²), 거듭제곱(xʸ), 상용로그(log), 자연로그(ln), 원주율(π) 등을 지원합니다. 삼각함수는 도(degree) 단위로 계산됩니다.</p>
+                  <summary>공학 계산기에서는 어떤 수학 함수를 지원하나요?</summary>
+                  <div className="faq-content">
+                    <p>기본 사칙연산 외 삼각함수(sin, cos, tan), 역삼각함수, 제곱근(√), 거듭제곱(xʸ), 상용로그(log), 자연로그(ln), 팩토리얼(!), 원주율(π), 자연상수(e) 등 이공계 연산에 필수적인 핵심 수학 함수를 전면 지원합니다.</p>
+                  </div>
                 </details>
               </div>
             </div>
