@@ -17,6 +17,7 @@ import SignupPage from './pages/SignupPage';
 import NewsPage from './pages/NewsPage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import { AuthProvider } from './context/AuthContext';
+import { MobileTabBar } from './components/MobileTabBar';
 
 function HomePage() {
     console.log('HomePage rendering...');
@@ -258,6 +259,7 @@ function App() {
                     </div>
                 } />
             </Routes>
+            <MobileTabBar />
         </AuthProvider>
     );
 }

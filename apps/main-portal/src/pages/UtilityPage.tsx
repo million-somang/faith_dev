@@ -83,6 +83,14 @@ export default function UtilityPage() {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [modalOpen]);
 
+    // 모바일 탭 바 스마트 하이딩을 위해 바디 클래스 제어
+    useEffect(() => {
+        document.body.classList.toggle('miniapp-modal-open', modalOpen);
+        return () => {
+            document.body.classList.remove('miniapp-modal-open');
+        };
+    }, [modalOpen]);
+
     // 모달이 오픈될 때 자동으로 iframe 엘리먼트와 그 내부 Window에 포커스를 집행하여 물리 키보드/키패드가 즉시 동작하도록 보장
     useEffect(() => {
         if (modalOpen) {
