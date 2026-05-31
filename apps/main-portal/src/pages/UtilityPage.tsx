@@ -30,7 +30,7 @@ const CATEGORIES: CategoryInfo[] = [
 ];
 
 /** 모달로 열어야 하는 앱의 slug 목록 */
-const MODAL_APP_SLUGS = ['calculator', 'text-checker', 'pyeong-calc'];
+const MODAL_APP_SLUGS = ['calculator', 'text-checker', 'pyeong-calc', 'age-calc'];
 
 export default function UtilityPage() {
     const { user, logout } = useAuth();
@@ -158,6 +158,7 @@ export default function UtilityPage() {
         if (app.app_url.includes('calculator')) return 'http://localhost:5019/app/calculator/';
         if (app.app_url.includes('text-checker')) return 'http://localhost:5011/app/text-checker/';
         if (app.app_url.includes('pyeong-calc')) return 'http://localhost:5014/app/pyeong-calc/';
+        if (app.app_url.includes('age-calc')) return 'http://localhost:5017/app/age-calc/';
         return app.app_url;
     };
 
