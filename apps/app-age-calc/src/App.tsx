@@ -133,12 +133,36 @@ function App() {
     useEffect(() => {
         if (isLoadingScreen) return;
 
-        const focusInput = () => {
+        const focusInput = (e?: Event) => {
+            if (e && e.target) {
+                const target = e.target as HTMLElement;
+                // SELECT, INPUT, TEXTAREA, OPTION 및 버튼, 탭 네비게이션, 커뮤니티 내부 요소 클릭 시 포커스 강제 뺏기 생략
+                if (
+                    target.tagName === 'SELECT' ||
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.tagName === 'OPTION' ||
+                    target.closest('.calc-nav-container') ||
+                    target.closest('.mini-app-community') ||
+                    target.closest('button')
+                ) {
+                    return;
+                }
+            }
+
             window.focus();
-            if (yearInputRef.current) yearInputRef.current.focus();
+            const activeEl = document.activeElement;
+            const isInputField = activeEl && (
+                activeEl.tagName === 'INPUT' ||
+                activeEl.tagName === 'SELECT' ||
+                activeEl.tagName === 'TEXTAREA'
+            );
+            if (!isInputField && yearInputRef.current) {
+                yearInputRef.current.focus();
+            }
             window.parent.postMessage({ type: 'MINI_APP_READY' }, '*');
         };
-        const timer = setTimeout(focusInput, 150);
+        const timer = setTimeout(() => focusInput(), 150);
         window.addEventListener('click', focusInput);
 
         return () => {
