@@ -1,1 +1,292 @@
 @import "tailwindcss";
+@source "../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../packages/mini-app-sdk/src/**/*.ts";
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ========================================
+   공통 리셋 및 폰트 설정
+   ======================================== */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0b071e; /* 딥 스페이스 바이올렛 */
+}
+
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 (포털 모달 헤더와 중복 방지) */
+#root > div > header {
+  display: none !important;
+}
+
+/* ========================================
+   프리미엄 로딩 스크린
+   ======================================= */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  background: linear-gradient(135deg, #100a26 0%, #060410 50%, #100a26 100%);
+  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.loading-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 1.2rem;
+}
+
+.loading-icon-wrapper {
+  width: 150px;
+  height: 150px;
+  background: rgba(30, 15, 60, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 20px 50px rgba(59, 130, 246, 0.25),
+    inset 0 0 20px rgba(59, 130, 246, 0.3);
+  margin-bottom: 1.5rem;
+  animation: loadingFloat 3s ease-in-out infinite;
+  box-sizing: border-box;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.loading-logo-emoji {
+  font-size: 4.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6));
+}
+
+@keyframes loadingFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.loading-title {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: #f1f5f9;
+  margin: 0;
+  letter-spacing: -0.03em;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.loading-subtitle {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #93c5fd;
+  margin: 0;
+  text-align: center;
+  letter-spacing: -0.01em;
+  max-width: 380px;
+  line-height: 1.5;
+}
+
+/* 3도트 스피너 */
+.loading-spinner {
+  display: flex;
+  gap: 8px;
+  margin: 1rem 0;
+}
+
+.spinner-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #3b82f6;
+  border-radius: 50%;
+  animation: dotPulse 1.2s infinite ease-in-out both;
+  box-shadow: 0 0 8px #3b82f6;
+}
+
+.spinner-dot:nth-child(1) { animation-delay: -0.32s; }
+.spinner-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* 하단 브랜드 배너 */
+.loading-ad-banner {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 380px;
+  box-sizing: border-box;
+}
+
+.ad-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 1rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  box-sizing: border-box;
+}
+
+.ad-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  letter-spacing: 0.05em;
+}
+
+.ad-text {
+  flex: 1;
+  text-align: left;
+  line-height: 1.4;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ========================================
+   바이올렛 & 블루 4탭 바 헤더
+   ======================================== */
+.calc-nav-container {
+  width: 100%;
+  background: rgba(15, 10, 35, 0.95);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(12px);
+}
+
+.calc-nav-inner {
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  height: 52px;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+.calc-nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  gap: 3px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.calc-nav-tab i {
+  font-size: 1.05rem;
+  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.calc-nav-tab.active {
+  color: #3b82f6; /* 만나이 파란 테마 */
+}
+
+.calc-nav-tab.active i {
+  transform: scale(1.15) translateY(-1px);
+}
+
+.calc-nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 15%;
+  width: 70%;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+}
+
+/* ========================================
+   아파트 평형FAQ 가이드 지식 테이블 전용 스타일 (AEO 용)
+   ======================================== */
+.aeo-guide-card {
+  background: rgba(30, 41, 59, 0.4);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.aeo-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(15, 23, 42, 0.6);
+  margin-top: 1rem;
+}
+
+.aeo-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.aeo-table th {
+  background: rgba(30, 41, 59, 0.8);
+  color: #93c5fd;
+  font-weight: 800;
+  padding: 10px 8px;
+  border-bottom: 2px solid rgba(148, 163, 184, 0.15);
+}
+
+.aeo-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  color: #e2e8f0;
+}
+
+.aeo-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.aeo-highlight {
+  color: #3b82f6;
+  font-weight: 800;
+}
