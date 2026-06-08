@@ -34,6 +34,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // GET 요청이 아닌 경우(POST, PUT 등) 캐싱 처리 없이 네트워크 요청만 수행
+  if (event.request.method !== 'GET') {
+    return event.respondWith(fetch(event.request));
+  }
+
   // Network-First 전략: 항상 서버에서 최신 파일을 가져오고, 오프라인일 때만 캐시 사용
   event.respondWith(
     fetch(event.request)

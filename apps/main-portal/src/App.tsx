@@ -11,6 +11,7 @@ import { PageSEO } from './components/PageSEO';
 import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
 import GamePage from './pages/GamePage';
+import GamePlayPage from './pages/GamePlayPage';
 import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -250,6 +251,7 @@ function App() {
                 <Route path="/lifestyle" element={<UtilityPage />} />
                 <Route path="/finance" element={<FinancePage />} />
                 <Route path="/game" element={<GamePage />} />
+                <Route path="/game/play/tetris" element={<GamePlayPage />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/news/:id" element={<NewsDetailPage />} />

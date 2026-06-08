@@ -290,3 +290,53 @@ html, body, #root {
   color: #3b82f6;
   font-weight: 800;
 }
+
+/* ========================================
+   자유토론(MiniAppCommunity) 텍스트 가독성 확보 오버라이드
+   ======================================== */
+.mac-container * {
+  text-shadow: none !important;
+}
+
+.mac-header-title-box h2 {
+  color: #f1f5f9 !important; /* 다크모드 헤더는 밝게 */
+}
+
+.mac-header-title-box p {
+  color: #94a3b8 !important; /* 다크모드 헤더 설명글 */
+}
+
+.mac-author-name {
+  color: #0f172a !important; /* 흰 카드 내 작성자명 */
+}
+
+.mac-card-body {
+  color: #334155 !important; /* 흰 카드 내 본문 */
+}
+
+.mac-comment-author {
+  color: #1e293b !important; /* 흰 카드 내 댓글 작성자 */
+}
+
+.mac-comment-text {
+  color: #475569 !important; /* 흰 카드 내 댓글 본문 */
+}
+
+.mac-form-row textarea {
+  color: #334155 !important;
+  background-color: #ffffff !important;
+}
+
+.mac-comment-input {
+  color: #334155 !important;
+  background-color: #ffffff !important;
+}
+
+.mac-empty-feed p {
+  color: #64748b !important;
+}
+
+.mac-notice-checkbox-label {
+  color: #ef4444 !important;
+}
+

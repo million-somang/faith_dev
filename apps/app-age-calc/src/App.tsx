@@ -336,8 +336,28 @@ function App() {
                         <div className="spinner-dot"></div>
                     </div>
 
-                    <aside className="loading-ad-banner" aria-label="보안 및 안내">
-                        <div className="ad-placeholder">
+                    {/* 프리미엄 광고 영역 */}
+                    <aside className="loading-ad-banner" aria-label="광고 및 안내">
+                        <div className="ad-container overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/60 shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-slate-700">
+                            <a href="#" className="block relative group" onClick={(e) => e.preventDefault()}>
+                                <span className="absolute top-2 left-2 z-10 bg-slate-950/80 text-amber-400 text-[9px] font-black px-1.5 py-0.5 rounded border border-amber-500/30 tracking-wider">AD</span>
+                                <img 
+                                    src="ad_bible_pass.png" 
+                                    alt="FaithLink 프리미엄 성경 패스 광고" 
+                                    className="w-full h-auto object-cover max-h-[90px] transition-transform duration-500 group-hover:scale-105"
+                                />
+                                <div className="p-3 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between">
+                                    <span className="text-[10px] text-slate-400 leading-normal">
+                                        FaithLink 프리미엄 성경 통독 패스 오픈!
+                                    </span>
+                                    <span className="text-[9px] font-bold text-amber-400 flex items-center gap-0.5">
+                                        자세히 보기 <i className="fas fa-chevron-right text-[8px]"></i>
+                                    </span>
+                                </div>
+                            </a>
+                        </div>
+                        {/* 보안 및 안내 플레이스홀더 */}
+                        <div className="ad-placeholder mt-3">
                             <span className="ad-badge">보안</span>
                             <span className="ad-text">입력하신 생년월일 정보는 로컬 세션에만 임시 활용되며 외부로 무단 유출되지 않습니다.</span>
                         </div>

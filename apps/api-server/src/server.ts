@@ -123,6 +123,7 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/game', priority: '0.7', changefreq: 'weekly' },
         { loc: '/lifestyle', priority: '0.7', changefreq: 'weekly' },
         { loc: '/finance', priority: '0.7', changefreq: 'monthly' },
+        { loc: '/game/play/tetris', priority: '0.6', changefreq: 'monthly' },
     ];
 
     // DB에서 최근 뉴스 100개 가져오기

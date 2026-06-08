@@ -6,6 +6,9 @@
     <title>감성 D-Day 매니저 - FaithLink</title>
     <meta name="description" content="단순히 날짜만 세는 게 아니라, 설레는 기다림을 시각화해주는 D-Day 관리 도구" />
   
+  <!-- FontAwesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -13,6 +16,84 @@
   <meta name="apple-mobile-web-app-title" content="페이스링크" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
   <link rel="icon" type="image/png" href="/logo-192.png" />
+
+  <!-- JSON-LD AEO Schema Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "감성 D-Day 매니저",
+    "alternateName": "FaithLink D-Day Manager",
+    "description": "설레는 기다림의 가치를 시각적으로 전달하는 프리미엄 날짜 및 D-Day 연산 유틸리티입니다.",
+    "url": "https://faithlink.site/app/dday-calc/",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires HTML5, CSS3, and JavaScript support.",
+    "featureList": "D-Day 역산(Countdown), 기념일 계산(Countup), 기준일 날짜찾기, 5종 커스텀 프리미엄 색상 및 이모지 매핑, 실시간 데이터 격리 보존"
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "감성 D-Day 계산 및 추가 가이드",
+    "description": "원클릭으로 중요 목표일 및 기념일까지의 D-Day를 등록하고 관리하는 3단계 공식 프로토콜입니다.",
+    "step": [
+      {
+        "@type": "HowToStep",
+        "name": "1단계: 정보 입력",
+        "text": "출생일, 자격 시험일, 혹은 커플 기념일 등 매칭하고 싶은 날짜의 제목과 기준 연월일을 입력합니다.",
+        "url": "https://faithlink.site/app/dday-calc/"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "2단계: 테마 커스터마이징",
+        "text": "5종의 세련된 그러데이션 배경색 중 하나를 고르고, 목표의 개성을 돋보이게 만들 대표 이모지를 선택합니다.",
+        "url": "https://faithlink.site/app/dday-calc/"
+      },
+      {
+        "@type": "HowToStep",
+        "name": "3단계: 대시보드 저장",
+        "text": "'리스트에 추가하기' 버튼을 누르면 실시간 로컬 세션에 완벽히 동기화되어 메인 대시보드 및 타임라인에 시각화됩니다.",
+        "url": "https://faithlink.site/app/dday-calc/"
+      }
+    ]
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "D-Day 카운트다운 모드와 기념일 모드의 계산 방식 차이는 무엇인가요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "카운트다운 모드는 다가올 목표일(예: 수능, 입대일 등)까지의 순수 남은 일수를 표현하여 당일은 D-Day, 전날은 D-1로 세어갑니다. 반면, 기념일(Countup) 모드는 기준일을 1일로 포함할지 여부(isAnniversary 옵션)를 골라 사귄 날짜나 생애 일수를 정확하게 적산해 나갑니다."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "법정 '만 나이 통일법'이 D-Day 기념일 계산기에도 적용되나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "그렇지 않습니다. 만 나이 통일법은 행정·법률적 연령 계산에만 100% 한정 적용되므로, 일상적인 백일이나 첫 돌, 결혼 기념일 등의 D-Day 기념일 카운팅은 기존의 적산 관습(시작일 또는 만 일수 환산)에 따라 그대로 자유롭게 세어가시면 됩니다."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "등록한 D-Day 데이터의 유출 걱정은 없나요?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "네, 완벽히 안전합니다. '감성 D-Day 매니저'는 사용자가 입력한 중요 일정을 브라우저의 격리된 로컬 세션 스토리지에만 저장하고 관리하므로, 어떤 외부 서버로도 입력한 세부 일정이 무단 수집 및 노출되지 않습니다."
+        }
+      }
+    ]
+  }
+  </script>
 
   <script>
     window.deferredPrompt = null;
