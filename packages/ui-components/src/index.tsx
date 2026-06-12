@@ -18,7 +18,21 @@ export const Card = ({ children, className = "" }: { children: React.ReactNode, 
 
 export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, hideActions = false, onVote }: { news: any, index?: number, isBookmarked?: boolean, onBookmarkToggle?: (id: number) => void, hideActions?: boolean, onVote?: (id: number, type: 'up' | 'down') => void }) => {
     const timeAgo = getTimeAgo(news.published_at || news.created_at);
-    const categoryColor = getCategoryColor(news.category);
+    // 다중 카테고리 지원: 'stock,general' 형태 → 배지 여러 개
+    const categories: string[] = String(news.category || '').split(',').map((s: string) => s.trim()).filter(Boolean);
+
+    // 제목 끝의 " - 언론사" 분리 (예: "금리 인상 신호 - 한국경제")
+    const rawTitle: string = String(news.title || '');
+    let displayTitle = rawTitle;
+    let publisher = '';
+    const sepIdx = rawTitle.lastIndexOf(' - ');
+    if (sepIdx > 0 && rawTitle.length - sepIdx - 3 <= 25) {
+        publisher = rawTitle.slice(sepIdx + 3).trim();
+        displayTitle = rawTitle.slice(0, sepIdx).trim();
+    }
+    if (!publisher && news.source && !/구글\s?뉴스/.test(news.source)) {
+        publisher = news.source;
+    }
     const isAnalyzed = (news.title.includes('환율') || news.title.includes('주가') || news.title.includes('증시') || news.title.includes('달러') || news.title.includes('코스피') || news.title.includes('경제'));
 
     let keywords: string[] = [];
@@ -30,19 +44,42 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
 
     return (
         <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-100 last:border-0 p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                    <span className={`badge ${categoryColor}`}>{getCategoryName(news.category)}</span>
-                    <span className="text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
-                    {isAnalyzed && (
-                        <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                            <i className="fas fa-chart-line mr-1"></i>분석됨
-                        </span>
+            <div className="flex gap-4 items-center">
+                {/* 썸네일 (이미지가 없어도 동일 크기 유지 → 카드 높이 통일) */}
+                <div className="relative w-28 h-20 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <i className="far fa-newspaper text-gray-300 text-2xl"></i>
+                    {news.thumbnail && (
+                        <img
+                            src={news.thumbnail}
+                            alt=""
+                            loading="lazy"
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
                     )}
                 </div>
-                <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm leading-snug line-clamp-2">
-                    {news.title}
-                </p>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        {categories.slice(0, 3).map((cat) => (
+                            <span key={cat} className={`badge ${getCategoryColor(cat)}`}>{getCategoryName(cat)}</span>
+                        ))}
+                        <span className="text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
+                        {isAnalyzed && (
+                            <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                                <i className="fas fa-chart-line mr-1"></i>분석됨
+                            </span>
+                        )}
+                    </div>
+                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm leading-snug line-clamp-2">
+                        {displayTitle}
+                    </p>
+                </div>
+                {/* 언론사 (카드 오른쪽 끝 독립 표시) */}
+                <div className="w-20 sm:w-24 flex-shrink-0 flex items-center justify-center border-l border-gray-100 pl-2 sm:pl-3 self-stretch">
+                    <span className="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight text-center break-keep">
+                        {publisher || '뉴스'}
+                    </span>
+                </div>
             </div>
 
             {(keywords.length > 0 || !hideActions) && (
@@ -104,31 +141,33 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
 
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => (
     <>
-        <header className="header-gradient text-white py-1">
-            <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-10">
-                <div className="flex items-center gap-4">
-                    <a href={`${baseUrl}/`} className="font-black text-xl tracking-tighter hover:opacity-90 transition-opacity">FaithPortal</a>
-                    <nav className="hidden sm:flex gap-4 text-xs font-bold">
-                        <a href={`${baseUrl}/news`} className="hover:text-green-100 uppercase">News</a>
-                        <a href={`${baseUrl}/lifestyle`} className="hover:text-green-100 uppercase">Utility</a>
-                        <a href={`${baseUrl}/finance`} className="hover:text-green-100 uppercase">Finance</a>
-                        <a href={`${baseUrl}/game`} className="hover:text-green-100 uppercase">Games</a>
+        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
+            <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14">
+                <div className="flex items-center gap-6">
+                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+                            <i className="fas fa-link text-sm"></i>
+                        </span>
+                        <span className="font-black text-xl tracking-tighter text-gray-900">Faith<span className="text-blue-600">Portal</span></span>
+                    </a>
+                    <nav className="hidden sm:flex gap-1 text-sm font-bold text-gray-600">
+                        <a href={`${baseUrl}/news`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">뉴스</a>
+                        <a href={`${baseUrl}/lifestyle`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">유틸리티</a>
+                        <a href={`${baseUrl}/finance`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">금융</a>
+                        <a href={`${baseUrl}/game`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">게임</a>
                     </nav>
                 </div>
                 <div className="flex items-center gap-3">
                     {user ? (
                         <>
-                            <span className="text-xs font-bold">{user.name}님</span>
-                            <div className="w-[1px] h-3 bg-white/30"></div>
-                            <a href={`${baseUrl}/mypage`} className="text-xs font-bold hover:text-green-100 transition-colors">마이페이지</a>
-                            <div className="w-[1px] h-3 bg-white/30"></div>
-                            <button onClick={onLogout} className="text-xs font-bold hover:text-green-100 transition-colors">로그아웃</button>
+                            <span className="hidden sm:inline text-xs font-bold text-gray-500">{user.name}님</span>
+                            <a href={`${baseUrl}/mypage`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">마이페이지</a>
+                            <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">로그아웃</button>
                         </>
                     ) : (
                         <>
-                            <a href={`${baseUrl}/login`} className="text-xs font-bold hover:text-green-100 transition-colors">로그인</a>
-                            <div className="w-[1px] h-3 bg-white/30"></div>
-                            <a href={`${baseUrl}/signup`} className="text-xs font-bold hover:text-green-100 transition-colors">회원가입</a>
+                            <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">로그인</a>
+                            <a href={`${baseUrl}/signup`} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
                         </>
                     )}
                 </div>
@@ -151,7 +190,7 @@ export const QuickMenu = () => (
                     { label: '교육', icon: 'fa-graduation-cap', bg: 'bg-indigo-50', color: 'text-indigo-600', href: '/education' },
                 ].map((item) => (
                     <a key={item.label} href={item.href} className="group text-center flex-shrink-0">
-                        <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] group-hover:ring-2 group-hover:ring-brand-green`}>
+                        <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(37,99,235,0.15)] group-hover:ring-2 group-hover:ring-blue-400`}>
                             <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 transition-transform`}></i>
                         </div>
                         <p className="text-[11px] sm:text-xs text-gray-800 font-bold group-hover:text-brand-green transition-colors">{item.label}</p>
@@ -245,7 +284,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
             <div className="max-w-6xl mx-auto px-4">
                 
                 {/* 앱 설치 버튼 (명시적으로 추가) */}
-                <div className="mb-10 p-6 bg-green-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-green-100 shadow-sm">
+                <div className="mb-10 p-6 bg-blue-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-blue-100 shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-brand-green">
                             {isInstalled ? <i className="fas fa-check-circle text-2xl"></i> : <i className="fas fa-mobile-alt text-2xl"></i>}

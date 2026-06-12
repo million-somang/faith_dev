@@ -20,12 +20,13 @@ news.get('/api/news', async (c) => {
     const includeStocks = c.req.query('includeStocks') === 'true';
 
     try {
-        let query = 'SELECT * FROM news';
+        let query = 'SELECT * FROM news WHERE (hidden IS NULL OR hidden = 0)';
         const params: any[] = [];
 
         if (category && category !== 'all') {
-            query += ' WHERE category = $1';
-            params.push(category);
+            // 다중 카테고리 지원: category 컬럼이 'stock,general' 형태일 수 있음
+            query += ` AND (',' || category || ',') LIKE $1`;
+            params.push(`%,${category},%`);
         }
 
         query += ` ORDER BY published_at DESC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -72,9 +73,10 @@ news.get('/api/news/hot', async (c) => {
     const limit = parseInt(c.req.query('limit') || '10');
     try {
         const result = await pool.query(`
-            SELECT * FROM news 
+            SELECT * FROM news
             WHERE created_at >= NOW() - INTERVAL '7 days'
-            ORDER BY popularity_score DESC, created_at DESC 
+              AND (hidden IS NULL OR hidden = 0)
+            ORDER BY popularity_score DESC, created_at DESC
             LIMIT $1
         `, [limit]);
 
@@ -105,12 +107,13 @@ news.get('/api/news/search', async (c) => {
         const ftsQuery = q.trim().split(' ').map(w => `"${w}"`).join(' AND ');
 
         const result = await pool.query(`
-            SELECT * FROM news 
+            SELECT * FROM news
             WHERE id IN (
-                SELECT rowid FROM news_fts 
+                SELECT rowid FROM news_fts
                 WHERE news_fts MATCH $1
             )
-            ORDER BY published_at DESC, created_at DESC 
+              AND (hidden IS NULL OR hidden = 0)
+            ORDER BY published_at DESC, created_at DESC
             LIMIT $2 OFFSET $3
         `, [ftsQuery, limit, offset]);
 

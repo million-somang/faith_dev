@@ -53,6 +53,15 @@ app.route('/', adminUi);
 import { adminStatsUi } from './routes/admin-stats-ui.js';
 app.route('/', adminStatsUi);
 
+import { bannerRoutes } from './routes/banner.routes.js';
+app.route('/', bannerRoutes);
+
+import { bannerAdminUi } from './routes/banner-admin-ui.js';
+app.route('/', bannerAdminUi);
+
+// 배너 업로드 이미지 정적 서빙
+app.use('/uploads/*', serveStatic({ root: './public' }));
+
 import { miniappRoutes } from './routes/miniapp.routes.js';
 app.route('/', miniappRoutes);
 

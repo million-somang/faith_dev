@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, Footer, Card, Button } from '@faithportal/ui';
+import { Header, Footer, Button } from '@faithportal/ui';
 import { getCategoryName, getCategoryColor, getTimeAgo } from '@faithportal/core-utils';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -15,8 +15,6 @@ export default function NewsDetailPage() {
     const [news, setNews] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [voting, setVoting] = useState(false);
-    const [summarizing, setSummarizing] = useState(false);
-    const [aiSummary, setAiSummary] = useState<string | null>(null);
 
     useEffect(() => {
         fetchNewsDetail();
@@ -28,9 +26,6 @@ export default function NewsDetailPage() {
             const res = await axios.get(`${API_BASE_URL}/api/news/${id}`);
             if (res.data.success) {
                 setNews(res.data.news);
-                if (res.data.news.ai_processed) {
-                    setAiSummary(res.data.news.ai_summary);
-                }
             }
         } catch (error) {
             console.error('Fetch news detail error:', error);
@@ -59,19 +54,39 @@ export default function NewsDetailPage() {
         }
     };
 
-    const handleSummarize = async () => {
-        if (summarizing || aiSummary) return;
-        setSummarizing(true);
-        try {
-            const res = await axios.post(`${API_BASE_URL}/api/news/${id}/summarize`);
-            if (res.data.success) {
-                setAiSummary(res.data.ai_summary);
-            }
-        } catch (error) {
-            console.error('Summarize error:', error);
-        } finally {
-            setSummarizing(false);
+    // HTML 엔티티(&nbsp; 등) 정리 — 기존 저장 데이터 호환용
+    const cleanEntities = (text: string): string =>
+        (text || '')
+            .replace(/&amp;/g, '&')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;|&apos;/g, "'")
+            .replace(/\s+/g, ' ')
+            .trim();
+
+    // 제목 끝의 " - 언론사" 분리
+    const splitTitle = (raw: string): { title: string; publisher: string } => {
+        const t = cleanEntities(raw);
+        const sepIdx = t.lastIndexOf(' - ');
+        if (sepIdx > 0 && t.length - sepIdx - 3 <= 25) {
+            return { title: t.slice(0, sepIdx).trim(), publisher: t.slice(sepIdx + 3).trim() };
         }
+        return { title: t, publisher: '' };
+    };
+
+    // 구글 뉴스 요약은 여러 헤드라인이 이어 붙은 형태 → 줄 단위로 분리해 가독성 개선
+    const getSummaryLines = (): string[] => {
+        const raw = news?.summary || news?.description || '';
+        return raw
+            .split(/&nbsp;&nbsp;|&amp;nbsp;&amp;nbsp;|\s{2,}/)
+            .map((line: string) => cleanEntities(line)
+                // 끝에 남은 불완전한 엔티티 조각 제거 (예: "...경고&nb")
+                .replace(/&[a-z#0-9]{0,7}$/i, '')
+                // 기존 데이터에서 앞에 붙어버린 매체 도메인 제거 (예: "v.daum.net한은총재...")
+                .replace(/^(?:[a-z0-9-]+\.)+[a-z]{2,6}(?=[가-힣“"'‘\[(])/i, '')
+                .trim())
+            // 매체명만 남은 짧은 줄은 제외 (헤드라인은 충분히 긺)
+            .filter((line: string) => line.length >= 12);
     };
 
     if (loading) {
@@ -125,20 +140,22 @@ export default function NewsDetailPage() {
                     <i className="fas fa-chevron-right text-[8px]"></i>
                     <a href="/news" className="hover:text-gray-600">뉴스</a>
                     <i className="fas fa-chevron-right text-[8px]"></i>
-                    <span className="text-gray-600">{getCategoryName(news.category)}</span>
+                    <span className="text-gray-600">{getCategoryName(String(news.category || '').split(',')[0])}</span>
                 </div>
 
                 <article className="space-y-8">
                     {/* Header Section */}
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(news.category)}`}>
-                                {getCategoryName(news.category)}
-                            </span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {String(news.category || '').split(',').map((s: string) => s.trim()).filter(Boolean).map((cat: string) => (
+                                <span key={cat} className={`px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(cat)}`}>
+                                    {getCategoryName(cat)}
+                                </span>
+                            ))}
                             <span className="text-xs text-gray-400 font-medium">{getTimeAgo(news.published_at)}</span>
                         </div>
                         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">
-                            {news.title}
+                            {splitTitle(news.title).title}
                         </h1>
                         <div className="flex items-center justify-between pb-6 border-b border-gray-100">
                             <div className="flex items-center gap-3">
@@ -146,7 +163,9 @@ export default function NewsDetailPage() {
                                     <i className="fas fa-user-edit"></i>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-900">{news.publisher || news.source || '기자 정보 없음'}</p>
+                                    <p className="text-sm font-bold text-gray-900">
+                                        {splitTitle(news.title).publisher || news.publisher || news.source || '기자 정보 없음'}
+                                    </p>
                                     <p className="text-xs text-gray-400">FaithPortal News Service</p>
                                 </div>
                             </div>
@@ -161,48 +180,33 @@ export default function NewsDetailPage() {
                         </div>
                     </div>
 
-                    {/* AI Summary Section */}
-                    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-none relative overflow-hidden">
-                        <div className="relative z-10">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-indigo-900 flex items-center gap-2">
-                                    <i className="fas fa-magic"></i> AI 3줄 요약
-                                </h3>
-                                {!aiSummary && !summarizing && (
-                                    <button
-                                        onClick={handleSummarize}
-                                        className="text-xs font-bold text-indigo-600 bg-white px-3 py-1.5 rounded-lg shadow-sm hover:shadow-md transition-all"
-                                    >
-                                        요약 생성하기
-                                    </button>
-                                )}
-                            </div>
-
-                            {summarizing ? (
-                                <div className="space-y-2 animate-pulse">
-                                    <div className="h-4 bg-indigo-100 rounded w-full"></div>
-                                    <div className="h-4 bg-indigo-100 rounded w-5/6"></div>
-                                    <div className="h-4 bg-indigo-100 rounded w-4/6"></div>
-                                </div>
-                            ) : aiSummary ? (
-                                <div className="space-y-2 text-indigo-800 text-sm leading-relaxed font-medium">
-                                    {aiSummary.split('\n').map((line, idx) => (
-                                        <p key={idx}>{line}</p>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-indigo-400 text-sm italic">AI가 기사 내용을 요약해 드립니다.</p>
-                            )}
+                    {/* 대표 이미지 */}
+                    {news.thumbnail && (
+                        <div className="rounded-2xl overflow-hidden shadow-sm bg-gray-100">
+                            <img
+                                src={news.thumbnail}
+                                alt={news.title}
+                                className="w-full max-h-[420px] object-cover"
+                                onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
+                            />
                         </div>
-                        <i className="fas fa-brain absolute -right-4 -bottom-4 text-7xl text-indigo-500 opacity-5"></i>
-                    </Card>
+                    )}
 
                     {/* Main Content */}
-                    <div className="text-lg text-gray-800 leading-loose space-y-6">
+                    <div className="text-gray-800 leading-relaxed space-y-6">
                         {news.content ? (
-                            <div dangerouslySetInnerHTML={{ __html: news.content }}></div>
+                            <div className="text-lg leading-loose" dangerouslySetInnerHTML={{ __html: news.content }}></div>
+                        ) : getSummaryLines().length > 0 ? (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                                {getSummaryLines().map((line, idx) => (
+                                    <p key={idx} className="px-6 py-4 text-base leading-relaxed flex gap-3">
+                                        <i className="fas fa-angle-right text-blue-400 mt-1.5 flex-shrink-0"></i>
+                                        <span>{line}</span>
+                                    </p>
+                                ))}
+                            </div>
                         ) : (
-                            <p>{news.summary || news.description || '이 기사의 상세 정보는 외부 링크를 통해 확인해 주세요.'}</p>
+                            <p className="text-lg">이 기사의 상세 정보는 외부 링크를 통해 확인해 주세요.</p>
                         )}
 
                         {news.link && (

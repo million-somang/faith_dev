@@ -3,6 +3,9 @@ import { Header, Footer } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
+import { PreferenceWizard } from '../components/homepage/PreferenceWizard';
+import { useUserPreferenceContext } from '../context/UserPreferenceContext';
+import { HomepageConfig } from '../types/homepage.types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -10,7 +13,9 @@ export default function MyPage() {
     const { user, logout, isLoading } = useAuth();
     const navigate = useNavigate();
 
-    const [activeSection, setActiveSection] = useState<'news' | 'stocks' | 'games' | 'utils'>('news');
+    const [activeSection, setActiveSection] = useState<'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('news');
+    const [showWizard, setShowWizard] = useState(false);
+    const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
 
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
     const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: [] });
@@ -152,6 +157,17 @@ export default function MyPage() {
                                     <i className="fas fa-tools w-6 text-orange-500"></i>
                                     <span>유틸리티</span>
                                 </button>
+                                <hr className="my-2 border-gray-100" />
+                                <button
+                                    onClick={() => setActiveSection('home-customize')}
+                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'home-customize'
+                                        ? 'border-green-500 bg-green-50 font-semibold text-green-700'
+                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                        }`}
+                                >
+                                    <i className="fas fa-magic w-6 text-green-500"></i>
+                                    <span>홈 꾸미기</span>
+                                </button>
                             </nav>
                         </div>
                     </div>
@@ -165,6 +181,59 @@ export default function MyPage() {
                                 </div>
                             ) : (
                                 <>
+                                    {/* 홈 꾸미기 섹션 */}
+                                    {activeSection === 'home-customize' && (
+                                        <div className="animate-fade-in">
+                                            <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center border-b pb-4">
+                                                <i className="fas fa-magic mr-3 text-green-500 text-3xl"></i>내 홈페이지 꾸미기
+                                            </h2>
+                                            <p className="text-gray-500 text-sm mb-6">설정을 바꾸면 메인 페이지가 나만의 모습으로 바뀝니다.</p>
+
+                                            {/* 현재 설정 요약 카드 */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                                                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                                    <div className="text-xs font-bold text-green-600 mb-1 uppercase">퀵메뉴</div>
+                                                    <div className="text-2xl font-black text-green-700">{homeConfig.quickMenuItems.length}개</div>
+                                                    <div className="text-xs text-green-500 mt-1">선택됨</div>
+                                                </div>
+                                                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                                    <div className="text-xs font-bold text-blue-600 mb-1 uppercase">레이아웃</div>
+                                                    <div className="text-lg font-black text-blue-700">
+                                                        {homeConfig.theme.layout === 'portal' ? '포털형' : homeConfig.theme.layout === 'minimal' ? '미니멀' : '카드형'}
+                                                    </div>
+                                                    <div className="text-xs text-blue-500 mt-1">{homeConfig.theme.colorScheme} 테마</div>
+                                                </div>
+                                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                                    <div className="text-xs font-bold text-purple-600 mb-1 uppercase">설정 상태</div>
+                                                    <div className="text-lg font-black text-purple-700">
+                                                        {homeConfig.isConfigured ? '✅ 완료' : '⚙️ 기본값'}
+                                                    </div>
+                                                    <div className="text-xs text-purple-500 mt-1">{homeConfig.isConfigured ? '맞춤 설정 적용중' : '아직 설정 전'}</div>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => setShowWizard(true)}
+                                                className="w-full py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-lg rounded-2xl transition-all hover:shadow-lg flex items-center justify-center gap-3 group"
+                                            >
+                                                <i className="fas fa-magic text-xl group-hover:rotate-12 transition-transform"></i>
+                                                {homeConfig.isConfigured ? '설정 다시 하기' : '지금 내 홈 꾸미기 시작!'}
+                                            </button>
+
+                                            {homeConfig.isConfigured && (
+                                                <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                                                    <h4 className="font-bold text-yellow-800 text-sm mb-2"><i className="fas fa-info-circle mr-1"></i>현재 나만의 설정</h4>
+                                                    <ul className="text-xs text-yellow-700 space-y-1">
+                                                        <li>• 주 관심사: {homeConfig.preferences.mainInterest === 'news' ? '뉴스' : homeConfig.preferences.mainInterest === 'games' ? '게임' : homeConfig.preferences.mainInterest === 'utility' ? '유틸리티' : '금융'}</li>
+                                                        <li>• 뉴스 카테고리: {homeConfig.preferences.newsCategories.join(', ') || '전체'}</li>
+                                                        {homeConfig.theme.greeting && <li>• 인사말: "{homeConfig.theme.greeting}"</li>}
+                                                        <li>• 즐겨하는 게임: {homeConfig.preferences.favoriteGames.length > 0 ? homeConfig.preferences.favoriteGames.join(', ') : '없음'}</li>
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* 뉴스 섹션 */}
                                     {activeSection === 'news' && (
                                         <div className="animate-fade-in">
@@ -437,6 +506,22 @@ export default function MyPage() {
                 </div>
             </div>
             <Footer />
+
+            {/* 홈 꾸미기 마법사 모달 */}
+            {showWizard && (
+                <PreferenceWizard
+                    currentConfig={homeConfig}
+                    isSaving={isHomeSaving}
+                    onSave={async (newConfig: HomepageConfig) => {
+                        updateHomeConfig(newConfig);
+                        const ok = await saveHomeConfig(newConfig);
+                        if (ok) {
+                            setShowWizard(false);
+                        }
+                    }}
+                    onClose={() => setShowWizard(false)}
+                />
+            )}
         </div>
     );
 }

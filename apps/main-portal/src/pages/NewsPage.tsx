@@ -3,6 +3,7 @@ import { Header, Footer, Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
+import { BannerSlot } from '../components/BannerSlot';
 
 const API_BASE_URL = '';
 
@@ -270,6 +271,9 @@ export default function NewsPage() {
             <Header user={user} onLogout={logout} />
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+                {/* 배너 슬롯: 뉴스 목록 상단 */}
+                <BannerSlot slotKey="news_list_top" className="mb-6" />
+
                 {/* Search & Categories */}
                 <div className="mb-8">
                     <form onSubmit={handleSearch} className="relative mb-6">
@@ -302,8 +306,8 @@ export default function NewsPage() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
-                    {/* Left: News List */}
-                    <div className="flex-1 space-y-6">
+                    {/* Left: News List (flex gap: 숨겨진 모바일 카드가 여백을 만들지 않음 → 우측 카드와 상단 정렬) */}
+                    <div className="flex-1 flex flex-col gap-6">
                         {/* Tabbed Card for Keyword Subscription and Hot Issues (Mobile Only) */}
                         <Card className="p-0 overflow-hidden lg:hidden">
                             <div className="flex bg-gray-50 border-b border-gray-100">

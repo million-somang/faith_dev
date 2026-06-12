@@ -4,6 +4,7 @@ import { getDB } from '../db/adapter.js';
 import { escapeHtml } from '../utils/htmlEscape.js';
 import { getCategoryName, getCategoryColor, getTimeAgo } from '../utils/formatter.js';
 import { checkSession } from '../middleware/auth.js';
+import { toIsoDateTime, backfillGoogleThumbnails, collectPublisherFeeds, insertOrMergeNews } from '../services/newsCollector.js';
 
 export const adminUi = new Hono();
 
@@ -468,7 +469,8 @@ export function getAdminNavigation(currentPage: string): string {
         { path: '/admin/users', label: '회원 관리', icon: 'fa-users', shortLabel: '회원' },
         {
             path: '/admin/content', label: '컨텐츠관리', icon: 'fa-folder', shortLabel: '컨텐츠', hasDropdown: true, dropdownItems: [
-                { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' }
+                { path: '/admin/news', label: '뉴스관리', icon: 'fa-newspaper' },
+                { path: '/admin/banners', label: '배너관리', icon: 'fa-image' }
             ]
         },
         { path: '/admin/stats', label: '통계', icon: 'fa-chart-line', shortLabel: '통계' },
@@ -2002,7 +2004,7 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
             const link = itemContent.match(/<link>(.*?)<\/link>/)?.[1] || ''
             const pubDate = itemContent.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || ''
             const description = decodeHtmlEntities(itemContent.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1] || itemContent.match(/<description>(.*?)<\/description>/)?.[1] || '')
-            const summary = description.replace(/<[^>]*>/g, '').trim().substring(0, 150)
+            const summary = description.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/\s+/g, ' ').trim().substring(0, 150)
             items.push({ category, title: title.trim(), summary: summary || title, link: link.trim(), publisher: '구글 뉴스', published_at: pubDate })
             if (items.length >= 20) break
         }
@@ -2040,12 +2042,28 @@ adminUi.get('/api/news/fetch', async (c) => {
         }
 
         let savedCount = 0
+        const newGoogleLinks: string[] = []
         for (const item of newsItems) {
             try {
-                await DB.prepare(`INSERT OR IGNORE INTO news (category, title, summary, link, source, published_at) VALUES (?, ?, ?, ?, ?, ?)`)
-                    .bind(item.category, item.title, item.summary, item.link, item.publisher, item.published_at).run()
-                savedCount++
+                // 같은 제목 뉴스가 있으면 카테고리 병합, 없으면 신규 저장 (ISO 날짜로 저장)
+                const status = await insertOrMergeNews(
+                    item.category, item.title, item.summary, item.link,
+                    null, item.publisher, toIsoDateTime(item.published_at)
+                )
+                if (status === 'inserted') {
+                    savedCount++
+                    if (item.link && item.link.includes('news.google.com')) newGoogleLinks.push(item.link)
+                }
             } catch (err) { console.error('뉴스 저장 오류:', err) }
+        }
+
+        // 백그라운드: 신규 구글 기사 썸네일 해독 (best-effort, 최대 10건)
+        if (newGoogleLinks.length > 0) {
+            backfillGoogleThumbnails(newGoogleLinks.slice(0, 10)).catch(() => { })
+        }
+        // 백그라운드: 이미지 포함 언론사 피드 수집 (general 수집 시에만 1회)
+        if (category === 'general') {
+            collectPublisherFeeds().catch(() => { })
         }
 
         return c.json({ success: true, fetched: newsItems.length, saved: savedCount, message: `${savedCount}개의 새 뉴스를 저장했습니다.` })

@@ -4,6 +4,7 @@ export interface RSSItem {
     pubDate: string
     summary: string
     source?: string
+    thumbnail?: string | null
 }
 
 export function parseRSSXML(xmlText: string): RSSItem[] {
@@ -25,11 +26,33 @@ export function parseRSSXML(xmlText: string): RSSItem[] {
                 link: cleanText(link),
                 pubDate: pubDate || new Date().toISOString(),
                 summary: cleanText(description || ''),
-                source: cleanText(source || '구글뉴스')
+                source: cleanText(source || '구글뉴스'),
+                thumbnail: extractThumbnail(itemXml)
             })
         }
     }
     return items
+}
+
+/**
+ * RSS item에서 썸네일 이미지 URL 추출
+ * 지원: <enclosure url>, <media:content url>, <media:thumbnail url>, description 내 <img src>
+ */
+function extractThumbnail(itemXml: string): string | null {
+    // 1. enclosure (이미지 타입)
+    const enclosure = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*>/i)
+    if (enclosure && (!/type=/.test(enclosure[0]) || /type=["']image/i.test(enclosure[0]))) {
+        return enclosure[1]
+    }
+    // 2. media:content / media:thumbnail
+    const media = itemXml.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i)
+    if (media) return media[1]
+    // 3. description 안의 <img> (CDATA 또는 escaped 형태 모두)
+    const img = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i)
+        || itemXml.match(/&lt;img[^&]+src=&quot;([^&]+?)&quot;/i)
+        || itemXml.match(/&lt;img[^&]+src=["']([^"']+?)["']/i)
+    if (img) return img[1]
+    return null
 }
 
 function extractTag(xml: string, tagName: string): string {
@@ -47,6 +70,8 @@ function cleanText(text: string): string {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&nbsp;/g, ' ')
+        // 블록 경계(목록/문단 끝)는 공백 2칸으로 치환 → 매체명과 다음 제목이 붙는 것 방지
+        .replace(/<\/(li|p|div|tr|h[1-6])>/gi, '  ')
         .replace(/<[^>]+>/g, '')
         .trim()
 }

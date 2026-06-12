@@ -8,8 +8,12 @@ export default {
     theme: {
         extend: {
             colors: {
-                'brand-green': '#03c75a',
-                'brand-green-hover': '#02b350',
+                // 블루 테마 전환: 기존 'brand-green' 토큰명은 호환을 위해 유지하고 값만 블루로 변경
+                'brand-green': '#2563eb',
+                'brand-green-hover': '#1d4ed8',
+                'brand': '#2563eb',
+                'brand-hover': '#1d4ed8',
+                'brand-light': '#eff6ff',
                 'brand-navy': '#1e3a8a',
                 'brand-blue': '#3b82f6',
                 'accent-orange': '#f97316',

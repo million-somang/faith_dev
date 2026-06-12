@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
                                     type="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#03c75a] focus:border-transparent transition-all"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     placeholder="example@email.com"
                                     required
                                 />
@@ -86,7 +86,7 @@ const LoginPage: React.FC = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#03c75a] focus:border-transparent transition-all"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                     placeholder="비밀번호를 입력하세요"
                                     required
                                 />
@@ -99,7 +99,7 @@ const LoginPage: React.FC = () => {
                                 disabled={loading}
                                 className={`w-full py-3 rounded-lg text-white font-bold text-lg transition-colors flex items-center justify-center ${loading
                                         ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-[#03c75a] hover:bg-[#02b350]'
+                                        : 'bg-blue-600 hover:bg-blue-700'
                                     }`}
                             >
                                 {loading ? (
@@ -112,7 +112,7 @@ const LoginPage: React.FC = () => {
                     <div className="mt-8 text-center border-t border-gray-100 pt-6">
                         <p className="text-gray-600 text-sm">
                             아직 회원이 아니신가요?
-                            <Link to="/signup" className="text-[#03c75a] font-bold ml-2 hover:underline">
+                            <Link to="/signup" className="text-blue-600 font-bold ml-2 hover:underline">
                                 회원가입하기
                             </Link>
                         </p>

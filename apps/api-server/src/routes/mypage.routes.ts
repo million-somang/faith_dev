@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { requireAuth } from '../middleware/auth.js';
 import { MyPageService } from '../services/mypage.service.js';
+import { HomepageConfigService } from '../services/homepage-config.service.js';
 import { SessionUser } from '../middleware/auth.js';
 
 type Variables = {
@@ -114,6 +115,35 @@ mypage.get('/game-stats', async (c) => {
     const user = c.get('user') as SessionUser;
     const stats = await MyPageService.getGameStats(user.id);
     return c.json({ success: true, stats });
+});
+
+// ===== Homepage Personalization Config =====
+mypage.get('/homepage-config', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const config = await HomepageConfigService.getConfig(user.id);
+        return c.json({ success: true, config });
+    } catch (err) {
+        console.error('Homepage config GET error:', err);
+        return c.json({ success: false, error: { code: 500, message: 'Failed to load homepage config' } }, 500);
+    }
+});
+
+mypage.post('/homepage-config', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const body = await c.req.json() as Record<string, unknown>;
+
+        if (!body || typeof body !== 'object') {
+            return c.json({ success: false, error: { code: 400, message: 'Invalid config data' } }, 400);
+        }
+
+        await HomepageConfigService.saveConfig(user.id, body);
+        return c.json({ success: true });
+    } catch (err) {
+        console.error('Homepage config POST error:', err);
+        return c.json({ success: false, error: { code: 500, message: 'Failed to save homepage config' } }, 500);
+    }
 });
 
 export default mypage;
