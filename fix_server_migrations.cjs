@@ -44,6 +44,21 @@ for (const file of files) {
 
     let sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
 
+    // 003: 마이그레이션 도입 전 만들어진 구버전 tetris_scores에 lines/level 컬럼이 없으면 보충
+    if (file.startsWith('003') && hasTable('tetris_scores')) {
+        if (!hasColumn('tetris_scores', 'lines')) {
+            console.log('[Fix] tetris_scores.lines 컬럼 없음 → 추가 (기존 행은 0)');
+            db.exec('ALTER TABLE tetris_scores ADD COLUMN lines INTEGER NOT NULL DEFAULT 0');
+        }
+        if (!hasColumn('tetris_scores', 'level')) {
+            console.log('[Fix] tetris_scores.level 컬럼 없음 → 추가 (기존 행은 1)');
+            db.exec('ALTER TABLE tetris_scores ADD COLUMN level INTEGER NOT NULL DEFAULT 1');
+        }
+        // 재실행 시 game_scores로 중복 복사 방지
+        sql = sql.replace(/FROM tetris_scores;/,
+            "FROM tetris_scores WHERE NOT EXISTS (SELECT 1 FROM game_scores WHERE game_id = 'tetris');");
+    }
+
     // 010: hidden 컬럼이 이미 존재하면(과거 부분 적용) ALTER 구문만 제거
     if (file.startsWith('010') && hasColumn('news', 'hidden')) {
         console.log('[Fix] news.hidden 컬럼이 이미 존재 → ALTER TABLE 구문 건너뜀');
