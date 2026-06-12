@@ -38,8 +38,15 @@ try {
             if (!isExecuted) {
                 console.log(`[Database] Running migration: ${file}`);
                 const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
-                db.exec(sql);
-                db.prepare('INSERT INTO migrations_history (filename) VALUES (?)').run(file);
+                db.exec('BEGIN');
+                try {
+                    db.exec(sql);
+                    db.prepare('INSERT INTO migrations_history (filename) VALUES (?)').run(file);
+                    db.exec('COMMIT');
+                } catch (migrationError) {
+                    db.exec('ROLLBACK');
+                    throw migrationError;
+                }
                 console.log(`[Database] Migration completed: ${file}`);
             }
         }
