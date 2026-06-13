@@ -19,6 +19,8 @@ const PUBLISHER_RSS_URLS: Array<{ category: string; url: string; source: string 
 
 // 구글 뉴스 썸네일 해독은 비공식 API를 사용하므로 1회 수집당 건수 제한
 const GOOGLE_THUMBNAIL_LIMIT_PER_RUN = 15;
+// 언론사 피드는 원문 직링크라 해독 비용이 낮으므로 더 많이 보충
+const PUBLISHER_THUMBNAIL_LIMIT_PER_RUN = 40;
 
 /**
  * RSS pubDate → ISO 형식 문자열 (SQLite 정렬용: 'YYYY-MM-DD HH:MM:SS')
@@ -124,15 +126,21 @@ async function processCategory(category: string, rssUrl: string): Promise<string
  * 이미지 포함 언론사 피드 전체 수집 (외부에서 호출 가능)
  */
 export async function collectPublisherFeeds() {
+    const imagelessLinks: string[] = []
     for (const feed of PUBLISHER_RSS_URLS) {
-        await processPublisherFeed(feed.category, feed.url, feed.source)
+        const links = await processPublisherFeed(feed.category, feed.url, feed.source)
+        imagelessLinks.push(...links)
     }
+    // RSS에 이미지가 없던 언론사 기사 → 원문 og:image 해독으로 보충 (원문 직링크라 바로 fetch 가능)
+    await backfillGoogleThumbnails(imagelessLinks.slice(0, PUBLISHER_THUMBNAIL_LIMIT_PER_RUN))
 }
 
 /**
  * 언론사 RSS 수집 (이미지 포함 피드, 원문 직링크)
+ * @returns 새로 저장됐지만 이미지가 없는 기사 링크 목록 (og:image 해독 대상)
  */
-async function processPublisherFeed(category: string, rssUrl: string, sourceName: string) {
+async function processPublisherFeed(category: string, rssUrl: string, sourceName: string): Promise<string[]> {
+    const imagelessLinks: string[] = []
     try {
         console.log(`- ${sourceName} (${category}) 피드 수집 중...`)
 
@@ -141,7 +149,7 @@ async function processPublisherFeed(category: string, rssUrl: string, sourceName
         })
         if (!response.ok) {
             console.warn(`  ${sourceName} 피드 응답 오류: ${response.status}`)
-            return
+            return imagelessLinks
         }
 
         const xmlText = await response.text()
@@ -156,12 +164,19 @@ async function processPublisherFeed(category: string, rssUrl: string, sourceName
                 item.source && item.source !== '구글뉴스' ? item.source : sourceName,
                 toIsoDateTime(item.pubDate)
             )
-            if (status === 'inserted') count++
+            if (status === 'inserted') {
+                count++
+                // 이미지 없이 저장된 기사는 원문 og:image 해독 대상으로 큐잉
+                if (!imageUrl && item.link && item.link.startsWith('http')) {
+                    imagelessLinks.push(item.link)
+                }
+            }
         }
         console.log(`  ${sourceName}: 신규 ${count}건`)
     } catch (error) {
         console.error(`${sourceName} 피드 수집 중 오류:`, error)
     }
+    return imagelessLinks
 }
 
 /**
