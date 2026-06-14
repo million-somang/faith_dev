@@ -43,7 +43,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     }
 
     return (
-        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-200 sm:border-gray-100 last:border-0 p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
+        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-200 sm:border-gray-100 last:border-0 p-4 sm:p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
             <div className="flex gap-3 sm:gap-4 items-start sm:items-center">
                 {/* 썸네일 (이미지가 없어도 동일 크기 유지 → 카드 높이 통일) */}
                 <div className="relative w-24 h-24 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">

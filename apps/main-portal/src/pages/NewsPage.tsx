@@ -254,7 +254,7 @@ export default function NewsPage() {
             />
             <Header user={user} onLogout={logout} />
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
                 {/* 배너 슬롯: 뉴스 목록 상단 */}
                 <BannerSlot slotKey="news_list_top" className="mb-6" />
 
