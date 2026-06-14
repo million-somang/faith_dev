@@ -242,8 +242,8 @@ function PortalLayout({ config, news, health, user, logout }: Omit<PersonalizedL
 
             {/* Right Column */}
             <div className="flex-1 flex flex-col gap-4">
-                {/* 사용자 카드 */}
-                <Card className="p-6">
+                {/* 사용자 카드 (PC 사이드바 전용 — 모바일에서는 숨김) */}
+                <Card className="p-6 hidden lg:block">
                     {user ? (
                         <>
                             <div className="flex items-center gap-4 mb-4">

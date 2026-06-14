@@ -171,8 +171,8 @@ function HomePage() {
 
                             {/* Right Column: Widgets */}
                             <div className="flex-1 flex flex-col gap-4">
-                                {/* MyPage Widget */}
-                                <Card className="p-6">
+                                {/* MyPage Widget (PC 사이드바 전용 — 모바일에서는 숨김) */}
+                                <Card className="p-6 hidden lg:block">
                                     {user ? (
                                         <>
                                             <div className="flex items-center gap-4 mb-4">
