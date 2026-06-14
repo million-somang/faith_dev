@@ -70,7 +70,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                             </span>
                         )}
                     </div>
-                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm leading-snug line-clamp-2">
+                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm leading-snug line-clamp-1">
                         {displayTitle}
                     </p>
                     {/* 요약: 무조건 한 줄, 길면 ...으로 표시 (truncate = nowrap+ellipsis) */}

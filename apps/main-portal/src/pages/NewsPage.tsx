@@ -291,7 +291,7 @@ export default function NewsPage() {
 
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Left: News List (flex gap: 숨겨진 모바일 카드가 여백을 만들지 않음 → 우측 카드와 상단 정렬) */}
-                    <div className="flex-1 flex flex-col gap-6">
+                    <div className="flex-1 min-w-0 flex flex-col gap-6">
                         {/* Tabbed Card for Keyword Subscription and Hot Issues (Mobile Only) */}
                         <Card className="p-0 overflow-hidden lg:hidden">
                             <div className="flex bg-gray-50 border-b border-gray-100">
