@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Header, Footer, Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -186,22 +186,6 @@ export default function NewsPage() {
             loadNews(page, false);
         }
     }, [page]);
-
-    const loaderRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && !loading && hasMore) {
-                    setPage(prev => prev + 1);
-                }
-            },
-            { threshold: 0.1 }
-        );
-
-        if (loaderRef.current) observer.observe(loaderRef.current);
-        return () => observer.disconnect();
-    }, [loading, hasMore]);
 
     const loadNews = async (pageNum: number, isReset: boolean = false) => {
         if (!hasMore && !isReset) return;
@@ -425,9 +409,17 @@ export default function NewsPage() {
                                     </div>
                                 )}
 
-                                {/* Intersection Observer Target */}
+                                {/* 기사 더보기 버튼 (클릭 시 다음 페이지 로드) */}
                                 {hasMore && !loading && category !== 'keyword' && news.length > 0 && (
-                                    <div ref={loaderRef} className="h-10 w-full"></div>
+                                    <div className="p-4">
+                                        <button
+                                            onClick={() => setPage(prev => prev + 1)}
+                                            className="w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-brand-green hover:border-brand-green transition-all"
+                                        >
+                                            기사 더보기
+                                            <i className="fas fa-chevron-down text-xs"></i>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </Card>
