@@ -133,3 +133,58 @@ export async function resolveThumbnailFromGoogleNews(gnewsUrl: string): Promise<
     if (!realUrl) return null
     return await fetchOgImage(realUrl)
 }
+
+/** HTML 엔티티를 일반 텍스트로 디코딩 */
+function decodeEntities(s: string): string {
+    return s
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;|&apos;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+}
+
+/**
+ * 원문 페이지에서 설명(요약) 추출: og:description → meta description → twitter:description
+ * RSS 요약보다 완결된 2~3문장 요약을 제공하는 경우가 많다.
+ */
+export async function fetchOgDescription(articleUrl: string): Promise<string | null> {
+    try {
+        const res = await fetchWithTimeout(articleUrl)
+        if (!res || !res.ok) return null
+        const contentType = res.headers.get('content-type') || ''
+        if (!contentType.includes('text/html')) return null
+        const html = (await res.text()).slice(0, 300000)
+
+        const patterns = [
+            /<meta[^>]+property=["']og:description["'][^>]+content=(["'])([\s\S]*?)\1/i,
+            /<meta[^>]+content=(["'])([\s\S]*?)\1[^>]+property=["']og:description["']/i,
+            /<meta[^>]+name=["']description["'][^>]+content=(["'])([\s\S]*?)\1/i,
+            /<meta[^>]+content=(["'])([\s\S]*?)\1[^>]+name=["']description["']/i,
+            /<meta[^>]+name=["']twitter:description["'][^>]+content=(["'])([\s\S]*?)\1/i,
+        ]
+        let raw: string | null = null
+        for (const p of patterns) {
+            const m = html.match(p)
+            if (m) { raw = m[2]; break }
+        }
+        if (!raw) return null
+
+        const text = decodeEntities(raw)
+        return text.length >= 20 ? text : null
+    } catch {
+        return null
+    }
+}
+
+/**
+ * 구글 뉴스 링크 → 원문 해독 → og:description 추출 (전체 파이프라인)
+ */
+export async function resolveDescriptionFromGoogleNews(gnewsUrl: string): Promise<string | null> {
+    const realUrl = await resolveGoogleNewsUrl(gnewsUrl)
+    if (!realUrl) return null
+    return await fetchOgDescription(realUrl)
+}

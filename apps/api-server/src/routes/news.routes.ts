@@ -8,6 +8,7 @@ import {
     getTimeAgo
 } from '@faithportal/core-utils';
 import { fetchBatchStockData } from '../utils/stockDataFetcher.js';
+import { resolveDescriptionFromGoogleNews } from '../utils/googleNewsResolver.js';
 import { requireAuth, optionalAuth, SessionUser } from '../middleware/auth.js';
 
 const news = new Hono<{ Variables: { user: SessionUser | null } }>();
@@ -136,11 +137,23 @@ news.get('/api/news/:id{[0-9]+}', async (c) => {
         if (result.rows.length === 0) {
             return c.json({ success: false, message: 'News not found' }, 404);
         }
+        const row = result.rows[0];
+
+        // 본문(content)이 없으면 원문 og:description으로 보강 (best-effort, 1회만 가져와 캐시)
+        if ((!row.content || String(row.content).trim() === '') && row.link) {
+            try {
+                const desc = await resolveDescriptionFromGoogleNews(row.link);
+                if (desc && desc.length > String(row.summary || '').length) {
+                    await pool.query('UPDATE news SET content = $1 WHERE id = $2', [desc, id]);
+                    row.content = desc;
+                }
+            } catch { /* best-effort: 실패해도 기존 요약으로 표시 */ }
+        }
 
         // Increment view count
         await pool.query('UPDATE news SET view_count = view_count + 1, popularity_score = popularity_score + 1 WHERE id = $1', [id]);
 
-        return c.json({ success: true, news: result.rows[0] });
+        return c.json({ success: true, news: row });
     } catch (error) {
         console.error('Get news detail error:', error);
         return c.json({ success: false, message: 'Failed to fetch news detail' }, 500);

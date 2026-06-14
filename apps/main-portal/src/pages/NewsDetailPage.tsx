@@ -195,7 +195,9 @@ export default function NewsDetailPage() {
                     {/* Main Content */}
                     <div className="text-gray-800 leading-relaxed space-y-6">
                         {news.content ? (
-                            <div className="text-lg leading-loose" dangerouslySetInnerHTML={{ __html: news.content }}></div>
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                                <p className="text-lg leading-loose whitespace-pre-line">{cleanEntities(news.content)}</p>
+                            </div>
                         ) : getSummaryLines().length > 0 ? (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
                                 {getSummaryLines().map((line, idx) => (
