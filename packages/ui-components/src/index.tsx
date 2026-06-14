@@ -44,9 +44,9 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
 
     return (
         <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-100 last:border-0 p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
-            <div className="flex gap-4 items-center">
+            <div className="flex gap-3 sm:gap-4 items-start sm:items-center">
                 {/* 썸네일 (이미지가 없어도 동일 크기 유지 → 카드 높이 통일) */}
-                <div className="relative w-28 h-20 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                <div className="relative w-24 h-24 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
                     <i className="far fa-newspaper text-gray-300 text-2xl"></i>
                     {news.thumbnail && (
                         <img
@@ -59,7 +59,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                     )}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                         {categories.slice(0, 3).map((cat) => (
                             <span key={cat} className={`badge ${getCategoryColor(cat)}`}>{getCategoryName(cat)}</span>
                         ))}
@@ -69,20 +69,25 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                                 <i className="fas fa-chart-line mr-1"></i>분석됨
                             </span>
                         )}
+                        {/* 모바일: 언론사를 메타 줄에 인라인 표시 (별도 컬럼 제거로 본문 공간 확보) */}
+                        {publisher && (
+                            <span className="sm:hidden text-[11px] font-bold text-gray-400 truncate max-w-[45%]">· {publisher}</span>
+                        )}
                     </div>
-                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm leading-snug line-clamp-1">
+                    {/* 제목: 모바일 2줄, 데스크탑 1줄 */}
+                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm sm:text-[15px] leading-snug line-clamp-2 sm:line-clamp-1">
                         {displayTitle}
                     </p>
-                    {/* 요약: 무조건 한 줄, 길면 ...으로 표시 (truncate = nowrap+ellipsis) */}
+                    {/* 요약: 모바일 2줄, 데스크탑 1줄 (길면 ...으로 표시) */}
                     {(news.summary || news.description) && (
-                        <p className="text-gray-500 text-xs mt-1 truncate">
+                        <p className="text-gray-500 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
                             {news.summary || news.description}
                         </p>
                     )}
                 </div>
-                {/* 언론사 (카드 오른쪽 끝 독립 표시) */}
-                <div className="w-20 sm:w-24 flex-shrink-0 flex items-center justify-center border-l border-gray-100 pl-2 sm:pl-3 self-stretch">
-                    <span className="text-xs sm:text-sm font-extrabold text-gray-900 leading-tight text-center break-keep">
+                {/* 언론사 (데스크탑 전용: 카드 오른쪽 끝 독립 컬럼) */}
+                <div className="hidden sm:flex w-24 flex-shrink-0 items-center justify-center border-l border-gray-100 pl-3 self-stretch">
+                    <span className="text-sm font-extrabold text-gray-900 leading-tight text-center break-keep">
                         {publisher || '뉴스'}
                     </span>
                 </div>
