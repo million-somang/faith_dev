@@ -143,7 +143,7 @@ export default function NewsDetailPage() {
                     <span className="text-gray-600">{getCategoryName(String(news.category || '').split(',')[0])}</span>
                 </div>
 
-                <article className="space-y-8">
+                <article className="space-y-5">
                     {/* Header Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -212,7 +212,7 @@ export default function NewsDetailPage() {
                         )}
 
                         {news.link && (
-                            <div className="mt-12 p-6 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                            <div className="mt-5 p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-gray-400 font-bold mb-1">ORIGINAL SOURCE</p>
                                     <p className="text-sm font-medium text-gray-600 truncate">{news.link}</p>
@@ -231,7 +231,7 @@ export default function NewsDetailPage() {
                     </div>
 
                     {/* Interaction Bar */}
-                    <div className="py-12 border-t border-b border-gray-100 flex flex-col items-center gap-6">
+                    <div className="py-6 border-t border-b border-gray-100 flex flex-col items-center gap-4">
                         <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">기사가 도움이 되셨나요?</p>
                         <div className="flex gap-6">
                             <button
@@ -258,7 +258,7 @@ export default function NewsDetailPage() {
                     </div>
 
                     {/* Action Footer */}
-                    <div className="pt-8 flex justify-between">
+                    <div className="pt-1 flex justify-between">
                         <Button onClick={() => navigate('/news')} className="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50">
                             <i className="fas fa-arrow-left mr-2"></i> 뉴스 목록
                         </Button>
