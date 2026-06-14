@@ -213,9 +213,18 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
     const [isInstalling, setIsInstalling] = React.useState(false);
 
     React.useEffect(() => {
-        // Check if already installed
+        // 설치 여부 감지: ① 앱으로 실행 중(standalone) ② 이 브라우저의 설치 기록 ③ getInstalledRelatedApps
         if (window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone) {
             setIsInstalled(true);
+        }
+        try {
+            if (localStorage.getItem('faithlink_pwa_installed') === '1') setIsInstalled(true);
+        } catch { /* localStorage 차단 환경 무시 */ }
+        const nav = navigator as any;
+        if (typeof nav.getInstalledRelatedApps === 'function') {
+            nav.getInstalledRelatedApps()
+                .then((apps: any[]) => { if (apps && apps.length > 0) setIsInstalled(true); })
+                .catch(() => { /* 무시 */ });
         }
 
         // 이미 글로벌에서 잡힌 prompt가 있다면 가져오기
@@ -227,13 +236,16 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
             e.preventDefault();
             (window as any).deferredPrompt = e;
             setDeferredPrompt(e);
+            // beforeinstallprompt는 미설치 상태에서만 발생 → 미설치로 간주(삭제 후 재설치 케이스 포함)
             setIsInstalled(false);
+            try { localStorage.removeItem('faithlink_pwa_installed'); } catch { /* 무시 */ }
         };
-        
+
         const handleAppInstalled = () => {
             setIsInstalling(false);
             setIsInstalled(true);
             (window as any).deferredPrompt = null;
+            try { localStorage.setItem('faithlink_pwa_installed', '1'); } catch { /* 무시 */ }
             setTimeout(() => {
                 alert('설치가 완료되었습니다!');
             }, 500);
@@ -289,7 +301,8 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
         <footer className="bg-white border-t border-gray-200 mt-20 py-12">
             <div className="max-w-6xl mx-auto px-4">
                 
-                {/* 앱 설치 버튼 (명시적으로 추가) */}
+                {/* 앱 설치 카드 (앱이 설치되어 있지 않을 때만 노출) */}
+                {!isInstalled && (
                 <div className="mb-10 p-6 bg-blue-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-blue-100 shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center flex-shrink-0 text-brand-green">
@@ -320,6 +333,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                         )}
                     </button>
                 </div>
+                )}
 
                 <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
                     <div>
