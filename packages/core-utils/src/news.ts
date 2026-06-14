@@ -16,7 +16,9 @@ export function parseRSSXML(xmlText: string): RSSItem[] {
         const itemXml = match[1]
         const title = extractTag(itemXml, 'title')
         const link = extractTag(itemXml, 'link')
-        const pubDate = extractTag(itemXml, 'pubDate')
+        // pubDate 없으면 dc:date(Dublin Core) 폴백 — 경향 등 일부 언론사 RSS가 dc:date 사용.
+        // 누락 시 수집시각(now)으로 저장돼 해당 매체가 정렬 상단을 독식하는 문제 방지.
+        const pubDate = extractTag(itemXml, 'pubDate') || extractTag(itemXml, 'dc:date')
         const description = extractTag(itemXml, 'description')
         const source = extractTag(itemXml, 'source')
 
