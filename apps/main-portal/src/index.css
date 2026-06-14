@@ -7,6 +7,9 @@
 * {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     letter-spacing: -0.02em;
+    /* 한글은 띄어쓰기(단어) 단위로 줄바꿈, 긴 단어/URL만 강제 줄바꿈 */
+    word-break: keep-all;
+    overflow-wrap: break-word;
 }
 
 body {
