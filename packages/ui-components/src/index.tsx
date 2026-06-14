@@ -43,7 +43,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     }
 
     return (
-        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-100 last:border-0 p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
+        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-200 sm:border-gray-100 last:border-0 p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
             <div className="flex gap-3 sm:gap-4 items-start sm:items-center">
                 {/* 썸네일 (이미지가 없어도 동일 크기 유지 → 카드 높이 통일) */}
                 <div className="relative w-24 h-24 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -63,7 +63,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                         {categories.slice(0, 3).map((cat) => (
                             <span key={cat} className={`badge ${getCategoryColor(cat)}`}>{getCategoryName(cat)}</span>
                         ))}
-                        <span className="text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
+                        <span className="text-gray-600 sm:text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
                         {isAnalyzed && (
                             <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
                                 <i className="fas fa-chart-line mr-1"></i>분석됨
@@ -71,16 +71,16 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                         )}
                         {/* 모바일: 언론사를 메타 줄에 인라인 표시 (별도 컬럼 제거로 본문 공간 확보) */}
                         {publisher && (
-                            <span className="sm:hidden text-[11px] font-bold text-gray-400 truncate max-w-[45%]">· {publisher}</span>
+                            <span className="sm:hidden text-[11px] font-bold text-gray-500 truncate max-w-[45%]">· {publisher}</span>
                         )}
                     </div>
                     {/* 제목: 모바일 2줄, 데스크탑 1줄 */}
-                    <p className="text-gray-900 group-hover:text-brand-green-hover font-semibold text-sm sm:text-[15px] leading-snug line-clamp-2 sm:line-clamp-1">
+                    <p className="text-gray-900 group-hover:text-brand-green-hover font-bold sm:font-semibold text-sm sm:text-[15px] leading-snug line-clamp-2 sm:line-clamp-1">
                         {displayTitle}
                     </p>
                     {/* 요약: 모바일 2줄, 데스크탑 1줄 (길면 ...으로 표시) */}
                     {(news.summary || news.description) && (
-                        <p className="text-gray-500 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
+                        <p className="text-gray-700 sm:text-gray-500 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
                             {news.summary || news.description}
                         </p>
                     )}
