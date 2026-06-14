@@ -255,3 +255,7 @@ serve({
     port,
     hostname: '0.0.0.0'
 });
+
+// 자동 뉴스 가져오기 스케줄러 시작 (news_schedule 설정에 따라 주기 수집)
+import { startNewsScheduler } from './services/newsScheduler.js';
+startNewsScheduler();
