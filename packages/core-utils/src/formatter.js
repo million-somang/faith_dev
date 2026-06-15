@@ -24,6 +24,43 @@ export function getCategoryColor(category) {
     };
     return colors[category] || 'bg-gray-100 text-gray-700';
 }
+// 자주 쓰이는 named HTML 엔티티 매핑
+const NAMED_ENTITIES = {
+    amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+    hellip: '…', middot: '·', mdash: '—', ndash: '–',
+    lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”',
+    copy: '©', reg: '®', trade: '™', deg: '°', times: '×',
+};
+// HTML 엔티티 디코딩 — 뉴스 제목/본문에 '&#039;' '&quot;' '&amp;' 등이 글자 그대로 노출되는 문제를 차단.
+// 10진/16진 숫자(0 패딩 포함)와 named 엔티티를 처리하고, 이중 인코딩(&amp;#039;)도 안정될 때까지 반복 처리한다.
+export function decodeHtmlEntities(input) {
+    if (!input)
+        return input;
+    let result = String(input);
+    for (let pass = 0; pass < 4; pass++) {
+        const next = result.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z][a-zA-Z0-9]*);/g, (match, body) => {
+            if (body[0] === '#') {
+                const code = body[1] === 'x' || body[1] === 'X'
+                    ? parseInt(body.slice(2), 16)
+                    : parseInt(body.slice(1), 10);
+                if (Number.isFinite(code) && code > 0 && code <= 0x10FFFF) {
+                    try {
+                        return String.fromCodePoint(code);
+                    }
+                    catch {
+                        return match;
+                    }
+                }
+                return match;
+            }
+            return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, body) ? NAMED_ENTITIES[body] : match;
+        });
+        if (next === result)
+            break;
+        result = next;
+    }
+    return result;
+}
 // 시간 전 표시
 export function getTimeAgo(dateString) {
     const now = new Date();

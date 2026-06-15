@@ -293,7 +293,7 @@ export default function NewsPage() {
                     {/* Left: News List (flex gap: 숨겨진 모바일 카드가 여백을 만들지 않음 → 우측 카드와 상단 정렬) */}
                     <div className="flex-1 min-w-0 flex flex-col gap-6">
                         {/* Tabbed Card for Keyword Subscription and Hot Issues (Mobile Only) */}
-                        <Card className="p-0 overflow-hidden lg:hidden">
+                        <Card className="!p-0 overflow-hidden lg:hidden">
                             <div className="flex bg-gray-50 border-b border-gray-100">
                                 <button
                                     onClick={() => setActiveTab('keyword')}
@@ -368,7 +368,7 @@ export default function NewsPage() {
                             </div>
                         </Card>
 
-                        <Card className="p-0 overflow-hidden">
+                        <Card className="!p-0 sm:!p-6 overflow-hidden">
                             <div className="bg-white p-6 border-b border-gray-100 flex items-center justify-between">
                                 <h2 className="text-xl font-bold text-gray-900">최신 뉴스</h2>
                                 <button onClick={() => { setNews([]); setPage(1); setHasMore(true); loadNews(1, true); }} className="text-gray-400 hover:text-brand-green transition-colors">

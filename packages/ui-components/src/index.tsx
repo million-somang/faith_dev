@@ -1,5 +1,5 @@
 import React from 'react';
-import { getCategoryName, getCategoryColor, getTimeAgo } from '@faithportal/core-utils';
+import { getCategoryName, getCategoryColor, getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
 
 export const Button = ({ children, onClick, className = "" }: { children: React.ReactNode, onClick?: () => void, className?: string }) => (
     <button
@@ -22,7 +22,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     const categories: string[] = String(news.category || '').split(',').map((s: string) => s.trim()).filter(Boolean);
 
     // 제목 끝의 " - 언론사" 분리 (예: "금리 인상 신호 - 한국경제")
-    const rawTitle: string = String(news.title || '');
+    const rawTitle: string = decodeHtmlEntities(String(news.title || ''));
     let displayTitle = rawTitle;
     let publisher = '';
     const sepIdx = rawTitle.lastIndexOf(' - ');
@@ -31,7 +31,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
         displayTitle = rawTitle.slice(0, sepIdx).trim();
     }
     if (!publisher && news.source && !/구글\s?뉴스/.test(news.source)) {
-        publisher = news.source;
+        publisher = decodeHtmlEntities(news.source);
     }
     const isAnalyzed = (news.title.includes('환율') || news.title.includes('주가') || news.title.includes('증시') || news.title.includes('달러') || news.title.includes('코스피') || news.title.includes('경제'));
 
@@ -81,7 +81,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                     {/* 요약: 모바일 2줄, 데스크탑 1줄 (길면 ...으로 표시) */}
                     {(news.summary || news.description) && (
                         <p className="text-gray-700 sm:text-gray-500 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
-                            {news.summary || news.description}
+                            {decodeHtmlEntities(news.summary || news.description)}
                         </p>
                     )}
                 </div>

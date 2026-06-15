@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Header, Footer, Button } from '@faithportal/ui';
-import { getCategoryName, getCategoryColor, getTimeAgo } from '@faithportal/core-utils';
+import { getCategoryName, getCategoryColor, getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
@@ -54,13 +54,9 @@ export default function NewsDetailPage() {
         }
     };
 
-    // HTML 엔티티(&nbsp; 등) 정리 — 기존 저장 데이터 호환용
+    // HTML 엔티티(&#039; &quot; &nbsp; 등) 정리 + 공백 정규화 — 기존 저장 데이터 호환용
     const cleanEntities = (text: string): string =>
-        (text || '')
-            .replace(/&amp;/g, '&')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;|&apos;/g, "'")
+        decodeHtmlEntities(text || '')
             .replace(/\s+/g, ' ')
             .trim();
 
@@ -72,6 +68,19 @@ export default function NewsDetailPage() {
             return { title: t.slice(0, sepIdx).trim(), publisher: t.slice(sepIdx + 3).trim() };
         }
         return { title: t, publisher: '' };
+    };
+
+    // 현재 기사 제목(언론사 제외) — 본문/요약에 그대로 반복되는 중복 제거 비교용
+    const articleTitle = (): string => splitTitle(news?.title || '').title;
+
+    // 본문 첫머리에 H1 제목이 그대로 붙어있으면 떼어낸다 (제목이 두 번 보이는 문제 방지)
+    const stripDuplicateTitle = (text: string): string => {
+        const t = cleanEntities(text);
+        const title = articleTitle();
+        if (title.length >= 8 && t.startsWith(title)) {
+            return t.slice(title.length).replace(/^[\s,.;:·ㆍ・\-–—]+/, '').trim();
+        }
+        return t;
     };
 
     // 구글 뉴스 요약은 여러 헤드라인이 이어 붙은 형태 → 줄 단위로 분리해 가독성 개선
@@ -86,7 +95,13 @@ export default function NewsDetailPage() {
                 .replace(/^(?:[a-z0-9-]+\.)+[a-z]{2,6}(?=[가-힣“"'‘\[(])/i, '')
                 .trim())
             // 매체명만 남은 짧은 줄은 제외 (헤드라인은 충분히 긺)
-            .filter((line: string) => line.length >= 12);
+            .filter((line: string) => line.length >= 12)
+            // H1 제목과 동일·중복되는 줄 제외 (제목이 두 번 보이는 문제 방지)
+            .filter((line: string) => {
+                const title = articleTitle();
+                if (title.length < 8) return true;
+                return !(line === title || line.startsWith(title) || title.startsWith(line));
+            });
     };
 
     if (loading) {
@@ -196,7 +211,7 @@ export default function NewsDetailPage() {
                     <div className="text-gray-800 leading-relaxed space-y-6">
                         {news.content ? (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                                <p className="text-lg leading-loose whitespace-pre-line">{cleanEntities(news.content)}</p>
+                                <p className="text-lg leading-loose whitespace-pre-line">{stripDuplicateTitle(news.content)}</p>
                             </div>
                         ) : getSummaryLines().length > 0 ? (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
