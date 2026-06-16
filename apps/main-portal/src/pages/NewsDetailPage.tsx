@@ -120,7 +120,7 @@ export default function NewsDetailPage() {
         return (
             <div className="flex flex-col min-h-screen">
                 <Header user={user} onLogout={logout} />
-                <main className="flex-1 max-w-4xl mx-auto px-4 py-20 text-center">
+                <main className="flex-1 max-w-4xl mx-auto px-1 sm:px-4 py-20 text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">뉴스를 찾을 수 없습니다.</h2>
                     <Button onClick={() => navigate('/news')} className="bg-brand-green text-white">뉴스 목록으로 돌아가기</Button>
                 </main>
@@ -148,7 +148,7 @@ export default function NewsDetailPage() {
             )}
             <Header user={user} onLogout={logout} />
 
-            <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full">
+            <main className="flex-1 max-w-4xl mx-auto px-1 sm:px-4 py-8 w-full">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-xs text-gray-400 mb-6 font-medium">
                     <a href="/" className="hover:text-gray-600">홈</a>

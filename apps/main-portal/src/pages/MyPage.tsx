@@ -102,7 +102,7 @@ export default function MyPage() {
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header user={user} onLogout={logout} />
 
-            <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
+            <div className="flex-1 max-w-7xl mx-auto px-1 sm:px-4 py-8 w-full">
                 <div className="mb-8">
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                         <i className="fas fa-user-circle mr-2 text-gray-500"></i>마이페이지

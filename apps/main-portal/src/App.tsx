@@ -63,7 +63,7 @@ function HomePage() {
             <Header user={user} onLogout={logout} />
 
             {/* 메인 콘텐츠 */}
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-12 w-full">
                 {isPrefLoading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>

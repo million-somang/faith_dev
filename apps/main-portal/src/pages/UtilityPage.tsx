@@ -206,7 +206,7 @@ export default function UtilityPage() {
                 path="/lifestyle"
             />
             <Header user={user} onLogout={logout} />
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-12 w-full">
                 <Card className="p-8">
                     <div className="flex items-center gap-4 mb-8 border-b pb-4">
                         <div className="w-12 h-12 rounded-full bg-green-100 text-green-600 flex items-center justify-center">

@@ -111,7 +111,7 @@ export default function GamePage() {
                 path="/game"
             />
             <Header user={user} onLogout={logout} />
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-12 w-full">
                 <div className="text-center mb-14">
                     <h1 className="text-4xl font-extrabold text-slate-800 mb-3 tracking-tight">미니 게임</h1>
                     <p className="text-slate-500 text-lg">새로운 미니게임에 도전하고 명예의 전당에 이름을 올려보세요!</p>

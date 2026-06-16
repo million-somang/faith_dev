@@ -91,7 +91,7 @@ function PersonalizedQuickMenu({ config }: { config: HomepageConfig }) {
 
     return (
         <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu" aria-label="빠른 메뉴">
-            <div className="overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 py-4">
+            <div className="overflow-x-auto hide-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 py-4">
                 <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
                     {orderedSelected.map(item => (
                         <a key={item.id} href={item.href} className="group text-center flex-shrink-0">

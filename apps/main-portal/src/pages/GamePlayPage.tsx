@@ -106,7 +106,7 @@ export default function GamePlayPage() {
             />
             <Header user={user} onLogout={logout} />
 
-            <main className="flex-1 max-w-7xl mx-auto px-4 py-6 w-full flex flex-col relative">
+            <main className="flex-1 max-w-7xl mx-auto px-1 sm:px-4 py-6 w-full flex flex-col relative">
                 {/* Top Title Bar */}
                 <div className="flex items-center justify-between mb-4 shrink-0">
                     <div className="flex items-center gap-3">

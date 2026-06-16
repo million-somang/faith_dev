@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "main-portal",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@faithportal/main-portal"],
+      "port": 5000,
+      "autoPort": false
+    }
+  ]
+}

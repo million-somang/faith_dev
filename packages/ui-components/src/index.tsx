@@ -189,7 +189,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
 
 export const QuickMenu = () => (
     <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu">
-        <div className="overflow-x-auto hide-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 py-4">
+        <div className="overflow-x-auto hide-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 py-4">
             <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
                 {[
                     { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-blue-50', color: 'text-blue-600', href: '/news' },
