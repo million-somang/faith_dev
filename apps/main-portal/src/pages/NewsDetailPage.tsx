@@ -227,7 +227,12 @@ export default function NewsDetailPage() {
                         )}
 
                         {news.link && (
-                            <div className="mt-5 p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
+                          <>
+                            <p className="mt-6 mb-2 text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
+                                <i className="fas fa-info-circle mt-0.5 flex-shrink-0"></i>
+                                <span>본 뉴스는 전체 내용을 제공하지 않으니, 자세한 사항은 원문보기를 클릭해서 봐 주세요.</span>
+                            </p>
+                            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs text-gray-400 font-bold mb-1">ORIGINAL SOURCE</p>
                                     <p className="text-sm font-medium text-gray-600 truncate">{news.link}</p>
@@ -242,6 +247,7 @@ export default function NewsDetailPage() {
                                     <i className="fas fa-external-link-alt text-[10px]"></i>
                                 </a>
                             </div>
+                          </>
                         )}
                     </div>
 
