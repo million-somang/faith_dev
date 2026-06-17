@@ -16,6 +16,8 @@ import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import NewsPage from './pages/NewsPage';
+import NewsSourcesPage from './pages/NewsSourcesPage';
+import NewsBySourcePage from './pages/NewsBySourcePage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
@@ -334,6 +336,8 @@ function App() {
                     <Route path="/game/play/tetris" element={<GamePlayPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/news" element={<NewsPage />} />
+                    <Route path="/news/sources" element={<NewsSourcesPage />} />
+                    <Route path="/news/source/:source" element={<NewsBySourcePage />} />
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="*" element={
                         <div className="min-h-screen flex flex-col pt-20">

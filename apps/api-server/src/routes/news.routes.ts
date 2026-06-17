@@ -26,8 +26,16 @@ news.get('/api/news', async (c) => {
 
         if (category && category !== 'all') {
             // 다중 카테고리 지원: category 컬럼이 'stock,general' 형태일 수 있음
-            query += ` AND (',' || category || ',') LIKE $1`;
+            query += ` AND (',' || category || ',') LIKE $${params.length + 1}`;
             params.push(`%,${category},%`);
+        }
+
+        // 언론사별 필터: 제목 끝의 " - 언론사" 접미사로 매칭 (목록 화면 표기와 동일 기준)
+        const publisher = c.req.query('publisher');
+        if (publisher) {
+            const escaped = publisher.replace(/[\\%_]/g, (ch) => '\\' + ch);
+            query += ` AND title LIKE $${params.length + 1} ESCAPE '\\'`;
+            params.push(`% - ${escaped}`);
         }
 
         query += ` ORDER BY published_at DESC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -126,6 +134,42 @@ news.get('/api/news/search', async (c) => {
     } catch (error) {
         console.error('Search news error:', error);
         return c.json({ success: false, message: 'Failed to search news' }, 500);
+    }
+});
+
+// GET /api/news/sources - 언론사 목록(제목 접미사 기준) + 기사 수
+// 제목의 마지막 " - 언론사" 접미사가 실제 언론사명(목록 카드 표기와 동일). source 컬럼은 최신
+// 데이터가 '구글 뉴스'로 채워져 신뢰할 수 없어 사용하지 않는다.
+let sourcesCache: { data: { publisher: string; count: number }[]; ts: number } | null = null;
+const SOURCES_CACHE_TTL = 10 * 60 * 1000; // 10분
+
+news.get('/api/news/sources', async (c) => {
+    try {
+        if (sourcesCache && Date.now() - sourcesCache.ts < SOURCES_CACHE_TTL) {
+            return c.json({ success: true, sources: sourcesCache.data });
+        }
+
+        const result = await pool.query('SELECT title FROM news WHERE (hidden IS NULL OR hidden = 0)');
+        const counts = new Map<string, number>();
+        for (const row of result.rows) {
+            const title = String(row.title || '');
+            const sepIdx = title.lastIndexOf(' - ');
+            // NewsCard와 동일 규칙: 접미사 길이 25자 이하만 언론사로 인정
+            if (sepIdx > 0 && title.length - sepIdx - 3 <= 25) {
+                const publisher = title.slice(sepIdx + 3).trim();
+                if (publisher) counts.set(publisher, (counts.get(publisher) || 0) + 1);
+            }
+        }
+
+        const sources = Array.from(counts.entries())
+            .map(([publisher, count]) => ({ publisher, count }))
+            .sort((a, b) => b.count - a.count);
+
+        sourcesCache = { data: sources, ts: Date.now() };
+        return c.json({ success: true, sources });
+    } catch (error) {
+        console.error('Fetch news sources error:', error);
+        return c.json({ success: false, message: 'Failed to fetch news sources' }, 500);
     }
 });
 

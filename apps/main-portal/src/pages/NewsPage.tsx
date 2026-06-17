@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Header, Footer, Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -274,6 +275,14 @@ export default function NewsPage() {
                     </form>
 
                     <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                        {/* 언론사별 보기: 카테고리 칩 맨 앞. 클릭 시 언론사 목록 페이지로 이동 */}
+                        <Link
+                            to="/news/sources"
+                            className="whitespace-nowrap flex-shrink-0 px-5 py-2 rounded-full font-bold text-sm transition-all bg-white text-brand-green border border-brand-green hover:bg-brand-green hover:text-white flex items-center gap-1.5"
+                        >
+                            <i className="fas fa-building-columns"></i>
+                            언론사별
+                        </Link>
                         {categories.map((cat) => (
                             <button
                                 key={cat.id}
