@@ -12,6 +12,7 @@ import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
 import GamePage from './pages/GamePage';
 import TetrisInfoPage from './pages/TetrisInfoPage';
+import GameInfoPage from './pages/GameInfoPage';
 import GamePlayPage from './pages/GamePlayPage';
 import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
@@ -336,6 +337,7 @@ function App() {
                     <Route path="/game" element={<GamePage />} />
                     <Route path="/game/tetris" element={<TetrisInfoPage />} />
                     <Route path="/game/play/tetris" element={<GamePlayPage />} />
+                    <Route path="/game/:gameId" element={<GameInfoPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/news/sources" element={<NewsSourcesPage />} />

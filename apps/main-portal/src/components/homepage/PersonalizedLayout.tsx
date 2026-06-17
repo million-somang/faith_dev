@@ -72,9 +72,9 @@ interface PersonalizedLayoutProps {
 
 const GAME_LINKS: Record<string, { label: string; icon: string; href: string; color: string }> = {
     tetris: { label: '테트리스', icon: 'fa-th', href: '/game/tetris', color: 'from-blue-500 to-blue-700' },
-    sudoku: { label: '스도쿠', icon: 'fa-table', href: '/app/sudoku', color: 'from-green-500 to-green-700' },
-    '2048': { label: '2048', icon: 'fa-th-large', href: '/app/2048', color: 'from-orange-500 to-orange-700' },
-    minesweeper: { label: '지뢰찾기', icon: 'fa-bomb', href: '/app/minesweeper', color: 'from-red-500 to-red-700' },
+    sudoku: { label: '스도쿠', icon: 'fa-table', href: '/game/sudoku', color: 'from-green-500 to-green-700' },
+    '2048': { label: '2048', icon: 'fa-th-large', href: '/game/2048', color: 'from-orange-500 to-orange-700' },
+    minesweeper: { label: '지뢰찾기', icon: 'fa-bomb', href: '/game/minesweeper', color: 'from-red-500 to-red-700' },
 };
 
 /**

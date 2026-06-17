@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
-import { useAppLauncher } from '../hooks/useAppLauncher';
 import { PageSEO } from '../components/PageSEO';
 
 interface ScoreEntry {
@@ -37,7 +36,6 @@ const GAME_LABEL_MAP: Record<string, string> = {
 
 export default function GamePage() {
     const { user, logout } = useAuth();
-    const { launchApp } = useAppLauncher();
     const navigate = useNavigate();
 
     const [activeTab, setActiveTab] = useState('all');
@@ -130,21 +128,21 @@ export default function GamePage() {
                                     <p className="text-slate-500 text-xs leading-relaxed">블록을 쌓아 줄을 제거하고 높은 점수를 달성하세요!</p>
                                 </button>
 
-                                <button onClick={() => launchApp('/app/sudoku/', 'app-sudoku')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-violet-50 hover:border-violet-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                <button onClick={() => navigate('/game/sudoku')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-violet-50 hover:border-violet-200 hover:shadow-md transition-all group relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
                                     <i className="fas fa-table-cells text-3xl mb-3 text-violet-500 group-hover:rotate-12 transition-transform"></i>
                                     <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-violet-700 transition-colors">스도쿠</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">빈 칸에 숫자를 채워 9×9 퍼즐을 완성하세요!</p>
                                 </button>
 
-                                <button onClick={() => launchApp('/app/2048/', 'app-2048')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-cyan-50 hover:border-cyan-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                <button onClick={() => navigate('/game/2048')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-cyan-50 hover:border-cyan-200 hover:shadow-md transition-all group relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
                                     <i className="fas fa-grip text-3xl mb-3 text-cyan-500 group-hover:rotate-12 transition-transform"></i>
                                     <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-cyan-700 transition-colors">2048 챌린지</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">같은 숫자를 합쳐 2048 타일을 만들어보세요!</p>
                                 </button>
 
-                                <button onClick={() => launchApp('/app/minesweeper/', 'app-minesweeper')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-red-50 hover:border-red-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                <button onClick={() => navigate('/game/minesweeper')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-red-50 hover:border-red-200 hover:shadow-md transition-all group relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-red-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
                                     <i className="fas fa-bomb text-3xl mb-3 text-red-500 group-hover:rotate-12 transition-transform"></i>
                                     <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
