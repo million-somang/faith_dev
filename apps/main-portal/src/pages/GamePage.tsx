@@ -123,7 +123,7 @@ export default function GamePage() {
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                             <h2 className="text-[20px] font-bold text-slate-800 mb-5 border-b border-slate-100 pb-3">심플게임 플레이</h2>
                             <div className="flex flex-col gap-4">
-                                <button onClick={() => navigate('/game/play/tetris')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-emerald-50 hover:border-emerald-200 hover:shadow-md transition-all group relative overflow-hidden">
+                                <button onClick={() => navigate('/game/tetris')} className="bg-slate-50 border text-left border-slate-200 rounded-xl p-5 hover:bg-emerald-50 hover:border-emerald-200 hover:shadow-md transition-all group relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full -translate-y-1/2 translate-x-1/3 group-hover:scale-150 transition-transform duration-500"></div>
                                     <i className="fas fa-th text-3xl mb-3 text-emerald-500 group-hover:rotate-12 transition-transform"></i>
                                     <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-emerald-700 transition-colors">클래식 테트리스</h3>
