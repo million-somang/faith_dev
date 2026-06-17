@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev", "-w", "@faithportal/main-portal"],
       "port": 5000,
       "autoPort": false
+    },
+    {
+      "name": "finance",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "@faithportal/finance"],
+      "port": 5010,
+      "autoPort": false
     }
   ]
 }
