@@ -22,7 +22,10 @@
     }
 
     .stock-number {
-        font-family: 'Roboto Mono', 'Courier New', monospace;
+        /* 본문(Pretendard)과 폰트 통일 — 숫자 정렬은 tabular-nums(고정폭 숫자)로 유지 */
+        font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
     }
 
     .content-card {
