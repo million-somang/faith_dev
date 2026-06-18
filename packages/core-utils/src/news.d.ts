@@ -4,6 +4,7 @@ export interface RSSItem {
     pubDate: string;
     summary: string;
     source?: string;
+    thumbnail?: string | null;
 }
 export declare function parseRSSXML(xmlText: string): RSSItem[];
 export declare const SIGNAL_WORDS: string[];
