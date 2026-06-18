@@ -166,6 +166,49 @@ financeRoutes.get('/api/finance/macro', async (c) => {
     return c.json(macro);
 });
 
+// 주요 통화 환율 (원화 기준)
+let exchangeCache: { data: any; timestamp: number } | null = null;
+
+financeRoutes.get('/api/finance/exchange', async (c) => {
+    const now = Date.now();
+    if (exchangeCache && (now - exchangeCache.timestamp) < CACHE_TTL) {
+        return c.json(exchangeCache.data);
+    }
+
+    // KRW=X = USD/KRW, 나머지는 <통화>KRW=X. JPY는 관례상 100엔 기준 표시(unit=100).
+    const symbols = ['KRW=X', 'EURKRW=X', 'JPYKRW=X', 'CNYKRW=X', 'GBPKRW=X', 'AUDKRW=X'];
+    const config: Record<string, { code: string; name: string; flag: string; unit: number }> = {
+        'KRW=X': { code: 'USD', name: '미국 달러', flag: '🇺🇸', unit: 1 },
+        'EURKRW=X': { code: 'EUR', name: '유로', flag: '🇪🇺', unit: 1 },
+        'JPYKRW=X': { code: 'JPY', name: '일본 엔(100)', flag: '🇯🇵', unit: 100 },
+        'CNYKRW=X': { code: 'CNY', name: '중국 위안', flag: '🇨🇳', unit: 1 },
+        'GBPKRW=X': { code: 'GBP', name: '영국 파운드', flag: '🇬🇧', unit: 1 },
+        'AUDKRW=X': { code: 'AUD', name: '호주 달러', flag: '🇦🇺', unit: 1 },
+    };
+
+    const quotes = await fetchYahooQuotes(symbols);
+    const rates = quotes.map(q => {
+        const cfg = config[q.symbol] || { code: q.symbol, name: q.name, flag: '🏳️', unit: 1 };
+        const unit = cfg.unit;
+        const change = q.price - q.previousClose;
+        const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+        return {
+            code: cfg.code,
+            name: cfg.name,
+            flag: cfg.flag,
+            unit,
+            price: Math.round(q.price * unit * 100) / 100,  // unit당 원화 가격
+            change: Math.round(change * unit * 100) / 100,
+            rate: Math.round(rate * 100) / 100,
+            status: change >= 0 ? 'up' : 'down',
+            updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
+        };
+    });
+
+    if (rates.length > 0) exchangeCache = { data: rates, timestamp: now };
+    return c.json(rates);
+});
+
 // Yahoo 통화 코드 → 표시용 기호
 function currencyFromCode(code?: string): string {
     switch (code) {
