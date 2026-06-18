@@ -166,8 +166,21 @@ financeRoutes.get('/api/finance/macro', async (c) => {
     return c.json(macro);
 });
 
+// Yahoo 통화 코드 → 표시용 기호
+function currencyFromCode(code?: string): string {
+    switch (code) {
+        case 'KRW': return '₩';
+        case 'USD': return '$';
+        case 'JPY': return '¥';
+        case 'EUR': return '€';
+        case 'GBP': return '£';
+        default: return '';
+    }
+}
+
 // 국내 대표 기업 + 미국 빅테크 (미니 차트 포함)
-async function fetchStockCards(symbols: string[], nameMap: Record<string, string>, tickerMap: Record<string, string>, currencySymbol: string) {
+// currencySymbol 미지정 시 Yahoo meta.currency로 종목별 자동 판별(관심종목 등 혼합 목록용)
+async function fetchStockCards(symbols: string[], nameMap: Record<string, string>, tickerMap: Record<string, string>, currencySymbol?: string) {
     const results: any[] = [];
     
     for (const symbol of symbols) {
@@ -205,7 +218,7 @@ async function fetchStockCards(symbols: string[], nameMap: Record<string, string
                 change: Math.round(change * 100) / 100,
                 rate: Math.round(rate * 100) / 100,
                 status: change >= 0 ? 'up' : 'down',
-                currency: currencySymbol,
+                currency: currencySymbol ?? currencyFromCode(meta.currency),
                 sparkline,
             });
         } catch (e) {
@@ -257,6 +270,22 @@ financeRoutes.get('/api/finance/us-stocks', async (c) => {
     
     const stocks = await fetchStockCards(symbols, nameMap, symbols.reduce((a, s) => ({ ...a, [s]: s }), {} as Record<string, string>), '$');
     if (stocks.length > 0) usStocksCache = { data: stocks, timestamp: now };
+    return c.json(stocks);
+});
+
+// 임의 다종목 카드 일괄 조회 (관심종목 등) — symbols=AAPL,005930,TSLA
+financeRoutes.get('/api/finance/stocks', async (c) => {
+    const raw = c.req.query('symbols') || '';
+    const tickers = raw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 30);
+    if (tickers.length === 0) return c.json([]);
+
+    // 숫자 코드는 한국 종목으로 보고 .KS 접미사 부여
+    const symbols = tickers.map(t => /^\d+$/.test(t) ? `${t}.KS` : t.toUpperCase());
+    const tickerMap: Record<string, string> = {};
+    symbols.forEach((s, i) => { tickerMap[s] = tickers[i].toUpperCase(); });
+
+    // currency 미지정 → 종목별 자동 판별, 이름은 Yahoo shortName 사용
+    const stocks = await fetchStockCards(symbols, {}, tickerMap);
     return c.json(stocks);
 });
 

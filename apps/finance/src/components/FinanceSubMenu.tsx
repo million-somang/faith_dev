@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 
 const menuItems = [
     { path: '/', label: '주식', icon: 'fas fa-chart-line' },
+    { path: '/stocks', label: '종목', icon: 'fas fa-magnifying-glass-chart' },
     { path: '/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
     { path: '/banking', label: '은행', icon: 'fas fa-university' },
 ];
