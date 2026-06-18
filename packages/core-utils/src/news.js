@@ -6,7 +6,9 @@ export function parseRSSXML(xmlText) {
         const itemXml = match[1];
         const title = extractTag(itemXml, 'title');
         const link = extractTag(itemXml, 'link');
-        const pubDate = extractTag(itemXml, 'pubDate');
+        // pubDate 없으면 dc:date(Dublin Core) 폴백 — 경향 등 일부 언론사 RSS가 dc:date 사용.
+        // 누락 시 수집시각(now)으로 저장돼 해당 매체가 정렬 상단을 독식하는 문제 방지.
+        const pubDate = extractTag(itemXml, 'pubDate') || extractTag(itemXml, 'dc:date');
         const description = extractTag(itemXml, 'description');
         const source = extractTag(itemXml, 'source');
         if (title && link) {
@@ -15,11 +17,34 @@ export function parseRSSXML(xmlText) {
                 link: cleanText(link),
                 pubDate: pubDate || new Date().toISOString(),
                 summary: cleanText(description || ''),
-                source: cleanText(source || '구글뉴스')
+                source: cleanText(source || '구글뉴스'),
+                thumbnail: extractThumbnail(itemXml)
             });
         }
     }
     return items;
+}
+/**
+ * RSS item에서 썸네일 이미지 URL 추출
+ * 지원: <enclosure url>, <media:content url>, <media:thumbnail url>, description 내 <img src>
+ */
+function extractThumbnail(itemXml) {
+    // 1. enclosure (이미지 타입)
+    const enclosure = itemXml.match(/<enclosure[^>]+url=["']([^"']+)["'][^>]*>/i);
+    if (enclosure && (!/type=/.test(enclosure[0]) || /type=["']image/i.test(enclosure[0]))) {
+        return enclosure[1];
+    }
+    // 2. media:content / media:thumbnail
+    const media = itemXml.match(/<media:(?:content|thumbnail)[^>]+url=["']([^"']+)["']/i);
+    if (media)
+        return media[1];
+    // 3. description 안의 <img> (CDATA 또는 escaped 형태 모두)
+    const img = itemXml.match(/<img[^>]+src=["']([^"']+)["']/i)
+        || itemXml.match(/&lt;img[^&]+src=&quot;([^&]+?)&quot;/i)
+        || itemXml.match(/&lt;img[^&]+src=["']([^"']+?)["']/i);
+    if (img)
+        return img[1];
+    return null;
 }
 function extractTag(xml, tagName) {
     const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\/${tagName}>`, 'i');
@@ -35,6 +60,8 @@ function cleanText(text) {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'")
         .replace(/&nbsp;/g, ' ')
+        // 블록 경계(목록/문단 끝)는 공백 2칸으로 치환 → 매체명과 다음 제목이 붙는 것 방지
+        .replace(/<\/(li|p|div|tr|h[1-6])>/gi, '  ')
         .replace(/<[^>]+>/g, '')
         .trim();
 }
