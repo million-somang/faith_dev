@@ -5,6 +5,7 @@ const menuItems = [
     { path: '/stocks', label: '종목', icon: 'fas fa-magnifying-glass-chart' },
     { path: '/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
     { path: '/banking', label: '은행', icon: 'fas fa-university' },
+    { path: '/insurance', label: '보험', icon: 'fas fa-umbrella' },
 ];
 
 export default function FinanceSubMenu() {
@@ -14,20 +15,20 @@ export default function FinanceSubMenu() {
         <nav className="bg-white border-b border-gray-200 shadow-sm">
             <div className="max-w-6xl mx-auto px-3 sm:px-4">
                 {/* 모바일: 또렷한 알약 버튼 (활성=초록 배경, 화면 폭 균등 분할) */}
-                <div className="fin-menu-mobile gap-2 py-2.5 overflow-x-auto hide-scrollbar">
+                <div className="fin-menu-mobile gap-1.5 py-2.5 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                                className={`flex-1 flex flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-semibold whitespace-nowrap transition-all ${
                                     isActive
                                         ? 'bg-green-600 text-white shadow-sm'
                                         : 'bg-gray-100 text-gray-600'
                                 }`}
                             >
-                                <i className={item.icon}></i>
+                                <i className={`${item.icon} text-base`}></i>
                                 {item.label}
                             </Link>
                         );
