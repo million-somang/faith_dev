@@ -164,15 +164,15 @@ export default function ExchangePage() {
                                         value={amount}
                                         onChange={(e) => setAmount(e.target.value)}
                                         inputMode="decimal"
-                                        className="stock-number flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg"
+                                        className="stock-number flex-1 min-w-0 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-right text-lg"
                                     />
                                     <select
                                         value={from}
                                         onChange={(e) => setFrom(e.target.value)}
-                                        className="px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 bg-white"
+                                        className="shrink-0 w-24 px-2 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 bg-white"
                                     >
                                         {currencyOptions.map((c) => (
-                                            <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                                            <option key={c.code} value={c.code}>{c.code}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -192,7 +192,7 @@ export default function ExchangePage() {
                             <div className="flex-1">
                                 <label className="block text-sm text-gray-500 mb-1">변환 결과</label>
                                 <div className="flex gap-2">
-                                    <div className="stock-number flex-1 px-4 py-3 border border-gray-200 bg-gray-50 rounded-lg text-right text-lg font-bold text-gray-900 overflow-x-auto whitespace-nowrap">
+                                    <div className="stock-number flex-1 min-w-0 px-4 py-3 border border-gray-200 bg-gray-50 rounded-lg text-right text-lg font-bold text-gray-900 overflow-x-auto whitespace-nowrap">
                                         {converted === null
                                             ? '-'
                                             : converted.toLocaleString('ko-KR', { maximumFractionDigits: 2 })}
@@ -200,10 +200,10 @@ export default function ExchangePage() {
                                     <select
                                         value={to}
                                         onChange={(e) => setTo(e.target.value)}
-                                        className="px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 bg-white"
+                                        className="shrink-0 w-24 px-2 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 bg-white"
                                     >
                                         {currencyOptions.map((c) => (
-                                            <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                                            <option key={c.code} value={c.code}>{c.code}</option>
                                         ))}
                                     </select>
                                 </div>
