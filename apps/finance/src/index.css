@@ -47,6 +47,19 @@
     }
 }
 
+/* ========================================
+   금융 서브메뉴 — 모바일 알약 / 데스크톱 밑줄 탭 전환
+   Tailwind sm: 유틸리티가 @faithportal/ui 별도 스타일시트와 캐스케이드 충돌해
+   적용이 누락되므로, .mobile-tab-bar처럼 커스텀 클래스 + 미디어쿼리로 전환한다.
+   ======================================== */
+.fin-menu-mobile { display: flex; }
+.fin-menu-desktop { display: none; }
+
+@media (min-width: 768px) {
+    .fin-menu-mobile { display: none; }
+    .fin-menu-desktop { display: flex; }
+}
+
 /* Hide scrollbar but keep functionality */
 .hide-scrollbar {
     -ms-overflow-style: none;

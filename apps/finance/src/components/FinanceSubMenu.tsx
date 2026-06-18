@@ -12,8 +12,30 @@ export default function FinanceSubMenu() {
 
     return (
         <nav className="bg-white border-b border-gray-200 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4">
-                <div className="flex space-x-8 overflow-x-auto hide-scrollbar">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4">
+                {/* 모바일: 또렷한 알약 버튼 (활성=초록 배경, 화면 폭 균등 분할) */}
+                <div className="fin-menu-mobile gap-2 py-2.5 overflow-x-auto hide-scrollbar">
+                    {menuItems.map((item) => {
+                        const isActive = location.pathname === item.path;
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                className={`flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-sm font-semibold whitespace-nowrap transition-all ${
+                                    isActive
+                                        ? 'bg-green-600 text-white shadow-sm'
+                                        : 'bg-gray-100 text-gray-600'
+                                }`}
+                            >
+                                <i className={item.icon}></i>
+                                {item.label}
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                {/* 데스크톱: 밑줄 탭 (기존 디자인 유지) */}
+                <div className="fin-menu-desktop space-x-8 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
                         return (
