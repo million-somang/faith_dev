@@ -127,3 +127,61 @@ gameRoutes.get('/api/games/:gameId/highscore/:userId', async (c) => {
         return c.json({ success: false, message: '서버 오류' }, 500);
     }
 });
+
+// ==================== 마이페이지: 내 게임 통계 / 최근 기록 ====================
+// 실제 점수는 game_scores에 저장되므로(리더보드와 동일 테이블) 여기서도 game_scores를 읽는다.
+
+// 내 게임별 최고 기록 통계
+gameRoutes.get('/api/user/games/stats', requireAuth, async (c) => {
+    const DB = getDB(c);
+    const user = c.get('user');
+    if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+    try {
+        const result = await DB.prepare(`
+            SELECT game_id as game_type,
+                   MAX(score) as high_score,
+                   COUNT(*) as play_count,
+                   MAX(created_at) as last_played
+            FROM game_scores
+            WHERE user_id = ?
+            GROUP BY game_id
+            ORDER BY high_score DESC
+        `).bind(user.id).all();
+
+        // 마이페이지는 stats를 게임키로 순회하므로 객체 형태로 변환
+        const rows = (result.results || []) as Array<{ game_type: string; high_score: number; play_count: number; last_played: string }>;
+        const stats: Record<string, (typeof rows)[number]> = {};
+        for (const row of rows) stats[row.game_type] = row;
+
+        return c.json({ success: true, stats });
+    } catch (error) {
+        console.error('[Game] My stats error:', error);
+        return c.json({ success: false, message: '서버 오류' }, 500);
+    }
+});
+
+// 내 최근 게임 기록
+gameRoutes.get('/api/user/games/history', requireAuth, async (c) => {
+    const DB = getDB(c);
+    const user = c.get('user');
+    if (!user) return c.json({ success: false, message: 'Unauthorized' }, 401);
+
+    const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '10', 10) || 10, 1), 50);
+
+    try {
+        const result = await DB.prepare(`
+            SELECT game_id as game_type, score, created_at as played_at
+            FROM game_scores
+            WHERE user_id = ?
+            ORDER BY created_at DESC
+            LIMIT ?
+        `).bind(user.id, limit).all();
+
+        // 마이페이지는 history.history 형태로 접근
+        return c.json({ success: true, history: { history: result.results || [] } });
+    } catch (error) {
+        console.error('[Game] My history error:', error);
+        return c.json({ success: false, message: '서버 오류' }, 500);
+    }
+});
