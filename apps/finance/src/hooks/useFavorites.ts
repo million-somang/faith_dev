@@ -30,17 +30,24 @@ function readFavorites(): string[] {
 
 // 서버 관심종목에 추가 (로그인 안 됐으면 401 → 조용히 무시)
 async function syncAddToServer(ticker: string, meta?: StockMeta): Promise<void> {
-    const stock_symbol = normalize(ticker);
-    if (!stock_symbol) return;
+    const symbol = normalize(ticker);
+    if (!symbol) return;
+    const name = meta?.name?.trim() || symbol;
+    const market = meta?.market || inferMarket(symbol);
     try {
         await fetch(`${MAIN_PORTAL_URL}/api/user/watchlist`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
+            // 백엔드마다 기대하는 필드명이 달라(둘 다 전송): api-server는 symbol/name/market,
+            // 루트 src 백엔드는 stock_symbol/stock_name/market_type 을 읽는다.
             body: JSON.stringify({
-                stock_symbol,
-                stock_name: meta?.name?.trim() || stock_symbol,
-                market_type: meta?.market || inferMarket(stock_symbol),
+                symbol,
+                name,
+                market,
+                stock_symbol: symbol,
+                stock_name: name,
+                market_type: market,
             }),
         });
     } catch {
