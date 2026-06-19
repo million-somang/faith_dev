@@ -222,6 +222,10 @@ export default function NewsDetailPage() {
                                     </p>
                                 ))}
                             </div>
+                        ) : (news?.summary || news?.description) ? (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                                <p className="text-base leading-relaxed">{cleanEntities(news.summary || news.description)}</p>
+                            </div>
                         ) : (
                             <p className="text-lg">이 기사의 상세 정보는 외부 링크를 통해 확인해 주세요.</p>
                         )}
