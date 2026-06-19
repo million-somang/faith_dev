@@ -15,7 +15,7 @@ export interface StockCard {
 interface Props {
     stock: StockCard;
     isFavorite: boolean;
-    onToggleFavorite: (ticker: string) => void;
+    onToggleFavorite: (ticker: string, meta?: { name?: string }) => void;
 }
 
 /**
@@ -27,7 +27,7 @@ export default function StockListCard({ stock, isFavorite, onToggleFavorite }: P
         <div className="relative bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 transition-all group">
             <button
                 type="button"
-                onClick={(e) => { e.preventDefault(); onToggleFavorite(stock.ticker); }}
+                onClick={(e) => { e.preventDefault(); onToggleFavorite(stock.ticker, { name: stock.name }); }}
                 aria-label={isFavorite ? '관심종목 해제' : '관심종목 추가'}
                 className={`absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
                     isFavorite
