@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Footer, Card } from '@faithportal/ui';
 import FinanceSubMenu from '../components/FinanceSubMenu';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 
@@ -65,6 +66,7 @@ function calculate(amount: number, annualRate: number, months: number, type: Pro
 const won = (n: number) => '₩' + Math.round(n).toLocaleString('ko-KR');
 
 export default function BankingPage() {
+    const { user, logout } = useAuth();
     const [type, setType] = useState<ProductType>('예금');
     const [interest, setInterest] = useState<InterestType>('단리');
     const [taxFree, setTaxFree] = useState(false);
@@ -100,7 +102,7 @@ export default function BankingPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             {/* 브레드크럼 */}

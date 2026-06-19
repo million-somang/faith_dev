@@ -5,12 +5,14 @@ import FinanceSubMenu from '../components/FinanceSubMenu';
 import StockListCard from '../components/StockListCard';
 import type { StockCard } from '../components/StockListCard';
 import { useFavorites } from '../hooks/useFavorites';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
 
 export default function StocksPage() {
     const { favorites, isFavorite, add, remove, toggle } = useFavorites();
+    const { user, logout } = useAuth();
     const [favoriteCards, setFavoriteCards] = useState<StockCard[]>([]);
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
     const [usStocks, setUsStocks] = useState<StockCard[]>([]);
@@ -58,7 +60,7 @@ export default function StocksPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             {/* 브레드크럼 */}

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Header, Footer, Card } from '@faithportal/ui';
 import FinanceSubMenu from '../components/FinanceSubMenu';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
@@ -31,6 +32,7 @@ const MOCK_EXCHANGE: ExchangeRate[] = [
 const KRW = { code: 'KRW', name: '대한민국 원', flag: '🇰🇷' };
 
 export default function ExchangePage() {
+    const { user, logout } = useAuth();
     const [rates, setRates] = useState<ExchangeRate[]>(MOCK_EXCHANGE);
     const [loading, setLoading] = useState(true);
 
@@ -78,7 +80,7 @@ export default function ExchangePage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             {/* 브레드크럼 */}

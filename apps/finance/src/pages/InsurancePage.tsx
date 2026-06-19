@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Header, Footer, Card } from '@faithportal/ui';
 import FinanceSubMenu from '../components/FinanceSubMenu';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 
@@ -22,9 +23,10 @@ const CATEGORIES: InsuranceCategory[] = [
 ];
 
 export default function InsurancePage() {
+    const { user, logout } = useAuth();
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             {/* 브레드크럼 */}

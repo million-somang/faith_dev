@@ -6,6 +6,7 @@ import ProfitCalculator from '../components/ProfitCalculator';
 import SparklineChart from '../components/SparklineChart';
 import { MOCK_INDICES, MOCK_FINANCE_NEWS } from '../data/mockData';
 import type { MarketIndex } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
@@ -38,6 +39,7 @@ interface IndexData extends MarketIndex {
 }
 
 export default function FinancePage() {
+    const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
     const [indices, setIndices] = useState<IndexData[]>(MOCK_INDICES);
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
@@ -114,7 +116,7 @@ export default function FinancePage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">

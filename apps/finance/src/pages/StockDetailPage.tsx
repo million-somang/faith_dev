@@ -16,6 +16,7 @@ import FinanceSubMenu from '../components/FinanceSubMenu';
 import ProfitCalculator from '../components/ProfitCalculator';
 import { MOCK_POPULAR_STOCKS, generateMockChartData } from '../data/mockData';
 import type { ChartDataPoint } from '../data/mockData';
+import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
@@ -39,6 +40,7 @@ interface StockQuote {
 
 export default function StockDetailPage() {
     const { ticker } = useParams<{ ticker: string }>();
+    const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState<Tab>('summary');
     const [showCalculator, setShowCalculator] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -150,7 +152,7 @@ export default function StockDetailPage() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <Header baseUrl={MAIN_PORTAL_URL} />
+            <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
             {/* 브레드크럼 */}
