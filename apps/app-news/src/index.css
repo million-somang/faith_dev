@@ -17,7 +17,7 @@
 
 @layer components {
     .header-gradient {
-        background: linear-gradient(135deg, #03c75a 0%, #059b44 50%, #03c75a 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #2563eb 100%);
         background-size: 200% 100%;
         animation: headerShift 10s ease-in-out infinite;
     }
@@ -33,17 +33,17 @@
     }
 
     .search-shadow {
-        @apply bg-white border-2 border-[#03c75a] rounded-[40px] transition-all duration-200;
+        @apply bg-white border-2 border-[#2563eb] rounded-[40px] transition-all duration-200;
     }
 
     .search-shadow:hover {
-        @apply border-[#02b350];
-        box-shadow: 0 2px 8px rgba(3, 199, 90, 0.15);
+        @apply border-[#1d4ed8];
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15);
     }
 
     .search-shadow:focus-within {
-        @apply border-[#02b350];
-        box-shadow: 0 2px 12px rgba(3, 199, 90, 0.2);
+        @apply border-[#1d4ed8];
+        box-shadow: 0 2px 12px rgba(37, 99, 235, 0.2);
     }
 
     .badge {
@@ -51,7 +51,7 @@
     }
 
     .rank-number {
-        @apply font-bold text-lg text-[#03c75a] transition-all;
+        @apply font-bold text-lg text-[#2563eb] transition-all;
     }
 }
 

@@ -17,7 +17,7 @@
 
 @layer components {
     .header-gradient {
-        background: linear-gradient(135deg, #03c75a 0%, #059b44 50%, #03c75a 100%);
+        background: linear-gradient(135deg, #2563eb 0%, #1e40af 50%, #2563eb 100%);
         background-size: 200% 100%;
     }
 
@@ -38,12 +38,12 @@
     }
 
     .tab-button {
-        @apply px-4 py-4 text-gray-600 hover:text-green-600 transition-colors font-medium;
+        @apply px-4 py-4 text-gray-600 hover:text-blue-600 transition-colors font-medium;
     }
 
     .tab-button.active {
-        @apply text-green-600 font-semibold;
-        border-bottom: 2px solid #10b981;
+        @apply text-blue-600 font-semibold;
+        border-bottom: 2px solid #2563eb;
     }
 }
 
