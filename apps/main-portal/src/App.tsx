@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
@@ -23,6 +23,7 @@ import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import NewsPage from './pages/NewsPage';
+import SearchPage from './pages/SearchPage';
 import NewsSourcesPage from './pages/NewsSourcesPage';
 import NewsBySourcePage from './pages/NewsBySourcePage';
 import NewsDetailPage from './pages/NewsDetailPage';
@@ -38,9 +39,17 @@ import { BannerSlot } from './components/BannerSlot';
 function HomePage() {
     console.log('HomePage rendering...');
     const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState('');
     const [news, setNews] = useState<{ id: number; news_id?: number; title: string; summary?: string; description?: string; category?: string; published_at?: string; created_at?: string; tags?: string; relatedStocks?: { name: string }[]; vote_up?: number; vote_down?: number }[]>([]);
     const [health, setHealth] = useState<{ status: string } | null>(null);
     const [showWizard, setShowWizard] = useState(false);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        const q = searchQuery.trim();
+        if (q) navigate(`/search?q=${encodeURIComponent(q)}`);
+    };
     const { config, isLoading: isPrefLoading, isSaving, updateConfig, saveConfig } = useUserPreferenceContext();
 
     useEffect(() => {
@@ -106,20 +115,23 @@ function HomePage() {
                                 </p>
 
                                 {/* 검색창 */}
-                                <div className="bg-white rounded-full shadow-2xl flex items-center px-6 py-3 max-w-2xl mx-auto">
+                                <form onSubmit={handleSearch} className="bg-white rounded-full shadow-2xl flex items-center px-6 py-3 max-w-2xl mx-auto">
                                     <i className="fas fa-search text-blue-500 mr-3"></i>
                                     <input
                                         type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="무엇을 찾으시나요?"
                                         className="flex-1 bg-transparent border-none outline-none text-base text-gray-900 placeholder-gray-400 font-medium"
                                     />
                                     <button
+                                        type="submit"
                                         className="flex items-center justify-center px-5 py-2 rounded-full bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all ml-3"
                                         aria-label="검색"
                                     >
                                         검색
                                     </button>
-                                </div>
+                                </form>
 
                                 {/* 핵심 서비스 배지 */}
                                 <div className="flex flex-wrap justify-center gap-2 mt-4">
@@ -332,6 +344,7 @@ function App() {
                 <Routes>
                     <Route path="/admin/*" element={<AdminRedirect />} />
                     <Route path="/" element={<HomePage />} />
+                    <Route path="/search" element={<SearchPage />} />
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/lifestyle" element={<UtilityPage />} />
