@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
-import { Card, NewsCard, Header, Footer, QuickMenu } from '@faithportal/ui';
+import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from './context/AuthContext';
 import { PageSEO } from './components/PageSEO';
@@ -137,9 +137,6 @@ function HomePage() {
                                 </div>
                             </div>
                         </section>
-
-                        {/* Quick Menu */}
-                        <QuickMenu />
 
                         {/* 2-Column Layout */}
                         <div className="flex flex-col lg:flex-row gap-8">
