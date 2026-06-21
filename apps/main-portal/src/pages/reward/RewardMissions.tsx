@@ -4,10 +4,23 @@ import { MISSIONS } from './data';
 export default function RewardMissions() {
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-black text-gray-900">오늘의 미션</h1>
-                <p className="text-sm text-gray-500 mt-1">미션을 완료하고 포인트를 받으세요. 매일 0시에 초기화됩니다.</p>
-            </div>
+            {/* 미션 테마 히어로 배너 */}
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 text-white px-6 sm:px-10 py-8 shadow-xl">
+                <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full bg-white/10 pointer-events-none"></div>
+                <div className="absolute -bottom-20 -left-8 w-64 h-64 rounded-full bg-violet-300/20 pointer-events-none"></div>
+                <i className="fas fa-bullseye absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
+                <div className="relative">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
+                        <i className="fas fa-bolt"></i> 오늘의 미션
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+                        미션 깨고 오늘 최대 <span className="text-yellow-300">100P</span> 받아가세요
+                    </h1>
+                    <p className="text-indigo-100 text-sm font-medium">
+                        오늘 <b>1/3</b> 완료 · 모두 클리어 시 <b>+10P</b> 추가 보너스 · 매일 0시 초기화
+                    </p>
+                </div>
+            </section>
 
             <div className="space-y-3">
                 {MISSIONS.map((m) => {
