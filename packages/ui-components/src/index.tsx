@@ -165,7 +165,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <a href={`${baseUrl}/news`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">뉴스</a>
                         <a href={`${baseUrl}/lifestyle`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">유틸리티</a>
                         <a href={`${baseUrl}/finance`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">금융</a>
-                        <a href={`${baseUrl}/reward`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors inline-flex items-center gap-1">리워드<i className="fas fa-up-right-from-square text-[9px] opacity-60"></i></a>
+                        <a href={`${baseUrl}/reward`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">리워드</a>
                         <a href={`${baseUrl}/game`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">게임</a>
                     </nav>
                 </div>
