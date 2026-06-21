@@ -4,10 +4,23 @@ import { ATTENDANCE } from './data';
 export default function RewardAttendance() {
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-black text-gray-900">출석체크</h1>
-                <p className="text-sm text-gray-500 mt-1">매일 출석하고 포인트를 받으세요. 연속 출석 시 보너스!</p>
-            </div>
+            {/* 돈/포인트 테마 히어로 배너 */}
+            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 via-orange-500 to-amber-600 text-white px-6 sm:px-10 py-8 shadow-xl">
+                <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full bg-white/10 pointer-events-none"></div>
+                <div className="absolute -bottom-20 -left-8 w-64 h-64 rounded-full bg-amber-300/20 pointer-events-none"></div>
+                <i className="fas fa-coins absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
+                <div className="relative">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
+                        <i className="fas fa-won-sign"></i> 출석 리워드
+                    </span>
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
+                        출석만 해도 현금처럼 쓰는 포인트가 쌓여요
+                    </h1>
+                    <p className="text-amber-50 text-sm font-medium">
+                        이번 달 <b>180P</b> 적립 중 · 7일 개근 시 <b>+50P</b> 보너스 · <span className="font-bold">1P = 1원</span> 상당
+                    </p>
+                </div>
+            </section>
 
             {/* 연속 출석 요약 */}
             <div className="grid grid-cols-3 gap-3">
