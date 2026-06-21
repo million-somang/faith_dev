@@ -10,7 +10,11 @@ import { PageSEO } from './components/PageSEO';
 
 import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
-import RewardPage from './pages/RewardPage';
+import RewardLayout from './pages/reward/RewardLayout';
+import RewardHome from './pages/reward/RewardHome';
+import RewardAttendance from './pages/reward/RewardAttendance';
+import RewardMissions from './pages/reward/RewardMissions';
+import RewardExchange from './pages/reward/RewardExchange';
 import GamePage from './pages/GamePage';
 import TetrisInfoPage from './pages/TetrisInfoPage';
 import GameInfoPage from './pages/GameInfoPage';
@@ -335,7 +339,12 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/lifestyle" element={<UtilityPage />} />
                     <Route path="/finance" element={<FinancePage />} />
-                    <Route path="/reward" element={<RewardPage />} />
+                    <Route path="/reward" element={<RewardLayout />}>
+                        <Route index element={<RewardHome />} />
+                        <Route path="attendance" element={<RewardAttendance />} />
+                        <Route path="missions" element={<RewardMissions />} />
+                        <Route path="exchange" element={<RewardExchange />} />
+                    </Route>
                     <Route path="/game" element={<GamePage />} />
                     <Route path="/game/tetris" element={<TetrisInfoPage />} />
                     <Route path="/game/play/tetris" element={<GamePlayPage />} />
