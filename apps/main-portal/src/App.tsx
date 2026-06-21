@@ -91,17 +91,17 @@ function HomePage() {
                     /* 기본 레이아웃 (미설정 또는 새 사용자) */
                     <>
                         {/* Hero Section */}
-                        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white px-6 sm:px-12 py-12 sm:py-16 mb-12 shadow-xl">
+                        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white px-6 sm:px-12 py-6 sm:py-8 mb-12 shadow-xl">
                             {/* 장식용 원형 그래픽 */}
                             <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10 pointer-events-none"></div>
                             <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-indigo-400/20 pointer-events-none"></div>
                             <div className="absolute top-10 right-1/4 w-20 h-20 rounded-full bg-white/5 pointer-events-none"></div>
 
                             <div className="relative max-w-3xl mx-auto text-center">
-                                <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-3">
+                                <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">
                                     세상의 모든 정보를 한곳에서
                                 </h1>
-                                <p className="text-blue-100 text-sm sm:text-base mb-8 font-medium">
+                                <p className="text-blue-100 text-sm sm:text-base mb-5 font-medium">
                                     실시간 뉴스 · 금융 시세 · 미니게임 · 생활 도구까지, FaithPortal 하나면 충분해요
                                 </p>
 
@@ -122,7 +122,7 @@ function HomePage() {
                                 </div>
 
                                 {/* 핵심 서비스 배지 */}
-                                <div className="flex flex-wrap justify-center gap-2 mt-6">
+                                <div className="flex flex-wrap justify-center gap-2 mt-4">
                                     {[
                                         { label: '실시간 뉴스', icon: 'fa-newspaper', href: '/news' },
                                         { label: '금융 시세', icon: 'fa-chart-line', href: '/finance' },
