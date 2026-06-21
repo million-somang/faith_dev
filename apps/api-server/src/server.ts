@@ -132,6 +132,10 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/game', priority: '0.7', changefreq: 'weekly' },
         { loc: '/lifestyle', priority: '0.7', changefreq: 'weekly' },
         { loc: '/finance', priority: '0.7', changefreq: 'monthly' },
+        { loc: '/game/tetris', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/game/sudoku', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/play/tetris', priority: '0.6', changefreq: 'monthly' },
     ];
 
@@ -219,9 +223,11 @@ app.get('/news/:id', async (c) => {
     <meta property="og:url" content="${url}" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="FaithLink" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="${SITE_URL}/logo-512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title}" />
     <meta name="twitter:description" content="${description}" />
+    <meta name="twitter:image" content="${SITE_URL}/logo-512.png" />
     <link rel="canonical" href="${url}" />
     <script type="application/ld+json">${jsonLd}</script>`;
 
@@ -238,6 +244,117 @@ app.get('/news/:id', async (c) => {
         const indexPath = path.resolve('./apps/main-portal/dist/index.html');
         const html = fs.readFileSync(indexPath, 'utf-8');
         return c.html(html);
+    }
+});
+
+// ==================== SPA 라우트별 메타 주입 (네이버/구글 SEO) ====================
+// main-portal은 클라이언트 렌더링 SPA라 서버가 빈 셸을 내려준다.
+// 네이버 Yeti 크롤러는 JS 실행이 약하므로, 주요 경로는 서버에서 메타를 주입해 본문 신호를 제공한다.
+const OG_IMAGE = `${SITE_URL}/logo-512.png`;
+
+const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+function buildMetaBlock(opts: { title: string; description: string; path: string; type?: string; jsonLd?: object }) {
+    const { title, description, path: routePath, type = 'website', jsonLd } = opts;
+    const url = `${SITE_URL}${routePath}`;
+    return `
+    <title>${esc(title)}</title>
+    <meta name="description" content="${esc(description)}" />
+    <link rel="canonical" href="${url}" />
+    <meta property="og:title" content="${esc(title)}" />
+    <meta property="og:description" content="${esc(description)}" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:type" content="${type}" />
+    <meta property="og:site_name" content="FaithLink" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:image" content="${OG_IMAGE}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${esc(title)}" />
+    <meta name="twitter:description" content="${esc(description)}" />
+    <meta name="twitter:image" content="${OG_IMAGE}" />${jsonLd ? `\n    <script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : ''}`;
+}
+
+// 정적 index.html의 기본(홈) 메타를 라우트별 메타로 치환하여 중복을 방지한다.
+function renderSpaWithMeta(metaBlock: string): string {
+    const indexPath = path.resolve('./apps/main-portal/dist/index.html');
+    let html = fs.readFileSync(indexPath, 'utf-8');
+    html = html
+        .replace(/\s*<title>[\s\S]*?<\/title>/, '')
+        .replace(/\s*<meta name="description"[^>]*>/, '')
+        .replace(/\s*<link rel="canonical"[^>]*>/, '')
+        .replace(/\s*<meta property="og:title"[^>]*>/, '')
+        .replace(/\s*<meta property="og:description"[^>]*>/, '')
+        .replace(/\s*<meta property="og:url"[^>]*>/, '')
+        .replace(/\s*<meta property="og:image"[^>]*>/, '')
+        .replace(/\s*<meta name="twitter:card"[^>]*>/, '')
+        .replace(/\s*<meta name="twitter:title"[^>]*>/, '')
+        .replace(/\s*<meta name="twitter:description"[^>]*>/, '')
+        .replace(/\s*<meta name="twitter:image"[^>]*>/, '')
+        .replace('</head>', `${metaBlock}\n</head>`);
+    return html;
+}
+
+const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: object }> = {
+    '/': {
+        title: 'FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털',
+        description: 'FaithLink에서 실시간 속보 뉴스와 테트리스·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
+        jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: 'FaithLink', url: SITE_URL, logo: OG_IMAGE },
+    },
+    '/news': {
+        title: '실시간 뉴스 - FaithLink',
+        description: '정치·경제·IT·스포츠·연예 등 분야별 최신 속보를 실시간으로 모아 보는 FaithLink 뉴스. 주요 언론사 기사를 한눈에 확인하세요.',
+        jsonLd: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: '실시간 뉴스', url: `${SITE_URL}/news`, inLanguage: 'ko' },
+    },
+    '/lifestyle': {
+        title: '생활도구 - 계산기·단위 변환·맞춤법 검사 | FaithLink',
+        description: '계산기, 만 나이·디데이 계산기, 평수 변환, 맞춤법 검사기, JSON 포맷터, Base64 변환기 등 자주 쓰는 무료 온라인 도구 모음.',
+    },
+    '/game': {
+        title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | FaithLink',
+        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 테트리스, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+    },
+};
+
+const GAME_META: Record<string, { title: string; description: string }> = {
+    tetris: { title: '테트리스 무료 온라인 게임 - FaithLink', description: '브라우저에서 바로 즐기는 무료 테트리스. 설치·회원가입 없이 플레이하고 최고 점수 랭킹에 도전하세요.' },
+    sudoku: { title: '스도쿠 무료 온라인 게임 - FaithLink', description: '난이도별 스도쿠를 무료로. 브라우저에서 바로 플레이하고 기록을 남겨보세요.' },
+    '2048': { title: '2048 무료 온라인 게임 - FaithLink', description: '중독성 있는 숫자 퍼즐 2048을 무료로. 브라우저에서 바로 플레이하고 랭킹에 도전하세요.' },
+    minesweeper: { title: '지뢰찾기 무료 온라인 게임 - FaithLink', description: '클래식 지뢰찾기를 무료로. 브라우저에서 바로 즐기고 기록에 도전하세요.' },
+};
+
+for (const [routePath, meta] of Object.entries(ROUTE_META)) {
+    app.get(routePath, (c) => {
+        try {
+            return c.html(renderSpaWithMeta(buildMetaBlock({ ...meta, path: routePath })));
+        } catch (e) {
+            console.error('[SEO] meta injection error:', routePath, e);
+            return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
+        }
+    });
+}
+
+app.get('/game/:id', (c) => {
+    const id = c.req.param('id');
+    const meta = GAME_META[id];
+    try {
+        if (meta) {
+            const jsonLd = {
+                '@context': 'https://schema.org',
+                '@type': 'SoftwareApplication',
+                name: meta.title.split(' - ')[0],
+                description: meta.description,
+                url: `${SITE_URL}/game/${id}`,
+                applicationCategory: 'GameApplication',
+                operatingSystem: 'Web Browser',
+                offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
+            };
+            return c.html(renderSpaWithMeta(buildMetaBlock({ ...meta, path: `/game/${id}`, jsonLd })));
+        }
+        // 알 수 없는 게임 id는 게임 목록 메타로 폴백
+        return c.html(renderSpaWithMeta(buildMetaBlock({ ...ROUTE_META['/game'], path: `/game/${id}` })));
+    } catch (e) {
+        console.error('[SEO] game meta injection error:', id, e);
+        return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
     }
 });
 
