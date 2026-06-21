@@ -253,7 +253,7 @@ export default function GamePage() {
                             <button onClick={() => navigate('/game/tetris')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden"><TetrisThumb /></div>
                                 <div className="p-5">
-                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-emerald-700 transition-colors">클래식 테트리스</h3>
+                                    <h3 className="font-extrabold text-xl text-emerald-700 mb-1 group-hover:text-emerald-800 transition-colors">클래식 테트리스</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">블록을 쌓아 줄을 제거하고 높은 점수를 달성하세요!</p>
                                 </div>
                             </button>
@@ -261,7 +261,7 @@ export default function GamePage() {
                             <button onClick={() => navigate('/game/sudoku')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden"><SudokuThumb /></div>
                                 <div className="p-5">
-                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-violet-700 transition-colors">스도쿠</h3>
+                                    <h3 className="font-extrabold text-xl text-violet-700 mb-1 group-hover:text-violet-800 transition-colors">스도쿠</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">빈 칸에 숫자를 채워 9×9 퍼즐을 완성하세요!</p>
                                 </div>
                             </button>
@@ -269,7 +269,7 @@ export default function GamePage() {
                             <button onClick={() => navigate('/game/2048')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-cyan-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden"><Game2048Thumb /></div>
                                 <div className="p-5">
-                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-cyan-700 transition-colors">2048 챌린지</h3>
+                                    <h3 className="font-extrabold text-xl text-cyan-700 mb-1 group-hover:text-cyan-800 transition-colors">2048 챌린지</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">같은 숫자를 합쳐 2048 타일을 만들어보세요!</p>
                                 </div>
                             </button>
@@ -277,7 +277,7 @@ export default function GamePage() {
                             <button onClick={() => navigate('/game/minesweeper')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-red-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden"><MinesweeperThumb /></div>
                                 <div className="p-5">
-                                    <h3 className="font-bold text-lg text-slate-800 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
+                                    <h3 className="font-extrabold text-xl text-red-600 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
                                 </div>
                             </button>
