@@ -4,8 +4,9 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { PreferenceWizard } from '../components/homepage/PreferenceWizard';
+import { MobileTabEditor } from '../components/homepage/MobileTabEditor';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
-import { HomepageConfig } from '../types/homepage.types';
+import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -16,6 +17,24 @@ export default function MyPage() {
     const [activeSection, setActiveSection] = useState<'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('news');
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
+    const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
+
+    const currentMobileTabs = homeConfig.mobileTabs && homeConfig.mobileTabs.length > 0
+        ? homeConfig.mobileTabs
+        : DEFAULT_HOMEPAGE_CONFIG.mobileTabs;
+
+    const handleMobileTabsChange = (ids: string[]) => {
+        updateHomeConfig({ mobileTabs: ids });
+        setMobileTabsSaved(false);
+    };
+
+    const handleSaveMobileTabs = async () => {
+        const ok = await saveHomeConfig({ mobileTabs: currentMobileTabs });
+        if (ok) {
+            setMobileTabsSaved(true);
+            setTimeout(() => setMobileTabsSaved(false), 2000);
+        }
+    };
 
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
     const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: [] });
@@ -219,6 +238,22 @@ export default function MyPage() {
                                                 <i className="fas fa-magic text-xl group-hover:rotate-12 transition-transform"></i>
                                                 {homeConfig.isConfigured ? '설정 다시 하기' : '지금 내 홈 꾸미기 시작!'}
                                             </button>
+
+                                            {/* 모바일 하단 탭 설정 */}
+                                            <div className="mt-8 p-5 bg-white border border-gray-200 rounded-2xl">
+                                                <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
+                                                    <i className="fas fa-mobile-screen-button text-green-500"></i> 모바일 하단 탭 메뉴
+                                                </h3>
+                                                <p className="text-gray-500 text-xs mb-4">모바일에서 화면 아래에 표시되는 빠른 이동 탭을 직접 구성하세요.</p>
+                                                <MobileTabEditor value={currentMobileTabs} onChange={handleMobileTabsChange} />
+                                                <button
+                                                    onClick={handleSaveMobileTabs}
+                                                    disabled={isHomeSaving || currentMobileTabs.length === 0}
+                                                    className="mt-4 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                                >
+                                                    {isHomeSaving ? (<><i className="fas fa-circle-notch fa-spin"></i> 저장 중...</>) : mobileTabsSaved ? (<><i className="fas fa-check"></i> 저장됨</>) : (<><i className="fas fa-save"></i> 탭 설정 저장</>)}
+                                                </button>
+                                            </div>
 
                                             {homeConfig.isConfigured && (
                                                 <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">

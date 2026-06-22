@@ -1,18 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-
-export interface TabItem {
-    id: string;
-    label: string;
-    icon: string;
-    path: string;
-}
-
-const TAB_ITEMS: TabItem[] = [
-    { id: 'home', label: '홈', icon: 'fas fa-home', path: '/' },
-    { id: 'lifestyle', label: '생활도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle' },
-    { id: 'news', label: '소식', icon: 'fas fa-newspaper', path: '/news' }
-];
+import { useUserPreferenceContext } from '../context/UserPreferenceContext';
+import { ALL_MOBILE_TAB_ITEMS, DEFAULT_HOMEPAGE_CONFIG, MAX_MOBILE_TABS, MobileTabItem } from '../types/homepage.types';
 
 interface MenuCardItem {
     label: string;
@@ -37,7 +26,18 @@ const MENU_CARDS: MenuCardItem[] = [
  */
 export function MobileTabBar() {
     const location = useLocation();
+    const { config } = useUserPreferenceContext();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // 설정된 모바일 탭 구성 (없으면 기본값). 하단 바는 탭 + 전체메뉴 버튼 구조라 최대 MAX_MOBILE_TABS개.
+    const tabMap = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
+    const selectedTabIds = config.mobileTabs && config.mobileTabs.length > 0
+        ? config.mobileTabs
+        : DEFAULT_HOMEPAGE_CONFIG.mobileTabs;
+    const tabItems: MobileTabItem[] = selectedTabIds
+        .map(id => tabMap.get(id))
+        .filter((t): t is MobileTabItem => !!t)
+        .slice(0, MAX_MOBILE_TABS);
 
     // 메뉴가 열렸을 때 뒷배경 스크롤 방지 락
     useEffect(() => {
@@ -59,7 +59,7 @@ export function MobileTabBar() {
     return (
         <>
             <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
-                {TAB_ITEMS.map((item) => {
+                {tabItems.map((item) => {
                     const isActive = location.pathname === item.path && !isMenuOpen;
                     return (
                         <Link

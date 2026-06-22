@@ -91,6 +91,9 @@ export function PreferenceWizard({ currentConfig, isSaving, onSave, onClose }: P
         const newConfig: HomepageConfig = {
             quickMenuItems,
             quickMenuOrder,
+            mobileTabs: currentConfig.mobileTabs && currentConfig.mobileTabs.length > 0
+                ? currentConfig.mobileTabs
+                : DEFAULT_HOMEPAGE_CONFIG.mobileTabs,
             preferences,
             theme,
             isConfigured: true,
