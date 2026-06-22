@@ -27,6 +27,7 @@ const MENU_CARDS: MenuCardItem[] = [
     { label: '금융 정보', desc: '국내외 증시 실시간 트렌드 확인', icon: 'fas fa-chart-line', path: '/finance' },
     { label: '미니게임', desc: '테트리스, 스도쿠, 지뢰찾기 아케이드', icon: 'fas fa-gamepad', path: '/game' },
     { label: '실시간 뉴스', desc: '가장 신속하게 전달되는 정보 피드', icon: 'fas fa-newspaper', path: '/news' },
+    { label: '리워드', desc: '출석·미션으로 포인트 적립 및 교환', icon: 'fas fa-gift', path: '/reward' },
     { label: '마이페이지', desc: '개인 등급 및 게임 스코어 관리', icon: 'fas fa-user', path: '/mypage' }
 ];
 
