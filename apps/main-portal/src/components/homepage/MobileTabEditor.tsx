@@ -35,7 +35,7 @@ export function MobileTabEditor({ value, onChange }: MobileTabEditorProps) {
         <div className="space-y-4">
             <p className="text-xs text-gray-500">
                 <i className="fas fa-info-circle mr-1 text-blue-400"></i>
-                모바일 화면 하단에 표시할 탭을 최대 {MAX_MOBILE_TABS}개까지 고를 수 있어요. 맨 오른쪽 <b>전체메뉴</b> 버튼은 항상 표시됩니다.
+                모바일 화면 하단에 표시할 탭을 최대 {MAX_MOBILE_TABS}개까지 고를 수 있어요. 선택한 순서대로 하단바에 표시됩니다.
             </p>
 
             {/* 선택된 탭 (순서) */}
