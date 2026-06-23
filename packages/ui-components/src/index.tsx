@@ -166,13 +166,13 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
     return (
     <>
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
-            <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14">
+            <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14 relative">
                 <div className="flex items-center gap-3 sm:gap-6">
                     {/* 모바일 전체메뉴 햄버거 (좌측 상단) */}
                     <button onClick={() => setMenuOpen(true)} className="sm:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" aria-label="전체메뉴 열기">
                         <i className="fas fa-bars text-lg"></i>
                     </button>
-                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
+                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 sm:static sm:left-auto sm:translate-x-0">
                         <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
                             <i className="fas fa-link text-sm"></i>
                         </span>
