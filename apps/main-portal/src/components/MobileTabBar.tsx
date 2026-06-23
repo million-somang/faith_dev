@@ -30,7 +30,7 @@ export function MobileTabBar() {
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
                         aria-label={`${item.label} 페이지로 이동`}
                     >
-                        <i className={item.icon} aria-hidden="true"></i>
+                        <i className={item.icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
                         <span>{item.label}</span>
                     </Link>
                 );

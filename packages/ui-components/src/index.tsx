@@ -150,11 +150,28 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     );
 };
 
-export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => (
+const FULL_MENU_ITEMS = [
+    { label: '홈', icon: 'fa-home', bg: 'bg-blue-50', color: 'text-blue-600', path: '/' },
+    { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-sky-50', color: 'text-sky-600', path: '/news' },
+    { label: '생활도구', icon: 'fa-screwdriver-wrench', bg: 'bg-green-50', color: 'text-green-600', path: '/lifestyle' },
+    { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', path: '/finance' },
+    { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', path: '/game' },
+    { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
+    { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
+    { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
+];
+
+export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
+    const [menuOpen, setMenuOpen] = React.useState(false);
+    return (
     <>
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
             <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14">
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3 sm:gap-6">
+                    {/* 모바일 전체메뉴 햄버거 (좌측 상단) */}
+                    <button onClick={() => setMenuOpen(true)} className="sm:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" aria-label="전체메뉴 열기">
+                        <i className="fas fa-bars text-lg"></i>
+                    </button>
                     <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity">
                         <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
                             <i className="fas fa-link text-sm"></i>
@@ -185,8 +202,34 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                 </div>
             </div>
         </header>
+
+        {/* 모바일 전체메뉴 드로어 (왼쪽 슬라이드) */}
+        {menuOpen && (
+            <div className="sm:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="전체메뉴">
+                <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)}></div>
+                <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
+                    <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
+                        <span className="font-black text-lg text-gray-900">전체메뉴</span>
+                        <button onClick={() => setMenuOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" aria-label="메뉴 닫기">
+                            <i className="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+                    <nav className="flex-1 overflow-y-auto p-3">
+                        {FULL_MENU_ITEMS.map((m) => (
+                            <a key={m.path} href={`${baseUrl}${m.path}`} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors">
+                                <span className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0`}>
+                                    <i className={`fas ${m.icon} ${m.color}`}></i>
+                                </span>
+                                <span className="font-bold text-gray-800">{m.label}</span>
+                            </a>
+                        ))}
+                    </nav>
+                </div>
+            </div>
+        )}
     </>
-);
+    );
+};
 
 export const QuickMenu = () => (
     <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu">
