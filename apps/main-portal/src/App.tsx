@@ -189,8 +189,8 @@ function HomePage() {
                                 </Card>
                             </div>
 
-                            {/* Right Column: Widgets */}
-                            <div className="flex-1 flex flex-col gap-4">
+                            {/* Right Column: Widgets — 모바일에서는 베너 위로 올림(order-first) */}
+                            <div className="flex-1 flex flex-col gap-4 order-first sm:order-none">
                                 {/* 날씨·증시 — 모바일: 컴팩트 가로 칩 / PC: 큰 카드 */}
                                 <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
                                     {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
