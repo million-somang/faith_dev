@@ -42,9 +42,28 @@ export function StockWidget() {
 
     const color = (status: string) => status === 'up' ? 'text-red-500' : 'text-blue-500';
     const arrow = (status: string) => status === 'up' ? 'fa-caret-up' : 'fa-caret-down';
+    const firstStock = stocks[0];
 
     return (
-        <div className="content-card p-6">
+        <>
+            {/* 모바일 컴팩트 칩 (대표 종목 + 환율) */}
+            {firstStock && (
+                <div className="sm:hidden flex-shrink-0 content-card px-4 py-3 min-w-[130px]">
+                    <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
+                        {firstStock.price.toLocaleString()} <span className={`text-xs ${color(firstStock.status)}`}><i className={`fas ${arrow(firstStock.status)}`}></i>{Math.abs(firstStock.rate).toFixed(2)}%</span>
+                    </div>
+                    <div className="text-xs text-gray-400 truncate">{firstStock.name}</div>
+                </div>
+            )}
+            {usd && (
+                <div className="sm:hidden flex-shrink-0 content-card px-4 py-3 min-w-[110px]">
+                    <div className="font-bold text-gray-900 text-sm whitespace-nowrap">{usd.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div className="text-xs text-gray-400">미국USD</div>
+                </div>
+            )}
+
+            {/* PC 카드 */}
+            <div className="hidden sm:block content-card p-6">
             <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-chart-line text-green-500"></i> 증시</h3>
                 {updatedAt && <span className="text-xs text-gray-400">{updatedAt}</span>}
@@ -88,6 +107,7 @@ export function StockWidget() {
                     </Link>
                 </>
             )}
-        </div>
+            </div>
+        </>
     );
 }
