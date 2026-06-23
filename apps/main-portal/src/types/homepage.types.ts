@@ -38,6 +38,7 @@ export interface MobileTabItem {
     label: string;
     icon: string;
     path: string;
+    color?: string;   // 아이콘 색상 (하단 탭바에서 사용)
 }
 
 export interface HomepageConfig {
@@ -84,14 +85,14 @@ export const ALL_QUICK_MENU_ITEMS: QuickMenuItem[] = [
 
 // 모바일 하단 탭에 선택 가능한 후보 (전체메뉴 버튼은 항상 마지막에 고정)
 export const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
-    { id: 'home', label: '홈', icon: 'fas fa-home', path: '/' },
-    { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news' },
-    { id: 'shopping', label: '쇼핑', icon: 'fas fa-bag-shopping', path: '/shopping' },
-    { id: 'lifestyle', label: '도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle' },
-    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage' },
-    { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance' },
-    { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game' },
-    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward' },
+    { id: 'home', label: '홈', icon: 'fas fa-home', path: '/', color: '#2563eb' },
+    { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news', color: '#0ea5e9' },
+    { id: 'shopping', label: '쇼핑', icon: 'fas fa-bag-shopping', path: '/shopping', color: '#ec4899' },
+    { id: 'lifestyle', label: '도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
+    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
+    { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance', color: '#f97316' },
+    { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
+    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
 ];
 
 // API 응답 타입
