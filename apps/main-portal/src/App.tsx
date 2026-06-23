@@ -191,14 +191,17 @@ function HomePage() {
 
                             {/* Right Column: Widgets */}
                             <div className="flex-1 flex flex-col gap-4">
-                                {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
-                                <WeatherWidget />
+                                {/* 날씨·증시 — 모바일: 컴팩트 가로 칩 / PC: 큰 카드 */}
+                                <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
+                                    {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
+                                    <WeatherWidget />
 
-                                {/* 증시 위젯 (실제 데이터: 환율/국내 종목) */}
-                                <StockWidget />
+                                    {/* 증시 위젯 (실제 데이터: 환율/국내 종목) */}
+                                    <StockWidget />
+                                </div>
 
-                                {/* System Monitor Widget */}
-                                <Card className="p-4 bg-gray-50 border-none shadow-none">
+                                {/* System Monitor Widget (PC 전용) */}
+                                <Card className="hidden sm:block p-4 bg-gray-50 border-none shadow-none">
                                     <h4 className="text-xs font-bold text-gray-400 mb-2">SYSTEM MONITOR</h4>
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] text-gray-500">Backend Status</span>

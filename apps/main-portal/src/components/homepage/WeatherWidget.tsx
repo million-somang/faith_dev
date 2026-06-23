@@ -113,66 +113,77 @@ export function WeatherWidget() {
 
     if (error) return null;
 
-    if (!data) {
-        return (
-            <div className="content-card p-6">
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-cloud-sun text-blue-400"></i> 날씨</h3>
-                </div>
-                <div className="py-6 flex items-center justify-center text-gray-300">
-                    <i className="fas fa-circle-notch fa-spin text-xl"></i>
-                </div>
-            </div>
-        );
-    }
-
-    const ci = codeInfo(data.code, data.isDay);
-    const pm25g = grade(data.pm25, 15, 35, 75);
-    const pm10g = grade(data.pm10, 30, 80, 150);
+    const ci = data ? codeInfo(data.code, data.isDay) : null;
+    const pm25g = grade(data?.pm25 ?? null, 15, 35, 75);
+    const pm10g = grade(data?.pm10 ?? null, 30, 80, 150);
 
     return (
-        <div className="content-card p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-cloud-sun text-blue-400"></i> 날씨</h3>
-                <span className="text-xs font-semibold text-gray-400 truncate max-w-[45%]" title={data.location}>{data.location}</span>
+        <>
+            {/* 모바일 컴팩트 칩 */}
+            <div className="sm:hidden flex-shrink-0 content-card px-4 py-3 flex items-center gap-3 min-w-[150px]">
+                {data && ci ? (
+                    <>
+                        <div className="flex-1 min-w-0">
+                            <div className="font-bold text-gray-900 text-sm whitespace-nowrap">{ci.label} {data.temp.toFixed(1)}°</div>
+                            <div className="text-xs text-gray-400 truncate">{data.location}</div>
+                        </div>
+                        <i className={`fas ${ci.icon} text-2xl`}></i>
+                    </>
+                ) : (
+                    <span className="mx-auto text-gray-300"><i className="fas fa-circle-notch fa-spin"></i></span>
+                )}
             </div>
 
-            <div className="flex items-center gap-4">
-                <i className={`fas ${ci.icon} text-4xl`}></i>
-                <div className="flex-1">
-                    <div className="flex items-end gap-2">
-                        <span className="text-3xl font-black text-gray-900 leading-none">{data.temp.toFixed(1)}°</span>
-                        <span className="text-sm font-bold text-gray-500 mb-0.5">{ci.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-xs font-bold">
-                        <span className="text-blue-500">{data.min}°</span>
-                        <span className="text-gray-300">/</span>
-                        <span className="text-red-500">{data.max}°</span>
-                    </div>
-                </div>
-            </div>
+            {/* PC 카드 */}
+            <div className="hidden sm:block content-card p-6">
+                {data && ci ? (
+                    <>
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-cloud-sun text-blue-400"></i> 날씨</h3>
+                            <span className="text-xs font-semibold text-gray-400 truncate max-w-[45%]" title={data.location}>{data.location}</span>
+                        </div>
 
-            {(pm25g || pm10g) && (
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs">
-                    {pm10g && <span className="text-gray-500">미세 <b className={pm10g.color}>{pm10g.label}</b></span>}
-                    {pm25g && <span className="text-gray-500">초미세 <b className={pm25g.color}>{pm25g.label}</b></span>}
-                </div>
-            )}
-
-            {data.hourly.length > 0 && (
-                <div className="flex justify-between mt-4 pt-3 border-t border-gray-100">
-                    {data.hourly.map((h, i) => {
-                        const hci = codeInfo(h.code, h.isDay);
-                        return (
-                            <div key={i} className="flex flex-col items-center gap-1.5">
-                                <span className="text-xs font-bold text-gray-500">{h.temp}°</span>
-                                <i className={`fas ${hci.icon} text-base`}></i>
-                                <span className={`text-[11px] ${i === 0 ? 'font-extrabold text-gray-800' : 'text-gray-400'}`}>{h.hour}시</span>
+                        <div className="flex items-center gap-4">
+                            <i className={`fas ${ci.icon} text-4xl`}></i>
+                            <div className="flex-1">
+                                <div className="flex items-end gap-2">
+                                    <span className="text-3xl font-black text-gray-900 leading-none">{data.temp.toFixed(1)}°</span>
+                                    <span className="text-sm font-bold text-gray-500 mb-0.5">{ci.label}</span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1 text-xs font-bold">
+                                    <span className="text-blue-500">{data.min}°</span>
+                                    <span className="text-gray-300">/</span>
+                                    <span className="text-red-500">{data.max}°</span>
+                                </div>
                             </div>
-                        );
-                    })}
-                </div>
-            )}
-        </div>
+                        </div>
+
+                        {(pm25g || pm10g) && (
+                            <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 text-xs">
+                                {pm10g && <span className="text-gray-500">미세 <b className={pm10g.color}>{pm10g.label}</b></span>}
+                                {pm25g && <span className="text-gray-500">초미세 <b className={pm25g.color}>{pm25g.label}</b></span>}
+                            </div>
+                        )}
+
+                        {data.hourly.length > 0 && (
+                            <div className="flex justify-between mt-4 pt-3 border-t border-gray-100">
+                                {data.hourly.map((h, i) => {
+                                    const hci = codeInfo(h.code, h.isDay);
+                                    return (
+                                        <div key={i} className="flex flex-col items-center gap-1.5">
+                                            <span className="text-xs font-bold text-gray-500">{h.temp}°</span>
+                                            <i className={`fas ${hci.icon} text-base`}></i>
+                                            <span className={`text-[11px] ${i === 0 ? 'font-extrabold text-gray-800' : 'text-gray-400'}`}>{h.hour}시</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="py-6 flex items-center justify-center text-gray-300"><i className="fas fa-circle-notch fa-spin text-xl"></i></div>
+                )}
+            </div>
+        </>
     );
 }
