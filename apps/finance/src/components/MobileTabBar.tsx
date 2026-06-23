@@ -1,125 +1,90 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 // 금융 앱은 메인 포털과 분리된 별도 앱이므로, 탭/메뉴 이동은 메인 포털 URL을 기준으로 한다.
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-interface TabItem {
+interface MobileTabItem {
     id: string;
     label: string;
     icon: string;
     path: string;
+    color?: string;   // 아이콘 색상 (하단 탭바에서 사용)
 }
 
-const TAB_ITEMS: TabItem[] = [
-    { id: 'home', label: '홈', icon: 'fas fa-home', path: '/' },
-    { id: 'lifestyle', label: '생활도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle' },
-    { id: 'news', label: '소식', icon: 'fas fa-newspaper', path: '/news' }
+const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
+    { id: 'home', label: '홈', icon: 'fas fa-home', path: '/', color: '#2563eb' },
+    { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news', color: '#0ea5e9' },
+    { id: 'shopping', label: '쇼핑', icon: 'fas fa-bag-shopping', path: '/shopping', color: '#ec4899' },
+    { id: 'lifestyle', label: '도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
+    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
+    { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance', color: '#f97316' },
+    { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
+    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
 ];
 
-interface MenuCardItem {
-    label: string;
-    desc: string;
-    icon: string;
-    path: string;
-}
-
-const MENU_CARDS: MenuCardItem[] = [
-    { label: '포털 홈', desc: '실시간 뉴스 및 주요 대시보드', icon: 'fas fa-home', path: '/' },
-    { label: '생활도구', desc: '계산기, 변환기, 맞춤법 등 유용 도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle' },
-    { label: '금융 정보', desc: '국내외 증시 실시간 트렌드 확인', icon: 'fas fa-chart-line', path: '/finance' },
-    { label: '미니게임', desc: '테트리스, 스도쿠, 지뢰찾기 아케이드', icon: 'fas fa-gamepad', path: '/game' },
-    { label: '실시간 뉴스', desc: '가장 신속하게 전달되는 정보 피드', icon: 'fas fa-newspaper', path: '/news' },
-    { label: '마이페이지', desc: '개인 등급 및 게임 스코어 관리', icon: 'fas fa-user', path: '/mypage' }
-];
+const DEFAULT_MOBILE_TABS = ['home', 'news', 'shopping', 'lifestyle', 'mypage'];
+const MAX_MOBILE_TABS = 5;
 
 const toHref = (path: string) => `${MAIN_PORTAL_URL}${path}`;
 
 /**
- * 금융 앱용 모바일 하단 플로팅 탭 바 & 전체메뉴 드로어.
- * 메인 포털의 MobileTabBar와 동일한 UI를 제공하되, 별도 앱이므로 앵커로 페이지 이동한다.
+ * 금융 앱용 모바일 하단 플로팅 탭 바
+ * - 메인 포털의 MobileTabBar와 동일하게 API 개인화 설정을 읽어와 5개 탭을 동적으로 렌더링합니다.
  */
 export function MobileTabBar() {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [tabIds, setTabIds] = useState<string[]>(DEFAULT_MOBILE_TABS);
 
-    // 메뉴가 열렸을 때 뒷배경 스크롤 방지 락
+    // API를 통해 메인 포털의 개인화 탭 설정을 로드하여 동기화
     useEffect(() => {
-        if (isMenuOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
+        const fetchConfig = async () => {
+            try {
+                const res = await axios.get<{ success: boolean; config?: { mobileTabs?: string[] } }>(
+                    `${API_BASE_URL}/api/user/homepage-config`,
+                    { withCredentials: true }
+                );
+                if (res.data && res.data.success && res.data.config?.mobileTabs) {
+                    setTabIds(res.data.config.mobileTabs);
+                }
+            } catch (err) {
+                console.warn('[Finance MobileTabBar] 메인 포털 설정 로드 실패, 기본값 사용:', err);
+            }
         };
-    }, [isMenuOpen]);
+        fetchConfig();
+    }, []);
+
+    const tabMap = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
+    const tabItems: MobileTabItem[] = tabIds
+        .map(id => tabMap.get(id))
+        .filter((t): t is MobileTabItem => !!t)
+        .slice(0, MAX_MOBILE_TABS);
+
+    // 현재 경로 활성화 체크 (금융 앱 내부 경로는 /finance 로 매핑됨)
+    const isTabActive = (itemPath: string) => {
+        const currentPath = window.location.pathname;
+        if (itemPath === '/finance') {
+            return currentPath.startsWith('/finance');
+        }
+        return false;
+    };
 
     return (
-        <>
-            <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
-                {TAB_ITEMS.map((item) => (
+        <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
+            {tabItems.map((item) => {
+                const isActive = isTabActive(item.path);
+                return (
                     <a
                         key={item.id}
                         href={toHref(item.path)}
-                        className="mobile-tab-item"
+                        className={`mobile-tab-item ${isActive ? 'active' : ''}`}
                         aria-label={`${item.label} 페이지로 이동`}
                     >
-                        <i className={item.icon} aria-hidden="true"></i>
+                        <i className={item.icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
                         <span>{item.label}</span>
                     </a>
-                ))}
-
-                {/* 4번째 전체메뉴 트리거 탭 */}
-                <button
-                    onClick={() => setIsMenuOpen(true)}
-                    className={`mobile-tab-item ${isMenuOpen ? 'active' : ''}`}
-                    aria-label="전체메뉴 보기"
-                    style={{ background: 'none', border: 'none', padding: 0 }}
-                >
-                    <i className="fas fa-bars" aria-hidden="true"></i>
-                    <span>전체메뉴</span>
-                </button>
-            </nav>
-
-            {/* 전체메뉴 럭셔리 오버레이 (Emerald Overlay) */}
-            {isMenuOpen && (
-                <div className="mobile-menu-overlay" role="dialog" aria-modal="true" aria-label="전체메뉴 목록">
-                    {/* 상단 헤더 */}
-                    <div className="mobile-menu-header">
-                        <span className="mobile-menu-title">
-                            <i className="fas fa-cubes"></i>
-                            FaithLink 전체서비스
-                        </span>
-                        <button
-                            onClick={() => setIsMenuOpen(false)}
-                            className="mobile-menu-close"
-                            aria-label="메뉴 닫기"
-                        >
-                            <i className="fas fa-times"></i>
-                        </button>
-                    </div>
-
-                    {/* 본문 그리드 카드 */}
-                    <div className="mobile-menu-body">
-                        <div className="mobile-menu-section-title">전체 카테고리</div>
-                        <div className="mobile-menu-grid">
-                            {MENU_CARDS.map((card) => (
-                                <a
-                                    key={card.path}
-                                    href={toHref(card.path)}
-                                    className="mobile-menu-card"
-                                    aria-label={`${card.label} 바로가기`}
-                                >
-                                    <div className="mobile-menu-card-icon">
-                                        <i className={card.icon}></i>
-                                    </div>
-                                    <span className="mobile-menu-card-title">{card.label}</span>
-                                    <span className="mobile-menu-card-desc">{card.desc}</span>
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
+                );
+            })}
+        </nav>
     );
 }

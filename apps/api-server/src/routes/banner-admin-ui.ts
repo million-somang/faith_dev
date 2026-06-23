@@ -82,13 +82,26 @@ bannerAdminUi.get('/admin/banners', async (c) => {
                     <span class="text-blue-500 text-xs ml-1">이미지를 선택하면 사이즈를 자동으로 확인합니다</span>
                 </div>
 
+                <!-- 배너 유형 선택 -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">배너 유형 *</label>
+                    <div class="flex gap-4">
+                        <label class="flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
+                            <input type="radio" name="f-type" value="image" checked onclick="switchBannerType('image')" class="w-4 h-4 accent-blue-600"> 일반 이미지
+                        </label>
+                        <label class="flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
+                            <input type="radio" name="f-type" value="adsense" onclick="switchBannerType('adsense')" class="w-4 h-4 accent-blue-600"> 구글 에드센스 (광고 코드)
+                        </label>
+                    </div>
+                </div>
+
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">배너 이름 *</label>
                     <input id="f-title" type="text" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-400 outline-none" placeholder="관리용 이름 (예: 6월 프로모션)">
                 </div>
 
-                <!-- 이미지: 업로드 / URL 탭 -->
-                <div>
+                <!-- 이미지: 업로드 / URL 탭 (이미지 배너 전용) -->
+                <div id="f-image-group">
                     <label class="block text-sm font-bold text-gray-700 mb-1">배너 이미지 *</label>
                     <div class="flex gap-1 mb-2">
                         <button type="button" id="tab-upload" onclick="switchImgTab('upload')" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-blue-600 text-white">파일 업로드</button>
@@ -105,8 +118,15 @@ bannerAdminUi.get('/admin/banners', async (c) => {
                     <div id="size-check" class="hidden mt-2 px-3 py-2 rounded-lg text-sm font-semibold"></div>
                 </div>
 
+                <!-- 구글 에드센스 광고 코드 입력 (에드센스 전용) -->
+                <div id="f-ad-code-group" class="hidden">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">광고 스크립트 코드 (HTML) *</label>
+                    <textarea id="f-ad-code" rows="5" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-400 outline-none font-mono" placeholder='<ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-..." data-ad-slot="..."></ins>'></textarea>
+                    <p class="text-xs text-gray-400 mt-1">구글 에드센스에서 발급받은 광고 스크립트 코드를 그대로 붙여넣으세요.</p>
+                </div>
+
                 <!-- 실제 크기 미리보기 -->
-                <div>
+                <div id="preview-group">
                     <label class="block text-sm font-bold text-gray-700 mb-1">미리보기 <span class="text-xs text-gray-400 font-normal">(실제 슬롯 크기 프레임)</span></label>
                     <div class="bg-gray-100 rounded-xl p-4 overflow-x-auto">
                         <div id="preview-frame" class="mx-auto bg-white border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden" style="width:728px;height:90px;max-width:100%;">
@@ -117,7 +137,7 @@ bannerAdminUi.get('/admin/banners', async (c) => {
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
+                    <div id="link-group">
                         <label class="block text-sm font-bold text-gray-700 mb-1">클릭 시 이동 URL</label>
                         <input id="f-link" type="text" class="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-400 outline-none" placeholder="https://... (없으면 비워두기)">
                     </div>
@@ -136,7 +156,7 @@ bannerAdminUi.get('/admin/banners', async (c) => {
                 </div>
 
                 <div class="flex items-center gap-4">
-                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <label id="newtab-group" class="flex items-center gap-2 text-sm font-semibold text-gray-700">
                         <input id="f-newtab" type="checkbox" checked class="w-4 h-4 accent-blue-600"> 새 창으로 열기
                     </label>
                     <label class="flex items-center gap-2 text-sm font-semibold text-gray-700">
@@ -244,24 +264,29 @@ async function loadBanners() {
         el.innerHTML = '<div class="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center text-gray-400 text-sm">등록된 배너가 없습니다. [배너 등록] 버튼으로 추가하세요.</div>';
         return;
     }
-    el.innerHTML = data.banners.map(b => \`
-        <div class="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4 \${b.is_active ? '' : 'opacity-50'}">
+    el.innerHTML = data.banners.map(b => {
+        const isAd = !!b.ad_code;
+        return \`
+        <div class="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4 \\\${b.is_active ? '' : 'opacity-50'}">
             <div class="w-40 h-14 bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 border">
-                <img src="\${esc(b.image_url)}" class="max-w-full max-h-full object-contain" onerror="this.outerHTML='<span class=&quot;text-xs text-red-400&quot;>이미지 오류</span>'">
+                \\\${isAd 
+                    ? '<div class="text-xs font-bold text-orange-600 bg-orange-50 w-full h-full flex items-center justify-center"><i class="fab fa-google mr-1"></i>에드센스</div>' 
+                    : '<img src="' + esc(b.image_url) + '" class="max-w-full max-h-full object-contain" onerror="this.outerHTML=\\\'<span class=&quot;text-xs text-red-400&quot;>이미지 오류</span>\\\'">'}
             </div>
             <div class="flex-1 min-w-0">
-                <p class="font-bold text-gray-900 text-sm truncate">\${esc(b.title)}
-                    <span class="ml-1 text-[10px] font-bold \${b.is_active ? 'text-blue-600' : 'text-gray-400'}">\${b.is_active ? '노출중' : '숨김'}</span>
+                <p class="font-bold text-gray-900 text-sm truncate">\\\${esc(b.title)}
+                    <span class="ml-1 text-[10px] font-bold \\\${b.is_active ? 'text-blue-600' : 'text-gray-400'}">\\\${b.is_active ? '노출중' : '숨김'}</span>
                 </p>
-                <p class="text-xs text-gray-400 truncate">\${esc(b.link_url || '링크 없음')}</p>
-                <p class="text-[11px] text-gray-400">순서 \${b.sort_order}\${b.start_at ? ' · ' + b.start_at + ' 부터' : ''}\${b.end_at ? ' ~ ' + b.end_at : ''}</p>
+                <p class="text-xs text-gray-400 truncate">\\\${isAd ? '[구글 에드센스 광고 코드 등록됨]' : esc(b.link_url || '링크 없음')}</p>
+                <p class="text-[11px] text-gray-400">순서 \\\${b.sort_order}\\\${b.start_at ? ' · ' + b.start_at + ' 부터' : ''}\\\${b.end_at ? ' ~ ' + b.end_at : ''}</p>
             </div>
             <div class="flex gap-1 flex-shrink-0">
-                <button onclick='openBannerForm(\${JSON.stringify(b).replace(/'/g, "&#39;")})' class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">수정</button>
-                <button onclick="toggleBanner(\${b.id})" class="px-3 py-1.5 text-xs font-bold \${b.is_active ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'} rounded-lg">\${b.is_active ? '숨기기' : '노출'}</button>
+                <button onclick='openBannerForm(\\\${JSON.stringify(b).replace(/'/g, "&#39;")})' class="px-3 py-1.5 text-xs font-bold bg-gray-100 hover:bg-gray-200 rounded-lg">수정</button>
+                <button onclick="toggleBanner(\\\${b.id})" class="px-3 py-1.5 text-xs font-bold \\\${b.is_active ? 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'} rounded-lg">\\\${b.is_active ? '숨기기' : '노출'}</button>
             </div>
         </div>
-    \`).join('');
+        \`;
+    }).join('');
 }
 
 async function toggleBanner(id) {
@@ -279,6 +304,7 @@ function openBannerForm(banner) {
     document.getElementById('form-slot-size').textContent = currentSlot.width + ' × ' + currentSlot.height + ' px';
     document.getElementById('f-title').value = banner ? banner.title : '';
     document.getElementById('f-image-url').value = banner ? banner.image_url : '';
+    document.getElementById('f-ad-code').value = banner ? (banner.ad_code || '') : '';
     document.getElementById('f-link').value = banner ? (banner.link_url || '') : '';
     document.getElementById('f-sort').value = banner ? banner.sort_order : 0;
     document.getElementById('f-start').value = banner && banner.start_at ? banner.start_at.replace(' ', 'T').slice(0, 16) : '';
@@ -286,6 +312,12 @@ function openBannerForm(banner) {
     document.getElementById('f-newtab').checked = banner ? !!banner.open_new_tab : true;
     document.getElementById('f-active').checked = banner ? !!banner.is_active : true;
     document.getElementById('f-file').value = '';
+    
+    // 배너 유형 라디오 설정
+    const isAd = banner && banner.ad_code;
+    document.querySelector('input[name="f-type"][value="' + (isAd ? 'adsense' : 'image') + '"]').checked = true;
+    switchBannerType(isAd ? 'adsense' : 'image');
+
     // 미리보기 프레임을 슬롯 실제 크기로
     const frame = document.getElementById('preview-frame');
     frame.style.width = currentSlot.width + 'px';
@@ -294,6 +326,14 @@ function openBannerForm(banner) {
     switchImgTab(banner ? 'url' : 'upload');
     if (banner && banner.image_url) checkImageSize(banner.image_url);
     document.getElementById('banner-modal').classList.remove('hidden');
+}
+
+function switchBannerType(type) {
+    document.getElementById('f-image-group').classList.toggle('hidden', type !== 'image');
+    document.getElementById('preview-group').classList.toggle('hidden', type !== 'image');
+    document.getElementById('link-group').classList.toggle('hidden', type !== 'image');
+    document.getElementById('newtab-group').classList.toggle('hidden', type !== 'image');
+    document.getElementById('f-ad-code-group').classList.toggle('hidden', type !== 'adsense');
 }
 
 function closeBannerForm() { document.getElementById('banner-modal').classList.add('hidden'); }
@@ -370,35 +410,47 @@ async function saveBanner() {
     const btn = document.getElementById('banner-save-btn');
     btn.disabled = true; btn.textContent = '저장 중...';
     try {
+        const type = document.querySelector('input[name="f-type"]:checked').value;
         let imageUrl = '';
-        if (imgTab === 'upload') {
-            const file = document.getElementById('f-file').files[0];
-            if (file) {
-                const fd = new FormData();
-                fd.append('file', file);
-                const up = await fetch('/api/admin/banners/upload', { method: 'POST', body: fd });
-                const upData = await up.json();
-                if (!upData.success) { alert(upData.message || '업로드 실패'); return; }
-                imageUrl = upData.url;
-            } else if (editingBannerId) {
-                imageUrl = document.getElementById('f-image-url').value.trim(); // 수정 시 기존 이미지 유지
+        let adCode = null;
+
+        if (type === 'image') {
+            if (imgTab === 'upload') {
+                const file = document.getElementById('f-file').files[0];
+                if (file) {
+                    const fd = new FormData();
+                    fd.append('file', file);
+                    const up = await fetch('/api/admin/banners/upload', { method: 'POST', body: fd });
+                    const upData = await up.json();
+                    if (!upData.success) { alert(upData.message || '업로드 실패'); return; }
+                    imageUrl = upData.url;
+                } else if (editingBannerId) {
+                    imageUrl = document.getElementById('f-image-url').value.trim(); // 수정 시 기존 이미지 유지
+                }
+            } else {
+                imageUrl = document.getElementById('f-image-url').value.trim();
             }
         } else {
-            imageUrl = document.getElementById('f-image-url').value.trim();
+            adCode = document.getElementById('f-ad-code').value.trim();
         }
+
         const payload = {
             slot_key: currentSlot.slot_key,
             title: document.getElementById('f-title').value.trim(),
             image_url: imageUrl,
-            link_url: document.getElementById('f-link').value.trim() || null,
-            open_new_tab: document.getElementById('f-newtab').checked,
+            link_url: type === 'image' ? (document.getElementById('f-link').value.trim() || null) : null,
+            open_new_tab: type === 'image' ? document.getElementById('f-newtab').checked : false,
             sort_order: parseInt(document.getElementById('f-sort').value) || 0,
             start_at: document.getElementById('f-start').value ? document.getElementById('f-start').value.replace('T', ' ') + ':00' : null,
             end_at: document.getElementById('f-end').value ? document.getElementById('f-end').value.replace('T', ' ') + ':00' : null,
             is_active: document.getElementById('f-active').checked,
+            ad_code: adCode
         };
+
         if (!payload.title) { alert('배너 이름을 입력해주세요'); return; }
-        if (!payload.image_url) { alert('이미지를 업로드하거나 URL을 입력해주세요'); return; }
+        if (type === 'image' && !payload.image_url) { alert('이미지를 업로드하거나 URL을 입력해주세요'); return; }
+        if (type === 'adsense' && !payload.ad_code) { alert('에드센스 광고 코드를 입력해주세요'); return; }
+
         const res = await fetch(editingBannerId ? '/api/admin/banners/' + editingBannerId : '/api/admin/banners', {
             method: editingBannerId ? 'PUT' : 'POST',
             headers: { 'Content-Type': 'application/json' },

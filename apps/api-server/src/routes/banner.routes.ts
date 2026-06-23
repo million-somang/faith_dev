@@ -15,7 +15,7 @@ bannerRoutes.get('/api/banners/:slotKey', async (c: Context) => {
     try {
         const slotKey = c.req.param('slotKey')
         const res = await query(
-            `SELECT b.id, b.title, b.image_url, b.link_url, b.open_new_tab, b.sort_order
+            `SELECT b.id, b.title, b.image_url, b.link_url, b.open_new_tab, b.sort_order, b.ad_code
              FROM banners b
              JOIN banner_slots s ON b.slot_key = s.slot_key
              WHERE b.slot_key = $1
@@ -136,21 +136,21 @@ bannerRoutes.get('/api/admin/banners', async (c: Context) => {
 // 배너 등록
 bannerRoutes.post('/api/admin/banners', async (c: Context) => {
     try {
-        const { slot_key, title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active } = await c.req.json()
-        if (!slot_key || !title || !image_url) {
-            return c.json({ success: false, message: 'slot_key, title, image_url은 필수입니다' }, 400)
+        const { slot_key, title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active, ad_code } = await c.req.json()
+        if (!slot_key || !title || (!image_url && !ad_code)) {
+            return c.json({ success: false, message: 'slot_key, title, (image_url 또는 ad_code)는 필수입니다' }, 400)
         }
         const slot = await query('SELECT id FROM banner_slots WHERE slot_key = $1', [slot_key])
         if (slot.rows.length === 0) {
             return c.json({ success: false, message: '존재하지 않는 슬롯입니다' }, 404)
         }
         await query(
-            `INSERT INTO banners (slot_key, title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-            [slot_key, title, image_url, link_url || null,
+            `INSERT INTO banners (slot_key, title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active, ad_code)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+            [slot_key, title, image_url || '', link_url || null,
              open_new_tab === undefined ? 1 : (open_new_tab ? 1 : 0),
              sort_order ?? 0, start_at || null, end_at || null,
-             is_active === undefined ? 1 : (is_active ? 1 : 0)]
+             is_active === undefined ? 1 : (is_active ? 1 : 0), ad_code || null]
         )
         return c.json({ success: true, message: '배너가 등록되었습니다' })
     } catch (error) {
@@ -163,7 +163,7 @@ bannerRoutes.post('/api/admin/banners', async (c: Context) => {
 bannerRoutes.put('/api/admin/banners/:id', async (c: Context) => {
     try {
         const id = parseInt(c.req.param('id'))
-        const { title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active } = await c.req.json()
+        const { title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active, ad_code } = await c.req.json()
         await query(
             `UPDATE banners SET
                 title = COALESCE($1, title),
@@ -174,12 +174,14 @@ bannerRoutes.put('/api/admin/banners/:id', async (c: Context) => {
                 start_at = COALESCE($6, start_at),
                 end_at = COALESCE($7, end_at),
                 is_active = COALESCE($8, is_active),
+                ad_code = COALESCE($9, ad_code),
                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $9`,
+             WHERE id = $10`,
             [title ?? null, image_url ?? null, link_url ?? null,
              open_new_tab === undefined ? null : (open_new_tab ? 1 : 0),
              sort_order ?? null, start_at ?? null, end_at ?? null,
-             is_active === undefined ? null : (is_active ? 1 : 0), id]
+             is_active === undefined ? null : (is_active ? 1 : 0),
+             ad_code === undefined ? null : ad_code, id]
         )
         return c.json({ success: true, message: '배너가 수정되었습니다' })
     } catch (error) {

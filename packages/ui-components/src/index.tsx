@@ -190,7 +190,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     {user ? (
                         <>
                             <span className="hidden sm:inline text-xs font-bold text-gray-500">{user.name}님</span>
-                            <a href={`${baseUrl}/mypage`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">마이페이지</a>
+                            <a href={`${baseUrl}/mypage`} className="hidden sm:inline-block text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">마이페이지</a>
                             <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">로그아웃</button>
                         </>
                     ) : (

@@ -135,20 +135,7 @@ function HomePage() {
                                     </button>
                                 </form>
 
-                                {/* 핵심 서비스 배지 */}
-                                <div className="flex flex-wrap justify-center gap-2 mt-4">
-                                    {[
-                                        { label: '실시간 뉴스', icon: 'fa-newspaper', href: '/news' },
-                                        { label: '금융 시세', icon: 'fa-chart-line', href: '/finance' },
-                                        { label: '미니게임', icon: 'fa-gamepad', href: '/game' },
-                                        { label: '생활 도구', icon: 'fa-tools', href: '/lifestyle' },
-                                    ].map(b => (
-                                        <a key={b.label} href={b.href}
-                                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm text-xs font-bold transition-colors">
-                                            <i className={`fas ${b.icon} text-[10px]`}></i> {b.label}
-                                        </a>
-                                    ))}
-                                </div>
+
                             </div>
                         </section>
 

@@ -1,16 +1,14 @@
-import { useEffect, useState } from 'react';
-import axios from 'axios';
 import { Card, NewsCard } from '@faithportal/ui';
 import { Link } from 'react-router-dom';
 import { BannerSlot } from '../BannerSlot';
+import { WeatherWidget } from './WeatherWidget';
+import { StockWidget } from './StockWidget';
 import {
     HomepageConfig,
     ALL_QUICK_MENU_ITEMS,
     QuickMenuItem,
     ColorScheme,
 } from '../../types/homepage.types';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 // 색상 테마별 액센트 클래스 (Tailwind는 동적 클래스명을 지원하지 않으므로 정적 매핑)
 const SCHEME_STYLES: Record<ColorScheme, {
@@ -70,129 +68,12 @@ interface PersonalizedLayoutProps {
 }
 
 
-const GAME_LINKS: Record<string, { label: string; icon: string; href: string; color: string }> = {
-    tetris: { label: '테트리스', icon: 'fa-th', href: '/game/tetris', color: 'from-blue-500 to-blue-700' },
-    sudoku: { label: '스도쿠', icon: 'fa-table', href: '/game/sudoku', color: 'from-green-500 to-green-700' },
-    '2048': { label: '2048', icon: 'fa-th-large', href: '/game/2048', color: 'from-orange-500 to-orange-700' },
-    minesweeper: { label: '지뢰찾기', icon: 'fa-bomb', href: '/game/minesweeper', color: 'from-red-500 to-red-700' },
-};
 
-/**
- * 설정에 따른 맞춤 퀵메뉴 렌더링
- */
-function PersonalizedQuickMenu({ config }: { config: HomepageConfig }) {
-    const menuMap = new Map<string, QuickMenuItem>(ALL_QUICK_MENU_ITEMS.map(m => [m.id, m]));
-    const orderedSelected = config.quickMenuOrder
-        .filter(id => config.quickMenuItems.includes(id))
-        .map(id => menuMap.get(id))
-        .filter((m): m is QuickMenuItem => !!m);
 
-    if (orderedSelected.length === 0) return null;
 
-    return (
-        <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu" aria-label="빠른 메뉴">
-            <div className="overflow-x-auto hide-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 py-4">
-                <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
-                    {orderedSelected.map(item => (
-                        <a key={item.id} href={item.href} className="group text-center flex-shrink-0">
-                            <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)]`}>
-                                <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 transition-transform`}></i>
-                            </div>
-                            <p className="text-[11px] sm:text-xs text-gray-800 font-bold group-hover:text-brand-green transition-colors">{item.label}</p>
-                        </a>
-                    ))}
-                </div>
-            </div>
-        </nav>
-    );
-}
 
-/**
- * 게임 바로가기 위젯 (게임 선호 사용자)
- */
-function GameWidget({ games }: { games: string[] }) {
-    if (games.length === 0) return null;
-    return (
-        <Card className="p-6 mb-4">
-            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <i className="fas fa-gamepad text-purple-500"></i> 즐겨하는 게임
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-                {games.map(g => {
-                    const info = GAME_LINKS[g];
-                    if (!info) return null;
-                    return (
-                        <a
-                            key={g}
-                            href={info.href}
-                            className={`flex items-center gap-2 p-3 rounded-xl bg-gradient-to-r ${info.color} text-white text-sm font-bold hover:opacity-90 transition-opacity`}
-                        >
-                            <i className={`fas ${info.icon}`}></i>
-                            {info.label}
-                        </a>
-                    );
-                })}
-            </div>
-        </Card>
-    );
-}
 
-interface StockIndex {
-    name: string;
-    value: number;
-    change: number;
-    rate: number;
-    status: 'up' | 'down';
-    updatedAt?: string;
-}
 
-/**
- * 주식 시세 위젯 (showStockWidget ON 시)
- */
-function StockWidget() {
-    const [indices, setIndices] = useState<StockIndex[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        axios.get<StockIndex[]>(`${API_BASE_URL}/api/finance/indices`)
-            .then(res => { if (Array.isArray(res.data)) setIndices(res.data); })
-            .catch(e => console.error('Stock widget error:', e))
-            .finally(() => setLoading(false));
-    }, []);
-
-    return (
-        <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <i className="fas fa-chart-line text-blue-500"></i> 주식 시세
-                </h3>
-                <Link to="/finance" className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors">
-                    더보기 <i className="fas fa-chevron-right text-[10px]"></i>
-                </Link>
-            </div>
-            {loading ? (
-                <div className="py-4 text-center text-gray-400 text-sm">시세를 불러오는 중...</div>
-            ) : indices.length > 0 ? (
-                <div className="space-y-3">
-                    {indices.map(idx => (
-                        <div key={idx.name} className="flex items-center justify-between text-sm">
-                            <span className="text-gray-700 font-medium">{idx.name}</span>
-                            <div className="text-right">
-                                <span className="font-bold text-gray-900">{idx.value.toLocaleString()}</span>
-                                <span className={`ml-2 text-xs font-semibold ${idx.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
-                                    <i className={`fas ${idx.status === 'up' ? 'fa-caret-up' : 'fa-caret-down'} mr-0.5`}></i>
-                                    {Math.abs(idx.change).toLocaleString()} ({Math.abs(idx.rate)}%)
-                                </span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="py-4 text-center text-gray-400 text-sm">시세 정보를 가져올 수 없습니다</div>
-            )}
-        </Card>
-    );
-}
 
 /**
  * 포털형 레이아웃 (기본)
@@ -200,8 +81,7 @@ function StockWidget() {
 function PortalLayout({ config, news, health, user, logout }: Omit<PersonalizedLayoutProps, 'onOpenWizard'>) {
     const isDark = config.theme.colorScheme === 'dark';
     const scheme = getScheme(config);
-    // 즐겨하는 게임을 선택했다면 주 관심사와 무관하게 게임 위젯 표시
-    const showGames = config.preferences.favoriteGames.length > 0;
+
     // 관심 카테고리 뉴스 우선 표시
     const sortedNews = prioritizeNews(news, config.preferences.newsCategories);
 
@@ -241,70 +121,32 @@ function PortalLayout({ config, news, health, user, logout }: Omit<PersonalizedL
             </div>
 
             {/* Right Column */}
-            <div className="flex-1 flex flex-col gap-4">
-                {/* 사용자 카드 (PC 사이드바 전용 — 모바일에서는 숨김) */}
-                <Card className="p-6 hidden lg:block">
-                    {user ? (
-                        <>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className={`w-12 h-12 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : `${scheme.softBg} ${scheme.text}`} flex items-center justify-center`}>
-                                    <i className="fas fa-user-check text-xl"></i>
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-gray-900">
-                                        {config.theme.greeting
-                                            ? `${config.theme.greeting}`
-                                            : `${user.name}님 환영합니다!`}
-                                    </h4>
-                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Link to="/mypage" className={`flex-1 py-2 bg-white border ${scheme.border} ${scheme.text} rounded-lg font-bold text-sm ${scheme.hoverSoftBg} transition-colors text-center`}>마이페이지</Link>
-                                <button onClick={logout} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200 transition-colors">로그아웃</button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                    <i className="fas fa-user text-xl"></i>
-                                </div>
-                                <div>
-                                    <h4 className="font-bold text-gray-900">환영합니다!</h4>
-                                    <p className="text-xs text-gray-500">로그인하고 더 많은 혜택을 받으세요</p>
-                                </div>
-                            </div>
-                            <div className="flex gap-2">
-                                <Link to="/login" className="flex-1 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors text-center">로그인</Link>
-                                <Link to="/signup" className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors text-center">회원가입</Link>
-                            </div>
-                        </>
-                    )}
-                </Card>
+            <div className="flex-1 flex flex-col gap-4 order-first sm:order-none">
+                {/* 날씨·증시 — 모바일: 컴팩트 가로 칩 / PC: 큰 카드 */}
+                <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
+                    <WeatherWidget />
+                    <StockWidget />
+                </div>
 
-                {/* 게임 위젯 (즐겨하는 게임 선택 시) */}
-                {showGames && <GameWidget games={config.preferences.favoriteGames} />}
-
-                {/* 주식 시세 위젯 (설정 ON 시) */}
-                {config.preferences.showStockWidget && <StockWidget />}
-
-                {/* 트렌드 위젯 (설정 ON 시) */}
-                {config.preferences.showTrendWidget && (
-                    <Card className="p-6">
-                        <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                            <i className="fas fa-fire text-orange-500"></i> 실시간 트렌드
-                        </h3>
-                        <div className="space-y-3">
-                            {[1, 2, 3, 4, 5].map(i => (
-                                <div key={i} className="flex items-center justify-between text-sm">
-                                    <div className="flex items-center gap-3">
-                                        <span className="rank-number text-sm">{i}</span>
-                                        <span className="text-gray-700 font-medium">검색어 트렌드 {i}</span>
-                                    </div>
-                                    <i className="fas fa-minus text-gray-300 text-[10px]"></i>
-                                </div>
-                            ))}
+                {/* 사용자 카드 (로그인 완료 상태인 경우에만 표시) */}
+                {user && (
+                    <Card className="p-6 hidden lg:block">
+                        <div className="flex items-center gap-4 mb-4">
+                            <div className={`w-12 h-12 rounded-full ${isDark ? 'bg-gray-700 text-gray-200' : `${scheme.softBg} ${scheme.text}`} flex items-center justify-center`}>
+                                <i className="fas fa-user-check text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 className="font-bold text-gray-900">
+                                    {config.theme.greeting
+                                        ? `${config.theme.greeting}`
+                                        : `${user.name}님 환영합니다!`}
+                                </h4>
+                                <p className="text-xs text-gray-500">{user.email}</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Link to="/mypage" className={`flex-1 py-2 bg-white border ${scheme.border} ${scheme.text} rounded-lg font-bold text-sm ${scheme.hoverSoftBg} transition-colors text-center`}>마이페이지</Link>
+                            <button onClick={logout} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200 transition-colors">로그아웃</button>
                         </div>
                     </Card>
                 )}
@@ -359,13 +201,7 @@ function MinimalLayout({ config, user, logout }: Omit<PersonalizedLayoutProps, '
                 }
             </div>
 
-            {/* 로그인 버튼 (비로그인) */}
-            {!user && (
-                <div className="mt-8 flex gap-3 justify-center">
-                    <Link to="/login" className="px-6 py-2.5 border-2 border-blue-600 text-blue-600 rounded-xl font-bold text-sm hover:bg-blue-50 transition-colors">로그인</Link>
-                    <Link to="/signup" className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">회원가입</Link>
-                </div>
-            )}
+
             {user && (
                 <div className="mt-6 flex gap-2 justify-center">
                     <Link to="/mypage" className="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">마이페이지</Link>
@@ -401,22 +237,7 @@ function CardLayout({ config, news, user, logout }: Omit<PersonalizedLayoutProps
 
             {/* 메뉴 + 뉴스 카드 그리드 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* 퀵메뉴 카드들 */}
-                {config.quickMenuOrder
-                    .filter(id => config.quickMenuItems.includes(id))
-                    .map(id => ALL_QUICK_MENU_ITEMS.find(m => m.id === id))
-                    .filter((m): m is QuickMenuItem => !!m)
-                    .map(item => (
-                        <a key={item.id} href={item.href}
-                            className={`flex items-center gap-4 p-5 ${item.bg} rounded-2xl hover:shadow-lg transition-all hover:-translate-y-1 group`}>
-                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                                <i className={`fas ${item.icon} text-xl ${item.color}`}></i>
-                            </div>
-                            <span className={`font-bold text-base ${item.color}`}>{item.label}</span>
-                            <i className={`fas fa-arrow-right ml-auto ${item.color} opacity-0 group-hover:opacity-100 transition-opacity text-sm`}></i>
-                        </a>
-                    ))
-                }
+
 
                 {/* 뉴스 카드 (관심 카테고리 우선 3개) */}
                 {sortedNews.slice(0, 3).map(item => (
@@ -468,8 +289,7 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
                 </div>
             </section>
 
-            {/* 개인화 퀵메뉴 (minimal 제외: minimal은 자체 메뉴 표시) */}
-            {layout !== 'minimal' && <PersonalizedQuickMenu config={config} />}
+
 
             {/* 레이아웃 분기 */}
             {layout === 'portal' && <PortalLayout {...props} />}
