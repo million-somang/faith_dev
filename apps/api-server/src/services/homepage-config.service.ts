@@ -4,7 +4,7 @@ import { pool } from '@faithportal/database';
 const DEFAULT_CONFIG_JSON = JSON.stringify({
     quickMenuItems: ['news', 'utility', 'game', 'finance'],
     quickMenuOrder: ['news', 'utility', 'game', 'finance', 'shopping', 'entertainment', 'education'],
-    mobileTabs: ['home', 'lifestyle', 'news'],
+    mobileTabs: ['home', 'news', 'shopping', 'lifestyle', 'mypage'],
     preferences: {
         mainInterest: 'news',
         newsCategories: ['politics', 'economy'],
