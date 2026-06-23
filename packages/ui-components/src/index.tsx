@@ -196,7 +196,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     ) : (
                         <>
                             <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">로그인</a>
-                            <a href={`${baseUrl}/signup`} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
+                            <a href={`${baseUrl}/signup`} className="hidden sm:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
                         </>
                     )}
                 </div>
