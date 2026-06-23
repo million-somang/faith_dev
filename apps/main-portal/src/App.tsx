@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
@@ -35,6 +35,8 @@ import { PreferenceWizard } from './components/homepage/PreferenceWizard';
 import { HomepageConfig } from './types/homepage.types';
 import { MobileTabBar } from './components/MobileTabBar';
 import { BannerSlot } from './components/BannerSlot';
+import { WeatherWidget } from './components/homepage/WeatherWidget';
+import { StockWidget } from './components/homepage/StockWidget';
 
 function HomePage() {
     console.log('HomePage rendering...');
@@ -189,60 +191,11 @@ function HomePage() {
 
                             {/* Right Column: Widgets */}
                             <div className="flex-1 flex flex-col gap-4">
-                                {/* MyPage Widget (PC 사이드바 전용 — 모바일에서는 숨김) */}
-                                <Card className="p-6 hidden lg:block">
-                                    {user ? (
-                                        <>
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                                    <i className="fas fa-user-check text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900">{user.name}님 환영합니다!</h4>
-                                                    <p className="text-xs text-gray-500">{user.email}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Link to="/mypage" className="flex-1 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors text-center flex items-center justify-center">마이페이지</Link>
-                                                <button onClick={logout} className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm hover:bg-gray-200 transition-colors text-center flex items-center justify-center">로그아웃</button>
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                                    <i className="fas fa-user text-xl"></i>
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900">환영합니다!</h4>
-                                                    <p className="text-xs text-gray-500">로그인하고 더 많은 혜택을 받으세요</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <Link to="/login" className="flex-1 py-2 bg-white border border-blue-600 text-blue-600 rounded-lg font-bold text-sm hover:bg-blue-50 transition-colors text-center flex items-center justify-center">로그인</Link>
-                                                <Link to="/signup" className="flex-1 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors text-center flex items-center justify-center">회원가입</Link>
-                                            </div>
-                                        </>
-                                    )}
-                                </Card>
+                                {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
+                                <WeatherWidget />
 
-                                {/* Trends Widget */}
-                                <Card className="p-6">
-                                    <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                        <i className="fas fa-chart-line text-orange-500"></i> 실시간 트렌드
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {[1, 2, 3, 4, 5].map(i => (
-                                            <div key={i} className="flex items-center justify-between text-sm">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="rank-number text-sm">{i}</span>
-                                                    <span className="text-gray-700 font-medium">검색어 트렌드 {i}</span>
-                                                </div>
-                                                <i className="fas fa-minus text-gray-300 text-[10px]"></i>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </Card>
+                                {/* 증시 위젯 (실제 데이터: 환율/국내 종목) */}
+                                <StockWidget />
 
                                 {/* System Monitor Widget */}
                                 <Card className="p-4 bg-gray-50 border-none shadow-none">
