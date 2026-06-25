@@ -7,7 +7,7 @@ import { PageSEO } from '../components/PageSEO';
 const GENRES = [
     { id: 'mini', label: '미니게임', icon: 'fas fa-bolt' },
     { id: 'classic', label: '고전게임', icon: 'fas fa-ghost' },
-    { id: 'rpg', label: 'RPG 게임', icon: 'fas fa-dragon' },
+    { id: 'emulator', label: '에뮬레이터', icon: 'fas fa-gamepad' },
 ];
 
 const thumbClass = 'w-full h-28 block transition-transform duration-500 group-hover:scale-105';
@@ -279,6 +279,18 @@ export default function GamePage() {
                                 <div className="p-5">
                                     <h3 className="font-extrabold text-xl text-red-600 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
+                                </div>
+                            </button>
+                        </div>
+                    ) : genre === 'emulator' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <button onClick={() => navigate('/game/comboy')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group">
+                                <div className="h-28 bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
+                                    <i className="fas fa-gamepad mr-2"></i> Vera Comboy
+                                </div>
+                                <div className="p-5">
+                                    <h3 className="font-extrabold text-xl text-slate-700 mb-1 group-hover:text-slate-800 transition-colors">베라 컴보이 아케이드</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 ROM 파일을 로드해 플레이해 보세요.</p>
                                 </div>
                             </button>
                         </div>

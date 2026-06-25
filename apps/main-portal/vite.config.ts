@@ -16,6 +16,10 @@ export default defineConfig({
                 target: 'http://localhost:4200',
                 changeOrigin: true,
             },
+            '^/app/comboy.*': {
+                target: 'http://localhost:5023',
+                changeOrigin: true
+            },
             '^/app/calculator.*': {
                 target: 'http://localhost:5019',
                 changeOrigin: true

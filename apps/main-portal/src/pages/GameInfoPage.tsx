@@ -70,6 +70,25 @@ const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-minesweeper',
         leaderboardUrl: '/api/games/minesweeper/leaderboard',
     },
+    comboy: {
+        label: 'NES 에뮬레이터',
+        icon: 'fas fa-gamepad',
+        gradient: 'from-gray-600 to-gray-700',
+        buttonGradient: 'from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800',
+        tagline: '8비트 고전 패미콤/NES 게임을 웹에서 가볍게 즐겨보세요!',
+        description: 'Vera Comboy는 브라우저 내부 메모리에서 유저 소장 .nes 파일을 실행하는 하드웨어 구동 엔진만 제공하며, 어떠한 ROM 파일도 서버에 보관하거나 유포하지 않습니다.',
+        controls: [
+            { keys: 'ROM 파일 업로드', desc: '개인 소장 .nes 파일을 플레이어 화면에 드래그 앤 드롭' },
+            { keys: '방향키 (← → ↑ ↓)', desc: '방향키 (D-Pad)' },
+            { keys: 'Z / X', desc: 'A / B 버튼' },
+            { keys: 'Space / Enter', desc: 'Select / Start 버튼' },
+            { keys: '모바일 컨트롤러', desc: '모바일 환경 감지 시 가상 컨트롤러 화면 오버레이 및 진동(햅틱) 지원' },
+            { keys: '클라우드 세이브', desc: '언제 어디서든 [Save State] 버튼으로 원격 DB에 내 게임 상태 백업 가능' },
+        ],
+        appUrl: '/app/comboy/',
+        appName: 'app-comboy',
+        leaderboardUrl: '',
+    },
 };
 
 /**
@@ -182,7 +201,29 @@ export default function GameInfoPage() {
 
                     {/* 오른쪽: 점수(명예의 전당) */}
                     <div className="lg:col-span-1 flex flex-col items-center lg:items-stretch">
-                        <GameLeaderboard apiUrl={config.leaderboardUrl} />
+                        {gameId === 'comboy' ? (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
+                                <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
+                                    <i className="fas fa-shield-halved text-slate-500"></i>
+                                    보안 및 개인정보 보호정책
+                                </h3>
+                                <div className="text-xs text-slate-500 leading-relaxed space-y-2">
+                                    <p>
+                                        <strong>1. 100% 로컬 구동</strong><br />
+                                        Vera Comboy는 웹 어셈블리/자바스크립트 엔진 기반으로 동작하여, 사용자가 올린 게임 ROM 파일을 서버로 절대 업로드하지 않고 사용자 브라우저 메모리상에서만 구동합니다.
+                                    </p>
+                                    <p>
+                                        <strong>2. 클라우드 세이브 보안</strong><br />
+                                        저장(Save State) 시, 게임 데이터 자체가 아닌 현재 에뮬레이터의 일시적인 램 상태(바이너리 텍스트)만 추출하여 포털 데이터베이스에 암호화하여 백업합니다.
+                                    </p>
+                                    <p className="text-[11px] text-slate-400 mt-2 bg-slate-50 p-2 rounded border border-slate-100 font-sans">
+                                        ※ Vera Comboy는 저작권을 준수하며 어떠한 ROM 파일도 서버에 보관하거나 배포하지 않습니다. 유저가 합법적으로 소유한 파일만 실행할 수 있습니다.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <GameLeaderboard apiUrl={config.leaderboardUrl} />
+                        )}
                     </div>
                 </div>
             </main>

@@ -68,6 +68,9 @@ app.route('/', miniappRoutes);
 import { tetrisRoutes } from './routes/tetris.routes.js';
 app.route('/', tetrisRoutes);
 
+import { comboyRoutes } from './routes/comboy.routes.js';
+app.route('/', comboyRoutes);
+
 import { gameRoutes } from './routes/game.routes.js';
 app.route('/', gameRoutes);
 
@@ -83,7 +86,7 @@ app.route('/', financeRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'news'
+    'base64-converter', 'svg-converter', 'news', 'comboy'
 ];
 
 miniApps.forEach(appName => {

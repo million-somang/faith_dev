@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>베라 컴보이 아케이드 - NES 패미콤 에뮬레이터 | FaithLink</title>
+    <meta name="description" content="추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 NES ROM 파일을 브라우저 로컬 메모리에서 즉시 안전하게 구동하세요." />
+    
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="페이스링크" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
+    <link rel="icon" type="image/png" href="/logo-192.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="FaithLink" />
+    <meta property="og:title" content="베라 컴보이 아케이드 - NES 패미콤 에뮬레이터 | FaithLink" />
+    <meta property="og:description" content="추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 NES ROM 파일을 브라우저 로컬 메모리에서 즉시 안전하게 구동하세요." />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:image" content="https://faithlink.my/logo-512.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="베라 컴보이 아케이드 - NES 패미콤 에뮬레이터 | FaithLink" />
+    <meta name="twitter:description" content="추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 NES ROM 파일을 브라우저 로컬 메모리에서 즉시 안전하게 구동하세요." />
+    <meta name="twitter:image" content="https://faithlink.my/logo-512.png" />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "베라 컴보이 아케이드 (Vera Comboy Arcade)",
+      "description": "추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 .nes 파일을 로드해 플레이해 보세요.",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
