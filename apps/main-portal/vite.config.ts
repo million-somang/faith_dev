@@ -20,6 +20,10 @@ export default defineConfig({
                 target: 'http://localhost:5023',
                 changeOrigin: true
             },
+            '^/app/sfc.*': {
+                target: 'http://localhost:5024',
+                changeOrigin: true
+            },
             '^/app/calculator.*': {
                 target: 'http://localhost:5019',
                 changeOrigin: true

@@ -293,6 +293,15 @@ export default function GamePage() {
                                     <p className="text-slate-500 text-xs leading-relaxed">추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 ROM 파일을 로드해 플레이해 보세요.</p>
                                 </div>
                             </button>
+                            <button onClick={() => navigate('/game/sfc')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group">
+                                <div className="h-28 bg-gradient-to-r from-indigo-600 to-indigo-700 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
+                                    <i className="fas fa-gamepad mr-2"></i> Super Comboy
+                                </div>
+                                <div className="p-5">
+                                    <h3 className="font-extrabold text-xl text-indigo-600 mb-1 group-hover:text-indigo-700 transition-colors">베라 슈퍼컴보이</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">추억의 16비트 슈퍼패미콤 게임 에뮬레이터. 개인 소장 SNES ROM을 로드해 플레이해 보세요.</p>
+                                </div>
+                            </button>
                         </div>
                     ) : (
                         <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100 border-dashed">

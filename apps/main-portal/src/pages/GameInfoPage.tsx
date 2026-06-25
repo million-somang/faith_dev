@@ -89,6 +89,26 @@ const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-comboy',
         leaderboardUrl: '',
     },
+    sfc: {
+        label: 'SNES 에뮬레이터',
+        icon: 'fas fa-gamepad',
+        gradient: 'from-indigo-600 to-indigo-700',
+        buttonGradient: 'from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800',
+        tagline: '16비트 슈퍼패미콤/SNES 게임을 웹에서 가볍게 즐겨보세요!',
+        description: 'Vera Super Comboy는 브라우저 내부 메모리에서 유저 소장 .sfc/.smc 파일을 실행하는 하드웨어 구동 엔진만 제공하며, 어떠한 ROM 파일도 서버에 보관하거나 유포하지 않습니다.',
+        controls: [
+            { keys: 'ROM 파일 업로드', desc: '개인 소장 .sfc/.smc 파일을 플레이어 화면에 드래그 앤 드롭' },
+            { keys: '방향키 (← → ↑ ↓)', desc: '방향키 (D-Pad)' },
+            { keys: 'Z / X', desc: 'A / B 버튼' },
+            { keys: 'A / Y', desc: 'X / Y 버튼' },
+            { keys: 'Q / W', desc: 'L / R 버튼' },
+            { keys: 'Shift / Enter', desc: 'Select / Start 버튼' },
+            { keys: '게임패드', desc: 'USB/블루투스 게임패드 자동 감지 지원' },
+        ],
+        appUrl: '/app/sfc/',
+        appName: 'app-sfc',
+        leaderboardUrl: '',
+    },
 };
 
 /**
@@ -201,7 +221,7 @@ export default function GameInfoPage() {
 
                     {/* 오른쪽: 점수(명예의 전당) */}
                     <div className="lg:col-span-1 flex flex-col items-center lg:items-stretch">
-                        {gameId === 'comboy' ? (
+                        {(gameId === 'comboy' || gameId === 'sfc') ? (
                             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
                                 <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">
                                     <i className="fas fa-shield-halved text-slate-500"></i>
@@ -210,14 +230,14 @@ export default function GameInfoPage() {
                                 <div className="text-xs text-slate-500 leading-relaxed space-y-2">
                                     <p>
                                         <strong>1. 100% 로컬 구동</strong><br />
-                                        Vera Comboy는 웹 어셈블리/자바스크립트 엔진 기반으로 동작하여, 사용자가 올린 게임 ROM 파일을 서버로 절대 업로드하지 않고 사용자 브라우저 메모리상에서만 구동합니다.
+                                        {gameId === 'sfc' ? 'Vera Super Comboy' : 'Vera Comboy'}는 웹 어셈블리/자바스크립트 엔진 기반으로 동작하여, 사용자가 올린 게임 ROM 파일을 서버로 절대 업로드하지 않고 사용자 브라우저 메모리상에서만 구동합니다.
                                     </p>
                                     <p>
                                         <strong>2. 클라우드 세이브 보안</strong><br />
                                         저장(Save State) 시, 게임 데이터 자체가 아닌 현재 에뮬레이터의 일시적인 램 상태(바이너리 텍스트)만 추출하여 포털 데이터베이스에 암호화하여 백업합니다.
                                     </p>
                                     <p className="text-[11px] text-slate-400 mt-2 bg-slate-50 p-2 rounded border border-slate-100 font-sans">
-                                        ※ Vera Comboy는 저작권을 준수하며 어떠한 ROM 파일도 서버에 보관하거나 배포하지 않습니다. 유저가 합법적으로 소유한 파일만 실행할 수 있습니다.
+                                        ※ {gameId === 'sfc' ? 'Vera Super Comboy' : 'Vera Comboy'}는 저작권을 준수하며 어떠한 ROM 파일도 서버에 보관하거나 배포하지 않습니다. 유저가 합법적으로 소유한 파일만 실행할 수 있습니다.
                                     </p>
                                 </div>
                             </div>
