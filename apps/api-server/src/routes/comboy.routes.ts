@@ -1,11 +1,12 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
 import { requireAuth } from '../middleware/auth.js';
+import { bodyLimit } from 'hono/body-limit';
 
 export const comboyRoutes = new Hono<{ Variables: { user?: any } }>();
 
 // 1. 세이브 데이터 저장 (POST /api/comboy/save)
-comboyRoutes.post('/api/comboy/save', requireAuth, async (c) => {
+comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), requireAuth, async (c) => {
     const DB = getDB(c);
     const user = c.get('user');
     if (!user) {
