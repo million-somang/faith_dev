@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Header, Footer, Card } from '@faithportal/ui';
 import FinanceSubMenu from '../components/FinanceSubMenu';
 import { useAuth } from '../hooks/useAuth';
@@ -23,7 +24,40 @@ const CATEGORIES: InsuranceCategory[] = [
 ];
 
 export default function InsurancePage() {
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading } = useAuth();
+    const navigate = useNavigate();
+    const [showPopup, setShowPopup] = useState(false);
+
+    const isAuthorized = user && user.email === 'sukman@naver.com';
+
+    useEffect(() => {
+        if (!isLoading && !isAuthorized) {
+            setShowPopup(true);
+        }
+    }, [isLoading, isAuthorized]);
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate('/');
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col min-h-screen">
+                <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
+                <FinanceSubMenu />
+                <main className="flex-1 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-green-500"></div>
+                </main>
+                <Footer baseUrl={MAIN_PORTAL_URL} />
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-screen">
             <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
@@ -42,55 +76,82 @@ export default function InsurancePage() {
                 </div>
             </div>
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
-                {/* 인트로 */}
-                <section className="mb-8">
-                    <div className="flex items-center gap-3 mb-2">
-                        <span className="w-11 h-11 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl">
-                            <i className="fas fa-umbrella"></i>
-                        </span>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">보험</h1>
-                            <p className="text-sm text-gray-500">내게 맞는 보험을 한눈에 살펴보세요.</p>
+            {isAuthorized ? (
+                <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
+                    {/* 인트로 */}
+                    <section className="mb-8">
+                        <div className="flex items-center gap-3 mb-2">
+                            <span className="w-11 h-11 rounded-xl bg-green-50 text-green-600 flex items-center justify-center text-xl">
+                                <i className="fas fa-umbrella"></i>
+                            </span>
+                            <div>
+                                <h1 className="text-2xl font-bold text-gray-900">보험</h1>
+                                <p className="text-sm text-gray-500">내게 맞는 보험을 한눈에 살펴보세요.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* 보험 종류 */}
+                    <section className="mb-10">
+                        <h2 className="text-xl font-bold text-gray-900 mb-4">
+                            <i className="fas fa-layer-group text-green-600 mr-2"></i>보험 종류
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {CATEGORIES.map((c) => (
+                                <div
+                                    key={c.key}
+                                    className="relative bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition-all"
+                                >
+                                    <span className="absolute top-4 right-4 text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                        준비중
+                                    </span>
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3 ${c.color}`}>
+                                        <i className={c.icon}></i>
+                                    </div>
+                                    <div className="font-bold text-gray-900 mb-1">{c.name}</div>
+                                    <p className="text-sm text-gray-500">{c.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {/* 준비중 안내 */}
+                    <section className="mb-10">
+                        <Card className="p-8 text-center">
+                            <i className="fas fa-screwdriver-wrench text-3xl text-gray-300 mb-3"></i>
+                            <h3 className="text-lg font-bold text-gray-900 mb-1">보험료 비교·계산 기능 준비중</h3>
+                            <p className="text-sm text-gray-500">
+                                보험사별 상품 비교와 예상 보험료 계산 기능을 곧 제공할 예정입니다.
+                            </p>
+                        </Card>
+                    </section>
+                </main>
+            ) : (
+                <main className="flex-1 bg-gray-50" />
+            )}
+
+            {/* 권한이 없는 경우 팝업 모달 노출 */}
+            {showPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+                    <div className="bg-white rounded-2xl p-6 max-w-xs sm:max-w-sm w-full mx-4 shadow-2xl border border-gray-100 transform scale-100 transition-all duration-300">
+                        <div className="text-center">
+                            <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl border border-amber-100">
+                                <i className="fas fa-clock"></i>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">서비스 준비 중</h3>
+                            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                                보험 서비스는 현재 준비 중입니다.<br/>더 나은 서비스로 찾아뵙겠습니다.
+                            </p>
+                            <button
+                                onClick={handleClosePopup}
+                                className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold rounded-xl shadow-md transition-colors outline-none"
+                            >
+                                확인
+                            </button>
                         </div>
                     </div>
-                </section>
-
-                {/* 보험 종류 */}
-                <section className="mb-10">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">
-                        <i className="fas fa-layer-group text-green-600 mr-2"></i>보험 종류
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {CATEGORIES.map((c) => (
-                            <div
-                                key={c.key}
-                                className="relative bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:border-gray-300 transition-all"
-                            >
-                                <span className="absolute top-4 right-4 text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                    준비중
-                                </span>
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl mb-3 ${c.color}`}>
-                                    <i className={c.icon}></i>
-                                </div>
-                                <div className="font-bold text-gray-900 mb-1">{c.name}</div>
-                                <p className="text-sm text-gray-500">{c.desc}</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
-                {/* 준비중 안내 */}
-                <section className="mb-10">
-                    <Card className="p-8 text-center">
-                        <i className="fas fa-screwdriver-wrench text-3xl text-gray-300 mb-3"></i>
-                        <h3 className="text-lg font-bold text-gray-900 mb-1">보험료 비교·계산 기능 준비중</h3>
-                        <p className="text-sm text-gray-500">
-                            보험사별 상품 비교와 예상 보험료 계산 기능을 곧 제공할 예정입니다.
-                        </p>
-                    </Card>
-                </section>
-            </main>
+                </div>
+            )}
 
             <Footer baseUrl={MAIN_PORTAL_URL} />
         </div>

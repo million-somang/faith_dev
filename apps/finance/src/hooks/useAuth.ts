@@ -18,9 +18,11 @@ export interface AuthUser {
  */
 export function useAuth() {
     const [user, setUser] = useState<AuthUser | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         let cancelled = false;
+        setIsLoading(true);
         fetch(`${MAIN_PORTAL_URL}/api/auth/check`, { credentials: 'include' })
             .then((r) => (r.ok ? r.json() : null))
             .then((data) => {
@@ -28,6 +30,9 @@ export function useAuth() {
             })
             .catch(() => {
                 /* 비로그인/네트워크 실패는 조용히 무시 */
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoading(false);
             });
         return () => {
             cancelled = true;
@@ -48,5 +53,5 @@ export function useAuth() {
         window.location.href = `${MAIN_PORTAL_URL}/`;
     }, []);
 
-    return { user, logout };
+    return { user, logout, isLoading };
 }
