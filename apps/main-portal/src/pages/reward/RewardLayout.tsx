@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../../context/AuthContext';
 import { PageSEO } from '../../components/PageSEO';
@@ -12,8 +13,25 @@ const TABS = [
 
 export default function RewardLayout() {
     const { user, logout, isLoading } = useAuth();
+    const navigate = useNavigate();
+    const [showPopup, setShowPopup] = useState(false);
 
     const isAuthorized = user && user.email === 'sukman@naver.com';
+
+    useEffect(() => {
+        if (!isLoading && !isAuthorized) {
+            setShowPopup(true);
+        }
+    }, [isLoading, isAuthorized]);
+
+    const handleClosePopup = () => {
+        setShowPopup(false);
+        if (window.history.length > 1) {
+            navigate(-1);
+        } else {
+            navigate('/');
+        }
+    };
 
     if (isLoading) {
         return (
@@ -74,17 +92,30 @@ export default function RewardLayout() {
                     </main>
                 </>
             ) : (
-                <main className="flex-1 flex flex-col items-center justify-center p-8">
-                    <div className="text-center py-20">
-                        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl shadow-sm">
-                            <i className="fas fa-clock"></i>
+                <main className="flex-1 bg-gray-50" />
+            )}
+
+            {/* 권한이 없는 경우 팝업 모달 노출 */}
+            {showPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-300">
+                    <div className="bg-white rounded-2xl p-6 max-w-xs sm:max-w-sm w-full mx-4 shadow-2xl border border-gray-100 transform scale-100 transition-all duration-300">
+                        <div className="text-center">
+                            <div className="w-14 h-14 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 text-xl border border-amber-100">
+                                <i className="fas fa-clock"></i>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">서비스 준비 중</h3>
+                            <p className="text-sm text-gray-500 mb-6 leading-relaxed">
+                                리워드 서비스는 현재 준비 중입니다.<br/>더 나은 서비스로 찾아뵙겠습니다.
+                            </p>
+                            <button
+                                onClick={handleClosePopup}
+                                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold rounded-xl shadow-md transition-colors outline-none"
+                            >
+                                확인
+                            </button>
                         </div>
-                        <h2 className="text-2xl font-extrabold text-gray-900 mb-2">서비스 준비 중</h2>
-                        <p className="text-gray-500 max-w-md mx-auto mb-6">
-                            리워드 서비스는 현재 준비 중입니다. 더 나은 서비스로 찾아뵙겠습니다.
-                        </p>
                     </div>
-                </main>
+                </div>
             )}
 
             <Footer />
