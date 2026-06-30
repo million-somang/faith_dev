@@ -203,7 +203,7 @@ app.get('/news/:id', async (c) => {
 
         if (newsResult.rows.length > 0) {
             const news = newsResult.rows[0] as any;
-            const title = `${news.title} - FaithLink 뉴스`;
+            const title = `${news.title} - VERA 뉴스`;
             const description = (news.content || '').replace(/<[^>]*>/g, '').substring(0, 160);
             const url = `${SITE_URL}/news/${newsId}`;
 
@@ -217,7 +217,7 @@ app.get('/news/:id', async (c) => {
                 "datePublished": news.created_at,
                 "publisher": {
                     "@type": "Organization",
-                    "name": "FaithLink"
+                    "name": "VERA"
                 }
             });
 
@@ -228,7 +228,7 @@ app.get('/news/:id', async (c) => {
     <meta property="og:description" content="${description}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:type" content="article" />
-    <meta property="og:site_name" content="FaithLink" />
+    <meta property="og:site_name" content="VERA" />
     <meta property="og:image" content="${SITE_URL}/logo-512.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${title}" />
@@ -237,10 +237,10 @@ app.get('/news/:id', async (c) => {
     <link rel="canonical" href="${url}" />
     <script type="application/ld+json">${jsonLd}</script>`;
 
-            // <title>FaithPortal</title> 을 동적 메타로 교체
-            html = html.replace('<title>FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털</title>', metaTags);
+            // <title>VERA</title> 을 동적 메타로 교체
+            html = html.replace('<title>VERA - 실시간 뉴스, 미니게임, 생활도구 포털</title>', metaTags);
             // fallback: 원래 title도 교체
-            html = html.replace('<title>FaithPortal</title>', metaTags);
+            html = html.replace('<title>VERA</title>', metaTags);
         }
 
         return c.html(html);
@@ -271,7 +271,7 @@ function buildMetaBlock(opts: { title: string; description: string; path: string
     <meta property="og:description" content="${esc(description)}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:type" content="${type}" />
-    <meta property="og:site_name" content="FaithLink" />
+    <meta property="og:site_name" content="VERA" />
     <meta property="og:locale" content="ko_KR" />
     <meta property="og:image" content="${OG_IMAGE}" />
     <meta name="twitter:card" content="summary_large_image" />
@@ -302,30 +302,30 @@ function renderSpaWithMeta(metaBlock: string): string {
 
 const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: object }> = {
     '/': {
-        title: 'FaithLink - 실시간 뉴스, 미니게임, 생활도구 포털',
-        description: 'FaithLink에서 실시간 속보 뉴스와 테트리스·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
-        jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: 'FaithLink', url: SITE_URL, logo: OG_IMAGE },
+        title: 'VERA - 실시간 뉴스, 미니게임, 생활도구 포털',
+        description: 'VERA에서 실시간 속보 뉴스와 테트리스·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
+        jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: 'VERA', url: SITE_URL, logo: OG_IMAGE },
     },
     '/news': {
-        title: '실시간 뉴스 - FaithLink',
-        description: '정치·경제·IT·스포츠·연예 등 분야별 최신 속보를 실시간으로 모아 보는 FaithLink 뉴스. 주요 언론사 기사를 한눈에 확인하세요.',
+        title: '실시간 뉴스 - VERA',
+        description: '정치·경제·IT·스포츠·연예 등 분야별 최신 속보를 실시간으로 모아 보는 VERA 뉴스. 주요 언론사 기사를 한눈에 확인하세요.',
         jsonLd: { '@context': 'https://schema.org', '@type': 'CollectionPage', name: '실시간 뉴스', url: `${SITE_URL}/news`, inLanguage: 'ko' },
     },
     '/lifestyle': {
-        title: '생활도구 - 계산기·단위 변환·맞춤법 검사 | FaithLink',
+        title: '생활도구 - 계산기·단위 변환·맞춤법 검사 | VERA',
         description: '계산기, 만 나이·디데이 계산기, 평수 변환, 맞춤법 검사기, JSON 포맷터, Base64 변환기 등 자주 쓰는 무료 온라인 도구 모음.',
     },
     '/game': {
-        title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | FaithLink',
+        title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | VERA',
         description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 테트리스, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
     },
 };
 
 const GAME_META: Record<string, { title: string; description: string }> = {
-    tetris: { title: '테트리스 무료 온라인 게임 - FaithLink', description: '브라우저에서 바로 즐기는 무료 테트리스. 설치·회원가입 없이 플레이하고 최고 점수 랭킹에 도전하세요.' },
-    sudoku: { title: '스도쿠 무료 온라인 게임 - FaithLink', description: '난이도별 스도쿠를 무료로. 브라우저에서 바로 플레이하고 기록을 남겨보세요.' },
-    '2048': { title: '2048 무료 온라인 게임 - FaithLink', description: '중독성 있는 숫자 퍼즐 2048을 무료로. 브라우저에서 바로 플레이하고 랭킹에 도전하세요.' },
-    minesweeper: { title: '지뢰찾기 무료 온라인 게임 - FaithLink', description: '클래식 지뢰찾기를 무료로. 브라우저에서 바로 즐기고 기록에 도전하세요.' },
+    tetris: { title: '테트리스 무료 온라인 게임 - VERA', description: '브라우저에서 바로 즐기는 무료 테트리스. 설치·회원가입 없이 플레이하고 최고 점수 랭킹에 도전하세요.' },
+    sudoku: { title: '스도쿠 무료 온라인 게임 - VERA', description: '난이도별 스도쿠를 무료로. 브라우저에서 바로 플레이하고 기록을 남겨보세요.' },
+    '2048': { title: '2048 무료 온라인 게임 - VERA', description: '중독성 있는 숫자 퍼즐 2048을 무료로. 브라우저에서 바로 플레이하고 랭킹에 도전하세요.' },
+    minesweeper: { title: '지뢰찾기 무료 온라인 게임 - VERA', description: '클래식 지뢰찾기를 무료로. 브라우저에서 바로 즐기고 기록에 도전하세요.' },
 };
 
 for (const [routePath, meta] of Object.entries(ROUTE_META)) {

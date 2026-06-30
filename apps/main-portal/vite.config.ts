@@ -72,6 +72,10 @@ export default defineConfig({
                 target: 'http://localhost:5022',
                 changeOrigin: true
             },
+            '^/app/saju.*': {
+                target: 'http://localhost:5025',
+                changeOrigin: true
+            },
             '^/app/news.*': {
                 target: 'http://localhost:5001',
                 changeOrigin: true,

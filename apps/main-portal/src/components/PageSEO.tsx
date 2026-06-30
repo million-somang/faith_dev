@@ -10,7 +10,7 @@ interface PageSEOProps {
 }
 
 const SITE_URL = 'https://faithlink.my';
-const SITE_NAME = 'FaithLink';
+const SITE_NAME = 'VERA';
 const DEFAULT_IMAGE = `${SITE_URL}/logo-512.png`;
 
 export function PageSEO({ title, description, path = '/', type = 'website', image = DEFAULT_IMAGE, jsonLd }: PageSEOProps) {

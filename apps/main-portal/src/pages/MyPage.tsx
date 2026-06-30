@@ -10,11 +10,96 @@ import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+// ─── 명리학 사주 연산 이식 (사주 미니앱 알고리즘 일치) ───
+const CHEONGAN = ['갑(甲)', '을(을)', '병(丙)', '정(丁)', '무(戊)', '기(己)', '경(庚)', '신(辛)', '임(壬)', '계(癸)'];
+const JIJI = ['자(子)', '축(丑)', '인(寅)', '묘(卯)', '진(辰)', '사(巳)', '오(午)', '미(未)', '신(申)', '유(酉)', '술(戌)', '해(亥)'];
+const CHEONGAN_ELEMENT: Record<string, 'wood' | 'fire' | 'earth' | 'metal' | 'water'> = {
+    '갑(甲)': 'wood', '을(을)': 'wood', '병(丙)': 'fire', '정(丁)': 'fire', '무(戊)': 'earth', '기(己)': 'earth', '경(庚)': 'metal', '신(辛)': 'metal', '임(壬)': 'water', '계(癸)': 'water'
+};
+const JIJI_ELEMENT: Record<string, 'wood' | 'fire' | 'earth' | 'metal' | 'water'> = {
+    '인(寅)': 'wood', '묘(卯)': 'wood', '사(巳)': 'fire', '오(午)': 'fire', '진(辰)': 'earth', '미(未)': 'earth', '술(戌)': 'earth', '축(丑)': 'earth', '신(申)': 'metal', '유(酉)': 'metal', '자(子)': 'water', '해(亥)': 'water'
+};
+
+function getSeedHash(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return Math.abs(hash);
+}
+
+function calculateSaju(name: string, dateStr: string): { wood: number; fire: number; earth: number; metal: number; water: number; nature: string } {
+    const seed = getSeedHash(`${name}_${dateStr}`);
+
+    const yearIndex = (seed % 10);
+    const yearJijiIndex = ((seed + 2) % 12);
+    const monthIndex = ((seed + 3) % 10);
+    const monthJijiIndex = ((seed + 5) % 12);
+    const dayIndex = ((seed + 7) % 10);
+    const dayJijiIndex = ((seed + 1) % 12);
+
+    const yearGan = CHEONGAN[yearIndex];
+    const yearJi = JIJI[yearJijiIndex];
+    const monthGan = CHEONGAN[monthIndex];
+    const monthJi = JIJI[monthJijiIndex];
+    const dayGan = CHEONGAN[dayIndex];
+    const dayJi = JIJI[dayJijiIndex];
+
+    const eightCharacters = [
+        { type: 'gan', elem: CHEONGAN_ELEMENT[yearGan] },
+        { type: 'ji', elem: JIJI_ELEMENT[yearJi] },
+        { type: 'gan', elem: CHEONGAN_ELEMENT[monthGan] },
+        { type: 'ji', elem: JIJI_ELEMENT[monthJi] },
+        { type: 'gan', elem: CHEONGAN_ELEMENT[dayGan] },
+        { type: 'ji', elem: JIJI_ELEMENT[dayJi] }
+    ];
+
+    const counts = { wood: 0, fire: 0, earth: 0, metal: 0, water: 0 };
+    eightCharacters.forEach((char, idx) => {
+        let weight = 10;
+        if (char.type === 'ji') weight = 15;
+        if (idx === 4) weight = 20; // 일간 가중치
+        counts[char.elem] += weight;
+    });
+
+    const totalWeight = Object.values(counts).reduce((a, b) => a + b, 0);
+    const elements = {
+        wood: Math.round((counts.wood / totalWeight) * 100),
+        fire: Math.round((counts.fire / totalWeight) * 100),
+        earth: Math.round((counts.earth / totalWeight) * 100),
+        metal: Math.round((counts.metal / totalWeight) * 100),
+        water: Math.round((counts.water / totalWeight) * 100)
+    };
+
+    // 보정
+    const sum = elements.wood + elements.fire + elements.earth + elements.metal + elements.water;
+    if (sum !== 100) {
+        elements.wood += (100 - sum);
+    }
+
+    const dayElement = CHEONGAN_ELEMENT[dayGan];
+    let nature = "";
+    if (dayElement === 'wood') {
+        nature = "자비롭고 선구적인 목(木)의 성향을 타고나 성장 역량이 뛰어납니다.";
+    } else if (dayElement === 'fire') {
+        nature = "명랑하고 정의로운 화(火)의 기운을 가져 표현과 사교성이 풍부합니다.";
+    } else if (dayElement === 'earth') {
+        nature = "듬직하고 포용력 있는 토(土)의 기운으로 주위의 신망이 아주 두텁습니다.";
+    } else if (dayElement === 'metal') {
+        nature = "결단력 있고 강한 의지의 금(金)의 기질로 매사에 빈틈없이 추진합니다.";
+    } else {
+        nature = "유연하고 지혜로운 수(水)의 성질로 뛰어난 적응력과 임기응변을 보입니다.";
+    }
+
+    return { ...elements, nature };
+}
+
 export default function MyPage() {
     const { user, logout, isLoading } = useAuth();
     const navigate = useNavigate();
 
-    const [activeSection, setActiveSection] = useState<'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('news');
+    // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
+    const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
     const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
@@ -36,11 +121,25 @@ export default function MyPage() {
         }
     };
 
+    // 데이터 상태 관리
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
     const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: [] });
     const [gamesData, setGamesData] = useState<{ stats: any, history: any[] }>({ stats: {}, history: [] });
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
     const [loading, setLoading] = useState(false);
+
+    // 생년월일 관리 로컬 스토리지 연동
+    const [birthDate, setBirthDate] = useState(localStorage.getItem('user_birth_date') || '');
+    const [tempBirthDate, setTempBirthDate] = useState(birthDate);
+    const [showBirthEditor, setShowBirthEditor] = useState(!birthDate);
+
+    const handleSaveBirth = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!tempBirthDate) return;
+        localStorage.setItem('user_birth_date', tempBirthDate);
+        setBirthDate(tempBirthDate);
+        setShowBirthEditor(false);
+    };
 
     useEffect(() => {
         if (!isLoading && !user) {
@@ -56,7 +155,35 @@ export default function MyPage() {
             try {
                 const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
 
-                if (activeSection === 'news') {
+                // ─── 대시보드(나의 홈)일 때는 모든 데이터를 일괄 취합해서 가져옴 ───
+                if (activeSection === 'dashboard') {
+                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes] = await Promise.all([
+                        instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/news/keywords?limit=3`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/bookmarks?page=1&limit=3`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/watchlist`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/games/stats`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/games/history?limit=3`).catch(() => ({ data: {} }))
+                    ]);
+
+                    setNewsData({
+                        keywords: kwRes.data.keywords || [],
+                        keywordNews: kwNewsRes.data.news || [],
+                        bookmarks: bmRes.data.items || []
+                    });
+                    setStocksData({
+                        stats: statsStocksRes.data.stats || {},
+                        watchlist: wlRes.data.stocks || []
+                    });
+                    setGamesData({
+                        stats: statsGamesRes.data.stats || {},
+                        history: historyGamesRes.data.history?.history || []
+                    });
+                }
+                
+                // 기존 개별 탭 렌더링용 API 호출
+                else if (activeSection === 'news') {
                     const [kwRes, kwNewsRes, bmRes] = await Promise.all([
                         instance.get(`/api/user/keywords`),
                         instance.get(`/api/user/news/keywords?limit=5`),
@@ -108,25 +235,45 @@ export default function MyPage() {
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-sky-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-violet-500"></div>
             </div>
         );
     }
 
     if (!user) {
-        return null; // will redirect
+        return null;
     }
 
+    // 로그인 회원의 사주 계산 작동
+    const saju = birthDate ? calculateSaju(user.name, birthDate) : null;
+
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
             <Header user={user} onLogout={logout} />
 
-            <div className="flex-1 max-w-7xl mx-auto px-1 sm:px-4 py-8 w-full">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                        <i className="fas fa-user-circle mr-2 text-gray-500"></i>마이페이지
-                    </h1>
-                    <p className="text-gray-600">나의 저장 항목과 활동 내역을 확인하세요</p>
+            <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
+                
+                {/* 상단 히어로 마이포탈 헤더 */}
+                <div className="mb-8 bg-gradient-to-r from-violet-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+                    <div className="absolute right-0 bottom-0 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black">
+                                Personal Portal
+                            </span>
+                            <h1 className="text-3xl font-black tracking-tight mt-2 flex items-center gap-2">
+                                <i className="fas fa-house-user"></i> 나만의 홈페이지
+                            </h1>
+                            <p className="text-violet-100 text-xs sm:text-sm font-semibold mt-1">
+                                {user.name}님을 위해 실시간 연동된 뉴스, 주식, 게임 전적 및 사주 오행 대시보드입니다.
+                            </p>
+                        </div>
+                        {user.email && (
+                            <div className="text-xs sm:text-right font-medium opacity-90">
+                                <i className="fas fa-envelope mr-1.5"></i>{user.email}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* 레이아웃: 사이드바 + 컨텐츠 */}
@@ -134,57 +281,68 @@ export default function MyPage() {
 
                     {/* 사이드바 */}
                     <div className="md:col-span-1">
-                        <div className="bg-white rounded-xl shadow-sm p-4 sticky top-24 border border-gray-100">
+                        <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-24 border border-slate-200/80">
                             <nav className="space-y-2">
+                                {/* 신설: 대시보드(나의 홈) */}
                                 <button
-                                    onClick={() => setActiveSection('news')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'news'
-                                        ? 'border-sky-500 bg-sky-50 font-semibold'
-                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                    onClick={() => setActiveSection('dashboard')}
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'dashboard'
+                                        ? 'border-violet-600 bg-violet-50 font-black text-violet-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
                                         }`}
                                 >
-                                    <i className="fas fa-newspaper w-6 text-sky-500"></i>
+                                    <i className="fas fa-house-user w-5 text-violet-600"></i>
+                                    <span>나의 홈</span>
+                                </button>
+                                <button
+                                    onClick={() => setActiveSection('news')}
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'news'
+                                        ? 'border-sky-500 bg-sky-50 font-black text-sky-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
+                                        }`}
+                                >
+                                    <i className="fas fa-newspaper w-5 text-sky-500"></i>
                                     <span>뉴스</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveSection('stocks')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'stocks'
-                                        ? 'border-green-500 bg-green-50 font-semibold'
-                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'stocks'
+                                        ? 'border-green-500 bg-green-50 font-black text-green-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
                                         }`}
                                 >
-                                    <i className="fas fa-chart-line w-6 text-green-500"></i>
+                                    <i className="fas fa-chart-line w-5 text-green-500"></i>
                                     <span>주식</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveSection('games')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'games'
-                                        ? 'border-purple-500 bg-purple-50 font-semibold'
-                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'games'
+                                        ? 'border-purple-500 bg-purple-50 font-black text-purple-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
                                         }`}
                                 >
-                                    <i className="fas fa-gamepad w-6 text-purple-500"></i>
+                                    <i className="fas fa-gamepad w-5 text-purple-500"></i>
                                     <span>게임</span>
                                 </button>
                                 <button
                                     onClick={() => setActiveSection('utils')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'utils'
-                                        ? 'border-orange-500 bg-orange-50 font-semibold'
-                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'utils'
+                                        ? 'border-orange-500 bg-orange-50 font-black text-orange-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
                                         }`}
                                 >
-                                    <i className="fas fa-tools w-6 text-orange-500"></i>
+                                    <i className="fas fa-tools w-5 text-orange-500"></i>
                                     <span>유틸리티</span>
                                 </button>
-                                <hr className="my-2 border-gray-100" />
+                                <hr className="my-2 border-slate-100" />
                                 <button
                                     onClick={() => setActiveSection('home-customize')}
-                                    className={`w-full text-left px-4 py-3 rounded-lg border-l-4 transition-all ${activeSection === 'home-customize'
-                                        ? 'border-green-500 bg-green-50 font-semibold text-green-700'
-                                        : 'border-transparent hover:bg-gray-50 text-gray-600'
+                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'home-customize'
+                                        ? 'border-violet-600 bg-violet-50 font-black text-violet-700'
+                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
                                         }`}
                                 >
-                                    <i className="fas fa-magic w-6 text-green-500"></i>
+                                    <i className="fas fa-magic w-5 text-violet-500"></i>
                                     <span>홈 꾸미기</span>
                                 </button>
                             </nav>
@@ -193,13 +351,189 @@ export default function MyPage() {
 
                     {/* 메인 컨텐츠 */}
                     <div className="md:col-span-3">
-                        <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8 border border-gray-100 min-h-[500px]">
+                        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-slate-200/80 min-h-[500px]">
                             {loading ? (
                                 <div className="h-full flex items-center justify-center py-20">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-gray-400"></div>
+                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
                                 </div>
                             ) : (
                                 <>
+                                    {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
+                                    {activeSection === 'dashboard' && (
+                                        <div className="animate-fade-in space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                
+                                                {/* 위젯 1: 나만의 사주팔자 오행 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-[#FAF9F5] flex flex-col justify-between min-h-[300px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-stone-200 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-yin-yang text-violet-600"></i> {user.name}님의 사주 오행
+                                                            </h3>
+                                                            <button
+                                                                onClick={() => setShowBirthEditor(true)}
+                                                                className="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-0.5 rounded font-black transition-colors"
+                                                            >
+                                                                생일 수정
+                                                            </button>
+                                                        </div>
+
+                                                        {/* 생일 수정 폼 */}
+                                                        {showBirthEditor ? (
+                                                            <form onSubmit={handleSaveBirth} className="space-y-3 py-2">
+                                                                <p className="text-xs text-stone-500 font-bold">생년월일을 입력해 실시간 사주를 받아보세요.</p>
+                                                                <input
+                                                                    type="date"
+                                                                    value={tempBirthDate}
+                                                                    onChange={(e) => setTempBirthDate(e.target.value)}
+                                                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold"
+                                                                    required
+                                                                />
+                                                                <div className="flex gap-2">
+                                                                    <button type="submit" className="flex-1 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-black">확인</button>
+                                                                    {birthDate && <button type="button" onClick={() => setShowBirthEditor(false)} className="flex-1 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-black">취소</button>}
+                                                                </div>
+                                                            </form>
+                                                        ) : saju ? (
+                                                            <div className="space-y-3">
+                                                                <p className="text-xs text-stone-600 leading-relaxed font-bold break-keep">
+                                                                    🔮 <span className="text-violet-600 font-black">천성:</span> {saju.nature}
+                                                                </p>
+                                                                {/* 오행 그래프 */}
+                                                                <div className="space-y-1.5">
+                                                                    <div className="flex justify-between text-[10px] font-black text-stone-500">
+                                                                        <span>🌳 목 {saju.wood}%</span>
+                                                                        <span>🔥 화 {saju.fire}%</span>
+                                                                        <span>⛰️ 토 {saju.earth}%</span>
+                                                                        <span>⚙️ 금 {saju.metal}%</span>
+                                                                        <span>💧 수 {saju.water}%</span>
+                                                                    </div>
+                                                                    <div className="h-2.5 w-full bg-stone-100 rounded-full overflow-hidden flex shadow-inner">
+                                                                        <div className="bg-emerald-500" style={{ width: `${saju.wood}%` }}></div>
+                                                                        <div className="bg-red-500" style={{ width: `${saju.fire}%` }}></div>
+                                                                        <div className="bg-amber-500" style={{ width: `${saju.earth}%` }}></div>
+                                                                        <div className="bg-stone-500" style={{ width: `${saju.metal}%` }}></div>
+                                                                        <div className="bg-blue-600" style={{ width: `${saju.water}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+
+                                                    <Link
+                                                        to="/entertainment/saju"
+                                                        className="mt-4 w-full py-2 bg-violet-600 hover:bg-violet-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                    >
+                                                        전통 사주 종합 해설 열기
+                                                    </Link>
+                                                </div>
+
+                                                {/* 위젯 2: 최근 플레이 게임 전적 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-gamepad text-purple-500"></i> 나의 게임 히스토리
+                                                            </h3>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            {gamesData.history && gamesData.history.length > 0 ? (
+                                                                gamesData.history.map((game, i) => (
+                                                                    <div key={i} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl text-xs">
+                                                                        <span className="font-black text-slate-700 font-mono">{game.game_type}</span>
+                                                                        <span className="font-extrabold text-purple-600">{game.score}점</span>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">플레이한 게임이 없습니다</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <Link
+                                                        to="/game"
+                                                        className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                    >
+                                                        게임 센터 바로가기
+                                                    </Link>
+                                                </div>
+
+                                                {/* 위젯 3: 관심 주식 시황 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-chart-line text-green-600"></i> 관심 주식 종목
+                                                            </h3>
+                                                            {stocksData.watchlist.length > 0 && (
+                                                                <span className="text-[10px] text-slate-400 font-bold">{stocksData.watchlist.length}개 구독중</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            {stocksData.watchlist && stocksData.watchlist.length > 0 ? (
+                                                                stocksData.watchlist.slice(0, 3).map(stock => (
+                                                                    <div key={stock.id} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl text-xs">
+                                                                        <div>
+                                                                            <span className="font-black text-slate-800 mr-2">{stock.stock_name}</span>
+                                                                            <span className="font-mono text-slate-400">{stock.stock_symbol}</span>
+                                                                        </div>
+                                                                        {stock.target_price && (
+                                                                            <span className="font-bold text-green-600">목표: {Number(stock.target_price).toLocaleString()}</span>
+                                                                        )}
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">관심 등록한 주식이 없습니다</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <Link
+                                                        to="/finance"
+                                                        className="mt-4 w-full py-2 bg-green-600 hover:bg-green-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                    >
+                                                        주식/금융 센터 바로가기
+                                                    </Link>
+                                                </div>
+
+                                                {/* 위젯 4: 북마크 뉴스 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-bookmark text-amber-500"></i> 스크랩 뉴스
+                                                            </h3>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            {newsData.bookmarks && newsData.bookmarks.length > 0 ? (
+                                                                newsData.bookmarks.map(bm => (
+                                                                    <div key={bm.id} className="bg-slate-50 p-2.5 rounded-xl text-xs hover:bg-slate-100 transition-colors">
+                                                                        <Link to={`/news/${bm.news_id || bm.id}`} className="font-extrabold text-slate-700 block truncate hover:text-sky-600">
+                                                                            {bm.title}
+                                                                        </Link>
+                                                                    </div>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">북마크한 뉴스가 없습니다</div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <Link
+                                                        to="/news"
+                                                        className="mt-4 w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                    >
+                                                        종합 뉴스 데스크 바로가기
+                                                    </Link>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* 홈 꾸미기 섹션 */}
                                     {activeSection === 'home-customize' && (
                                         <div className="animate-fade-in">
@@ -208,7 +542,6 @@ export default function MyPage() {
                                             </h2>
                                             <p className="text-gray-500 text-sm mb-6">설정을 바꾸면 메인 페이지가 나만의 모습으로 바뀝니다.</p>
 
-                                            {/* 현재 설정 요약 카드 */}
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                                                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
                                                     <div className="text-xs font-bold text-green-600 mb-1 uppercase">퀵메뉴</div>
@@ -239,7 +572,6 @@ export default function MyPage() {
                                                 {homeConfig.isConfigured ? '설정 다시 하기' : '지금 내 홈 꾸미기 시작!'}
                                             </button>
 
-                                            {/* 모바일 하단 탭 설정 */}
                                             <div className="mt-8 p-5 bg-white border border-gray-200 rounded-2xl">
                                                 <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
                                                     <i className="fas fa-mobile-screen-button text-green-500"></i> 모바일 하단 탭 메뉴

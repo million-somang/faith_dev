@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "페이스링크",
-  "short_name": "페이스링크",
+  "name": "VERA",
+  "short_name": "VERA",
   "description": "실시간 뉴스, 미니게임, 생활도구 통합 포털",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#7c3aed",
   "prefer_related_applications": false,
   "icons": [
     {

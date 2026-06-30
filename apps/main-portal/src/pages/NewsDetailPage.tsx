@@ -133,7 +133,7 @@ export default function NewsDetailPage() {
         <div className="flex flex-col min-h-screen bg-gray-50">
             {news && (
                 <PageSEO
-                    title={`${news.title} - FaithLink 뉴스`}
+                    title={`${news.title} - VERA 뉴스`}
                     description={(news.content || news.summary || '').replace(/<[^>]*>/g, '').substring(0, 160)}
                     path={`/news/${id}`}
                     type="article"
@@ -142,7 +142,7 @@ export default function NewsDetailPage() {
                         '@type': 'NewsArticle',
                         headline: news.title,
                         datePublished: news.published_at || news.created_at,
-                        publisher: { '@type': 'Organization', name: 'FaithLink' },
+                        publisher: { '@type': 'Organization', name: 'VERA' },
                     }}
                 />
             )}

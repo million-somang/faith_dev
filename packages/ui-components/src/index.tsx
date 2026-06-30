@@ -156,6 +156,7 @@ const FULL_MENU_ITEMS = [
     { label: '생활도구', icon: 'fa-screwdriver-wrench', bg: 'bg-green-50', color: 'text-green-600', path: '/lifestyle' },
     { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', path: '/finance' },
     { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', path: '/game' },
+    { label: '재미', icon: 'fa-masks-theater', bg: 'bg-rose-50', color: 'text-rose-600', path: '/entertainment' },
     { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
     { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
@@ -173,10 +174,10 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <i className="fas fa-bars text-lg"></i>
                     </button>
                     <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 sm:static sm:left-auto sm:translate-x-0">
-                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
-                            <i className="fas fa-link text-sm"></i>
+                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+                            <i className="fas fa-sparkles text-sm"></i>
                         </span>
-                        <span className="font-black text-xl tracking-tighter text-gray-900">Faith<span className="text-blue-600">Portal</span></span>
+                        <span className="font-black text-xl tracking-wider text-gray-900">V<span className="text-violet-600">ERA</span></span>
                     </a>
                     <nav className="hidden sm:flex gap-1 text-sm font-bold text-gray-600">
                         <a href={`${baseUrl}/news`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">뉴스</a>
@@ -184,6 +185,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <a href={`${baseUrl}/finance`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">금융</a>
                         <a href={`${baseUrl}/reward`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">리워드</a>
                         <a href={`${baseUrl}/game`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">게임</a>
+                        <a href={`${baseUrl}/entertainment`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">재미</a>
                     </nav>
                 </div>
                 <div className="flex items-center gap-3">
@@ -311,7 +313,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 
     const handleInstallClick = async () => {
         if (isInstalled) {
-            alert('이미 페이스링크 앱이 기기에 설치되어 있습니다.\n바탕화면에서 아이콘을 찾아 실행해 보세요.');
+            alert('이미 VERA 앱이 기기에 설치되어 있습니다.\n바탕화면에서 아이콘을 찾아 실행해 보세요.');
             return;
         }
 
@@ -358,9 +360,9 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                             {isInstalled ? <i className="fas fa-check-circle text-2xl"></i> : <i className="fas fa-mobile-alt text-2xl"></i>}
                         </div>
                         <div>
-                            <h3 className="font-bold text-gray-900 text-lg">페이스링크 앱 설치하기</h3>
+                            <h3 className="font-bold text-gray-900 text-lg">VERA 앱 설치하기</h3>
                             <p className="text-sm text-gray-600">
-                                {isInstalled ? '이미 페이스링크 앱이 기기에 설치되어 있습니다.' : '바탕화면에 아이콘을 추가하고 더 빠르고 편리하게 접속하세요!'}
+                                {isInstalled ? '이미 VERA 앱이 기기에 설치되어 있습니다.' : '바탕화면에 아이콘을 추가하고 더 빠르고 편리하게 접속하세요!'}
                             </p>
                         </div>
                     </div>
@@ -386,7 +388,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 
                 <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
                     <div>
-                        <h2 className="text-xl font-black text-gray-900 mb-4">FaithPortal</h2>
+                        <h2 className="text-xl font-black text-gray-900 mb-4">VERA</h2>
                         <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
                             세상의 모든 정보를 하나로 묶는 믿음의 포털. 더 나은 내일을 위해 매일 성장합니다.
                         </p>
@@ -403,7 +405,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                     </div>
                 </div>
                 <div className="pt-8 border-t border-gray-100 flex flex-col sm:row items-center justify-between gap-4">
-                    <p className="text-xs text-gray-400">© 2026 FaithPortal. All rights reserved.</p>
+                    <p className="text-xs text-gray-400">© 2026 VERA. All rights reserved.</p>
                     <div className="flex gap-4 text-gray-400 text-sm">
                         <a href="#" className="hover:text-gray-600"><i className="fab fa-facebook"></i></a>
                         <a href="#" className="hover:text-gray-600"><i className="fab fa-twitter"></i></a>

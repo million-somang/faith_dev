@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash",
+      "PowerShell",
+      "PowerShell(npm run dev)",
+      "PowerShell(Start-Sleep -Seconds 10; Select-String -Path \"C:\\\\Users\\\\USER\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--project-faithportal\\\\8fabe5d6-1fe6-4cdb-8858-551cfaf9fa38\\\\tasks\\\\bpbw7lbjt.output\" -Pattern \"localhost|Local:|listening|port|error|Error\" | Select-Object -Last 40 | ForEach-Object { $_.Line })"
+    ]
+  }
+}
