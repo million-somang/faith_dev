@@ -29,6 +29,8 @@ import NewsBySourcePage from './pages/NewsBySourcePage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import EntertainmentPage from './pages/EntertainmentPage';
 import SajuInfoPage from './pages/SajuInfoPage';
+import LoungePage from './pages/LoungePage';
+import LoungeTopicPage from './pages/LoungeTopicPage';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
 import { useUserPreferenceContext } from './context/UserPreferenceContext';
@@ -103,6 +105,20 @@ function HomePage() {
                 ) : (
                     /* 기본 레이아웃 (미설정 또는 새 사용자) */
                     <>
+                        {/* VERA Lounge 실시간 띠배너 */}
+                        <div 
+                            onClick={() => navigate('/lounge/topic/비트코인')}
+                            className="flex items-center justify-between px-4.5 py-3 bg-gradient-to-r from-rose-600 via-violet-600 to-indigo-600 text-white rounded-2xl shadow-md mb-6 hover:opacity-95 transition-all hover:translate-y-[-1px] cursor-pointer group"
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">LIVE 🔥</span>
+                                <span className="text-xs sm:text-sm font-black tracking-tight text-white">지금 VERA 라운지 격론 중: 비트코인 급락 수습 방안 긴급 대토론</span>
+                            </div>
+                            <span className="text-xs font-black flex items-center gap-1 text-violet-200 group-hover:text-white transition-colors">
+                                실시간 라운지 가기 <i className="fas fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+                            </span>
+                        </div>
+
                         {/* Hero Section */}
                         <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white px-6 sm:px-12 py-6 sm:py-8 mb-12 shadow-xl">
                             {/* 장식용 원형 그래픽 */}
@@ -311,6 +327,8 @@ function App() {
                     <Route path="/news/sources" element={<NewsSourcesPage />} />
                     <Route path="/news/source/:source" element={<NewsBySourcePage />} />
                     <Route path="/news/:id" element={<NewsDetailPage />} />
+                    <Route path="/lounge" element={<LoungePage />} />
+                    <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
                     <Route path="*" element={
                         <div className="min-h-screen flex flex-col pt-20">
                             <div className="flex-1 flex items-center justify-center text-gray-500 font-bold">준비 중인 서비스입니다 ✨</div>

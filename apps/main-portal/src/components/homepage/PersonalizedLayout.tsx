@@ -67,6 +67,23 @@ interface PersonalizedLayoutProps {
     logout: () => void;
 }
 
+function LoungePromoBanner() {
+    return (
+        <Link 
+            to="/lounge/topic/비트코인"
+            className="flex items-center justify-between px-4.5 py-3 bg-gradient-to-r from-rose-600 via-violet-600 to-indigo-600 text-white rounded-2xl shadow-md mb-6 hover:opacity-95 transition-all hover:translate-y-[-1px] group"
+        >
+            <div className="flex items-center gap-2">
+                <span className="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">LIVE 🔥</span>
+                <span className="text-xs sm:text-sm font-black tracking-tight text-white">지금 VERA 라운지 격론 중: 비트코인 급락 수습 방안 긴급 대토론</span>
+            </div>
+            <span className="text-xs font-black flex items-center gap-1 text-violet-200 group-hover:text-white transition-colors">
+                실시간 라운지 가기 <i className="fas fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+            </span>
+        </Link>
+    );
+}
+
 
 
 
@@ -265,6 +282,9 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
 
     return (
         <>
+            {/* VERA Lounge 실시간 띠배너 */}
+            <LoungePromoBanner />
+
             {/* 상단: 히어로 + 검색창 */}
             <section className={`relative overflow-hidden rounded-3xl bg-gradient-to-br ${scheme.hero} text-white px-6 sm:px-10 py-10 mb-10 shadow-xl`}>
                 <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-white/10 pointer-events-none"></div>

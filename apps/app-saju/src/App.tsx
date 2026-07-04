@@ -130,13 +130,17 @@ export default function App() {
         if (!result) return;
         const text = `🔮 [VERA Fortune AI 운세 인증]\n${name}님의 오늘의 운세 총점은 ${result.generalScore}점입니다!\n🤖 AI 투자스타일: ${result.investment.style}\n💬 사주 MBTI: ${result.mbti.character}\n🍀 행운의 컬러: ${result.luckyColor}\n\n지금 VERA 포털에서 무료 사주 분석을 받고 10P 적립금을 받아가세요!`;
         
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text)
-                .then(() => alert('내 운세 요약 카드가 복사되었습니다!\nVera Lounge(라운지)에 붙여넣기(Ctrl+V)하여 친구들에게 운세를 실시간 인증해 보세요. 💬'))
-                .catch(() => alert('복사에 실패했습니다.'));
-        } else {
-            alert(text);
-        }
+        // 징검다리 localStorage 세이브
+        localStorage.setItem('vera_lounge_pending_share', JSON.stringify({
+            text,
+            source: 'saju'
+        }));
+
+        alert('운세 인증 카드가 VERA Lounge 피드에 자동 업로드용으로 대기 상태입니다. 확인 버튼 클릭 시 라운지로 즉시 이동합니다!');
+        
+        // 부모 창으로 라운지 이동 메시지 전달 및 fallback 이동
+        window.parent.postMessage({ type: 'NAVIGATE', url: '/lounge' }, '*');
+        window.location.href = '/lounge';
     };
 
     if (isAuthLoading) {
