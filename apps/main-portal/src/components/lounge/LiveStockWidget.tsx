@@ -57,7 +57,6 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
             isUp = false;
             chartData = [101200, 99800, 98900, 97500, 96800, 95100, 94850];
         } else {
-            // 기타 종목 해시 생성
             let hash = 0;
             for (let i = 0; i < cleanName.length; i++) {
                 hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
@@ -95,19 +94,19 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
     return (
         <div 
             onClick={handleWidgetClick}
-            className="my-3 flex items-center justify-between p-3.5 bg-slate-900 border border-slate-800 hover:border-violet-500/40 rounded-2xl shadow-md cursor-pointer transition-all hover:translate-y-[-2px] group"
+            className="my-2.5 flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200/80 hover:border-violet-300 rounded-2xl shadow-sm cursor-pointer transition-all hover:translate-y-[-1px] group"
         >
             <div className="flex items-center gap-3">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm text-white ${stock.isUp ? 'bg-rose-500/10 border border-rose-500/20' : 'bg-blue-500/10 border border-blue-500/20'}`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${stock.isUp ? 'bg-rose-50 border border-rose-200 text-rose-600' : 'bg-blue-50 border border-blue-200 text-blue-600'}`}>
                     {stockName.replace('$', '').substring(0, 2)}
                 </div>
                 <div>
                     <div className="flex items-center gap-1.5">
-                        <span className="font-extrabold text-sm text-slate-100 group-hover:text-violet-400 transition-colors">{stockName}</span>
-                        <span className="text-[10px] text-slate-500 font-bold">실시간 시세</span>
+                        <span className="font-extrabold text-sm text-slate-800 group-hover:text-violet-600 transition-colors">{stockName}</span>
+                        <span className="text-[10px] text-slate-400 font-bold">실시간 시세</span>
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-sm font-black font-mono text-slate-100">{stock.price}</span>
+                        <span className="text-sm font-black font-mono text-slate-700">{stock.price}</span>
                         <span className={`text-xs font-black font-mono flex items-center ${stock.isUp ? 'text-rose-500' : 'text-blue-500'}`}>
                             {stock.isUp ? '▲' : '▼'} {Math.abs(stock.changeRate)}%
                         </span>
@@ -120,8 +119,8 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
                 <svg width="110" height="35">
                     <polyline
                         fill="none"
-                        stroke={stock.isUp ? '#ef4444' : '#3b82f6'}
-                        strokeWidth="2.5"
+                        stroke={stock.isUp ? '#f43f5e' : '#3b82f6'}
+                        strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         points={pointsStr}
@@ -130,9 +129,9 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
             </div>
 
             <div className="text-right flex flex-col justify-center items-end">
-                <span className="text-[10px] text-slate-500 font-bold">VERA 금융</span>
-                <span className="text-[11px] text-violet-400 font-black mt-1 flex items-center gap-0.5">
-                    토론방 가기 <i className="fas fa-chevron-right text-[8px]"></i>
+                <span className="text-[9px] text-slate-400 font-bold">VERA 금융</span>
+                <span className="text-[10px] text-violet-600 font-black mt-1 flex items-center gap-0.5">
+                    토론방 가기 <i className="fas fa-chevron-right text-[7px]"></i>
                 </span>
             </div>
         </div>

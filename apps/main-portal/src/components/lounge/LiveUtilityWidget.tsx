@@ -28,7 +28,7 @@ export function LiveUtilityWidget({ utilityName }: LiveUtilityWidgetProps) {
             const randomIdx = Math.floor(Math.random() * results.length);
             setLadderResult(results[randomIdx]);
             setIsLadderRunning(false);
-        }, 1500);
+        }, 1200);
     };
 
     // 주사위 시뮬레이터
@@ -50,28 +50,28 @@ export function LiveUtilityWidget({ utilityName }: LiveUtilityWidgetProps) {
 
     if (cleanName === '사다리타기') {
         return (
-            <div className="my-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-md">
-                <div className="flex justify-between items-center border-b border-slate-850 pb-2.5 mb-3">
-                    <span className="bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+            <div className="my-2.5 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                    <span className="bg-sky-50 border border-sky-200 text-sky-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                         🛠️ 실시간 사다리타기 위젯
                     </span>
-                    <span className="text-[10px] text-slate-500 font-bold">VERA 라이프</span>
+                    <span className="text-[9px] text-slate-400 font-bold">VERA 라이프</span>
                 </div>
 
-                <p className="text-xs text-slate-300 font-bold mb-3">
+                <p className="text-xs text-slate-600 font-bold mb-2.5">
                     👇 번호를 터치해 사다리 타기 게임을 즉시 시작하세요 (커피 내기용):
                 </p>
 
-                <div className="grid grid-cols-4 gap-2 mb-3.5">
+                <div className="grid grid-cols-4 gap-2 mb-3">
                     {[1, 2, 3, 4].map((num) => (
                         <button
                             key={num}
                             onClick={() => runLadder(num)}
                             disabled={isLadderRunning}
-                            className={`py-3.5 rounded-xl border text-sm font-black transition-all ${
+                            className={`py-2.5 rounded-xl border text-xs font-black transition-all ${
                                 ladderSelection === num
-                                    ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-md shadow-sky-500/20'
-                                    : 'bg-white/5 text-slate-300 border-white/5 hover:bg-white/10'
+                                    ? 'bg-sky-500 text-white border-sky-500 shadow-sm'
+                                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                             }`}
                         >
                             {num}번
@@ -80,15 +80,15 @@ export function LiveUtilityWidget({ utilityName }: LiveUtilityWidgetProps) {
                 </div>
 
                 {isLadderRunning && (
-                    <div className="text-center py-2.5 text-xs font-bold text-sky-400 animate-pulse">
-                        💡 사다리를 타고 내려가는 중... 🚶‍♂️🚶‍♀️
+                    <div className="text-center py-2 text-xs font-bold text-sky-600 animate-pulse">
+                        🚶‍♂️ 사다리를 타고 내려가는 중...
                     </div>
                 )}
 
                 {ladderResult && (
-                    <div className="p-3 bg-sky-500/10 border border-sky-500/20 rounded-xl text-center animate-fade-in">
-                        <span className="text-xs text-slate-400 font-bold">선택: {ladderSelection}번 결과</span>
-                        <div className="text-sm font-black text-sky-400 mt-1">{ladderResult}</div>
+                    <div className="p-2.5 bg-sky-50 border border-sky-100 rounded-xl text-center animate-fade-in">
+                        <span className="text-[10px] text-slate-450 font-bold">선택: {ladderSelection}번 결과</span>
+                        <div className="text-xs font-black text-sky-650 mt-0.5">{ladderResult}</div>
                     </div>
                 )}
             </div>
@@ -97,20 +97,20 @@ export function LiveUtilityWidget({ utilityName }: LiveUtilityWidgetProps) {
 
     if (cleanName === '주사위굴리기' || cleanName === '주사위') {
         return (
-            <div className="my-3 p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-md">
-                <div className="flex justify-between items-center border-b border-slate-850 pb-2.5 mb-3">
-                    <span className="bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+            <div className="my-2.5 p-4 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-sm">
+                <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                    <span className="bg-amber-50 border border-amber-200 text-amber-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                         🎲 3D 주사위 굴리기 위젯
                     </span>
-                    <span className="text-[10px] text-slate-500 font-bold">VERA 라이프</span>
+                    <span className="text-[9px] text-slate-400 font-bold">VERA 라이프</span>
                 </div>
 
-                <div className="flex items-center justify-around py-2">
-                    <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center justify-around py-1">
+                    <div className="flex flex-col items-center gap-1">
                         {/* 주사위 비주얼 */}
                         <div 
                             onClick={rollDice}
-                            className={`w-14 h-14 rounded-2xl bg-slate-800 border-2 border-slate-700 flex items-center justify-center text-3xl shadow-lg cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                            className={`w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-2xl shadow-sm cursor-pointer transition-all hover:scale-105 active:scale-95 text-slate-750 ${
                                 isDiceRolling ? 'animate-spin' : ''
                             }`}
                         >
@@ -122,22 +122,22 @@ export function LiveUtilityWidget({ utilityName }: LiveUtilityWidgetProps) {
                             {diceResult === 6 && '⚅'}
                             {!diceResult && '🎲'}
                         </div>
-                        <span className="text-[10px] text-slate-400 font-bold">주사위 터치</span>
+                        <span className="text-[9px] text-slate-400 font-bold">주사위 터치</span>
                     </div>
 
                     <div className="flex flex-col justify-center items-start gap-1">
-                        <p className="text-xs text-slate-300 font-bold">
-                            {isDiceRolling ? '주사위가 회전하고 있습니다...' : '주사위를 굴려 확률을 테스트하세요!'}
+                        <p className="text-xs text-slate-600 font-bold">
+                            {isDiceRolling ? '주사위 굴리는 중...' : '터치해 주사위를 굴려보세요!'}
                         </p>
                         {diceResult && !isDiceRolling && (
-                            <div className="text-sm font-black text-amber-400 animate-bounce">
-                                결과 값: <span className="font-mono text-lg">{diceResult}</span>이(가) 나왔습니다!
+                            <div className="text-xs font-black text-amber-600 animate-bounce">
+                                결과 값: <span className="font-mono text-sm">{diceResult}</span>이(가) 나왔습니다!
                             </div>
                         )}
                         <button
                             onClick={rollDice}
                             disabled={isDiceRolling}
-                            className="mt-1 px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition-colors"
+                            className="mt-1 px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-white text-[10px] font-black transition-colors"
                         >
                             굴리기
                         </button>

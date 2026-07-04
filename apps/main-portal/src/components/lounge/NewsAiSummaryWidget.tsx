@@ -54,7 +54,7 @@ export function NewsAiSummaryWidget({ url }: NewsAiSummaryWidgetProps) {
             sentimentScore = 76;
             id = 3;
         } else if (url.includes('samsung') || url.includes('hbm')) {
-            title = '삼성전자 HBM3E 엔비디아 최종 품질 검증 완료 임박, 공급 계약 성사 국면';
+            title = '삼성전자 HBM3E 엔비디아 품질 검증 완료 임박, 공급 계약 성사 국면';
             source = 'VERA 테크 뉴스';
             bullets = [
                 '테스트 최종 승인 절차가 완료 단계에 접어들며 이르면 3분기 말 양산 물량 인도 개시.',
@@ -65,7 +65,6 @@ export function NewsAiSummaryWidget({ url }: NewsAiSummaryWidgetProps) {
             sentimentScore = 84;
             id = 4;
         } else {
-            // 기본 기사 생성
             let hash = 0;
             for (let i = 0; i < url.length; i++) {
                 hash = url.charCodeAt(i) + ((hash << 5) - hash);
@@ -95,47 +94,46 @@ export function NewsAiSummaryWidget({ url }: NewsAiSummaryWidgetProps) {
     return (
         <div 
             onClick={handleNewsClick}
-            className="my-3 p-4 bg-slate-900 border border-slate-800 hover:border-violet-500/40 rounded-2xl shadow-md cursor-pointer transition-all hover:translate-y-[-2px] group"
+            className="my-2.5 p-4 bg-slate-50 border border-slate-200/80 hover:border-violet-300 rounded-2xl shadow-sm cursor-pointer transition-all hover:translate-y-[-1px] group"
         >
             <div className="flex justify-between items-start gap-2 mb-2">
-                <span className="bg-violet-900/40 border border-violet-600/40 text-violet-300 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="bg-violet-50 border border-violet-200 text-violet-600 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                     📰 VERA AI 뉴스 3줄 요약
                 </span>
                 
-                {/* 감성 점수 뱃지 */}
                 {news.sentiment === 'good' && (
-                    <span className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-black px-2 py-0.5 rounded-full">
-                        🟢 호재 {news.sentimentScore}%
+                    <span className="bg-rose-50 border border-rose-200 text-rose-600 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        호재 {news.sentimentScore}%
                     </span>
                 )}
                 {news.sentiment === 'bad' && (
-                    <span className="bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black px-2 py-0.5 rounded-full">
-                        🔴 악재 {news.sentimentScore}%
+                    <span className="bg-blue-50 border border-blue-200 text-blue-600 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        악재 {news.sentimentScore}%
                     </span>
                 )}
                 {news.sentiment === 'neutral' && (
-                    <span className="bg-slate-500/10 border border-slate-500/20 text-slate-400 text-[10px] font-black px-2 py-0.5 rounded-full">
-                        ⚪ 중립 {news.sentimentScore}%
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        중립 {news.sentimentScore}%
                     </span>
                 )}
             </div>
 
-            <h4 className="text-sm font-black text-slate-100 group-hover:text-violet-400 transition-colors mb-2.5 break-keep leading-snug">
+            <h4 className="text-sm font-black text-slate-800 group-hover:text-violet-600 transition-colors mb-2 break-keep leading-snug">
                 {news.title}
             </h4>
 
-            <ul className="space-y-1.5 border-l-2 border-violet-500/30 pl-3">
+            <ul className="space-y-1.5 border-l-2 border-violet-300 pl-3">
                 {news.bullets.map((bullet, idx) => (
-                    <li key={idx} className="text-xs text-slate-400 font-medium leading-relaxed break-keep">
-                        • {bullet}
+                    <li key={idx} className="text-xs text-slate-500 font-medium leading-relaxed break-keep">
+                        {bullet}
                     </li>
                 ))}
             </ul>
 
-            <div className="flex justify-between items-center text-[10px] text-slate-500 font-bold border-t border-slate-850 pt-2.5 mt-3">
+            <div className="flex justify-between items-center text-[9px] text-slate-400 font-bold border-t border-slate-100 pt-2.5 mt-3">
                 <span>출처: {news.source}</span>
-                <span className="text-violet-400 font-black flex items-center gap-0.5">
-                    기사 전체 읽기 <i className="fas fa-chevron-right text-[8px]"></i>
+                <span className="text-violet-600 font-black flex items-center gap-0.5">
+                    기사 전체 읽기 <i className="fas fa-chevron-right text-[7px]"></i>
                 </span>
             </div>
         </div>
