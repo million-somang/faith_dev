@@ -53,8 +53,8 @@ export interface HomepageConfig {
 export const MAX_MOBILE_TABS = 5;
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
-    quickMenuItems: ['news', 'utility', 'game', 'finance'],
-    quickMenuOrder: ['news', 'utility', 'game', 'finance', 'shopping', 'entertainment', 'education'],
+    quickMenuItems: ['news', 'utility', 'game', 'finance', 'lounge'],
+    quickMenuOrder: ['news', 'utility', 'game', 'finance', 'lounge', 'shopping', 'entertainment', 'education'],
     mobileTabs: ['home', 'news', 'shopping', 'lifestyle', 'mypage'],
     preferences: {
         mainInterest: 'news',
@@ -78,6 +78,7 @@ export const ALL_QUICK_MENU_ITEMS: QuickMenuItem[] = [
     { id: 'utility', label: '유틸리티', icon: 'fa-tools', href: '/lifestyle', color: 'text-green-600', bg: 'bg-green-50' },
     { id: 'game', label: '게임', icon: 'fa-gamepad', href: '/game', color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'finance', label: '금융', icon: 'fa-won-sign', href: '/finance', color: 'text-orange-600', bg: 'bg-orange-50' },
+    { id: 'lounge', label: '라운지', icon: 'fa-comments', href: '/lounge', color: 'text-violet-600', bg: 'bg-violet-50' },
     { id: 'shopping', label: '쇼핑', icon: 'fa-shopping-bag', href: '/shopping', color: 'text-pink-600', bg: 'bg-pink-50' },
     { id: 'entertainment', label: '엔터', icon: 'fa-film', href: '/entertainment', color: 'text-red-600', bg: 'bg-red-50' },
     { id: 'education', label: '교육', icon: 'fa-graduation-cap', href: '/education', color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -93,6 +94,7 @@ export const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
     { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance', color: '#f97316' },
     { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
     { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
+    { id: 'lounge', label: '라운지', icon: 'fas fa-comments', path: '/lounge', color: '#8b5cf6' },
 ];
 
 // API 응답 타입

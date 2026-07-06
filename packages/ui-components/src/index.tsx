@@ -159,6 +159,7 @@ const FULL_MENU_ITEMS = [
     { label: '재미', icon: 'fa-masks-theater', bg: 'bg-rose-50', color: 'text-rose-600', path: '/entertainment' },
     { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
     { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
+    { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
 ];
 
@@ -186,6 +187,13 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <a href={`${baseUrl}/reward`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">리워드</a>
                         <a href={`${baseUrl}/game`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">게임</a>
                         <a href={`${baseUrl}/entertainment`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">재미</a>
+                        <a href={`${baseUrl}/lounge`} className="px-3 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-600 transition-all duration-300 flex items-center gap-1 group relative">
+                            <span>라운지</span>
+                            <span className="flex h-1.5 w-1.5 absolute -top-0.5 -right-0.5 sm:static sm:-top-0 sm:-right-0">
+                                <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-violet-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-violet-600"></span>
+                            </span>
+                        </a>
                     </nav>
                 </div>
                 <div className="flex items-center gap-3">
@@ -218,11 +226,18 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     </div>
                     <nav className="flex-1 overflow-y-auto p-3">
                         {FULL_MENU_ITEMS.map((m) => (
-                            <a key={m.path} href={`${baseUrl}${m.path}`} className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors">
-                                <span className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0`}>
-                                    <i className={`fas ${m.icon} ${m.color}`}></i>
-                                </span>
-                                <span className="font-bold text-gray-800">{m.label}</span>
+                            <a key={m.path} href={`${baseUrl}${m.path}`} className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group">
+                                <div className="flex items-center gap-3">
+                                    <span className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                                        <i className={`fas ${m.icon} ${m.color}`}></i>
+                                    </span>
+                                    <span className="font-bold text-gray-800">{m.label}</span>
+                                </div>
+                                {m.label === '라운지' && (
+                                    <span className="text-[9px] bg-violet-100 text-violet-600 font-extrabold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-0.5">
+                                        HOT <i className="fas fa-fire text-[8px] text-violet-500"></i>
+                                    </span>
+                                )}
                             </a>
                         ))}
                     </nav>
@@ -242,13 +257,20 @@ export const QuickMenu = () => (
                     { label: '유틸리티', icon: 'fa-home', bg: 'bg-green-50', color: 'text-green-600', href: '/lifestyle' },
                     { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', href: '/game' },
                     { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', href: '/finance' },
+                    { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', href: '/lounge' },
                     { label: '쇼핑', icon: 'fa-shopping-bag', bg: 'bg-pink-50', color: 'text-pink-600', href: '/shopping' },
                     { label: '엔터', icon: 'fa-film', bg: 'bg-red-50', color: 'text-red-600', href: '/entertainment' },
                     { label: '교육', icon: 'fa-graduation-cap', bg: 'bg-indigo-50', color: 'text-indigo-600', href: '/education' },
                 ].map((item) => (
-                    <a key={item.label} href={item.href} className="group text-center flex-shrink-0">
-                        <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(37,99,235,0.15)] group-hover:ring-2 group-hover:ring-blue-400`}>
-                            <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 transition-transform`}></i>
+                    <a key={item.label} href={item.href} className="group text-center flex-shrink-0 relative">
+                        {item.label === '라운지' && (
+                            <span className="absolute top-0 right-1/2 translate-x-4 sm:translate-x-5 z-10 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-600"></span>
+                            </span>
+                        )}
+                        <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(37,99,235,0.15)] group-hover:ring-2 ${item.label === '라운지' ? 'group-hover:ring-violet-400' : 'group-hover:ring-blue-400'}`}>
+                            <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 group-hover:rotate-6 transition-transform`}></i>
                         </div>
                         <p className="text-[11px] sm:text-xs text-gray-800 font-bold group-hover:text-brand-green transition-colors">{item.label}</p>
                     </a>
