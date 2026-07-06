@@ -62,6 +62,8 @@ export default function LoungePage() {
     });
     const [posts, setPosts] = useState<Post[]>([]);
     const [newPostContent, setNewPostContent] = useState('');
+    const [editingPostId, setEditingPostId] = useState<string | null>(null);
+    const [editingContent, setEditingContent] = useState<string>('');
 
     // 알림 리스트
     const [notifications] = useState([
@@ -206,6 +208,40 @@ export default function LoungePage() {
         setPosts(updated);
         localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
         alert('피드가 성공적으로 삭제되었습니다.');
+    };
+
+    // 10. 게시글 수정 시작
+    const handleStartEdit = (postId: string, currentContent: string) => {
+        setEditingPostId(postId);
+        setEditingContent(currentContent);
+    };
+
+    // 11. 게시글 수정 저장
+    const handleSaveEdit = (postId: string) => {
+        if (!editingContent.trim()) {
+            alert('피드 내용을 입력해 주세요.');
+            return;
+        }
+        const updated = posts.map(post => {
+            if (post.id === postId) {
+                return {
+                    ...post,
+                    content: editingContent
+                };
+            }
+            return post;
+        });
+        setPosts(updated);
+        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        setEditingPostId(null);
+        setEditingContent('');
+        alert('피드가 성공적으로 수정되었습니다! 🚀');
+    };
+
+    // 12. 게시글 수정 취소
+    const handleCancelEdit = () => {
+        setEditingPostId(null);
+        setEditingContent('');
     };
 
     // 필터링된 피드
@@ -371,12 +407,47 @@ export default function LoungePage() {
                                                             <p className="text-[10px] text-slate-400 font-bold font-mono mt-0.5">{post.author.handle}</p>
                                                         </div>
                                                     </div>
-                                                    <span className="text-[10px] text-slate-400 font-semibold">{post.createdAt}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-slate-400 font-semibold">{post.createdAt}</span>
+                                                        {post.author.handle === persona.handle && (
+                                                            <div className="flex gap-2 ml-1">
+                                                                <button 
+                                                                    onClick={() => handleStartEdit(post.id, post.content)}
+                                                                    className="text-slate-400 hover:text-violet-650 transition-colors text-[11px]"
+                                                                    title="피드 수정"
+                                                                >
+                                                                    <i className="far fa-edit"></i>
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleDeletePost(post.id)}
+                                                                    className="text-slate-400 hover:text-rose-500 transition-colors text-[11px]"
+                                                                    title="피드 삭제"
+                                                                >
+                                                                    <i className="far fa-trash-alt"></i>
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
 
                                                 {/* 피드 본문 */}
-                                                <div className="text-sm font-semibold text-slate-700 break-keep border-b border-slate-100 pb-3 leading-relaxed">
-                                                    <SmartTagParser text={post.content} />
+                                                <div className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 leading-relaxed">
+                                                    {editingPostId === post.id ? (
+                                                        <div className="flex flex-col gap-2 mt-1">
+                                                            <textarea
+                                                                value={editingContent}
+                                                                onChange={(e) => setEditingContent(e.target.value)}
+                                                                rows={3}
+                                                                className="w-full p-2.5 border border-slate-200 rounded-xl outline-none font-semibold text-xs leading-relaxed focus:ring-1 focus:ring-violet-500 text-slate-800"
+                                                            />
+                                                            <div className="flex justify-end gap-2 text-[10px] font-black">
+                                                                <button onClick={handleCancelEdit} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">취소</button>
+                                                                <button onClick={() => handleSaveEdit(post.id)} className="px-3 py-1 bg-violet-600 hover:bg-violet-750 text-white rounded-lg">저장</button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <SmartTagParser text={post.content} />
+                                                    )}
                                                 </div>
 
                                                 {/* 피드 풋 정보바 */}
@@ -584,16 +655,40 @@ export default function LoungePage() {
                                         {posts.filter(p => p.author.handle === persona.handle).length > 0 ? (
                                             posts.filter(p => p.author.handle === persona.handle).map((post) => (
                                                 <div key={post.id} className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl relative group">
-                                                    <button 
-                                                        onClick={() => handleDeletePost(post.id)}
-                                                        className="absolute top-3 right-3 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer text-xs"
-                                                        title="피드 삭제"
-                                                    >
-                                                        <i className="far fa-trash-alt"></i>
-                                                    </button>
+                                                    <div className="absolute top-3 right-3 flex gap-2">
+                                                        <button 
+                                                            onClick={() => handleStartEdit(post.id, post.content)}
+                                                            className="text-slate-400 hover:text-violet-600 transition-colors cursor-pointer text-xs"
+                                                            title="피드 수정"
+                                                        >
+                                                            <i className="far fa-edit"></i>
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeletePost(post.id)}
+                                                            className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer text-xs"
+                                                            title="피드 삭제"
+                                                        >
+                                                            <i className="far fa-trash-alt"></i>
+                                                        </button>
+                                                    </div>
                                                     <span className="text-[9px] text-slate-400 font-bold block mb-1">{post.createdAt}</span>
-                                                    <div className="text-xs font-semibold text-slate-700 break-keep leading-relaxed pr-6">
-                                                        <SmartTagParser text={post.content} />
+                                                    <div className="text-xs font-semibold text-slate-700 break-keep leading-relaxed pr-12">
+                                                        {editingPostId === post.id ? (
+                                                            <div className="flex flex-col gap-2 mt-1">
+                                                                <textarea
+                                                                    value={editingContent}
+                                                                    onChange={(e) => setEditingContent(e.target.value)}
+                                                                    rows={2}
+                                                                    className="w-full p-2 border border-slate-200 rounded-lg outline-none font-semibold text-xs leading-relaxed focus:ring-1 focus:ring-violet-500 text-slate-800"
+                                                                />
+                                                                <div className="flex justify-end gap-1.5 text-[9px] font-black">
+                                                                    <button type="button" onClick={handleCancelEdit} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded">취소</button>
+                                                                    <button type="button" onClick={() => handleSaveEdit(post.id)} className="px-2 py-0.5 bg-violet-600 hover:bg-violet-750 text-white rounded">저장</button>
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <SmartTagParser text={post.content} />
+                                                        )}
                                                     </div>
                                                     <div className="flex gap-3 text-[10px] text-slate-400 font-bold mt-2 pt-2 border-t border-slate-200/40">
                                                         <span><i className="fas fa-heart text-rose-450 mr-1"></i>{post.likes}</span>
