@@ -199,6 +199,15 @@ export default function LoungePage() {
         localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
     };
 
+    // 9. 게시글 삭제 핸들러
+    const handleDeletePost = (postId: string) => {
+        if (!window.confirm('정말 이 피드를 삭제하시겠습니까?')) return;
+        const updated = posts.filter(post => post.id !== postId);
+        setPosts(updated);
+        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        alert('피드가 성공적으로 삭제되었습니다.');
+    };
+
     // 필터링된 피드
     const filteredPosts = posts.filter(post => {
         if (!searchQuery.trim()) return true;
@@ -543,6 +552,63 @@ export default function LoungePage() {
                                         </div>
                                     </form>
                                 )}
+
+                                {/* 마이 스토리 & 피드 아카이브 섹션 */}
+                                <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm mt-3 text-left">
+                                    <h3 className="font-black text-sm text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center gap-1.5">
+                                        <i className="fas fa-camera-retro text-violet-500"></i> 📸 마이 스토리 & 피드 아카이브
+                                    </h3>
+                                    
+                                    {/* 인스타그램 스토리 하이라이트 느낌의 원형 칩 배치 */}
+                                    <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-3 mb-4 border-b border-slate-100/60">
+                                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => setActiveTab('write')}>
+                                            <div className="w-12 h-12 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-violet-500 hover:text-violet-500 transition-all bg-slate-50">
+                                                <i className="fas fa-plus text-xs"></i>
+                                            </div>
+                                            <span className="text-[10px] text-slate-500 font-extrabold">새 스토리</span>
+                                        </div>
+                                        {posts.filter(p => p.author.handle === persona.handle).slice(0, 5).map((p, idx) => (
+                                            <div key={p.id} className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                                                <div className="w-12 h-12 rounded-full border-2 border-violet-400 p-0.5 flex items-center justify-center bg-white shadow-inner animate-pulse-slow">
+                                                    <span className="w-full h-full rounded-full bg-violet-50 flex items-center justify-center text-base">
+                                                        🔮
+                                                    </span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-600 font-extrabold truncate w-12 text-center">스토리 #{idx + 1}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* 내가 쓴 피드 리스트 */}
+                                    <div className="flex flex-col gap-3">
+                                        {posts.filter(p => p.author.handle === persona.handle).length > 0 ? (
+                                            posts.filter(p => p.author.handle === persona.handle).map((post) => (
+                                                <div key={post.id} className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl relative group">
+                                                    <button 
+                                                        onClick={() => handleDeletePost(post.id)}
+                                                        className="absolute top-3 right-3 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer text-xs"
+                                                        title="피드 삭제"
+                                                    >
+                                                        <i className="far fa-trash-alt"></i>
+                                                    </button>
+                                                    <span className="text-[9px] text-slate-400 font-bold block mb-1">{post.createdAt}</span>
+                                                    <div className="text-xs font-semibold text-slate-700 break-keep leading-relaxed pr-6">
+                                                        <SmartTagParser text={post.content} />
+                                                    </div>
+                                                    <div className="flex gap-3 text-[10px] text-slate-400 font-bold mt-2 pt-2 border-t border-slate-200/40">
+                                                        <span><i className="fas fa-heart text-rose-450 mr-1"></i>{post.likes}</span>
+                                                        <span><i className="fas fa-comment text-violet-450 mr-1"></i>{post.commentsCount}</span>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="py-8 text-center bg-slate-50/50 border border-slate-100 rounded-xl border-dashed">
+                                                <i className="far fa-images text-2xl text-slate-300 mb-2"></i>
+                                                <p className="font-bold text-slate-400 text-[10px]">아직 작성한 스토리 피드가 없습니다.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </section>
