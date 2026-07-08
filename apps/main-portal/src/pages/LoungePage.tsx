@@ -14,6 +14,7 @@ export interface Post {
         badge?: string;
     };
     content: string;
+    image?: string;
     createdAt: string;
     likes: number;
     commentsCount: number;
@@ -64,6 +65,26 @@ export default function LoungePage() {
     const [newPostContent, setNewPostContent] = useState('');
     const [editingPostId, setEditingPostId] = useState<string | null>(null);
     const [editingContent, setEditingContent] = useState<string>('');
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 1.5 * 1024 * 1024) {
+                alert('이미지 용량은 1.5MB 이하만 첨부 가능합니다.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setSelectedImage(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleRemoveImage = () => {
+        setSelectedImage(null);
+    };
 
     // 알림 리스트
     const [notifications] = useState([
@@ -171,6 +192,7 @@ export default function LoungePage() {
                 avatar: persona.avatar
             },
             content: newPostContent,
+            image: selectedImage || undefined,
             createdAt: '방금 전',
             likes: 0,
             commentsCount: 0
@@ -180,6 +202,7 @@ export default function LoungePage() {
         setPosts(updated);
         localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
         setNewPostContent('');
+        setSelectedImage(null);
         setActiveTab('home');
         alert('새 피드 글이 등록되었습니다! 스마트 태그가 실시간 연동됩니다. 🚀');
     };
@@ -365,11 +388,35 @@ export default function LoungePage() {
                                                 rows={3}
                                                 className="w-full bg-transparent border-none outline-none resize-none text-slate-800 placeholder-slate-400 font-bold text-sm leading-relaxed"
                                             />
+                                            {/* 이미지 미리보기 */}
+                                            {selectedImage && (
+                                                <div className="relative mt-2 w-20 h-20 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50">
+                                                    <img src={selectedImage} alt="미리보기" className="w-full h-full object-cover" />
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={handleRemoveImage}
+                                                        className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 text-white rounded-full flex items-center justify-center text-[9px]"
+                                                    >
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-2">
-                                                <div className="flex gap-2 text-[10px] font-black text-slate-400">
-                                                    <span className="text-violet-500">$ 주식위젯</span>
-                                                    <span className="text-sky-500"># 유틸위젯</span>
-                                                    <span className="text-amber-500">@ 뉴스분석</span>
+                                                <div className="flex items-center gap-3">
+                                                    <label className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-1">
+                                                        <i className="fas fa-camera text-base"></i>
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            onChange={handleImageChange}
+                                                            className="hidden" 
+                                                        />
+                                                    </label>
+                                                    <div className="flex gap-2 text-[10px] font-black text-slate-400">
+                                                        <span className="text-violet-500">$ 주식</span>
+                                                        <span className="text-sky-500"># 유틸</span>
+                                                        <span className="text-amber-500">@ 뉴스</span>
+                                                    </div>
                                                 </div>
                                                 <button
                                                     onClick={handleCreatePost}
@@ -446,7 +493,18 @@ export default function LoungePage() {
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <SmartTagParser text={post.content} />
+                                                        <>
+                                                            <SmartTagParser text={post.content} />
+                                                            {post.image && (
+                                                                <div className="mt-2.5 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center max-h-[300px] w-full">
+                                                                    <img 
+                                                                        src={post.image} 
+                                                                        alt="첨부 이미지" 
+                                                                        className="w-full h-full object-contain max-h-[300px]"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     )}
                                                 </div>
 
@@ -534,12 +592,35 @@ export default function LoungePage() {
                                     rows={5}
                                     className="w-full border border-slate-200 rounded-xl p-3 outline-none text-slate-800 placeholder-slate-400 font-semibold text-xs leading-relaxed focus:ring-1 focus:ring-violet-500"
                                 />
-                                <button
-                                    type="submit"
-                                    className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-xs transition-all cursor-pointer"
-                                >
-                                    등록하기
-                                </button>
+                                {selectedImage && (
+                                    <div className="relative w-28 h-28 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50">
+                                        <img src={selectedImage} alt="미리보기" className="w-full h-full object-cover" />
+                                        <button 
+                                            type="button" 
+                                            onClick={handleRemoveImage}
+                                            className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center text-[10px]"
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center mt-1">
+                                    <label className="cursor-pointer px-4 py-2 bg-slate-100 hover:bg-slate-250 border border-slate-200 text-slate-600 font-extrabold text-xs rounded-xl flex items-center gap-1.5 transition-colors">
+                                        <i className="fas fa-camera text-sm"></i> 사진 추가
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleImageChange}
+                                            className="hidden" 
+                                        />
+                                    </label>
+                                    <button
+                                        type="submit"
+                                        className="px-6 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-xs transition-all cursor-pointer shadow-sm"
+                                    >
+                                        등록하기
+                                    </button>
+                                </div>
                             </form>
                         )}
 
@@ -687,7 +768,18 @@ export default function LoungePage() {
                                                                 </div>
                                                             </div>
                                                         ) : (
-                                                            <SmartTagParser text={post.content} />
+                                                            <>
+                                                                <SmartTagParser text={post.content} />
+                                                                {post.image && (
+                                                                    <div className="mt-2 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center max-h-[220px] w-full">
+                                                                        <img 
+                                                                            src={post.image} 
+                                                                            alt="첨부 이미지" 
+                                                                            className="w-full h-full object-contain max-h-[220px]"
+                                                                        />
+                                                                    </div>
+                                                                )}
+                                                            </>
                                                         )}
                                                     </div>
                                                     <div className="flex gap-3 text-[10px] text-slate-400 font-bold mt-2 pt-2 border-t border-slate-200/40">
