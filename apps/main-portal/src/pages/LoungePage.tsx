@@ -103,39 +103,19 @@ export default function LoungePage() {
     // 5. 초기 피드 덤프 생성 및 로드
     useEffect(() => {
         const savedPosts = localStorage.getItem('vera_lounge_posts');
-        let currentPosts = [];
+        let currentPosts: Post[] = [];
         if (savedPosts) {
-            currentPosts = JSON.parse(savedPosts);
+            try {
+                const parsed: Post[] = JSON.parse(savedPosts);
+                // 기존 브라우저 로컬 스토리지에 남아 있을 수 있는 목업 데이터를 확실히 걸러냅니다.
+                currentPosts = parsed.filter(post => !post.id.startsWith('default-'));
+                localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
+            } catch (err) {
+                currentPosts = [];
+                localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
+            }
         } else {
-            currentPosts = [
-                {
-                    id: 'default-1',
-                    author: { name: '서학개미 탑티어', handle: '@stock_tsunami', avatar: '🦁', badge: '주식 전문가' },
-                    content: '오늘 국장 삼전 탈출하고 서학에 집중하길 잘했네요. $엔비디아 폭발 흐름 오늘 밤 뉴욕 증시도 기대해봅니다! 자세한 내용은 아래 뉴스 요약 참고해보세요 @http://news/rate',
-                    createdAt: '10분 전',
-                    likes: 42,
-                    commentsCount: 8,
-                    hasLiked: false
-                },
-                {
-                    id: 'default-2',
-                    author: { name: '지뢰찾기 고수', handle: '@mine_pro', avatar: '🐱' },
-                    content: '아 지뢰찾기 99개 모드 오늘 120초 컷 찍고 VERA 랭킹 상위 1% 갱신 ㅋㅋㅋ 라운지에 기록 인증 박습니다!! 커피 한 잔 살 사람 구함 #사다리타기 고고',
-                    createdAt: '35분 전',
-                    likes: 18,
-                    commentsCount: 3,
-                    hasLiked: false
-                },
-                {
-                    id: 'default-3',
-                    author: { name: '비즈니스 마스터', handle: '@ceo_kim', avatar: '🐨', badge: 'B2B 사장' },
-                    content: '이번 주 비즈니스 캘린더에서 강한 계약 문서 운이 들어왔다고 하더군요. 마침 오늘 신규 해외 바이어 납품 건 도장 찍었습니다! 역시 VERA 사주는 과학인가 봅니다.',
-                    createdAt: '2시간 전',
-                    likes: 29,
-                    commentsCount: 5,
-                    hasLiked: false
-                }
-            ];
+            currentPosts = [];
             localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
         }
 
