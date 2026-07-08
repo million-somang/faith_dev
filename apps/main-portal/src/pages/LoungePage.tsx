@@ -67,6 +67,13 @@ export default function LoungePage() {
     const [editingContent, setEditingContent] = useState<string>('');
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
+    const [followingList, setFollowingList] = useState<string[]>(() => {
+        const saved = localStorage.getItem('vera_lounge_following');
+        return saved ? JSON.parse(saved) : ['@stock_tsunami', '@ceo_kim'];
+    });
+    const [followersCount] = useState<number>(48);
+    const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
+
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -233,6 +240,21 @@ export default function LoungePage() {
         alert('피드가 성공적으로 삭제되었습니다.');
     };
 
+    // 10. 팔로우 토글 핸들러
+    const handleFollowToggle = (targetHandle: string) => {
+        if (targetHandle === persona.handle) return;
+        let updated;
+        if (followingList.includes(targetHandle)) {
+            updated = followingList.filter(h => h !== targetHandle);
+            alert(`${targetHandle} 님을 언팔로우했습니다.`);
+        } else {
+            updated = [...followingList, targetHandle];
+            alert(`${targetHandle} 님을 팔로우했습니다. 🤝`);
+        }
+        setFollowingList(updated);
+        localStorage.setItem('vera_lounge_following', JSON.stringify(updated));
+    };
+
     // 10. 게시글 수정 시작
     const handleStartEdit = (postId: string, currentContent: string) => {
         setEditingPostId(postId);
@@ -269,6 +291,11 @@ export default function LoungePage() {
 
     // 필터링된 피드
     const filteredPosts = posts.filter(post => {
+        if (feedFilter === 'following') {
+            const isSelf = post.author.handle === persona.handle;
+            const isFollowing = followingList.includes(post.author.handle);
+            if (!isSelf && !isFollowing) return false;
+        }
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         return (
@@ -429,6 +456,30 @@ export default function LoungePage() {
                                     </div>
                                 </div>
 
+                                {/* 피드 필터 탭 */}
+                                <div className="flex gap-2.5 text-xs font-black border-b border-slate-100 pb-2.5">
+                                    <button 
+                                        onClick={() => setFeedFilter('all')}
+                                        className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                            feedFilter === 'all' 
+                                                ? 'bg-violet-50 text-violet-600' 
+                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                                        }`}
+                                    >
+                                        모든 피드
+                                    </button>
+                                    <button 
+                                        onClick={() => setFeedFilter('following')}
+                                        className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                            feedFilter === 'following' 
+                                                ? 'bg-violet-50 text-violet-600' 
+                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                                        }`}
+                                    >
+                                        팔로잉 피드 ({followingList.length})
+                                    </button>
+                                </div>
+
                                 {/* 피드 목록 */}
                                 <div className="flex flex-col gap-4">
                                     {filteredPosts.length > 0 ? (
@@ -443,12 +494,24 @@ export default function LoungePage() {
                                                             {post.author.avatar}
                                                         </div>
                                                         <div>
-                                                            <div className="flex items-center gap-1.5">
+                                                            <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <span className="font-extrabold text-sm text-slate-850">{post.author.name}</span>
                                                                 {post.author.badge && (
-                                                                    <span className="bg-rose-50 border border-rose-200 text-[9px] text-rose-500 font-extrabold px-1.5 py-0.5 rounded">
+                                                                    <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[9px] text-rose-500 font-extrabold px-1.5 py-0.5 rounded">
                                                                         {post.author.badge}
                                                                     </span>
+                                                                )}
+                                                                {post.author.handle !== persona.handle && (
+                                                                    <button
+                                                                        onClick={() => handleFollowToggle(post.author.handle)}
+                                                                        className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                                                                            followingList.includes(post.author.handle)
+                                                                                ? 'bg-slate-100 text-slate-500 border-slate-200'
+                                                                                : 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100'
+                                                                        }`}
+                                                                    >
+                                                                        {followingList.includes(post.author.handle) ? '팔로잉' : '+ 팔로우'}
+                                                                    </button>
                                                                 )}
                                                             </div>
                                                             <p className="text-[10px] text-slate-400 font-bold font-mono mt-0.5">{post.author.handle}</p>
@@ -657,6 +720,18 @@ export default function LoungePage() {
                                     <h3 className="text-sm font-black text-slate-850">{persona.name}</h3>
                                     <p className="text-[10px] text-slate-400 font-black font-mono mt-0.5">{persona.handle}</p>
                                     <p className="text-xs text-slate-500 font-medium mt-3 max-w-sm mx-auto leading-relaxed">{persona.bio}</p>
+
+                                    {/* 팔로워/팔로잉 수치 표시 */}
+                                    <div className="flex justify-center gap-6 mt-4 border-t border-b border-slate-100 py-2.5 max-w-xs mx-auto">
+                                        <div className="text-center flex-1">
+                                            <span className="block text-sm font-black text-slate-800 font-mono">{followersCount}</span>
+                                            <span className="text-[9px] text-slate-400 font-bold">팔로워</span>
+                                        </div>
+                                        <div className="text-center flex-1 border-l border-slate-100">
+                                            <span className="block text-sm font-black text-slate-800 font-mono">{followingList.length}</span>
+                                            <span className="text-[9px] text-slate-400 font-bold">팔로잉</span>
+                                        </div>
+                                    </div>
 
                                     {!isEditingProfile && (
                                         <button
