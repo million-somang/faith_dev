@@ -69,10 +69,40 @@ export default function LoungePage() {
 
     const [followingList, setFollowingList] = useState<string[]>(() => {
         const saved = localStorage.getItem('vera_lounge_following');
-        return saved ? JSON.parse(saved) : ['@stock_tsunami', '@ceo_kim'];
+        return saved ? JSON.parse(saved) : [];
     });
-    const [followersCount] = useState<number>(48);
+    const [followersList, setFollowersList] = useState<string[]>(() => {
+        const saved = localStorage.getItem('vera_lounge_followers');
+        return saved ? JSON.parse(saved) : [];
+    });
     const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
+
+    interface NotificationItem {
+        id: string;
+        type: string;
+        user: string;
+        msg: string;
+        time: string;
+    }
+    const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+        const saved = localStorage.getItem('vera_lounge_notifications');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const addNotification = (type: string, user: string, msg: string) => {
+        const newNotif: NotificationItem = {
+            id: `notif-${Date.now()}`,
+            type,
+            user,
+            msg,
+            time: '방금 전'
+        };
+        setNotifications(prev => {
+            const updated = [newNotif, ...prev].slice(0, 30);
+            localStorage.setItem('vera_lounge_notifications', JSON.stringify(updated));
+            return updated;
+        });
+    };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -92,13 +122,6 @@ export default function LoungePage() {
     const handleRemoveImage = () => {
         setSelectedImage(null);
     };
-
-    // 알림 리스트
-    const [notifications] = useState([
-        { id: '1', type: 'like', user: '@invest_queen', msg: '님이 회원님의 $엔비디아 투자 분석 글에 좋아요를 눌렀습니다.', time: '2분 전' },
-        { id: '2', type: 'comment', user: '@toss_developer', msg: '님이 "#사다리타기 커피 내기 결과"에 댓글을 남겼습니다.', time: '15분 전' },
-        { id: '3', type: 'mention', user: '@saju_master', msg: '님이 회원님을 띠별 운세 공유 룸에서 멘션했습니다.', time: '1시간 전' }
-    ]);
 
     // 5. 초기 피드 덤프 생성 및 로드
     useEffect(() => {
@@ -192,6 +215,31 @@ export default function LoungePage() {
         setSelectedImage(null);
         setActiveTab('home');
         alert('새 피드 글이 등록되었습니다! 스마트 태그가 실시간 연동됩니다. 🚀');
+
+        // [소셜 반응 시뮬레이션] 글 작성 시 이웃들의 실시간 반응
+        const randomHandles = ['@stock_tsunami', '@ceo_kim', '@invest_queen', '@saju_master', '@toss_developer', '@mine_pro'];
+        const potentialUsers = randomHandles.filter(h => h !== persona.handle);
+        const randomUser = potentialUsers[Math.floor(Math.random() * potentialUsers.length)];
+
+        // 1) 40% 확률로 이웃이 새 글 소식을 듣고 팔로우
+        if (Math.random() < 0.4 && !followersList.includes(randomUser)) {
+            setTimeout(() => {
+                setFollowersList(prev => {
+                    if (prev.includes(randomUser)) return prev;
+                    const updatedFollowers = [...prev, randomUser];
+                    localStorage.setItem('vera_lounge_followers', JSON.stringify(updatedFollowers));
+                    return updatedFollowers;
+                });
+                addNotification('follow', randomUser, '님이 회원님의 새 피드 발행 소식을 듣고 회원님을 팔로우했습니다. 👥');
+            }, 1500);
+        }
+
+        // 2) 50% 확률로 이웃이 새 글에 좋아요 누름
+        if (Math.random() < 0.5) {
+            setTimeout(() => {
+                addNotification('like', randomUser, '님이 회원님의 새로운 피드 글에 좋아요를 눌렀습니다. ❤️');
+            }, 2500);
+        }
     };
 
     // 8. 좋아요 토글
@@ -223,16 +271,36 @@ export default function LoungePage() {
     // 10. 팔로우 토글 핸들러
     const handleFollowToggle = (targetHandle: string) => {
         if (targetHandle === persona.handle) return;
-        let updated;
+        let updatedFollowing;
         if (followingList.includes(targetHandle)) {
-            updated = followingList.filter(h => h !== targetHandle);
+            updatedFollowing = followingList.filter(h => h !== targetHandle);
             alert(`${targetHandle} 님을 언팔로우했습니다.`);
+            
+            // 언팔로우 시 상대방도 맞팔을 끊도록 처리
+            if (followersList.includes(targetHandle)) {
+                const updatedFollowers = followersList.filter(h => h !== targetHandle);
+                setFollowersList(updatedFollowers);
+                localStorage.setItem('vera_lounge_followers', JSON.stringify(updatedFollowers));
+            }
         } else {
-            updated = [...followingList, targetHandle];
+            updatedFollowing = [...followingList, targetHandle];
             alert(`${targetHandle} 님을 팔로우했습니다. 🤝`);
+
+            // 맞팔로우 시뮬레이션 (70% 확률)
+            if (Math.random() < 0.7 && !followersList.includes(targetHandle)) {
+                setTimeout(() => {
+                    setFollowersList(prev => {
+                        if (prev.includes(targetHandle)) return prev;
+                        const updatedFollowers = [...prev, targetHandle];
+                        localStorage.setItem('vera_lounge_followers', JSON.stringify(updatedFollowers));
+                        return updatedFollowers;
+                    });
+                    addNotification('follow', targetHandle, '님이 회원님을 맞팔로우하기 시작했습니다. 🤝');
+                }, 800);
+            }
         }
-        setFollowingList(updated);
-        localStorage.setItem('vera_lounge_following', JSON.stringify(updated));
+        setFollowingList(updatedFollowing);
+        localStorage.setItem('vera_lounge_following', JSON.stringify(updatedFollowing));
     };
 
     // 10. 게시글 수정 시작
@@ -701,17 +769,17 @@ export default function LoungePage() {
                                     <p className="text-[10px] text-slate-400 font-black font-mono mt-0.5">{persona.handle}</p>
                                     <p className="text-xs text-slate-500 font-medium mt-3 max-w-sm mx-auto leading-relaxed">{persona.bio}</p>
 
-                                    {/* 팔로워/팔로잉 수치 표시 */}
-                                    <div className="flex justify-center gap-6 mt-4 border-t border-b border-slate-100 py-2.5 max-w-xs mx-auto">
-                                        <div className="text-center flex-1">
-                                            <span className="block text-sm font-black text-slate-800 font-mono">{followersCount}</span>
-                                            <span className="text-[9px] text-slate-400 font-bold">팔로워</span>
-                                        </div>
-                                        <div className="text-center flex-1 border-l border-slate-100">
-                                            <span className="block text-sm font-black text-slate-800 font-mono">{followingList.length}</span>
-                                            <span className="text-[9px] text-slate-400 font-bold">팔로잉</span>
-                                        </div>
-                                    </div>
+                                     {/* 팔로워/팔로잉 수치 표시 */}
+                                     <div className="flex justify-center gap-6 mt-4 border-t border-b border-slate-100 py-2.5 max-w-xs mx-auto">
+                                         <div className="text-center flex-1">
+                                             <span className="block text-sm font-black text-slate-800 font-mono">{followersList.length}</span>
+                                             <span className="text-[9px] text-slate-400 font-bold">팔로워</span>
+                                         </div>
+                                         <div className="text-center flex-1 border-l border-slate-100">
+                                             <span className="block text-sm font-black text-slate-800 font-mono">{followingList.length}</span>
+                                             <span className="text-[9px] text-slate-400 font-bold">팔로잉</span>
+                                         </div>
+                                     </div>
 
                                     {!isEditingProfile && (
                                         <button
