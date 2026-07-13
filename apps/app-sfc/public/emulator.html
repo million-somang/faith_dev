@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body, html { width:100%; height:100%; overflow:hidden; background:#000; }
+        #game { width:100%; height:100%; }
+    </style>
+</head>
+<body>
+    <div id="game"></div>
+    <script>
+        var EMULATORJS_CDN = 'https://cdn.emulatorjs.org/stable/data/';
+
+        window.addEventListener('message', function(e) {
+            if (!e.data) return;
+
+            if (e.data.type === 'load-rom') {
+                var blob = new Blob([e.data.romData]);
+                var url = URL.createObjectURL(blob);
+
+                EJS_player = "#game";
+                EJS_core = "snes";
+                EJS_gameUrl = url;
+                EJS_language = "en-US";
+                EJS_pathtodata = EMULATORJS_CDN;
+
+                var s = document.createElement('script');
+                s.src = EMULATORJS_CDN + "loader.js";
+                document.body.appendChild(s);
+            }
+
+            if (e.data.type === 'save-state') {
+                try {
+                    var emu = window.EJS_emulator;
+                    if (!emu) { window.parent.postMessage({ type: 'save-state-result', success: false, error: 'EJS_emulator not found' }, '*'); return; }
+                    
+                    var gm = emu.gameManager;
+                    var state = null;
+                    
+                    if (gm && typeof gm.getState === 'function') {
+                        state = gm.getState();
+                    } else if (typeof emu.getState === 'function') {
+                        state = emu.getState();
+                    }
+                    
+                    if (!state) {
+                        var available = gm ? Object.getOwnPropertyNames(Object.getPrototypeOf(gm)).join(', ') : 'no gameManager';
+                        window.parent.postMessage({ type: 'save-state-result', success: false, error: 'getState not found. Methods: ' + available }, '*');
+                        return;
+                    }
+                    
+                    var bytes = new Uint8Array(state);
+                    var CHUNK = 0x8000;
+                    var parts = [];
+                    for (var i = 0; i < bytes.length; i += CHUNK) {
+                        parts.push(String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK)));
+                    }
+                    var base64 = btoa(parts.join(''));
+                    
+                    window.parent.postMessage({ type: 'save-state-result', success: true, data: base64, size: bytes.length }, '*');
+                } catch(err) {
+                    window.parent.postMessage({ type: 'save-state-result', success: false, error: String(err.message || err) }, '*');
+                }
+            }
+
+            if (e.data.type === 'load-state') {
+                try {
+                    var emu = window.EJS_emulator;
+                    if (!emu) { window.parent.postMessage({ type: 'load-state-result', success: false, error: 'EJS_emulator not found' }, '*'); return; }
+                    if (!e.data.stateData) { window.parent.postMessage({ type: 'load-state-result', success: false, error: 'No state data received' }, '*'); return; }
+                    
+                    var binary = atob(e.data.stateData);
+                    var bytes = new Uint8Array(binary.length);
+                    for (var i = 0; i < binary.length; i++) {
+                        bytes[i] = binary.charCodeAt(i);
+                    }
+                    
+                    var gm = emu.gameManager;
+                    var loaded = false;
+                    
+                    if (gm) {
+                        if (typeof gm.loadState === 'function') {
+                            try { gm.loadState(bytes); loaded = true; } catch(e1) {
+                                try { gm.loadState(bytes.buffer); loaded = true; } catch(e2) {}
+                            }
+                        }
+                        if (!loaded && typeof gm.setState === 'function') {
+                            try { gm.setState(bytes); loaded = true; } catch(e1) {
+                                try { gm.setState(bytes.buffer); loaded = true; } catch(e2) {}
+                            }
+                        }
+                    }
+                    if (!loaded && typeof emu.loadState === 'function') {
+                        try { emu.loadState(bytes); loaded = true; } catch(e1) {
+                            try { emu.loadState(bytes.buffer); loaded = true; } catch(e2) {}
+                        }
+                    }
+                    
+                    if (loaded) {
+                        window.parent.postMessage({ type: 'load-state-result', success: true }, '*');
+                    } else {
+                        var available = gm ? Object.getOwnPropertyNames(Object.getPrototypeOf(gm)).join(', ') : 'no gameManager';
+                        window.parent.postMessage({ type: 'load-state-result', success: false, error: 'loadState/setState not found. Methods: ' + available }, '*');
+                    }
+                } catch(err) {
+                    window.parent.postMessage({ type: 'load-state-result', success: false, error: String(err.message || err) }, '*');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

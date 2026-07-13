@@ -128,6 +128,42 @@ export default function MyPage() {
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
     const [loading, setLoading] = useState(false);
 
+    const [points] = useState<number>(() => {
+        const saved = localStorage.getItem('vera_points');
+        return saved ? parseInt(saved, 10) : 120;
+    });
+
+    const [bizAgenda, setBizAgenda] = useState<{ id: string; time: string; text: string }[]>(() => {
+        const saved = localStorage.getItem('vera_biz_agenda');
+        return saved ? JSON.parse(saved) : [
+            { id: '1', time: '09:30', text: '해외 수출 관련 계약서 최종 검토' },
+            { id: '2', time: '14:00', text: 'VERA Lounge 실시간 투자 트렌드 브리핑' },
+            { id: '3', time: '16:30', text: 'B2B 파트너 정산 세금계산서 마감' }
+        ];
+    });
+    const [newAgendaText, setNewAgendaText] = useState('');
+    const [newAgendaTime, setNewAgendaTime] = useState('09:00');
+
+    const handleAddAgenda = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newAgendaText.trim()) return;
+        const newItem = {
+            id: `agenda-${Date.now()}`,
+            time: newAgendaTime,
+            text: newAgendaText
+        };
+        const updated = [...bizAgenda, newItem].sort((a, b) => a.time.localeCompare(b.time));
+        setBizAgenda(updated);
+        localStorage.setItem('vera_biz_agenda', JSON.stringify(updated));
+        setNewAgendaText('');
+    };
+
+    const handleRemoveAgenda = (id: string) => {
+        const updated = bizAgenda.filter(item => item.id !== id);
+        setBizAgenda(updated);
+        localStorage.setItem('vera_biz_agenda', JSON.stringify(updated));
+    };
+
     // 생년월일 관리 로컬 스토리지 연동
     const [birthDate, setBirthDate] = useState(localStorage.getItem('user_birth_date') || '');
     const [tempBirthDate, setTempBirthDate] = useState(birthDate);
@@ -363,99 +399,110 @@ export default function MyPage() {
                                         <div className="animate-fade-in space-y-6">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 
-                                                {/* 위젯 1: 나만의 사주팔자 오행 위젯 */}
-                                                <div className="border border-slate-200 rounded-2xl p-5 bg-[#FAF9F5] flex flex-col justify-between min-h-[300px]">
-                                                    <div>
-                                                        <div className="flex justify-between items-center border-b border-stone-200 pb-2 mb-3">
-                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
-                                                                <i className="fas fa-yin-yang text-violet-600"></i> {user.name}님의 사주 오행
-                                                            </h3>
-                                                            <button
-                                                                onClick={() => setShowBirthEditor(true)}
-                                                                className="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-0.5 rounded font-black transition-colors"
-                                                            >
-                                                                생일 수정
-                                                            </button>
-                                                        </div>
-
-                                                        {/* 생일 수정 폼 */}
-                                                        {showBirthEditor ? (
-                                                            <form onSubmit={handleSaveBirth} className="space-y-3 py-2">
-                                                                <p className="text-xs text-stone-500 font-bold">생년월일을 입력해 실시간 사주를 받아보세요.</p>
-                                                                <input
-                                                                    type="date"
-                                                                    value={tempBirthDate}
-                                                                    onChange={(e) => setTempBirthDate(e.target.value)}
-                                                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold"
-                                                                    required
-                                                                />
-                                                                <div className="flex gap-2">
-                                                                    <button type="submit" className="flex-1 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-black">확인</button>
-                                                                    {birthDate && <button type="button" onClick={() => setShowBirthEditor(false)} className="flex-1 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-black">취소</button>}
-                                                                </div>
-                                                            </form>
-                                                        ) : saju ? (
-                                                            <div className="space-y-3">
-                                                                <p className="text-xs text-stone-600 leading-relaxed font-bold break-keep">
-                                                                    🔮 <span className="text-violet-600 font-black">천성:</span> {saju.nature}
-                                                                </p>
-                                                                {/* 오행 그래프 */}
-                                                                <div className="space-y-1.5">
-                                                                    <div className="flex justify-between text-[10px] font-black text-stone-500">
-                                                                        <span>🌳 목 {saju.wood}%</span>
-                                                                        <span>🔥 화 {saju.fire}%</span>
-                                                                        <span>⛰️ 토 {saju.earth}%</span>
-                                                                        <span>⚙️ 금 {saju.metal}%</span>
-                                                                        <span>💧 수 {saju.water}%</span>
-                                                                    </div>
-                                                                    <div className="h-2.5 w-full bg-stone-100 rounded-full overflow-hidden flex shadow-inner">
-                                                                        <div className="bg-emerald-500" style={{ width: `${saju.wood}%` }}></div>
-                                                                        <div className="bg-red-500" style={{ width: `${saju.fire}%` }}></div>
-                                                                        <div className="bg-amber-500" style={{ width: `${saju.earth}%` }}></div>
-                                                                        <div className="bg-stone-500" style={{ width: `${saju.metal}%` }}></div>
-                                                                        <div className="bg-blue-600" style={{ width: `${saju.water}%` }}></div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        ) : null}
-                                                    </div>
-
-                                                    <Link
-                                                        to="/entertainment/saju"
-                                                        className="mt-4 w-full py-2 bg-violet-600 hover:bg-violet-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
-                                                    >
-                                                        전통 사주 종합 해설 열기
-                                                    </Link>
-                                                </div>
-
-                                                {/* 위젯 2: 최근 플레이 게임 전적 위젯 */}
-                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                {/* 위젯 1: 오늘의 비즈니스 일정 (BIZ Agenda) */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[320px]">
                                                     <div>
                                                         <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                                                             <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
-                                                                <i className="fas fa-gamepad text-purple-500"></i> 나의 게임 히스토리
+                                                                <i className="fas fa-calendar-alt text-emerald-600"></i> 💼 오늘의 비즈니스 일정
                                                             </h3>
                                                         </div>
 
-                                                        <div className="space-y-2">
-                                                            {gamesData.history && gamesData.history.length > 0 ? (
-                                                                gamesData.history.map((game, i) => (
-                                                                    <div key={i} className="flex justify-between items-center bg-slate-50 p-2.5 rounded-xl text-xs">
-                                                                        <span className="font-black text-slate-700 font-mono">{game.game_type}</span>
-                                                                        <span className="font-extrabold text-purple-600">{game.score}점</span>
+                                                        {/* 일정 입력 폼 */}
+                                                        <form onSubmit={handleAddAgenda} className="flex gap-1.5 mb-3">
+                                                            <input 
+                                                                type="time" 
+                                                                value={newAgendaTime}
+                                                                onChange={(e) => setNewAgendaTime(e.target.value)}
+                                                                className="px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold"
+                                                            />
+                                                            <input 
+                                                                type="text" 
+                                                                placeholder="새로운 업무 일정 추가..."
+                                                                value={newAgendaText}
+                                                                onChange={(e) => setNewAgendaText(e.target.value)}
+                                                                className="flex-1 px-3 py-1 border border-slate-200 rounded-lg text-xs font-semibold"
+                                                            />
+                                                            <button type="submit" className="px-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-black hover:bg-emerald-700 transition-colors">
+                                                                추가
+                                                            </button>
+                                                        </form>
+
+                                                        {/* 일정 목록 */}
+                                                        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                                                            {bizAgenda.length > 0 ? (
+                                                                bizAgenda.map((item) => (
+                                                                    <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/40 p-2.5 rounded-xl text-xs relative group">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="font-bold text-emerald-600 font-mono bg-emerald-50 px-2 py-0.5 rounded-md">{item.time}</span>
+                                                                            <span className="font-semibold text-slate-700 leading-relaxed pr-6">{item.text}</span>
+                                                                        </div>
+                                                                        <button 
+                                                                            onClick={() => handleRemoveAgenda(item.id)}
+                                                                            className="absolute right-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                                                            title="일정 삭제"
+                                                                        >
+                                                                            <i className="fas fa-times text-xs"></i>
+                                                                        </button>
                                                                     </div>
                                                                 ))
                                                             ) : (
-                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">플레이한 게임이 없습니다</div>
+                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">등록된 업무 일정이 없습니다.</div>
                                                             )}
                                                         </div>
                                                     </div>
+                                                </div>
 
-                                                    <Link
-                                                        to="/game"
-                                                        className="mt-4 w-full py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                {/* 위젯 2: 비즈니스 리워드 포인트 정산 (Settlement) */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[320px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-coins text-amber-500"></i> 🪙 비즈니스 포인트 정산
+                                                            </h3>
+                                                        </div>
+
+                                                        {/* 지표 보드 */}
+                                                        <div className="grid grid-cols-2 gap-3 mb-4">
+                                                            <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
+                                                                <span className="text-[10px] text-amber-600 font-black">누적 포인트</span>
+                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{points.toLocaleString()} P</span>
+                                                            </div>
+                                                            <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
+                                                                <span className="text-[10px] text-emerald-600 font-black">정산 대기 금액</span>
+                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{(points * 10).toLocaleString()} 원</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* 그래프 시뮬레이션 */}
+                                                        <div className="space-y-2">
+                                                            <span className="text-[10px] text-slate-400 font-bold block">비즈니스 수익 기여 지표</span>
+                                                            <div>
+                                                                <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
+                                                                    <span>💼 비즈니스 파트너십</span>
+                                                                    <span>64%</span>
+                                                                </div>
+                                                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-emerald-500" style={{ width: '64%' }}></div>
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
+                                                                    <span>💬 소셜 라운지 리워드</span>
+                                                                    <span>36%</span>
+                                                                </div>
+                                                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                                                    <div className="h-full bg-amber-500" style={{ width: '36%' }}></div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <Link 
+                                                        to="/reward"
+                                                        className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors"
                                                     >
-                                                        게임 센터 바로가기
+                                                        실시간 파트너 포인트 출금 신청
                                                     </Link>
                                                 </div>
 
@@ -492,41 +539,74 @@ export default function MyPage() {
 
                                                     <Link
                                                         to="/finance"
-                                                        className="mt-4 w-full py-2 bg-green-600 hover:bg-green-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                        className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-750 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors"
                                                     >
                                                         주식/금융 센터 바로가기
                                                     </Link>
                                                 </div>
 
-                                                {/* 위젯 4: 북마크 뉴스 위젯 */}
-                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                {/* 위젯 4: 사주팔자 오행 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-[#FAF9F5] flex flex-col justify-between min-h-[300px]">
                                                     <div>
-                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                        <div className="flex justify-between items-center border-b border-stone-200 pb-2 mb-3">
                                                             <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
-                                                                <i className="fas fa-bookmark text-amber-500"></i> 스크랩 뉴스
+                                                                <i className="fas fa-yin-yang text-emerald-600"></i> {user.name}님의 사주 오행
                                                             </h3>
+                                                            <button
+                                                                onClick={() => setShowBirthEditor(true)}
+                                                                className="text-[10px] bg-slate-200 hover:bg-slate-300 text-slate-600 px-2 py-0.5 rounded font-black transition-colors"
+                                                            >
+                                                                생일 수정
+                                                            </button>
                                                         </div>
 
-                                                        <div className="space-y-2">
-                                                            {newsData.bookmarks && newsData.bookmarks.length > 0 ? (
-                                                                newsData.bookmarks.map(bm => (
-                                                                    <div key={bm.id} className="bg-slate-50 p-2.5 rounded-xl text-xs hover:bg-slate-100 transition-colors">
-                                                                        <Link to={`/news/${bm.news_id || bm.id}`} className="font-extrabold text-slate-700 block truncate hover:text-sky-600">
-                                                                            {bm.title}
-                                                                        </Link>
+                                                        {/* 생일 수정 폼 */}
+                                                        {showBirthEditor ? (
+                                                            <form onSubmit={handleSaveBirth} className="space-y-3 py-2">
+                                                                <p className="text-xs text-stone-500 font-bold">생년월일을 입력해 실시간 사주를 받아보세요.</p>
+                                                                <input
+                                                                    type="date"
+                                                                    value={tempBirthDate}
+                                                                    onChange={(e) => setTempBirthDate(e.target.value)}
+                                                                    className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-bold"
+                                                                    required
+                                                                />
+                                                                <div className="flex gap-2">
+                                                                    <button type="submit" className="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-black">확인</button>
+                                                                    {birthDate && <button type="button" onClick={() => setShowBirthEditor(false)} className="flex-1 py-1.5 bg-slate-200 text-slate-600 rounded-lg text-xs font-black">취소</button>}
+                                                                </div>
+                                                            </form>
+                                                        ) : saju ? (
+                                                            <div className="space-y-3">
+                                                                <p className="text-xs text-stone-600 leading-relaxed font-bold break-keep">
+                                                                    🔮 <span className="text-emerald-600 font-black">천성:</span> {saju.nature}
+                                                                </p>
+                                                                {/* 오행 그래프 */}
+                                                                <div className="space-y-1.5">
+                                                                    <div className="flex justify-between text-[10px] font-black text-stone-500">
+                                                                        <span>🌳 목 {saju.wood}%</span>
+                                                                        <span>🔥 화 {saju.fire}%</span>
+                                                                        <span>⛰️ 토 {saju.earth}%</span>
+                                                                        <span>⚙️ 금 {saju.metal}%</span>
+                                                                        <span>💧 수 {saju.water}%</span>
                                                                     </div>
-                                                                ))
-                                                            ) : (
-                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">북마크한 뉴스가 없습니다</div>
-                                                            )}
-                                                        </div>
+                                                                    <div className="h-2.5 w-full bg-stone-100 rounded-full overflow-hidden flex shadow-inner">
+                                                                        <div className="bg-emerald-500" style={{ width: `${saju.wood}%` }}></div>
+                                                                        <div className="bg-red-500" style={{ width: `${saju.fire}%` }}></div>
+                                                                        <div className="bg-amber-500" style={{ width: `${saju.earth}%` }}></div>
+                                                                        <div className="bg-stone-500" style={{ width: `${saju.metal}%` }}></div>
+                                                                        <div className="bg-blue-600" style={{ width: `${saju.water}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ) : null}
                                                     </div>
 
                                                     <Link
-                                                        to="/news"
-                                                        className="mt-4 w-full py-2 bg-sky-600 hover:bg-sky-700 text-white font-black text-center text-xs rounded-xl shadow-sm block"
+                                                        to="/entertainment/saju"
+                                                        className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors"
                                                     >
-                                                        종합 뉴스 데스크 바로가기
+                                                        전통 사주 종합 해설 열기
                                                     </Link>
                                                 </div>
 

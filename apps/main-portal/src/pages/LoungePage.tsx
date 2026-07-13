@@ -369,6 +369,43 @@ export default function LoungePage() {
             <Header user={user} onLogout={logout} />
 
             <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-8 w-full">
+                {/* VERA Lounge Hero Banner */}
+                <div className="relative mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/10">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
+                    <div className="flex flex-col lg:flex-row items-center justify-between p-6 sm:p-8 lg:p-10 gap-8 relative z-10">
+                        {/* Copy & Glassmorphism Badges */}
+                        <div className="flex-1 flex flex-col items-start gap-4">
+                            <div className="flex flex-wrap gap-2">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-white/90 shadow-sm">
+                                    <i className="fas fa-sparkles text-amber-300"></i> New Updates
+                                </span>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-white/90 shadow-sm">
+                                    <i className="fas fa-users text-sky-300"></i> 12.4K Members
+                                </span>
+                            </div>
+                            
+                            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight text-white">
+                                VERA 라운지에서<br className="hidden sm:inline" />
+                                실시간 경제 트렌드와 미니게임을 즐겨보세요!
+                            </h2>
+                            
+                            <p className="text-sm sm:text-base text-white/80 max-w-lg font-normal leading-relaxed text-left">
+                                포털 회원들과 실시간으로 소통하고 주식, 코인 이슈를 분석하세요. 
+                                대화 중 바로 실행되는 사다리타기와 지뢰찾기 미니게임으로 즐거움을 더해보세요.
+                            </p>
+                        </div>
+                        
+                        {/* Image Container with Hover Effect */}
+                        <div className="w-full lg:w-[380px] h-[180px] sm:h-[220px] rounded-2xl overflow-hidden shadow-lg border border-white/10 bg-black/20 shrink-0">
+                            <img 
+                                src="/lounge_hero_banner.jpg" 
+                                alt="VERA Lounge Hero" 
+                                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 {/* 3단 레이아웃 분할 그리드 */}
                 <div className="flex flex-col md:flex-row gap-6">
                     

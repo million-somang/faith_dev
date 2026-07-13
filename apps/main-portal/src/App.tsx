@@ -31,6 +31,7 @@ import EntertainmentPage from './pages/EntertainmentPage';
 import SajuInfoPage from './pages/SajuInfoPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
+import B2BPage from './pages/B2BPage';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
 import { useUserPreferenceContext } from './context/UserPreferenceContext';
@@ -87,7 +88,11 @@ function HomePage() {
             <Header user={user} onLogout={logout} />
 
             {/* 메인 콘텐츠 */}
-            <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-12 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full">
+                
+                {/* 3대 분야 인트로 웰컴 카드 배너 */}
+
+
                 {isPrefLoading ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
@@ -323,6 +328,7 @@ function App() {
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
                     <Route path="/mypage" element={<MyPage />} />
+                    <Route path="/b2b" element={<B2BPage />} />
                     <Route path="/news" element={<NewsPage />} />
                     <Route path="/news/sources" element={<NewsSourcesPage />} />
                     <Route path="/news/source/:source" element={<NewsBySourcePage />} />

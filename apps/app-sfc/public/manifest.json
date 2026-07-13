@@ -1,0 +1,27 @@
+{
+  "id": "/sfc/",
+  "name": "베라 슈퍼컴보이",
+  "short_name": "슈퍼컴보이",
+  "description": "추억의 16비트 슈퍼패미콤 게임 에뮬레이터",
+  "start_url": "/sfc/",
+  "scope": "/sfc/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#000000",
+  "theme_color": "#6366f1",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/logo-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

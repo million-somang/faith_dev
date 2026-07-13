@@ -26,6 +26,128 @@ const KEY_MAP: Record<string, number> = {
 
 const AUDIO_BUFFER_SIZE = 4096;
 
+export interface CachedRom {
+    name: string;
+    type: 'nes' | 'sfc';
+    data: string | ArrayBuffer | Blob;
+    lastPlayed: number;
+}
+
+const DB_NAME = 'RomCacheDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'roms';
+
+export function openRomDB(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                const store = db.createObjectStore(STORE_NAME, { keyPath: 'name' });
+                store.createIndex('type', 'type', { unique: false });
+                store.createIndex('lastPlayed', 'lastPlayed', { unique: false });
+            }
+        };
+    });
+}
+
+export function saveRomToDB(name: string, type: 'nes' | 'sfc', data: string | ArrayBuffer | Blob): Promise<void> {
+    return openRomDB().then((db) => {
+        return new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            let savedData = data;
+            if (typeof data === 'string') {
+                const len = data.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = data.charCodeAt(i);
+                }
+                savedData = new Blob([bytes.buffer], { type: 'application/octet-stream' });
+            } else if (data instanceof ArrayBuffer) {
+                savedData = new Blob([data], { type: 'application/octet-stream' });
+            }
+            const romRecord: CachedRom = {
+                name,
+                type,
+                data: savedData,
+                lastPlayed: Date.now()
+            };
+            const request = store.put(romRecord);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve();
+        });
+    });
+}
+
+export function getRecentRoms(type: 'nes' | 'sfc'): Promise<CachedRom[]> {
+    return openRomDB().then((db) => {
+        return new Promise<CachedRom[]>((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const typeIndex = store.index('type');
+            const request = typeIndex.getAll(type);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                const results = request.result as CachedRom[];
+                results.sort((a, b) => b.lastPlayed - a.lastPlayed);
+                resolve(results);
+            };
+        });
+    });
+}
+
+export function deleteRomFromDB(name: string): Promise<void> {
+    return openRomDB().then((db) => {
+        return new Promise<void>((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(name);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => resolve();
+        });
+    });
+}
+
+function getBinaryString(data: unknown): string {
+    if (typeof data === 'string') {
+        return data;
+    }
+    if (data instanceof ArrayBuffer) {
+        const bytes = new Uint8Array(data);
+        let binary = '';
+        const len = bytes.byteLength;
+        const chunk = 8192;
+        for (let i = 0; i < len; i += chunk) {
+            binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+        }
+        return binary;
+    }
+    if (ArrayBuffer.isView(data)) {
+        const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        let binary = '';
+        const len = bytes.byteLength;
+        const chunk = 8192;
+        for (let i = 0; i < len; i += chunk) {
+            binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+        }
+        return binary;
+    }
+    if (Array.isArray(data)) {
+        const bytes = new Uint8Array(data);
+        let binary = '';
+        const len = bytes.byteLength;
+        const chunk = 8192;
+        for (let i = 0; i < len; i += chunk) {
+            binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+        }
+        return binary;
+    }
+    return '';
+}
+
 export default function App() {
     const { user, isLoading: isAuthLoading } = useAuth();
     
@@ -38,6 +160,21 @@ export default function App() {
     const [errorMessage, setErrorMessage] = useState('');
     const [isMobile, setIsMobile] = useState(false);
     const [activeTab, setActiveTab] = useState<'play' | 'guide' | 'faq'>('play');
+    const [recentRoms, setRecentRoms] = useState<CachedRom[]>([]);
+
+    const loadRecentRoms = () => {
+        getRecentRoms('nes')
+            .then((roms) => {
+                setRecentRoms(roms);
+            })
+            .catch((err) => {
+                console.error('[IndexedDB] 최근 롬 로드 실패:', err);
+            });
+    };
+
+    useEffect(() => {
+        loadRecentRoms();
+    }, []);
 
     // Refs
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -229,9 +366,17 @@ export default function App() {
                 try {
                     initEmulator(result);
                     setRomLoaded(true);
-                } catch (err: any) {
-                    console.error('[Comboy] ROM 로딩 에러:', err);
-                    setErrorMessage(`에뮬레이터 초기화 실패: ${err?.message || '알 수 없는 오류'}`);
+                    saveRomToDB(file.name, 'nes', file)
+                        .then(() => {
+                            loadRecentRoms();
+                        })
+                        .catch((dbErr) => {
+                            console.error('[IndexedDB] ROM 저장 실패:', dbErr);
+                        });
+                } catch (err) {
+                    const errorObj = err as Error;
+                    console.error('[Comboy] ROM 로딩 에러:', errorObj);
+                    setErrorMessage(`에뮬레이터 초기화 실패: ${errorObj.message || '알 수 없는 오류'}`);
                 }
             } else {
                 setErrorMessage('파일 읽기에 실패했습니다. 다른 ROM 파일을 시도해 주세요.');
@@ -429,6 +574,78 @@ export default function App() {
                                             이곳에 .nes 카트리지 파일을 끌어다 놓거나 클릭하여 로컬 기기에서 선택해 주세요.
                                         </p>
                                     </label>
+
+                                    {recentRoms.length > 0 && (
+                                        <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-5 shadow-sm flex flex-col gap-3">
+                                            <h4 className="font-bold text-sm text-slate-200 flex items-center gap-2">
+                                                <i className="fas fa-history text-red-500"></i>
+                                                최근 플레이한 NES 게임
+                                            </h4>
+                                            <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
+                                                {recentRoms.slice(0, 5).map((rom) => (
+                                                    <div 
+                                                        key={rom.name} 
+                                                        onClick={() => {
+                                                            try {
+                                                                if (rom.data instanceof Blob) {
+                                                                    const reader = new FileReader();
+                                                                    reader.onload = (re) => {
+                                                                        const romString = re.target?.result as string;
+                                                                        if (romString) {
+                                                                            initEmulator(romString);
+                                                                            setGameName(rom.name);
+                                                                            setRomLoaded(true);
+                                                                            saveRomToDB(rom.name, 'nes', rom.data)
+                                                                                .then(() => loadRecentRoms())
+                                                                                .catch((err) => console.error(err));
+                                                                        }
+                                                                    };
+                                                                    reader.readAsBinaryString(rom.data);
+                                                                } else {
+                                                                    const romString = getBinaryString(rom.data);
+                                                                    initEmulator(romString);
+                                                                    setGameName(rom.name);
+                                                                    setRomLoaded(true);
+                                                                    saveRomToDB(rom.name, 'nes', romString)
+                                                                        .then(() => loadRecentRoms())
+                                                                        .catch((err) => console.error(err));
+                                                                }
+                                                            } catch (err) {
+                                                                const errorObj = err as Error;
+                                                                console.error('[Comboy] 캐시 롬 로딩 에러:', errorObj);
+                                                                setErrorMessage(`에뮬레이터 초기화 실패: ${errorObj.message || '알 수 없는 오류'}`);
+                                                            }
+                                                        }}
+                                                        className="flex items-center justify-between bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 rounded-xl p-3 transition-all cursor-pointer group"
+                                                    >
+                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <i className="fas fa-gamepad text-neutral-500 group-hover:text-red-500 transition-colors"></i>
+                                                            <span className="text-xs font-semibold text-slate-300 truncate max-w-[200px]">
+                                                                {rom.name}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            <span className="text-[10px] text-neutral-500">
+                                                                {new Date(rom.lastPlayed).toLocaleDateString()}
+                                                            </span>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    deleteRomFromDB(rom.name)
+                                                                        .then(() => loadRecentRoms())
+                                                                        .catch((err) => console.error('[IndexedDB] 롬 삭제 실패:', err));
+                                                                }}
+                                                                className="p-1 rounded text-neutral-500 hover:text-red-400 hover:bg-red-950/20 active:scale-95 transition-all"
+                                                                title="삭제"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {errorMessage && (
                                         <div className="bg-red-950 border border-red-800 text-red-400 p-3.5 rounded-xl text-xs text-center font-medium">

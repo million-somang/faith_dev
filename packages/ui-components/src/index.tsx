@@ -161,10 +161,59 @@ const FULL_MENU_ITEMS = [
     { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
     { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
+    { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
 
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
     const [menuOpen, setMenuOpen] = React.useState(false);
+    const [activeMode, setActiveMode] = React.useState<'general' | 'business' | 'lounge'>(() => {
+        if (typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            if (path.startsWith('/lounge')) return 'lounge';
+            if (path.startsWith('/mypage') || path.startsWith('/b2b')) return 'business';
+        }
+        return 'general';
+    });
+
+    React.useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const path = window.location.pathname;
+            let mode: 'general' | 'business' | 'lounge' = 'general';
+            if (path.startsWith('/lounge')) mode = 'lounge';
+            else if (path.startsWith('/mypage') || path.startsWith('/b2b')) mode = 'business';
+            setActiveMode(mode);
+            localStorage.setItem('vera_portal_mode', mode);
+        }
+    }, []);
+
+    const handleModeSwitch = (mode: 'general' | 'business' | 'lounge') => {
+        setActiveMode(mode);
+        localStorage.setItem('vera_portal_mode', mode);
+        if (typeof window !== 'undefined') {
+            if (mode === 'lounge') {
+                window.location.href = `${baseUrl}/lounge`;
+            } else if (mode === 'business') {
+                window.location.href = `${baseUrl}/b2b`;
+            } else {
+                window.location.href = `${baseUrl}/`;
+            }
+        }
+    };
+
+    let modeColor = 'text-violet-600';
+    let modeBg = 'hover:bg-violet-50 hover:text-violet-600';
+    let gradientFrom = 'from-violet-500 to-indigo-600';
+
+    if (activeMode === 'business') {
+        modeColor = 'text-emerald-600';
+        modeBg = 'hover:bg-emerald-50 hover:text-emerald-600';
+        gradientFrom = 'from-emerald-500 to-teal-600';
+    } else if (activeMode === 'lounge') {
+        modeColor = 'text-fuchsia-600';
+        modeBg = 'hover:bg-fuchsia-50 hover:text-fuchsia-600';
+        gradientFrom = 'from-fuchsia-500 to-purple-600';
+    }
+
     return (
     <>
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
@@ -175,32 +224,93 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <i className="fas fa-bars text-lg"></i>
                     </button>
                     <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 sm:static sm:left-auto sm:translate-x-0">
-                        <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+                        <span className={`w-8 h-8 rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center text-white shadow-sm`}>
                             <i className="fas fa-sparkles text-sm"></i>
                         </span>
-                        <span className="font-black text-xl tracking-wider text-gray-900">V<span className="text-violet-600">ERA</span></span>
+                        <span className="font-black text-xl tracking-wider text-gray-900">V<span className={modeColor}>ERA</span></span>
                     </a>
-                    <nav className="hidden sm:flex gap-1 text-sm font-bold text-gray-600">
-                        <a href={`${baseUrl}/news`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">뉴스</a>
-                        <a href={`${baseUrl}/lifestyle`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">유틸리티</a>
-                        <a href={`${baseUrl}/finance`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">금융</a>
-                        <a href={`${baseUrl}/reward`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">리워드</a>
-                        <a href={`${baseUrl}/game`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">게임</a>
-                        <a href={`${baseUrl}/entertainment`} className="px-3 py-1.5 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors">재미</a>
-                        <a href={`${baseUrl}/lounge`} className="px-3 py-1.5 rounded-lg hover:bg-violet-50 hover:text-violet-600 transition-all duration-300 flex items-center gap-1 group relative">
-                            <span>라운지</span>
-                            <span className="flex h-1.5 w-1.5 absolute -top-0.5 -right-0.5 sm:static sm:-top-0 sm:-right-0">
-                                <span className="animate-ping absolute inline-flex h-1.5 w-1.5 rounded-full bg-violet-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-violet-600"></span>
-                            </span>
-                        </a>
-                    </nav>
+
+                    {/* 데스크탑 모드 스위처 */}
+                    <div className="hidden md:flex items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[10px] font-black text-slate-500 gap-0.5 ml-2 shadow-inner">
+                        {activeMode !== 'general' && (
+                            <button 
+                                onClick={() => handleModeSwitch('general')} 
+                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
+                            >
+                                🔮 일반 포털
+                            </button>
+                        )}
+                        {activeMode !== 'business' && (
+                            <button 
+                                onClick={() => handleModeSwitch('business')} 
+                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
+                            >
+                                💼 비즈니스
+                            </button>
+                        )}
+                        {activeMode !== 'lounge' && (
+                            <button 
+                                onClick={() => handleModeSwitch('lounge')} 
+                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
+                            >
+                                💬 라운지
+                            </button>
+                        )}
+                    </div>
+
+                    {/* 모바일 모드 스위처 */}
+                    <div className="flex md:hidden items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[9px] font-extrabold text-slate-500 gap-0.5 ml-1 absolute right-4 sm:static">
+                        {activeMode !== 'general' && (
+                            <button 
+                                onClick={() => handleModeSwitch('general')} 
+                                className="px-2 py-0.5 rounded-full transition-all"
+                            >
+                                포털
+                            </button>
+                        )}
+                        {activeMode !== 'business' && (
+                            <button 
+                                onClick={() => handleModeSwitch('business')} 
+                                className="px-2 py-0.5 rounded-full transition-all"
+                            >
+                                비즈
+                            </button>
+                        )}
+                        {activeMode !== 'lounge' && (
+                            <button 
+                                onClick={() => handleModeSwitch('lounge')} 
+                                className="px-2 py-0.5 rounded-full transition-all"
+                            >
+                                라운지
+                            </button>
+                        )}
+                    </div>
+
+                    {activeMode === 'general' && (
+                        <nav className="hidden xl:flex gap-1 text-sm font-bold text-gray-600">
+                            <a href={`${baseUrl}/news`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>뉴스</a>
+                            <a href={`${baseUrl}/lifestyle`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>유틸리티</a>
+                            <a href={`${baseUrl}/finance`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>금융</a>
+                            <a href={`${baseUrl}/reward`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
+                            <a href={`${baseUrl}/game`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
+                            <a href={`${baseUrl}/entertainment`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
+                        </nav>
+                    )}
+
+                    {activeMode === 'business' && (
+                        <nav className="hidden xl:flex gap-1 text-sm font-bold text-gray-600">
+                            <a href={`${baseUrl}/b2b`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>홈페이지 제작</a>
+                            <a href={`${baseUrl}/mypage`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                        </nav>
+                    )}
+
+                    {activeMode === 'lounge' && null}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3">
                     {user ? (
                         <>
                             <span className="hidden sm:inline text-xs font-bold text-gray-500">{user.name}님</span>
-                            <a href={`${baseUrl}/mypage`} className="hidden sm:inline-block text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">마이페이지</a>
+                            <a href={`${baseUrl}/mypage`} className={`hidden sm:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>마이페이지</a>
                             <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">로그아웃</button>
                         </>
                     ) : (
@@ -225,7 +335,15 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         </button>
                     </div>
                     <nav className="flex-1 overflow-y-auto p-3">
-                        {FULL_MENU_ITEMS.map((m) => (
+                        {FULL_MENU_ITEMS.filter((m) => {
+                            if (activeMode === 'business') {
+                                return m.path === '/b2b' || m.path === '/mypage';
+                            }
+                            if (activeMode === 'lounge') {
+                                return false;
+                            }
+                            return m.path !== '/b2b' && m.path !== '/lounge';
+                        }).map((m) => (
                             <a key={m.path} href={`${baseUrl}${m.path}`} className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group">
                                 <div className="flex items-center gap-3">
                                     <span className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
