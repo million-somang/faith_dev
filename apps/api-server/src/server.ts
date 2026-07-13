@@ -89,7 +89,7 @@ app.route('/', financeRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc'
+    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju'
 ];
 
 miniApps.forEach(appName => {
