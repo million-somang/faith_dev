@@ -14,7 +14,27 @@ comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), 
     }
 
     try {
-        const { gameName, saveData } = await c.req.json();
+        // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
+        await DB.prepare(`
+            CREATE TABLE IF NOT EXISTS comboy_saves (
+                user_id INTEGER NOT NULL,
+                game_name TEXT NOT NULL,
+                save_data TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, game_name)
+            )
+        `).run();
+
+        // 400 에러 해결: Hono의 c.req.json() 대용량 예외 우회를 위해 c.req.text() 후 직접 파싱
+        const rawBody = await c.req.text();
+        let body;
+        try {
+            body = JSON.parse(rawBody);
+        } catch (pe) {
+            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid JSON body' } }, 400);
+        }
+
+        const { gameName, saveData } = body;
         
         if (!gameName || !saveData) {
             return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName and saveData are required' } }, 400);
@@ -22,7 +42,7 @@ comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), 
 
         console.log('[Comboy] Saving state for user:', user.id, 'game:', gameName);
 
-        // SQLite UPSERT
+        // SQLite/PostgreSQL 공용 UPSERT
         await DB.prepare(`
             INSERT INTO comboy_saves (user_id, game_name, save_data, updated_at)
             VALUES (?, ?, ?, CURRENT_TIMESTAMP)
@@ -58,6 +78,17 @@ comboyRoutes.get('/api/comboy/load', requireAuth, async (c) => {
     }
 
     try {
+        // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
+        await DB.prepare(`
+            CREATE TABLE IF NOT EXISTS comboy_saves (
+                user_id INTEGER NOT NULL,
+                game_name TEXT NOT NULL,
+                save_data TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, game_name)
+            )
+        `).run();
+
         console.log('[Comboy] Loading state for user:', user.id, 'game:', gameName);
 
         const result = await DB.prepare(`

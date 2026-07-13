@@ -14,7 +14,27 @@ sfcRoutes.post('/api/sfc/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), requir
     }
 
     try {
-        const { gameName, saveData } = await c.req.json();
+        // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
+        await DB.prepare(`
+            CREATE TABLE IF NOT EXISTS sfc_saves (
+                user_id INTEGER NOT NULL,
+                game_name TEXT NOT NULL,
+                save_data TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, game_name)
+            )
+        `).run();
+
+        // 400 에러 해결: Hono의 c.req.json() 대용량 예외 우회를 위해 c.req.text() 후 직접 파싱
+        const rawBody = await c.req.text();
+        let body;
+        try {
+            body = JSON.parse(rawBody);
+        } catch (pe) {
+            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid JSON body' } }, 400);
+        }
+
+        const { gameName, saveData } = body;
         
         if (!gameName || !saveData) {
             return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName and saveData are required' } }, 400);
@@ -57,6 +77,17 @@ sfcRoutes.get('/api/sfc/load', requireAuth, async (c) => {
     }
 
     try {
+        // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
+        await DB.prepare(`
+            CREATE TABLE IF NOT EXISTS sfc_saves (
+                user_id INTEGER NOT NULL,
+                game_name TEXT NOT NULL,
+                save_data TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (user_id, game_name)
+            )
+        `).run();
+
         console.log('[SFC] Loading state for user:', user.id, 'game:', gameName);
 
         const result = await DB.prepare(`
