@@ -1112,7 +1112,13 @@ export default function NovelPage() {
               </div>
 
               <div>
-                <label className="text-[9px] font-black text-slate-500 block mb-1">스토리 본문 내용 *</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-[9px] font-black text-slate-500">스토리 본문 내용 *</label>
+                  <span className="text-[9px] font-bold text-slate-400">
+                    공백 포함: <span className="text-violet-650 font-extrabold">{newEpContent.length.toLocaleString()}</span>자 | 
+                    공백 제외: <span className="text-indigo-600 font-extrabold">{newEpContent.replace(/\s/g, '').length.toLocaleString()}</span>자
+                  </span>
+                </div>
                 <textarea
                   rows={10}
                   required
