@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
+import { useAppLauncher } from '../hooks/useAppLauncher';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
 
 // 해시 함수 (오늘의 운세 결정론적 산출 시드용)
@@ -36,6 +37,7 @@ const COLORS = ["보라색 계열", "금색/황토색 계열", "푸른색/네이
 export default function EntertainmentPage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { launchApp } = useAppLauncher();
     const [activeTab, setActiveTab] = useState<'all' | 'saju' | 'five' | 'healing'>('all');
 
     // 로그인 검증 및 라우팅 이동 가드
@@ -171,25 +173,31 @@ export default function EntertainmentPage() {
                                 </div>
                             </button>
 
-                            {/* 슬롯 3: 무료 영화 상영관 (준비중) */}
+                            {/* 슬롯 3: 베라 웹소설 연재관 */}
                             <button
-                                onClick={() => handleInactiveClick('무료 영화 상영관')}
-                                className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-indigo-900 to-slate-800 text-white shadow-sm hover:opacity-95 transition-all"
+                                onClick={() => {
+                                    if (!user) {
+                                        alert('웹소설 연재관은 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
+                                        navigate('/login?redirect=/entertainment');
+                                    } else {
+                                        launchApp('/app/novel/', 'app-novel');
+                                    }
+                                }}
+                                className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-indigo-900 to-slate-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
                             >
-                                <div className="absolute top-3 right-3 bg-slate-900/60 text-white text-[9px] font-bold px-2 py-0.5 rounded-full z-20">
-                                    준비 중 ⏳
-                                </div>
+                                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
+                                <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl group-hover:scale-110 transition-transform"></div>
                                 <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
                                     <div className="flex justify-between items-start">
-                                        <span className="bg-white/20 backdrop-blur-md text-[10px] font-black px-2 py-0.5 rounded-full">영화관</span>
-                                        <i className="fas fa-film text-2xl text-indigo-300"></i>
+                                        <span className="bg-white/20 backdrop-blur-md text-[10px] font-black px-2 py-0.5 rounded-full">신규✨</span>
+                                        <i className="fas fa-book-open text-2xl text-indigo-300 animate-pulse"></i>
                                     </div>
                                     <div>
                                         <h3 className="font-black text-base leading-snug mb-1">
-                                            로그인 없이 가볍게<br />즐기는 클래식 명작
+                                            베라 웹소설 연재관<br />자가 출판 & 유료 연재
                                         </h3>
                                         <p className="text-indigo-200 text-[10px] font-medium">
-                                            주말 힐링 무비 극장
+                                            {!user ? '로그인 후 연재 및 감상' : '골드 충전 및 뷰어 연동'}
                                         </p>
                                     </div>
                                 </div>

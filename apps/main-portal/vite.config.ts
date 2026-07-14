@@ -24,6 +24,10 @@ export default defineConfig({
                 target: 'http://127.0.0.1:5024',
                 changeOrigin: true
             },
+            '^/app/novel.*': {
+                target: 'http://127.0.0.1:5026',
+                changeOrigin: true
+            },
             '^/app/calculator.*': {
                 target: 'http://localhost:5019',
                 changeOrigin: true

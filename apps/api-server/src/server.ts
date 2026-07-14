@@ -83,6 +83,9 @@ app.route('/', ddayRoutes);
 import { analyticsRoutes } from './routes/analytics.routes.js';
 app.route('/', analyticsRoutes);
 
+import novelRoutes from './routes/novel.routes.js';
+app.route('/api/novel', novelRoutes);
+
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);
 

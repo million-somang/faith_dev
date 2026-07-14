@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@layer utilities {
+  /* Scrollbar hide utility */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  /* Text blur for locked contents */
+  .blur-text {
+    filter: blur(8px);
+    user-select: none;
+    pointer-events: none;
+    opacity: 0.25;
+  }
+  
+  /* Shimmer effect for loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(38, 38, 38, 0.6) 25%,
+      rgba(64, 64, 64, 0.8) 37%,
+      rgba(38, 38, 38, 0.6) 50%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-animation 1.5s infinite;
+  }
+}
+
+@keyframes shimmer-animation {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Custom Outlined Input Style */
+.premium-input {
+  background: rgba(23, 23, 23, 0.8);
+  border: 1px solid rgba(64, 64, 64, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.premium-input:focus {
+  border-color: rgba(99, 102, 241, 0.8);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+  outline: none;
+}
