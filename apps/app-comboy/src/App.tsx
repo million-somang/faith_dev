@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MiniAppLayout, useAuth } from '@faithportal/mini-app-sdk';
 import * as jsnesModule from 'jsnes';
 import axios from 'axios';
-import { ShieldAlert, Save, RotateCcw, ArrowLeft, RefreshCw, X } from 'lucide-react';
+import { ShieldAlert, Save, RotateCcw, ArrowLeft, RefreshCw, X, Trash2, Cloud } from 'lucide-react';
 import '@faithportal/mini-app-sdk/src/mini-app.css';
 
 // CJS/ESM 호환 안전 처리
@@ -161,6 +161,29 @@ export default function App() {
     const [isMobile, setIsMobile] = useState(false);
     const [activeTab, setActiveTab] = useState<'play' | 'guide' | 'faq'>('play');
     const [recentRoms, setRecentRoms] = useState<CachedRom[]>([]);
+
+    const [slots, setSlots] = useState<Array<{ slot_no: number, slot_name: string, updated_at: string }>>([]);
+    const [isDeletingSlot, setIsDeletingSlot] = useState<number | null>(null);
+
+    const loadSlots = React.useCallback(async (currentName = gameName) => {
+        if (!user || !currentName) return;
+        try {
+            const { data } = await axios.get(`/api/comboy/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
+            if (data.success) {
+                setSlots(data.slots || []);
+            }
+        } catch (err) {
+            console.error('[Comboy Slots Load Error]', err);
+        }
+    }, [user, gameName]);
+
+    useEffect(() => {
+        if (romLoaded && gameName) {
+            loadSlots(gameName);
+        } else {
+            setSlots([]);
+        }
+    }, [romLoaded, gameName, loadSlots]);
 
     const loadRecentRoms = () => {
         getRecentRoms('nes')
@@ -438,13 +461,21 @@ export default function App() {
         if (code !== null) nesRef.current.buttonUp(1, code);
     };
 
-    // 클라우드 세이브 (Cloud Save)
-    const handleCloudSave = async () => {
+    // 클라우드 세이브 (Cloud Save) - 슬롯 번호와 이름 사용
+    const handleCloudSave = async (slotNo: number, existingName?: string) => {
         if (!nesRef.current) return;
         if (!user) {
             setSaveMessage('로그인이 필요한 기능입니다.');
             return;
         }
+
+        let customName = existingName;
+        if (!customName) {
+            const promptName = prompt('세이브 파일의 이름을 입력해주세요:', `슬롯 ${slotNo}`);
+            if (promptName === null) return; // 취소 시 동작 중단
+            customName = promptName.trim() || `슬롯 ${slotNo}`;
+        }
+
         setIsSaving(true);
         setSaveMessage('');
         
@@ -457,11 +488,14 @@ export default function App() {
 
             const res = await axios.post('/api/comboy/save', {
                 gameName,
+                slotNo,
+                slotName: customName,
                 saveData: base64Data
             });
 
             if (res.data.success) {
-                setSaveMessage('게임 진행 상태가 성공적으로 세이브되었습니다.');
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
+                await loadSlots();
             } else {
                 setSaveMessage('세이브 실패: ' + (res.data.error?.message || '알 수 없는 에러'));
             }
@@ -473,8 +507,8 @@ export default function App() {
         }
     };
 
-    // 클라우드 로드 (Cloud Load)
-    const handleCloudLoad = async () => {
+    // 클라우드 로드 (Cloud Load) - 특정 슬롯에서 불러오기
+    const handleCloudLoad = async (slotNo: number) => {
         if (!nesRef.current) return;
         if (!user) {
             setSaveMessage('로그인이 필요한 기능입니다.');
@@ -484,7 +518,7 @@ export default function App() {
         setSaveMessage('');
         
         try {
-            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}`);
+            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`);
 
             if (res.data.success && res.data.data?.saveData) {
                 // Base64 디코딩
@@ -493,19 +527,39 @@ export default function App() {
 
                 // JSNES 상태 복구
                 nesRef.current.fromJSON(parsedState);
-                setSaveMessage('마지막 저장 위치에서 성공적으로 로드되었습니다.');
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브를 정상적으로 로드했습니다!`);
             } else {
-                setSaveMessage('저장된 데이터를 찾을 수 없습니다.');
+                setSaveMessage(`저장된 슬롯 ${slotNo} 세이브 파일이 존재하지 않습니다.`);
             }
         } catch (e: any) {
             console.error(e);
             if (e.response?.status === 404) {
-                setSaveMessage('저장된 세이브 파일이 존재하지 않습니다.');
+                setSaveMessage(`슬롯 ${slotNo} 세이브 데이터를 찾을 수 없습니다.`);
             } else {
                 setSaveMessage('로드 중 네트워크 오류 발생: ' + e.message);
             }
         } finally {
             setIsLoadingState(false);
+        }
+    };
+
+    // 클라우드 세이브 삭제 (Cloud Delete)
+    const handleCloudDelete = async (slotNo: number) => {
+        if (!user || !gameName) return;
+        if (!confirm(`정말로 슬롯 ${slotNo}의 세이브 데이터를 삭제하시겠습니까?`)) return;
+
+        setIsDeletingSlot(slotNo);
+        setSaveMessage('');
+        try {
+            const res = await axios.delete(`/api/comboy/delete?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
+            if (res.data.success) {
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
+                await loadSlots();
+            }
+        } catch (e: any) {
+            setSaveMessage('삭제 중 오류: ' + (e.message || '알 수 없는 오류'));
+        } finally {
+            setIsDeletingSlot(null);
         }
     };
 
@@ -682,28 +736,6 @@ export default function App() {
                                             </span>
                                         </div>
                                         <div className="flex gap-1.5">
-                                            {user ? (
-                                                <>
-                                                    <button 
-                                                        onClick={handleCloudSave} 
-                                                        disabled={isSaving}
-                                                        className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-slate-200 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                                                    >
-                                                        {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                                                        세이브
-                                                    </button>
-                                                    <button 
-                                                        onClick={handleCloudLoad}
-                                                        disabled={isLoadingState}
-                                                        className="px-3 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-slate-200 text-xs font-extrabold flex items-center gap-1 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                                                    >
-                                                        {isLoadingState ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                                                        로드
-                                                    </button>
-                                                </>
-                                            ) : (
-                                                <span className="text-[10px] text-neutral-500 italic">로그인 시 클라우드 세이브 지원</span>
-                                            )}
                                             <button 
                                                 onClick={() => {
                                                     cleanUpEmulator();
@@ -731,8 +763,88 @@ export default function App() {
 
                                     {/* 세이브/로드 알림 피드백 메시지 */}
                                     {saveMessage && (
-                                        <div className="w-full mt-3 bg-neutral-950 border border-neutral-800 text-[11px] font-bold text-center text-slate-300 py-2 px-3 rounded-xl">
+                                        <div className="w-full mt-3 bg-neutral-950 border border-neutral-800 text-[11px] font-bold text-center text-slate-300 py-2 px-3 rounded-xl animate-fade-in">
                                             {saveMessage}
+                                        </div>
+                                    )}
+
+                                    {/* 클라우드 세이브 슬롯 (최대 3개) */}
+                                    {user && (
+                                        <div className="w-full mt-4 bg-neutral-950/60 border border-neutral-800/80 p-3 rounded-2xl">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                                    <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+                                                    클라우드 세이브 슬롯 (최대 3개)
+                                                </span>
+                                                {isSaving && <span className="text-[10px] text-indigo-400 animate-pulse font-bold">저장 중...</span>}
+                                                {isLoadingState && <span className="text-[10px] text-indigo-400 animate-pulse font-bold">로딩 중...</span>}
+                                            </div>
+
+                                            <div className="grid grid-cols-1 gap-2.5">
+                                                {[1, 2, 3].map((slotNo) => {
+                                                    const slot = slots.find((s) => s.slot_no === slotNo);
+                                                    return (
+                                                        <div 
+                                                            key={slotNo}
+                                                            className="flex items-center justify-between p-2.5 rounded-xl bg-neutral-900/80 border border-neutral-850 hover:border-neutral-800 transition-all"
+                                                        >
+                                                            <div className="flex flex-col gap-0.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-900/50">
+                                                                        슬롯 {slotNo}
+                                                                    </span>
+                                                                    <span className="text-xs font-bold text-slate-200 truncate max-w-[150px]">
+                                                                        {slot ? slot.slot_name : '비어 있음'}
+                                                                    </span>
+                                                                </div>
+                                                                {slot && (
+                                                                    <span className="text-[9px] text-neutral-500 font-mono">
+                                                                        저장일시: {new Date(slot.updated_at).toLocaleString('ko-KR')}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1.5">
+                                                                {slot ? (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleCloudLoad(slotNo)}
+                                                                            disabled={isLoadingState || isSaving}
+                                                                            className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-slate-200 text-[10px] font-extrabold transition-all disabled:opacity-40 cursor-pointer"
+                                                                        >
+                                                                            불러오기
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleCloudSave(slotNo, slot.slot_name)}
+                                                                            disabled={isLoadingState || isSaving}
+                                                                            className="px-2.5 py-1 rounded bg-indigo-900 hover:bg-indigo-850 active:scale-95 text-indigo-200 text-[10px] font-extrabold transition-all disabled:opacity-40 cursor-pointer"
+                                                                            title="현재 상태로 덮어씁니다"
+                                                                        >
+                                                                            덮어쓰기
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleCloudDelete(slotNo)}
+                                                                            disabled={isDeletingSlot !== null || isLoadingState || isSaving}
+                                                                            className="p-1.5 rounded bg-neutral-800 hover:bg-rose-950/40 text-neutral-400 hover:text-rose-400 transition-all disabled:opacity-40 cursor-pointer flex items-center justify-center"
+                                                                            title="슬롯 비우기"
+                                                                        >
+                                                                            {isDeletingSlot === slotNo ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                                                                        </button>
+                                                                    </>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => handleCloudSave(slotNo)}
+                                                                        disabled={isLoadingState || isSaving}
+                                                                        className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-slate-50 text-[10px] font-extrabold transition-all disabled:opacity-40 cursor-pointer"
+                                                                    >
+                                                                        현재 상태 저장
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     )}
 
