@@ -201,20 +201,20 @@ export default function App() {
     }`}>
       {/* 상단 뷰어 제어 네비 */}
       <div className="flex items-center justify-between mb-4 border-b border-slate-200/40 pb-3 shrink-0">
-        <span className="text-xs font-black max-w-[220px] truncate">
+        <span className="text-sm font-black max-w-[220px] truncate sm:text-base">
           {currentEpisode.title}
         </span>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button 
             onClick={() => {
               if (viewerFontSize === 'small') setViewerFontSize('medium');
               else if (viewerFontSize === 'medium') setViewerFontSize('large');
               else setViewerFontSize('small');
             }}
-            className="p-1.5 rounded-lg bg-slate-100/50 hover:bg-slate-100 text-slate-500 hover:text-indigo-650 transition-colors"
+            className="p-2 rounded-lg bg-slate-100/50 hover:bg-slate-100 text-slate-500 hover:text-indigo-650 transition-colors"
             title="글꼴 크기 조절"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-4.5 h-4.5" />
           </button>
           <button 
             onClick={() => {
@@ -222,7 +222,7 @@ export default function App() {
               else if (viewerTheme === 'light') setViewerTheme('sepia');
               else setViewerTheme('dark');
             }}
-            className="w-5 h-5 rounded-full border border-neutral-700/20 bg-amber-50 flex items-center justify-center text-[10px] font-bold text-slate-800 cursor-pointer"
+            className="w-7 h-7 rounded-full border border-neutral-700/20 bg-amber-50 flex items-center justify-center text-xs font-black text-slate-800 cursor-pointer"
             title="뷰어 배경 테마"
           >
             T
@@ -232,7 +232,7 @@ export default function App() {
 
       {/* 본문 텍스트 */}
       <div 
-        className={`flex-1 p-5 rounded-2xl border transition-all overflow-y-auto ${
+        className={`flex-1 p-6 rounded-2xl border transition-all overflow-y-auto ${
           viewerTheme === 'dark' 
             ? 'bg-neutral-900/60 border-neutral-850' 
             : viewerTheme === 'sepia'
@@ -243,10 +243,10 @@ export default function App() {
         <p 
           className={`leading-relaxed whitespace-pre-wrap break-keep select-none font-serif ${
             viewerFontSize === 'small' 
-              ? 'text-xs' 
+              ? 'text-sm sm:text-base' 
               : viewerFontSize === 'large'
-              ? 'text-lg'
-              : 'text-sm'
+              ? 'text-xl sm:text-2xl font-semibold'
+              : 'text-base sm:text-lg'
           } ${isLocked ? 'blur-text' : ''}`}
         >
           {currentEpisode.content}
@@ -254,27 +254,27 @@ export default function App() {
 
         {/* 유료 차단 */}
         {isLocked && (
-          <div className="mt-8 p-5 rounded-2xl bg-white border border-slate-200 shadow-sm text-center flex flex-col items-center">
-            <Lock className="w-7 h-7 text-indigo-500 mb-3 animate-bounce" />
-            <h3 className="text-xs font-black text-slate-800 mb-1">이 에피소드는 유료 회차입니다.</h3>
-            <p className="text-[10px] text-slate-500 leading-relaxed mb-4">
+          <div className="mt-8 p-6 rounded-2xl bg-white border border-slate-200 shadow-sm text-center flex flex-col items-center">
+            <Lock className="w-8 h-8 text-indigo-500 mb-3 animate-bounce" />
+            <h3 className="text-sm sm:text-base font-black text-slate-800 mb-1">이 에피소드는 유료 회차입니다.</h3>
+            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed mb-4">
               대여 요금: <span className="text-indigo-650 font-black">{currentEpisode.price || 100} G</span>
             </p>
             
             <div className="flex flex-col gap-2 w-full">
               {systemMessage && (
-                <p className="text-[9px] text-indigo-600 font-extrabold mb-1">{systemMessage}</p>
+                <p className="text-xs text-indigo-600 font-extrabold mb-1">{systemMessage}</p>
               )}
               <button
                 onClick={handlePurchaseEpisode}
                 disabled={isPurchasing}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl transition-all disabled:opacity-40 cursor-pointer shadow-sm"
+                className="w-full py-3 bg-indigo-600 hover:bg-indigo-750 text-white text-sm font-black rounded-xl transition-all disabled:opacity-40 cursor-pointer shadow-md"
               >
                 {isPurchasing ? '처리 중...' : `골드로 소설 보기 (${currentEpisode.price || 100}G 소모)`}
               </button>
               <button
                 onClick={() => setShowChargeModal(true)}
-                className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[9px] font-bold rounded-lg transition-all cursor-pointer border border-slate-200"
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-all cursor-pointer border border-slate-200"
               >
                 골드 충전하기
               </button>
@@ -288,14 +288,14 @@ export default function App() {
         <button
           onClick={() => navigateEpisode(currentEpisode.episode_no - 1)}
           disabled={currentEpisode.episode_no <= 1}
-          className="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold flex items-center gap-1 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700"
+          className="px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs sm:text-sm font-black flex items-center gap-1.5 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700 transition-all"
         >
-          <ChevronLeft className="w-3.5 h-3.5" /> 이전화
+          <ChevronLeft className="w-4 h-4" /> 이전화
         </button>
         
         <button
           onClick={() => window.close()}
-          className="px-4 py-2 rounded-lg bg-indigo-50 border border-indigo-150 text-[11px] font-black hover:bg-indigo-100 active:scale-95 cursor-pointer text-indigo-600 shadow-sm"
+          className="px-5.5 py-2.5 rounded-xl bg-indigo-50 border border-indigo-150 text-xs sm:text-sm font-black hover:bg-indigo-100 active:scale-95 cursor-pointer text-indigo-600 shadow-sm transition-all"
         >
           창 닫기
         </button>
@@ -303,9 +303,9 @@ export default function App() {
         <button
           onClick={() => navigateEpisode(currentEpisode.episode_no + 1)}
           disabled={currentEpisode.episode_no >= episodesCount}
-          className="px-3 py-2 rounded-lg bg-slate-100 border border-slate-200 text-[11px] font-bold flex items-center gap-1 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700"
+          className="px-4 py-2.5 rounded-xl bg-slate-100 border border-slate-200 text-xs sm:text-sm font-black flex items-center gap-1.5 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700 transition-all"
         >
-          다음화 <ChevronRight className="w-3.5 h-3.5" />
+          다음화 <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
@@ -316,13 +316,13 @@ export default function App() {
             {chargeSuccess ? (
               <div className="py-6 flex flex-col items-center animate-fade-in">
                 <CheckCircle className="w-12 h-12 text-emerald-500 mb-3.5 animate-pulse" />
-                <h3 className="text-sm font-black text-slate-800">골드 충전 완료!</h3>
-                <p className="text-[10px] text-slate-550 mt-1">지갑 잔액이 실시간 보충되었습니다.</p>
+                <h3 className="text-base font-black text-slate-805">골드 충전 완료!</h3>
+                <p className="text-xs text-slate-550 mt-1">지갑 잔액이 실시간 보충되었습니다.</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                  <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                  <span className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
                     <BookOpen className="w-4 h-4 text-indigo-500 animate-pulse" />
                     골드 충전소
                   </span>
@@ -331,7 +331,7 @@ export default function App() {
                   </button>
                 </div>
 
-                <p className="text-[10px] text-slate-500 text-left mb-4 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-550 text-left mb-4 leading-relaxed font-semibold">
                   원하시는 골드 상품을 선택해 주세요. 개발자 전용 모의 결제로 무료 승인됩니다.
                 </p>
 
@@ -345,14 +345,14 @@ export default function App() {
                     <div
                       key={item.g}
                       onClick={() => setChargeAmount(item.g)}
-                      className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                         chargeAmount === item.g
-                          ? 'bg-indigo-50 border-indigo-500'
+                          ? 'bg-indigo-50 border-indigo-500 shadow-sm'
                           : 'bg-slate-50 border-slate-200'
                       }`}
                     >
-                      <span className="text-xs font-black text-slate-800">{item.g.toLocaleString()} 골드</span>
-                      <span className="text-[10px] font-black text-indigo-650 font-mono">{item.w.toLocaleString()}원</span>
+                      <span className="text-sm font-black text-slate-800">{item.g.toLocaleString()} 골드</span>
+                      <span className="text-xs font-black text-indigo-650 font-mono">{item.w.toLocaleString()}원</span>
                     </div>
                   ))}
                 </div>
@@ -360,7 +360,7 @@ export default function App() {
                 <button
                   onClick={handleChargeGold}
                   disabled={isCharging}
-                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-sm"
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-750 text-white text-sm font-black rounded-xl transition-all cursor-pointer shadow-md"
                 >
                   {isCharging ? '승인 요청 중...' : '모의 결제 및 즉시 충전'}
                 </button>
