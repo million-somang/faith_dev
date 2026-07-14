@@ -46,7 +46,7 @@ async function initNovelDatabase() {
         await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN status TEXT DEFAULT 'published'").run();
     } catch(e) {}
     try {
-        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN publish_at TEXT DEFAULT CURRENT_TIMESTAMP").run();
+        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN publish_at TEXT DEFAULT '1970-01-01 00:00:00'").run();
     } catch(e) {}
 
     // 3. 골드 지갑 테이블
