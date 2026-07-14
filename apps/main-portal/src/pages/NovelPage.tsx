@@ -510,7 +510,7 @@ export default function NovelPage() {
                 <div className="flex flex-col bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm animate-slide-up">
                   <button 
                     onClick={() => setCurrentNovel(null)}
-                    className="self-start px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-[10px] font-black text-slate-650 hover:text-slate-855 flex items-center gap-1.5 mb-5 cursor-pointer border border-slate-200 transition-all active:scale-95"
+                    className="self-start px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-black text-slate-650 hover:text-slate-855 flex items-center gap-1.5 mb-5 cursor-pointer border border-slate-200 transition-all active:scale-95 animate-fade-in"
                   >
                     <i className="fas fa-chevron-left"></i> 전체 작품보기
                   </button>
@@ -520,7 +520,7 @@ export default function NovelPage() {
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="text-[9px] font-black px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
                             {currentNovel.genre}
                           </span>
                           <button 
@@ -531,20 +531,20 @@ export default function NovelPage() {
                             <i className={`${isBookmarked ? 'fas text-rose-500' : 'far text-slate-400'} fa-heart text-xs`}></i>
                           </button>
                         </div>
-                        <h3 className="text-base font-black text-slate-850 mt-2.5 leading-tight">
+                        <h3 className="text-lg font-black text-slate-850 mt-2.5 leading-tight">
                           {currentNovel.title}
                         </h3>
-                        <span className="text-[10px] text-slate-500 font-bold block mt-1.5">
+                        <span className="text-xs text-slate-500 font-bold block mt-1.5">
                           작가: {currentNovel.author}
                         </span>
                       </div>
-                      <p className="text-[10px] text-slate-500 leading-relaxed line-clamp-3 mt-3 font-light">
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3 mt-3 font-light">
                         {currentNovel.description}
                       </p>
                     </div>
                   </div>
 
-                  <h4 className="text-xs font-black text-slate-700 mt-6 mb-3 flex items-center gap-1.5">
+                  <h4 className="text-sm font-black text-slate-800 mt-6 mb-3 flex items-center gap-1.5">
                     <i className="fas fa-list text-violet-500"></i>
                     전체 에피소드 ({episodes.length}화)
                   </h4>
@@ -558,20 +558,20 @@ export default function NovelPage() {
                         className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all cursor-pointer shadow-inner"
                       >
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-xs font-bold text-slate-800 truncate max-w-[340px]">
+                          <span className="text-sm font-bold text-slate-800 truncate max-w-[340px]">
                             {ep.title}
                           </span>
-                          <span className="text-[9px] text-slate-400 font-mono">
+                          <span className="text-xs text-slate-450 font-mono">
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex items-center">
                           {ep.is_free === 1 ? (
-                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                               무료
                             </span>
                           ) : (
-                            <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
+                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
                               <i className="fas fa-lock text-[8px] text-violet-500"></i> {ep.price || 100}G
                             </span>
                           )}
@@ -579,7 +579,7 @@ export default function NovelPage() {
                       </div>
                     ))}
                     {episodes.length === 0 && (
-                      <p className="text-[10px] text-slate-400 text-center py-10">등록된 에피소드가 아직 없습니다.</p>
+                      <p className="text-xs text-slate-400 text-center py-10">등록된 에피소드가 아직 없습니다.</p>
                     )}
                   </div>
                 </div>
@@ -703,12 +703,12 @@ export default function NovelPage() {
                       {/* 소설 연재 전체 리스트 */}
                       <div className="flex flex-col gap-3.5 bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                          <h3 className="text-xs font-black text-slate-800">소설 연재 목록</h3>
+                          <h3 className="text-sm sm:text-base font-black text-slate-800">소설 연재 목록</h3>
                           
                           <select
                             value={selectedGenre}
                             onChange={(e) => setSelectedGenre(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-[10px] font-black text-violet-600 rounded-lg px-2 py-1 shadow-sm focus:outline-none"
+                            className="bg-slate-50 border border-slate-200 text-xs sm:text-sm font-black text-violet-650 rounded-lg px-2.5 py-1.5 shadow-sm focus:outline-none"
                           >
                             <option value="all">전체 장르</option>
                             <option value="현대판타지">현대판타지</option>
@@ -723,22 +723,22 @@ export default function NovelPage() {
                             <div 
                               key={novel.id}
                               onClick={() => handleSelectNovel(novel)}
-                              className="flex gap-3.5 p-3 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:border-violet-100 hover:bg-slate-50 transition-all cursor-pointer group"
+                              className="flex gap-3.5 p-3.5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:border-violet-100 hover:bg-slate-50 transition-all cursor-pointer group"
                             >
                               {renderCover(novel.cover_url, "w-14 h-20")}
                               <div className="flex-1 flex flex-col justify-between py-0.5">
                                 <div>
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-50 text-violet-650 border border-violet-100">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-violet-50 text-violet-650 border border-violet-100">
                                       {novel.genre}
                                     </span>
-                                    <span className="text-[9px] text-slate-400 font-bold">작가: {novel.author}</span>
+                                    <span className="text-xs text-slate-450 font-bold">작가: {novel.author}</span>
                                   </div>
-                                  <h4 className="text-xs font-black text-slate-800 group-hover:text-violet-600 transition-colors mt-1.5 leading-tight">
+                                  <h4 className="text-sm sm:text-base font-black text-slate-800 group-hover:text-violet-600 transition-colors mt-1.5 leading-tight">
                                     {novel.title}
                                   </h4>
                                 </div>
-                                <p className="text-[10px] text-slate-500 line-clamp-2 leading-normal">
+                                <p className="text-xs text-slate-500 line-clamp-2 leading-normal mt-1">
                                   {novel.description}
                                 </p>
                               </div>
@@ -747,8 +747,8 @@ export default function NovelPage() {
                           {novels.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-14 text-center">
                               <i className="fas fa-book-open text-slate-200 text-3xl mb-3"></i>
-                              <p className="text-xs font-black text-slate-800">현재 연재 중인 소설이 한 건도 없습니다.</p>
-                              <p className="text-[10px] text-slate-400 mt-1 max-w-[280px]">
+                              <p className="text-sm font-black text-slate-800">현재 연재 중인 소설이 한 건도 없습니다.</p>
+                              <p className="text-xs text-slate-400 mt-1 max-w-[280px]">
                                 상단의 [작가 스튜디오] 탭을 터치해 첫 소설을 직접 발굴하고 1호 작가가 되어보세요! ✍️
                               </p>
                             </div>
