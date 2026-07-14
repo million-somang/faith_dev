@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, checkSession } from '../middleware/auth.js';
 import { getDB } from '../db/adapter.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -24,7 +24,7 @@ async function initNovelDatabase() {
         )
     `).run();
 
-    // 2. 에피소드 테이블
+    // 2. 에피소드 테이블 (status, publish_at 컬럼 기본 포함 생성)
     await db.prepare(`
         CREATE TABLE IF NOT EXISTS novel_episodes_v2 (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,9 +35,19 @@ async function initNovelDatabase() {
             is_free INTEGER DEFAULT 1,
             price INTEGER DEFAULT 100,
             views INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'published',
+            publish_at TEXT DEFAULT CURRENT_TIMESTAMP,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `).run();
+
+    // 기존 테이블 구조 안전 호환 패치 (ALTER TABLE)
+    try {
+        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN status TEXT DEFAULT 'published'").run();
+    } catch(e) {}
+    try {
+        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN publish_at TEXT DEFAULT CURRENT_TIMESTAMP").run();
+    } catch(e) {}
 
     // 3. 골드 지갑 테이블
     await db.prepare(`
@@ -123,9 +133,24 @@ router.get('/detail', async (c) => {
     const novel = await db.prepare('SELECT * FROM novel_novels WHERE id = ?').bind(novelId).first();
     if (!novel) return c.json({ success: false, message: '작품을 찾을 수 없습니다.' }, 404);
 
-    const epRes = await db.prepare(
-        'SELECT id, novel_id, episode_no, title, is_free, price, views, created_at FROM novel_episodes_v2 WHERE novel_id = ? ORDER BY episode_no ASC'
-    ).bind(novelId).all();
+    // 접속 유저 세션 분석
+    const user = await checkSession(c);
+    const isAuthor = user && novel.author_id === user.id;
+
+    let queryStr = `
+        SELECT id, novel_id, episode_no, title, is_free, price, views, status, publish_at, created_at 
+        FROM novel_episodes_v2 
+        WHERE novel_id = ?
+    `;
+
+    if (!isAuthor) {
+        // 작가가 아닌 일반 독자는 오직 발행완료 상태이거나, 예약 일시가 지난 에피소드만 볼 수 있음
+        queryStr += " AND (status = 'published' OR (status = 'scheduled' AND publish_at <= datetime('now', 'localtime')))";
+    }
+
+    queryStr += " ORDER BY episode_no ASC";
+
+    const epRes = await db.prepare(queryStr).bind(novelId).all();
 
     return c.json({ success: true, novel, episodes: epRes.results });
 });
@@ -189,11 +214,11 @@ router.get('/writer/list', requireAuth, async (c) => {
     return c.json({ success: true, list: res.results });
 });
 
-// 7. [인증] 작가 특정 소설 새 회차 등록 API (유/무료 체크 & 요금 설정 포함)
+// 7. [인증] 작가 특정 소설 새 회차 등록 API (유/무료 체크 & 요금 설정 및 임시저장/예약발행 포함)
 router.post('/episode/create', requireAuth, async (c) => {
     const db = await getDB(c);
     const user = c.get('user');
-    const { novelId, title, content, isFree, price } = await c.req.json();
+    const { novelId, title, content, isFree, price, status, publishAt } = await c.req.json();
 
     if (!novelId || !title || !content) {
         return c.json({ success: false, message: '필수 필드가 누락되었습니다.' }, 400);
@@ -210,10 +235,22 @@ router.post('/episode/create', requireAuth, async (c) => {
     const lastEp = await db.prepare('SELECT MAX(episode_no) as max_no FROM novel_episodes_v2 WHERE novel_id = ?').bind(novelId).first();
     const nextEpNo = (lastEp?.max_no || 0) + 1;
 
+    // publish_at 시각 보정 (예약발행 시각이 넘어오면 그것을 쓰고, 없거나 즉시발행/임시저장이면 현재 시간)
+    const finalPublishAt = (status === 'scheduled' && publishAt) ? publishAt : new Date().toISOString();
+
     await db.prepare(
-        `INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-         VALUES (?, ?, ?, ?, ?, ?)`
-    ).bind(novelId, nextEpNo, title, content, isFree ? 1 : 0, isFree ? 0 : (price || 100)).run();
+        `INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price, status, publish_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(
+        novelId, 
+        nextEpNo, 
+        title, 
+        content, 
+        isFree ? 1 : 0, 
+        isFree ? 0 : (price || 100),
+        status || 'published',
+        finalPublishAt
+    ).run();
 
     return c.json({ success: true, episodeNo: nextEpNo });
 });
@@ -233,6 +270,15 @@ router.get('/episode', requireAuth, async (c) => {
         'SELECT * FROM novel_episodes_v2 WHERE novel_id = ? AND episode_no = ?'
     ).bind(novelId, episodeNo).first();
     if (!ep) return c.json({ success: false, message: '해당 회차를 찾을 수 없습니다.' }, 404);
+
+    // [예약발행/임시저장 검증] 임시저장이거나 아직 미래 예정된 예약발행 에피소드인 경우
+    const isFutureScheduled = ep.status === 'scheduled' && new Date(ep.publish_at) > new Date();
+    if (ep.status === 'draft' || isFutureScheduled) {
+        const novel = await db.prepare('SELECT author_id FROM novel_novels WHERE id = ?').bind(novelId).first();
+        if (!novel || novel.author_id !== user.id) {
+            return c.json({ success: false, message: '아직 발행 및 공개되지 않은 에피소드입니다.' }, 403);
+        }
+    }
 
     // 조회수 1 증가
     await db.prepare('UPDATE novel_episodes_v2 SET views = views + 1 WHERE id = ?').bind(ep.id).run();

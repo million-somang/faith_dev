@@ -29,6 +29,8 @@ interface Episode {
   is_free: number;
   price: number;
   views: number;
+  status?: string;
+  publish_at?: string;
   created_at: string;
 }
 
@@ -72,6 +74,8 @@ export default function NovelPage() {
   const [newEpContent, setNewEpContent] = useState('');
   const [newEpIsFree, setNewEpIsFree] = useState(true);
   const [newEpPrice] = useState(100);
+  const [newEpStatus, setNewEpStatus] = useState<'published' | 'draft' | 'scheduled'>('published');
+  const [newEpPublishAt, setNewEpPublishAt] = useState<string>('');
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
   
   // 골드 & 지갑 상태
@@ -330,15 +334,19 @@ export default function NovelPage() {
         title: newEpTitle,
         content: newEpContent,
         isFree: newEpIsFree,
-        price: newEpIsFree ? 0 : newEpPrice
+        price: newEpIsFree ? 0 : newEpPrice,
+        status: newEpStatus,
+        publishAt: newEpPublishAt
       }, { withCredentials: true });
 
       if (res.data.success) {
-        alert(`🎉 ${res.data.episodeNo}화 에피소드가 발행되었습니다!`);
+        alert(`🎉 ${res.data.episodeNo}화 에피소드가 등록 처리되었습니다!`);
         setShowCreateEpisode(false);
         setNewEpTitle('');
         setNewEpContent('');
         setNewEpIsFree(true);
+        setNewEpStatus('published');
+        setNewEpPublishAt('');
         handleSelectWriterNovel(selectedWriterNovel);
       }
     } catch (err: any) {
@@ -872,7 +880,22 @@ export default function NovelPage() {
                         className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm"
                       >
                         <div>
-                          <span className="text-xs font-bold text-slate-800 block">{ep.title}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-xs font-bold text-slate-800">{ep.title}</span>
+                            {ep.status === 'draft' ? (
+                              <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">
+                                임시저장
+                              </span>
+                            ) : ep.status === 'scheduled' ? (
+                              <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 border border-amber-200">
+                                예약발행 ({new Date(ep.publish_at || '').toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })})
+                              </span>
+                            ) : (
+                              <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-violet-50 text-violet-650 border border-violet-100">
+                                공개완료
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[9px] text-slate-450 font-mono mt-0.5 block">
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
@@ -1109,6 +1132,66 @@ export default function NovelPage() {
                     유료 연재
                   </button>
                 </div>
+              </div>
+
+              {/* 발행 방식 설정 (즉시발행 / 임시저장 / 예약발행) */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-2.5 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-800 block">발행 방식 설정</label>
+                    <span className="text-[8px] text-slate-450 font-bold block mt-0.5">원하시는 발행 형태를 선택해 주세요.</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setNewEpStatus('published')}
+                      className={`px-2 py-1 rounded-md text-[8px] font-black transition-all cursor-pointer ${
+                        newEpStatus === 'published' 
+                          ? 'bg-violet-50 text-violet-655 border border-violet-200/50 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      즉시발행
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEpStatus('draft')}
+                      className={`px-2 py-1 rounded-md text-[8px] font-black transition-all cursor-pointer ${
+                        newEpStatus === 'draft' 
+                          ? 'bg-slate-100 text-slate-700 border border-slate-200 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      임시저장
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewEpStatus('scheduled')}
+                      className={`px-2 py-1 rounded-md text-[8px] font-black transition-all cursor-pointer ${
+                        newEpStatus === 'scheduled' 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200/50 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      예약발행
+                    </button>
+                  </div>
+                </div>
+
+                {/* 예약 발행일 때만 예약 일시 입력 인풋 노출 */}
+                {newEpStatus === 'scheduled' && (
+                  <div className="flex flex-col gap-1 border-t border-slate-200/50 pt-2 animate-fade-in">
+                    <label className="text-[8px] font-black text-slate-500 block">예약 발행일시 설정 *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={newEpPublishAt}
+                      onChange={(e) => setNewEpPublishAt(e.target.value)}
+                      className="w-full text-[10px] p-2 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+                )}
               </div>
 
               <div>
