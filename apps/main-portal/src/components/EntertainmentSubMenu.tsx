@@ -1,5 +1,4 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAppLauncher } from '../hooks/useAppLauncher';
 import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
@@ -12,7 +11,6 @@ const menuItems = [
 export default function EntertainmentSubMenu() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { launchApp } = useAppLauncher();
     const { user } = useAuth();
 
     const handleInactiveClick = (e: React.MouseEvent, label: string) => {
@@ -26,7 +24,7 @@ export default function EntertainmentSubMenu() {
             alert(`${label} 서비스는 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.`);
             navigate('/login?redirect=/entertainment');
         } else {
-            launchApp(path, 'app-novel');
+            window.open(path, '_blank');
         }
     };
 

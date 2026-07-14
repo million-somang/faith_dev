@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
-import { useAppLauncher } from '../hooks/useAppLauncher';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
 
 // 해시 함수 (오늘의 운세 결정론적 산출 시드용)
@@ -37,7 +36,6 @@ const COLORS = ["보라색 계열", "금색/황토색 계열", "푸른색/네이
 export default function EntertainmentPage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
-    const { launchApp } = useAppLauncher();
     const [activeTab, setActiveTab] = useState<'all' | 'saju' | 'five' | 'healing'>('all');
 
     // 로그인 검증 및 라우팅 이동 가드
@@ -180,7 +178,7 @@ export default function EntertainmentPage() {
                                         alert('웹소설 연재관은 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
                                         navigate('/login?redirect=/entertainment');
                                     } else {
-                                        launchApp('/app/novel/', 'app-novel');
+                                        window.open('/app/novel/', '_blank');
                                     }
                                 }}
                                 className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-indigo-900 to-slate-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
