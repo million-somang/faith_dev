@@ -520,7 +520,7 @@ export default function NovelPage() {
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
+                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-105">
                             {currentNovel.genre}
                           </span>
                           <button 
@@ -531,20 +531,20 @@ export default function NovelPage() {
                             <i className={`${isBookmarked ? 'fas text-rose-500' : 'far text-slate-400'} fa-heart text-xs`}></i>
                           </button>
                         </div>
-                        <h3 className="text-lg font-black text-slate-850 mt-2.5 leading-tight">
+                        <h3 className="text-xl sm:text-2xl font-black text-slate-850 mt-2.5 leading-tight">
                           {currentNovel.title}
                         </h3>
-                        <span className="text-xs text-slate-500 font-bold block mt-1.5">
+                        <span className="text-sm sm:text-base text-slate-550 font-extrabold block mt-1.5">
                           작가: {currentNovel.author}
                         </span>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-3 mt-3 font-light">
+                      <p className="text-sm sm:text-base text-slate-600 leading-relaxed line-clamp-3 mt-3 font-normal">
                         {currentNovel.description}
                       </p>
                     </div>
                   </div>
 
-                  <h4 className="text-sm font-black text-slate-800 mt-6 mb-3 flex items-center gap-1.5">
+                  <h4 className="text-base sm:text-lg font-black text-slate-800 mt-6 mb-3 flex items-center gap-1.5">
                     <i className="fas fa-list text-violet-500"></i>
                     전체 에피소드 ({episodes.length}화)
                   </h4>
@@ -558,20 +558,20 @@ export default function NovelPage() {
                         className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all cursor-pointer shadow-inner"
                       >
                         <div className="flex flex-col gap-0.5">
-                          <span className="text-sm font-bold text-slate-800 truncate max-w-[340px]">
+                          <span className="text-base sm:text-lg font-extrabold text-slate-800 truncate max-w-[340px]">
                             {ep.title}
                           </span>
-                          <span className="text-xs text-slate-450 font-mono">
+                          <span className="text-sm text-slate-500 font-medium font-mono">
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex items-center">
                           {ep.is_free === 1 ? (
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            <span className="text-xs sm:text-sm font-black px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                               무료
                             </span>
                           ) : (
-                            <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
+                            <span className="text-xs sm:text-sm font-black px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
                               <i className="fas fa-lock text-[8px] text-violet-500"></i> {ep.price || 100}G
                             </span>
                           )}
@@ -579,7 +579,7 @@ export default function NovelPage() {
                       </div>
                     ))}
                     {episodes.length === 0 && (
-                      <p className="text-xs text-slate-400 text-center py-10">등록된 에피소드가 아직 없습니다.</p>
+                      <p className="text-sm sm:text-base text-slate-400 text-center py-10">등록된 에피소드가 아직 없습니다.</p>
                     )}
                   </div>
                 </div>
