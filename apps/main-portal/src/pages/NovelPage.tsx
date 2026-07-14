@@ -489,8 +489,8 @@ export default function NovelPage() {
       </div>
 
       {/* D. 메인 콘텐츠 가로폭 정렬 */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full flex flex-col items-center">
-        <div className="max-w-2xl w-full flex-1 flex flex-col">
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full flex flex-col">
+        <div className="w-full flex-1 flex flex-col">
           
           {/* ========================================================= */}
           {/* 1. 독자 연재관 모드                                       */}
