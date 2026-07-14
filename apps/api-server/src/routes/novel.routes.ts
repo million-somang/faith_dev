@@ -80,12 +80,6 @@ async function initNovelDatabase() {
         )
     `).run();
 
-    // 기존 묵은 샘플 목업 데이터 테이블 전체 청소
-    await db.prepare(`DELETE FROM novel_novels`).run();
-    await db.prepare(`DELETE FROM novel_episodes_v2`).run();
-    await db.prepare(`DELETE FROM novel_history`).run();
-    await db.prepare(`DELETE FROM novel_purchases`).run();
-    await db.prepare(`DELETE FROM novel_bookmarks`).run();
 }
 
 // 초기화 실행
