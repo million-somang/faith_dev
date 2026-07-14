@@ -9,19 +9,19 @@ export default defineConfig({
         strictPort: true,
         proxy: {
             '/api': {
-                target: 'http://localhost:4200',
+                target: 'http://127.0.0.1:4200',
                 changeOrigin: true,
             },
             '^/admin.*': {
-                target: 'http://localhost:4200',
+                target: 'http://127.0.0.1:4200',
                 changeOrigin: true,
             },
             '^/app/comboy.*': {
-                target: 'http://localhost:5023',
+                target: 'http://127.0.0.1:5023',
                 changeOrigin: true
             },
             '^/app/sfc.*': {
-                target: 'http://localhost:5024',
+                target: 'http://127.0.0.1:5024',
                 changeOrigin: true
             },
             '^/app/calculator.*': {
