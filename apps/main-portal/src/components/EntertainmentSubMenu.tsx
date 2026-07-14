@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
     { path: '/entertainment/saju', label: '사주', icon: 'fas fa-yin-yang', active: true },
-    { path: '/app/novel/', label: '웹소설', icon: 'fas fa-book-open', active: true, isApp: true },
+    { path: '/entertainment/novel', label: '웹소설', icon: 'fas fa-book-open', active: true, isApp: false },
     { path: '/entertainment/palmistry', label: '손금', icon: 'fas fa-hand-paper', active: false },
     { path: '/entertainment/movies', label: '영화', icon: 'fas fa-film', active: false },
 ];

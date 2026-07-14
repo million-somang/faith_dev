@@ -29,6 +29,7 @@ import NewsBySourcePage from './pages/NewsBySourcePage';
 import NewsDetailPage from './pages/NewsDetailPage';
 import EntertainmentPage from './pages/EntertainmentPage';
 import SajuInfoPage from './pages/SajuInfoPage';
+import NovelPage from './pages/NovelPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
 import B2BPage from './pages/B2BPage';
@@ -327,6 +328,7 @@ function App() {
                     <Route path="/game/:gameId" element={<GameInfoPage />} />
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
+                    <Route path="/entertainment/novel" element={<NovelPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
                     <Route path="/news" element={<NewsPage />} />
