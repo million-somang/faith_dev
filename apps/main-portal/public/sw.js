@@ -34,27 +34,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // GET 요청이 아닌 경우(POST, PUT 등) 캐싱 처리 없이 네트워크 요청만 수행
-  if (event.request.method !== 'GET') {
-    return event.respondWith(fetch(event.request));
-  }
-
-  // Network-First 전략: 항상 서버에서 최신 파일을 가져오고, 오프라인일 때만 캐시 사용
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // 성공적으로 응답을 받으면 캐시 업데이트
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      })
-      .catch(() => {
-        // 네트워크 실패 시 캐시에서 찾기
-        return caches.match(event.request);
-      })
-  );
+  // 개발 및 실시간 배포 동기화를 위해 정적 캐싱을 완전히 우회하고 네트워크에서 최신 데이터만 로드하도록 강제 적용
+  event.respondWith(fetch(event.request));
 });
