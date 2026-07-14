@@ -672,6 +672,15 @@ export default function App() {
         {/* 상단 통합 제어 바 */}
         <header className="sticky top-0 z-40 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800/80 px-4 py-3 flex items-center justify-between shadow-lg">
           <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => {
+                window.location.href = '/entertainment';
+              }}
+              className="p-1.5 rounded-lg bg-neutral-950 border border-neutral-800 text-slate-400 hover:text-white transition-colors cursor-pointer mr-1"
+              title="재미 메뉴로 돌아가기"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
             <div 
               onClick={() => {
                 setCurrentNovel(null);

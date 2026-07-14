@@ -178,7 +178,7 @@ export default function EntertainmentPage() {
                                         alert('웹소설 연재관은 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
                                         navigate('/login?redirect=/entertainment');
                                     } else {
-                                        window.open('/app/novel/', '_blank');
+                                        window.location.href = '/app/novel/';
                                     }
                                 }}
                                 className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-indigo-900 to-slate-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"

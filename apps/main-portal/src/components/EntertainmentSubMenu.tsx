@@ -24,7 +24,7 @@ export default function EntertainmentSubMenu() {
             alert(`${label} 서비스는 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.`);
             navigate('/login?redirect=/entertainment');
         } else {
-            window.open(path, '_blank');
+            window.location.href = path;
         }
     };
 
