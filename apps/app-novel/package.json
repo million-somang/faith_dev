@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@faithportal/mini-app-sdk": "^1.0.0",
+    "@faithportal/ui": "^1.0.0",
     "@fortawesome/fontawesome-free": "^7.2.0",
     "@tailwindcss/vite": "^4.2.0",
     "axios": "^1.13.5",

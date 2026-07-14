@@ -18,13 +18,13 @@
     opacity: 0.25;
   }
   
-  /* Shimmer effect for loading */
+  /* Shimmer effect for loading (Light theme) */
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(38, 38, 38, 0.6) 25%,
-      rgba(64, 64, 64, 0.8) 37%,
-      rgba(38, 38, 38, 0.6) 50%
+      rgba(241, 245, 249, 0.6) 25%,
+      rgba(226, 232, 240, 0.8) 37%,
+      rgba(241, 245, 249, 0.6) 50%
     );
     background-size: 200% 100%;
     animation: shimmer-animation 1.5s infinite;
@@ -40,14 +40,15 @@
   }
 }
 
-/* Custom Outlined Input Style */
+/* Custom Outlined Input Style (Light mode) */
 .premium-input {
-  background: rgba(23, 23, 23, 0.8);
-  border: 1px solid rgba(64, 64, 64, 0.5);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .premium-input:focus {
-  border-color: rgba(99, 102, 241, 0.8);
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.15);
   outline: none;
 }

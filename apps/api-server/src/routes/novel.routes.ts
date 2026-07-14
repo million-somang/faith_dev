@@ -80,67 +80,12 @@ async function initNovelDatabase() {
         )
     `).run();
 
-    // 시드 데이터가 비어있는지 확인 후 기본 작품들 투입
-    const count = await db.prepare(`SELECT COUNT(*) as cnt FROM novel_novels`).first();
-    if (!count || count.cnt === 0) {
-        // 샘플 소설 1
-        const n1 = await db.prepare(`
-            INSERT INTO novel_novels (author_id, title, author, description, cover_url, genre)
-            VALUES (1, '재벌가 막내아들은 오행을 잘 본다', '명리거사', '사주명리학의 대가가 재벌가 막내로 환생했다! 오행의 기운을 조율하여 기업들을 장악하고, 가문의 숨겨진 액운을 퇴치해 나가는 명리 비즈니스 판타지.', '/uploads/novels/sample_fortune_chaebol.png', '현대판타지')
-        `).run();
-        // custom adapter의 run 반환값에 lastInsertRowid 가 존재함
-        const n1Id = n1.lastInsertRowid || 1;
-
-        // 샘플 소설 1 에피소드 (1, 2화 무료 / 3화 유료)
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 1, '1화: 명리 장인의 환생', '눈을 뜨니 나는 대한민국 굴지의 대기업, 한성 그룹의 막내 손자가 되어 있었다.\n내 눈앞에 들어온 한성 그룹 회장의 이마에는 거무스름한 수(水)의 나쁜 기운이 가득 엉켜 있었다.\n"회장님, 이번 남쪽 개발 사업은 화(火)의 기운을 방해하므로 당장 멈추셔야 합니다."\n내 조용한 한마디에 회장실의 공기가 급격히 얼어붙었다.', 1, 0)
-        `).bind(n1Id).run();
-        
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 2, '2화: 수(水)와 화(火)의 쟁투', '"너 같은 어린 꼬맹이가 사주의 형국을 논하다니!" 한성 그룹 둘째 아들이 불같이 소리를 질렀다.\n하지만 나는 미동조차 하지 않았다. 그의 사주 팔자는 이미 이번 년도에 삼재(三災)의 늪에 빠져 파산할 운명이었다.\n나는 주머니에서 금의 침묵을 담은 흰 조약돌을 꺼내 놓았다.\n"일주일 뒤 물의 창고가 터질 때, 제 말을 다시 기억하시게 될 겁니다."', 1, 0)
-        `).bind(n1Id).run();
-
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 3, '3화: 재앙의 시작 (유료)', '일주일 뒤 정확히 강남 개발구 지하철 공사 현장에서 거대한 지하수가 폭출했다.\n총 1,000억 원 상당의 자재가 일순간에 침수되며 둘째 아들이 추진하던 쇼핑몰 프로젝트는 공중 분해 직전에 처했다.\n"그 녀석을 데려와라!"\n한성 그룹 한도영 회장의 뇌성 같은 부르짖음이 떨렸다.\n나는 한성의 숨겨진 적장자, 오행을 조율하는 유일한 열쇠였다.', 0, 100)
-        `).bind(n1Id).run();
-
-        // 샘플 소설 2
-        const n2 = await db.prepare(`
-            INSERT INTO novel_novels (author_id, title, author, description, cover_url, genre)
-            VALUES (1, '마도 천재의 무림 사주 상담소', '독고명리', '삼대 마도 천마의 제자가 무림 맹주와 십대 고수들의 사주를 정밀하게 봐주기 시작했다. 무공의 막힌 혈을 뚫어주고 기운을 조율해주는 신묘한 운세 판타지 무협.', '/uploads/novels/sample_murim_saju.png', '무협')
-        `).run();
-        const n2Id = n2.lastInsertRowid || 2;
-
-        // 샘플 소설 2 에피소드
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 1, '1화: 천마의 제자, 사주를 보다', '천마 신교의 핏빛 뇌옥에서 나는 10년 동안 동양 역학의 정수인 사주명리학을 집대성했다.\n사부님은 늘 내 목을 치겠다고 으름장부렸지만, 정작 본인의 목을 누르고 있는 화독(火毒)이 내 조언 한 줄로 뚫리자 나를 최고의 비서로 등극시켰다.\n"너의 오행 예측은 천하를 흔들 것이다."', 1, 0)
-        `).bind(n2Id).run();
-
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 2, '2화: 맹주의 운명선', '무림맹주의 사주는 보기 드문 양강(陽剛)의 사주였지만 시주(時柱)에 음(陰)의 마장이 숨어 있었다.\n나는 그의 손바닥 가운데를 가리켰다.\n"맹주님, 오늘 밤 북쪽 서재로 드는 자객을 막지 못하면, 백일 내로 주화입마에 들 것입니다."\n맹주의 미간이 깊이 파였다.', 1, 0)
-        `).bind(n2Id).run();
-
-        await db.prepare(`
-            INSERT INTO novel_episodes_v2 (novel_id, episode_no, title, content, is_free, price)
-            VALUES (?, 3, '3화: 음양의 역류 (유료)', '그날 밤, 맹주의 침소에는 그가 형제라 믿었던 부맹주의 독수검이 은밀히 비수를 드러냈다.\n하지만 맹주는 이미 나를 통해 대비를 완료한 상태였다.\n검이 허공을 찢고, 부맹주의 시신이 바닥에 처박혔다.\n"사주 상담가 독고여, 네가 나를 구했구나. 원하는 게 무엇이냐?"\n나는 조용히 웃었다. "무림맹의 금고 절반입니다."', 0, 100)
-        `).bind(n2Id).run();
-        
-        // 서버 기동 시 샘플용 표지 이미지 파일들이 존재하는지 확인하고, 더미 픽셀 이미지로 미리 생성해 둡니다.
-        const uploadDir = path.resolve('./public/uploads/novels');
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        
-        // 1x1 투명 픽셀 GIF 바이트 배열
-        const dummyGif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
-        fs.writeFileSync(path.join(uploadDir, 'sample_fortune_chaebol.png'), dummyGif);
-        fs.writeFileSync(path.join(uploadDir, 'sample_murim_saju.png'), dummyGif);
-    }
+    // 기존 묵은 샘플 목업 데이터 테이블 전체 청소
+    await db.prepare(`DELETE FROM novel_novels`).run();
+    await db.prepare(`DELETE FROM novel_episodes_v2`).run();
+    await db.prepare(`DELETE FROM novel_history`).run();
+    await db.prepare(`DELETE FROM novel_purchases`).run();
+    await db.prepare(`DELETE FROM novel_bookmarks`).run();
 }
 
 // 초기화 실행
