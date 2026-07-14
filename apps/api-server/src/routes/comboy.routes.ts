@@ -40,7 +40,18 @@ comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), 
             return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName and saveData are required' } }, 400);
         }
 
-        console.log('[Comboy] Saving state for user:', user.id, 'game:', gameName);
+        // 파일명 정규화 (대소문자, 확장자, 특수문자 제거하여 기기 간 연동 보장)
+        const normalizedGameName = gameName
+            .toLowerCase()
+            .replace(/\.[^/.]+$/, "")
+            .replace(/[^a-z0-9]/g, "")
+            .trim();
+
+        if (!normalizedGameName) {
+            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid gameName' } }, 400);
+        }
+
+        console.log('[Comboy] Saving state for user:', user.id, 'game:', normalizedGameName, `(original: ${gameName})`);
 
         // SQLite/PostgreSQL 공용 UPSERT
         await DB.prepare(`
@@ -49,12 +60,12 @@ comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), 
             ON CONFLICT(user_id, game_name) DO UPDATE SET
                 save_data = excluded.save_data,
                 updated_at = CURRENT_TIMESTAMP
-        `).bind(user.id, gameName, saveData).run();
+        `).bind(user.id, normalizedGameName, saveData).run();
 
         return c.json({
             success: true,
             data: {
-                gameName,
+                gameName: normalizedGameName,
                 updatedAt: new Date().toISOString()
             }
         });
@@ -77,6 +88,13 @@ comboyRoutes.get('/api/comboy/load', requireAuth, async (c) => {
         return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName is required' } }, 400);
     }
 
+    // 파일명 정규화
+    const normalizedGameName = gameName
+        .toLowerCase()
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+
     try {
         // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
         await DB.prepare(`
@@ -89,13 +107,13 @@ comboyRoutes.get('/api/comboy/load', requireAuth, async (c) => {
             )
         `).run();
 
-        console.log('[Comboy] Loading state for user:', user.id, 'game:', gameName);
+        console.log('[Comboy] Loading state for user:', user.id, 'game:', normalizedGameName, `(original: ${gameName})`);
 
         const result = await DB.prepare(`
             SELECT game_name, save_data, updated_at
             FROM comboy_saves
             WHERE user_id = ? AND game_name = ?
-        `).bind(user.id, gameName).first();
+        `).bind(user.id, normalizedGameName).first();
 
         if (!result) {
             return c.json({ success: false, error: { code: 404, message: 'Save state not found' } }, 404);

@@ -148,7 +148,7 @@ export default function App() {
     const gameContainerRef = useRef<HTMLDivElement | null>(null);
     const loaderScriptRef = useRef<HTMLScriptElement | null>(null);
 
-    const EMULATORJS_CDN = 'https://cdn.emulatorjs.org/4.0.10/data/';
+    const EMULATORJS_CDN = 'https://cdn.emulatorjs.org/stable/data/';
 
     // 에뮬레이터 초기화 - iframe 없이 직접 페이지에 로드
     const initEmulator = useCallback((fileOrBuffer: File | ArrayBuffer, fileName?: string) => {

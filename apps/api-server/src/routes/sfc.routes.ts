@@ -27,20 +27,35 @@ sfcRoutes.post('/api/sfc/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), requir
 
         // 400 에러 해결: Hono의 c.req.json() 대용량 예외 우회를 위해 c.req.text() 후 직접 파싱
         const rawBody = await c.req.text();
+        console.log('[SFC DEBUG] Received raw body length:', rawBody ? rawBody.length : 0);
+
         let body;
         try {
             body = JSON.parse(rawBody);
-        } catch (pe) {
-            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid JSON body' } }, 400);
+        } catch (pe: any) {
+            console.error('[SFC DEBUG] JSON parse error:', pe.message, 'rawBody head:', rawBody ? rawBody.substring(0, 100) : 'null');
+            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid JSON body: ' + pe.message } }, 400);
         }
 
         const { gameName, saveData } = body;
         
         if (!gameName || !saveData) {
-            return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName and saveData are required' } }, 400);
+            console.warn('[SFC DEBUG] Validation failed: gameName:', !!gameName, 'saveData:', !!saveData);
+            return c.json({ success: false, error: { code: 400, message: `Bad Request: gameName (${!!gameName}) and saveData (${!!saveData}) are required` } }, 400);
         }
 
-        console.log('[SFC] Saving state for user:', user.id, 'game:', gameName);
+        // 파일명 정규화 (대소문자, 확장자, 특수문자 제거하여 기기 간 연동 보장)
+        const normalizedGameName = gameName
+            .toLowerCase()
+            .replace(/\.[^/.]+$/, "")
+            .replace(/[^a-z0-9]/g, "")
+            .trim();
+
+        if (!normalizedGameName) {
+            return c.json({ success: false, error: { code: 400, message: 'Bad Request: Invalid gameName' } }, 400);
+        }
+
+        console.log('[SFC] Saving state for user:', user.id, 'game:', normalizedGameName, `(original: ${gameName})`);
 
         await DB.prepare(`
             INSERT INTO sfc_saves (user_id, game_name, save_data, updated_at)
@@ -48,12 +63,12 @@ sfcRoutes.post('/api/sfc/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), requir
             ON CONFLICT(user_id, game_name) DO UPDATE SET
                 save_data = excluded.save_data,
                 updated_at = CURRENT_TIMESTAMP
-        `).bind(user.id, gameName, saveData).run();
+        `).bind(user.id, normalizedGameName, saveData).run();
 
         return c.json({
             success: true,
             data: {
-                gameName,
+                gameName: normalizedGameName,
                 updatedAt: new Date().toISOString()
             }
         });
@@ -76,6 +91,13 @@ sfcRoutes.get('/api/sfc/load', requireAuth, async (c) => {
         return c.json({ success: false, error: { code: 400, message: 'Bad Request: gameName is required' } }, 400);
     }
 
+    // 파일명 정규화
+    const normalizedGameName = gameName
+        .toLowerCase()
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-z0-9]/g, "")
+        .trim();
+
     try {
         // 테이블이 존재하지 않는 경우 동적 초기화 (SQLite/PostgreSQL 공용 호환 스키마)
         await DB.prepare(`
@@ -88,13 +110,13 @@ sfcRoutes.get('/api/sfc/load', requireAuth, async (c) => {
             )
         `).run();
 
-        console.log('[SFC] Loading state for user:', user.id, 'game:', gameName);
+        console.log('[SFC] Loading state for user:', user.id, 'game:', normalizedGameName, `(original: ${gameName})`);
 
         const result = await DB.prepare(`
             SELECT game_name, save_data, updated_at
             FROM sfc_saves
             WHERE user_id = ? AND game_name = ?
-        `).bind(user.id, gameName).first();
+        `).bind(user.id, normalizedGameName).first();
 
         if (!result) {
             return c.json({ success: false, error: { code: 404, message: 'Save state not found' } }, 404);
