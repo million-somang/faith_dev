@@ -442,11 +442,11 @@ export default function NovelPage() {
         <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <i className="fas fa-book-open text-base"></i>
+              <i className="fas fa-book-open text-lg"></i>
             </div>
             <div>
-              <h2 className="text-lg font-black text-slate-800 tracking-tight leading-none">베라 웹소설 연재관</h2>
-              <span className="text-xs text-slate-450 font-black block mt-1 tracking-wider">VERA NOVEL STAGE</span>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-none">베라 웹소설 연재관</h2>
+              <span className="text-xs sm:text-sm text-slate-500 font-black block mt-1 tracking-wider">VERA NOVEL STAGE</span>
             </div>
           </div>
 
@@ -458,7 +458,7 @@ export default function NovelPage() {
                   setAppMode('reader');
                   setCurrentNovel(null);
                 }}
-                className={`px-4.5 py-2.5 rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer ${
+                className={`px-5 py-3 rounded-lg text-sm sm:text-base font-black transition-all cursor-pointer ${
                   appMode === 'reader'
                     ? 'bg-white text-violet-600 shadow-sm border border-slate-200/40'
                     : 'text-slate-500 hover:text-slate-850'
@@ -471,7 +471,7 @@ export default function NovelPage() {
                   setAppMode('writer');
                   setSelectedWriterNovel(null);
                 }}
-                className={`px-4.5 py-2.5 rounded-lg text-xs sm:text-sm font-black transition-all cursor-pointer ${
+                className={`px-5 py-3 rounded-lg text-sm sm:text-base font-black transition-all cursor-pointer ${
                   appMode === 'writer'
                     ? 'bg-white text-violet-600 shadow-sm border border-slate-200/40'
                     : 'text-slate-500 hover:text-slate-850'
@@ -484,11 +484,11 @@ export default function NovelPage() {
             {/* 골드 지갑 잔액 표시 */}
             <button 
               onClick={() => setShowChargeModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-100 cursor-pointer shadow-sm"
+              className="flex items-center gap-2 px-4.5 py-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-100 cursor-pointer shadow-sm"
               aria-label="골드 충전소 열기"
             >
-              <i className="fas fa-coins text-violet-600 animate-pulse text-xs"></i>
-              <span className="text-xs sm:text-sm font-black text-violet-700 font-mono">
+              <i className="fas fa-coins text-violet-600 animate-pulse text-sm"></i>
+              <span className="text-sm sm:text-base font-black text-violet-700 font-mono">
                 {goldBalance.toLocaleString()} G
               </span>
             </button>
@@ -510,113 +510,113 @@ export default function NovelPage() {
                 <div className="flex flex-col bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm animate-slide-up">
                   <button 
                     onClick={() => setCurrentNovel(null)}
-                    className="self-start px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs sm:text-sm font-black text-slate-650 hover:text-slate-855 flex items-center gap-1.5 mb-5 cursor-pointer border border-slate-200 transition-all active:scale-95 animate-fade-in"
+                    className="self-start px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-sm sm:text-base font-black text-slate-650 hover:text-slate-855 flex items-center gap-1.5 mb-5 cursor-pointer border border-slate-200 transition-all active:scale-95 animate-fade-in"
                   >
                     <i className="fas fa-chevron-left"></i> 전체 작품보기
                   </button>
 
                   <div className="bg-slate-50 border border-slate-200/50 p-5 rounded-2xl flex gap-4 relative overflow-hidden">
-                    {renderCover(currentNovel.cover_url, "w-24 h-32")}
+                    {renderCover(currentNovel.cover_url, "w-28 h-36")}
                     <div className="flex-1 flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
-                          <span className="text-xs font-bold px-2.5 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-105">
+                          <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded bg-violet-50 text-violet-600 border border-violet-105">
                             {currentNovel.genre}
                           </span>
                           <button 
                             onClick={handleToggleBookmark}
-                            className="p-2 rounded-xl bg-white border border-slate-200 text-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                            className="p-2.5 rounded-xl bg-white border border-slate-200 text-rose-500 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                             aria-label="선호작 북마크 토글"
                           >
-                            <i className={`${isBookmarked ? 'fas text-rose-500' : 'far text-slate-400'} fa-heart text-xs`}></i>
+                            <i className={`${isBookmarked ? 'fas text-rose-500' : 'far text-slate-400'} fa-heart text-sm`}></i>
                           </button>
                         </div>
-                        <h3 className="text-xl sm:text-2xl font-black text-slate-850 mt-2.5 leading-tight">
+                        <h3 className="text-2xl sm:text-3xl font-black text-slate-850 mt-3 leading-tight">
                           {currentNovel.title}
                         </h3>
-                        <span className="text-sm sm:text-base text-slate-550 font-extrabold block mt-1.5">
+                        <span className="text-base sm:text-lg text-slate-600 font-extrabold block mt-2">
                           작가: {currentNovel.author}
                         </span>
                       </div>
-                      <p className="text-sm sm:text-base text-slate-600 leading-relaxed line-clamp-3 mt-3 font-normal">
+                      <p className="text-base sm:text-lg text-slate-600 leading-relaxed line-clamp-3 mt-3 font-normal">
                         {currentNovel.description}
                       </p>
                     </div>
                   </div>
 
-                  <h4 className="text-base sm:text-lg font-black text-slate-800 mt-6 mb-3 flex items-center gap-1.5">
+                  <h4 className="text-lg sm:text-xl font-black text-slate-800 mt-7 mb-4 flex items-center gap-2">
                     <i className="fas fa-list text-violet-500"></i>
                     전체 에피소드 ({episodes.length}화)
                   </h4>
 
                   {/* 회차 리스트 */}
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2.5">
                     {episodes.map((ep) => (
                       <div
                         key={ep.id}
                         onClick={() => handleSelectEpisode(ep.episode_no)}
-                        className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all cursor-pointer shadow-inner"
+                        className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 hover:bg-violet-50/30 transition-all cursor-pointer shadow-inner"
                       >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-base sm:text-lg font-extrabold text-slate-800 truncate max-w-[340px]">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-base sm:text-xl font-extrabold text-slate-850 truncate max-w-[340px]">
                             {ep.title}
                           </span>
-                          <span className="text-sm text-slate-500 font-medium font-mono">
+                          <span className="text-xs sm:text-sm text-slate-500 font-medium font-mono">
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
                         </div>
                         <div className="flex items-center">
                           {ep.is_free === 1 ? (
-                            <span className="text-xs sm:text-sm font-black px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            <span className="text-xs sm:text-sm font-black px-3 py-1 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                               무료
                             </span>
                           ) : (
-                            <span className="text-xs sm:text-sm font-black px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
-                              <i className="fas fa-lock text-[8px] text-violet-500"></i> {ep.price || 100}G
+                            <span className="text-xs sm:text-sm font-black px-3 py-1 rounded bg-violet-50 text-violet-600 border border-violet-100 flex items-center gap-1">
+                              <i className="fas fa-lock text-xs text-violet-500"></i> {ep.price || 100}G
                             </span>
                           )}
                         </div>
                       </div>
                     ))}
                     {episodes.length === 0 && (
-                      <p className="text-sm sm:text-base text-slate-400 text-center py-10">등록된 에피소드가 아직 없습니다.</p>
+                      <p className="text-base sm:text-lg text-slate-400 text-center py-10">등록된 에피소가 아직 없습니다.</p>
                     )}
                   </div>
                 </div>
               ) : (
                 // 독자 메인 홈 탐색
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-6">
                   {/* 독자 내부 탭 버튼 */}
-                  <div className="flex items-center bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
+                  <div className="flex items-center bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
                     <button 
                       onClick={() => setReaderTab('home')}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`flex-1 py-3 rounded-xl text-sm sm:text-base font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         readerTab === 'home' 
                           ? 'bg-violet-50 text-violet-600 border border-violet-100 font-black shadow-sm' 
                           : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      <i className="fas fa-compass text-xs"></i> 소설 탐색
+                      <i className="fas fa-compass text-sm"></i> 소설 탐색
                     </button>
                     <button 
                       onClick={() => setReaderTab('library')}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`flex-1 py-3 rounded-xl text-sm sm:text-base font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         readerTab === 'library' 
                           ? 'bg-violet-50 text-violet-600 border border-violet-100 font-black shadow-sm' 
                           : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      <i className="fas fa-bookmark text-xs"></i> 선호보관함
+                      <i className="fas fa-bookmark text-sm"></i> 선호보관함
                     </button>
                     <button 
                       onClick={() => setReaderTab('history')}
-                      className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                      className={`flex-1 py-3 rounded-xl text-sm sm:text-base font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                         readerTab === 'history' 
                           ? 'bg-violet-50 text-violet-600 border border-violet-100 font-black shadow-sm' 
                           : 'text-slate-500 hover:text-slate-800'
                       }`}
                     >
-                      <i className="fas fa-history text-xs"></i> 최근 읽은 목록
+                      <i className="fas fa-history text-sm"></i> 최근 읽은 목록
                     </button>
                   </div>
 
@@ -625,8 +625,8 @@ export default function NovelPage() {
                     <>
                       {/* 보던 소설 이어서 읽기 퀵카드 */}
                       {recentHistory.length > 0 && (
-                        <div className="flex flex-col gap-2.5 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
-                          <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                        <div className="flex flex-col gap-3 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                          <h3 className="global-section-title text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                             <i className="fas fa-history text-violet-500"></i>
                             보던 소설 이어서 읽기
                           </h3>
@@ -637,20 +637,20 @@ export default function NovelPage() {
                                 handleSelectEpisode(recentHistory[0].last_episode_no);
                               }, 300);
                             }}
-                            className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between cursor-pointer hover:border-violet-300 transition-all shadow-sm group"
+                            className="bg-slate-50 border border-slate-100 p-4.5 rounded-2xl flex items-center justify-between cursor-pointer hover:border-violet-300 transition-all shadow-sm group"
                           >
-                            <div className="flex items-center gap-3.5">
-                              {renderCover(recentHistory[0].cover_url, "w-12 h-16")}
-                              <div className="flex flex-col gap-1">
-                                <span className="text-sm sm:text-base font-black text-slate-850 group-hover:text-violet-600 transition-colors">
+                            <div className="flex items-center gap-4">
+                              {renderCover(recentHistory[0].cover_url, "w-14 h-20")}
+                              <div className="flex flex-col gap-1.5">
+                                <span className="text-base sm:text-lg font-black text-slate-850 group-hover:text-violet-600 transition-colors">
                                   {recentHistory[0].title}
                                 </span>
-                                <span className="text-xs sm:text-sm text-violet-600 font-black">
+                                <span className="text-sm sm:text-base text-violet-600 font-black">
                                   최근 {recentHistory[0].last_episode_no}화 리딩 중
                                 </span>
                               </div>
                             </div>
-                            <span className="text-xs sm:text-sm font-black px-4 py-2.5 rounded-xl bg-violet-600 text-white hover:bg-violet-750 transition-all shadow-md">
+                            <span className="text-sm sm:text-base font-black px-5 py-3 rounded-xl bg-violet-600 text-white hover:bg-violet-750 transition-all shadow-md">
                               이어읽기
                             </span>
                           </div>
@@ -659,38 +659,38 @@ export default function NovelPage() {
 
                       {/* 실시간 베스트 TOP 3 */}
                       {bestNovels.length > 0 && (
-                        <div className="flex flex-col gap-3 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
-                          <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                        <div className="flex flex-col gap-3.5 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                          <h3 className="global-section-title text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                             <i className="fas fa-award text-amber-500"></i>
                             실시간 인기 베스트 TOP 3
                           </h3>
                           
-                          <div className="flex flex-col gap-2.5">
+                          <div className="flex flex-col gap-3">
                             {bestNovels.map((novel, index) => (
                               <div
                                 key={novel.id}
                                 onClick={() => handleSelectNovel(novel)}
-                                className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100 hover:border-violet-200 transition-all cursor-pointer shadow-sm"
+                                className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 border border-slate-100 hover:border-violet-200 transition-all cursor-pointer shadow-sm"
                               >
-                                <div className="flex items-center gap-3.5">
-                                  <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-black text-white ${
+                                <div className="flex items-center gap-4">
+                                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-sm font-black text-white ${
                                     index === 0 ? 'bg-amber-500' : index === 1 ? 'bg-slate-400' : 'bg-amber-700'
                                   }`}>
                                     {index + 1}
                                   </span>
-                                  {renderCover(novel.cover_url, "w-12 h-16")}
-                                  <div className="flex flex-col gap-1">
-                                    <span className="text-sm sm:text-base font-black text-slate-800 truncate max-w-[280px]">
+                                  {renderCover(novel.cover_url, "w-16 h-22")}
+                                  <div className="flex flex-col gap-1.5">
+                                    <span className="text-base sm:text-lg font-black text-slate-800 truncate max-w-[320px]">
                                       {novel.title}
                                     </span>
-                                    <span className="text-xs sm:text-sm text-slate-500 font-semibold">
+                                    <span className="text-sm sm:text-base text-slate-500 font-semibold">
                                       작가: {novel.author} • {novel.genre}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="text-right">
-                                  <span className="text-xs font-bold text-slate-400 block">조회수</span>
-                                  <span className="text-sm font-black text-violet-600 font-mono">
+                                  <span className="text-xs sm:text-sm font-bold text-slate-400 block">조회수</span>
+                                  <span className="text-base sm:text-lg font-black text-violet-600 font-mono">
                                     {(novel as any).total_views || 0}
                                   </span>
                                 </div>
@@ -701,14 +701,14 @@ export default function NovelPage() {
                       )}
 
                       {/* 소설 연재 전체 리스트 */}
-                      <div className="flex flex-col gap-3.5 bg-white border border-slate-200/80 p-5 rounded-3xl shadow-sm">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                          <h3 className="text-sm sm:text-base font-black text-slate-800">소설 연재 목록</h3>
+                      <div className="flex flex-col gap-4 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="global-section-title text-lg sm:text-xl font-black text-slate-800">소설 연재 목록</h3>
                           
                           <select
                             value={selectedGenre}
                             onChange={(e) => setSelectedGenre(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 text-xs sm:text-sm font-black text-violet-650 rounded-lg px-2.5 py-1.5 shadow-sm focus:outline-none"
+                            className="bg-slate-50 border border-slate-200 text-sm sm:text-base font-black text-violet-650 rounded-xl px-3 py-2 shadow-sm focus:outline-none"
                           >
                             <option value="all">전체 장르</option>
                             <option value="현대판타지">현대판타지</option>
@@ -718,27 +718,27 @@ export default function NovelPage() {
                           </select>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-3">
+                        <div className="grid grid-cols-1 gap-4">
                           {novels.map((novel) => (
                             <div 
                               key={novel.id}
                               onClick={() => handleSelectNovel(novel)}
-                              className="flex gap-4.5 p-4.5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:border-violet-100 hover:bg-slate-55 transition-all cursor-pointer group"
+                              className="flex gap-5 p-5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:border-violet-100 hover:bg-slate-55 transition-all cursor-pointer group"
                             >
-                              {renderCover(novel.cover_url, "w-16 h-22")}
-                              <div className="flex-1 flex flex-col justify-between py-0.5">
+                              {renderCover(novel.cover_url, "w-20 h-28")}
+                              <div className="flex-1 flex flex-col justify-between py-1">
                                 <div>
-                                  <div className="flex items-center gap-2.5">
-                                    <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-650 border border-violet-100">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xs sm:text-sm font-black px-2.5 py-1 rounded bg-violet-50 text-violet-650 border border-violet-100">
                                       {novel.genre}
                                     </span>
-                                    <span className="text-xs sm:text-sm text-slate-500 font-extrabold">작가: {novel.author}</span>
+                                    <span className="text-sm sm:text-base text-slate-600 font-extrabold">작가: {novel.author}</span>
                                   </div>
-                                  <h4 className="text-base sm:text-lg font-black text-slate-800 group-hover:text-violet-600 transition-colors mt-2 leading-tight">
+                                  <h4 className="global-card-title text-lg sm:text-xl font-black text-slate-850 group-hover:text-violet-600 transition-colors mt-2.5 leading-tight">
                                     {novel.title}
                                   </h4>
                                 </div>
-                                <p className="text-sm sm:text-base text-slate-550 line-clamp-2 leading-relaxed mt-1">
+                                <p className="global-card-desc text-base sm:text-lg text-slate-600 line-clamp-2 leading-relaxed mt-2">
                                   {novel.description}
                                 </p>
                               </div>
@@ -747,8 +747,8 @@ export default function NovelPage() {
                           {novels.length === 0 && (
                             <div className="flex flex-col items-center justify-center py-14 text-center">
                               <i className="fas fa-book-open text-slate-200 text-3xl mb-3"></i>
-                              <p className="text-sm font-black text-slate-800">현재 연재 중인 소설이 한 건도 없습니다.</p>
-                              <p className="text-xs text-slate-400 mt-1 max-w-[280px]">
+                              <p className="text-base font-black text-slate-800">현재 연재 중인 소설이 한 건도 없습니다.</p>
+                              <p className="text-sm text-slate-400 mt-1 max-w-[280px]">
                                 상단의 [작가 스튜디오] 탭을 터치해 첫 소설을 직접 발굴하고 1호 작가가 되어보세요! ✍️
                               </p>
                             </div>
@@ -760,33 +760,33 @@ export default function NovelPage() {
 
                   {/* ─── B. 선호보관함 탭 ─── */}
                   {readerTab === 'library' && (
-                    <div className="flex flex-col gap-3.5 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
-                      <h3 className="text-sm sm:text-base font-black text-slate-750 flex items-center gap-1.5">
+                    <div className="flex flex-col gap-4 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                      <h3 className="global-section-title text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                         <i className="fas fa-bookmark text-rose-500"></i>
                         선호보관함 목록 ({bookmarkedNovels.length})
                       </h3>
                       
-                      <div className="grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 gap-4">
                         {bookmarkedNovels.map((novel) => (
                           <div 
                             key={novel.id}
                             onClick={() => handleSelectNovel(novel)}
-                            className="flex gap-4.5 p-4.5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:bg-slate-50 transition-all cursor-pointer group"
+                            className="flex gap-5 p-5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:bg-slate-50 transition-all cursor-pointer group"
                           >
-                            {renderCover(novel.cover_url, "w-16 h-22")}
-                            <div className="flex-1 flex flex-col justify-center gap-1">
-                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-650 border border-violet-100 self-start">
+                            {renderCover(novel.cover_url, "w-20 h-28")}
+                            <div className="flex-1 flex flex-col justify-center gap-1.5">
+                              <span className="text-xs sm:text-sm font-black px-2.5 py-1 rounded bg-violet-50 text-violet-650 border border-violet-100 self-start">
                                 {novel.genre}
                               </span>
-                              <h4 className="text-base sm:text-lg font-black text-slate-800 mt-1.5 group-hover:text-violet-600 transition-colors">
+                              <h4 className="global-card-title text-lg sm:text-xl font-black text-slate-850 mt-1.5 group-hover:text-violet-600 transition-colors">
                                 {novel.title}
                               </h4>
-                              <span className="text-xs sm:text-sm text-slate-500 font-extrabold block">작가: {novel.author}</span>
+                              <span className="text-sm sm:text-base text-slate-600 font-extrabold block">작가: {novel.author}</span>
                             </div>
                           </div>
                         ))}
                         {bookmarkedNovels.length === 0 && (
-                          <p className="text-sm text-slate-500 text-center py-12">선호하는 보관함 목록이 비어있습니다. 소설 상세 페이지에서 하트를 추가해 보세요.</p>
+                          <p className="text-base text-slate-500 text-center py-12">선호하는 보관함 목록이 비어있습니다. 소설 상세 페이지에서 하트를 추가해 보세요.</p>
                         )}
                       </div>
                     </div>
@@ -794,13 +794,13 @@ export default function NovelPage() {
 
                   {/* ─── C. 최근 읽은 목록 탭 ─── */}
                   {readerTab === 'history' && (
-                    <div className="flex flex-col gap-3.5 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
-                      <h3 className="text-sm sm:text-base font-black text-slate-750 flex items-center gap-1.5">
+                    <div className="flex flex-col gap-4 bg-white border border-slate-200/80 p-6 rounded-3xl shadow-sm">
+                      <h3 className="global-section-title text-base sm:text-xl font-black text-slate-800 flex items-center gap-2">
                         <i className="fas fa-history text-violet-500"></i>
                         최근 읽은 에피소드 이력
                       </h3>
 
-                      <div className="flex flex-col gap-2">
+                      <div className="flex flex-col gap-3">
                         {recentHistory.map((h) => (
                           <div
                             key={h.id}
@@ -810,26 +810,26 @@ export default function NovelPage() {
                                 handleSelectEpisode(h.last_episode_no);
                               }, 300);
                             }}
-                            className="p-4.5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:bg-slate-55 transition-all flex items-center justify-between cursor-pointer group"
+                            className="p-5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:bg-slate-55 transition-all flex items-center justify-between cursor-pointer group"
                           >
-                            <div className="flex items-center gap-4.5">
-                              {renderCover(h.cover_url, "w-16 h-22")}
-                              <div className="flex flex-col gap-1.5">
-                                <span className="text-base sm:text-lg font-black text-slate-850 group-hover:text-violet-600 transition-colors">
+                            <div className="flex items-center gap-5">
+                              {renderCover(h.cover_url, "w-20 h-28")}
+                              <div className="flex flex-col gap-2">
+                                <span className="global-card-title text-lg sm:text-xl font-black text-slate-850 group-hover:text-violet-600 transition-colors">
                                   {h.title}
                                 </span>
-                                <span className="text-xs sm:text-sm text-violet-650 font-black">
+                                <span className="text-sm sm:text-base text-violet-650 font-black">
                                   최종 {h.last_episode_no}화 감상함
                                 </span>
                               </div>
                             </div>
-                            <span className="text-xs sm:text-sm text-slate-500 font-extrabold font-mono">
+                            <span className="text-sm text-slate-500 font-extrabold font-mono">
                               {new Date(h.read_at).toLocaleDateString()}
                             </span>
                           </div>
                         ))}
                         {recentHistory.length === 0 && (
-                          <p className="text-sm text-slate-500 text-center py-12">소설 감상 이력이 없습니다.</p>
+                          <p className="text-base text-slate-500 text-center py-12">소설 감상 이력이 없습니다.</p>
                         )}
                       </div>
                     </div>
