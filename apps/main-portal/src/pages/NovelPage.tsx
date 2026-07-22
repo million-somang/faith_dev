@@ -437,67 +437,99 @@ export default function NovelPage() {
       {/* B. 포털 재미 하위 서브 탭 메뉴 탑재 (디자인 일체화) */}
       <EntertainmentSubMenu />
       
-      {/* C. 소설 전용 서브 타이틀 영역 */}
-      <div className="bg-white border-b border-slate-200/60 shadow-sm w-full py-5">
-        <div className="max-w-6xl mx-auto px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-violet-500 to-indigo-600 flex items-center justify-center text-white shadow-md">
-              <i className="fas fa-book-open text-lg"></i>
-            </div>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-none">베라 웹소설 연재관</h2>
-              <span className="text-xs sm:text-sm text-slate-500 font-black block mt-1 tracking-wider">VERA NOVEL STAGE</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3.5">
-            {/* 독자/작가 뷰어 모드 토글 */}
-            <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-              <button
-                onClick={() => {
-                  setAppMode('reader');
-                  setCurrentNovel(null);
-                }}
-                className={`px-5 py-3 rounded-lg text-sm sm:text-base font-black transition-all cursor-pointer ${
-                  appMode === 'reader'
-                    ? 'bg-white text-violet-600 shadow-sm border border-slate-200/40'
-                    : 'text-slate-500 hover:text-slate-850'
-                }`}
-              >
-                독자 연재관
-              </button>
-              <button
-                onClick={() => {
-                  setAppMode('writer');
-                  setSelectedWriterNovel(null);
-                }}
-                className={`px-5 py-3 rounded-lg text-sm sm:text-base font-black transition-all cursor-pointer ${
-                  appMode === 'writer'
-                    ? 'bg-white text-violet-600 shadow-sm border border-slate-200/40'
-                    : 'text-slate-500 hover:text-slate-850'
-                }`}
-              >
-                작가 스튜디오
-              </button>
-            </div>
-
-            {/* 골드 지갑 잔액 표시 */}
-            <button 
-              onClick={() => setShowChargeModal(true)}
-              className="flex items-center gap-2 px-4.5 py-3 rounded-xl bg-violet-50 hover:bg-violet-100 transition-colors border border-violet-100 cursor-pointer shadow-sm"
-              aria-label="골드 충전소 열기"
-            >
-              <i className="fas fa-coins text-violet-600 animate-pulse text-sm"></i>
-              <span className="text-sm sm:text-base font-black text-violet-700 font-mono">
-                {goldBalance.toLocaleString()} G
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* D. 메인 콘텐츠 가로폭 정렬 */}
+      {/* C. 메인 콘텐츠 (사주 페이지와 100% 동일한 2컬럼 레이아웃 & 폰트 스케일 구조) */}
       <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full flex flex-col">
+        
+        {/* 상단 히어로 메인 카드 (사주 페이지와 1:1 매칭) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            
+            {/* 좌측 (2컬럼 분량): H1 소개 카드 및 시작 버튼 */}
+            <div className="lg:col-span-2">
+                <div className="bg-white rounded-3xl border border-slate-100 p-8 sm:p-10 shadow-sm relative overflow-hidden h-full flex flex-col justify-between min-h-[380px]">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-600"></div>
+                    
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-violet-50 text-violet-600 text-xs sm:text-sm font-extrabold mb-4">
+                            <i className="fas fa-book-open"></i> VERA 웹소설 연재관
+                        </span>
+                        
+                        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tight leading-snug mb-4">
+                            베라 웹소설 연재관 - 내 글쓰기 및 소설 탐색
+                        </h1>
+                        
+                        <p className="text-slate-500 text-sm sm:text-base leading-relaxed mb-8">
+                            VERA 웹소설 연재관에서 최신 웹소설(현대판타지, 무협, 로맨스)을 자유롭게 탐색하거나 작가 스튜디오에서 직접 소설 작품을 무료/유료 회차로 기획하고 로컬 표지와 함께 연재해 보세요.
+                        </p>
+                    </div>
+
+                    {/* 모드 선택 대형 버튼 (사주 시작 버튼과 100% 동일한 px-8 py-4 text-lg font-black 스케일) */}
+                    <div className="flex flex-col sm:flex-row items-center justify-start gap-4">
+                        <button
+                            onClick={() => {
+                              setAppMode('reader');
+                              setCurrentNovel(null);
+                            }}
+                            className={`w-full sm:w-auto px-8 py-4 font-black rounded-2xl text-lg shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2.5 cursor-pointer ${
+                              appMode === 'reader'
+                                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                        >
+                            <i className="fas fa-compass"></i>
+                            독자 연재관 입장
+                        </button>
+                        <button
+                            onClick={() => {
+                              setAppMode('writer');
+                              setSelectedWriterNovel(null);
+                            }}
+                            className={`w-full sm:w-auto px-8 py-4 font-black rounded-2xl text-lg shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2.5 cursor-pointer ${
+                              appMode === 'writer'
+                                ? 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                        >
+                            <i className="fas fa-feather-alt"></i>
+                            작가 스튜디오
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* 우측 (1컬럼 분량): 골드 잔액 및 충전 카드 */}
+            <div className="lg:col-span-1">
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden h-full flex flex-col justify-between p-8 min-h-[380px] relative">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-500"></div>
+                    
+                    <div>
+                        <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs sm:text-sm font-extrabold mb-4">
+                            <i className="fas fa-coins"></i> VERA 골드 지갑
+                        </span>
+                        
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-snug mb-2">
+                            내 지갑 보유 잔액
+                        </h2>
+                        
+                        <div className="text-3xl sm:text-4xl font-black text-violet-600 font-mono my-4">
+                            {goldBalance.toLocaleString()} <span className="text-xl text-amber-500 font-sans">G</span>
+                        </div>
+
+                        <p className="text-slate-500 text-xs sm:text-sm leading-relaxed mb-6">
+                            유료 회차 소설 감상 시 회차당 100G가 차감됩니다. 부족한 골드는 언제든 무료 충전소에서 즉시 충전하세요.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => setShowChargeModal(true)}
+                        className="w-full px-6 py-4 font-black rounded-2xl bg-amber-500 hover:bg-amber-600 text-white text-base shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                        <i className="fas fa-plus-circle"></i>
+                        골드 충전소 열기
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <div className="w-full flex-1 flex flex-col">
           
           {/* ========================================================= */}
