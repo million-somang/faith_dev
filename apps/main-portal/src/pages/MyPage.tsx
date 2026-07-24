@@ -317,82 +317,81 @@ export default function MyPage() {
                     </div>
                 </div>
 
-                {/* 레이아웃: 사이드바 + 컨텐츠 */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* 히어로 배너 바로 아래: 상단 가로 탭 바 (Horizontal Tab Bar) */}
+                <div className="bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80 mb-6">
+                    <nav className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
+                        <button
+                            onClick={() => setActiveSection('dashboard')}
+                            className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'dashboard'
+                                    ? 'bg-violet-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-house-user text-sm"></i>
+                            <span>나의 홈</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('news')}
+                            className={`flex-1 min-w-[110px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'news'
+                                    ? 'bg-sky-500 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-newspaper text-sm"></i>
+                            <span>뉴스</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('stocks')}
+                            className={`flex-1 min-w-[110px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'stocks'
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-chart-line text-sm"></i>
+                            <span>주식</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('games')}
+                            className={`flex-1 min-w-[110px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'games'
+                                    ? 'bg-purple-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-gamepad text-sm"></i>
+                            <span>게임</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('utils')}
+                            className={`flex-1 min-w-[110px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'utils'
+                                    ? 'bg-orange-500 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-tools text-sm"></i>
+                            <span>유틸리티</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('home-customize')}
+                            className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'home-customize'
+                                    ? 'bg-indigo-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-magic text-sm"></i>
+                            <span>홈 꾸미기</span>
+                        </button>
+                    </nav>
+                </div>
 
-                    {/* 사이드바 */}
-                    <div className="md:col-span-1">
-                        <div className="bg-white rounded-2xl shadow-sm p-4 sticky top-24 border border-slate-200/80">
-                            <nav className="space-y-2">
-                                {/* 신설: 대시보드(나의 홈) */}
-                                <button
-                                    onClick={() => setActiveSection('dashboard')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'dashboard'
-                                        ? 'border-violet-600 bg-violet-50 font-black text-violet-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-house-user w-5 text-violet-600"></i>
-                                    <span>나의 홈</span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('news')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'news'
-                                        ? 'border-sky-500 bg-sky-50 font-black text-sky-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-newspaper w-5 text-sky-500"></i>
-                                    <span>뉴스</span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('stocks')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'stocks'
-                                        ? 'border-green-500 bg-green-50 font-black text-green-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-chart-line w-5 text-green-500"></i>
-                                    <span>주식</span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('games')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'games'
-                                        ? 'border-purple-500 bg-purple-50 font-black text-purple-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-gamepad w-5 text-purple-500"></i>
-                                    <span>게임</span>
-                                </button>
-                                <button
-                                    onClick={() => setActiveSection('utils')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'utils'
-                                        ? 'border-orange-500 bg-orange-50 font-black text-orange-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-tools w-5 text-orange-500"></i>
-                                    <span>유틸리티</span>
-                                </button>
-                                <hr className="my-2 border-slate-100" />
-                                <button
-                                    onClick={() => setActiveSection('home-customize')}
-                                    className={`w-full text-left px-4 py-3 rounded-xl border-l-4 transition-all flex items-center gap-2.5 ${activeSection === 'home-customize'
-                                        ? 'border-violet-600 bg-violet-50 font-black text-violet-700'
-                                        : 'border-transparent hover:bg-slate-50 text-slate-600 font-bold'
-                                        }`}
-                                >
-                                    <i className="fas fa-magic w-5 text-violet-500"></i>
-                                    <span>홈 꾸미기</span>
-                                </button>
-                            </nav>
-                        </div>
-                    </div>
-
-                    {/* 메인 컨텐츠 */}
-                    <div className="md:col-span-3">
-                        <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-slate-200/80 min-h-[500px]">
+                {/* 메인 컨텐츠 영역 (100% 전체 너비로 확장) */}
+                <div className="w-full">
+                    <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-slate-200/80 min-h-[500px]">
                             {loading ? (
                                 <div className="h-full flex items-center justify-center py-20">
                                     <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
@@ -955,7 +954,6 @@ export default function MyPage() {
                             )}
                         </div>
                     </div>
-                </div>
             </div>
             <Footer />
 
