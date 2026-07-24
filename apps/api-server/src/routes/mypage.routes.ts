@@ -187,4 +187,16 @@ mypage.delete('/schedules/:id', async (c) => {
     }
 });
 
+// ===== Vera Points =====
+mypage.get('/vera-points', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const data = await MyPageService.getVeraPoints(user.id);
+        return c.json({ success: true, ...data });
+    } catch (err) {
+        console.error('Get vera-points error:', err);
+        return c.json({ success: false, message: 'Failed to fetch vera points' }, 500);
+    }
+});
+
 export default mypage;

@@ -135,4 +135,44 @@ export class MyPageService {
             [scheduleId, userId]
         );
     }
+
+    // ===== Vera Points =====
+
+    static async getVeraPoints(userId: number) {
+        let res = await pool.query(
+            `SELECT points, pending_amount, attendance_points, activity_points
+             FROM user_points
+             WHERE user_id = $1`,
+            [userId]
+        );
+
+        if (res.rows.length === 0) {
+            await pool.query(
+                `INSERT INTO user_points (user_id, points, pending_amount, attendance_points, activity_points)
+                 VALUES ($1, 1250, 12500, 812, 438)
+                 ON CONFLICT DO NOTHING`,
+                [userId]
+            );
+            res = await pool.query(
+                `SELECT points, pending_amount, attendance_points, activity_points
+                 FROM user_points
+                 WHERE user_id = $1`,
+                [userId]
+            );
+        }
+
+        const data = res.rows[0] || { points: 1250, pending_amount: 12500, attendance_points: 812, activity_points: 438 };
+        const total = (data.attendance_points || 0) + (data.activity_points || 0);
+        const attendanceRatio = total > 0 ? Math.round(((data.attendance_points || 0) / total) * 100) : 65;
+        const activityRatio = 100 - attendanceRatio;
+
+        return {
+            points: data.points,
+            pendingAmount: data.pending_amount,
+            attendancePoints: data.attendance_points,
+            activityPoints: data.activity_points,
+            attendanceRatio,
+            activityRatio
+        };
+    }
 }

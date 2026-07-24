@@ -128,9 +128,16 @@ export default function MyPage() {
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
     const [loading, setLoading] = useState(false);
 
-    const [points] = useState<number>(() => {
-        const saved = localStorage.getItem('vera_points');
-        return saved ? parseInt(saved, 10) : 120;
+    const [veraPointsData, setVeraPointsData] = useState<{
+        points: number;
+        pendingAmount: number;
+        attendanceRatio: number;
+        activityRatio: number;
+    }>({
+        points: 1250,
+        pendingAmount: 12500,
+        attendanceRatio: 65,
+        activityRatio: 35
     });
 
     const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_time?: string; time?: string; schedule_text?: string; text?: string }[]>([]);
@@ -196,7 +203,7 @@ export default function MyPage() {
 
                 // ─── 대시보드(나의 홈)일 때는 모든 데이터를 일괄 취합해서 가져옴 ───
                 if (activeSection === 'dashboard') {
-                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes, schedulesRes] = await Promise.all([
+                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes, schedulesRes, veraPointsRes] = await Promise.all([
                         instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/news/keywords?limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/bookmarks?page=1&limit=3`).catch(() => ({ data: {} })),
@@ -204,7 +211,8 @@ export default function MyPage() {
                         instance.get(`/api/user/watchlist`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/games/stats`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/games/history?limit=3`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/schedules`).catch(() => ({ data: {} }))
+                        instance.get(`/api/user/schedules`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/vera-points`).catch(() => ({ data: {} }))
                     ]);
 
                     setNewsData({
@@ -221,6 +229,15 @@ export default function MyPage() {
                         history: historyGamesRes.data.history?.history || []
                     });
                     setBizAgenda(schedulesRes.data.schedules || []);
+
+                    if (veraPointsRes.data && veraPointsRes.data.success) {
+                        setVeraPointsData({
+                            points: veraPointsRes.data.points ?? 1250,
+                            pendingAmount: veraPointsRes.data.pendingAmount ?? 12500,
+                            attendanceRatio: veraPointsRes.data.attendanceRatio ?? 65,
+                            activityRatio: veraPointsRes.data.activityRatio ?? 35
+                        });
+                    }
                 }
                 
                 // 기존 개별 탭 렌더링용 API 호출
@@ -457,12 +474,12 @@ export default function MyPage() {
                                                     </div>
                                                 </div>
 
-                                                {/* 위젯 2: 비즈니스 리워드 포인트 정산 (Settlement) */}
+                                                {/* 위젯 2: 베라포인트 정산 (Vera Points Settlement) */}
                                                 <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[320px]">
                                                     <div>
                                                         <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
                                                             <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
-                                                                <i className="fas fa-coins text-amber-500"></i> 🪙 비즈니스 포인트 정산
+                                                                <i className="fas fa-coins text-amber-500"></i> 🪙 베라포인트 정산
                                                             </h3>
                                                         </div>
 
@@ -470,43 +487,43 @@ export default function MyPage() {
                                                         <div className="grid grid-cols-2 gap-3 mb-4">
                                                             <div className="p-3 bg-amber-50/50 border border-amber-100 rounded-xl">
                                                                 <span className="text-[10px] text-amber-600 font-black">누적 포인트</span>
-                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{points.toLocaleString()} P</span>
+                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{veraPointsData.points.toLocaleString()} P</span>
                                                             </div>
                                                             <div className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl">
                                                                 <span className="text-[10px] text-emerald-600 font-black">정산 대기 금액</span>
-                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{(points * 10).toLocaleString()} 원</span>
+                                                                <span className="block text-base font-mono font-black text-slate-800 mt-0.5">{veraPointsData.pendingAmount.toLocaleString()} 원</span>
                                                             </div>
                                                         </div>
 
-                                                        {/* 그래프 시뮬레이션 */}
+                                                        {/* 적립 내역 지표 */}
                                                         <div className="space-y-2">
-                                                            <span className="text-[10px] text-slate-400 font-bold block">비즈니스 수익 기여 지표</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold block">베라포인트 적립 내역 지표</span>
                                                             <div>
                                                                 <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
-                                                                    <span>💼 비즈니스 파트너십</span>
-                                                                    <span>64%</span>
+                                                                    <span>📅 출석체크 & 미션 완료</span>
+                                                                    <span>{veraPointsData.attendanceRatio}%</span>
                                                                 </div>
                                                                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                    <div className="h-full bg-emerald-500" style={{ width: '64%' }}></div>
+                                                                    <div className="h-full bg-emerald-500" style={{ width: `${veraPointsData.attendanceRatio}%` }}></div>
                                                                 </div>
                                                             </div>
                                                             <div>
                                                                 <div className="flex justify-between text-[9px] font-bold text-slate-600 mb-1">
-                                                                    <span>💬 소셜 라운지 리워드</span>
-                                                                    <span>36%</span>
+                                                                    <span>💬 소셜 라운지 & 커뮤니티 활동</span>
+                                                                    <span>{veraPointsData.activityRatio}%</span>
                                                                 </div>
                                                                 <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                                                    <div className="h-full bg-amber-500" style={{ width: '36%' }}></div>
+                                                                    <div className="h-full bg-amber-500" style={{ width: `${veraPointsData.activityRatio}%` }}></div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
                                                     <Link 
-                                                        to="/reward"
-                                                        className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors"
+                                                        to="/reward/exchange"
+                                                        className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors cursor-pointer"
                                                     >
-                                                        실시간 파트너 포인트 출금 신청
+                                                        베라포인트 리워드 교환 신청
                                                     </Link>
                                                 </div>
 
