@@ -133,35 +133,38 @@ export default function MyPage() {
         return saved ? parseInt(saved, 10) : 120;
     });
 
-    const [bizAgenda, setBizAgenda] = useState<{ id: string; time: string; text: string }[]>(() => {
-        const saved = localStorage.getItem('vera_biz_agenda');
-        return saved ? JSON.parse(saved) : [
-            { id: '1', time: '09:30', text: '해외 수출 관련 계약서 최종 검토' },
-            { id: '2', time: '14:00', text: 'VERA Lounge 실시간 투자 트렌드 브리핑' },
-            { id: '3', time: '16:30', text: 'B2B 파트너 정산 세금계산서 마감' }
-        ];
-    });
+    const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_time?: string; time?: string; schedule_text?: string; text?: string }[]>([]);
     const [newAgendaText, setNewAgendaText] = useState('');
     const [newAgendaTime, setNewAgendaTime] = useState('09:00');
 
-    const handleAddAgenda = (e: React.FormEvent) => {
+    const handleAddAgenda = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newAgendaText.trim()) return;
-        const newItem = {
-            id: `agenda-${Date.now()}`,
-            time: newAgendaTime,
-            text: newAgendaText
-        };
-        const updated = [...bizAgenda, newItem].sort((a, b) => a.time.localeCompare(b.time));
-        setBizAgenda(updated);
-        localStorage.setItem('vera_biz_agenda', JSON.stringify(updated));
-        setNewAgendaText('');
+        try {
+            const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+            const res = await instance.post('/api/user/schedules', {
+                time: newAgendaTime,
+                text: newAgendaText.trim()
+            });
+            if (res.data && res.data.success) {
+                setBizAgenda(res.data.schedules || []);
+                setNewAgendaText('');
+            }
+        } catch (err) {
+            console.error('Failed to add schedule:', err);
+        }
     };
 
-    const handleRemoveAgenda = (id: string) => {
-        const updated = bizAgenda.filter(item => item.id !== id);
-        setBizAgenda(updated);
-        localStorage.setItem('vera_biz_agenda', JSON.stringify(updated));
+    const handleRemoveAgenda = async (id: number | string) => {
+        try {
+            const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+            const res = await instance.delete(`/api/user/schedules/${id}`);
+            if (res.data && res.data.success) {
+                setBizAgenda(res.data.schedules || []);
+            }
+        } catch (err) {
+            console.error('Failed to delete schedule:', err);
+        }
     };
 
     // 생년월일 관리 로컬 스토리지 연동
@@ -193,14 +196,15 @@ export default function MyPage() {
 
                 // ─── 대시보드(나의 홈)일 때는 모든 데이터를 일괄 취합해서 가져옴 ───
                 if (activeSection === 'dashboard') {
-                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes] = await Promise.all([
+                    const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes, schedulesRes] = await Promise.all([
                         instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/news/keywords?limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/bookmarks?page=1&limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/games/stats`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/games/history?limit=3`).catch(() => ({ data: {} }))
+                        instance.get(`/api/user/games/history?limit=3`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/schedules`).catch(() => ({ data: {} }))
                     ]);
 
                     setNewsData({
@@ -216,6 +220,7 @@ export default function MyPage() {
                         stats: statsGamesRes.data.stats || {},
                         history: historyGamesRes.data.history?.history || []
                     });
+                    setBizAgenda(schedulesRes.data.schedules || []);
                 }
                 
                 // 기존 개별 탭 렌더링용 API 호출
@@ -434,12 +439,12 @@ export default function MyPage() {
                                                                 bizAgenda.map((item) => (
                                                                     <div key={item.id} className="flex justify-between items-center bg-slate-50 border border-slate-200/40 p-2.5 rounded-xl text-xs relative group">
                                                                         <div className="flex items-center gap-2">
-                                                                            <span className="font-bold text-emerald-600 font-mono bg-emerald-50 px-2 py-0.5 rounded-md">{item.time}</span>
-                                                                            <span className="font-semibold text-slate-700 leading-relaxed pr-6">{item.text}</span>
+                                                                            <span className="font-bold text-emerald-600 font-mono bg-emerald-50 px-2 py-0.5 rounded-md">{item.schedule_time || item.time}</span>
+                                                                            <span className="font-semibold text-slate-700 leading-relaxed pr-6">{item.schedule_text || item.text}</span>
                                                                         </div>
                                                                         <button 
                                                                             onClick={() => handleRemoveAgenda(item.id)}
-                                                                            className="absolute right-2 text-slate-400 hover:text-rose-500 transition-colors"
+                                                                            className="absolute right-2 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                                                             title="일정 삭제"
                                                                         >
                                                                             <i className="fas fa-times text-xs"></i>

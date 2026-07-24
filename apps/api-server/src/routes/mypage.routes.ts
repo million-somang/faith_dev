@@ -146,4 +146,45 @@ mypage.post('/homepage-config', async (c) => {
     }
 });
 
+// ===== User Schedules (Today's Biz Agenda) =====
+mypage.get('/schedules', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const schedules = await MyPageService.getSchedules(user.id);
+        return c.json({ success: true, schedules });
+    } catch (err) {
+        console.error('Get schedules error:', err);
+        return c.json({ success: false, message: 'Failed to fetch schedules' }, 500);
+    }
+});
+
+mypage.post('/schedules', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const { time, text } = await c.req.json();
+        if (!text || !text.trim()) {
+            return c.json({ success: false, message: 'Text is required' }, 400);
+        }
+        await MyPageService.addSchedule(user.id, time || '09:00', text.trim());
+        const schedules = await MyPageService.getSchedules(user.id);
+        return c.json({ success: true, schedules });
+    } catch (err) {
+        console.error('Add schedule error:', err);
+        return c.json({ success: false, message: 'Failed to add schedule' }, 500);
+    }
+});
+
+mypage.delete('/schedules/:id', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const scheduleId = parseInt(c.req.param('id'));
+        await MyPageService.deleteSchedule(user.id, scheduleId);
+        const schedules = await MyPageService.getSchedules(user.id);
+        return c.json({ success: true, schedules });
+    } catch (err) {
+        console.error('Delete schedule error:', err);
+        return c.json({ success: false, message: 'Failed to delete schedule' }, 500);
+    }
+});
+
 export default mypage;

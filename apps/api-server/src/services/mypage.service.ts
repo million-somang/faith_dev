@@ -106,4 +106,33 @@ export class MyPageService {
         );
         return res.rows;
     }
+
+    // ===== User Schedules (Today's Biz Agenda) =====
+
+    static async getSchedules(userId: number) {
+        const res = await pool.query(
+            `SELECT id, schedule_time, schedule_text, created_at
+             FROM user_schedules
+             WHERE user_id = $1
+             ORDER BY schedule_time ASC, id ASC`,
+            [userId]
+        );
+        return res.rows;
+    }
+
+    static async addSchedule(userId: number, time: string, text: string) {
+        const res = await pool.query(
+            `INSERT INTO user_schedules (user_id, schedule_time, schedule_text)
+             VALUES ($1, $2, $3)`,
+            [userId, time, text]
+        );
+        return res;
+    }
+
+    static async deleteSchedule(userId: number, scheduleId: number) {
+        await pool.query(
+            'DELETE FROM user_schedules WHERE id = $1 AND user_id = $2',
+            [scheduleId, userId]
+        );
+    }
 }
