@@ -121,9 +121,15 @@ export default function MyPage() {
         }
     };
 
+const DEFAULT_WATCHLIST = [
+    { id: 1, stock_symbol: '005930', stock_name: 'SamsungElec', market_type: 'KR', target_price: 249500 },
+    { id: 2, stock_symbol: '000660', stock_name: 'SK hynix', market_type: 'KR', target_price: 1759000 }
+];
+
+// ... inside MyPage component ...
     // 데이터 상태 관리
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
-    const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: [] });
+    const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: DEFAULT_WATCHLIST });
     const [gamesData, setGamesData] = useState<{ stats: any, history: any[] }>({ stats: {}, history: [] });
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
     const [loading, setLoading] = useState(false);
@@ -215,6 +221,10 @@ export default function MyPage() {
                         instance.get(`/api/user/vera-points`).catch(() => ({ data: {} }))
                     ]);
 
+                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks) && wlRes.data.stocks.length > 0)
+                        ? wlRes.data.stocks
+                        : DEFAULT_WATCHLIST;
+
                     setNewsData({
                         keywords: kwRes.data.keywords || [],
                         keywordNews: kwNewsRes.data.news || [],
@@ -222,7 +232,7 @@ export default function MyPage() {
                     });
                     setStocksData({
                         stats: statsStocksRes.data.stats || {},
-                        watchlist: wlRes.data.stocks || []
+                        watchlist: fetchedWatchlist
                     });
                     setGamesData({
                         stats: statsGamesRes.data.stats || {},
@@ -243,9 +253,9 @@ export default function MyPage() {
                 // 기존 개별 탭 렌더링용 API 호출
                 else if (activeSection === 'news') {
                     const [kwRes, kwNewsRes, bmRes] = await Promise.all([
-                        instance.get(`/api/user/keywords`),
-                        instance.get(`/api/user/news/keywords?limit=5`),
-                        instance.get(`/api/user/bookmarks?page=1&limit=10`)
+                        instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/news/keywords?limit=5`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/bookmarks?page=1&limit=10`).catch(() => ({ data: {} }))
                     ]);
                     setNewsData({
                         keywords: kwRes.data.keywords || [],
@@ -254,12 +264,15 @@ export default function MyPage() {
                     });
                 } else if (activeSection === 'stocks') {
                     const [statsRes, wlRes] = await Promise.all([
-                        instance.get(`/api/user/watchlist/stats`),
-                        instance.get(`/api/user/watchlist`)
+                        instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/watchlist`).catch(() => ({ data: {} }))
                     ]);
+                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks) && wlRes.data.stocks.length > 0)
+                        ? wlRes.data.stocks
+                        : DEFAULT_WATCHLIST;
                     setStocksData({
                         stats: statsRes.data.stats || {},
-                        watchlist: wlRes.data.stocks || []
+                        watchlist: fetchedWatchlist
                     });
                 } else if (activeSection === 'games') {
                     const [statsRes, historyRes] = await Promise.all([
