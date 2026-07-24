@@ -3,9 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 // 관심종목은 이 기기(localStorage)에 저장한다. 서버 DB는 건드리지 않는다.
 const STORAGE_KEY = 'finance:favorites';
 
-// 로그인한 사용자의 경우, 마이페이지(주식 관심종목)에도 보이도록 서버에 동기화한다.
-// 메인 포털과 동일 출처의 사용자 API를 사용한다.
-const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
+// 로그인한 사용자의 경우, 마이페이지(주식 관심종목)에도 보이도록 서버 DB에 동기화한다.
+const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
 
 const normalize = (ticker: string) => ticker.trim().toUpperCase();
 
@@ -28,19 +27,17 @@ function readFavorites(): string[] {
     }
 }
 
-// 서버 관심종목에 추가 (로그인 안 됐으면 401 → 조용히 무시)
+// 서버 관심종목에 추가
 async function syncAddToServer(ticker: string, meta?: StockMeta): Promise<void> {
     const symbol = normalize(ticker);
     if (!symbol) return;
     const name = meta?.name?.trim() || symbol;
     const market = meta?.market || inferMarket(symbol);
     try {
-        await fetch(`${MAIN_PORTAL_URL}/api/user/watchlist`, {
+        await fetch(`${API_BASE}/api/user/watchlist`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            // 백엔드마다 기대하는 필드명이 달라(둘 다 전송): api-server는 symbol/name/market,
-            // 루트 src 백엔드는 stock_symbol/stock_name/market_type 을 읽는다.
             body: JSON.stringify({
                 symbol,
                 name,
@@ -50,17 +47,17 @@ async function syncAddToServer(ticker: string, meta?: StockMeta): Promise<void> 
                 market_type: market,
             }),
         });
-    } catch {
-        /* 동기화 실패는 조용히 무시 (관심종목은 이미 로컬에 저장됨) */
+    } catch (e) {
+        console.error('Failed to sync watchlist to server:', e);
     }
 }
 
-// 서버 관심종목에서 제거 (symbol → id 매핑 후 삭제, 실패 시 조용히 무시)
+// 서버 관심종목에서 제거
 async function syncRemoveFromServer(ticker: string): Promise<void> {
     const symbol = normalize(ticker);
     if (!symbol) return;
     try {
-        const res = await fetch(`${MAIN_PORTAL_URL}/api/user/watchlist`, {
+        const res = await fetch(`${API_BASE}/api/user/watchlist`, {
             credentials: 'include',
         });
         if (!res.ok) return;
@@ -68,28 +65,46 @@ async function syncRemoveFromServer(ticker: string): Promise<void> {
         const stocks: Array<{ id: number; stock_symbol: string }> = data.stocks || [];
         const match = stocks.find((s) => normalize(s.stock_symbol) === symbol);
         if (!match) return;
-        await fetch(`${MAIN_PORTAL_URL}/api/user/watchlist/${match.id}`, {
+        await fetch(`${API_BASE}/api/user/watchlist/${match.id}`, {
             method: 'DELETE',
             credentials: 'include',
         });
-    } catch {
-        /* 동기화 실패는 조용히 무시 */
+    } catch (e) {
+        console.error('Failed to remove watchlist from server:', e);
     }
 }
 
 /**
- * 관심종목(내가 지정한 주식) 목록을 localStorage에 영구 저장하고 관리하는 훅.
- * 지정한 종목은 종목 페이지 최상단에 최우선으로 노출된다.
- * 로그인 상태라면 마이페이지(주식)에도 보이도록 서버 관심종목과 동기화한다.
+ * 관심종목(내가 지정한 주식) 목록을 localStorage 및 백엔드 DB 서버와 동기화하는 훅.
  */
 export function useFavorites() {
     const [favorites, setFavorites] = useState<string[]>(readFavorites);
+
+    // 마운트 시 서버 DB 관심종목 불러와 로컬 상태와 병합 및 동기화
+    useEffect(() => {
+        let cancelled = false;
+        fetch(`${API_BASE}/api/user/watchlist`, { credentials: 'include' })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+                if (cancelled || !data || !Array.isArray(data.stocks)) return;
+                const serverSymbols = data.stocks.map((s: { stock_symbol: string }) => normalize(s.stock_symbol));
+                if (serverSymbols.length > 0) {
+                    setFavorites((prev) => {
+                        const merged = Array.from(new Set([...prev, ...serverSymbols]));
+                        return merged;
+                    });
+                }
+            })
+            .catch(() => {});
+
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites));
         } catch {
-            /* 저장 실패는 조용히 무시 */
+            /* 저장 실패 무시 */
         }
     }, [favorites]);
 

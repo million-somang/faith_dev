@@ -83,7 +83,7 @@ export default function StocksPage() {
                         <h2 className="text-xl font-bold text-gray-900">
                             <i className="fas fa-star text-yellow-400 mr-2"></i>내 관심종목
                         </h2>
-                        <span className="text-xs text-gray-400">최우선 표시 · 이 기기에 저장</span>
+                        <span className="text-xs text-gray-400">최우선 표시 · 마이페이지 실시간 연동</span>
                     </div>
 
                     {/* 종목 직접 추가 */}
