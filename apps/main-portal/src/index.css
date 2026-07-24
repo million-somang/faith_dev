@@ -222,8 +222,8 @@ body {
     box-sizing: border-box;
 }
 
-/* 모바일 뷰포트에서 노출 */
-@media (max-width: 768px) {
+/* 모바일 및 태블릿 뷰포트에서 노출 */
+@media (max-width: 1024px) {
     .mobile-tab-bar {
         display: flex;
     }

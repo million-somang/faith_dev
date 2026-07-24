@@ -219,19 +219,19 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
         <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
             <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14 relative">
                 <div className="flex items-center gap-3 sm:gap-6">
-                    {/* 모바일 전체메뉴 햄버거 (좌측 상단) */}
-                    <button onClick={() => setMenuOpen(true)} className="sm:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" aria-label="전체메뉴 열기">
+                    {/* 모바일/태블릿 전체메뉴 햄버거 (좌측 상단: md 미만 상시 표출) */}
+                    <button onClick={() => setMenuOpen(true)} className="md:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" aria-label="전체메뉴 열기">
                         <i className="fas fa-bars text-lg"></i>
                     </button>
-                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 sm:static sm:left-auto sm:translate-x-0">
+                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 md:static md:left-auto md:translate-x-0">
                         <span className={`w-8 h-8 rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center text-white shadow-sm`}>
                             <i className="fas fa-sparkles text-sm"></i>
                         </span>
                         <span className="font-black text-xl tracking-wider text-gray-900">V<span className={modeColor}>ERA</span></span>
                     </a>
 
-                    {/* 데스크탑 모드 스위처 */}
-                    <div className="hidden md:flex items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[10px] font-black text-slate-500 gap-0.5 ml-2 shadow-inner">
+                    {/* 데스크탑/태블릿 모드 스위처 */}
+                    <div className="hidden lg:flex items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[10px] font-black text-slate-500 gap-0.5 ml-2 shadow-inner">
                         {activeMode !== 'general' && (
                             <button 
                                 onClick={() => handleModeSwitch('general')} 
@@ -259,7 +259,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     </div>
 
                     {/* 모바일 모드 스위처 */}
-                    <div className="flex md:hidden items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[9px] font-extrabold text-slate-500 gap-0.5 ml-1 absolute right-4 sm:static">
+                    <div className="flex lg:hidden items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[9px] font-extrabold text-slate-500 gap-0.5 ml-1 absolute right-4 md:static">
                         {activeMode !== 'general' && (
                             <button 
                                 onClick={() => handleModeSwitch('general')} 
@@ -287,45 +287,45 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     </div>
 
                     {activeMode === 'general' && (
-                        <nav className="hidden xl:flex gap-1 text-sm font-bold text-gray-600">
-                            <a href={`${baseUrl}/news`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>뉴스</a>
-                            <a href={`${baseUrl}/lifestyle`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>유틸리티</a>
-                            <a href={`${baseUrl}/finance`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>금융</a>
-                            <a href={`${baseUrl}/reward`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
-                            <a href={`${baseUrl}/game`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
-                            <a href={`${baseUrl}/entertainment`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
+                        <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
+                            <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>뉴스</a>
+                            <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>유틸리티</a>
+                            <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>금융</a>
+                            <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
+                            <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
+                            <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
                         </nav>
                     )}
 
                     {activeMode === 'business' && (
-                        <nav className="hidden xl:flex gap-1 text-sm font-bold text-gray-600">
-                            <a href={`${baseUrl}/b2b`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>홈페이지 제작</a>
-                            <a href={`${baseUrl}/mypage`} className={`px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                        <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
+                            <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>홈페이지 제작</a>
+                            <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
                         </nav>
                     )}
 
                     {activeMode === 'lounge' && null}
                 </div>
-                <div className="hidden sm:flex items-center gap-3">
+                <div className="hidden md:flex items-center gap-3">
                     {user ? (
                         <>
-                            <span className="hidden sm:inline text-xs font-bold text-gray-500">{user.name}님</span>
-                            <a href={`${baseUrl}/mypage`} className={`hidden sm:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>마이페이지</a>
+                            <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
+                            <a href={`${baseUrl}/mypage`} className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>마이페이지</a>
                             <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">로그아웃</button>
                         </>
                     ) : (
                         <>
                             <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">로그인</a>
-                            <a href={`${baseUrl}/signup`} className="hidden sm:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
+                            <a href={`${baseUrl}/signup`} className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
                         </>
                     )}
                 </div>
             </div>
         </header>
 
-        {/* 모바일 전체메뉴 드로어 (왼쪽 슬라이드) */}
+        {/* 모바일/태블릿 전체메뉴 드로어 (왼쪽 슬라이드: md 미만 상시 가능) */}
         {menuOpen && (
-            <div className="sm:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="전체메뉴">
+            <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="전체메뉴">
                 <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)}></div>
                 <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
