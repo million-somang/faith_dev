@@ -189,7 +189,7 @@ export default function MyPage() {
 
     useEffect(() => {
         if (!isLoading && !user) {
-            navigate('/login');
+            navigate('/', { replace: true });
         }
     }, [user, isLoading, navigate]);
 

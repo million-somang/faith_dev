@@ -46,12 +46,18 @@ import { StockWidget } from './components/homepage/StockWidget';
 
 function HomePage() {
     console.log('HomePage rendering...');
-    const { user, logout } = useAuth();
+    const { user, logout, isLoading: isAuthLoading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [news, setNews] = useState<{ id: number; news_id?: number; title: string; summary?: string; description?: string; category?: string; published_at?: string; created_at?: string; tags?: string; relatedStocks?: { name: string }[]; vote_up?: number; vote_down?: number }[]>([]);
     const [health, setHealth] = useState<{ status: string } | null>(null);
     const [showWizard, setShowWizard] = useState(false);
+
+    useEffect(() => {
+        if (!isAuthLoading && user) {
+            navigate('/mypage', { replace: true });
+        }
+    }, [user, isAuthLoading, navigate]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
