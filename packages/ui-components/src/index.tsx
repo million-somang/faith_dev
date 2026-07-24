@@ -170,7 +170,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
         if (typeof window !== 'undefined') {
             const path = window.location.pathname;
             if (path.startsWith('/lounge')) return 'lounge';
-            if (path.startsWith('/mypage') || path.startsWith('/b2b')) return 'business';
+            if (path.startsWith('/b2b')) return 'business';
         }
         return 'general';
     });
@@ -180,7 +180,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
             const path = window.location.pathname;
             let mode: 'general' | 'business' | 'lounge' = 'general';
             if (path.startsWith('/lounge')) mode = 'lounge';
-            else if (path.startsWith('/mypage') || path.startsWith('/b2b')) mode = 'business';
+            else if (path.startsWith('/b2b')) mode = 'business';
             setActiveMode(mode);
             localStorage.setItem('vera_portal_mode', mode);
         }
@@ -294,6 +294,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
                             <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
+                            <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
                         </nav>
                     )}
 
