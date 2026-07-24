@@ -67,13 +67,36 @@ export class MyPageService {
     // ===== Stock Watchlist =====
 
     static async getWatchlist(userId: number) {
-        const res = await pool.query(
+        let res = await pool.query(
             `SELECT id, stock_symbol, stock_name, market_type, target_price, memo, created_at
              FROM user_watchlist_stocks
              WHERE user_id = $1
              ORDER BY created_at DESC`,
             [userId]
         );
+
+        // 유저의 관심 종목 DB가 비어있는 경우 기본 주식 2종목(삼성전자, SK하이닉스)을 자동으로 주입
+        if (res.rows.length === 0) {
+            try {
+                await pool.query(
+                    `INSERT INTO user_watchlist_stocks (user_id, stock_symbol, stock_name, market_type)
+                     VALUES ($1, '005930', 'SamsungElec', 'KR'),
+                            ($1, '000660', 'SK hynix', 'KR')
+                     ON CONFLICT (user_id, stock_symbol) DO NOTHING`,
+                    [userId]
+                );
+                res = await pool.query(
+                    `SELECT id, stock_symbol, stock_name, market_type, target_price, memo, created_at
+                     FROM user_watchlist_stocks
+                     WHERE user_id = $1
+                     ORDER BY created_at DESC`,
+                    [userId]
+                );
+            } catch (err) {
+                console.error('Failed to seed default watchlist:', err);
+            }
+        }
+
         return res.rows;
     }
 

@@ -779,15 +779,15 @@ export default function MyPage() {
                                             <div className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-md">
                                                     <div className="text-sm opacity-90 mb-1 font-medium">총 종목 수</div>
-                                                    <div className="text-3xl font-black">{stocksData.stats.total_stocks || 0}</div>
+                                                    <div className="text-3xl font-black">{stocksData.watchlist.length}</div>
                                                 </div>
                                                 <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 text-white shadow-md">
                                                     <div className="text-sm opacity-90 mb-1 font-medium">미국 주식</div>
-                                                    <div className="text-3xl font-black">{stocksData.stats.market_distribution?.US || 0}</div>
+                                                    <div className="text-3xl font-black">{stocksData.watchlist.filter(s => s.market_type === 'US').length}</div>
                                                 </div>
                                                 <div className="bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl p-5 text-white shadow-md">
                                                     <div className="text-sm opacity-90 mb-1 font-medium">한국 주식</div>
-                                                    <div className="text-3xl font-black">{stocksData.stats.market_distribution?.KR || 0}</div>
+                                                    <div className="text-3xl font-black">{stocksData.watchlist.filter(s => s.market_type === 'KR').length}</div>
                                                 </div>
                                             </div>
 
