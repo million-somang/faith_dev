@@ -164,16 +164,74 @@ const FULL_MENU_ITEMS = [
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
 
+const getLang = (): 'ko' | 'en' => {
+    if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('user_lang');
+        if (saved === 'ko' || saved === 'en') return saved;
+        return (navigator.language || '').toLowerCase().includes('ko') ? 'ko' : 'en';
+    }
+    return 'ko';
+};
+
+const UI_TRANSLATIONS: Record<'ko' | 'en', Record<string, string>> = {
+    ko: {
+        '뉴스': '뉴스',
+        '유틸리티': '유틸리티',
+        '생활도구': '생활도구',
+        '금융': '금융',
+        '리워드': '리워드',
+        '게임': '게임',
+        '재미': '재미',
+        '쇼핑': '쇼핑',
+        '라운지': '라운지',
+        '마이페이지': '마이페이지',
+        '로그인': '로그인',
+        '로그아웃': '로그아웃',
+        '회원가입': '회원가입',
+        '홈페이지 제작': '홈페이지 제작',
+        '전체메뉴': '전체메뉴',
+        '홈': '홈',
+        '일반 포털': '🔮 일반 포털',
+        '비즈니스': '💼 비즈니스',
+        '포털': '포털',
+        '비즈': '비즈',
+        '교육': '교육',
+        '엔터': '엔터',
+        '님': '님',
+    },
+    en: {
+        '뉴스': 'News',
+        '유틸리티': 'Utility',
+        '생활도구': 'Tools',
+        '금융': 'Finance',
+        '리워드': 'Rewards',
+        '게임': 'Games',
+        '재미': 'Fun',
+        '쇼핑': 'Shopping',
+        '라운지': 'Lounge',
+        '마이페이지': 'My Page',
+        '로그인': 'Log In',
+        '로그아웃': 'Log Out',
+        '회원가입': 'Sign Up',
+        '홈페이지 제작': 'Web Design',
+        '전체메뉴': 'All Menu',
+        '홈': 'Home',
+        '일반 포털': '🔮 General',
+        '비즈니스': '💼 Business',
+        '포털': 'Portal',
+        '비즈': 'Biz',
+        '교육': 'Education',
+        '엔터': 'Entertainment',
+        '님': '',
+    }
+};
+
+const tr = (key: string, lang: 'ko' | 'en'): string => {
+    return UI_TRANSLATIONS[lang]?.[key] || UI_TRANSLATIONS['ko']?.[key] || key;
+};
+
 export const LanguageSwitcher = () => {
-    const [lang, setLang] = React.useState<'ko' | 'en'>(() => {
-        if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('user_lang');
-            if (saved === 'ko' || saved === 'en') return saved;
-            const navLang = navigator.language || '';
-            return navLang.toLowerCase().includes('ko') ? 'ko' : 'en';
-        }
-        return 'ko';
-    });
+    const [lang, setLang] = React.useState<'ko' | 'en'>(() => getLang());
 
     const toggleLanguage = () => {
         const nextLang = lang === 'ko' ? 'en' : 'ko';
@@ -196,6 +254,7 @@ export const LanguageSwitcher = () => {
 };
 
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
+    const currentLang = getLang();
     const [menuOpen, setMenuOpen] = React.useState(false);
     const [activeMode, setActiveMode] = React.useState<'general' | 'business' | 'lounge'>(() => {
         if (typeof window !== 'undefined') {
@@ -268,7 +327,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('general')} 
                                 className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
                             >
-                                🔮 일반 포털
+                                {tr('일반 포털', currentLang)}
                             </button>
                         )}
                         {activeMode !== 'business' && (
@@ -276,7 +335,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('business')} 
                                 className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
                             >
-                                💼 비즈니스
+                                {tr('비즈니스', currentLang)}
                             </button>
                         )}
                         {activeMode !== 'lounge' && (
@@ -284,7 +343,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('lounge')} 
                                 className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
                             >
-                                💬 라운지
+                                {tr('라운지', currentLang)}
                             </button>
                         )}
                     </div>
@@ -296,7 +355,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('general')} 
                                 className="px-2 py-0.5 rounded-full transition-all"
                             >
-                                포털
+                                {tr('포털', currentLang)}
                             </button>
                         )}
                         {activeMode !== 'business' && (
@@ -304,7 +363,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('business')} 
                                 className="px-2 py-0.5 rounded-full transition-all"
                             >
-                                비즈
+                                {tr('비즈', currentLang)}
                             </button>
                         )}
                         {activeMode !== 'lounge' && (
@@ -312,34 +371,34 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 onClick={() => handleModeSwitch('lounge')} 
                                 className="px-2 py-0.5 rounded-full transition-all"
                             >
-                                라운지
+                                {tr('라운지', currentLang)}
                             </button>
                         )}
                     </div>
 
                     {activeMode === 'general' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
-                            <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>뉴스</a>
-                            <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>유틸리티</a>
-                            <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>금융</a>
-                            <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
-                            <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
-                            <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
+                            <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('뉴스', currentLang)}</a>
+                            <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('유틸리티', currentLang)}</a>
+                            <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
+                            <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
+                            <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
+                            <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
                             {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
                             ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>로그인</a>
+                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
                             )}
                         </nav>
                     )}
 
                     {activeMode === 'business' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
-                            <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>홈페이지 제작</a>
+                            <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('홈페이지 제작', currentLang)}</a>
                             {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
                             ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>로그인</a>
+                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
                             )}
                         </nav>
                     )}
@@ -350,14 +409,14 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     <LanguageSwitcher />
                     {user ? (
                         <>
-                            <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
-                            <a href={`${baseUrl}/mypage`} className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>마이페이지</a>
-                            <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">로그아웃</button>
+                            <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}{tr('님', currentLang)}</span>
+                            <a href={`${baseUrl}/mypage`} className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>{tr('마이페이지', currentLang)}</a>
+                            <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">{tr('로그아웃', currentLang)}</button>
                         </>
                     ) : (
                         <>
-                            <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">로그인</a>
-                            <a href={`${baseUrl}/signup`} className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">회원가입</a>
+                            <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">{tr('로그인', currentLang)}</a>
+                            <a href={`${baseUrl}/signup`} className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">{tr('회원가입', currentLang)}</a>
                         </>
                     )}
                 </div>
@@ -370,7 +429,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                 <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)}></div>
                 <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
-                        <span className="font-black text-lg text-gray-900">전체메뉴</span>
+                        <span className="font-black text-lg text-gray-900">{tr('전체메뉴', currentLang)}</span>
                         <div className="flex items-center gap-2">
                             <LanguageSwitcher />
                             <button onClick={() => setMenuOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" aria-label="메뉴 닫기">
@@ -389,7 +448,8 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             return m.path !== '/b2b' && m.path !== '/lounge';
                         }).map((m) => {
                             const isMyPageItem = m.path === '/mypage';
-                            const itemLabel = isMyPageItem && !user ? '로그인' : m.label;
+                            const rawLabel = isMyPageItem && !user ? '로그인' : m.label;
+                            const itemLabel = tr(rawLabel, currentLang);
                             const itemPath = isMyPageItem && !user ? '/login' : m.path;
                             const itemIcon = isMyPageItem && !user ? 'fa-sign-in-alt' : m.icon;
                             const itemBg = isMyPageItem && !user ? 'bg-blue-50' : m.bg;
@@ -419,37 +479,40 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
     );
 };
 
-export const QuickMenu = () => (
-    <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu">
-        <div className="overflow-x-auto hide-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 py-4">
-            <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
-                {[
-                    { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-blue-50', color: 'text-blue-600', href: '/news' },
-                    { label: '유틸리티', icon: 'fa-home', bg: 'bg-green-50', color: 'text-green-600', href: '/lifestyle' },
-                    { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', href: '/game' },
-                    { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', href: '/finance' },
-                    { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', href: '/lounge' },
-                    { label: '쇼핑', icon: 'fa-shopping-bag', bg: 'bg-pink-50', color: 'text-pink-600', href: '/shopping' },
-                    { label: '엔터', icon: 'fa-film', bg: 'bg-red-50', color: 'text-red-600', href: '/entertainment' },
-                    { label: '교육', icon: 'fa-graduation-cap', bg: 'bg-indigo-50', color: 'text-indigo-600', href: '/education' },
-                ].map((item) => (
-                    <a key={item.label} href={item.href} className="group text-center flex-shrink-0 relative">
-                        {item.label === '라운지' && (
-                            <span className="absolute top-0 right-1/2 translate-x-4 sm:translate-x-5 z-10 flex h-2.5 w-2.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-600"></span>
-                            </span>
-                        )}
-                        <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(37,99,235,0.15)] group-hover:ring-2 ${item.label === '라운지' ? 'group-hover:ring-violet-400' : 'group-hover:ring-blue-400'}`}>
-                            <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 group-hover:rotate-6 transition-transform`}></i>
-                        </div>
-                        <p className="text-[11px] sm:text-xs text-gray-800 font-bold group-hover:text-brand-green transition-colors">{item.label}</p>
-                    </a>
-                ))}
+export const QuickMenu = () => {
+    const currentLang = getLang();
+    return (
+        <nav className="mb-16 max-w-4xl mx-auto" id="quick-menu">
+            <div className="overflow-x-auto hide-scrollbar -mx-1 px-1 sm:mx-0 sm:px-0 py-4">
+                <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
+                    {[
+                        { label: tr('뉴스', currentLang), icon: 'fa-newspaper', bg: 'bg-blue-50', color: 'text-blue-600', href: '/news' },
+                        { label: tr('유틸리티', currentLang), icon: 'fa-home', bg: 'bg-green-50', color: 'text-green-600', href: '/lifestyle' },
+                        { label: tr('게임', currentLang), icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', href: '/game' },
+                        { label: tr('금융', currentLang), icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', href: '/finance' },
+                        { label: tr('라운지', currentLang), icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', href: '/lounge' },
+                        { label: tr('쇼핑', currentLang), icon: 'fa-shopping-bag', bg: 'bg-pink-50', color: 'text-pink-600', href: '/shopping' },
+                        { label: tr('엔터', currentLang), icon: 'fa-film', bg: 'bg-red-50', color: 'text-red-600', href: '/entertainment' },
+                        { label: tr('교육', currentLang), icon: 'fa-graduation-cap', bg: 'bg-indigo-50', color: 'text-indigo-600', href: '/education' },
+                    ].map((item) => (
+                        <a key={item.label} href={item.href} className="group text-center flex-shrink-0 relative">
+                            {item.href === '/lounge' && (
+                                <span className="absolute top-0 right-1/2 translate-x-4 sm:translate-x-5 z-10 flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-600"></span>
+                                </span>
+                            )}
+                            <div className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-2 rounded-2xl ${item.bg} shadow-sm flex items-center justify-center transition-all duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_8px_16px_rgba(37,99,235,0.15)] group-hover:ring-2 ${item.href === '/lounge' ? 'group-hover:ring-violet-400' : 'group-hover:ring-blue-400'}`}>
+                                <i className={`fas ${item.icon} text-xl sm:text-2xl ${item.color} group-hover:scale-110 group-hover:rotate-6 transition-transform`}></i>
+                            </div>
+                            <p className="text-[11px] sm:text-xs text-gray-800 font-bold group-hover:text-brand-green transition-colors">{item.label}</p>
+                        </a>
+                    ))}
+                </div>
             </div>
-        </div>
-    </nav>
-);
+        </nav>
+    );
+};
 
 export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
     const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);

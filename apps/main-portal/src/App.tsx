@@ -6,6 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from './context/AuthContext';
+import { useLanguage } from './context/LanguageContext';
 import { PageSEO } from './components/PageSEO';
 
 import UtilityPage from './pages/UtilityPage';
@@ -47,6 +48,7 @@ import { StockWidget } from './components/homepage/StockWidget';
 function HomePage() {
     console.log('HomePage rendering...');
     const { user, logout, isLoading: isAuthLoading } = useAuth();
+    const { lang, t } = useLanguage();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [news, setNews] = useState<{ id: number; news_id?: number; title: string; summary?: string; description?: string; category?: string; published_at?: string; created_at?: string; tags?: string; relatedStocks?: { name: string }[]; vote_up?: number; vote_down?: number }[]>([]);
@@ -124,10 +126,12 @@ function HomePage() {
                         >
                             <div className="flex items-center gap-2">
                                 <span className="bg-white/20 text-white text-[9px] font-black px-2 py-0.5 rounded-full animate-pulse">LIVE 🔥</span>
-                                <span className="text-xs sm:text-sm font-black tracking-tight text-white">지금 VERA 라운지 격론 중: 비트코인 급락 수습 방안 긴급 대토론</span>
+                                <span className="text-xs sm:text-sm font-black tracking-tight text-white">
+                                    {lang === 'en' ? 'VERA Lounge Hot Debate: Bitcoin Sudden Crash Emergency Discussion' : '지금 VERA 라운지 격론 중: 비트코인 급락 수습 방안 긴급 대토론'}
+                                </span>
                             </div>
                             <span className="text-xs font-black flex items-center gap-1 text-violet-200 group-hover:text-white transition-colors">
-                                실시간 라운지 가기 <i className="fas fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
+                                {lang === 'en' ? 'Go to Live Lounge' : '실시간 라운지 가기'} <i className="fas fa-arrow-right text-[10px] group-hover:translate-x-0.5 transition-transform"></i>
                             </span>
                         </div>
 
@@ -140,10 +144,10 @@ function HomePage() {
 
                             <div className="relative max-w-3xl mx-auto text-center">
                                 <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">
-                                    세상의 모든 정보를 한곳에서
+                                    {lang === 'en' ? 'All Information in One Place' : '세상의 모든 정보를 한곳에서'}
                                 </h1>
                                 <p className="text-blue-100 text-sm sm:text-base mb-5 font-medium">
-                                    실시간 뉴스 · 금융 시세 · 미니게임 · 생활 도구까지, FaithPortal 하나면 충분해요
+                                    {lang === 'en' ? 'Real-time news, financial rates, mini games & utility tools — all in FaithPortal' : '실시간 뉴스 · 금융 시세 · 미니게임 · 생활 도구까지, FaithPortal 하나면 충분해요'}
                                 </p>
 
                                 {/* 검색창 */}
@@ -153,15 +157,15 @@ function HomePage() {
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="무엇을 찾으시나요?"
+                                        placeholder={lang === 'en' ? 'Search news, games, tools...' : '무엇을 찾으시나요?'}
                                         className="flex-1 bg-transparent border-none outline-none text-base text-gray-900 placeholder-gray-400 font-medium"
                                     />
                                     <button
                                         type="submit"
                                         className="flex items-center justify-center px-5 py-2 rounded-full bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all ml-3"
-                                        aria-label="검색"
+                                        aria-label={lang === 'en' ? 'Search' : '검색'}
                                     >
-                                        검색
+                                        {lang === 'en' ? 'Search' : '검색'}
                                     </button>
                                 </form>
 
@@ -183,11 +187,11 @@ function HomePage() {
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
                                                 <i className="fas fa-newspaper text-white text-lg"></i>
                                             </div>
-                                            <span>실시간 뉴스</span>
+                                            <span>{lang === 'en' ? 'Live News' : '실시간 뉴스'}</span>
                                             <span className="ml-3 text-[10px] bg-red-500 text-white px-2 py-1 rounded-full animate-pulse-slow font-bold">LIVE</span>
                                         </h3>
                                         <a href="/news" className="text-sm font-medium text-gray-500 hover:text-brand-green flex items-center gap-1 transition-colors">
-                                            더보기 <i className="fas fa-chevron-right text-xs"></i>
+                                            {lang === 'en' ? 'More' : '더보기'} <i className="fas fa-chevron-right text-xs"></i>
                                         </a>
                                     </div>
 
