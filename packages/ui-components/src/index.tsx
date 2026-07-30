@@ -164,6 +164,37 @@ const FULL_MENU_ITEMS = [
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
 
+export const LanguageSwitcher = () => {
+    const [lang, setLang] = React.useState<'ko' | 'en'>(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('user_lang');
+            if (saved === 'ko' || saved === 'en') return saved;
+            const navLang = navigator.language || '';
+            return navLang.toLowerCase().includes('ko') ? 'ko' : 'en';
+        }
+        return 'ko';
+    });
+
+    const toggleLanguage = () => {
+        const nextLang = lang === 'ko' ? 'en' : 'ko';
+        setLang(nextLang);
+        localStorage.setItem('user_lang', nextLang);
+        if (typeof window !== 'undefined') {
+            window.location.reload();
+        }
+    };
+
+    return (
+        <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-700 hover:bg-slate-200 transition-all cursor-pointer shadow-sm"
+            title={lang === 'ko' ? 'English로 변경' : '한국어로 변경'}
+        >
+            <span>{lang === 'ko' ? '🇰🇷 KO' : '🇺🇸 EN'}</span>
+        </button>
+    );
+};
+
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
     const [menuOpen, setMenuOpen] = React.useState(false);
     const [activeMode, setActiveMode] = React.useState<'general' | 'business' | 'lounge'>(() => {
@@ -307,7 +338,8 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
 
                     {activeMode === 'lounge' && null}
                 </div>
-                <div className="hidden md:flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                    <LanguageSwitcher />
                     {user ? (
                         <>
                             <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
@@ -331,9 +363,12 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                 <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
                     <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
                         <span className="font-black text-lg text-gray-900">전체메뉴</span>
-                        <button onClick={() => setMenuOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" aria-label="메뉴 닫기">
-                            <i className="fas fa-times text-lg"></i>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <LanguageSwitcher />
+                            <button onClick={() => setMenuOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" aria-label="메뉴 닫기">
+                                <i className="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
                     </div>
                     <nav className="flex-1 overflow-y-auto p-3">
                         {FULL_MENU_ITEMS.filter((m) => {

@@ -89,6 +89,9 @@ app.route('/api/novel', novelRoutes);
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);
 
+import { geoRoutes } from './routes/geo.routes.js';
+app.route('/', geoRoutes);
+
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'age-calc', 'dday-calc', 'json-formatter',
