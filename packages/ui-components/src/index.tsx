@@ -325,14 +325,22 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>리워드</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>게임</a>
                             <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>재미</a>
-                            <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                            {user ? (
+                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                            ) : (
+                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>로그인</a>
+                            )}
                         </nav>
                     )}
 
                     {activeMode === 'business' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>홈페이지 제작</a>
-                            <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                            {user ? (
+                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>마이페이지</a>
+                            ) : (
+                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>로그인</a>
+                            )}
                         </nav>
                     )}
 
@@ -379,21 +387,30 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 return false;
                             }
                             return m.path !== '/b2b' && m.path !== '/lounge';
-                        }).map((m) => (
-                            <a key={m.path} href={`${baseUrl}${m.path}`} className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group">
-                                <div className="flex items-center gap-3">
-                                    <span className={`w-9 h-9 rounded-lg ${m.bg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                                        <i className={`fas ${m.icon} ${m.color}`}></i>
-                                    </span>
-                                    <span className="font-bold text-gray-800">{m.label}</span>
-                                </div>
-                                {m.label === '라운지' && (
-                                    <span className="text-[9px] bg-violet-100 text-violet-600 font-extrabold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-0.5">
-                                        HOT <i className="fas fa-fire text-[8px] text-violet-500"></i>
-                                    </span>
-                                )}
-                            </a>
-                        ))}
+                        }).map((m) => {
+                            const isMyPageItem = m.path === '/mypage';
+                            const itemLabel = isMyPageItem && !user ? '로그인' : m.label;
+                            const itemPath = isMyPageItem && !user ? '/login' : m.path;
+                            const itemIcon = isMyPageItem && !user ? 'fa-sign-in-alt' : m.icon;
+                            const itemBg = isMyPageItem && !user ? 'bg-blue-50' : m.bg;
+                            const itemColor = isMyPageItem && !user ? 'text-blue-600' : m.color;
+
+                            return (
+                                <a key={m.path} href={`${baseUrl}${itemPath}`} className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`w-9 h-9 rounded-lg ${itemBg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
+                                            <i className={`fas ${itemIcon} ${itemColor}`}></i>
+                                        </span>
+                                        <span className="font-bold text-gray-800">{itemLabel}</span>
+                                    </div>
+                                    {m.label === '라운지' && (
+                                        <span className="text-[9px] bg-violet-100 text-violet-600 font-extrabold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-0.5">
+                                            HOT <i className="fas fa-fire text-[8px] text-violet-500"></i>
+                                        </span>
+                                    )}
+                                </a>
+                            );
+                        })}
                     </nav>
                 </div>
             </div>

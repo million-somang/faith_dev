@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
+import { useAuth } from '../context/AuthContext';
 import { ALL_MOBILE_TAB_ITEMS, DEFAULT_HOMEPAGE_CONFIG, MAX_MOBILE_TABS, MobileTabItem } from '../types/homepage.types';
 
 /**
@@ -9,6 +10,7 @@ import { ALL_MOBILE_TAB_ITEMS, DEFAULT_HOMEPAGE_CONFIG, MAX_MOBILE_TABS, MobileT
 export function MobileTabBar() {
     const location = useLocation();
     const { config } = useUserPreferenceContext();
+    const { user } = useAuth();
 
     const tabMap = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
     const selectedTabIds = config.mobileTabs && config.mobileTabs.length > 0
@@ -22,16 +24,21 @@ export function MobileTabBar() {
     return (
         <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
             {tabItems.map((item) => {
-                const isActive = location.pathname === item.path;
+                const isMyPageItem = item.id === 'mypage' || item.path === '/mypage';
+                const label = isMyPageItem && !user ? '로그인' : item.label;
+                const path = isMyPageItem && !user ? '/login' : item.path;
+                const icon = isMyPageItem && !user ? 'fas fa-sign-in-alt' : item.icon;
+                const isActive = location.pathname === path;
+
                 return (
                     <Link
                         key={item.id}
-                        to={item.path}
+                        to={path}
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
-                        aria-label={`${item.label} 페이지로 이동`}
+                        aria-label={`${label} 페이지로 이동`}
                     >
-                        <i className={item.icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
-                        <span>{item.label}</span>
+                        <i className={icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
+                        <span>{label}</span>
                     </Link>
                 );
             })}

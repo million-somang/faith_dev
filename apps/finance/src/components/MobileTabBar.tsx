@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../hooks/useAuth';
 
 // 금융 앱은 메인 포털과 분리된 별도 앱이므로, 탭/메뉴 이동은 메인 포털 URL을 기준으로 한다.
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
@@ -35,6 +36,7 @@ const toHref = (path: string) => `${MAIN_PORTAL_URL}${path}`;
  */
 export function MobileTabBar() {
     const [tabIds, setTabIds] = useState<string[]>(DEFAULT_MOBILE_TABS);
+    const { user } = useAuth();
 
     // API를 통해 메인 포털의 개인화 탭 설정을 로드하여 동기화
     useEffect(() => {
@@ -72,16 +74,20 @@ export function MobileTabBar() {
     return (
         <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
             {tabItems.map((item) => {
-                const isActive = isTabActive(item.path);
+                const isMyPageItem = item.id === 'mypage' || item.path === '/mypage';
+                const label = isMyPageItem && !user ? '로그인' : item.label;
+                const path = isMyPageItem && !user ? '/login' : item.path;
+                const icon = isMyPageItem && !user ? 'fas fa-sign-in-alt' : item.icon;
+                const isActive = isTabActive(path);
                 return (
                     <a
                         key={item.id}
-                        href={toHref(item.path)}
+                        href={toHref(path)}
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
-                        aria-label={`${item.label} 페이지로 이동`}
+                        aria-label={`${label} 페이지로 이동`}
                     >
-                        <i className={item.icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
-                        <span>{item.label}</span>
+                        <i className={icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
+                        <span>{label}</span>
                     </a>
                 );
             })}
