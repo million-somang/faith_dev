@@ -123,14 +123,32 @@ export default function App() {
     const [isDeletingSlot, setIsDeletingSlot] = useState<number | null>(null);
 
     const loadSlots = useCallback(async (currentName = gameName) => {
-        if (!user || !currentName) return;
-        try {
-            const { data } = await axios.get(`/api/sfc/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
-            if (data.success) {
-                setSlots(data.slots || []);
+        if (!currentName) return;
+        if (user) {
+            try {
+                const { data } = await axios.get(`/api/sfc/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
+                if (data.success) {
+                    setSlots(data.slots || []);
+                }
+            } catch (err) {
+                console.error('[SFC Slots Load Error]', err);
             }
-        } catch (err) {
-            console.error('[SFC Slots Load Error]', err);
+        } else {
+            const localSlots: Array<{ slot_no: number, slot_name: string, updated_at: string }> = [];
+            [1, 2, 3].forEach(slotNo => {
+                const saved = localStorage.getItem(`vera_sfc_save_${currentName}_slot_${slotNo}`);
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        localSlots.push({
+                            slot_no: slotNo,
+                            slot_name: parsed.slot_name || `슬롯 ${slotNo}`,
+                            updated_at: parsed.updated_at || new Date().toISOString()
+                        });
+                    } catch (_) {}
+                }
+            });
+            setSlots(localSlots);
         }
     }, [user, gameName]);
 
@@ -316,9 +334,9 @@ export default function App() {
         setSaveMessage('');
     };
 
-    // 클라우드 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
-    const handleCloudSave = async (slotNo: number, existingName?: string) => {
-        if (!user || !gameName) return;
+    // 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
+    const handleCloudSave = async (slotNo: number = 1, existingName?: string) => {
+        if (!gameName) return;
 
         let customName = existingName;
         if (!customName) {
@@ -358,14 +376,24 @@ export default function App() {
             }
             const base64 = btoa(parts.join(''));
 
-            await axios.post('/api/sfc/save', {
-                gameName,
-                slotNo,
-                slotName: customName,
-                saveData: base64,
-            }, { withCredentials: true });
-
-            setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
+            if (user) {
+                await axios.post('/api/sfc/save', {
+                    gameName,
+                    slotNo,
+                    slotName: customName,
+                    saveData: base64,
+                }, { withCredentials: true });
+                setSaveMessage(`✅ [클라우드 슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
+            } else {
+                const localData = {
+                    slot_no: slotNo,
+                    slot_name: customName,
+                    saveData: base64,
+                    updated_at: new Date().toISOString()
+                };
+                localStorage.setItem(`vera_sfc_save_${gameName}_slot_${slotNo}`, JSON.stringify(localData));
+                setSaveMessage(`✅ [로컬 슬롯 ${slotNo}] 세이브가 브라우저에 저장되었습니다! (로그인 시 클라우드 동기화)`);
+            }
             await loadSlots();
         } catch (e: any) {
             setSaveMessage('세이브 중 오류: ' + (e.message || '알 수 없는 오류'));
@@ -374,17 +402,28 @@ export default function App() {
         }
     };
 
-    // 클라우드 로드 - 특정 슬롯에서 세이브 가져오기
-    const handleCloudLoad = async (slotNo: number) => {
-        if (!user || !gameName) return;
+    // 로드 - 특정 슬롯에서 세이브 가져오기
+    const handleCloudLoad = async (slotNo: number = 1) => {
+        if (!gameName) return;
         setIsLoadingState(true);
         setSaveMessage('');
         try {
-            const { data } = await axios.get(`/api/sfc/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
-            
-            if (!data.success || !data.data?.saveData) {
-                setSaveMessage(`저장된 슬롯 ${slotNo} 세이브 파일이 존재하지 않습니다.`);
-                return;
+            let base64SaveData = '';
+            if (user) {
+                const { data } = await axios.get(`/api/sfc/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
+                if (!data.success || !data.data?.saveData) {
+                    setSaveMessage(`저장된 슬롯 ${slotNo} 세이브 파일이 존재하지 않습니다.`);
+                    return;
+                }
+                base64SaveData = data.data.saveData;
+            } else {
+                const saved = localStorage.getItem(`vera_sfc_save_${gameName}_slot_${slotNo}`);
+                if (!saved) {
+                    setSaveMessage(`저장된 로컬 슬롯 ${slotNo} 세이브 파일이 존재하지 않습니다.`);
+                    return;
+                }
+                const parsed = JSON.parse(saved);
+                base64SaveData = parsed.saveData;
             }
 
             const emu = (window as any).EJS_emulator;
@@ -394,7 +433,7 @@ export default function App() {
             }
 
             // base64 → Uint8Array
-            const binary = atob(data.data.saveData);
+            const binary = atob(base64SaveData);
             const bytes = new Uint8Array(binary.length);
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
@@ -436,19 +475,24 @@ export default function App() {
         }
     };
 
-    // 클라우드 세이브 삭제
+    // 세이브 삭제
     const handleCloudDelete = async (slotNo: number) => {
-        if (!user || !gameName) return;
+        if (!gameName) return;
         if (!confirm(`정말로 슬롯 ${slotNo}의 세이브 데이터를 삭제하시겠습니까?`)) return;
 
         setIsDeletingSlot(slotNo);
         setSaveMessage('');
         try {
-            const { data } = await axios.delete(`/api/sfc/delete?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
-            if (data.success) {
-                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
-                await loadSlots();
+            if (user) {
+                const { data } = await axios.delete(`/api/sfc/delete?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
+                if (data.success) {
+                    setSaveMessage(`✅ [클라우드 슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
+                }
+            } else {
+                localStorage.removeItem(`vera_sfc_save_${gameName}_slot_${slotNo}`);
+                setSaveMessage(`✅ [로컬 슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
             }
+            await loadSlots();
         } catch (e: any) {
             setSaveMessage('삭제 중 오류: ' + (e.message || '알 수 없는 오류'));
         } finally {
@@ -628,7 +672,25 @@ export default function App() {
                                             {gameName}
                                         </span>
                                     </div>
-                                    <div className="flex gap-1.5">
+                                    <div className="flex gap-1.5 items-center">
+                                        <button 
+                                            onClick={() => handleCloudSave(1)}
+                                            disabled={isSaving || isLoadingState}
+                                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+                                            title="슬롯 1에 즉시 세이브"
+                                        >
+                                            <Save className="w-3.5 h-3.5" />
+                                            <span>세이브</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleCloudLoad(1)}
+                                            disabled={isSaving || isLoadingState}
+                                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-bold transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+                                            title="슬롯 1에서 즉시 로드"
+                                        >
+                                            <RotateCcw className="w-3.5 h-3.5" />
+                                            <span>로드</span>
+                                        </button>
                                         <button 
                                             onClick={handleExit}
                                             className="p-1.5 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-950/60 active:scale-95 transition-all cursor-pointer"
@@ -712,14 +774,13 @@ export default function App() {
                                     </div>
                                 )}
 
-                                {/* 클라우드 세이브 슬롯 (최대 3개) */}
-                                {user && (
-                                    <div className="w-full mt-4 bg-neutral-950/60 border border-neutral-800/80 p-3 rounded-2xl">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                                                <Cloud className="w-3.5 h-3.5 text-indigo-400" />
-                                                클라우드 세이브 슬롯 (최대 3개)
-                                            </span>
+                                {/* 세이브 슬롯 (최대 3개 - 로그인/비로그인 모두 상시 노출) */}
+                                <div className="w-full mt-4 bg-neutral-950/60 border border-neutral-800/80 p-3 rounded-2xl">
+                                    <div className="flex justify-between items-center mb-3">
+                                        <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                                            <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+                                            {user ? '클라우드 세이브 슬롯 (최대 3개)' : '세이브 슬롯 (로컬 저장 / 로그인 시 클라우드 동기화)'}
+                                        </span>
                                             {isSaving && <span className="text-[10px] text-indigo-400 animate-pulse font-bold">저장 중...</span>}
                                             {isLoadingState && <span className="text-[10px] text-indigo-400 animate-pulse font-bold">로딩 중...</span>}
                                         </div>
@@ -790,7 +851,6 @@ export default function App() {
                                             })}
                                         </div>
                                     </div>
-                                )}
 
                                 {/* EmulatorJS 안내 */}
                                 <div className="w-full mt-3 bg-indigo-950/30 border border-indigo-900/40 text-[11px] text-center text-indigo-300 py-2 px-3 rounded-xl">
