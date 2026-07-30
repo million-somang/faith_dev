@@ -48,7 +48,7 @@ import { StockWidget } from './components/homepage/StockWidget';
 function HomePage() {
     console.log('HomePage rendering...');
     const { user, logout, isLoading: isAuthLoading } = useAuth();
-    const { lang, t } = useLanguage();
+    const { lang } = useLanguage();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [news, setNews] = useState<{ id: number; news_id?: number; title: string; summary?: string; description?: string; category?: string; published_at?: string; created_at?: string; tags?: string; relatedStocks?: { name: string }[]; vote_up?: number; vote_down?: number }[]>([]);
