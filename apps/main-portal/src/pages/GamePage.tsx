@@ -281,6 +281,16 @@ export default function GamePage() {
                                     <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
                                 </div>
                             </button>
+
+                            <button onClick={() => navigate('/game/freecell')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-teal-300 hover:shadow-lg transition-all group">
+                                <div className="h-28 bg-gradient-to-r from-emerald-800 to-teal-900 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
+                                    <i className="fas fa-spade mr-2 text-emerald-400"></i> 클래식 프리셀
+                                </div>
+                                <div className="p-5">
+                                    <h3 className="font-extrabold text-xl text-teal-600 mb-1 group-hover:text-teal-700 transition-colors">클래식 프리셀</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">실력과 수싸움으로 52장 카드를 홈셀로 수집하세요!</p>
+                                </div>
+                            </button>
                         </div>
                     ) : genre === 'emulator' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">

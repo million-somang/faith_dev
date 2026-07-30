@@ -94,7 +94,7 @@ app.route('/', geoRoutes);
 
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
-    '2048', 'minesweeper', 'age-calc', 'dday-calc', 'json-formatter',
+    '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
     'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju'
 ];
 
@@ -148,6 +148,7 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/game/sudoku', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/game/freecell', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/play/tetris', priority: '0.6', changefreq: 'monthly' },
     ];
 
@@ -332,6 +333,7 @@ const GAME_META: Record<string, { title: string; description: string }> = {
     sudoku: { title: '스도쿠 무료 온라인 게임 - VERA', description: '난이도별 스도쿠를 무료로. 브라우저에서 바로 플레이하고 기록을 남겨보세요.' },
     '2048': { title: '2048 무료 온라인 게임 - VERA', description: '중독성 있는 숫자 퍼즐 2048을 무료로. 브라우저에서 바로 플레이하고 랭킹에 도전하세요.' },
     minesweeper: { title: '지뢰찾기 무료 온라인 게임 - VERA', description: '클래식 지뢰찾기를 무료로. 브라우저에서 바로 즐기고 기록에 도전하세요.' },
+    freecell: { title: '클래식 프리셀 무료 온라인 게임 - VERA', description: '클래식 프리셀 카드 솔리테어를 무료로. 99.9% 이상 클리어 가능한 퍼즐 수싸움에 도전하세요.' },
 };
 
 for (const [routePath, meta] of Object.entries(ROUTE_META)) {

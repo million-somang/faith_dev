@@ -28,6 +28,7 @@ const CATALOG: CatalogItem[] = [
     { label: '스도쿠', desc: '숫자 퍼즐 게임', href: '/game/sudoku', icon: 'fa-table-cells', color: 'text-violet-600', bg: 'bg-violet-50', keywords: ['스도쿠', 'sudoku', '숫자', '퍼즐'] },
     { label: '2048', desc: '숫자 합치기 퍼즐', href: '/game/2048', icon: 'fa-grip', color: 'text-cyan-600', bg: 'bg-cyan-50', keywords: ['2048', '숫자', '퍼즐'] },
     { label: '지뢰찾기', desc: '클래식 지뢰찾기', href: '/game/minesweeper', icon: 'fa-bomb', color: 'text-red-600', bg: 'bg-red-50', keywords: ['지뢰찾기', 'minesweeper', '지뢰'] },
+    { label: '프리셀', desc: '클래식 카드 솔리테어', href: '/game/freecell', icon: 'fa-spade', color: 'text-emerald-600', bg: 'bg-emerald-50', keywords: ['프리셀', 'freecell', '카드', '솔리테어'] },
     { label: '계산기', desc: '다기능 온라인 계산기', href: '/app/calculator/', icon: 'fa-calculator', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['계산기', 'calculator', '사칙연산', '퍼센트', 'bmi'] },
     { label: '맞춤법 검사기', desc: '글자수·맞춤법 교정', href: '/app/text-checker/', icon: 'fa-spell-check', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['맞춤법', '글자수', '검사기', '띄어쓰기'] },
     { label: '만 나이 계산기', desc: '생년월일로 나이 계산', href: '/app/age-calc/', icon: 'fa-cake-candles', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['만나이', '나이', 'age', '생년월일'] },

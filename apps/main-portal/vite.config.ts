@@ -56,6 +56,10 @@ export default defineConfig({
                 target: 'http://localhost:5016',
                 changeOrigin: true
             },
+            '^/app/freecell.*': {
+                target: 'http://localhost:5020',
+                changeOrigin: true
+            },
             '^/app/age-calc.*': {
                 target: 'http://localhost:5017',
                 changeOrigin: true

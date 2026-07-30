@@ -6,7 +6,7 @@ export type AgeGroup = 'young' | 'middle' | 'senior';
 export type ColorScheme = 'green' | 'blue' | 'purple' | 'orange' | 'dark';
 export type LayoutStyle = 'portal' | 'minimal' | 'card';
 export type NewsCategory = 'politics' | 'economy' | 'sports' | 'tech' | 'entertainment' | 'society';
-export type GameType = 'tetris' | 'sudoku' | '2048' | 'minesweeper';
+export type GameType = 'tetris' | 'sudoku' | '2048' | 'minesweeper' | 'freecell';
 
 export interface QuickMenuItem {
     id: string;

@@ -109,6 +109,24 @@ const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-sfc',
         leaderboardUrl: '',
     },
+    freecell: {
+        label: '프리셀',
+        icon: 'fas fa-spade',
+        gradient: 'from-emerald-600 to-teal-700',
+        buttonGradient: 'from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700',
+        tagline: '실력과 전략으로 99.9% 이상 풀 수 있는 클래식 카드 솔리테어!',
+        description: '윈도우 기본 탑재로 사랑받아 온 추억의 프리셀 솔리테어입니다. 4개의 프리셀(임시 보관소)과 순서대로 쌓는 규칙을 활용해 52장 카드를 홈셀로 수집하세요. #1~#32000번 유명 시드 플레이를 모두 지원합니다.',
+        controls: [
+            { keys: '카드 클릭 / 드래그', desc: '카드 선택 및 이동 위치 지정' },
+            { keys: '더블 클릭', desc: '홈셀/프리셀로 카드 자동 빠른 이동' },
+            { keys: '자동 올리기', desc: '홈셀로 올릴 수 있는 안전한 카드 일괄 수집' },
+            { keys: '실행 취소 (Undo)', desc: '이전 동작 취소 및 복원' },
+            { keys: '시드 번호 변경', desc: '#1 ~ #32000 고전 게임 시드 번호 선택 가능' },
+        ],
+        appUrl: '/app/freecell/',
+        appName: 'app-freecell',
+        leaderboardUrl: '/api/games/freecell/leaderboard',
+    },
 };
 
 /**

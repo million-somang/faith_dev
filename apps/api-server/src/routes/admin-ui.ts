@@ -85,6 +85,7 @@ export function getSimpleGameSidebar(currentPage: string): string {
         { path: '/game/simple/sudoku', label: '스도쿠', icon: 'fas fa-table' },
         { path: '/game/simple/2048', label: '2048', icon: 'fas fa-th-large' },
         { path: '/game/simple/minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb' },
+        { path: '/game/simple/freecell', label: '프리셀', icon: 'fas fa-spade' },
     ]
     let sidebarHtml = `
     <aside class="lg:w-64 flex-shrink-0">
