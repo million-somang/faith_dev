@@ -321,12 +321,16 @@ export default function App() {
     };
 
     // 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
+    // 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
     const handleCloudSave = async (slotNo: number = 1, existingName?: string) => {
         if (!user) {
             setShowLoginModal(true);
             return;
         }
-        if (!gameName) return;
+        if (!gameName) {
+            setSaveMessage('세이브 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
+            return;
+        }
 
         let customName = existingName;
         if (!customName) {
@@ -357,12 +361,17 @@ export default function App() {
                 return;
             }
 
-            // Uint8Array → base64
+            // Uint8Array → stack-safe base64
             const bytes = new Uint8Array(state);
-            const CHUNK = 0x8000;
+            const CHUNK = 4096;
             const parts: string[] = [];
             for (let i = 0; i < bytes.length; i += CHUNK) {
-                parts.push(String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + CHUNK))));
+                const chunk = bytes.subarray(i, i + CHUNK);
+                let str = '';
+                for (let j = 0; j < chunk.length; j++) {
+                    str += String.fromCharCode(chunk[j]);
+                }
+                parts.push(str);
             }
             const base64 = btoa(parts.join(''));
 
@@ -387,7 +396,10 @@ export default function App() {
             setShowLoginModal(true);
             return;
         }
-        if (!gameName) return;
+        if (!gameName) {
+            setSaveMessage('로드 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
+            return;
+        }
         setIsLoadingState(true);
         setSaveMessage('');
         try {
@@ -415,7 +427,9 @@ export default function App() {
             if (gm) {
                 if (typeof gm.loadState === 'function') {
                     try { gm.loadState(bytes); loaded = true; } catch (_) {
-                        try { gm.loadState(bytes.buffer); loaded = true; } catch (_2) {}
+                        try { gm.loadState(bytes.buffer); loaded = true; } catch (_2) {
+                            try { gm.loadState(new Blob([bytes])); loaded = true; } catch (_3) {}
+                        }
                     }
                 }
                 if (!loaded && typeof gm.setState === 'function') {
@@ -426,7 +440,9 @@ export default function App() {
             }
             if (!loaded && typeof emu.loadState === 'function') {
                 try { emu.loadState(bytes); loaded = true; } catch (_) {
-                    try { emu.loadState(bytes.buffer); loaded = true; } catch (_2) {}
+                    try { emu.loadState(bytes.buffer); loaded = true; } catch (_2) {
+                        try { emu.loadState(new Blob([bytes])); loaded = true; } catch (_3) {}
+                    }
                 }
             }
 

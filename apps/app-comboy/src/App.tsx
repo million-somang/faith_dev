@@ -471,7 +471,10 @@ export default function App() {
             setShowLoginModal(true);
             return;
         }
-        if (!nesRef.current || !gameName) return;
+        if (!gameName || !nesRef.current) {
+            setSaveMessage('세이브 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
+            return;
+        }
 
         let customName = existingName;
         if (!customName) {
@@ -495,7 +498,7 @@ export default function App() {
                 slotNo,
                 slotName: customName,
                 saveData: base64Data
-            });
+            }, { withCredentials: true });
             if (res.data.success) {
                 setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
             } else {
@@ -504,7 +507,7 @@ export default function App() {
             await loadSlots();
         } catch (e: any) {
             console.error(e);
-            setSaveMessage('세이브 중 오류 발생: ' + e.message);
+            setSaveMessage('세이브 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
         } finally {
             setIsSaving(false);
         }
@@ -516,12 +519,15 @@ export default function App() {
             setShowLoginModal(true);
             return;
         }
-        if (!nesRef.current || !gameName) return;
+        if (!gameName || !nesRef.current) {
+            setSaveMessage('로드 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
+            return;
+        }
         setIsLoadingState(true);
         setSaveMessage('');
         
         try {
-            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`);
+            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
             if (res.data.success && res.data.data?.saveData) {
                 // Base64 디코딩
                 const jsonStr = decodeURIComponent(escape(atob(res.data.data.saveData)));
@@ -535,7 +541,7 @@ export default function App() {
             }
         } catch (e: any) {
             console.error(e);
-            setSaveMessage('로드 중 오류 발생: ' + e.message);
+            setSaveMessage('로드 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
         } finally {
             setIsLoadingState(false);
         }

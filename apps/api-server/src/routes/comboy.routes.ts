@@ -20,13 +20,14 @@ async function initComboyTable(DB: any) {
     `).run();
 }
 
-// 헬퍼: 파일명 정규화
+// 헬퍼: 파일명 정규화 (한글, 영문, 숫자, _, - 보존)
 function getNormalizedGameName(name: string): string {
-    return name
+    const cleaned = name
         .toLowerCase()
         .replace(/\.[^/.]+$/, "")
-        .replace(/[^a-z0-9]/g, "")
+        .replace(/[^\w\u3131-\u318E\uAC00-\uD7A30-9_-]/g, "")
         .trim();
+    return cleaned || "comboy_game";
 }
 
 // 1. 특정 게임의 세이브 슬롯 리스트 가져오기 (GET /api/comboy/list)
