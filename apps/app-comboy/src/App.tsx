@@ -164,34 +164,20 @@ export default function App() {
 
     const [slots, setSlots] = useState<Array<{ slot_no: number, slot_name: string, updated_at: string }>>([]);
     const [isDeletingSlot, setIsDeletingSlot] = useState<number | null>(null);
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
     const loadSlots = React.useCallback(async (currentName = gameName) => {
-        if (!currentName) return;
-        if (user) {
-            try {
-                const { data } = await axios.get(`/api/comboy/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
-                if (data.success) {
-                    setSlots(data.slots || []);
-                }
-            } catch (err) {
-                console.error('[Comboy Slots Load Error]', err);
+        if (!currentName || !user) {
+            setSlots([]);
+            return;
+        }
+        try {
+            const { data } = await axios.get(`/api/comboy/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
+            if (data.success) {
+                setSlots(data.slots || []);
             }
-        } else {
-            const localSlots: Array<{ slot_no: number, slot_name: string, updated_at: string }> = [];
-            [1, 2, 3].forEach(slotNo => {
-                const saved = localStorage.getItem(`vera_comboy_save_${currentName}_slot_${slotNo}`);
-                if (saved) {
-                    try {
-                        const parsed = JSON.parse(saved);
-                        localSlots.push({
-                            slot_no: slotNo,
-                            slot_name: parsed.slot_name || `슬롯 ${slotNo}`,
-                            updated_at: parsed.updated_at || new Date().toISOString()
-                        });
-                    } catch (_) {}
-                }
-            });
-            setSlots(localSlots);
+        } catch (err) {
+            console.error('[Comboy Slots Load Error]', err);
         }
     }, [user, gameName]);
 
@@ -481,6 +467,10 @@ export default function App() {
 
     // 세이브 - 슬롯 번호와 이름 사용
     const handleCloudSave = async (slotNo: number = 1, existingName?: string) => {
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
         if (!nesRef.current || !gameName) return;
 
         let customName = existingName;
@@ -500,27 +490,16 @@ export default function App() {
             // 텍스트 바이너리를 Base64 인코딩
             const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
 
-            if (user) {
-                const res = await axios.post('/api/comboy/save', {
-                    gameName,
-                    slotNo,
-                    slotName: customName,
-                    saveData: base64Data
-                });
-                if (res.data.success) {
-                    setSaveMessage(`✅ [클라우드 슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
-                } else {
-                    setSaveMessage('세이브 실패: ' + (res.data.error?.message || '알 수 없는 에러'));
-                }
+            const res = await axios.post('/api/comboy/save', {
+                gameName,
+                slotNo,
+                slotName: customName,
+                saveData: base64Data
+            });
+            if (res.data.success) {
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
             } else {
-                const localData = {
-                    slot_no: slotNo,
-                    slot_name: customName,
-                    saveData: base64Data,
-                    updated_at: new Date().toISOString()
-                };
-                localStorage.setItem(`vera_comboy_save_${gameName}_slot_${slotNo}`, JSON.stringify(localData));
-                setSaveMessage(`✅ [로컬 슬롯 ${slotNo}] 세이브가 브라우저에 저장되었습니다! (로그인 시 클라우드 동기화)`);
+                setSaveMessage('세이브 실패: ' + (res.data.error?.message || '알 수 없는 에러'));
             }
             await loadSlots();
         } catch (e: any) {
@@ -533,37 +512,27 @@ export default function App() {
 
     // 로드 - 특정 슬롯에서 불러오기
     const handleCloudLoad = async (slotNo: number = 1) => {
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
         if (!nesRef.current || !gameName) return;
         setIsLoadingState(true);
         setSaveMessage('');
         
         try {
-            let base64Data = '';
-            if (user) {
-                const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`);
-                if (res.data.success && res.data.data?.saveData) {
-                    base64Data = res.data.data.saveData;
-                } else {
-                    setSaveMessage(`저장된 클라우드 슬롯 ${slotNo} 세이브가 존재하지 않습니다.`);
-                    return;
-                }
+            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`);
+            if (res.data.success && res.data.data?.saveData) {
+                // Base64 디코딩
+                const jsonStr = decodeURIComponent(escape(atob(res.data.data.saveData)));
+                const parsedState = JSON.parse(jsonStr);
+
+                // JSNES 상태 복구
+                nesRef.current.fromJSON(parsedState);
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브를 정상적으로 로드했습니다!`);
             } else {
-                const saved = localStorage.getItem(`vera_comboy_save_${gameName}_slot_${slotNo}`);
-                if (!saved) {
-                    setSaveMessage(`저장된 로컬 슬롯 ${slotNo} 세이브가 존재하지 않습니다.`);
-                    return;
-                }
-                const parsed = JSON.parse(saved);
-                base64Data = parsed.saveData;
+                setSaveMessage(`저장된 슬롯 ${slotNo} 세이브가 존재하지 않습니다.`);
             }
-
-            // Base64 디코딩
-            const jsonStr = decodeURIComponent(escape(atob(base64Data)));
-            const parsedState = JSON.parse(jsonStr);
-
-            // JSNES 상태 복구
-            nesRef.current.fromJSON(parsedState);
-            setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브를 정상적으로 로드했습니다!`);
         } catch (e: any) {
             console.error(e);
             setSaveMessage('로드 중 오류 발생: ' + e.message);
@@ -574,20 +543,19 @@ export default function App() {
 
     // 세이브 삭제
     const handleCloudDelete = async (slotNo: number) => {
+        if (!user) {
+            setShowLoginModal(true);
+            return;
+        }
         if (!gameName) return;
         if (!confirm(`정말로 슬롯 ${slotNo}의 세이브 데이터를 삭제하시겠습니까?`)) return;
 
         setIsDeletingSlot(slotNo);
         setSaveMessage('');
         try {
-            if (user) {
-                const res = await axios.delete(`/api/comboy/delete?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
-                if (res.data.success) {
-                    setSaveMessage(`✅ [클라우드 슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
-                }
-            } else {
-                localStorage.removeItem(`vera_comboy_save_${gameName}_slot_${slotNo}`);
-                setSaveMessage(`✅ [로컬 슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
+            const res = await axios.delete(`/api/comboy/delete?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
+            if (res.data.success) {
+                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브 데이터를 삭제했습니다.`);
             }
             await loadSlots();
         } catch (e: any) {
@@ -1129,6 +1097,35 @@ export default function App() {
                 </div>
 
             </div>
+
+            {/* 로그인 필요 안내 모달 팝업 */}
+            {showLoginModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-sm w-full shadow-2xl flex flex-col items-center text-center font-sans">
+                        <div className="w-12 h-12 rounded-full bg-red-950/80 border border-red-900/60 flex items-center justify-center text-red-400 mb-4">
+                            <Cloud className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-base font-extrabold text-slate-100 mb-2">로그인이 필요한 기능입니다</h3>
+                        <p className="text-xs text-neutral-400 leading-relaxed mb-6">
+                            에뮬레이터 세이브 및 로드 기능은 회원 로그인 후 클라우드 슬롯에 안전하게 보관됩니다. 메인 포털에서 로그인해 주세요.
+                        </p>
+                        <div className="flex gap-2.5 w-full">
+                            <button
+                                onClick={() => setShowLoginModal(false)}
+                                className="flex-1 py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-xs font-bold text-neutral-300 transition-all cursor-pointer"
+                            >
+                                닫기
+                            </button>
+                            <a
+                                href="/"
+                                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 active:scale-95 text-xs font-bold text-white transition-all cursor-pointer text-center flex items-center justify-center"
+                            >
+                                메인 포털 이동
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
         </MiniAppLayout>
     );
 }
