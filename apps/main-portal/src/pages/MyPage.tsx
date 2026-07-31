@@ -354,7 +354,7 @@ const DEFAULT_WATCHLIST = [
                 if (activeSection === 'dashboard') {
                     const [kwRes, kwNewsRes, bmRes, statsStocksRes, wlRes, statsGamesRes, historyGamesRes, schedulesRes, veraPointsRes] = await Promise.all([
                         instance.get(`/api/user/keywords`).catch(() => ({ data: {} })),
-                        instance.get(`/api/user/news/keywords?limit=3`).catch(() => ({ data: {} })),
+                        instance.get(`/api/user/news/keywords?limit=6`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/bookmarks?page=1&limit=3`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist`).catch(() => ({ data: {} })),
@@ -368,8 +368,12 @@ const DEFAULT_WATCHLIST = [
                         ? wlRes.data.stocks
                         : DEFAULT_WATCHLIST;
 
+                    const activeKeywords = (kwRes.data && Array.isArray(kwRes.data.keywords) && kwRes.data.keywords.length > 0)
+                        ? kwRes.data.keywords
+                        : (kwNewsRes.data && kwNewsRes.data.keywords ? kwNewsRes.data.keywords : []);
+
                     setNewsData({
-                        keywords: kwRes.data.keywords || [],
+                        keywords: activeKeywords,
                         keywordNews: kwNewsRes.data.news || [],
                         bookmarks: bmRes.data.items || []
                     });
@@ -574,6 +578,99 @@ const DEFAULT_WATCHLIST = [
                                     {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
                                     {activeSection === 'dashboard' && (
                                         <div className="animate-fade-in space-y-6">
+                                            {/* 📰 [맨 윗부분] 내가 구독한 주제의 최신 뉴스 (Subscribed Topic News Feed) */}
+                                            <div className="border border-sky-100 rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-sky-50/70 via-white to-indigo-50/40 shadow-2xs flex flex-col gap-5">
+                                                {/* 상단 헤더 & 구독 키워드 뱃지 목록 */}
+                                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100/80 pb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-sky-200">
+                                                            <i className="fas fa-newspaper"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-extrabold text-slate-800 text-lg tracking-tight flex items-center gap-2">
+                                                                내가 구독한 주제 최신 뉴스
+                                                                <span className="text-[10px] font-black font-mono px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700">
+                                                                    LIVE FEED
+                                                                </span>
+                                                            </h3>
+                                                            <p className="text-xs text-slate-400">구독하신 맞춤 관심 주제의 실시간 관련 뉴스 피드입니다.</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 구독중인 키워드 태그 뱃지 목록 & 키워드 설정 이동 버튼 */}
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            {newsData.keywords && newsData.keywords.length > 0 ? (
+                                                                newsData.keywords.map((kw: any, idx: number) => {
+                                                                    const kwName = typeof kw === 'string' ? kw : (kw.keyword || kw.name || '');
+                                                                    return (
+                                                                        <span key={idx} className="text-xs font-black px-3 py-1 rounded-xl bg-white border border-sky-200 text-sky-700 shadow-2xs flex items-center gap-1">
+                                                                            <i className="fas fa-hashtag text-[10px] text-sky-400"></i> {kwName}
+                                                                        </span>
+                                                                    );
+                                                                })
+                                                            ) : (
+                                                                <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-xl">
+                                                                    기본 추천 키워드 (AI, 경제, IT, 기술, 금융)
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setActiveSection('news')}
+                                                            className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ml-1 active:scale-98"
+                                                        >
+                                                            <i className="fas fa-sliders-h text-[11px]"></i> 주제 관리
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* 구독 뉴스 기사 카드 그리드 (3열) */}
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    {newsData.keywordNews && newsData.keywordNews.length > 0 ? (
+                                                        newsData.keywordNews.slice(0, 3).map((article: any, idx: number) => (
+                                                            <a
+                                                                key={article.id || idx}
+                                                                href={article.origin_url || article.url || '#'}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="bg-white border border-slate-200/90 hover:border-sky-400 p-4 sm:p-5 rounded-2xl shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group cursor-pointer"
+                                                            >
+                                                                <div>
+                                                                    <div className="flex items-center justify-between gap-2 mb-2.5">
+                                                                        <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-md bg-sky-50 text-sky-600 border border-sky-100">
+                                                                            #{article.category || article.keyword || '구독뉴스'}
+                                                                        </span>
+                                                                        <span className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">
+                                                                            {article.publisher || article.source || '주요뉴스'}
+                                                                        </span>
+                                                                    </div>
+                                                                    <h4 className="font-extrabold text-slate-800 text-sm line-clamp-2 group-hover:text-sky-600 transition-colors leading-snug">
+                                                                        {article.title}
+                                                                    </h4>
+                                                                    {article.description && (
+                                                                        <p className="text-xs text-slate-500 line-clamp-2 mt-2 leading-relaxed font-normal">
+                                                                            {article.description}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-[10px] font-extrabold text-slate-400">
+                                                                    <span className="font-mono">{article.published_at ? String(article.published_at).substring(0, 10) : '최근'}</span>
+                                                                    <span className="text-sky-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
+                                                                        기사 읽기 <i className="fas fa-arrow-right text-[9px]"></i>
+                                                                    </span>
+                                                                </div>
+                                                            </a>
+                                                        ))
+                                                    ) : (
+                                                        <div className="col-span-3 text-slate-400 text-xs py-10 text-center bg-white rounded-2xl border border-dashed border-slate-200">
+                                                            <i className="fas fa-newspaper text-slate-300 text-2xl mb-2 block"></i>
+                                                            구독한 주제의 뉴스 기사를 불러오는 중이거나 아직 등록된 뉴스가 없습니다.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 
                                                 {/* 위젯 1: 나의 월별 일정 달력 (Monthly Calendar & Color-Coded Schedule) */}

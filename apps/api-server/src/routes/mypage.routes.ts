@@ -41,15 +41,19 @@ mypage.get('/news/keywords', async (c) => {
     const offset = parseInt(c.req.query('offset') || '0');
 
     // Get user keywords
-    const keywords = await MyPageService.getKeywords(user.id);
-    if (keywords.length === 0) return c.json({ success: true, news: [], count: 0 });
+    let keywords = await MyPageService.getKeywords(user.id);
+    let keywordList = keywords.map((k: any) => k.keyword);
 
-    // Create FTS5 query using OR for multiple keywords
-    const ftsQuery = keywords.map((k: any) => `"${k.keyword}"`).join(' OR ');
+    // If user has no custom keywords yet, fallback to popular categories
+    if (keywordList.length === 0) {
+        keywordList = ['AI', '경제', 'IT', '기술', '금융'];
+    }
 
     try {
         const { pool } = await import('@faithportal/database');
-        const result = await pool.query(`
+        const ftsQuery = keywordList.map((k: string) => `"${k}"`).join(' OR ');
+
+        let result = await pool.query(`
             SELECT * FROM news 
             WHERE id IN (
                 SELECT rowid FROM news_fts 
@@ -57,9 +61,28 @@ mypage.get('/news/keywords', async (c) => {
             )
             ORDER BY published_at DESC, created_at DESC 
             LIMIT $2 OFFSET $3
-        `, [ftsQuery, limit, offset]);
+        `, [ftsQuery, limit, offset]).catch(async () => {
+            return await pool.query(`
+                SELECT * FROM news 
+                ORDER BY published_at DESC, created_at DESC 
+                LIMIT $1 OFFSET $2
+            `, [limit, offset]);
+        });
 
-        return c.json({ success: true, news: result.rows, count: result.rows.length });
+        if (!result.rows || result.rows.length === 0) {
+            result = await pool.query(`
+                SELECT * FROM news 
+                ORDER BY published_at DESC, created_at DESC 
+                LIMIT $1 OFFSET $2
+            `, [limit, offset]);
+        }
+
+        return c.json({ 
+            success: true, 
+            keywords: keywordList,
+            news: result.rows, 
+            count: result.rows.length 
+        });
     } catch (err) {
         console.error('Fetch keyword news error:', err);
         return c.json({ success: false, message: 'Failed to fetch keyword news' }, 500);
