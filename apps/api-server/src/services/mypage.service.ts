@@ -130,24 +130,58 @@ export class MyPageService {
         return res.rows;
     }
 
-    // ===== User Schedules (Today's Biz Agenda) =====
+    // ===== User Schedules (Today's Biz Agenda & Monthly Calendar) =====
 
-    static async getSchedules(userId: number) {
-        const res = await pool.query(
-            `SELECT id, schedule_time, schedule_text, created_at
-             FROM user_schedules
-             WHERE user_id = $1
-             ORDER BY schedule_time ASC, id ASC`,
-            [userId]
-        );
-        return res.rows;
+    static async ensureScheduleColumns() {
+        try {
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS user_schedules (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    schedule_date DATE DEFAULT CURRENT_DATE,
+                    schedule_time VARCHAR(10) DEFAULT '09:00',
+                    schedule_text TEXT NOT NULL,
+                    color VARCHAR(20) DEFAULT 'blue',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            `);
+            await pool.query(`
+                ALTER TABLE user_schedules ADD COLUMN IF NOT EXISTS schedule_date DATE DEFAULT CURRENT_DATE;
+            `).catch(() => {});
+            await pool.query(`
+                ALTER TABLE user_schedules ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT 'blue';
+            `).catch(() => {});
+        } catch (e) {
+            console.error('[MyPageService] ensureScheduleColumns error:', e);
+        }
     }
 
-    static async addSchedule(userId: number, time: string, text: string) {
+    static async getSchedules(userId: number) {
+        await this.ensureScheduleColumns();
         const res = await pool.query(
-            `INSERT INTO user_schedules (user_id, schedule_time, schedule_text)
-             VALUES ($1, $2, $3)`,
-            [userId, time, text]
+            `SELECT id, schedule_date, schedule_time, schedule_text, color, created_at
+             FROM user_schedules
+             WHERE user_id = $1
+             ORDER BY COALESCE(schedule_date, CURRENT_DATE) ASC, schedule_time ASC, id ASC`,
+            [userId]
+        );
+        return res.rows.map((row: any) => ({
+            ...row,
+            schedule_date: row.schedule_date 
+                ? (typeof row.schedule_date === 'string' ? row.schedule_date.substring(0, 10) : new Date(row.schedule_date).toISOString().substring(0, 10)) 
+                : new Date().toISOString().substring(0, 10),
+            color: row.color || 'blue'
+        }));
+    }
+
+    static async addSchedule(userId: number, date: string, time: string, text: string, color: string = 'blue') {
+        await this.ensureScheduleColumns();
+        const validDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().substring(0, 10);
+        const validColor = color || 'blue';
+        const res = await pool.query(
+            `INSERT INTO user_schedules (user_id, schedule_date, schedule_time, schedule_text, color)
+             VALUES ($1, $2, $3, $4, $5)`,
+            [userId, validDate, time || '09:00', text, validColor]
         );
         return res;
     }
