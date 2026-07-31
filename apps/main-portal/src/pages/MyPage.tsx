@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Header, Footer } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -616,7 +616,7 @@ const DEFAULT_WATCHLIST = [
 
                                                             {/* 날짜 셀 그리드 */}
                                                             <div className="grid grid-cols-7 gap-1.5">
-                                                                {calendarDays.map((cell) => {
+                                                                {calendarDays.map((cell: any) => {
                                                                     const daySchedules = schedulesByDate[cell.dateStr] || [];
                                                                     const isSelected = selectedDate === cell.dateStr;
 
@@ -659,7 +659,7 @@ const DEFAULT_WATCHLIST = [
 
                                                                             {/* 일정을 나타내는 색상 dot / pill 뱃지 */}
                                                                             <div className="flex flex-col gap-1 mt-1 overflow-hidden max-h-[38px]">
-                                                                                {daySchedules.slice(0, 2).map((sched) => {
+                                                                                {daySchedules.slice(0, 2).map((sched: any) => {
                                                                                     const cConfig = SCHEDULE_COLOR_CONFIG[sched.color || 'blue'] || SCHEDULE_COLOR_CONFIG.blue;
                                                                                     return (
                                                                                         <div
@@ -770,7 +770,7 @@ const DEFAULT_WATCHLIST = [
 
                                                                 <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                                                                     {displaySchedules.length > 0 ? (
-                                                                        displaySchedules.map((item) => {
+                                                                        displaySchedules.map((item: any) => {
                                                                             const cConfig = SCHEDULE_COLOR_CONFIG[item.color || 'blue'] || SCHEDULE_COLOR_CONFIG.blue;
                                                                             return (
                                                                                 <div
