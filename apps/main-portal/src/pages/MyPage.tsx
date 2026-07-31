@@ -148,10 +148,10 @@ const DEFAULT_WATCHLIST = [
         attendanceRatio: number;
         activityRatio: number;
     }>({
-        points: 1250,
-        pendingAmount: 12500,
-        attendanceRatio: 65,
-        activityRatio: 35
+        points: 0,
+        pendingAmount: 0,
+        attendanceRatio: 0,
+        activityRatio: 0
     });
 
     const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_date?: string; schedule_time?: string; time?: string; schedule_text?: string; text?: string; color?: string }[]>([]);
@@ -385,10 +385,10 @@ const DEFAULT_WATCHLIST = [
 
                     if (veraPointsRes.data && veraPointsRes.data.success) {
                         setVeraPointsData({
-                            points: veraPointsRes.data.points ?? 1250,
-                            pendingAmount: veraPointsRes.data.pendingAmount ?? 12500,
-                            attendanceRatio: veraPointsRes.data.attendanceRatio ?? 65,
-                            activityRatio: veraPointsRes.data.activityRatio ?? 35
+                            points: veraPointsRes.data.points ?? 0,
+                            pendingAmount: veraPointsRes.data.pendingAmount ?? 0,
+                            attendanceRatio: veraPointsRes.data.attendanceRatio ?? 0,
+                            activityRatio: veraPointsRes.data.activityRatio ?? 0
                         });
                     }
                 }

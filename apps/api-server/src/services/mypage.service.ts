@@ -206,7 +206,7 @@ export class MyPageService {
         if (res.rows.length === 0) {
             await pool.query(
                 `INSERT INTO user_points (user_id, points, pending_amount, attendance_points, activity_points)
-                 VALUES ($1, 1250, 12500, 812, 438)
+                 VALUES ($1, 0, 0, 0, 0)
                  ON CONFLICT DO NOTHING`,
                 [userId]
             );
@@ -218,16 +218,28 @@ export class MyPageService {
             );
         }
 
-        const data = res.rows[0] || { points: 1250, pending_amount: 12500, attendance_points: 812, activity_points: 438 };
+        let data = res.rows[0] || { points: 0, pending_amount: 0, attendance_points: 0, activity_points: 0 };
+        
+        // 기존 더미데이터(1250, 12500 등) 감지 시 0으로 초기화 리셋
+        if (data.points === 1250 || data.pending_amount === 12500) {
+            await pool.query(
+                `UPDATE user_points 
+                 SET points = 0, pending_amount = 0, attendance_points = 0, activity_points = 0 
+                 WHERE user_id = $1`,
+                [userId]
+            );
+            data = { points: 0, pending_amount: 0, attendance_points: 0, activity_points: 0 };
+        }
+
         const total = (data.attendance_points || 0) + (data.activity_points || 0);
-        const attendanceRatio = total > 0 ? Math.round(((data.attendance_points || 0) / total) * 100) : 65;
-        const activityRatio = 100 - attendanceRatio;
+        const attendanceRatio = total > 0 ? Math.round(((data.attendance_points || 0) / total) * 100) : 0;
+        const activityRatio = total > 0 ? (100 - attendanceRatio) : 0;
 
         return {
-            points: data.points,
-            pendingAmount: data.pending_amount,
-            attendancePoints: data.attendance_points,
-            activityPoints: data.activity_points,
+            points: data.points || 0,
+            pendingAmount: data.pending_amount || 0,
+            attendancePoints: data.attendance_points || 0,
+            activityPoints: data.activity_points || 0,
             attendanceRatio,
             activityRatio
         };

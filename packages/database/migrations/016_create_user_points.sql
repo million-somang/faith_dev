@@ -2,10 +2,10 @@
 CREATE TABLE IF NOT EXISTS user_points (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL UNIQUE,
-    points INTEGER DEFAULT 1250,
-    pending_amount INTEGER DEFAULT 12500,
-    attendance_points INTEGER DEFAULT 812,
-    activity_points INTEGER DEFAULT 438,
+    points INTEGER DEFAULT 0,
+    pending_amount INTEGER DEFAULT 0,
+    attendance_points INTEGER DEFAULT 0,
+    activity_points INTEGER DEFAULT 0,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
