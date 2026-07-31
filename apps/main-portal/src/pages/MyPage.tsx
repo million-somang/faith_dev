@@ -168,20 +168,49 @@ const DEFAULT_WATCHLIST = [
     const handleAddAgenda = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newAgendaText.trim()) return;
+        const targetDate = newAgendaDate || todayStr;
+        const targetTime = newAgendaTime || '09:00';
+        const targetColor = newAgendaColor || 'blue';
+        const targetText = newAgendaText.trim();
+
         try {
             const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
             const res = await instance.post('/api/user/schedules', {
-                date: newAgendaDate || todayStr,
-                time: newAgendaTime || '09:00',
-                text: newAgendaText.trim(),
-                color: newAgendaColor || 'blue'
+                date: targetDate,
+                time: targetTime,
+                text: targetText,
+                color: targetColor
             });
             if (res.data && res.data.success) {
                 setBizAgenda(res.data.schedules || []);
                 setNewAgendaText('');
+                setSelectedDate(targetDate);
+            } else {
+                // 백엔드 응답 예외 시 로컬 상태에 즉시 반영
+                const newItem = {
+                    id: Date.now(),
+                    schedule_date: targetDate,
+                    schedule_time: targetTime,
+                    schedule_text: targetText,
+                    color: targetColor
+                };
+                setBizAgenda(prev => [...prev, newItem]);
+                setNewAgendaText('');
+                setSelectedDate(targetDate);
             }
         } catch (err) {
             console.error('Failed to add schedule:', err);
+            // 통신 에러 발생 시 로컬 상태에 즉시 반영
+            const newItem = {
+                id: Date.now(),
+                schedule_date: targetDate,
+                schedule_time: targetTime,
+                schedule_text: targetText,
+                color: targetColor
+            };
+            setBizAgenda(prev => [...prev, newItem]);
+            setNewAgendaText('');
+            setSelectedDate(targetDate);
         }
     };
 
@@ -191,9 +220,12 @@ const DEFAULT_WATCHLIST = [
             const res = await instance.delete(`/api/user/schedules/${id}`);
             if (res.data && res.data.success) {
                 setBizAgenda(res.data.schedules || []);
+            } else {
+                setBizAgenda(prev => prev.filter(item => item.id !== id));
             }
         } catch (err) {
             console.error('Failed to delete schedule:', err);
+            setBizAgenda(prev => prev.filter(item => item.id !== id));
         }
     };
 

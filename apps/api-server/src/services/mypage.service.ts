@@ -138,19 +138,19 @@ export class MyPageService {
                 CREATE TABLE IF NOT EXISTS user_schedules (
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL,
-                    schedule_date DATE DEFAULT CURRENT_DATE,
+                    schedule_date TEXT DEFAULT CURRENT_DATE,
                     schedule_time VARCHAR(10) DEFAULT '09:00',
                     schedule_text TEXT NOT NULL,
                     color VARCHAR(20) DEFAULT 'blue',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
-            await pool.query(`
-                ALTER TABLE user_schedules ADD COLUMN IF NOT EXISTS schedule_date DATE DEFAULT CURRENT_DATE;
-            `).catch(() => {});
-            await pool.query(`
-                ALTER TABLE user_schedules ADD COLUMN IF NOT EXISTS color VARCHAR(20) DEFAULT 'blue';
-            `).catch(() => {});
+            try {
+                await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_date TEXT DEFAULT CURRENT_DATE;`);
+            } catch (_) {}
+            try {
+                await pool.query(`ALTER TABLE user_schedules ADD COLUMN color VARCHAR(20) DEFAULT 'blue';`);
+            } catch (_) {}
         } catch (e) {
             console.error('[MyPageService] ensureScheduleColumns error:', e);
         }
