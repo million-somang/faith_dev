@@ -139,7 +139,9 @@ export class MyPageService {
                     id SERIAL PRIMARY KEY,
                     user_id INTEGER NOT NULL,
                     schedule_date TEXT DEFAULT CURRENT_DATE,
+                    end_date TEXT,
                     schedule_time VARCHAR(10) DEFAULT '09:00',
+                    end_time VARCHAR(10) DEFAULT '18:00',
                     schedule_text TEXT NOT NULL,
                     color VARCHAR(20) DEFAULT 'blue',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -147,6 +149,12 @@ export class MyPageService {
             `);
             try {
                 await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_date TEXT DEFAULT CURRENT_DATE;`);
+            } catch (_) {}
+            try {
+                await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_date TEXT;`);
+            } catch (_) {}
+            try {
+                await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_time VARCHAR(10) DEFAULT '18:00';`);
             } catch (_) {}
             try {
                 await pool.query(`ALTER TABLE user_schedules ADD COLUMN color VARCHAR(20) DEFAULT 'blue';`);
@@ -159,29 +167,39 @@ export class MyPageService {
     static async getSchedules(userId: number) {
         await this.ensureScheduleColumns();
         const res = await pool.query(
-            `SELECT id, schedule_date, schedule_time, schedule_text, color, created_at
+            `SELECT id, schedule_date, end_date, schedule_time, end_time, schedule_text, color, created_at
              FROM user_schedules
              WHERE user_id = $1
              ORDER BY COALESCE(schedule_date, CURRENT_DATE) ASC, schedule_time ASC, id ASC`,
             [userId]
         );
-        return res.rows.map((row: any) => ({
-            ...row,
-            schedule_date: row.schedule_date 
+        return res.rows.map((row: any) => {
+            const sDate = row.schedule_date 
                 ? (typeof row.schedule_date === 'string' ? row.schedule_date.substring(0, 10) : new Date(row.schedule_date).toISOString().substring(0, 10)) 
-                : new Date().toISOString().substring(0, 10),
-            color: row.color || 'blue'
-        }));
+                : new Date().toISOString().substring(0, 10);
+            const eDate = row.end_date 
+                ? (typeof row.end_date === 'string' ? row.end_date.substring(0, 10) : new Date(row.end_date).toISOString().substring(0, 10)) 
+                : sDate;
+            return {
+                ...row,
+                schedule_date: sDate,
+                end_date: eDate,
+                schedule_time: row.schedule_time || '09:00',
+                end_time: row.end_time || row.schedule_time || '18:00',
+                color: row.color || 'blue'
+            };
+        });
     }
 
-    static async addSchedule(userId: number, date: string, time: string, text: string, color: string = 'blue') {
+    static async addSchedule(userId: number, date: string, endDate: string, time: string, endTime: string, text: string, color: string = 'blue') {
         await this.ensureScheduleColumns();
         const validDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : new Date().toISOString().substring(0, 10);
+        const validEndDate = endDate && /^\d{4}-\d{2}-\d{2}$/.test(endDate) ? endDate : validDate;
         const validColor = color || 'blue';
         const res = await pool.query(
-            `INSERT INTO user_schedules (user_id, schedule_date, schedule_time, schedule_text, color)
-             VALUES ($1, $2, $3, $4, $5)`,
-            [userId, validDate, time || '09:00', text, validColor]
+            `INSERT INTO user_schedules (user_id, schedule_date, end_date, schedule_time, end_time, schedule_text, color)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [userId, validDate, validEndDate, time || '09:00', endTime || '18:00', text, validColor]
         );
         return res;
     }

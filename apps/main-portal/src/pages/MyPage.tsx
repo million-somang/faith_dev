@@ -154,22 +154,35 @@ const DEFAULT_WATCHLIST = [
         activityRatio: 0
     });
 
-    const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_date?: string; schedule_time?: string; time?: string; schedule_text?: string; text?: string; color?: string }[]>([]);
+    const [bizAgenda, setBizAgenda] = useState<{ id: number | string; schedule_date?: string; end_date?: string; schedule_time?: string; end_time?: string; time?: string; schedule_text?: string; text?: string; color?: string }[]>([]);
     const todayStr = useMemo(() => new Date().toISOString().substring(0, 10), []);
     const [calYear, setCalYear] = useState(() => new Date().getFullYear());
     const [calMonth, setCalMonth] = useState(() => new Date().getMonth() + 1);
     const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
 
     const [newAgendaDate, setNewAgendaDate] = useState(todayStr);
+    const [newAgendaEndDate, setNewAgendaEndDate] = useState(todayStr);
     const [newAgendaTime, setNewAgendaTime] = useState('09:00');
+    const [newAgendaEndTime, setNewAgendaEndTime] = useState('18:00');
     const [newAgendaText, setNewAgendaText] = useState('');
     const [newAgendaColor, setNewAgendaColor] = useState('blue');
+
+    const handleSetPresetDuration = (days: number) => {
+        if (!newAgendaDate) return;
+        const sDate = new Date(newAgendaDate);
+        sDate.setDate(sDate.getDate() + (days - 1));
+        const eStr = sDate.toISOString().substring(0, 10);
+        setNewAgendaEndDate(eStr);
+    };
 
     const handleAddAgenda = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newAgendaText.trim()) return;
         const targetDate = newAgendaDate || todayStr;
+        let targetEndDate = newAgendaEndDate || targetDate;
+        if (targetEndDate < targetDate) targetEndDate = targetDate;
         const targetTime = newAgendaTime || '09:00';
+        const targetEndTime = newAgendaEndTime || '18:00';
         const targetColor = newAgendaColor || 'blue';
         const targetText = newAgendaText.trim();
 
@@ -177,7 +190,9 @@ const DEFAULT_WATCHLIST = [
             const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
             const res = await instance.post('/api/user/schedules', {
                 date: targetDate,
+                endDate: targetEndDate,
                 time: targetTime,
+                endTime: targetEndTime,
                 text: targetText,
                 color: targetColor
             });
@@ -190,7 +205,9 @@ const DEFAULT_WATCHLIST = [
                 const newItem = {
                     id: Date.now(),
                     schedule_date: targetDate,
+                    end_date: targetEndDate,
                     schedule_time: targetTime,
+                    end_time: targetEndTime,
                     schedule_text: targetText,
                     color: targetColor
                 };
@@ -204,7 +221,9 @@ const DEFAULT_WATCHLIST = [
             const newItem = {
                 id: Date.now(),
                 schedule_date: targetDate,
+                end_date: targetEndDate,
                 schedule_time: targetTime,
+                end_time: targetEndTime,
                 schedule_text: targetText,
                 color: targetColor
             };
@@ -305,21 +324,36 @@ const DEFAULT_WATCHLIST = [
     const schedulesByDate = useMemo(() => {
         const map: Record<string, typeof bizAgenda> = {};
         bizAgenda.forEach(item => {
-            const dateKey = item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr;
-            if (!map[dateKey]) map[dateKey] = [];
-            map[dateKey].push(item);
+            const sDate = item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr;
+            const eDate = item.end_date ? String(item.end_date).substring(0, 10) : sDate;
+
+            let curr = new Date(sDate);
+            const end = new Date(eDate);
+            let limit = 0;
+            while (curr <= end && limit < 365) {
+                const dateKey = curr.toISOString().substring(0, 10);
+                if (!map[dateKey]) map[dateKey] = [];
+                map[dateKey].push(item);
+                curr.setDate(curr.getDate() + 1);
+                limit++;
+            }
         });
         return map;
     }, [bizAgenda, todayStr]);
 
     const displaySchedules = useMemo(() => {
         if (selectedDate) {
-            return bizAgenda.filter(item => (item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr) === selectedDate);
+            return bizAgenda.filter(item => {
+                const sDate = item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr;
+                const eDate = item.end_date ? String(item.end_date).substring(0, 10) : sDate;
+                return selectedDate >= sDate && selectedDate <= eDate;
+            });
         }
         const yearMonthPrefix = `${calYear}-${String(calMonth).padStart(2, '0')}`;
         return bizAgenda.filter(item => {
-            const dateKey = item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr;
-            return dateKey.startsWith(yearMonthPrefix);
+            const sDate = item.schedule_date ? String(item.schedule_date).substring(0, 10) : todayStr;
+            const eDate = item.end_date ? String(item.end_date).substring(0, 10) : sDate;
+            return sDate.startsWith(yearMonthPrefix) || eDate.startsWith(yearMonthPrefix) || (sDate <= `${yearMonthPrefix}-31` && eDate >= `${yearMonthPrefix}-01`);
         });
     }, [bizAgenda, selectedDate, calYear, calMonth, todayStr]);
 
@@ -755,6 +789,7 @@ const DEFAULT_WATCHLIST = [
                                                                             onClick={() => {
                                                                                 setSelectedDate(cell.dateStr);
                                                                                 setNewAgendaDate(cell.dateStr);
+                                                                                setNewAgendaEndDate(cell.dateStr);
                                                                             }}
                                                                             className={`min-h-[68px] sm:min-h-[78px] p-1.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative group ${
                                                                                 !cell.isCurrentMonth
@@ -820,29 +855,67 @@ const DEFAULT_WATCHLIST = [
                                                                         <i className="fas fa-plus-circle text-emerald-600"></i> 일정 추가
                                                                     </span>
                                                                     <span className="text-xs font-mono font-semibold text-slate-500">
-                                                                        {newAgendaDate}
+                                                                        {newAgendaDate === newAgendaEndDate ? newAgendaDate : `${newAgendaDate} ~ ${newAgendaEndDate}`}
                                                                     </span>
                                                                 </h4>
 
                                                                 <form onSubmit={handleAddAgenda} className="flex flex-col gap-2.5">
-                                                                    <div className="flex gap-2">
-                                                                        <input
-                                                                            type="date"
-                                                                            value={newAgendaDate}
-                                                                            onChange={(e) => setNewAgendaDate(e.target.value)}
-                                                                            className="w-1/2 px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                                                        />
-                                                                        <input
-                                                                            type="time"
-                                                                            value={newAgendaTime}
-                                                                            onChange={(e) => setNewAgendaTime(e.target.value)}
-                                                                            className="w-1/2 px-2.5 py-1.5 border border-slate-200 rounded-xl text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                                                        />
+                                                                    {/* 날짜 입력 (시작일 ~ 종료일 & 퀵 프리셋) */}
+                                                                    <div className="flex flex-col gap-1 bg-white p-2 rounded-xl border border-slate-200">
+                                                                        <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-600">
+                                                                            <span><i className="far fa-calendar-alt text-emerald-500 mr-1"></i> 일정 기간</span>
+                                                                            <div className="flex gap-1">
+                                                                                <button type="button" onClick={() => handleSetPresetDuration(1)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">당일</button>
+                                                                                <button type="button" onClick={() => handleSetPresetDuration(2)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">1박2일</button>
+                                                                                <button type="button" onClick={() => handleSetPresetDuration(3)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">2박3일</button>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <input
+                                                                                type="date"
+                                                                                value={newAgendaDate}
+                                                                                onChange={(e) => {
+                                                                                    setNewAgendaDate(e.target.value);
+                                                                                    if (e.target.value > newAgendaEndDate) {
+                                                                                        setNewAgendaEndDate(e.target.value);
+                                                                                    }
+                                                                                }}
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                            />
+                                                                            <span className="text-slate-400 text-xs font-bold">~</span>
+                                                                            <input
+                                                                                type="date"
+                                                                                value={newAgendaEndDate}
+                                                                                min={newAgendaDate}
+                                                                                onChange={(e) => setNewAgendaEndDate(e.target.value)}
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* 시간 입력 (시작시간 ~ 종료시간) */}
+                                                                    <div className="flex flex-col gap-1 bg-white p-2 rounded-xl border border-slate-200">
+                                                                        <span className="text-[11px] font-extrabold text-slate-600"><i className="far fa-clock text-blue-500 mr-1"></i> 시간 범위</span>
+                                                                        <div className="flex items-center gap-1">
+                                                                            <input
+                                                                                type="time"
+                                                                                value={newAgendaTime}
+                                                                                onChange={(e) => setNewAgendaTime(e.target.value)}
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                            />
+                                                                            <span className="text-slate-400 text-xs font-bold">~</span>
+                                                                            <input
+                                                                                type="time"
+                                                                                value={newAgendaEndTime}
+                                                                                onChange={(e) => setNewAgendaEndTime(e.target.value)}
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                            />
+                                                                        </div>
                                                                     </div>
 
                                                                     <input
                                                                         type="text"
-                                                                        placeholder="일정 내용을 입력하세요 (예: 미팅, 병원 예약)"
+                                                                        placeholder="일정 내용을 입력하세요 (예: 2박3일 여행, 미팅)"
                                                                         value={newAgendaText}
                                                                         onChange={(e) => setNewAgendaText(e.target.value)}
                                                                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
@@ -872,7 +945,7 @@ const DEFAULT_WATCHLIST = [
 
                                                                     <button
                                                                         type="submit"
-                                                                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md active:scale-98"
+                                                                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md active:scale-98 cursor-pointer"
                                                                     >
                                                                         <i className="fas fa-check mr-1.5"></i> 일정 등록하기
                                                                     </button>
@@ -890,7 +963,7 @@ const DEFAULT_WATCHLIST = [
                                                                         <button
                                                                             type="button"
                                                                             onClick={() => setSelectedDate(null)}
-                                                                            className="text-[10px] text-slate-400 hover:text-slate-600 font-bold underline"
+                                                                            className="text-[10px] text-slate-400 hover:text-slate-600 font-bold underline cursor-pointer"
                                                                         >
                                                                             전체 보기
                                                                         </button>
@@ -901,25 +974,34 @@ const DEFAULT_WATCHLIST = [
                                                                     {displaySchedules.length > 0 ? (
                                                                         displaySchedules.map((item: any) => {
                                                                             const cConfig = SCHEDULE_COLOR_CONFIG[item.color || 'blue'] || SCHEDULE_COLOR_CONFIG.blue;
+                                                                            const sDate = item.schedule_date ? String(item.schedule_date).substring(0, 10) : '';
+                                                                            const eDate = item.end_date ? String(item.end_date).substring(0, 10) : sDate;
+                                                                            const sTime = item.schedule_time || item.time || '09:00';
+                                                                            const eTime = item.end_time || '18:00';
+                                                                            const isMultiDay = sDate && eDate && sDate !== eDate;
+
                                                                             return (
                                                                                 <div
                                                                                     key={item.id}
                                                                                     className={`flex justify-between items-center p-2.5 rounded-xl text-xs border shadow-2xs relative group ${cConfig.bg} ${cConfig.border}`}
                                                                                 >
-                                                                                    <div className="flex items-center gap-2 overflow-hidden">
-                                                                                        <span className={`font-mono text-[10px] font-black px-1.5 py-0.5 rounded-md shrink-0 ${cConfig.badge}`}>
-                                                                                            {cConfig.label}
-                                                                                        </span>
-                                                                                        <span className="font-bold text-slate-500 font-mono text-[11px] shrink-0">
-                                                                                            {item.schedule_time || item.time || '09:00'}
-                                                                                        </span>
-                                                                                        <span className={`font-bold truncate pr-6 ${cConfig.text}`}>
-                                                                                            {item.schedule_text || item.text}
+                                                                                    <div className="flex flex-col gap-0.5 overflow-hidden pr-6">
+                                                                                        <div className="flex items-center gap-1.5">
+                                                                                            <span className={`font-mono text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0 ${cConfig.badge}`}>
+                                                                                                {cConfig.label}
+                                                                                            </span>
+                                                                                            <span className={`font-bold truncate ${cConfig.text}`}>
+                                                                                                {item.schedule_text || item.text}
+                                                                                            </span>
+                                                                                        </div>
+                                                                                        <span className="font-bold text-slate-500 font-mono text-[10px]">
+                                                                                            <i className="far fa-clock mr-1 text-[9px]"></i>
+                                                                                            {isMultiDay ? `${sDate.substring(5)} ${sTime} ~ ${eDate.substring(5)} ${eTime}` : `${sTime} ~ ${eTime}`}
                                                                                         </span>
                                                                                     </div>
                                                                                     <button
                                                                                         onClick={() => handleRemoveAgenda(item.id)}
-                                                                                        className="absolute right-2.5 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                                                                                        className="absolute right-2.5 top-3 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                                                                                         title="일정 삭제"
                                                                                     >
                                                                                         <i className="fas fa-times text-xs"></i>

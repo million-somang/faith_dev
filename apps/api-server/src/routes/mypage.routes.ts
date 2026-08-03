@@ -195,14 +195,16 @@ mypage.get('/schedules', async (c) => {
 mypage.post('/schedules', async (c) => {
     try {
         const user = c.get('user') as SessionUser;
-        const { date, time, text, color } = await c.req.json();
+        const { date, endDate, time, endTime, text, color } = await c.req.json();
         if (!text || !text.trim()) {
             return c.json({ success: false, message: 'Text is required' }, 400);
         }
         const scheduleDate = date || new Date().toISOString().substring(0, 10);
+        const scheduleEndDate = endDate || scheduleDate;
         const scheduleTime = time || '09:00';
+        const scheduleEndTime = endTime || '18:00';
         const scheduleColor = color || 'blue';
-        await MyPageService.addSchedule(user.id, scheduleDate, scheduleTime, text.trim(), scheduleColor);
+        await MyPageService.addSchedule(user.id, scheduleDate, scheduleEndDate, scheduleTime, scheduleEndTime, text.trim(), scheduleColor);
         const schedules = await MyPageService.getSchedules(user.id);
         return c.json({ success: true, schedules });
     } catch (err) {
