@@ -102,9 +102,86 @@ function calculateSaju(name: string, dateStr: string): { wood: number; fire: num
     return { ...elements, nature };
 }
 
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
 export default function MyPage() {
     const { user, logout, isLoading } = useAuth();
     const navigate = useNavigate();
+
+    const [isPushSubscribed, setIsPushSubscribed] = useState(false);
+    const [pushLoading, setPushLoading] = useState(false);
+
+    useEffect(() => {
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker.ready.then(registration => {
+                registration.pushManager.getSubscription().then(sub => {
+                    setIsPushSubscribed(!!sub);
+                });
+            });
+        }
+    }, []);
+
+    const handleTogglePush = async () => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            alert('이 브라우저는 웹 푸시 알림을 지원하지 않습니다.');
+            return;
+        }
+
+        try {
+            setPushLoading(true);
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                alert('알림 권한이 거부되었습니다. 브라우저 설정에서 알림 권한을 허용해 주세요.');
+                setPushLoading(false);
+                return;
+            }
+
+            const registration = await navigator.serviceWorker.ready;
+            let sub = await registration.pushManager.getSubscription();
+
+            if (sub) {
+                // Unsubscribe
+                await sub.unsubscribe();
+                const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+                await instance.delete('/api/user/push-subscription', { data: { endpoint: sub.endpoint } });
+                setIsPushSubscribed(false);
+                alert('일정 1시간 전 푸시 알림이 해제되었습니다.');
+            } else {
+                // Subscribe
+                const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+                const keyRes = await instance.get('/api/user/push-key');
+                if (!keyRes.data || !keyRes.data.publicKey) {
+                    throw new Error('VAPID public key load failed');
+                }
+                const convertedKey = urlBase64ToUint8Array(keyRes.data.publicKey);
+                sub = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedKey
+                });
+
+                await instance.post('/api/user/push-subscription', {
+                    subscription: sub.toJSON()
+                });
+
+                setIsPushSubscribed(true);
+                alert('🔔 일정 1시간 전 모바일 푸시 알림이 성공적으로 설정되었습니다!');
+            }
+        } catch (err) {
+            console.error('Push toggle error:', err);
+            alert('푸시 알림 설정 중 오류가 발생했습니다.');
+        } finally {
+            setPushLoading(false);
+        }
+    };
 
     // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
     const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
@@ -752,9 +829,24 @@ const DEFAULT_WATCHLIST = [
                                                             <button
                                                                 type="button"
                                                                 onClick={handleGoToday}
-                                                                className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all shadow-sm"
+                                                                className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all shadow-sm cursor-pointer"
                                                             >
                                                                 오늘
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleTogglePush}
+                                                                disabled={pushLoading}
+                                                                className={`ml-2 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                                                                    isPushSubscribed
+                                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
+                                                                        : 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-black'
+                                                                }`}
+                                                                title="일정 1시간 전 모바일 푸시 알림 설정"
+                                                            >
+                                                                <i className={`fas ${isPushSubscribed ? 'fa-bell text-emerald-600' : 'fa-bell-slash text-slate-900'} ${pushLoading ? 'animate-spin' : ''}`}></i>
+                                                                {pushLoading ? '설정 중...' : isPushSubscribed ? '1시간 전 알림 켜짐' : '🔔 1시간 전 알림 켜기'}
                                                             </button>
                                                         </div>
                                                     </div>

@@ -238,4 +238,41 @@ mypage.get('/vera-points', async (c) => {
     }
 });
 
+// ===== Push Notifications =====
+import { PushService } from '../services/push.service.js';
+
+mypage.get('/push-key', async (c) => {
+    const publicKey = PushService.getVapidPublicKey();
+    return c.json({ success: true, publicKey });
+});
+
+mypage.post('/push-subscription', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const { subscription } = await c.req.json();
+        if (!subscription || !subscription.endpoint) {
+            return c.json({ success: false, message: 'Invalid subscription' }, 400);
+        }
+        await PushService.saveSubscription(user.id, subscription);
+        return c.json({ success: true });
+    } catch (err) {
+        console.error('Save push subscription error:', err);
+        return c.json({ success: false, message: 'Failed to save push subscription' }, 500);
+    }
+});
+
+mypage.delete('/push-subscription', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const { endpoint } = await c.req.json();
+        if (endpoint) {
+            await PushService.removeSubscription(user.id, endpoint);
+        }
+        return c.json({ success: true });
+    } catch (err) {
+        console.error('Remove push subscription error:', err);
+        return c.json({ success: false, message: 'Failed to remove push subscription' }, 500);
+    }
+});
+
 export default mypage;
