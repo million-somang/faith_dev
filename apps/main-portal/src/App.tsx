@@ -347,6 +347,11 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
+                    <Route path="/ads.txt" element={
+                        <pre style={{ margin: 0, padding: '16px', fontFamily: 'monospace', fontSize: '14px', backgroundColor: '#fff', color: '#000' }}>
+                            google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0
+                        </pre>
+                    } />
                     <Route path="*" element={
                         <div className="min-h-screen flex flex-col pt-20">
                             <div className="flex-1 flex items-center justify-center text-gray-500 font-bold">준비 중인 서비스입니다 ✨</div>
