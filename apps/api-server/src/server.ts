@@ -136,6 +136,20 @@ Sitemap: ${SITE_URL}/sitemap.xml
     return c.text(robotsTxt, 200, { 'Content-Type': 'text/plain' });
 });
 
+// ads.txt
+app.get('/ads.txt', (c) => {
+    try {
+        const adsTxtPath = path.resolve('./public/ads.txt');
+        if (fs.existsSync(adsTxtPath)) {
+            const content = fs.readFileSync(adsTxtPath, 'utf-8');
+            return c.text(content, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        }
+    } catch (e) {
+        console.error('Error reading ads.txt:', e);
+    }
+    return c.text('google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+});
+
 // sitemap.xml (동적 생성 — 뉴스 URL 포함)
 app.get('/sitemap.xml', async (c) => {
     const staticPages = [
