@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Header, Footer } from '@faithportal/ui';
+import { Header, Footer, getLang, t } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -663,7 +663,9 @@ const DEFAULT_WATCHLIST = [
                                 <i className="fas fa-house-user"></i> 나만의 홈페이지
                             </h1>
                             <p className="text-violet-100 text-xs sm:text-sm font-semibold mt-1">
-                                {user.name}님을 위해 실시간 연동된 뉴스, 주식, 게임 전적 및 사주 오행 대시보드입니다.
+                                {getLang() === 'en' 
+                                    ? `Real-time dashboard for news, stocks, game records and fortune for ${user.name}.`
+                                    : `${user.name}님을 위해 실시간 연동된 뉴스, 주식, 게임 전적 및 사주 오행 대시보드입니다.`}
                             </p>
                         </div>
                         {user.email && (
@@ -686,7 +688,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-house-user text-sm"></i>
-                            <span>나의 홈</span>
+                            <span>{t('나의 홈')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('news')}
@@ -697,7 +699,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-newspaper text-sm"></i>
-                            <span>뉴스</span>
+                            <span>{t('뉴스')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('stocks')}
@@ -708,7 +710,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-chart-line text-sm"></i>
-                            <span>주식</span>
+                            <span>{t('주식')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('games')}
@@ -719,7 +721,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-gamepad text-sm"></i>
-                            <span>게임</span>
+                            <span>{t('게임')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('utils')}
@@ -730,7 +732,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-tools text-sm"></i>
-                            <span>유틸리티</span>
+                            <span>{t('유틸리티')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('home-customize')}
@@ -741,7 +743,7 @@ const DEFAULT_WATCHLIST = [
                             }`}
                         >
                             <i className="fas fa-magic text-sm"></i>
-                            <span>홈 꾸미기</span>
+                            <span>{t('홈꾸미기')}</span>
                         </button>
                     </nav>
                 </div>
