@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../hooks/useAuth';
+import { t } from '@faithportal/ui';
 
 // 금융 앱은 메인 포털과 분리된 별도 앱이므로, 탭/메뉴 이동은 메인 포털 URL을 기준으로 한다.
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
@@ -84,10 +85,10 @@ export function MobileTabBar() {
                         key={item.id}
                         href={toHref(path)}
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
-                        aria-label={`${label} 페이지로 이동`}
+                        aria-label={`${t(label)} 페이지로 이동`}
                     >
                         <i className={icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
-                        <span>{label}</span>
+                        <span>{t(label)}</span>
                     </a>
                 );
             })}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { getCategoryName, getCategoryColor, getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
+import { getLang, t } from './utils/i18n';
 
 export const Button = ({ children, onClick, className = "" }: { children: React.ReactNode, onClick?: () => void, className?: string }) => (
     <button
@@ -164,70 +165,8 @@ const FULL_MENU_ITEMS = [
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
 
-const getLang = (): 'ko' | 'en' => {
-    if (typeof window !== 'undefined') {
-        const saved = localStorage.getItem('user_lang');
-        if (saved === 'ko' || saved === 'en') return saved;
-        return (navigator.language || '').toLowerCase().includes('ko') ? 'ko' : 'en';
-    }
-    return 'ko';
-};
-
-const UI_TRANSLATIONS: Record<'ko' | 'en', Record<string, string>> = {
-    ko: {
-        '뉴스': '뉴스',
-        '유틸리티': '유틸리티',
-        '생활도구': '생활도구',
-        '금융': '금융',
-        '리워드': '리워드',
-        '게임': '게임',
-        '재미': '재미',
-        '쇼핑': '쇼핑',
-        '라운지': '라운지',
-        '마이페이지': '마이페이지',
-        '로그인': '로그인',
-        '로그아웃': '로그아웃',
-        '회원가입': '회원가입',
-        '홈페이지 제작': '홈페이지 제작',
-        '전체메뉴': '전체메뉴',
-        '홈': '홈',
-        '일반 포털': '🔮 일반 포털',
-        '비즈니스': '💼 비즈니스',
-        '포털': '포털',
-        '비즈': '비즈',
-        '교육': '교육',
-        '엔터': '엔터',
-        '님': '님',
-    },
-    en: {
-        '뉴스': 'News',
-        '유틸리티': 'Utility',
-        '생활도구': 'Tools',
-        '금융': 'Finance',
-        '리워드': 'Rewards',
-        '게임': 'Games',
-        '재미': 'Fun',
-        '쇼핑': 'Shopping',
-        '라운지': 'Lounge',
-        '마이페이지': 'My Page',
-        '로그인': 'Log In',
-        '로그아웃': 'Log Out',
-        '회원가입': 'Sign Up',
-        '홈페이지 제작': 'Web Design',
-        '전체메뉴': 'All Menu',
-        '홈': 'Home',
-        '일반 포털': '🔮 General',
-        '비즈니스': '💼 Business',
-        '포털': 'Portal',
-        '비즈': 'Biz',
-        '교육': 'Education',
-        '엔터': 'Entertainment',
-        '님': '',
-    }
-};
-
 const tr = (key: string, lang: 'ko' | 'en'): string => {
-    return UI_TRANSLATIONS[lang]?.[key] || UI_TRANSLATIONS['ko']?.[key] || key;
+    return t(key, lang);
 };
 
 export const LanguageSwitcher = () => {
@@ -679,3 +618,4 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 };
 
 export * from './utils/analytics';
+export * from './utils/i18n';

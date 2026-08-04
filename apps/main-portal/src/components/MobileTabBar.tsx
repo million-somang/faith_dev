@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { useAuth } from '../context/AuthContext';
 import { ALL_MOBILE_TAB_ITEMS, DEFAULT_HOMEPAGE_CONFIG, MAX_MOBILE_TABS, MobileTabItem } from '../types/homepage.types';
+import { t } from '@faithportal/ui';
 
 /**
  * 모바일 하단 플로팅 탭 바
@@ -35,10 +36,10 @@ export function MobileTabBar() {
                         key={item.id}
                         to={path}
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
-                        aria-label={`${label} 페이지로 이동`}
+                        aria-label={`${t(label)} 페이지로 이동`}
                     >
                         <i className={icon} style={item.color ? { color: item.color } : undefined} aria-hidden="true"></i>
-                        <span>{label}</span>
+                        <span>{t(label)}</span>
                     </Link>
                 );
             })}
