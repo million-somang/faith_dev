@@ -136,7 +136,7 @@ export class MyPageService {
         try {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS user_schedules (
-                    id SERIAL PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     schedule_date TEXT DEFAULT CURRENT_DATE,
                     end_date TEXT,
@@ -144,21 +144,44 @@ export class MyPageService {
                     end_time VARCHAR(10) DEFAULT '18:00',
                     schedule_text TEXT NOT NULL,
                     color VARCHAR(20) DEFAULT 'blue',
+                    notified_1h BOOLEAN DEFAULT FALSE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
-            try {
-                await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_date TEXT DEFAULT CURRENT_DATE;`);
-            } catch (_) {}
-            try {
-                await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_date TEXT;`);
-            } catch (_) {}
-            try {
-                await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_time VARCHAR(10) DEFAULT '18:00';`);
-            } catch (_) {}
-            try {
-                await pool.query(`ALTER TABLE user_schedules ADD COLUMN color VARCHAR(20) DEFAULT 'blue';`);
-            } catch (_) {}
+
+            const colsRes = await pool.query(`PRAGMA table_info(user_schedules)`);
+            const colNames = (colsRes.rows || []).map((c: any) => c.name);
+
+            if (!colNames.includes('schedule_date')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_date TEXT;`); } catch (_) {}
+                if (colNames.includes('date')) {
+                    try { await pool.query(`UPDATE user_schedules SET schedule_date = date WHERE schedule_date IS NULL;`); } catch (_) {}
+                }
+            }
+            if (!colNames.includes('end_date')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_date TEXT;`); } catch (_) {}
+            }
+            if (!colNames.includes('schedule_time')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_time VARCHAR(10) DEFAULT '09:00';`); } catch (_) {}
+                if (colNames.includes('time')) {
+                    try { await pool.query(`UPDATE user_schedules SET schedule_time = time WHERE schedule_time IS NULL;`); } catch (_) {}
+                }
+            }
+            if (!colNames.includes('end_time')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN end_time VARCHAR(10) DEFAULT '18:00';`); } catch (_) {}
+            }
+            if (!colNames.includes('schedule_text')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN schedule_text TEXT;`); } catch (_) {}
+                if (colNames.includes('text')) {
+                    try { await pool.query(`UPDATE user_schedules SET schedule_text = text WHERE schedule_text IS NULL;`); } catch (_) {}
+                }
+            }
+            if (!colNames.includes('color')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN color VARCHAR(20) DEFAULT 'blue';`); } catch (_) {}
+            }
+            if (!colNames.includes('notified_1h')) {
+                try { await pool.query(`ALTER TABLE user_schedules ADD COLUMN notified_1h BOOLEAN DEFAULT FALSE;`); } catch (_) {}
+            }
         } catch (e) {
             console.error('[MyPageService] ensureScheduleColumns error:', e);
         }

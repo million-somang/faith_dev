@@ -18,7 +18,7 @@ export function MobileTabBar() {
         : DEFAULT_HOMEPAGE_CONFIG.mobileTabs;
     const tabItems: MobileTabItem[] = selectedTabIds
         .map(id => tabMap.get(id))
-        .filter((t): t is MobileTabItem => !!t)
+        .filter((t): t is MobileTabItem => !!t && (t.id !== 'reward' || user?.email === 'sukman@naver.com'))
         .slice(0, MAX_MOBILE_TABS);
 
     return (

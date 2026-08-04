@@ -59,7 +59,7 @@ export function MobileTabBar() {
     const tabMap = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
     const tabItems: MobileTabItem[] = tabIds
         .map(id => tabMap.get(id))
-        .filter((t): t is MobileTabItem => !!t)
+        .filter((t): t is MobileTabItem => !!t && (t.id !== 'reward' || user?.email === 'sukman@naver.com'))
         .slice(0, MAX_MOBILE_TABS);
 
     // 현재 경로 활성화 체크 (금융 앱 내부 경로는 /finance 로 매핑됨)

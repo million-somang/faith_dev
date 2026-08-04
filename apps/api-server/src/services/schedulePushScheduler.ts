@@ -24,25 +24,11 @@ export function startSchedulePushScheduler() {
     }, 5000);
 }
 
+import { MyPageService } from './mypage.service';
+
 async function checkAndSend1HourNotifications() {
     try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS user_schedules (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL,
-                schedule_date TEXT DEFAULT CURRENT_DATE,
-                end_date TEXT,
-                schedule_time VARCHAR(10) DEFAULT '09:00',
-                end_time VARCHAR(10) DEFAULT '18:00',
-                schedule_text TEXT NOT NULL,
-                color VARCHAR(20) DEFAULT 'blue',
-                notified_1h BOOLEAN DEFAULT FALSE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        `);
-        try {
-            await pool.query(`ALTER TABLE user_schedules ADD COLUMN notified_1h BOOLEAN DEFAULT FALSE;`);
-        } catch (_) {}
+        await MyPageService.ensureScheduleColumns();
 
         // Get unnotified schedules
         const res = await pool.query(`

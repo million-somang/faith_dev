@@ -219,6 +219,63 @@ const DEFAULT_WATCHLIST = [
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
     const [loading, setLoading] = useState(false);
 
+    // 뉴스 키워드/주제 추가 및 삭제 처리
+    const [newKeywordInput, setNewKeywordInput] = useState('');
+    const [isSubmittingKeyword, setIsSubmittingKeyword] = useState(false);
+
+    const handleAddKeyword = async (keywordToAdd?: string) => {
+        const targetKeyword = (keywordToAdd || newKeywordInput).trim();
+        if (!targetKeyword) return;
+
+        setIsSubmittingKeyword(true);
+        try {
+            const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+            const res = await instance.post('/api/user/keywords', { keyword: targetKeyword });
+            if (res.data && res.data.success !== false) {
+                setNewKeywordInput('');
+                const [kwRes, kwNewsRes] = await Promise.all([
+                    instance.get('/api/user/keywords').catch(() => ({ data: {} })),
+                    instance.get('/api/user/news/keywords?limit=5').catch(() => ({ data: {} }))
+                ]);
+                setNewsData(prev => ({
+                    ...prev,
+                    keywords: kwRes.data.keywords || [],
+                    keywordNews: kwNewsRes.data.news || []
+                }));
+            }
+        } catch (err) {
+            console.error('Failed to add keyword:', err);
+        } finally {
+            setIsSubmittingKeyword(false);
+        }
+    };
+
+    const handleDeleteKeyword = async (keywordId?: number | string, keywordName?: string) => {
+        try {
+            const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
+            if (keywordId) {
+                await instance.delete(`/api/user/keywords/${keywordId}`);
+            } else if (keywordName) {
+                // Find matching keyword in newsData.keywords
+                const matched = newsData.keywords.find((k: any) => (typeof k === 'string' ? k : k.keyword) === keywordName);
+                if (matched && matched.id) {
+                    await instance.delete(`/api/user/keywords/${matched.id}`);
+                }
+            }
+            const [kwRes, kwNewsRes] = await Promise.all([
+                instance.get('/api/user/keywords').catch(() => ({ data: {} })),
+                instance.get('/api/user/news/keywords?limit=5').catch(() => ({ data: {} }))
+            ]);
+            setNewsData(prev => ({
+                ...prev,
+                keywords: kwRes.data.keywords || [],
+                keywordNews: kwNewsRes.data.news || []
+            }));
+        } catch (err) {
+            console.error('Failed to delete keyword:', err);
+        }
+    };
+
     const [veraPointsData, setVeraPointsData] = useState<{
         points: number;
         pendingAmount: number;
@@ -243,6 +300,19 @@ const DEFAULT_WATCHLIST = [
     const [newAgendaEndTime, setNewAgendaEndTime] = useState('18:00');
     const [newAgendaText, setNewAgendaText] = useState('');
     const [newAgendaColor, setNewAgendaColor] = useState('blue');
+    const [isAllDay, setIsAllDay] = useState(false);
+
+    const handleToggleAllDay = () => {
+        if (!isAllDay) {
+            setIsAllDay(true);
+            setNewAgendaTime('00:00');
+            setNewAgendaEndTime('23:59');
+        } else {
+            setIsAllDay(false);
+            setNewAgendaTime('09:00');
+            setNewAgendaEndTime('18:00');
+        }
+    };
 
     const handleSetPresetDuration = (days: number) => {
         if (!newAgendaDate) return;
@@ -258,10 +328,29 @@ const DEFAULT_WATCHLIST = [
         const targetDate = newAgendaDate || todayStr;
         let targetEndDate = newAgendaEndDate || targetDate;
         if (targetEndDate < targetDate) targetEndDate = targetDate;
-        const targetTime = newAgendaTime || '09:00';
-        const targetEndTime = newAgendaEndTime || '18:00';
+        const targetTime = isAllDay ? '00:00' : (newAgendaTime || '09:00');
+        const targetEndTime = isAllDay ? '23:59' : (newAgendaEndTime || '18:00');
         const targetColor = newAgendaColor || 'blue';
         const targetText = newAgendaText.trim();
+
+        const newItem = {
+            id: Date.now(),
+            schedule_date: targetDate,
+            end_date: targetEndDate,
+            schedule_time: targetTime,
+            end_time: targetEndTime,
+            schedule_text: targetText,
+            color: targetColor
+        };
+
+        // UI & LocalStorage 우선 즉시 업데이트 (항상 저장 보장)
+        setBizAgenda(prev => {
+            const updated = [...prev, newItem];
+            localStorage.setItem('faith_user_schedules', JSON.stringify(updated));
+            return updated;
+        });
+        setNewAgendaText('');
+        setSelectedDate(targetDate);
 
         try {
             const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
@@ -273,55 +362,31 @@ const DEFAULT_WATCHLIST = [
                 text: targetText,
                 color: targetColor
             });
-            if (res.data && res.data.success) {
-                setBizAgenda(res.data.schedules || []);
-                setNewAgendaText('');
-                setSelectedDate(targetDate);
-            } else {
-                // 백엔드 응답 예외 시 로컬 상태에 즉시 반영
-                const newItem = {
-                    id: Date.now(),
-                    schedule_date: targetDate,
-                    end_date: targetEndDate,
-                    schedule_time: targetTime,
-                    end_time: targetEndTime,
-                    schedule_text: targetText,
-                    color: targetColor
-                };
-                setBizAgenda(prev => [...prev, newItem]);
-                setNewAgendaText('');
-                setSelectedDate(targetDate);
+            if (res.data && res.data.success && Array.isArray(res.data.schedules) && res.data.schedules.length > 0) {
+                setBizAgenda(res.data.schedules);
+                localStorage.setItem('faith_user_schedules', JSON.stringify(res.data.schedules));
             }
         } catch (err) {
-            console.error('Failed to add schedule:', err);
-            // 통신 에러 발생 시 로컬 상태에 즉시 반영
-            const newItem = {
-                id: Date.now(),
-                schedule_date: targetDate,
-                end_date: targetEndDate,
-                schedule_time: targetTime,
-                end_time: targetEndTime,
-                schedule_text: targetText,
-                color: targetColor
-            };
-            setBizAgenda(prev => [...prev, newItem]);
-            setNewAgendaText('');
-            setSelectedDate(targetDate);
+            console.error('API call failed, schedule saved to local storage:', err);
         }
     };
 
     const handleRemoveAgenda = async (id: number | string) => {
+        setBizAgenda(prev => {
+            const updated = prev.filter(item => item.id !== id);
+            localStorage.setItem('faith_user_schedules', JSON.stringify(updated));
+            return updated;
+        });
+
         try {
             const instance = axios.create({ withCredentials: true, baseURL: API_BASE_URL });
             const res = await instance.delete(`/api/user/schedules/${id}`);
-            if (res.data && res.data.success) {
-                setBizAgenda(res.data.schedules || []);
-            } else {
-                setBizAgenda(prev => prev.filter(item => item.id !== id));
+            if (res.data && res.data.success && Array.isArray(res.data.schedules)) {
+                setBizAgenda(res.data.schedules);
+                localStorage.setItem('faith_user_schedules', JSON.stringify(res.data.schedules));
             }
         } catch (err) {
-            console.error('Failed to delete schedule:', err);
-            setBizAgenda(prev => prev.filter(item => item.id !== id));
+            console.error('Failed to delete schedule on server:', err);
         }
     };
 
@@ -496,7 +561,11 @@ const DEFAULT_WATCHLIST = [
                         stats: statsGamesRes.data.stats || {},
                         history: historyGamesRes.data.history?.history || []
                     });
-                    setBizAgenda(schedulesRes.data.schedules || []);
+                    const localSavedSchedules = JSON.parse(localStorage.getItem('faith_user_schedules') || '[]');
+                    const fetchedSchedules = (schedulesRes.data && Array.isArray(schedulesRes.data.schedules) && schedulesRes.data.schedules.length > 0)
+                        ? schedulesRes.data.schedules
+                        : localSavedSchedules;
+                    setBizAgenda(fetchedSchedules);
 
                     if (veraPointsRes.data && veraPointsRes.data.success) {
                         setVeraPointsData({
@@ -714,9 +783,18 @@ const DEFAULT_WATCHLIST = [
                                                             {newsData.keywords && newsData.keywords.length > 0 ? (
                                                                 newsData.keywords.map((kw: any, idx: number) => {
                                                                     const kwName = typeof kw === 'string' ? kw : (kw.keyword || kw.name || '');
+                                                                    const kwId = typeof kw === 'object' ? kw.id : null;
                                                                     return (
-                                                                        <span key={idx} className="text-xs font-black px-3 py-1 rounded-xl bg-white border border-sky-200 text-sky-700 shadow-2xs flex items-center gap-1">
+                                                                        <span key={kwId || idx} className="text-xs font-black px-3 py-1 rounded-xl bg-white border border-sky-200 text-sky-700 shadow-2xs flex items-center gap-1.5">
                                                                             <i className="fas fa-hashtag text-[10px] text-sky-400"></i> {kwName}
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => handleDeleteKeyword(kwId, kwName)}
+                                                                                className="text-sky-300 hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
+                                                                                title="구독 해제"
+                                                                            >
+                                                                                <i className="fas fa-times text-[10px]"></i>
+                                                                            </button>
                                                                         </span>
                                                                     );
                                                                 })
@@ -731,7 +809,7 @@ const DEFAULT_WATCHLIST = [
                                                             onClick={() => setActiveSection('news')}
                                                             className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ml-1 active:scale-98"
                                                         >
-                                                            <i className="fas fa-sliders-h text-[11px]"></i> 주제 관리
+                                                            <i className="fas fa-plus text-[11px]"></i> 주제 추가/관리
                                                         </button>
                                                     </div>
                                                 </div>
@@ -985,22 +1063,37 @@ const DEFAULT_WATCHLIST = [
                                                                         </div>
                                                                     </div>
 
-                                                                    {/* 시간 입력 (시작시간 ~ 종료시간) */}
-                                                                    <div className="flex flex-col gap-1 bg-white p-2 rounded-xl border border-slate-200">
-                                                                        <span className="text-[11px] font-extrabold text-slate-600"><i className="far fa-clock text-blue-500 mr-1"></i> 시간 범위</span>
-                                                                        <div className="flex items-center gap-1">
+                                                                    {/* 시간 입력 (시작시간 ~ 종료시간 & 종일 설정) */}
+                                                                    <div className="flex flex-col gap-1 bg-white p-2.5 rounded-xl border border-slate-200">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <span className="text-[11px] font-extrabold text-slate-600"><i className="far fa-clock text-blue-500 mr-1"></i> 시간 범위</span>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={handleToggleAllDay}
+                                                                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all flex items-center gap-1 cursor-pointer ${
+                                                                                    isAllDay
+                                                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-black'
+                                                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+                                                                                }`}
+                                                                            >
+                                                                                <i className={`fas ${isAllDay ? 'fa-check-circle text-white' : 'fa-sun text-amber-500'}`}></i> 종일
+                                                                            </button>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 mt-0.5">
                                                                             <input
                                                                                 type="time"
                                                                                 value={newAgendaTime}
+                                                                                disabled={isAllDay}
                                                                                 onChange={(e) => setNewAgendaTime(e.target.value)}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-slate-100 disabled:text-slate-400"
                                                                             />
                                                                             <span className="text-slate-400 text-xs font-bold">~</span>
                                                                             <input
                                                                                 type="time"
                                                                                 value={newAgendaEndTime}
+                                                                                disabled={isAllDay}
                                                                                 onChange={(e) => setNewAgendaEndTime(e.target.value)}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-slate-100 disabled:text-slate-400"
                                                                             />
                                                                         </div>
                                                                     </div>
@@ -1071,6 +1164,7 @@ const DEFAULT_WATCHLIST = [
                                                                             const sTime = item.schedule_time || item.time || '09:00';
                                                                             const eTime = item.end_time || '18:00';
                                                                             const isMultiDay = sDate && eDate && sDate !== eDate;
+                                                                            const isAllDayItem = (sTime === '00:00' && (eTime === '23:59' || eTime === '24:00')) || sTime === '종일';
 
                                                                             return (
                                                                                 <div
@@ -1088,7 +1182,9 @@ const DEFAULT_WATCHLIST = [
                                                                                         </div>
                                                                                         <span className="font-bold text-slate-500 font-mono text-[10px]">
                                                                                             <i className="far fa-clock mr-1 text-[9px]"></i>
-                                                                                            {isMultiDay ? `${sDate.substring(5)} ${sTime} ~ ${eDate.substring(5)} ${eTime}` : `${sTime} ~ ${eTime}`}
+                                                                                            {isAllDayItem
+                                                                                                ? (isMultiDay ? `${sDate.substring(5)} ~ ${eDate.substring(5)} [종일]` : '[종일]')
+                                                                                                : (isMultiDay ? `${sDate.substring(5)} ${sTime} ~ ${eDate.substring(5)} ${eTime}` : `${sTime} ~ ${eTime}`)}
                                                                                         </span>
                                                                                     </div>
                                                                                     <button
@@ -1157,12 +1253,14 @@ const DEFAULT_WATCHLIST = [
                                                         </div>
                                                     </div>
 
-                                                    <Link 
-                                                        to="/reward/exchange"
-                                                        className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors cursor-pointer"
-                                                    >
-                                                        베라포인트 리워드 교환 신청
-                                                    </Link>
+                                                    {user?.email === 'sukman@naver.com' && (
+                                                        <Link 
+                                                            to="/reward/exchange"
+                                                            className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors cursor-pointer"
+                                                        >
+                                                            베라포인트 리워드 교환 신청
+                                                        </Link>
+                                                    )}
                                                 </div>
 
                                                 {/* 위젯 3: 관심 주식 시황 위젯 */}
@@ -1347,19 +1445,92 @@ const DEFAULT_WATCHLIST = [
                                                 <i className="fas fa-newspaper mr-3 text-sky-500 text-3xl"></i>뉴스
                                             </h2>
 
-                                            <div className="mb-10">
-                                                <div className="flex justify-between items-center mb-4">
-                                                    <h3 className="text-lg font-bold text-gray-800 flex items-center">
-                                                        <i className="fas fa-hashtag text-sky-500 mr-2"></i>키워드 구독 뉴스
-                                                    </h3>
-                                                    <div className="flex gap-2">
-                                                        {newsData.keywords.length > 0 && newsData.keywords.map(kw => (
-                                                            <span key={kw.id || kw.keyword} className="inline-flex items-center px-2 py-1 rounded bg-sky-50 text-sky-700 text-xs font-semibold border border-sky-100">
-                                                                #{kw.keyword}
-                                                            </span>
-                                                        ))}
+                                            <div className="mb-10 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
+                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-5 border-b border-slate-100">
+                                                    <div>
+                                                        <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
+                                                            <i className="fas fa-hashtag text-sky-500"></i>키워드 구독 뉴스
+                                                        </h3>
+                                                        <p className="text-xs text-slate-400 mt-1">원하는 관심 주제/키워드를 추가하여 맞춤 실시간 뉴스 피드를 받아보세요.</p>
+                                                    </div>
+
+                                                    {/* 주제 추가 입력창 & 버튼 */}
+                                                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                                                        <div className="relative flex-1 sm:w-64">
+                                                            <input
+                                                                type="text"
+                                                                value={newKeywordInput}
+                                                                onChange={(e) => setNewKeywordInput(e.target.value)}
+                                                                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                                                                placeholder="관심 주제/키워드 입력 (예: AI, 부동산)"
+                                                                className="w-full pl-8 pr-3 py-2 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 focus:bg-white transition-all"
+                                                            />
+                                                            <i className="fas fa-[#] text-[11px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleAddKeyword()}
+                                                            disabled={isSubmittingKeyword || !newKeywordInput.trim()}
+                                                            className="px-4 py-2 bg-sky-600 hover:bg-sky-700 active:scale-98 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                                        >
+                                                            <i className="fas fa-plus text-[11px]"></i> 주제 추가
+                                                        </button>
                                                     </div>
                                                 </div>
+
+                                                {/* 추천 주제 칩 목록 */}
+                                                <div className="mb-5 bg-slate-50/80 p-3.5 rounded-xl border border-slate-100 flex flex-wrap items-center gap-2">
+                                                    <span className="text-xs font-bold text-slate-500 mr-1 flex items-center gap-1">
+                                                        <i className="fas fa-[#] text-amber-500 text-[10px]"></i> 추천 주제:
+                                                    </span>
+                                                    {['인공지능', '부동산', '주식', 'IT/기술', '금융', '경제', '정치', '엔터'].map((recKw) => {
+                                                        const isSubscribed = newsData.keywords.some((k: any) => (typeof k === 'string' ? k : k.keyword) === recKw);
+                                                        return (
+                                                            <button
+                                                                key={recKw}
+                                                                type="button"
+                                                                onClick={() => !isSubscribed && handleAddKeyword(recKw)}
+                                                                disabled={isSubscribed}
+                                                                className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                                                                    isSubscribed
+                                                                        ? 'bg-slate-200/80 text-slate-500 cursor-default border border-slate-200'
+                                                                        : 'bg-white hover:bg-sky-50 hover:text-sky-600 text-slate-700 border border-slate-200 shadow-2xs active:scale-95'
+                                                                }`}
+                                                            >
+                                                                #{recKw}
+                                                                {isSubscribed ? <i className="fas fa-check text-[10px] text-sky-500 ml-0.5"></i> : <i className="fas fa-plus text-[9px] text-slate-400"></i>}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+
+                                                {/* 구독 중인 주제 뱃지 목록 */}
+                                                <div className="flex items-center gap-2 flex-wrap mb-6">
+                                                    <span className="text-xs font-bold text-slate-600 mr-1">내 구독 목록 ({newsData.keywords.length}):</span>
+                                                    {newsData.keywords && newsData.keywords.length > 0 ? (
+                                                        newsData.keywords.map((kw: any, idx: number) => {
+                                                            const kwName = typeof kw === 'string' ? kw : (kw.keyword || kw.name || '');
+                                                            const kwId = typeof kw === 'object' ? kw.id : null;
+                                                            return (
+                                                                <span key={kwId || idx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-sky-50 text-sky-700 text-xs font-bold border border-sky-200/80 shadow-2xs">
+                                                                    #{kwName}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteKeyword(kwId, kwName)}
+                                                                        className="text-sky-400 hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
+                                                                        title="구독 해제"
+                                                                    >
+                                                                        <i className="fas fa-times text-[10px]"></i>
+                                                                    </button>
+                                                                </span>
+                                                            );
+                                                        })
+                                                    ) : (
+                                                        <span className="text-xs text-slate-400 italic">구독 중인 주제가 없습니다. 위 입력창이나 추천 주제를 눌러 추가해보세요.</span>
+                                                    )}
+                                                </div>
+
+                                                {/* 뉴스 기사 목록 */}
                                                 <div className="space-y-4">
                                                     {newsData.keywordNews && newsData.keywordNews.length > 0 ? (
                                                         newsData.keywordNews.map(news => (
@@ -1377,7 +1548,9 @@ const DEFAULT_WATCHLIST = [
                                                             </div>
                                                         ))
                                                     ) : (
-                                                        <div className="text-gray-500 text-sm py-4 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">구독한 키워드와 일치하는 뉴스가 없습니다</div>
+                                                        <div className="text-gray-500 text-sm py-6 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                                            구독한 주제와 일치하는 뉴스가 없습니다. 새로운 키워드를 추가해보세요!
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>

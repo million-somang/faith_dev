@@ -292,9 +292,26 @@ function ScrollToTop() {
     return null;
 }
 
-function App() {
-    console.log('App rendering...');
+function AppTracker() {
     usePageTracking();
+    return null;
+}
+
+function App() {
+    useEffect(() => {
+        const handleAdminMessage = (e: MessageEvent) => {
+            if (e.data && e.data.type === 'ADMIN_AUTH') {
+                const token = e.data.token;
+                if (token) {
+                    localStorage.setItem('admin_token', token);
+                    window.location.href = '/admin/dashboard';
+                }
+            }
+        };
+
+        window.addEventListener('message', handleAdminMessage);
+        return () => window.removeEventListener('message', handleAdminMessage);
+    }, []);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -318,6 +335,7 @@ function App() {
         <AuthProvider>
             <UserPreferenceProvider>
                 <ScrollToTop />
+                <AppTracker />
                 <Routes>
                     <Route path="/admin/*" element={<AdminRedirect />} />
                     <Route path="/" element={<HomePage />} />

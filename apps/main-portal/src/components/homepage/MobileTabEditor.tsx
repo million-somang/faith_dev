@@ -1,4 +1,5 @@
 import { ALL_MOBILE_TAB_ITEMS, MAX_MOBILE_TABS, MobileTabItem } from '../../types/homepage.types';
+import { useAuth } from '../../context/AuthContext';
 
 interface MobileTabEditorProps {
     value: string[];                       // 선택된 탭 id 순서 목록
@@ -12,9 +13,11 @@ interface MobileTabEditorProps {
  * - 전체메뉴 버튼은 코드상 항상 마지막에 고정되므로 여기서 다루지 않음
  */
 export function MobileTabEditor({ value, onChange }: MobileTabEditorProps) {
-    const map = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
+    const { user } = useAuth();
+    const allowedItems = ALL_MOBILE_TAB_ITEMS.filter(t => t.id !== 'reward' || user?.email === 'sukman@naver.com');
+    const map = new Map<string, MobileTabItem>(allowedItems.map(t => [t.id, t]));
     const selected = value.map(id => map.get(id)).filter((t): t is MobileTabItem => !!t);
-    const available = ALL_MOBILE_TAB_ITEMS.filter(t => !value.includes(t.id));
+    const available = allowedItems.filter(t => !value.includes(t.id));
     const atMax = selected.length >= MAX_MOBILE_TABS;
 
     const add = (id: string) => {

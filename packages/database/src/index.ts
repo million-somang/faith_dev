@@ -59,6 +59,7 @@ export const pool = {
     query: async (text: string, params: any[] = []): Promise<{ rows: any[], rowCount: number, lastInsertRowid?: number | bigint }> => {
         // Convert PostgreSQL syntax to SQLite
         const sqliteText = text
+            .replace(/SERIAL PRIMARY KEY/gi, 'INTEGER PRIMARY KEY AUTOINCREMENT')
             .replace(/\$\d+/g, '?')
             .replace(/ILIKE/gi, 'LIKE')
             .replace(/NOW\(\)\s*-\s*INTERVAL\s*'(\d+)\s*days'/gi, "datetime('now', '-$1 days')")

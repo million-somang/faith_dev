@@ -43,10 +43,14 @@ async function initNovelDatabase() {
 
     // 기존 테이블 구조 안전 호환 패치 (ALTER TABLE)
     try {
-        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN status TEXT DEFAULT 'published'").run();
-    } catch(e) {}
-    try {
-        await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN publish_at TEXT DEFAULT '1970-01-01 00:00:00'").run();
+        const colsRes = await db.prepare("PRAGMA table_info(novel_episodes_v2)").all();
+        const colNames = (colsRes.results || []).map((c: any) => c.name);
+        if (!colNames.includes('status')) {
+            await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN status TEXT DEFAULT 'published'").run();
+        }
+        if (!colNames.includes('publish_at')) {
+            await db.prepare("ALTER TABLE novel_episodes_v2 ADD COLUMN publish_at TEXT DEFAULT '1970-01-01 00:00:00'").run();
+        }
     } catch(e) {}
 
     // 3. 골드 지갑 테이블

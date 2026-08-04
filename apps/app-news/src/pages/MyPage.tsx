@@ -11,7 +11,43 @@ export default function MyPage() {
     const [watchlist, setWatchlist] = useState<any[]>([]);
     const [gameStats, setGameStats] = useState<any[]>([]);
     const [utilHistory, setUtilHistory] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [newKeywordInput, setNewKeywordInput] = useState('');
+
+    const fetchKeywordsAndNews = async () => {
+        try {
+            const instance = axios.create({ withCredentials: true });
+            const [kwRes, kwNewsRes] = await Promise.all([
+                instance.get(`${API_BASE}/api/user/keywords`),
+                instance.get(`${API_BASE}/api/user/news/keywords?limit=5`)
+            ]);
+            setKeywords(kwRes.data.keywords || []);
+            setKeywordNews(kwNewsRes.data.news || []);
+        } catch (error) {
+            console.error('Failed to update keywords:', error);
+        }
+    };
+
+    const handleAddKeyword = async () => {
+        if (!newKeywordInput.trim()) return;
+        try {
+            const instance = axios.create({ withCredentials: true });
+            await instance.post(`${API_BASE}/api/user/keywords`, { keyword: newKeywordInput.trim() });
+            setNewKeywordInput('');
+            await fetchKeywordsAndNews();
+        } catch (error) {
+            console.error('Failed to add keyword:', error);
+        }
+    };
+
+    const handleRemoveKeyword = async (keywordId: number) => {
+        try {
+            const instance = axios.create({ withCredentials: true });
+            await instance.delete(`${API_BASE}/api/user/keywords/${keywordId}`);
+            await fetchKeywordsAndNews();
+        } catch (error) {
+            console.error('Failed to remove keyword:', error);
+        }
+    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -131,7 +167,7 @@ export default function MyPage() {
                                     keywords.map((kw) => (
                                         <span key={kw.id} className="px-3 py-1 bg-green-50 text-brand-green text-sm font-bold rounded-full border border-green-100 flex items-center gap-2">
                                             #{kw.keyword}
-                                            <button className="hover:text-red-500 transition-colors">
+                                            <button onClick={() => handleRemoveKeyword(kw.id)} className="hover:text-red-500 transition-colors">
                                                 <i className="fas fa-times text-[10px]"></i>
                                             </button>
                                         </span>
@@ -141,8 +177,15 @@ export default function MyPage() {
                                 )}
                             </div>
                             <div className="mt-4 flex gap-2">
-                                <input type="text" placeholder="키워드 추가" className="flex-1 bg-gray-100 border-none rounded-lg py-2 px-4 text-xs focus:ring-2 focus:ring-brand-green transition-all" />
-                                <button className="p-2 bg-brand-green text-white rounded-lg hover:bg-brand-green-hover">
+                                <input
+                                    type="text"
+                                    value={newKeywordInput}
+                                    onChange={(e) => setNewKeywordInput(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddKeyword())}
+                                    placeholder="키워드/주제 추가"
+                                    className="flex-1 bg-gray-100 border-none rounded-lg py-2 px-4 text-xs focus:ring-2 focus:ring-brand-green transition-all"
+                                />
+                                <button onClick={handleAddKeyword} className="p-2 bg-brand-green text-white rounded-lg hover:bg-brand-green-hover">
                                     <i className="fas fa-plus text-xs"></i>
                                 </button>
                             </div>

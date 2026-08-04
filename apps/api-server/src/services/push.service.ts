@@ -51,7 +51,7 @@ export class PushService {
         try {
             await pool.query(`
                 CREATE TABLE IF NOT EXISTS user_push_subscriptions (
-                    id SERIAL PRIMARY KEY,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     endpoint TEXT NOT NULL UNIQUE,
                     p256dh TEXT NOT NULL,

@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Navigate } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../../context/AuthContext';
 import { PageSEO } from '../../components/PageSEO';
@@ -28,6 +28,10 @@ export default function RewardLayout() {
                 <Footer />
             </div>
         );
+    }
+
+    if (!user || user.email !== 'sukman@naver.com') {
+        return <Navigate to="/" replace />;
     }
 
     return (
