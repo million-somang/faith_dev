@@ -12,6 +12,7 @@ export default function MyPage() {
     const [gameStats, setGameStats] = useState<any[]>([]);
     const [utilHistory, setUtilHistory] = useState<any[]>([]);
     const [newKeywordInput, setNewKeywordInput] = useState('');
+    const [loading, setLoading] = useState(true);
 
     const fetchKeywordsAndNews = async () => {
         try {
