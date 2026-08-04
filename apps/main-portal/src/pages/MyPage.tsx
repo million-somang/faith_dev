@@ -1441,9 +1441,18 @@ const DEFAULT_WATCHLIST = [
                                     {/* 뉴스 섹션 */}
                                     {activeSection === 'news' && (
                                         <div className="animate-fade-in">
-                                            <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center border-b pb-4">
-                                                <i className="fas fa-newspaper mr-3 text-sky-500 text-3xl"></i>뉴스
-                                            </h2>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4">
+                                                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                                                    <i className="fas fa-newspaper mr-3 text-sky-500 text-3xl"></i>뉴스 관리와 구독
+                                                </h2>
+                                                <Link
+                                                    to="/news"
+                                                    className="px-4 py-2.5 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 group cursor-pointer"
+                                                >
+                                                    <span><i className="fas fa-newspaper mr-1"></i> 실시간 뉴스 서비스로 이동</span>
+                                                    <i className="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                                </Link>
+                                            </div>
 
                                             <div className="mb-10 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
                                                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-5 border-b border-slate-100">
@@ -1583,9 +1592,18 @@ const DEFAULT_WATCHLIST = [
                                     {/* 주식 섹션 */}
                                     {activeSection === 'stocks' && (
                                         <div className="animate-fade-in">
-                                            <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center border-b pb-4">
-                                                <i className="fas fa-chart-line mr-3 text-green-500 text-3xl"></i>주식
-                                            </h2>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4">
+                                                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                                                    <i className="fas fa-chart-line mr-3 text-green-500 text-3xl"></i>주식 / 금융
+                                                </h2>
+                                                <Link
+                                                    to="/finance"
+                                                    className="px-4 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 group cursor-pointer"
+                                                >
+                                                    <span><i className="fas fa-chart-line mr-1"></i> 금융 서비스 메인으로 이동</span>
+                                                    <i className="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                                </Link>
+                                            </div>
 
                                             <div className="mb-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
                                                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-5 text-white shadow-md">
@@ -1648,9 +1666,46 @@ const DEFAULT_WATCHLIST = [
                                     {/* 게임 섹션 */}
                                     {activeSection === 'games' && (
                                         <div className="animate-fade-in">
-                                            <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center border-b pb-4">
-                                                <i className="fas fa-gamepad mr-3 text-purple-500 text-3xl"></i>게임
-                                            </h2>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
+                                                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                                                    <i className="fas fa-gamepad mr-3 text-purple-500 text-3xl"></i>게임 전적 및 센터
+                                                </h2>
+                                                <Link
+                                                    to="/game"
+                                                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 group cursor-pointer"
+                                                >
+                                                    <span><i className="fas fa-gamepad mr-1"></i> 게임 센터 메인으로 이동</span>
+                                                    <i className="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                                </Link>
+                                            </div>
+
+                                            {/* 미니게임 바로가기 빠른 실행 카드 */}
+                                            <div className="mb-8 p-5 bg-gradient-to-br from-purple-50/70 to-indigo-50/50 border border-purple-200/80 rounded-2xl shadow-2xs">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                                        <i className="fas fa-bolt text-purple-500"></i> 미니게임 바로가기
+                                                    </h3>
+                                                    <Link to="/game" className="text-xs text-purple-600 font-bold hover:underline">전체 게임 →</Link>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                    <Link to="/game/play/tetris" className="p-3 bg-white hover:bg-purple-50 rounded-xl border border-purple-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-cubes"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">테트리스</span>
+                                                    </Link>
+                                                    <Link to="/game" className="p-3 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-hashtag"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">2048</span>
+                                                    </Link>
+                                                    <Link to="/game" className="p-3 bg-white hover:bg-rose-50 rounded-xl border border-rose-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-bomb"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">지뢰찾기</span>
+                                                    </Link>
+                                                    <Link to="/game" className="p-3 bg-white hover:bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-border-all"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">스도쿠</span>
+                                                    </Link>
+                                                </div>
+                                            </div>
 
                                             <div className="mb-10">
                                                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
@@ -1706,9 +1761,46 @@ const DEFAULT_WATCHLIST = [
                                     {/* 유틸리티 섹션 */}
                                     {activeSection === 'utils' && (
                                         <div className="animate-fade-in">
-                                            <h2 className="text-2xl font-bold text-gray-900 mb-8 flex items-center border-b pb-4">
-                                                <i className="fas fa-tools mr-3 text-orange-500 text-3xl"></i>유틸리티
-                                            </h2>
+                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
+                                                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                                                    <i className="fas fa-tools mr-3 text-orange-500 text-3xl"></i>유틸리티
+                                                </h2>
+                                                <Link
+                                                    to="/lifestyle"
+                                                    className="px-4 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-2 group cursor-pointer"
+                                                >
+                                                    <span><i className="fas fa-screwdriver-wrench mr-1"></i> 유틸리티 메인으로 이동</span>
+                                                    <i className="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                                </Link>
+                                            </div>
+
+                                            {/* 유틸리티 빠른 실행 카드 */}
+                                            <div className="mb-8 p-5 bg-gradient-to-br from-orange-50/70 to-amber-50/50 border border-orange-200/80 rounded-2xl shadow-2xs">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="font-extrabold text-slate-800 text-sm flex items-center gap-2">
+                                                        <i className="fas fa-bolt text-orange-500"></i> 유틸리티 서비스 바로가기
+                                                    </h3>
+                                                    <Link to="/lifestyle" className="text-xs text-orange-600 font-bold hover:underline">전체 도구 →</Link>
+                                                </div>
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                    <Link to="/lifestyle" className="p-3 bg-white hover:bg-orange-50 rounded-xl border border-orange-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-calculator"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">계산기 모음</span>
+                                                    </Link>
+                                                    <Link to="/finance" className="p-3 bg-white hover:bg-green-50 rounded-xl border border-green-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-coins"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">금융 계산기</span>
+                                                    </Link>
+                                                    <Link to="/entertainment/saju" className="p-3 bg-white hover:bg-violet-50 rounded-xl border border-violet-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-violet-100 text-violet-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-yin-yang"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">사주 / 운세</span>
+                                                    </Link>
+                                                    <Link to="/lifestyle" className="p-3 bg-white hover:bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-code"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">개발자 도구</span>
+                                                    </Link>
+                                                </div>
+                                            </div>
 
                                             <div className="mb-10">
                                                 <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center">
