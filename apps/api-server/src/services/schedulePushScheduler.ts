@@ -1,5 +1,6 @@
 import { pool } from '@faithportal/database';
 import { PushService } from './push.service.js';
+import { MyPageService } from './mypage.service.js';
 
 let isRunning = false;
 
@@ -23,8 +24,6 @@ export function startSchedulePushScheduler() {
         checkAndSend1HourNotifications().catch(e => console.error('[SchedulePushScheduler] Initial check error:', e));
     }, 5000);
 }
-
-import { MyPageService } from './mypage.service';
 
 async function checkAndSend1HourNotifications() {
     try {
