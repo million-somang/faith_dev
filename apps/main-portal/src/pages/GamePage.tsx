@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Header, Footer } from '@faithportal/ui';
+import { Header, Footer, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 
@@ -216,20 +216,20 @@ export default function GamePage() {
                     <i className="fas fa-gamepad absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
                     <div className="relative">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
-                            <i className="fas fa-bolt"></i> 미니게임
+                            <i className="fas fa-bolt"></i> {t('미니게임')}
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            틈날 때 가볍게, 무료로 즐기는 미니게임
+                            {t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
-                            테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요
+                            {t('테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
                 </section>
 
                 {/* 게임 선택 */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                    <h2 className="text-[20px] font-bold text-slate-800 mb-5 border-b border-slate-100 pb-3">게임 선택</h2>
+                    <h2 className="text-[20px] font-bold text-slate-800 mb-5 border-b border-slate-100 pb-3">{t('게임 선택')}</h2>
 
                     {/* 장르 탭 */}
                     <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1">
@@ -243,7 +243,7 @@ export default function GamePage() {
                                     }`}
                             >
                                 <i className={`${g.icon} text-xs ${genre === g.id ? 'text-violet-500' : ''}`} />
-                                {g.label}
+                                {t(g.label)}
                             </button>
                         ))}
                     </div>

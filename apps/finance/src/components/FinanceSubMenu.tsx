@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { t } from '@faithportal/ui';
 
 const menuItems = [
     { path: '/', label: '주식', icon: 'fas fa-chart-line' },
@@ -29,7 +30,7 @@ export default function FinanceSubMenu() {
                                 }`}
                             >
                                 <i className={`${item.icon} text-base`}></i>
-                                {item.label}
+                                {t(item.label)}
                             </Link>
                         );
                     })}
@@ -50,7 +51,7 @@ export default function FinanceSubMenu() {
                                 }`}
                             >
                                 <i className={item.icon}></i>
-                                {item.label}
+                                {t(item.label)}
                             </Link>
                         );
                     })}

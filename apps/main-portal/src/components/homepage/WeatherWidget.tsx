@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { t } from '@faithportal/ui';
 
 // 실제 데이터: Open-Meteo(무료, API키 불필요) + 브라우저 위치 + 무료 역지오코딩 + 대기질
 const SEOUL = { lat: 37.5665, lon: 126.978, name: '서울' };
@@ -139,7 +140,7 @@ export function WeatherWidget() {
                 {data && ci ? (
                     <>
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-cloud-sun text-blue-400"></i> 날씨</h3>
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-cloud-sun text-blue-400"></i> {t('날씨')}</h3>
                             <span className="text-xs font-semibold text-gray-400 truncate max-w-[45%]" title={data.location}>{data.location}</span>
                         </div>
 

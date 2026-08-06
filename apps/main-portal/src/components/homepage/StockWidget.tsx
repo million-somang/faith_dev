@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { t } from '@faithportal/ui';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -65,7 +66,7 @@ export function StockWidget() {
             {/* PC 카드 */}
             <div className="hidden sm:block content-card p-6">
             <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-chart-line text-green-500"></i> 증시</h3>
+                <h3 className="font-bold text-gray-900 flex items-center gap-2"><i className="fas fa-chart-line text-green-500"></i> {t('증시')}</h3>
                 {updatedAt && <span className="text-xs text-gray-400">{updatedAt}</span>}
             </div>
 
@@ -77,9 +78,9 @@ export function StockWidget() {
                 <>
                     {usd && (
                         <div className="pb-4 mb-3 border-b border-gray-100">
-                            <div className="text-xs font-bold text-gray-400 mb-1">환율 USD</div>
+                            <div className="text-xs font-bold text-gray-400 mb-1">{t('환율 USD')}</div>
                             <div className="text-2xl font-black text-gray-900 leading-none">
-                                {usd.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-sm font-bold text-gray-400 ml-1">원</span>
+                                {usd.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span className="text-sm font-bold text-gray-400 ml-1">{t('원')}</span>
                             </div>
                             <div className={`text-sm font-bold mt-1 ${color(usd.status)}`}>
                                 <i className={`fas ${arrow(usd.status)} mr-0.5`}></i>
@@ -103,7 +104,7 @@ export function StockWidget() {
                     </div>
 
                     <Link to="/finance" className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-sm font-semibold text-gray-500 hover:text-green-600 transition-colors">
-                        인기종목 더보기 <i className="fas fa-chevron-right text-xs"></i>
+                        {t('인기종목 더보기')} <i className="fas fa-chevron-right text-xs"></i>
                     </Link>
                 </>
             )}
