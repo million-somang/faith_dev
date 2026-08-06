@@ -102,6 +102,26 @@ export const translations: Record<SupportedLang, Record<string, string>> = {
         '미니게임': '미니게임',
         '고전게임': '고전게임',
         '에뮬레이터': '에뮬레이터',
+
+        // Utility Page Specifics
+        '자주 쓰는 앱': '자주 쓰는 앱',
+        '일상에 유용한 도구들을 모았습니다.': '일상에 유용한 도구들을 모았습니다.',
+        '만나이 계산기': '만나이 계산기',
+        '만 나이 계산기': '만 나이 계산기',
+        '평수 변환기': '평수 변환기',
+        '부동산 평수 계산기': '부동산 평수 계산기',
+        'D-Day 계산기': 'D-Day 계산기',
+        '글자수 세기': '글자수 세기',
+        '글자수 검사기': '글자수 검사기',
+        'JSON 포맷터': 'JSON 포맷터',
+        'Base64 변환기': 'Base64 변환기',
+        'SVG 변환기': 'SVG 변환기',
+        '공학용 계산기': '공학용 계산기',
+        '일반 계산기': '일반 계산기',
+        '생활도구 - 계산기, 변환기, 텍스트 도구': '생활도구 - 계산기, 변환기, 텍스트 도구',
+        '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.': '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.',
+        '앱 목록을 불러오는 중입니다...': '앱 목록을 불러오는 중입니다...',
+        '사용 가능한 미니앱이 없습니다.': '사용 가능한 미니앱이 없습니다.',
     },
     en: {
         // Navigation & General
@@ -183,6 +203,26 @@ export const translations: Record<SupportedLang, Record<string, string>> = {
         '미니게임': 'Mini Games',
         '고전게임': 'Classic Games',
         '에뮬레이터': 'Emulators',
+
+        // Utility Page Specifics
+        '자주 쓰는 앱': 'Frequently Used Tools',
+        '일상에 유용한 도구들을 모았습니다.': 'A collection of useful tools for everyday life.',
+        '만나이 계산기': 'Age Calculator',
+        '만 나이 계산기': 'Age Calculator',
+        '평수 변환기': 'Pyeong Converter',
+        '부동산 평수 계산기': 'Pyeong Converter',
+        'D-Day 계산기': 'D-Day Counter',
+        '글자수 세기': 'Word/Character Counter',
+        '글자수 검사기': 'Word/Character Counter',
+        'JSON 포맷터': 'JSON Formatter',
+        'Base64 변환기': 'Base64 Converter',
+        'SVG 변환기': 'SVG Converter',
+        '공학용 계산기': 'Scientific Calculator',
+        '일반 계산기': 'Standard Calculator',
+        '생활도구 - 계산기, 변환기, 텍스트 도구': 'Utilities - Calculators, Converters & Text Tools',
+        '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.': 'Collection of useful tools such as Age Calculator, Pyeong Converter, D-Day Counter, JSON Formatter, Base64 Converter, etc.',
+        '앱 목록을 불러오는 중입니다...': 'Loading tools...',
+        '사용 가능한 미니앱이 없습니다.': 'No tools available.',
     }
 };
 

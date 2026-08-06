@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Header, Footer, Card } from '@faithportal/ui';
+import { Header, Footer, Card, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { MiniAppButton } from '../components/MiniAppButton';
 import { PageSEO } from '../components/PageSEO';
@@ -189,7 +189,7 @@ export default function UtilityPage() {
         <MiniAppButton
             key={`${keyPrefix}${app.id}`}
             appId={String(app.id)}
-            title={app.name}
+            title={t(app.name)}
             icon={<i className={`${app.icon_url || 'fas fa-cube'} text-3xl ${keyPrefix ? 'text-indigo-500' : 'text-blue-500'}`}></i>}
             url={getDevUrl(app)}
             requireAuth={app.require_auth === 1}
@@ -201,8 +201,8 @@ export default function UtilityPage() {
     return (
         <div className="flex flex-col min-h-screen">
             <PageSEO
-                title="생활도구 - 계산기, 변환기, 텍스트 도구"
-                description="만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음."
+                title={t('생활도구 - 계산기, 변환기, 텍스트 도구')}
+                description={t('만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.')}
                 path="/lifestyle"
             />
             <Header user={user} onLogout={logout} />
@@ -213,8 +213,8 @@ export default function UtilityPage() {
                             <i className="fas fa-tools text-xl"></i>
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">유틸리티</h1>
-                            <p className="text-gray-500 text-sm mt-1">일상에 유용한 도구들을 모았습니다.</p>
+                            <h1 className="text-2xl font-bold text-gray-900">{t('유틸리티')}</h1>
+                            <p className="text-gray-500 text-sm mt-1">{t('일상에 유용한 도구들을 모았습니다.')}</p>
                         </div>
                     </div>
 
@@ -223,7 +223,7 @@ export default function UtilityPage() {
                         <div className="mb-8">
                             <div className="flex items-center gap-2 mb-4">
                                 <i className="fas fa-star text-amber-400 text-sm"></i>
-                                <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">자주 쓰는 앱</h2>
+                                <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">{t('자주 쓰는 앱')}</h2>
                             </div>
                             <div className="relative rounded-2xl bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 border border-blue-100/60 p-5">
                                 <div className="absolute inset-0 rounded-2xl bg-white/30 backdrop-blur-sm pointer-events-none"></div>
@@ -248,7 +248,7 @@ export default function UtilityPage() {
                                     }`}
                                 >
                                     <i className={cat.icon}></i>
-                                    {cat.label}
+                                    {t(cat.label)}
                                     {cat.key !== 'all' && (
                                         <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                                             selectedCategory === cat.key
@@ -265,11 +265,11 @@ export default function UtilityPage() {
 
                     {/* 전체 앱 목록 */}
                     {loading ? (
-                        <div className="py-12 text-center text-gray-500">앱 목록을 불러오는 중입니다...</div>
+                        <div className="py-12 text-center text-gray-500">{t('앱 목록을 불러오는 중입니다...')}</div>
                     ) : (
                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4 justify-items-center">
                             {filteredApps.length === 0 ? (
-                                <div className="col-span-full py-8 text-center text-sm text-gray-500">사용 가능한 미니앱이 없습니다.</div>
+                                <div className="col-span-full py-8 text-center text-sm text-gray-500">{t('사용 가능한 미니앱이 없습니다.')}</div>
                             ) : (
                                 filteredApps.map(app => renderAppButton(app))
                             )}
