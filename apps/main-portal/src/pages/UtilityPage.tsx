@@ -154,13 +154,17 @@ export default function UtilityPage() {
     }, [modalOpen]);
 
     const getDevUrl = (app: MiniApp): string => {
-        if (!import.meta.env.DEV) return app.app_url;
-        if (app.app_url.includes('calculator')) return 'http://localhost:5019/app/calculator/';
-        if (app.app_url.includes('text-checker')) return 'http://localhost:5011/app/text-checker/';
-        if (app.app_url.includes('pyeong-calc')) return 'http://localhost:5014/app/pyeong-calc/';
-        if (app.app_url.includes('age-calc')) return 'http://localhost:5017/app/age-calc/';
-        if (app.app_url.includes('dday-calc')) return 'http://localhost:5018/app/dday-calc/';
-        return app.app_url;
+        const lang = t('홈') === 'Home' ? 'en' : 'ko';
+        let baseUrl = app.app_url;
+        if (import.meta.env.DEV) {
+            if (app.app_url.includes('calculator')) baseUrl = 'http://localhost:5019/app/calculator/';
+            else if (app.app_url.includes('text-checker')) baseUrl = 'http://localhost:5011/app/text-checker/';
+            else if (app.app_url.includes('pyeong-calc')) baseUrl = 'http://localhost:5014/app/pyeong-calc/';
+            else if (app.app_url.includes('age-calc')) baseUrl = 'http://localhost:5017/app/age-calc/';
+            else if (app.app_url.includes('dday-calc')) baseUrl = 'http://localhost:5018/app/dday-calc/';
+        }
+        const separator = baseUrl.includes('?') ? '&' : '?';
+        return baseUrl.includes('lang=') ? baseUrl : `${baseUrl}${separator}lang=${lang}`;
     };
 
     /** 이 앱이 모달로 열어야 하는 앱인지 판별 */
@@ -170,8 +174,11 @@ export default function UtilityPage() {
 
     /** 모달 열기 콜백 */
     const handleModalOpen = useCallback((url: string, title: string) => {
-        setModalUrl(url);
-        setModalTitle(title);
+        const lang = t('홈') === 'Home' ? 'en' : 'ko';
+        const separator = url.includes('?') ? '&' : '?';
+        const finalUrl = url.includes('lang=') ? url : `${url}${separator}lang=${lang}`;
+        setModalUrl(finalUrl);
+        setModalTitle(t(title));
         setModalOpen(true);
     }, []);
 

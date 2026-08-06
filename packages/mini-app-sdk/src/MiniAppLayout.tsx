@@ -1,4 +1,6 @@
 import React from 'react';
+import { t } from './i18n';
+
 interface MiniAppLayoutProps {
     title: string;
     children: React.ReactNode;
@@ -20,7 +22,7 @@ export const MiniAppLayout: React.FC<MiniAppLayoutProps> = ({ title, children, h
             {/* Header */}
             <header className="h-14 flex items-center justify-between px-4 bg-white border-b border-gray-100 flex-shrink-0 z-10 sticky top-0">
                 <div className="flex-1" />
-                <h1 className="text-lg font-bold text-gray-800 flex-1 text-center truncate">{title}</h1>
+                <h1 className="text-lg font-bold text-gray-800 flex-1 text-center truncate">{t(title)}</h1>
                 <div className="flex-1 flex justify-end items-center gap-2">
                     {headerRight}
                     <button

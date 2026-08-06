@@ -1,3 +1,5 @@
+import { t } from '@faithportal/mini-app-sdk';
+
 interface TabBarProps {
     activeTab: string;
     onTabChange: (tab: string) => void;
@@ -27,7 +29,7 @@ export default function TabBar({ activeTab, onTabChange }: TabBarProps) {
                     className={`calc-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
                 >
                     <i className={`fas ${tab.icon}`} aria-hidden="true"></i>
-                    {tab.label}
+                    {t(tab.label)}
                 </button>
             ))}
         </nav>

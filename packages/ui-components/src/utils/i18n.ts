@@ -7,6 +7,10 @@ export const getLang = (): SupportedLang => {
         const saved = localStorage.getItem('user_lang');
         if (saved === 'ko' || saved === 'en') return saved;
         
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramLang = urlParams.get('lang');
+        if (paramLang === 'ko' || paramLang === 'en') return paramLang;
+
         // Auto-detect browser language: Default to 'en' for non-Korean users
         const browserLang = (navigator.language || (navigator as any).userLanguage || '').toLowerCase();
         return browserLang.startsWith('ko') ? 'ko' : 'en';
@@ -103,14 +107,19 @@ export const translations: Record<SupportedLang, Record<string, string>> = {
         '고전게임': '고전게임',
         '에뮬레이터': '에뮬레이터',
 
-        // Utility Page Specifics
+        // Utility Page & Mini-App Exact Database Titles
         '자주 쓰는 앱': '자주 쓰는 앱',
         '일상에 유용한 도구들을 모았습니다.': '일상에 유용한 도구들을 모았습니다.',
+        '다기능 계산기': '다기능 계산기',
+        '나이 계산기': '나이 계산기',
         '만나이 계산기': '만나이 계산기',
         '만 나이 계산기': '만 나이 계산기',
+        '디데이 계산기': '디데이 계산기',
+        'D-Day 계산기': 'D-Day 계산기',
+        '평수 계산기': '평수 계산기',
         '평수 변환기': '평수 변환기',
         '부동산 평수 계산기': '부동산 평수 계산기',
-        'D-Day 계산기': 'D-Day 계산기',
+        '맞춤법 검사기': '맞춤법 검사기',
         '글자수 세기': '글자수 세기',
         '글자수 검사기': '글자수 검사기',
         'JSON 포맷터': 'JSON 포맷터',
@@ -118,6 +127,11 @@ export const translations: Record<SupportedLang, Record<string, string>> = {
         'SVG 변환기': 'SVG 변환기',
         '공학용 계산기': '공학용 계산기',
         '일반 계산기': '일반 계산기',
+        '단위 변환기': '단위 변환기',
+        '퍼센트 계산기': '퍼센트 계산기',
+        '대출 계산기': '대출 계산기',
+        'BMI 계산기': 'BMI 계산기',
+        '날짜 계산기': '날짜 계산기',
         '생활도구 - 계산기, 변환기, 텍스트 도구': '생활도구 - 계산기, 변환기, 텍스트 도구',
         '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.': '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.',
         '앱 목록을 불러오는 중입니다...': '앱 목록을 불러오는 중입니다...',
@@ -204,21 +218,31 @@ export const translations: Record<SupportedLang, Record<string, string>> = {
         '고전게임': 'Classic Games',
         '에뮬레이터': 'Emulators',
 
-        // Utility Page Specifics
+        // Utility Page & Mini-App Exact Database Titles
         '자주 쓰는 앱': 'Frequently Used Tools',
         '일상에 유용한 도구들을 모았습니다.': 'A collection of useful tools for everyday life.',
+        '다기능 계산기': 'Calculator',
+        '나이 계산기': 'Age Calculator',
         '만나이 계산기': 'Age Calculator',
         '만 나이 계산기': 'Age Calculator',
+        '디데이 계산기': 'D-Day Counter',
+        'D-Day 계산기': 'D-Day Counter',
+        '평수 계산기': 'Pyeong Converter',
         '평수 변환기': 'Pyeong Converter',
         '부동산 평수 계산기': 'Pyeong Converter',
-        'D-Day 계산기': 'D-Day Counter',
-        '글자수 세기': 'Word/Character Counter',
-        '글자수 검사기': 'Word/Character Counter',
+        '맞춤법 검사기': 'Spell & Word Checker',
+        '글자수 세기': 'Word & Character Counter',
+        '글자수 검사기': 'Word & Character Counter',
         'JSON 포맷터': 'JSON Formatter',
         'Base64 변환기': 'Base64 Converter',
         'SVG 변환기': 'SVG Converter',
         '공학용 계산기': 'Scientific Calculator',
         '일반 계산기': 'Standard Calculator',
+        '단위 변환기': 'Unit Converter',
+        '퍼센트 계산기': 'Percentage Calculator',
+        '대출 계산기': 'Loan Calculator',
+        'BMI 계산기': 'BMI Calculator',
+        '날짜 계산기': 'Date Calculator',
         '생활도구 - 계산기, 변환기, 텍스트 도구': 'Utilities - Calculators, Converters & Text Tools',
         '만나이 계산기, 평수 변환기, D-Day 계산기, JSON 포맷터, Base64 변환기 등 유용한 생활 도구 모음.': 'Collection of useful tools such as Age Calculator, Pyeong Converter, D-Day Counter, JSON Formatter, Base64 Converter, etc.',
         '앱 목록을 불러오는 중입니다...': 'Loading tools...',
