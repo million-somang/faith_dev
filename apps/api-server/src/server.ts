@@ -118,9 +118,9 @@ app.get('/finance', serveStatic({ path: './apps/finance/dist/index.html' }));
 
 // ==================== SEO 라우트 ====================
 
-const SITE_URL = process.env.SITE_URL || 'https://faithlink.my';
+const SITE_URL = process.env.SITE_URL || 'https://veranex.app';
 
-// robots.txt
+// robots.txt (네이버 Yeti 및 구글봇 검색 크롤링 지원)
 app.get('/robots.txt', (c) => {
     const robotsTxt = `User-agent: *
 Allow: /
@@ -131,9 +131,15 @@ Disallow: /mypage
 Disallow: /login
 Disallow: /signup
 
+User-agent: Yeti
+Allow: /
+Allow: /sitemap.xml
+Allow: /rss.xml
+
 Sitemap: ${SITE_URL}/sitemap.xml
+Sitemap: ${SITE_URL}/rss.xml
 `;
-    return c.text(robotsTxt, 200, { 'Content-Type': 'text/plain' });
+    return c.text(robotsTxt, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
 });
 
 // ads.txt
@@ -150,27 +156,69 @@ app.get('/ads.txt', (c) => {
     return c.text('google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0\n', 200, { 'Content-Type': 'text/plain; charset=utf-8' });
 });
 
+// RSS 2.0 피드 생성 (네이버 서치어드바이저 수집 전용)
+app.get('/rss.xml', async (c) => {
+    let newsItems: any[] = [];
+    try {
+        const newsResult = await pool.query(
+            "SELECT id, title, content, source, created_at FROM news ORDER BY created_at DESC LIMIT 50"
+        );
+        newsItems = newsResult.rows;
+    } catch (e) {
+        console.warn('[SEO] News query for RSS failed:', e);
+    }
+
+    const itemsXml = newsItems.map(item => {
+        const title = (item.title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const desc = (item.content || '').replace(/<[^>]*>/g, '').substring(0, 300).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const pubDate = new Date(item.created_at || Date.now()).toUTCString();
+        const link = `${SITE_URL}/news/${item.id}`;
+        return `    <item>
+      <title>${title}</title>
+      <link>${link}</link>
+      <description>${desc}</description>
+      <pubDate>${pubDate}</pubDate>
+      <guid>${link}</guid>
+    </item>`;
+    }).join('\n');
+
+    const rssXml = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>VERA (베라) - 대한민국 라이프 포털</title>
+    <link>${SITE_URL}</link>
+    <description>실시간 뉴스, 미니게임, 생활도구 통합 라이프 포털 피드</description>
+    <language>ko-KR</language>
+    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+${itemsXml}
+  </channel>
+</rss>`;
+
+    return c.text(rssXml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+});
+
 // sitemap.xml (동적 생성 — 뉴스 URL 포함)
 app.get('/sitemap.xml', async (c) => {
     const staticPages = [
         { loc: '/', priority: '1.0', changefreq: 'daily' },
         { loc: '/news', priority: '0.9', changefreq: 'hourly' },
-        { loc: '/game', priority: '0.7', changefreq: 'weekly' },
-        { loc: '/lifestyle', priority: '0.7', changefreq: 'weekly' },
-        { loc: '/finance', priority: '0.7', changefreq: 'monthly' },
+        { loc: '/game', priority: '0.8', changefreq: 'weekly' },
+        { loc: '/lifestyle', priority: '0.8', changefreq: 'weekly' },
+        { loc: '/finance', priority: '0.8', changefreq: 'daily' },
+        { loc: '/lounge', priority: '0.7', changefreq: 'daily' },
+        { loc: '/entertainment', priority: '0.7', changefreq: 'weekly' },
         { loc: '/game/tetris', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/sudoku', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/freecell', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/game/play/tetris', priority: '0.6', changefreq: 'monthly' },
     ];
 
-    // DB에서 최근 뉴스 100개 가져오기
+    // DB에서 최근 뉴스 150개 가져오기
     let newsUrls: { loc: string; lastmod: string }[] = [];
     try {
         const newsResult = await pool.query(
-            "SELECT id, created_at FROM news ORDER BY created_at DESC LIMIT 100"
+            "SELECT id, created_at FROM news ORDER BY created_at DESC LIMIT 150"
         );
         newsUrls = newsResult.rows.map((n: any) => ({
             loc: `/news/${n.id}`,
@@ -190,7 +238,7 @@ app.get('/sitemap.xml', async (c) => {
     <loc>${SITE_URL}${n.loc}</loc>
     <lastmod>${n.lastmod}</lastmod>
     <changefreq>never</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>`),
     ];
 
@@ -199,7 +247,7 @@ app.get('/sitemap.xml', async (c) => {
 ${urls.join('\n')}
 </urlset>`;
 
-    return c.text(xml, 200, { 'Content-Type': 'application/xml' });
+    return c.text(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
 });
 
 // 뉴스 상세 페이지: 서버사이드 메타 태그 주입 (SSR 없이 OG 태그 제공)
