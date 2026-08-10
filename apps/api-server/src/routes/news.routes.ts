@@ -453,17 +453,20 @@ const handleCreateNewsApi = async (c: any) => {
             finalTags
         ]);
 
-        const newNews = result.rows[0];
+        const newNews = (result.rows && result.rows[0]) ? result.rows[0] : null;
+        const insertedId = newNews?.id || (result as any).lastInsertRowid || (result as any).insertId || Date.now();
+        const insertedTitle = newNews?.title || title;
+        const insertedCategory = newNews?.category || category;
 
         return c.json({
             success: true,
             message: '뉴스가 성공적으로 등록되었습니다.',
             article: {
-                id: newNews.id,
-                title: newNews.title,
-                category: newNews.category,
-                articleUrl: `https://veranex.app/news/${newNews.id}`,
-                createdAt: newNews.created_at
+                id: insertedId,
+                title: insertedTitle,
+                category: insertedCategory,
+                articleUrl: `https://veranex.app/news/${insertedId}`,
+                createdAt: newNews?.created_at || new Date().toISOString()
             }
         }, 201);
     } catch (error: any) {
