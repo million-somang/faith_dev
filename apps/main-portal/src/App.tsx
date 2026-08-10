@@ -24,6 +24,7 @@ import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import NewsPage from './pages/NewsPage';
+import NewsWritePage from './pages/NewsWritePage';
 import SearchPage from './pages/SearchPage';
 import NewsSourcesPage from './pages/NewsSourcesPage';
 import NewsBySourcePage from './pages/NewsBySourcePage';
@@ -363,7 +364,10 @@ function App() {
                     <Route path="/entertainment/novel" element={<NovelPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
+
                     <Route path="/news" element={<NewsPage />} />
+                    <Route path="/news/write" element={<NewsWritePage />} />
+                    <Route path="/news/create" element={<NewsWritePage />} />
                     <Route path="/news/sources" element={<NewsSourcesPage />} />
                     <Route path="/news/source/:source" element={<NewsBySourcePage />} />
                     <Route path="/news/:id" element={<NewsDetailPage />} />
