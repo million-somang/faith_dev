@@ -369,4 +369,105 @@ news.post('/api/news/schedule', async (c) => {
     }
 });
 
+// POST /api/news/create (및 POST /api/news) - 뉴스 기사 외부 API 등록
+const handleCreateNewsApi = async (c: any) => {
+    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+
+    const user = c.get('user');
+    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+
+    if (!isAuthorized) {
+        return c.json({
+            success: false,
+            error: {
+                code: 401,
+                message: 'Unauthorized: Invalid or missing API Key. Please provide X-API-KEY header.'
+            }
+        }, 401);
+    }
+
+    try {
+        const body = await c.req.json();
+        const {
+            title,
+            content,
+            summary,
+            category = 'fun',
+            imageUrl,
+            thumbnail,
+            sourceUrl,
+            link,
+            source,
+            publisher,
+            aiSummary,
+            sentiment = 'neutral',
+            keywords,
+            tags
+        } = body;
+
+        if (!title || (!content && !summary)) {
+            return c.json({
+                success: false,
+                error: {
+                    code: 400,
+                    message: 'Bad Request: title and content (or summary) are required.'
+                }
+            }, 400);
+        }
+
+        const finalThumbnail = imageUrl || thumbnail || '';
+        const finalLink = sourceUrl || link || '';
+        const finalSource = source || publisher || 'VERA 재미있는 뉴스';
+        const finalSummary = summary || (content ? content.replace(/<[^>]*>/g, '').substring(0, 160) : title);
+        const finalTags = Array.isArray(keywords || tags) ? (keywords || tags).join(',') : (keywords || tags || '');
+
+        const result = await pool.query(`
+            INSERT INTO news (
+                title, summary, content, category, thumbnail, link, source, 
+                ai_summary, sentiment, tags, published_at, created_at
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            RETURNING id, title, category, created_at
+        `, [
+            title,
+            finalSummary,
+            content || finalSummary,
+            category,
+            finalThumbnail,
+            finalLink,
+            finalSource,
+            aiSummary || null,
+            sentiment,
+            finalTags
+        ]);
+
+        const newNews = result.rows[0];
+
+        return c.json({
+            success: true,
+            message: '뉴스가 성공적으로 등록되었습니다.',
+            article: {
+                id: newNews.id,
+                title: newNews.title,
+                category: newNews.category,
+                articleUrl: `https://veranex.app/news/${newNews.id}`,
+                createdAt: newNews.created_at
+            }
+        }, 201);
+    } catch (error: any) {
+        console.error('[Create News API Error]', error);
+        return c.json({
+            success: false,
+            error: {
+                code: 500,
+                message: 'Failed to create news: ' + (error.message || 'Server error')
+            }
+        }, 500);
+    }
+};
+
+news.post('/api/news/create', handleCreateNewsApi);
+news.post('/api/news', handleCreateNewsApi);
+
 export default news;

@@ -4,6 +4,7 @@
 export function getCategoryName(category: string): string {
   const names: Record<string, string> = {
     'general': '일반',
+    'fun': '재미있는 뉴스',
     'politics': '정치',
     'economy': '경제',
     'tech': 'IT/과학',
@@ -18,6 +19,7 @@ export function getCategoryName(category: string): string {
 export function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
     'general': 'bg-gray-100 text-gray-700',
+    'fun': 'bg-amber-100 text-amber-800 border border-amber-200',
     'politics': 'bg-blue-100 text-blue-700',
     'economy': 'bg-green-100 text-green-700',
     'tech': 'bg-purple-100 text-purple-700',

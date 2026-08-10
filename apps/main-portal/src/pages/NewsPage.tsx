@@ -26,6 +26,7 @@ export default function NewsPage() {
 
     const categories = [
         { id: 'all', name: '전체' },
+        { id: 'fun', name: '재미있는 뉴스' },
         { id: 'general', name: '일반' },
         { id: 'politics', name: '정치' },
         { id: 'economy', name: '경제' },
