@@ -467,5 +467,11 @@ const handleCreateNewsApi = async (c: any) => {
     }
 };
 
+import { bodyLimit } from 'hono/body-limit';
+
+news.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+news.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+news.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+
 export { handleCreateNewsApi };
 export default news;
