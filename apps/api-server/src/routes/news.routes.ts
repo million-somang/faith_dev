@@ -417,7 +417,18 @@ const handleCreateNewsApi = async (c: any) => {
         }
 
         const finalThumbnail = imageUrl || thumbnail || '';
-        const finalLink = sourceUrl || link || '';
+        let finalLink = (sourceUrl || link || '').trim();
+        if (!finalLink) {
+            finalLink = `https://veranex.app/news/ref/${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+        }
+
+        // 중복 link 방지: DB에 이미 동일한 link가 존재하면 유니크 피닉스 쿼리 파라미터 부여
+        const checkExisting = await pool.query('SELECT id FROM news WHERE link = $1', [finalLink]);
+        if (checkExisting.rows && checkExisting.rows.length > 0) {
+            const separator = finalLink.includes('?') ? '&' : '?';
+            finalLink = `${finalLink}${separator}_v=${Date.now()}`;
+        }
+
         const finalSource = source || publisher || 'VERA 재미있는 뉴스';
         const finalSummary = summary || (content ? content.replace(/<[^>]*>/g, '').substring(0, 160) : title);
         const finalTags = Array.isArray(keywords || tags) ? (keywords || tags).join(',') : (keywords || tags || '');
