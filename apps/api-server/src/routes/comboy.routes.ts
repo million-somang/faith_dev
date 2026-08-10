@@ -14,7 +14,7 @@ async function initComboyTable(DB: any) {
             slot_no INTEGER NOT NULL,
             slot_name TEXT NOT NULL,
             save_data TEXT NOT NULL,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (user_id, game_name, slot_no)
         )
     `).run();
@@ -99,8 +99,8 @@ comboyRoutes.post('/api/comboy/save', bodyLimit({ maxSize: 20 * 1024 * 1024 }), 
             INSERT INTO comboy_saves_v2 (user_id, game_name, slot_no, slot_name, save_data, updated_at)
             VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(user_id, game_name, slot_no) DO UPDATE SET
-                slot_name = excluded.slot_name,
-                save_data = excluded.save_data,
+                slot_name = EXCLUDED.slot_name,
+                save_data = EXCLUDED.save_data,
                 updated_at = CURRENT_TIMESTAMP
         `).bind(user.id, normalized, parsedSlotNo, slotName, saveData).run();
 

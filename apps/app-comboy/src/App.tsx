@@ -465,8 +465,8 @@ export default function App() {
         if (code !== null) nesRef.current.buttonUp(1, code);
     };
 
-    // 세이브 - 슬롯 번호와 이름 사용
-    const handleCloudSave = async (slotNo: number = 1, existingName?: string) => {
+    // 세이브 - 슬롯 번호와 이름 사용 (forcePrompt: true 시 무조건 이름 수정 팝업)
+    const handleCloudSave = async (slotNo: number = 1, forcePrompt: boolean = false, existingName?: string) => {
         if (!user) {
             setShowLoginModal(true);
             return;
@@ -477,8 +477,8 @@ export default function App() {
         }
 
         let customName = existingName;
-        if (!customName) {
-            const promptName = prompt('세이브 파일의 이름을 입력해주세요:', `슬롯 ${slotNo}`);
+        if (forcePrompt || !customName) {
+            const promptName = prompt('세이브 파일의 이름을 입력해주세요:', customName || `슬롯 ${slotNo}`);
             if (promptName === null) return; // 취소 시 동작 중단
             customName = promptName.trim() || `슬롯 ${slotNo}`;
         }
@@ -490,8 +490,19 @@ export default function App() {
             // JSNES의 메모리 상태(JSON 포맷) 획득
             const rawState = nesRef.current.toJSON();
             const jsonStr = JSON.stringify(rawState);
-            // 텍스트 바이너리를 Base64 인코딩
-            const base64Data = btoa(unescape(encodeURIComponent(jsonStr)));
+            
+            // 안전한 TextEncoder & Chunk-based Base64 인코딩 (한글/특수문자/대용량 인코딩 에러 방지)
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(jsonStr);
+            const CHUNK = 4096;
+            let binary = '';
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                const sub = bytes.subarray(i, i + CHUNK);
+                for (let j = 0; j < sub.length; j++) {
+                    binary += String.fromCharCode(sub[j]);
+                }
+            }
+            const base64Data = btoa(binary);
 
             const res = await axios.post('/api/comboy/save', {
                 gameName,
@@ -500,14 +511,14 @@ export default function App() {
                 saveData: base64Data
             }, { withCredentials: true });
             if (res.data.success) {
-                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
+                setSaveMessage(`✅ [슬롯 ${slotNo} - ${customName}] 세이브가 성공적으로 완료되었습니다!`);
             } else {
                 setSaveMessage('세이브 실패: ' + (res.data.error?.message || '알 수 없는 에러'));
             }
             await loadSlots();
         } catch (e: any) {
-            console.error(e);
-            setSaveMessage('세이브 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
+            console.error('[Comboy Save Error]', e);
+            setSaveMessage('세이브 중 오류 발생: ' + (e.response?.data?.error?.message || e.message || '알 수 없는 오류'));
         } finally {
             setIsSaving(false);
         }
@@ -529,19 +540,25 @@ export default function App() {
         try {
             const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
             if (res.data.success && res.data.data?.saveData) {
-                // Base64 디코딩
-                const jsonStr = decodeURIComponent(escape(atob(res.data.data.saveData)));
+                // 안전한 Base64 → TextDecoder 복구
+                const binary = atob(res.data.data.saveData);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const decoder = new TextDecoder('utf-8');
+                const jsonStr = decoder.decode(bytes);
                 const parsedState = JSON.parse(jsonStr);
 
                 // JSNES 상태 복구
                 nesRef.current.fromJSON(parsedState);
-                setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브를 정상적으로 로드했습니다!`);
+                setSaveMessage(`✅ [슬롯 ${slotNo} - ${res.data.data.slotName}] 세이브를 정상적으로 로드했습니다!`);
             } else {
                 setSaveMessage(`저장된 슬롯 ${slotNo} 세이브가 존재하지 않습니다.`);
             }
         } catch (e: any) {
-            console.error(e);
-            setSaveMessage('로드 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
+            console.error('[Comboy Load Error]', e);
+            setSaveMessage('로드 중 오류 발생: ' + (e.response?.data?.error?.message || e.message || '알 수 없는 오류'));
         } finally {
             setIsLoadingState(false);
         }

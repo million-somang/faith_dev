@@ -321,8 +321,7 @@ export default function App() {
     };
 
     // 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
-    // 세이브 - EJS_emulator API 직접 호출 (슬롯 번호와 이름 사용)
-    const handleCloudSave = async (slotNo: number = 1, existingName?: string) => {
+    const handleCloudSave = async (slotNo: number = 1, forcePrompt: boolean = false, existingName?: string) => {
         if (!user) {
             setShowLoginModal(true);
             return;
@@ -333,8 +332,8 @@ export default function App() {
         }
 
         let customName = existingName;
-        if (!customName) {
-            const promptName = prompt('세이브 파일의 이름을 입력해주세요:', `슬롯 ${slotNo}`);
+        if (forcePrompt || !customName) {
+            const promptName = prompt('세이브 파일의 이름을 입력해주세요:', customName || `슬롯 ${slotNo}`);
             if (promptName === null) return; // 취소 시 동작 중단
             customName = promptName.trim() || `슬롯 ${slotNo}`;
         }
@@ -381,10 +380,10 @@ export default function App() {
                 slotName: customName,
                 saveData: base64,
             }, { withCredentials: true });
-            setSaveMessage(`✅ [슬롯 ${slotNo}] 세이브가 성공적으로 완료되었습니다!`);
+            setSaveMessage(`✅ [슬롯 ${slotNo} - ${customName}] 세이브가 성공적으로 완료되었습니다!`);
             await loadSlots();
         } catch (e: any) {
-            setSaveMessage('세이브 중 오류: ' + (e.message || '알 수 없는 오류'));
+            setSaveMessage('세이브 중 오류: ' + (e.response?.data?.error?.message || e.message || '알 수 없는 오류'));
         } finally {
             setIsSaving(false);
         }
@@ -806,10 +805,10 @@ export default function App() {
                                                                         불러오기
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleCloudSave(slotNo, slot.slot_name)}
+                                                                        onClick={() => handleCloudSave(slotNo, true, slot.slot_name)}
                                                                         disabled={isLoadingState || isSaving}
                                                                         className="px-2.5 py-1 rounded bg-indigo-900 hover:bg-indigo-850 active:scale-95 text-indigo-200 text-[10px] font-extrabold transition-all disabled:opacity-40 cursor-pointer"
-                                                                        title="현재 상태로 덮어씁니다"
+                                                                        title="세이브 이름 변경 및 현재 상태 덮어쓰기"
                                                                     >
                                                                         덮어쓰기
                                                                     </button>
@@ -824,7 +823,7 @@ export default function App() {
                                                                 </>
                                                             ) : (
                                                                 <button
-                                                                    onClick={() => handleCloudSave(slotNo)}
+                                                                    onClick={() => handleCloudSave(slotNo, true)}
                                                                     disabled={isLoadingState || isSaving}
                                                                     className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-slate-50 text-[10px] font-extrabold transition-all disabled:opacity-40 cursor-pointer"
                                                                 >
