@@ -212,6 +212,10 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/freecell', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/privacy', priority: '0.5', changefreq: 'monthly' },
+        { loc: '/terms', priority: '0.5', changefreq: 'monthly' },
+        { loc: '/about', priority: '0.5', changefreq: 'monthly' },
+        { loc: '/contact', priority: '0.5', changefreq: 'monthly' },
     ];
 
     // DB에서 최근 뉴스 150개 가져오기
