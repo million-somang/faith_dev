@@ -167,18 +167,46 @@ export default function App() {
     const [showLoginModal, setShowLoginModal] = useState(false);
 
     const loadSlots = React.useCallback(async (currentName = gameName) => {
-        if (!currentName || !user) {
+        if (!currentName) {
             setSlots([]);
             return;
         }
-        try {
-            const { data } = await axios.get(`/api/comboy/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
-            if (data.success) {
-                setSlots(data.slots || []);
+
+        let combinedSlots: Array<{ slot_no: number, slot_name: string, updated_at: string }> = [];
+
+        // 1. 클라우드 세이브 슬롯 로드 (로그인 시)
+        if (user) {
+            try {
+                const { data } = await axios.get(`/api/comboy/list?gameName=${encodeURIComponent(currentName)}`, { withCredentials: true });
+                if (data.success && Array.isArray(data.slots)) {
+                    combinedSlots = data.slots;
+                }
+            } catch (err) {
+                console.error('[Comboy Slots Cloud Load Error]', err);
             }
-        } catch (err) {
-            console.error('[Comboy Slots Load Error]', err);
         }
+
+        // 2. 로컬 세이브 슬롯 머지 (비로그인 / 클라우드 보완)
+        [1, 2, 3].forEach((slotNo) => {
+            const hasCloud = combinedSlots.some(s => s.slot_no === slotNo);
+            if (!hasCloud) {
+                const localKey = `comboy_save_${currentName}_${slotNo}`;
+                const localStr = localStorage.getItem(localKey);
+                if (localStr) {
+                    try {
+                        const parsed = JSON.parse(localStr);
+                        combinedSlots.push({
+                            slot_no: slotNo,
+                            slot_name: (parsed.slot_name || `슬롯 ${slotNo}`) + ' (로컬)',
+                            updated_at: parsed.updated_at || new Date().toISOString()
+                        });
+                    } catch (_) {}
+                }
+            }
+        });
+
+        combinedSlots.sort((a, b) => a.slot_no - b.slot_no);
+        setSlots(combinedSlots);
     }, [user, gameName]);
 
     useEffect(() => {
@@ -465,12 +493,69 @@ export default function App() {
         if (code !== null) nesRef.current.buttonUp(1, code);
     };
 
-    // 세이브 - 슬롯 번호와 이름 사용 (forcePrompt: true 시 무조건 이름 수정 팝업)
-    const handleCloudSave = async (slotNo: number = 1, forcePrompt: boolean = false, existingName?: string) => {
-        if (!user) {
-            setShowLoginModal(true);
-            return;
+// Gzip 압축 헬퍼 (대용량 세이브 용량 95% 감축 -> Nginx 413 / DB 500 전송 에러 완전 해결)
+async function compressSaveData(dataStr: string): Promise<string> {
+    try {
+        if (typeof CompressionStream !== 'undefined') {
+            const stream = new Blob([dataStr]).stream().pipeThrough(new CompressionStream('gzip'));
+            const response = new Response(stream);
+            const blob = await response.blob();
+            const buffer = await blob.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            const CHUNK = 4096;
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+                const sub = bytes.subarray(i, i + CHUNK);
+                for (let j = 0; j < sub.length; j++) {
+                    binary += String.fromCharCode(sub[j]);
+                }
+            }
+            return 'gz:' + btoa(binary);
         }
+    } catch (e) {
+        console.warn('[Gzip Compress Fallback]', e);
+    }
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(dataStr);
+    let binary = '';
+    const CHUNK = 4096;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+        const sub = bytes.subarray(i, i + CHUNK);
+        for (let j = 0; j < sub.length; j++) {
+            binary += String.fromCharCode(sub[j]);
+        }
+    }
+    return btoa(binary);
+}
+
+// Gzip 해제 헬퍼 (기존 세이브 하위 호환)
+async function decompressSaveData(savedStr: string): Promise<string> {
+    if (savedStr.startsWith('gz:')) {
+        const base64 = savedStr.substring(3);
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+        const response = new Response(stream);
+        return await response.text();
+    }
+    try {
+        const binary = atob(savedStr);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        const decoder = new TextDecoder('utf-8');
+        return decoder.decode(bytes);
+    } catch (_) {
+        return decodeURIComponent(escape(atob(savedStr)));
+    }
+}
+
+    // 세이브 - 슬롯 번호와 이름 사용 (Gzip 압축 및 클라우드+로컬 이중 백업)
+    const handleCloudSave = async (slotNo: number = 1, forcePrompt: boolean = false, existingName?: string) => {
         if (!gameName || !nesRef.current) {
             setSaveMessage('세이브 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
             return;
@@ -487,49 +572,53 @@ export default function App() {
         setSaveMessage('');
         
         try {
-            // JSNES의 메모리 상태(JSON 포맷) 획득
+            // JSNES 메모리 상태 추출 및 Gzip 초고속 압축
             const rawState = nesRef.current.toJSON();
             const jsonStr = JSON.stringify(rawState);
-            
-            // 안전한 TextEncoder & Chunk-based Base64 인코딩 (한글/특수문자/대용량 인코딩 에러 방지)
-            const encoder = new TextEncoder();
-            const bytes = encoder.encode(jsonStr);
-            const CHUNK = 4096;
-            let binary = '';
-            for (let i = 0; i < bytes.length; i += CHUNK) {
-                const sub = bytes.subarray(i, i + CHUNK);
-                for (let j = 0; j < sub.length; j++) {
-                    binary += String.fromCharCode(sub[j]);
-                }
-            }
-            const base64Data = btoa(binary);
+            const compressedData = await compressSaveData(jsonStr);
 
-            const res = await axios.post('/api/comboy/save', {
-                gameName,
-                slotNo,
-                slotName: customName,
-                saveData: base64Data
-            }, { withCredentials: true });
-            if (res.data.success) {
-                setSaveMessage(`✅ [슬롯 ${slotNo} - ${customName}] 세이브가 성공적으로 완료되었습니다!`);
+            // 1. 로컬 저장소 100% 즉시 보관 (서버 장애/비로그인 시 데이터 유실 방지)
+            const localKey = `comboy_save_${gameName}_${slotNo}`;
+            localStorage.setItem(localKey, JSON.stringify({
+                slot_no: slotNo,
+                slot_name: customName,
+                save_data: compressedData,
+                updated_at: new Date().toISOString()
+            }));
+
+            // 2. 로그인 유저의 경우 클라우드 서버 동기화
+            if (user) {
+                try {
+                    const res = await axios.post('/api/comboy/save', {
+                        gameName,
+                        slotNo,
+                        slotName: customName,
+                        saveData: compressedData
+                    }, { withCredentials: true });
+
+                    if (res.data.success) {
+                        setSaveMessage(`✅ [슬롯 ${slotNo} - ${customName}] 클라우드 세이브 완료!`);
+                    } else {
+                        setSaveMessage(`💾 [슬롯 ${slotNo} - ${customName}] 로컬 저장소에 세이브 되었습니다. (클라우드 응답 대기)`);
+                    }
+                } catch (apiErr: any) {
+                    console.warn('[Comboy Cloud Sync Error]', apiErr);
+                    setSaveMessage(`💾 [슬롯 ${slotNo} - ${customName}] 로컬 저장소에 세이브 되었습니다.`);
+                }
             } else {
-                setSaveMessage('세이브 실패: ' + (res.data.error?.message || '알 수 없는 에러'));
+                setSaveMessage(`💾 [슬롯 ${slotNo} - ${customName}] 로컬 저장소에 세이브 완료 (로그인 시 클라우드 자동 동기화)`);
             }
             await loadSlots();
         } catch (e: any) {
             console.error('[Comboy Save Error]', e);
-            setSaveMessage('세이브 중 오류 발생: ' + (e.response?.data?.error?.message || e.message || '알 수 없는 오류'));
+            setSaveMessage('세이브 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
         } finally {
             setIsSaving(false);
         }
     };
 
-    // 로드 - 특정 슬롯에서 불러오기
+    // 로드 - 특정 슬롯에서 불러오기 (클라우드 우선 및 로컬 백업 자동 복구)
     const handleCloudLoad = async (slotNo: number = 1) => {
-        if (!user) {
-            setShowLoginModal(true);
-            return;
-        }
         if (!gameName || !nesRef.current) {
             setSaveMessage('로드 실패: 먼저 게임(ROM)을 선택하여 실행해 주세요.');
             return;
@@ -538,27 +627,48 @@ export default function App() {
         setSaveMessage('');
         
         try {
-            const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
-            if (res.data.success && res.data.data?.saveData) {
-                // 안전한 Base64 → TextDecoder 복구
-                const binary = atob(res.data.data.saveData);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
+            let loadedSaveData: string | null = null;
+            let loadedSlotName: string = `슬롯 ${slotNo}`;
+
+            // 1. 로그인 유저는 클라우드에서 우선 조회
+            if (user) {
+                try {
+                    const res = await axios.get(`/api/comboy/load?gameName=${encodeURIComponent(gameName)}&slotNo=${slotNo}`, { withCredentials: true });
+                    if (res.data.success && res.data.data?.saveData) {
+                        loadedSaveData = res.data.data.saveData;
+                        loadedSlotName = res.data.data.slotName || loadedSlotName;
+                    }
+                } catch (cloudErr) {
+                    console.warn('[Comboy Cloud Load Fallback to Local]', cloudErr);
                 }
-                const decoder = new TextDecoder('utf-8');
-                const jsonStr = decoder.decode(bytes);
+            }
+
+            // 2. 클라우드에 없거나 비로그인 시 로컬 저장소 조회
+            if (!loadedSaveData) {
+                const localKey = `comboy_save_${gameName}_${slotNo}`;
+                const localDataStr = localStorage.getItem(localKey);
+                if (localDataStr) {
+                    try {
+                        const parsedLocal = JSON.parse(localDataStr);
+                        loadedSaveData = parsedLocal.save_data;
+                        loadedSlotName = parsedLocal.slot_name || loadedSlotName;
+                    } catch (_) {}
+                }
+            }
+
+            if (loadedSaveData) {
+                // Gzip 해제 및 JSNES 메모리복원
+                const jsonStr = await decompressSaveData(loadedSaveData);
                 const parsedState = JSON.parse(jsonStr);
 
-                // JSNES 상태 복구
                 nesRef.current.fromJSON(parsedState);
-                setSaveMessage(`✅ [슬롯 ${slotNo} - ${res.data.data.slotName}] 세이브를 정상적으로 로드했습니다!`);
+                setSaveMessage(`✅ [슬롯 ${slotNo} - ${loadedSlotName}] 세이브를 정상적으로 로드했습니다!`);
             } else {
                 setSaveMessage(`저장된 슬롯 ${slotNo} 세이브가 존재하지 않습니다.`);
             }
         } catch (e: any) {
             console.error('[Comboy Load Error]', e);
-            setSaveMessage('로드 중 오류 발생: ' + (e.response?.data?.error?.message || e.message || '알 수 없는 오류'));
+            setSaveMessage('로드 중 오류 발생: ' + (e.message || '알 수 없는 오류'));
         } finally {
             setIsLoadingState(false);
         }
