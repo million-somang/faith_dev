@@ -595,22 +595,36 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
                         <div>
-                            <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스</h4>
+                            <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스 바로가기</h4>
                             <ul className="space-y-2 text-sm text-gray-500">
-                                <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">뉴스</a></li>
-                                <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">유틸리티</a></li>
-                                <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융</a></li>
+                                <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">실시간 뉴스</a></li>
+                                <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">생활 유틸리티</a></li>
+                                <li><a href={`${baseUrl}/game`} className="hover:text-brand-green transition-colors">미니게임 센터</a></li>
+                                <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융 대시보드</a></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-gray-900 mb-4 text-sm">약관 및 운영 정책</h4>
+                            <ul className="space-y-2 text-sm text-gray-500">
+                                <li><a href={`${baseUrl}/privacy`} className="font-semibold text-gray-700 hover:text-brand-green transition-colors">개인정보처리방침</a></li>
+                                <li><a href={`${baseUrl}/terms`} className="hover:text-brand-green transition-colors">서비스 이용약관</a></li>
+                                <li><a href={`${baseUrl}/about`} className="hover:text-brand-green transition-colors">서비스 소개</a></li>
+                                <li><a href={`${baseUrl}/contact`} className="hover:text-brand-green transition-colors">문의하기</a></li>
                             </ul>
                         </div>
                     </div>
                 </div>
-                <div className="pt-8 border-t border-gray-100 flex flex-col sm:row items-center justify-between gap-4">
-                    <p className="text-xs text-gray-400">© 2026 VERA. All rights reserved.</p>
-                    <div className="flex gap-4 text-gray-400 text-sm">
-                        <a href="#" className="hover:text-gray-600"><i className="fab fa-facebook"></i></a>
-                        <a href="#" className="hover:text-gray-600"><i className="fab fa-twitter"></i></a>
-                        <a href="#" className="hover:text-gray-600"><i className="fab fa-instagram"></i></a>
+                <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                        <a href={`${baseUrl}/privacy`} className="font-bold text-gray-700 hover:underline">개인정보처리방침</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/terms`} className="hover:underline">이용약관</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/about`} className="hover:underline">서비스 소개</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/contact`} className="hover:underline">문의하기</a>
                     </div>
+                    <p className="text-xs text-gray-400">© 2026 VERA. All rights reserved.</p>
                 </div>
             </div>
         </footer>

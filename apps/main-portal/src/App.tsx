@@ -34,6 +34,10 @@ import NovelPage from './pages/NovelPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
 import B2BPage from './pages/B2BPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import AboutUsPage from './pages/AboutUsPage';
+import ContactUsPage from './pages/ContactUsPage';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
 import { useUserPreferenceContext } from './context/UserPreferenceContext';
@@ -365,6 +369,10 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
+                    <Route path="/privacy" element={<PrivacyPolicyPage />} />
+                    <Route path="/terms" element={<TermsOfServicePage />} />
+                    <Route path="/about" element={<AboutUsPage />} />
+                    <Route path="/contact" element={<ContactUsPage />} />
                     <Route path="/ads.txt" element={
                         <pre style={{ margin: 0, padding: '16px', fontFamily: 'monospace', fontSize: '14px', backgroundColor: '#fff', color: '#000' }}>
                             google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0

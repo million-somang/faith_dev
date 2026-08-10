@@ -283,6 +283,72 @@ export default function UtilityPage() {
                         </div>
                     )}
                 </Card>
+
+                {/* 구글 애드센스 및 검색 엔진(SEO)용 고밀도 유틸리티 도구 가이드 & FAQ (300~500자 이상) */}
+                <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
+                            <i className="fas fa-info-circle text-blue-600"></i>
+                            VERA 무료 생활 도구 & 계산기 이용 가이드
+                        </h2>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                            VERA 라이프 유틸리티는 일상생활에서 매일 사용하는 다양한 계산기, 단위 변환기, 텍스트 검사 도구를 별도의 회원가입이나 앱 설치 없이 브라우저에서 바로 사용할 수 있도록 제공합니다.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-birthday-cake text-pink-500"></i> 만 나이 계산 공식 및 규정
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                대한민국 행정·사법 기준인 '만 나이'는 태어난 날을 0세로 시작하여 매 생일마다 1살씩 더해집니다.
+                                현재 연도에서 출생 연도를 뺀 후, <strong>올해 생일이 지났다면 그 수치가 만 나이</strong>가 되며, <strong>생일이 지나지 않았다면 1살을 더 차감</strong>하여 정확한 법적 나이를 산출합니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-vector-square text-emerald-500"></i> 부동산 평수 - 제곱미터(㎡) 환산법
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                1평은 약 <strong>3.305785㎡</strong>입니다. 제곱미터(㎡) 값을 평수로 변환할 때는 <strong>㎡ ÷ 3.3058</strong>을 적용하며, 평수를 제곱미터로 바꿀 때는 <strong>평수 × 3.3058</strong>을 곱합니다. 아파트 분양 시 전용면적과 공급면적을 구분하여 계산하시면 더욱 정확합니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-calendar-alt text-purple-500"></i> D-Day 및 날짜 계산 원리
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                D-Day 계산기는 시험, 연애 기념일, 출산 예정일, 군 전역일 등 중요한 날짜까지 남은 일수(D-) 또는 지난 일수(D+)를 계산합니다. 시작일 당일을 1일로 포함하는 기준과 포함하지 않는 기준을 모두 지원하여 상황에 맞게 정확한 일수를 확인할 수 있습니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-spell-check text-blue-500"></i> 글자수 세기 & 자소서 검사 팁
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                자기소개서 및 공문서 작성 시 <strong>공백 포함 글자수</strong>와 <strong>공백 제외 글자수</strong>, 바이트(Byte) 수가 다르게 정해집니다. 한글은 1자당 2~3Byte, 영문·숫자·공백은 1자당 1Byte로 처리되므로 자소서 제출 전 VERA 글자수 검사기로 한도를 확인하세요.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-6">
+                        <h3 className="font-bold text-slate-900 text-lg mb-3">자주 묻는 질문 (FAQ)</h3>
+                        <dl className="space-y-3 text-xs text-slate-600">
+                            <div>
+                                <dt className="font-bold text-slate-800">Q. 모든 생활 유틸리티 도구 이용료는 무료인가요?</dt>
+                                <dd className="mt-1">A. 네, VERA에서 제공하는 계산기, 변환기, 글자수 세기 등 모든 유틸리티는 100% 무료이며 회원가입 없이 이용 가능합니다.</dd>
+                            </div>
+                            <div>
+                                <dt className="font-bold text-slate-800">Q. 모바일 스마트폰이나 태블릿에서도 사용 가능한가요?</dt>
+                                <dd className="mt-1">A. VERA의 모든 도구는 반응형 웹(Responsive Web)으로 디자인되어 PC, 스마트폰, 태블릿 모든 기기 화면에 맞춤 지원됩니다.</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
             </main>
             <Footer />
 

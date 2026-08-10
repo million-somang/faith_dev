@@ -308,8 +308,20 @@ app.get('/news/:id', async (c) => {
 
             // <title>VERA</title> 을 동적 메타로 교체
             html = html.replace('<title>VERA - 실시간 뉴스, 미니게임, 생활도구 포털</title>', metaTags);
-            // fallback: 원래 title도 교체
             html = html.replace('<title>VERA</title>', metaTags);
+
+            // 크롤러(Googlebot/Yeti) 소스보기(Ctrl+U) 시 텍스트 밀도 확보를 위한 noscript 본문 인젝션
+            const staticHtmlBody = `
+            <noscript>
+                <article style="padding: 20px; font-family: sans-serif;">
+                    <h1>${esc(news.title)}</h1>
+                    <p style="color: #666; font-size: 0.9em;">출처: ${esc(news.source || 'VERA 뉴스')} | 작성일: ${new Date(news.created_at).toLocaleDateString('ko-KR')}</p>
+                    <div style="font-size: 1.1em; line-height: 1.6; margin-top: 15px;">
+                        ${news.content || description}
+                    </div>
+                </article>
+            </noscript>`;
+            html = html.replace('<div id="root"></div>', `<div id="root"></div>${staticHtmlBody}`);
         }
 
         return c.html(html);
@@ -387,6 +399,22 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
     '/game': {
         title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | VERA',
         description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 테트리스, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+    },
+    '/privacy': {
+        title: '개인정보처리방침 - VERA',
+        description: 'VERA 포털의 개인정보처리방침 및 쿠키, Google AdSense 맞춤형 광고 수집 안내입니다.',
+    },
+    '/terms': {
+        title: '서비스 이용약관 - VERA',
+        description: 'VERA 라이프 포털 서비스 이용 조건 및 회원과 회사의 권리와 의무에 관한 약관입니다.',
+    },
+    '/about': {
+        title: '서비스 소개 - VERA',
+        description: 'VERA는 실시간 뉴스, 스마트 생활 도구, 클린 미니게임, 금융 시세를 한곳에서 편리하게 이용하는 라이프 포털입니다.',
+    },
+    '/contact': {
+        title: '문의하기 - VERA',
+        description: 'VERA 서비스 이용 문의, 제휴 제안, 오류 제보 및 고객 지원 센터입니다.',
     },
 };
 

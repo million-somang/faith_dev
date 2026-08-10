@@ -321,6 +321,71 @@ export default function GamePage() {
                         </div>
                     )}
                 </div>
+
+                {/* 구글 애드센스 및 검색 엔진(SEO)용 고밀도 미니게임 소개 & 가이드 (300~500자 이상) */}
+                <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
+                            <i className="fas fa-gamepad text-purple-600"></i>
+                            VERA 무설치 브라우저 미니게임 가이드 & 플레이 규칙
+                        </h2>
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                            VERA 게임 센터는 별도의 프로그램 설치나 회원가입 절차 없이 크롬, 사파리, 웨일 등 모든 웹 브라우저에서 즉시 실행되는 고품질 무료 미니게임을 수록하고 있습니다.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-cubes text-emerald-600"></i> 테트리스 (Tetris) 게임 전략
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                하늘에서 떨어지는 7가지 모양의 블록(테트로미노)을 수평으로 빈틈없이 채워 라인을 삭제하는 고전 명작 퍼즐 게임입니다. 방향키로 이동 및 회전이 가능하며, 4줄을 한 번에 없애는 '테트리스' 기술과 'T-스핀'을 활용해 최고 득점에 도전하세요.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 (Sudoku) 규칙 및 해법
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                9×9 격자판의 가로줄, 세로줄, 그리고 3×3 소형 격자 안에 1부터 9까지의 숫자가 중복 없이 하나씩 들어가도록 빈칸을 채우는 두뇌 논리 퍼즐입니다. 소거법과 후보 숫자 메모 기능을 활용해 두뇌 회전과 집중력을 향상시켜보세요.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-layer-group text-cyan-600"></i> 2048 퍼즐 공략법
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                방향키나 슬라이드 조작을 통해 같은 숫자가 적힌 타일을 합쳐 마침내 '2048' 타일을 완성하는 숫자 퍼즐입니다. 가장 큰 숫자를 한쪽 구석(예: 좌측 하단)에 고정하고 계단식으로 배치하는 전략을 사용하면 성공률이 급격히 올라갑니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-bomb text-red-500"></i> 지뢰찾기 & 프리셀 솔리테어
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                숫자가 의미하는 주변 8칸의 지뢰 개수를 추론하여 안전한 칸을 여는 '지뢰찾기'와, 4개의 임시 저장소(Freecell)를 활용해 카드를 문양별로 수집하는 '프리셀'은 논리적 판단력과 몰입감을 제공하는 최고의 고전 솔리테어 게임입니다.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-6">
+                        <h3 className="font-bold text-slate-900 text-lg mb-3">자주 묻는 질문 (FAQ)</h3>
+                        <dl className="space-y-3 text-xs text-slate-600">
+                            <div>
+                                <dt className="font-bold text-slate-800">Q. 최고 점수 및 기록은 저장되나요?</dt>
+                                <dd className="mt-1">A. 네, VERA 브라우저 게임은 플레이 기록과 최고 점수가 로컬 스토리지 및 계정에 자동 저장되어 언제든 랭킹 기록을 갱신하실 수 있습니다.</dd>
+                            </div>
+                            <div>
+                                <dt className="font-bold text-slate-800">Q. 모바일 스마트폰 터치 조작이 지원되나요?</dt>
+                                <dd className="mt-1">A. 모든 미니게임은 터치 스와이프 조작 및 모바일 가상 패드를 지원하여 스마트폰에서도 쾌적하게 플레이할 수 있습니다.</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
             </main>
             <Footer />
         </div>
