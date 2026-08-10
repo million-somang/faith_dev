@@ -35,8 +35,13 @@ app.get('/api/health', async (c) => {
 });
 
 // News API
-import newsRoutes from './routes/news.routes.js';
+import newsRoutes, { handleCreateNewsApi } from './routes/news.routes.js';
+import { bodyLimit } from 'hono/body-limit';
+
 app.route('/', newsRoutes);
+app.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+app.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+app.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 
 import mypageRoutes from './routes/mypage.routes.js';
 app.route('/api/user', mypageRoutes);
@@ -547,6 +552,20 @@ app.get('/game/:id', (c) => {
         console.error('[SEO] game meta injection error:', id, e);
         return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
     }
+});
+
+// API 404 JSON 처리 및 SPA 라우트 처리
+app.notFound((c) => {
+    if (c.req.path.startsWith('/api')) {
+        return c.json({
+            success: false,
+            error: {
+                code: 404,
+                message: `API Route Not Found: [${c.req.method}] ${c.req.path}. Please verify server build & PM2 process restart.`
+            }
+        }, 404);
+    }
+    return c.text('404 Not Found', 404);
 });
 
 // Serve frontend SPA (Fallback for all non-API routes)
