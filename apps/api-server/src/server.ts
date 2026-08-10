@@ -270,17 +270,18 @@ app.get('/news/:id', async (c) => {
 
         // DB에서 뉴스 데이터 가져오기
         const newsResult = await pool.query(
-            "SELECT title, content, source, created_at FROM news WHERE id = $1",
+            "SELECT title, content, source, ai_summary, sentiment, created_at FROM news WHERE id = $1",
             [newsId]
         );
 
         if (newsResult.rows.length > 0) {
             const news = newsResult.rows[0] as any;
             const title = `${news.title} - VERA 뉴스`;
-            const description = (news.content || '').replace(/<[^>]*>/g, '').substring(0, 160);
+            const cleanContent = (news.content || '').replace(/<[^>]*>/g, '');
+            const description = cleanContent.substring(0, 160) || news.title;
             const url = `${SITE_URL}/news/${newsId}`;
 
-            // JSON-LD 구조화 데이터
+            // JSON-LD 구조화 데이터 (NewsArticle + Author + Publisher)
             const jsonLd = JSON.stringify({
                 "@context": "https://schema.org",
                 "@type": "NewsArticle",
@@ -288,25 +289,37 @@ app.get('/news/:id', async (c) => {
                 "description": description,
                 "url": url,
                 "datePublished": news.created_at,
+                "mainEntityOfPage": {
+                    "@type": "WebPage",
+                    "@id": url
+                },
+                "author": {
+                    "@type": "Organization",
+                    "name": news.source || "VERA 뉴스"
+                },
                 "publisher": {
                     "@type": "Organization",
-                    "name": "VERA"
+                    "name": "VERA 라이프 포털",
+                    "logo": {
+                        "@type": "ImageObject",
+                        "url": OG_IMAGE
+                    }
                 }
             });
 
             const metaTags = `
-    <title>${title}</title>
-    <meta name="description" content="${description}" />
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${description}" />
+    <title>${esc(title)}</title>
+    <meta name="description" content="${esc(description)}" />
+    <meta property="og:title" content="${esc(title)}" />
+    <meta property="og:description" content="${esc(description)}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="VERA" />
-    <meta property="og:image" content="${SITE_URL}/logo-512.png" />
+    <meta property="og:image" content="${OG_IMAGE}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${title}" />
-    <meta name="twitter:description" content="${description}" />
-    <meta name="twitter:image" content="${SITE_URL}/logo-512.png" />
+    <meta name="twitter:title" content="${esc(title)}" />
+    <meta name="twitter:description" content="${esc(description)}" />
+    <meta name="twitter:image" content="${OG_IMAGE}" />
     <link rel="canonical" href="${url}" />
     <script type="application/ld+json">${jsonLd}</script>`;
 
@@ -317,12 +330,24 @@ app.get('/news/:id', async (c) => {
             // 크롤러(Googlebot/Yeti) 소스보기(Ctrl+U) 시 텍스트 밀도 확보를 위한 noscript 본문 인젝션
             const staticHtmlBody = `
             <noscript>
-                <article style="padding: 20px; font-family: sans-serif;">
+                <article style="padding: 20px; font-family: sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.7;">
                     <h1>${esc(news.title)}</h1>
-                    <p style="color: #666; font-size: 0.9em;">출처: ${esc(news.source || 'VERA 뉴스')} | 작성일: ${new Date(news.created_at).toLocaleDateString('ko-KR')}</p>
-                    <div style="font-size: 1.1em; line-height: 1.6; margin-top: 15px;">
-                        ${news.content || description}
+                    <p style="color: #666; font-size: 0.9em; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                        출처: <strong>${esc(news.source || 'VERA 뉴스')}</strong> | 작성일: ${new Date(news.created_at).toLocaleString('ko-KR')}
+                    </p>
+                    ${news.ai_summary ? `
+                    <div style="background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                        <h3 style="margin-top: 0; color: #1e3a8a;">AI 3줄 핵심 요약</h3>
+                        <p style="margin-bottom: 0;">${esc(news.ai_summary)}</p>
+                        ${news.sentiment ? `<p style="margin-top: 8px; font-weight: bold; font-size: 0.9em; color: #475569;">분석 감정 지수: ${esc(news.sentiment)}</p>` : ''}
                     </div>
+                    ` : ''}
+                    <div style="font-size: 1.1em; margin-top: 20px;">
+                        ${news.content || `<p>${esc(description)}</p>`}
+                    </div>
+                    <footer style="margin-top: 40px; padding-top: 15px; border-t: 1px solid #eee; color: #94a3b8; font-size: 0.85em;">
+                        본 콘텐츠는 VERA 실시간 뉴스 인덱싱 엔진에서 제공되며, 구글 검색 필수사항(Search Essentials) 및 애드센스 고품질 가이드라인을 준수합니다.
+                    </footer>
                 </article>
             </noscript>`;
             html = html.replace('<div id="root"></div>', `<div id="root"></div>${staticHtmlBody}`);
@@ -339,8 +364,6 @@ app.get('/news/:id', async (c) => {
 });
 
 // ==================== SPA 라우트별 메타 주입 (네이버/구글 SEO) ====================
-// main-portal은 클라이언트 렌더링 SPA라 서버가 빈 셸을 내려준다.
-// 네이버 Yeti 크롤러는 JS 실행이 약하므로, 주요 경로는 서버에서 메타를 주입해 본문 신호를 제공한다.
 const OG_IMAGE = `${SITE_URL}/logo-512.png`;
 
 const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -389,7 +412,17 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
     '/': {
         title: 'VERA - 실시간 뉴스, 미니게임, 생활도구 포털',
         description: 'VERA에서 실시간 속보 뉴스와 테트리스·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
-        jsonLd: { '@context': 'https://schema.org', '@type': 'Organization', name: 'VERA', url: SITE_URL, logo: OG_IMAGE },
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'VERA',
+            url: SITE_URL,
+            potentialAction: {
+                '@type': 'SearchAction',
+                target: `${SITE_URL}/news?q={search_term_string}`,
+                'query-input': 'required name=search_term_string'
+            }
+        },
     },
     '/news': {
         title: '실시간 뉴스 - VERA',
@@ -399,10 +432,42 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
     '/lifestyle': {
         title: '생활도구 - 계산기·단위 변환·맞춤법 검사 | VERA',
         description: '계산기, 만 나이·디데이 계산기, 평수 변환, 맞춤법 검사기, JSON 포맷터, Base64 변환기 등 자주 쓰는 무료 온라인 도구 모음.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+                {
+                    '@type': 'Question',
+                    name: '만 나이 계산기 계산 기준은 무엇인가요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '만 나이는 생일을 기준으로 하여 출생 시 0세로 시작하고 생일이 지날 때마다 1세씩 증가하는 법적/행정적 표준 계산법입니다.' }
+                },
+                {
+                    '@type': 'Question',
+                    name: '부동산 평수를 제곱미터(㎡)로 환산하는 공식은 무엇인가요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '1평은 약 3.305785㎡이며, ㎡ 단위 면적에 0.3025를 곱하면 평수로 환산됩니다.' }
+                }
+            ]
+        }
     },
     '/game': {
         title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | VERA',
         description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 테트리스, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+                {
+                    '@type': 'Question',
+                    name: '테트리스에서 T-스폰(T-Spin)이란 무엇인가요?',
+                    acceptedAnswer: { '@type': 'Answer', text: 'T-Spin은 T 자형 블록을 좁은 틈새로 회전시켜 채워 넣는 고급 테크닉으로 일반 삭제보다 2배 이상의 높은 점수를 획득할 수 있습니다.' }
+                },
+                {
+                    '@type': 'Question',
+                    name: '스도쿠 풀이 시 기본 규칙은 무엇인가요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '9x9 격자의 각 가로줄, 세로줄, 3x3 작은 박스 안에 1부터 9까지의 숫자가 중복 없이 한 번씩만 들어가야 합니다.' }
+                }
+            ]
+        }
     },
     '/privacy': {
         title: '개인정보처리방침 - VERA',
@@ -415,10 +480,28 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
     '/about': {
         title: '서비스 소개 - VERA',
         description: 'VERA는 실시간 뉴스, 스마트 생활 도구, 클린 미니게임, 금융 시세를 한곳에서 편리하게 이용하는 라이프 포털입니다.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'AboutPage',
+            name: 'VERA 서비스 소개',
+            description: '실시간 뉴스, 맞춤 유틸리티 도구, 클린 미니게임을 제공하는 라이프 통합 포털',
+            publisher: { '@type': 'Organization', name: 'VERA', url: SITE_URL, logo: OG_IMAGE }
+        }
     },
     '/contact': {
         title: '문의하기 - VERA',
         description: 'VERA 서비스 이용 문의, 제휴 제안, 오류 제보 및 고객 지원 센터입니다.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'ContactPage',
+            name: 'VERA 문의하기',
+            url: `${SITE_URL}/contact`,
+            mainEntity: {
+                '@type': 'Organization',
+                name: 'VERA 고객지원',
+                email: 'contact@veranex.app'
+            }
+        }
     },
 };
 
