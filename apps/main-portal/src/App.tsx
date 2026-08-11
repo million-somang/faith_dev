@@ -362,6 +362,8 @@ function App() {
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
                     <Route path="/entertainment/novel" element={<NovelPage />} />
+                    <Route path="/app/novel" element={<NovelPage />} />
+                    <Route path="/app/novel/*" element={<NovelPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
 
