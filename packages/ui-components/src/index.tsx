@@ -154,11 +154,11 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
 const FULL_MENU_ITEMS = [
     { label: '홈', icon: 'fa-home', bg: 'bg-blue-50', color: 'text-blue-600', path: '/' },
     { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-sky-50', color: 'text-sky-600', path: '/news' },
-    { label: '지식 가이드', icon: 'fa-book-open-reader', bg: 'bg-teal-50', color: 'text-teal-600', path: '/guides' },
     { label: '생활도구', icon: 'fa-screwdriver-wrench', bg: 'bg-green-50', color: 'text-green-600', path: '/lifestyle' },
     { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', path: '/finance' },
     { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', path: '/game' },
     { label: '재미', icon: 'fa-masks-theater', bg: 'bg-rose-50', color: 'text-rose-600', path: '/entertainment' },
+    { label: '지식 가이드', icon: 'fa-book-open-reader', bg: 'bg-teal-50', color: 'text-teal-600', path: '/guides' },
     { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
     { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
@@ -319,7 +319,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     {activeMode === 'general' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('뉴스', currentLang)}</a>
-                            <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                             <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('생활도구', currentLang)}</a>
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
@@ -330,6 +329,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                     <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('쇼핑', currentLang)}</a>
                                 </>
                             )}
+                            <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                             {user ? (
                                 <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
                             ) : (
