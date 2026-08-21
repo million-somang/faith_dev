@@ -297,7 +297,7 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
             name: validName,
             gender,
             birthDate: validDate,
-            birthTime,
+            birthTime: timeHour || 'unknown',
             isSolar,
             zodiac: `${pillars.year.gan}${pillars.year.ji}년 ${zodiacInfo.name}`,
             zodiacEmoji: zodiacInfo.emoji
