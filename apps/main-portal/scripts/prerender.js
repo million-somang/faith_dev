@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateRssFeed } from './generate-rss.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,7 +119,10 @@ async function prerender() {
     // 4. Generate static pages for Finance Util Calculators
     generateFinanceUtilPages(templateHtml);
 
-    console.log('✅ Static Prerendering completed successfully! All 18 articles and Finance Util pages have full static HTML.');
+    // 5. Generate RSS 2.0 Feed
+    await generateRssFeed();
+
+    console.log('✅ Static Prerendering completed successfully! All 18 articles, Finance Util pages, and RSS 2.0 Feed generated.');
 }
 
 function writeHtmlFile(filePath, content) {

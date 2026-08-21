@@ -39,5 +39,7 @@ Allow: /
 User-agent: Daumoa
 Allow: /
 
-# Sitemap Location
+# Sitemap & Feeds
 Sitemap: https://veranex.app/sitemap.xml
+# RSS 2.0 Feed
+# https://veranex.app/rss.xml

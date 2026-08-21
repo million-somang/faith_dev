@@ -1,128 +1,201 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>VERA 지식 가이드 &amp; 전문 칼럼</title>
-    <link>https://veranex.app/guides</link>
-    <description>금융, 명리학, 웹소설 작법, 생활계산, 게임 전략 등 일상과 지적 성장에 도움을 주는 고품질 지식 아티클</description>
+    <title>VERA (베라) - 실시간 라이프 포털 & 지식 가이드</title>
+    <link>https://veranex.app</link>
+    <description>실시간 뉴스, 금융 시뮬레이터, 전통문화, 창작 작법, 생활 계산기 및 게임 전략 전문 콘텐츠를 제공하는 믿음의 포털</description>
     <language>ko-KR</language>
-    <lastBuildDate>Fri, 21 Aug 2026 11:30:00 +0900</lastBuildDate>
+    <lastBuildDate>Fri, 21 Aug 2026 08:09:56 GMT</lastBuildDate>
     <atom:link href="https://veranex.app/rss.xml" rel="self" type="application/rss+xml"/>
+    
+    <item>
+      <title><![CDATA[미국 배당주 세금 & 주택담보대출 DSR/LTV & 퇴직금 실업급여 계산기]]></title>
+      <link>https://veranex.app/finance/util</link>
+      <guid isPermaLink="true">https://veranex.app/finance/util</guid>
+      <description><![CDATA[SCHD, JEPI 배당소득세(15.4%) 및 12개월 캘린더, 2026 스트레스 DSR 2단계 적용 주담대 한도, 법정 퇴직금 세후 실수령액 및 실업급여 무료 시뮬레이터]]></description>
+      <category><![CDATA[스마트 금융도구]]></category>
+      <author><![CDATA[VERA 금융팀]]></author>
+      <pubDate>Fri, 21 Aug 2026 08:09:56 GMT</pubDate>
+    </item>
 
     <item>
-      <title>2026 글로벌 금리 인하기, 초보자를 위한 미국 배당주 포트폴리오 구축 전략</title>
+      <title><![CDATA[2026 글로벌 금리 인하기, 초보자를 위한 미국 배당주 포트폴리오 구축 전략]]></title>
       <link>https://veranex.app/guides/2026-global-interest-rate-dividend-strategy</link>
       <guid isPermaLink="true">https://veranex.app/guides/2026-global-interest-rate-dividend-strategy</guid>
-      <description>글로벌 통화 정책 완화기에 안정적인 현금 흐름을 창출할 수 있는 미국 배당 귀족주 및 월배당 ETF 포트폴리오 구성 원칙과 주의점을 심층 분석합니다.</description>
-      <pubDate>Sat, 15 Aug 2026 09:00:00 +0900</pubDate>
-      <category>금융 &amp; 재테크</category>
+      <description><![CDATA[글로벌 통화 정책 완화기에 안정적인 현금 흐름을 창출할 수 있는 미국 배당 귀족주 및 월배당 ETF 포트폴리오 구성 원칙과 주의점을 심층 분석합니다.]]></description>
+      <category><![CDATA[금융 & 재테크]]></category>
+      <author><![CDATA[VERA 금융 리서치팀]]></author>
+      <pubDate>Sat, 15 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>원/달러 환율 변동 원리와 개인 투자자의 스마트한 외환 리스크 관리법</title>
+      <title><![CDATA[원/달러 환율 변동 원리와 개인 투자자의 스마트한 외환 리스크 관리법]]></title>
       <link>https://veranex.app/guides/foreign-exchange-rate-and-macro-investment</link>
       <guid isPermaLink="true">https://veranex.app/guides/foreign-exchange-rate-and-macro-investment</guid>
-      <description>글로벌 거시 경제 지표와 원/달러 환율의 상관관계를 이해하고, 개인 투자자가 환율 변동 시기 자산을 지키고 불리는 실전 외환 포트폴리오 기법을 안내합니다.</description>
-      <pubDate>Sun, 16 Aug 2026 09:00:00 +0900</pubDate>
-      <category>금융 &amp; 재테크</category>
+      <description><![CDATA[글로벌 거시 경제 지표와 원/달러 환율의 상관관계를 이해하고, 개인 투자자가 환율 변동 시기 자산을 지키고 불리는 실전 외환 포트폴리오 기법을 안내합니다.]]></description>
+      <category><![CDATA[금융 & 재테크]]></category>
+      <author><![CDATA[VERA 금융 리서치팀]]></author>
+      <pubDate>Sun, 16 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>복리의 마법과 스마트한 시드머니 불리기: 적립식 투자의 기초 원리</title>
+      <title><![CDATA[복리의 마법과 스마트한 시드머니 불리기: 적립식 투자의 기초 원리]]></title>
       <link>https://veranex.app/guides/magic-of-compound-interest-and-dollar-cost-averaging</link>
       <guid isPermaLink="true">https://veranex.app/guides/magic-of-compound-interest-and-dollar-cost-averaging</guid>
-      <description>시간이 지날수록 기하급수적으로 자산이 불어나는 복리의 수학적 메커니즘과 일반 직장인이 실천할 수 있는 정액적립식(DCA) 자산 형성 비결을 안내합니다.</description>
-      <pubDate>Mon, 17 Aug 2026 09:00:00 +0900</pubDate>
-      <category>금융 &amp; 재테크</category>
+      <description><![CDATA[시간이 지날수록 기하급수적으로 자산이 불어나는 복리의 수학적 메커니즘과 일반 직장인이 실천할 수 있는 정액적립식(DCA) 자산 형성 비결을 안내합니다.]]></description>
+      <category><![CDATA[금융 & 재테크]]></category>
+      <author><![CDATA[VERA 금융 리서치팀]]></author>
+      <pubDate>Mon, 17 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>복리 계산기 200% 활용법: 1억 만들기 5년 적금 vs ETF 투자 시뮬레이션</title>
+      <title><![CDATA[복리 계산기 200% 활용법: 1억 만들기 5년 적금 vs ETF 투자 시뮬레이션]]></title>
       <link>https://veranex.app/guides/compound-interest-calculator-guide-and-wealth-building</link>
       <guid isPermaLink="true">https://veranex.app/guides/compound-interest-calculator-guide-and-wealth-building</guid>
-      <description>사회초년생의 첫 번째 자산 목표인 1억 원을 모으기 위한 일반 시중은행 정기적금과 글로벌 지수 ETF 투자의 복리 수익률 격차를 실측 데이터로 비교 분석합니다.</description>
-      <pubDate>Thu, 30 Jul 2026 09:00:00 +0900</pubDate>
-      <category>금융 &amp; 재테크</category>
+      <description><![CDATA[사회초년생의 첫 번째 자산 목표인 1억 원을 모으기 위한 일반 시중은행 정기적금과 글로벌 지수 ETF 투자의 복리 수익률 격차를 실측 데이터로 비교 분석합니다.]]></description>
+      <category><![CDATA[금융 & 재테크]]></category>
+      <author><![CDATA[VERA 금융 리서치팀]]></author>
+      <pubDate>Thu, 30 Jul 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>워런 버핏이 추천한 S&amp;P 500 인덱스 펀드 무지성 적립식 투자의 역사적 수익률</title>
+      <title><![CDATA[워런 버핏이 추천한 S&P 500 인덱스 펀드 무지성 적립식 투자의 역사적 수익률]]></title>
       <link>https://veranex.app/guides/sp500-index-fund-dollar-investing-principles</link>
       <guid isPermaLink="true">https://veranex.app/guides/sp500-index-fund-dollar-investing-principles</guid>
-      <description>오마하의 현인 워런 버핏이 유언장에 남긴 S&amp;P 500 지수 투자의 100년 역사적 연평균 수익률(CAGR 10%), 변동성 극복 원리, 무지성 매수 원칙을 해설합니다.</description>
-      <pubDate>Fri, 24 Jul 2026 09:00:00 +0900</pubDate>
-      <category>금융 &amp; 재테크</category>
+      <description><![CDATA[오마하의 현인 워런 버핏이 유언장에 남긴 S&P 500 지수 투자의 100년 역사적 연평균 수익률(CAGR 10%), 변동성 극복 원리, 무지성 매수 원칙을 해설합니다.]]></description>
+      <category><![CDATA[금융 & 재테크]]></category>
+      <author><![CDATA[VERA 금융 리서치팀]]></author>
+      <pubDate>Fri, 24 Jul 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>사주팔자(四柱八字)와 만세력의 기본 원리: 천간과 지지가 말하는 나의 기운</title>
+      <title><![CDATA[사주팔자(四柱八字)와 만세력의 기본 원리: 천간과 지지가 말하는 나의 기운]]></title>
       <link>https://veranex.app/guides/saju-manseryeok-principles-and-four-pillars</link>
       <guid isPermaLink="true">https://veranex.app/guides/saju-manseryeok-principles-and-four-pillars</guid>
-      <description>생년월일시로 구성되는 사주팔자의 천문학적 기원과 10간 12지의 상호작용 원리를 현대적 관점에서 알기 쉽게 해설합니다.</description>
-      <pubDate>Fri, 14 Aug 2026 09:00:00 +0900</pubDate>
-      <category>명리학 &amp; 전통문화</category>
+      <description><![CDATA[생년월일시로 구성되는 사주팔자의 천문학적 기원과 10간 12지의 상호작용 원리를 현대적 관점에서 알기 쉽게 해설합니다.]]></description>
+      <category><![CDATA[명리학 & 전통문화]]></category>
+      <author><![CDATA[VERA 인문학 연구팀]]></author>
+      <pubDate>Fri, 14 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>음양오행(陰陽五行)의 균형과 일상 속 운세 보완법: 목·화·토·금·수 해석</title>
+      <title><![CDATA[음양오행(陰陽五行)의 균형과 일상 속 운세 보완법: 목·화·토·금·수 해석]]></title>
       <link>https://veranex.app/guides/five-elements-harmony-and-lifestyle-balance</link>
       <guid isPermaLink="true">https://veranex.app/guides/five-elements-harmony-and-lifestyle-balance</guid>
-      <description>오행(목·화·토·금·수)의 상생과 상극 원리를 일상 식습관, 인테리어, 패션 컬러, 심리 건강 관리에 적용하여 삶의 밸런스를 찾는 실용 팁을 제공합니다.</description>
-      <pubDate>Thu, 13 Aug 2026 09:00:00 +0900</pubDate>
-      <category>명리학 &amp; 전통문화</category>
+      <description><![CDATA[오행(목·화·토·금·수)의 상생과 상극 원리를 일상 식습관, 인테리어, 패션 컬러, 심리 건강 관리에 적용하여 삶의 밸런스를 찾는 실용 팁을 제공합니다.]]></description>
+      <category><![CDATA[명리학 & 전통문화]]></category>
+      <author><![CDATA[VERA 인문학 연구팀]]></author>
+      <pubDate>Thu, 13 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>십신(十神)으로 알아보는 나의 성향과 직업 적성 분석 가이드</title>
+      <title><![CDATA[십신(十神)으로 알아보는 나의 성향과 직업 적성 분석 가이드]]></title>
       <link>https://veranex.app/guides/ten-gods-personality-career-aptitude-guide</link>
       <guid isPermaLink="true">https://veranex.app/guides/ten-gods-personality-career-aptitude-guide</guid>
-      <description>사주명리학의 심화 분석 도구인 십신을 통해 개인의 재능과 최적의 커리어 패스를 탐색합니다.</description>
-      <pubDate>Wed, 12 Aug 2026 09:00:00 +0900</pubDate>
-      <category>명리학 &amp; 전통문화</category>
+      <description><![CDATA[사주명리학의 심화 분석 도구인 십신(비견, 겁재, 식신, 상관, 편재, 정재, 편관, 정관, 편인, 정인)을 통해 개인의 재능과 최적의 커리어 패스를 탐색합니다.]]></description>
+      <category><![CDATA[명리학 & 전통문화]]></category>
+      <author><![CDATA[VERA 인문학 연구팀]]></author>
+      <pubDate>Wed, 12 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>웹소설 트렌드 분석: 회빙환(회귀·빙의·환생) 클리셰와 독자 몰입의 비밀</title>
+      <title><![CDATA[신년운세와 대운(大運)의 흐름 읽는 법: 10년 주기 인생의 변곡점 대비하기]]></title>
+      <link>https://veranex.app/guides/saju-unse-interpretation-and-annual-horoscope</link>
+      <guid isPermaLink="true">https://veranex.app/guides/saju-unse-interpretation-and-annual-horoscope</guid>
+      <description><![CDATA[1년 단위의 세운(歲運)과 10년 주기로 인생의 무대가 바뀌는 대운(大運)의 원리를 이해하고, 운의 흐름에 맞춰 나아갈 때와 물러설 때를 분별하는 지혜를 나눕니다.]]></description>
+      <category><![CDATA[명리학 & 전통문화]]></category>
+      <author><![CDATA[VERA 인문학 연구팀]]></author>
+      <pubDate>Wed, 29 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[웹소설 트렌드 분석: 회빙환(회귀·빙의·환생) 클리셰와 독자 몰입의 비밀]]></title>
       <link>https://veranex.app/guides/webnovel-trends-regression-possession-reincarnation</link>
       <guid isPermaLink="true">https://veranex.app/guides/webnovel-trends-regression-possession-reincarnation</guid>
-      <description>K-웹소설 시장을 지배하는 회귀, 빙의, 환생 서사 구조가 대중 독자들에게 폭발적인 카타르시스를 제공하는 심리학적 원인과 최신 변주 트렌드를 분석합니다.</description>
-      <pubDate>Tue, 11 Aug 2026 09:00:00 +0900</pubDate>
-      <category>웹소설 &amp; 작법</category>
+      <description><![CDATA[K-웹소설 시장을 지배하는 회귀, 빙의, 환생 서사 구조가 대중 독자들에게 폭발적인 카타르시스를 제공하는 심리학적 원인과 최신 변주 트렌드를 분석합니다.]]></description>
+      <category><![CDATA[웹소설 & 작법]]></category>
+      <author><![CDATA[VERA 콘텐츠 트렌드팀]]></author>
+      <pubDate>Tue, 11 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>평수(坪)와 제곱미터(㎡) 완전 정복: 아파트 공급면적과 전용면적의 차이점</title>
+      <title><![CDATA[웹소설 작가를 위한 플롯 설계법: 기승전결 3막 구조와 후킹 포인트 연출]]></title>
+      <link>https://veranex.app/guides/webnovel-plot-design-and-three-act-structure</link>
+      <guid isPermaLink="true">https://veranex.app/guides/webnovel-plot-design-and-three-act-structure</guid>
+      <description><![CDATA[일일 연재 시장에서 매화 독자의 다음 화 결제를 유도하는 절단신공 기법, 3막 8장 플롯 설계, 캐릭터 아크 구성법을 실전 가이드로 제시합니다.]]></description>
+      <category><![CDATA[웹소설 & 작법]]></category>
+      <author><![CDATA[VERA 콘텐츠 트렌드팀]]></author>
+      <pubDate>Mon, 10 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[스토리의 긴장감을 지배하는 빌런(악역) 창작법: 동기와 매력의 3가지 법칙]]></title>
+      <link>https://veranex.app/guides/character-conflict-design-and-villain-writing</link>
+      <guid isPermaLink="true">https://veranex.app/guides/character-conflict-design-and-villain-writing</guid>
+      <description><![CDATA[단순한 평면적 악당을 넘어 독자의 분노와 감탄을 동시에 자아내는 입체적 안타고니스트(Antagonist) 설계법과 갈등의 삼각 구도 연출법을 해설합니다.]]></description>
+      <category><![CDATA[웹소설 & 작법]]></category>
+      <author><![CDATA[VERA 콘텐츠 트렌드팀]]></author>
+      <pubDate>Tue, 28 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[평수(坪)와 제곱미터(㎡) 완전 정복: 아파트 공급면적과 전용면적의 차이점]]></title>
       <link>https://veranex.app/guides/pyeong-to-square-meter-conversion-and-real-estate</link>
       <guid isPermaLink="true">https://veranex.app/guides/pyeong-to-square-meter-conversion-and-real-estate</guid>
-      <description>부동산 거래 시 필수적인 ㎡와 평(坪) 단위 환산 계산 공식, 59㎡와 84㎡의 실제 체감 평수, 전용·공급·계약면적의 개념을 알기 쉽게 정리합니다.</description>
-      <pubDate>Sun, 09 Aug 2026 09:00:00 +0900</pubDate>
-      <category>생활도구 &amp; 계산</category>
+      <description><![CDATA[부동산 거래 시 필수적인 ㎡와 평(坪) 단위 환산 계산 공식, 59㎡와 84㎡의 실제 체감 평수, 전용·공급·계약면적의 개념을 알기 쉽게 정리합니다.]]></description>
+      <category><![CDATA[생활도구 & 계산]]></category>
+      <author><![CDATA[VERA 생활경제팀]]></author>
+      <pubDate>Sun, 09 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>대한민국 '만 나이 통일법' 총정리: 연 나이와의 차이 및 법적 효력</title>
+      <title><![CDATA[대한민국 \]]></title>
       <link>https://veranex.app/guides/korean-age-unification-act-guide-and-legal-effects</link>
       <guid isPermaLink="true">https://veranex.app/guides/korean-age-unification-act-guide-and-legal-effects</guid>
-      <description>만 나이 통일법 시행에 따른 정확한 만 나이 계산법, 예외적으로 연 나이가 적용되는 병역·청소년보호법 사례를 정리합니다.</description>
-      <pubDate>Sat, 08 Aug 2026 09:00:00 +0900</pubDate>
-      <category>생활도구 &amp; 계산</category>
+      <description><![CDATA[만 나이 통일법 시행에 따른 정확한 만 나이 계산법, 예외적으로 연 나이가 적용되는 병역·청소년보호법 사례, 금융 및 행정 서류 작성 팁을 안내합니다.]]></description>
+      <category><![CDATA[생활도구 & 계산]]></category>
+      <author><![CDATA[VERA 생활경제팀]]></author>
+      <pubDate>Sat, 08 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>테트리스 마스터 가이드: T-스핀 원리와 고득점 라인 클리어 전략</title>
+      <title><![CDATA[목표 달성을 위한 D-Day 시간 관리 기법과 실천 체크리스트]]></title>
+      <link>https://veranex.app/guides/d-day-time-management-and-goal-setting-guide</link>
+      <guid isPermaLink="true">https://veranex.app/guides/d-day-time-management-and-goal-setting-guide</guid>
+      <description><![CDATA[시험, 결혼, 프로젝트 마감, 다이어트 등 중요한 D-Day 목표를 성공으로 이끄는 역산 스케줄링(Backward Scheduling)과 마이크로 액션 플랜 수립법을 제시합니다.]]></description>
+      <category><![CDATA[생활도구 & 계산]]></category>
+      <author><![CDATA[VERA 자기계발 연구팀]]></author>
+      <pubDate>Fri, 07 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[대출이자 계산기 완벽 가이드: 원리금균등 vs 원금균등 vs 만기일시 상환 차이]]></title>
+      <link>https://veranex.app/guides/loan-interest-calculation-and-repayment-methods</link>
+      <guid isPermaLink="true">https://veranex.app/guides/loan-interest-calculation-and-repayment-methods</guid>
+      <description><![CDATA[주택담보대출, 전세자금대출, 신용대출 시 총 이자 부담을 수백만 원 줄일 수 있는 3대 상환 방식의 계산 공식과 소득 상황별 최적의 선택 전략을 안내합니다.]]></description>
+      <category><![CDATA[생활도구 & 계산]]></category>
+      <author><![CDATA[VERA 생활경제팀]]></author>
+      <pubDate>Mon, 27 Jul 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[테트리스 마스터 가이드: T-스핀 원리와 고득점 라인 클리어 전략]]></title>
       <link>https://veranex.app/guides/tetris-master-guide-t-spin-and-line-clear-strategy</link>
       <guid isPermaLink="true">https://veranex.app/guides/tetris-master-guide-t-spin-and-line-clear-strategy</guid>
-      <description>40년 역사의 블록 퍼즐 테트리스(Tetris)의 현대 가이드라인 룰, 회전 메커니즘(SRS), T-스핀 공식과 스태킹 빌드를 심층 해설합니다.</description>
-      <pubDate>Thu, 06 Aug 2026 09:00:00 +0900</pubDate>
-      <category>두뇌게임 &amp; 공략</category>
+      <description><![CDATA[40년 역사의 블록 퍼즐 테트리스(Tetris)의 현대 가이드라인 룰, 회전 메커니즘(SRS), T-스핀(T-Spin) 더블/트리플 공식과 평탄화 빌드 기법을 심층 해설합니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA e-스포츠 전략팀]]></author>
+      <pubDate>Thu, 06 Aug 2026 00:00:00 GMT</pubDate>
     </item>
 
     <item>
-      <title>웹 개발자를 위한 JSON 포맷팅 가이드: 데이터 구조와 유효성 검증 팁</title>
+      <title><![CDATA[웹 개발자를 위한 JSON 포맷팅 가이드: 데이터 구조와 유효성 검증 팁]]></title>
       <link>https://veranex.app/guides/json-formatting-and-syntax-validation-guide</link>
       <guid isPermaLink="true">https://veranex.app/guides/json-formatting-and-syntax-validation-guide</guid>
-      <description>현대 웹/앱 통신의 표준인 JSON의 문법 규칙, 흔히 발생하는 파싱 오류 해결법, 대용량 JSON 포맷팅 툴 활용 팁을 안내합니다.</description>
-      <pubDate>Sun, 02 Aug 2026 09:00:00 +0900</pubDate>
-      <category>IT &amp; 개발자 도구</category>
+      <description><![CDATA[현대 웹/앱 통신의 표준인 JSON(JavaScript Object Notation)의 문법 규칙, 흔히 발생하는 파싱 오류 해결법, 대용량 JSON 포맷팅 툴 활용 팁을 안내합니다.]]></description>
+      <category><![CDATA[IT & 개발자 도구]]></category>
+      <author><![CDATA[VERA 기술 연구소]]></author>
+      <pubDate>Sun, 02 Aug 2026 00:00:00 GMT</pubDate>
     </item>
   </channel>
 </rss>
