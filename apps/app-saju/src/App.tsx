@@ -55,19 +55,24 @@ export default function App() {
     // 사주 분석 실행 핸들러
     const handleAnalyze = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!name.trim()) {
-            alert('이름을 입력해 주세요.');
-            return;
-        }
+        const targetName = name.trim() || (user && user.name) || '이용자';
 
         setStep('processing');
         setTimeout(() => {
-            const calculated = calculateSaju(name.trim(), gender, birthDate, birthTime, isSolar);
-            setResult(calculated);
-            setStep('result');
-            setPickedMenu(null);
-            setRevealedLotto(null);
-        }, 1800);
+            try {
+                const calculated = calculateSaju(targetName, gender, birthDate, birthTime, isSolar);
+                setResult(calculated);
+                setStep('result');
+                setPickedMenu(null);
+                setRevealedLotto(null);
+            } catch (err) {
+                console.error('Saju Calculation Error:', err);
+                // Fallback to safe default
+                const fallback = calculateSaju('이용자', 'M', '1995-08-21', '12', true);
+                setResult(fallback);
+                setStep('result');
+            }
+        }, 600);
     };
 
     // 점심 메뉴 룰렛 뽑기

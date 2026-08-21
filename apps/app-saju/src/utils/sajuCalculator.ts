@@ -37,8 +37,8 @@ export interface SajuResult {
         water: number;        // 수 (水) 비율 %
     };
     elementsSummary: {
-        dominant: string;     // 가장 강한 오행 (예: 木 기운)
-        deficient: string;    // 부족한 오행 (예: 金 기운)
+        dominant: string;     // 가장 강한 오행 (예: 목(木))
+        deficient: string;    // 부족한 오행 (예: 금(金))
         yongshin: string;     // 용신 (나를 돕는 핵심 기운)
     };
     businessWealth: {
@@ -142,39 +142,42 @@ function getHash(str: string): number {
 
 // 1. 단일 사주 정밀 연산
 export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, timeHour: string, isSolar: boolean): SajuResult {
-    const seed = getHash(`${name}_${gender}_${dateStr}_${timeHour}_${isSolar ? 'S' : 'L'}`);
+    const validName = name ? name.trim() : '이용자';
+    const validDate = dateStr || '1995-08-21';
+    const seed = getHash(`${validName}_${gender}_${validDate}_${timeHour}_${isSolar ? 'S' : 'L'}`);
     
-    // 생년에서 연간/연지 유도
-    const birthYear = parseInt(dateStr.split('-')[0] || '1995', 10);
-    const birthMonth = parseInt(dateStr.split('-')[1] || '5', 10);
-    const birthDay = parseInt(dateStr.split('-')[2] || '1', 10);
+    // 생년월일 파싱
+    const parts = validDate.split('-');
+    const birthYear = parseInt(parts[0] || '1995', 10);
+    const birthMonth = parseInt(parts[1] || '8', 10);
+    const birthDay = parseInt(parts[2] || '21', 10);
 
-    const yearGanIdx = (birthYear - 4) % 10;
-    const yearJiIdx = (birthYear - 4) % 12;
+    const yearGanIdx = ((birthYear - 4) % 10 + 10) % 10;
+    const yearJiIdx = ((birthYear - 4) % 12 + 12) % 12;
     const monthGanIdx = (seed + birthMonth) % 10;
     const monthJiIdx = (seed + birthMonth + 2) % 12;
     const dayGanIdx = (seed + birthDay * 3) % 10;
     const dayJiIdx = (seed + birthDay * 5) % 12;
 
-    const timeNum = timeHour === 'unknown' ? (seed % 24) : parseInt(timeHour, 10);
+    const timeNum = timeHour === 'unknown' ? (seed % 24) : parseInt(timeHour || '12', 10);
     const timeJiIdx = Math.floor(((timeNum + 1) % 24) / 2);
     const timeGanIdx = (dayGanIdx * 2 + timeJiIdx) % 10;
 
     const makePillar = (ganIdx: number, jiIdx: number, pIdx: number): PillarData => {
-        const gan = CHEONGAN[Math.abs(ganIdx) % 10];
-        const ji = JIJI[Math.abs(jiIdx) % 12];
-        const ganElem = CHEONGAN_ELEM[gan];
-        const jiElem = JIJI_ELEM[ji];
+        const gan = CHEONGAN[((ganIdx % 10) + 10) % 10] || '갑(甲)';
+        const ji = JIJI[((jiIdx % 12) + 12) % 12] || '자(子)';
+        const ganElem = CHEONGAN_ELEM[gan] || 'wood';
+        const jiElem = JIJI_ELEM[ji] || 'water';
         return {
             gan,
             ji,
             ganElem,
             jiElem,
-            ganColor: ELEMENT_CONFIG[ganElem].color,
-            jiColor: ELEMENT_CONFIG[jiElem].color,
-            ganTenGod: TEN_GODS[(seed + pIdx * 2) % 10],
-            jiTenGod: TEN_GODS[(seed + pIdx * 2 + 1) % 10],
-            jijanggan: JIJANGGAN_MAP[ji] || '무(戊)'
+            ganColor: ELEMENT_CONFIG[ganElem]?.color || '#10B981',
+            jiColor: ELEMENT_CONFIG[jiElem]?.color || '#3B82F6',
+            ganTenGod: TEN_GODS[((seed + pIdx * 2) % 10 + 10) % 10] || '비견',
+            jiTenGod: TEN_GODS[((seed + pIdx * 2 + 1) % 10 + 10) % 10] || '정재',
+            jijanggan: JIJANGGAN_MAP[ji] || '무(戊), 계(癸)'
         };
     };
 
@@ -190,11 +193,11 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
     [pillars.year, pillars.month, pillars.day, pillars.time].forEach((p, idx) => {
         const ganWeight = idx === 2 ? 25 : 15;
         const jiWeight = idx === 1 ? 25 : 15;
-        rawCounts[p.ganElem] += ganWeight;
-        rawCounts[p.jiElem] += jiWeight;
+        if (p.ganElem && rawCounts[p.ganElem] !== undefined) rawCounts[p.ganElem] += ganWeight;
+        if (p.jiElem && rawCounts[p.jiElem] !== undefined) rawCounts[p.jiElem] += jiWeight;
     });
 
-    const totalWeight = Object.values(rawCounts).reduce((a, b) => a + b, 0);
+    const totalWeight = Math.max(1, Object.values(rawCounts).reduce((a, b) => a + b, 0));
     const elements = {
         wood: Math.round((rawCounts.wood / totalWeight) * 100),
         fire: Math.round((rawCounts.fire / totalWeight) * 100),
@@ -207,9 +210,9 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
 
     // 오행 요약
     const sortedElems = Object.entries(elements).sort((a, b) => b[1] - a[1]);
-    const dominantKey = sortedElems[0][0] as keyof typeof ELEMENT_CONFIG;
-    const deficientKey = sortedElems[sortedElems.length - 1][0] as keyof typeof ELEMENT_CONFIG;
-    const yongshinKey = sortedElems[2][0] as keyof typeof ELEMENT_CONFIG;
+    const dominantKey = (sortedElems[0]?.[0] || 'fire') as keyof typeof ELEMENT_CONFIG;
+    const deficientKey = (sortedElems[sortedElems.length - 1]?.[0] || 'water') as keyof typeof ELEMENT_CONFIG;
+    const yongshinKey = (sortedElems[2]?.[0] || 'wood') as keyof typeof ELEMENT_CONFIG;
 
     // 비즈니스 / 재물운
     const entrepreneurScore = 65 + (seed % 32);
@@ -275,19 +278,25 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
 
     // 오행 맞춤 로또 6개 번호 (1~45 중복 없이)
     const lottoSet = new Set<number>();
-    let numCursor = seed % 45 + 1;
-    while (lottoSet.size < 6) {
+    let numCursor = (seed % 45) + 1;
+    let safetyLoop = 0;
+    while (lottoSet.size < 6 && safetyLoop < 100) {
         lottoSet.add(numCursor);
         numCursor = ((numCursor * 7 + 13) % 45) + 1;
+        safetyLoop++;
+    }
+    // 안전장치
+    while (lottoSet.size < 6) {
+        lottoSet.add(lottoSet.size + 1);
     }
 
     const zodiacInfo = ZODIAC_LIST[yearJiIdx] || { name: '용띠', emoji: '🐉' };
 
     return {
         basic: {
-            name,
+            name: validName,
             gender,
-            birthDate,
+            birthDate: validDate,
             birthTime,
             isSolar,
             zodiac: `${pillars.year.gan}${pillars.year.ji}년 ${zodiacInfo.name}`,
@@ -296,9 +305,9 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
         pillars,
         elements,
         elementsSummary: {
-            dominant: ELEMENT_CONFIG[dominantKey].name,
-            deficient: ELEMENT_CONFIG[deficientKey].name,
-            yongshin: ELEMENT_CONFIG[yongshinKey].name
+            dominant: ELEMENT_CONFIG[dominantKey]?.name || '화(火)',
+            deficient: ELEMENT_CONFIG[deficientKey]?.name || '수(水)',
+            yongshin: ELEMENT_CONFIG[yongshinKey]?.name || '목(木)'
         },
         businessWealth: {
             entrepreneurScore,
@@ -313,7 +322,7 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
                 : '변동성을 최소화하는 자산배분(올웨더/배당주/부동산) 전략에서 가장 심리적 안정감과 복리 극대화를 누립니다.',
             financeSector: {
                 theme: currentSector.theme,
-                element: `${ELEMENT_CONFIG[dominantKey].name} 맞춤 추천`,
+                element: `${ELEMENT_CONFIG[dominantKey]?.name || '화(火)'} 맞춤 추천`,
                 reason: currentSector.reason,
                 link: '/finance'
             },
@@ -384,11 +393,11 @@ export function calculateCoupleMatch(p1: SajuResult, p2Name: string, p2Gender: '
     const seed = getHash(`${p1.basic.name}_${p2Name}_${p1.basic.birthDate}_${p2Birth}`);
 
     // 오행 상호 보완도 계산 (서로 부족한 것을 채워주는지)
-    const diffSum = Math.abs(p1.elements.wood - p2.elements.wood) +
-                    Math.abs(p1.elements.fire - p2.elements.fire) +
-                    Math.abs(p1.elements.earth - p2.elements.earth) +
-                    Math.abs(p1.elements.metal - p2.elements.metal) +
-                    Math.abs(p1.elements.water - p2.elements.water);
+    const diffSum = Math.abs(p1.elements.wood - p2Saju.elements.wood) +
+                    Math.abs(p1.elements.fire - p2Saju.elements.fire) +
+                    Math.abs(p1.elements.earth - p2Saju.elements.earth) +
+                    Math.abs(p1.elements.metal - p2Saju.elements.metal) +
+                    Math.abs(p1.elements.water - p2Saju.elements.water);
 
     const complementRate = Math.min(99, Math.max(68, Math.round(100 - (diffSum / 5) * 0.4) + (seed % 10)));
     const totalScore = Math.min(99, Math.max(70, Math.round(complementRate * 0.6 + 30 + (seed % 10))));
