@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BannerSlot } from '../BannerSlot';
 import { WeatherWidget } from './WeatherWidget';
 import { StockWidget } from './StockWidget';
+import { CoreServicesShowcase } from './CoreServicesShowcase';
 import {
     HomepageConfig,
     ALL_QUICK_MENU_ITEMS,
@@ -310,6 +311,9 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
             </section>
 
 
+
+            {/* VERA 핵심 3대 서비스 쇼케이스 카드 (유틸리티 · 게임 · 사주/재미) */}
+            <CoreServicesShowcase />
 
             {/* 레이아웃 분기 */}
             {layout === 'portal' && <PortalLayout {...props} />}

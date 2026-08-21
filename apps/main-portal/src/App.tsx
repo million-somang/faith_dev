@@ -53,6 +53,7 @@ import { MobileTabBar } from './components/MobileTabBar';
 import { BannerSlot } from './components/BannerSlot';
 import { WeatherWidget } from './components/homepage/WeatherWidget';
 import { StockWidget } from './components/homepage/StockWidget';
+import { CoreServicesShowcase } from './components/homepage/CoreServicesShowcase';
 
 function HomePage() {
     console.log('HomePage rendering...');
@@ -182,133 +183,8 @@ function HomePage() {
                         </section>
 
                         {/* 포털 3대 핵심 서비스 쇼케이스 카드 (생활도구 · 미니게임 · 사주/재미) */}
-                        <section className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
-                            {/* 1. 생활도구 (Utility) 카드 */}
-                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg">
-                                            <i className="fas fa-screwdriver-wrench"></i>
-                                        </div>
-                                        <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full">
-                                            스마트 계산기
-                                        </span>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        생활도구 (Utility)
-                                    </h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                                        부동산 평수 변환, 만 나이, D-Day 계산, 대출이자 및 금융 계산기 등 실생활에 꼭 필요한 도구를 무료로 제공합니다.
-                                    </p>
+                        <CoreServicesShowcase />
 
-                                    <div className="space-y-1.5 text-xs font-medium text-slate-700">
-                                        <a href="/lifestyle" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
-                                            <span>• 부동산 평수 ↔ ㎡ 변환기</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                        <a href="/lifestyle" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
-                                            <span>• 만 나이 통일법 계산기</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                        <a href="/finance/util" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-800 transition-colors">
-                                            <span>• 미국 배당세 · 주담대 DSR 계산기</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <a
-                                    href="/lifestyle"
-                                    className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-800 text-xs font-semibold text-center transition-all block mt-2"
-                                >
-                                    생활도구 전체보기 →
-                                </a>
-                            </div>
-
-                            {/* 2. 게임 (Games) 카드 */}
-                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg">
-                                            <i className="fas fa-gamepad"></i>
-                                        </div>
-                                        <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-full">
-                                            설치 없이 즉시 플레이
-                                        </span>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        미니게임 천국 (Games)
-                                    </h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                                        테트리스, 스도쿠, 2048, 지뢰찾기, 프리셀 등 브라우저에서 바로 즐기는 클래식 퍼즐 & 아케이드 게임 모음입니다.
-                                    </p>
-
-                                    <div className="space-y-1.5 text-xs font-medium text-slate-700">
-                                        <a href="/game/tetris" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800 transition-colors">
-                                            <span>• 테트리스 마스터 (Tetris Pro)</span>
-                                            <span className="text-[10px] bg-red-100 text-red-600 font-bold px-1.5 py-0.5 rounded">인기</span>
-                                        </a>
-                                        <a href="/game/2048" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800 transition-colors">
-                                            <span>• 2048 숫자 퍼즐</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                        <a href="/game/sudoku" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800 transition-colors">
-                                            <span>• 두뇌 자극 일일 스도쿠</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <a
-                                    href="/game"
-                                    className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-800 text-xs font-semibold text-center transition-all block mt-2"
-                                >
-                                    게임 센터 바로가기 →
-                                </a>
-                            </div>
-
-                            {/* 3. 재미 / 엔터테인먼트 (Entertainment) 카드 */}
-                            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center text-lg">
-                                            <i className="fas fa-yin-yang"></i>
-                                        </div>
-                                        <span className="text-[11px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full">
-                                            사주 · 웹소설
-                                        </span>
-                                    </div>
-                                    <h3 className="text-lg font-bold text-slate-900 mb-1">
-                                        재미 & 사주 풀이 (Entertainment)
-                                    </h3>
-                                    <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                                        정통 만세력 8글자 오행 밸런스, 2인 정밀 궁합, 오늘의 12시진 운세 및 AI 웹소설 창작소를 만나보세요.
-                                    </p>
-
-                                    <div className="space-y-1.5 text-xs font-medium text-slate-700">
-                                        <a href="/entertainment/saju" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-amber-50 hover:text-amber-900 transition-colors">
-                                            <span>• 정통 만세력 & 오행 레이더 차트</span>
-                                            <span className="text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded">NEW</span>
-                                        </a>
-                                        <a href="/entertainment/saju" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-amber-50 hover:text-amber-900 transition-colors">
-                                            <span>• 2인 정밀 궁합 & 신살 매력도</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                        <a href="/novel" className="flex items-center justify-between p-2 rounded-xl bg-slate-50 hover:bg-amber-50 hover:text-amber-900 transition-colors">
-                                            <span>• AI 웹소설 & 스토리 창작소</span>
-                                            <i className="fas fa-chevron-right text-[10px] text-slate-400"></i>
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <a
-                                    href="/entertainment/saju"
-                                    className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-amber-700 hover:text-white text-slate-800 text-xs font-semibold text-center transition-all block mt-2"
-                                >
-                                    사주 & 재미 서비스 열기 →
-                                </a>
-                            </div>
-                        </section>
 
                         {/* 2-Column Layout */}
                         <div className="flex flex-col lg:flex-row gap-8">
