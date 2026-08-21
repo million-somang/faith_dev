@@ -2,96 +2,92 @@ import React, { useState } from 'react';
 import type { SajuResult } from '../utils/sajuCalculator';
 
 interface SajuShareModalProps {
-    saju: SajuResult;
+    result?: SajuResult;
+    saju?: SajuResult;
     isOpen: boolean;
     onClose: () => void;
 }
 
-export const SajuShareModal: React.FC<SajuShareModalProps> = ({ saju, isOpen, onClose }) => {
+export default function SajuShareModal({ result, saju, isOpen, onClose }: SajuShareModalProps) {
+    const mainSaju = result || saju;
     const [copied, setCopied] = useState(false);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mainSaju) return null;
 
     const shareUrl = window.location.href;
-    const summaryText = `[Veranex Saju Pro] ${saju.basic.name}님의 사주 분석 리포트\n` +
-        `• 띠/일주: ${saju.basic.zodiac} (${saju.pillars.day.gan}${saju.pillars.day.ji} 일주)\n` +
-        `• 오행 밸런스: ${saju.elementsSummary.dominant} 우세 / ${saju.elementsSummary.yongshin} 용신\n` +
-        `• 비즈니스 성향: ${saju.businessWealth.typeTitle}\n` +
-        `• 오늘의 행운 컬러: ${saju.microDaily.luckyColorName} (${saju.microDaily.luckyHexColor})\n` +
-        `• 행운의 숫자: ${saju.microDaily.luckyNumbers.join(', ')}\n\n` +
-        `👉 지금 무료로 내 사주 확인하기: ${shareUrl}`;
+    const summaryText = `[베라 정통 만세력 & 사주 풀이]\n` +
+        `• 이름: ${mainSaju.basic.name} 님\n` +
+        `• 일주: ${mainSaju.pillars.day.gan}${mainSaju.pillars.day.ji} 일주 (${mainSaju.basic.zodiac})\n` +
+        `• 오행 기운: ${mainSaju.elementsSummary.dominant} 주도 / ${mainSaju.elementsSummary.yongshin} 용신\n` +
+        `• 직업 성향: ${mainSaju.businessWealth.typeTitle}\n` +
+        `• 오늘의 행운 색상: ${mainSaju.microDaily.luckyColorName}\n` +
+        `• 오늘의 행운 숫자: ${mainSaju.microDaily.luckyNumbers.join(', ')}\n\n` +
+        `내 사주와 오행 확인하기: ${shareUrl}`;
 
     const handleCopy = () => {
         navigator.clipboard.writeText(summaryText).then(() => {
             setCopied(true);
-            setTimeout(() => setCopied(false), 2500);
+            setTimeout(() => setCopied(false), 2000);
         });
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-                    <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                        <span>📤</span> 사주 결과 카드 공유
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-xl border border-stone-200/80">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100 mb-4">
+                    <h3 className="text-base font-serif font-bold text-stone-900">
+                        사주 풀이 결과 공유
                     </h3>
                     <button
                         onClick={onClose}
-                        className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 text-sm"
+                        className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 text-sm"
                     >
                         ✕
                     </button>
                 </div>
 
-                {/* 인스타/카카오 프리뷰 카드 */}
-                <div className="p-5 bg-gradient-to-br from-indigo-900 via-purple-950 to-slate-900 text-white rounded-2xl shadow-inner mb-4 relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
-                        <span className="text-[10px] font-bold tracking-widest text-indigo-300 uppercase">Veranex Saju Pro</span>
-                        <span className="text-xs">{saju.basic.zodiacEmoji} {saju.basic.zodiac}</span>
+                {/* 정갈한 요약 카드 프리뷰 */}
+                <div className="p-5 bg-stone-900 text-stone-100 rounded-2xl mb-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-stone-800 pb-2">
+                        <span className="text-[10px] font-semibold tracking-wider text-stone-400 uppercase">VERA MANSERYEOK</span>
+                        <span className="text-xs text-stone-300">{mainSaju.basic.zodiac}</span>
                     </div>
 
-                    <div className="text-center my-3">
-                        <h4 className="text-xl font-black">{saju.basic.name} 님의 사주 프로필</h4>
-                        <p className="text-xs text-amber-300 font-medium mt-1">{saju.businessWealth.typeTitle}</p>
+                    <div className="text-center py-1">
+                        <h4 className="text-lg font-serif font-bold text-white">{mainSaju.basic.name} 님의 사주</h4>
+                        <p className="text-xs text-amber-300/90 font-medium mt-0.5">{mainSaju.businessWealth.typeTitle}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 bg-white/10 p-3 rounded-xl text-[11px] my-3">
+                    <div className="grid grid-cols-2 gap-2 bg-stone-800/80 p-3 rounded-xl text-xs">
                         <div>
-                            <span className="text-indigo-200 block text-[10px]">오행 우세</span>
-                            <strong className="text-emerald-300">{saju.elementsSummary.dominant}</strong>
+                            <span className="text-stone-400 block text-[10px]">주도 오행</span>
+                            <strong className="text-stone-100">{mainSaju.elementsSummary.dominant}</strong>
                         </div>
                         <div>
-                            <span className="text-indigo-200 block text-[10px]">핵심 용신</span>
-                            <strong className="text-amber-300">{saju.elementsSummary.yongshin}</strong>
+                            <span className="text-stone-400 block text-[10px]">도움 오행 (용신)</span>
+                            <strong className="text-amber-300">{mainSaju.elementsSummary.yongshin}</strong>
                         </div>
                         <div>
-                            <span className="text-indigo-200 block text-[10px]">행운의 컬러</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                                <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: saju.microDaily.luckyHexColor }}></span>
-                                <span>{saju.microDaily.luckyColorName.split(' ')[0]}</span>
-                            </div>
+                            <span className="text-stone-400 block text-[10px]">행운의 색상</span>
+                            <strong className="text-stone-100">{mainSaju.microDaily.luckyColorName.split(' ')[0]}</strong>
                         </div>
                         <div>
-                            <span className="text-indigo-200 block text-[10px]">행운의 번호</span>
-                            <strong className="text-rose-300">{saju.microDaily.luckyNumbers.join(', ')}</strong>
+                            <span className="text-stone-400 block text-[10px]">행운의 숫자</span>
+                            <strong className="text-stone-100">{mainSaju.microDaily.luckyNumbers.join(', ')}</strong>
                         </div>
                     </div>
-
-                    <p className="text-[10px] text-center text-slate-400">
-                        veranex.app/entertainment/saju
-                    </p>
                 </div>
 
                 <div className="space-y-2">
                     <button
                         onClick={handleCopy}
-                        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                        className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
                     >
-                        {copied ? '✅ 사주 요약 텍스트 복사 완료!' : '📋 카카오톡 / SNS 공유 텍스트 복사'}
+                        {copied ? '결과 텍스트가 복사되었습니다.' : '공유 텍스트 복사하기'}
                     </button>
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all"
+                        className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs rounded-xl transition-colors"
                     >
                         닫기
                     </button>
@@ -99,5 +95,4 @@ export const SajuShareModal: React.FC<SajuShareModalProps> = ({ saju, isOpen, on
             </div>
         </div>
     );
-};
-export default SajuShareModal;
+}

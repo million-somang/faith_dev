@@ -3,14 +3,16 @@ import { calculateCoupleMatch } from '../utils/sajuCalculator';
 import type { SajuResult, CoupleMatchResult } from '../utils/sajuCalculator';
 
 interface CoupleMatchModalProps {
-    userSaju: SajuResult;
+    person1?: SajuResult;
+    userSaju?: SajuResult;
     isOpen: boolean;
     onClose: () => void;
 }
 
-export const CoupleMatchModal: React.FC<CoupleMatchModalProps> = ({ userSaju, isOpen, onClose }) => {
+export default function CoupleMatchModal({ person1, userSaju, isOpen, onClose }: CoupleMatchModalProps) {
+    const mainUser = person1 || userSaju;
     const [partnerName, setPartnerName] = useState('');
-    const [partnerGender, setPartnerGender] = useState<'M' | 'F'>(userSaju.basic.gender === 'M' ? 'F' : 'M');
+    const [partnerGender, setPartnerGender] = useState<'M' | 'F'>(mainUser?.basic.gender === 'M' ? 'F' : 'M');
     const [partnerBirth, setPartnerBirth] = useState('1996-07-15');
     const [partnerTime, setPartnerTime] = useState('unknown');
     const [partnerSolar, setPartnerSolar] = useState(true);
@@ -18,7 +20,7 @@ export const CoupleMatchModal: React.FC<CoupleMatchModalProps> = ({ userSaju, is
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [matchResult, setMatchResult] = useState<CoupleMatchResult | null>(null);
 
-    if (!isOpen) return null;
+    if (!isOpen || !mainUser) return null;
 
     const handleCalculate = (e: React.FormEvent) => {
         e.preventDefault();
@@ -29,35 +31,23 @@ export const CoupleMatchModal: React.FC<CoupleMatchModalProps> = ({ userSaju, is
 
         setIsAnalyzing(true);
         setTimeout(() => {
-            const res = calculateCoupleMatch(userSaju, partnerName.trim(), partnerGender, partnerBirth, partnerTime, partnerSolar);
+            const res = calculateCoupleMatch(mainUser, partnerName.trim(), partnerGender, partnerBirth, partnerTime, partnerSolar);
             setMatchResult(res);
             setIsAnalyzing(false);
-        }, 1200);
-    };
-
-    const getTierBadge = (tier: string) => {
-        switch (tier) {
-            case 'S': return 'bg-gradient-to-r from-amber-400 to-rose-500 text-white shadow-rose-200';
-            case 'A': return 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-indigo-200';
-            case 'B': return 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-emerald-200';
-            default: return 'bg-gradient-to-r from-slate-500 to-gray-600 text-white shadow-slate-200';
-        }
+        }, 800);
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">❤️</span>
-                        <div>
-                            <h3 className="text-xl font-black text-slate-900">2인 정밀 사주 궁합 진단</h3>
-                            <p className="text-xs text-slate-500">명리학 오행 밸런스 & 일간(日干) 케미스트리 분석</p>
-                        </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-xl border border-stone-200/80 max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between pb-4 border-b border-stone-100 mb-6">
+                    <div>
+                        <h3 className="text-lg font-serif font-bold text-stone-900">2인 정밀 사주 궁합</h3>
+                        <p className="text-xs text-stone-500">두 사람의 오행 상호 보완도와 화합 지수</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500 text-lg transition-colors"
+                        className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 flex items-center justify-center text-stone-600 text-sm transition-colors"
                     >
                         ✕
                     </button>
@@ -65,83 +55,83 @@ export const CoupleMatchModal: React.FC<CoupleMatchModalProps> = ({ userSaju, is
 
                 {!matchResult ? (
                     <form onSubmit={handleCalculate} className="space-y-4">
-                        <div className="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100 text-xs text-indigo-900 leading-relaxed">
-                            💡 <strong>{userSaju.basic.name}</strong> 님과 상대방의 사주팔자 오행을 대조하여 서로의 결핍을 채워주는 보완율과 라이프스타일 조화를 연산합니다.
+                        <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200/60 text-xs text-stone-700 leading-relaxed">
+                            <strong>{mainUser.basic.name}</strong> 님과 상대방의 사주팔자 오행을 대조하여 서로 부족한 기운을 얼마나 채워주는지 정밀하게 풀이합니다.
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">상대방 이름</label>
+                            <label className="block text-xs font-bold text-stone-700 mb-1">상대방 이름</label>
                             <input
                                 type="text"
                                 value={partnerName}
                                 onChange={(e) => setPartnerName(e.target.value)}
                                 placeholder="예: 김민지"
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm font-medium"
                                 required
                             />
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">성별</label>
-                                <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                                <label className="block text-xs font-bold text-stone-700 mb-1">성별</label>
+                                <div className="grid grid-cols-2 gap-1 bg-stone-100 p-1 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => setPartnerGender('M')}
-                                        className={`py-2 text-xs font-bold rounded-lg transition-all ${partnerGender === 'M' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500'}`}
+                                        className={`py-2 text-xs font-semibold rounded-lg transition-all ${partnerGender === 'M' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
                                     >
-                                        남성 👦
+                                        남성
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPartnerGender('F')}
-                                        className={`py-2 text-xs font-bold rounded-lg transition-all ${partnerGender === 'F' ? 'bg-white text-pink-600 shadow-sm' : 'text-slate-500'}`}
+                                        className={`py-2 text-xs font-semibold rounded-lg transition-all ${partnerGender === 'F' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
                                     >
-                                        여성 👧
+                                        여성
                                     </button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">양력/음력</label>
-                                <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
+                                <label className="block text-xs font-bold text-stone-700 mb-1">달력</label>
+                                <div className="grid grid-cols-2 gap-1 bg-stone-100 p-1 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={() => setPartnerSolar(true)}
-                                        className={`py-2 text-xs font-bold rounded-lg transition-all ${partnerSolar ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                                        className={`py-2 text-xs font-semibold rounded-lg transition-all ${partnerSolar ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
                                     >
-                                        양력 ☀️
+                                        양력
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setPartnerSolar(false)}
-                                        className={`py-2 text-xs font-bold rounded-lg transition-all ${!partnerSolar ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                                        className={`py-2 text-xs font-semibold rounded-lg transition-all ${!partnerSolar ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}
                                     >
-                                        음력 🌙
+                                        음력
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">생년월일</label>
+                            <label className="block text-xs font-bold text-stone-700 mb-1">상대방 생년월일</label>
                             <input
                                 type="date"
                                 value={partnerBirth}
                                 onChange={(e) => setPartnerBirth(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm font-medium"
                                 required
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">태어난 시간</label>
+                            <label className="block text-xs font-bold text-stone-700 mb-1">태어난 시간 (선택)</label>
                             <select
                                 value={partnerTime}
                                 onChange={(e) => setPartnerTime(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium"
+                                className="w-full px-4 py-3 rounded-xl border border-stone-300 bg-stone-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-stone-400 text-sm font-medium"
                             >
-                                <option value="unknown">태어난 시간 모름 (기본 추정)</option>
+                                <option value="unknown">시간 모름</option>
                                 <option value="0">자시 (23:30 ~ 01:30)</option>
                                 <option value="2">축시 (01:30 ~ 03:30)</option>
                                 <option value="4">인시 (03:30 ~ 05:30)</option>
@@ -160,85 +150,60 @@ export const CoupleMatchModal: React.FC<CoupleMatchModalProps> = ({ userSaju, is
                         <button
                             type="submit"
                             disabled={isAnalyzing}
-                            className="w-full py-4 bg-gradient-to-r from-pink-500 via-rose-500 to-indigo-600 text-white font-extrabold rounded-2xl shadow-lg shadow-pink-200 hover:shadow-xl transition-all transform active:scale-98 flex items-center justify-center gap-2 mt-4"
+                            className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-sm rounded-xl transition-all shadow-sm active:scale-[0.99] mt-2"
                         >
-                            {isAnalyzing ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                    <span>2인의 오행 매칭 연산 중...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span>✨ 2인 정밀 궁합 결과 확인하기</span>
-                                </>
-                            )}
+                            {isAnalyzing ? '궁합 데이터 연산 중...' : '궁합 풀이 보기'}
                         </button>
                     </form>
                 ) : (
-                    <div className="space-y-5 animate-fadeIn">
-                        {/* 궁합 티어 헤더 */}
-                        <div className="text-center p-6 bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl shadow-xl relative overflow-hidden">
-                            <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-pink-500/20 rounded-full blur-2xl"></div>
-                            <div className="inline-block px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-3 border border-white/20 bg-white/10">
-                                Match Chemistry Result
-                            </div>
-                            <h4 className="text-2xl font-extrabold mb-1">
+                    <div className="space-y-6">
+                        {/* 결과 점수 및 티어 */}
+                        <div className="p-6 bg-stone-50 rounded-2xl border border-stone-200/80 text-center space-y-2">
+                            <span className="text-xs font-semibold text-stone-500">
                                 {matchResult.person1Name} & {matchResult.person2Name}
-                            </h4>
-                            <p className="text-xs text-indigo-200 mb-4">{matchResult.tierTitle}</p>
+                            </span>
+                            <div className="text-3xl font-serif font-bold text-stone-900">
+                                {matchResult.totalScore}점
+                            </div>
+                            <span className="inline-block px-3 py-1 bg-stone-900 text-white text-xs font-semibold rounded-full">
+                                {matchResult.tierTitle}
+                            </span>
+                        </div>
 
-                            <div className="flex items-center justify-center gap-6 my-4">
-                                <div className="text-center">
-                                    <div className="text-4xl font-black text-rose-400">{matchResult.totalScore}점</div>
-                                    <div className="text-[11px] text-slate-400 mt-1">종합 궁합 지수</div>
-                                </div>
-                                <div className="h-10 w-px bg-white/20"></div>
-                                <div className="text-center">
-                                    <div className="text-4xl font-black text-emerald-400">{matchResult.complementRate}%</div>
-                                    <div className="text-[11px] text-slate-400 mt-1">오행 보완율</div>
-                                </div>
+                        {/* 상호 보완도 게이지 */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between text-xs font-bold">
+                                <span className="text-stone-700">오행 상호 보완율</span>
+                                <span className="text-stone-900">{matchResult.complementRate}%</span>
+                            </div>
+                            <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
+                                <div
+                                    className="h-full bg-stone-800 rounded-full transition-all duration-700"
+                                    style={{ width: `${matchResult.complementRate}%` }}
+                                ></div>
                             </div>
                         </div>
 
-                        {/* 상세 해설 카드 */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
-                            <div>
-                                <span className="text-xs font-bold text-indigo-600 block mb-1">💬 가치관 & 성격 케미스트리</span>
-                                <p className="text-sm text-slate-700 leading-relaxed">{matchResult.chemistryAnalysis}</p>
-                            </div>
-                            <div className="pt-3 border-t border-slate-200">
-                                <span className="text-xs font-bold text-rose-600 block mb-1">❤️ 속궁합 & 친밀도 지수 ({matchResult.intimacyIndex}점)</span>
-                                <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden my-1.5">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-pink-500 to-rose-600 rounded-full transition-all duration-700"
-                                        style={{ width: `${matchResult.intimacyIndex}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-                            <div className="pt-3 border-t border-slate-200">
-                                <span className="text-xs font-bold text-amber-600 block mb-1">⚠️ 갈등 발생 시 솔루션 팁</span>
-                                <p className="text-xs text-slate-600 leading-relaxed">{matchResult.conflictAdvice}</p>
-                            </div>
+                        {/* 상세 해설 */}
+                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/60 space-y-2 text-xs leading-relaxed text-stone-700">
+                            <strong className="text-stone-900 font-bold block">케미스트리 분석</strong>
+                            <p>{matchResult.chemistryAnalysis}</p>
                         </div>
 
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setMatchResult(null)}
-                                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all"
-                            >
-                                🔄 다른 사람과 다시 보기
-                            </button>
-                            <button
-                                onClick={onClose}
-                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md transition-all"
-                            >
-                                확인 완료
-                            </button>
+                        <div className="p-4 bg-amber-50/70 rounded-2xl border border-amber-200/70 space-y-2 text-xs leading-relaxed text-amber-900">
+                            <strong className="font-bold block">조화로운 관계를 위한 조언</strong>
+                            <p>{matchResult.conflictAdvice}</p>
                         </div>
+
+                        <button
+                            onClick={() => setMatchResult(null)}
+                            className="w-full py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs rounded-xl transition-colors"
+                        >
+                            다른 사람과 다시 비교하기
+                        </button>
                     </div>
                 )}
             </div>
         </div>
     );
-};
-export default CoupleMatchModal;
+}
