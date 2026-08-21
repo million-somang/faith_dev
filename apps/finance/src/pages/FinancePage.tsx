@@ -168,18 +168,18 @@ export default function FinancePage() {
                                 </p>
                             </div>
                         </div>
-                        <a
-                            href={`${MAIN_PORTAL_URL}/finance/util`}
+                        <Link
+                            to="/util"
                             className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm w-fit"
                         >
                             <span>금융Util 전체보기</span>
                             <i className="fas fa-arrow-right text-[10px]"></i>
-                        </a>
+                        </Link>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <a
-                            href={`${MAIN_PORTAL_URL}/finance/util?tab=dividend`}
+                        <Link
+                            to="/util?tab=dividend"
                             className="p-4 bg-white rounded-2xl border border-amber-200/60 hover:border-amber-400 hover:shadow-md transition-all group"
                         >
                             <div className="flex items-center gap-2 mb-1.5">
@@ -191,10 +191,10 @@ export default function FinancePage() {
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 SCHD, JEPI 등 배당소득세(15.4%) 공제 후 실제 월 수령액 및 12개월 캘린더
                             </p>
-                        </a>
+                        </Link>
 
-                        <a
-                            href={`${MAIN_PORTAL_URL}/finance/util?tab=dsr`}
+                        <Link
+                            to="/util?tab=dsr"
                             className="p-4 bg-white rounded-2xl border border-blue-200/60 hover:border-blue-400 hover:shadow-md transition-all group"
                         >
                             <div className="flex items-center gap-2 mb-1.5">
@@ -206,10 +206,10 @@ export default function FinancePage() {
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 2026 스트레스 DSR 2단계 적용 최대 한도 및 상환방식별 이자 총액 비교
                             </p>
-                        </a>
+                        </Link>
 
-                        <a
-                            href={`${MAIN_PORTAL_URL}/finance/util?tab=severance`}
+                        <Link
+                            to="/util?tab=severance"
                             className="p-4 bg-white rounded-2xl border border-teal-200/60 hover:border-teal-400 hover:shadow-md transition-all group"
                         >
                             <div className="flex items-center gap-2 mb-1.5">
@@ -221,7 +221,7 @@ export default function FinancePage() {
                             <p className="text-xs text-slate-500 leading-relaxed">
                                 근속연수별 법정 퇴직금 세후 실수령액 및 2026 고용보험 구직급여 총액
                             </p>
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
