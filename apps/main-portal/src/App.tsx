@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
@@ -344,6 +344,56 @@ function AppTracker() {
     return null;
 }
 
+function RewardGuard({ children }: { children: React.ReactNode }) {
+    const { user, isLoading } = useAuth();
+    if (isLoading) return null;
+    if (user?.email !== 'sukman@naver.com') {
+        return <Navigate to="/guides" replace />;
+    }
+    return <>{children}</>;
+}
+
+function NotFoundOrDevPage() {
+    const { user } = useAuth();
+    const isDevAdmin = user?.email === 'sukman@naver.com';
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+            <Header user={user} />
+            <main className="flex-1 flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center">
+                    <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        {isDevAdmin ? '🛠️' : '🔍'}
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">
+                        {isDevAdmin ? '개발 중인 서비스 (관리자 모드)' : '요청하신 페이지를 찾을 수 없습니다'}
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                        {isDevAdmin 
+                            ? '현재 sukman@naver.com 관리자 계정으로 접속 중입니다. 해당 기능은 개발 중입니다.' 
+                            : '입력하신 주소가 잘못되었거나 변경되었습니다. 아래 추천 메뉴로 이동해 보세요.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <a 
+                            href="/" 
+                            className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all"
+                        >
+                            홈으로 이동
+                        </a>
+                        <a 
+                            href="/guides" 
+                            className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-all shadow-sm"
+                        >
+                            지식 가이드 둘러보기
+                        </a>
+                    </div>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
+}
+
 function App() {
     useEffect(() => {
         const handleAdminMessage = (e: MessageEvent) => {
@@ -391,7 +441,11 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/lifestyle" element={<UtilityPage />} />
                     <Route path="/finance" element={<FinancePage />} />
-                    <Route path="/reward" element={<RewardLayout />}>
+                    <Route path="/reward" element={
+                        <RewardGuard>
+                            <RewardLayout />
+                        </RewardGuard>
+                    }>
                         <Route index element={<RewardHome />} />
                         <Route path="attendance" element={<RewardAttendance />} />
                         <Route path="missions" element={<RewardMissions />} />
@@ -428,11 +482,7 @@ function App() {
                             google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0
                         </pre>
                     } />
-                    <Route path="*" element={
-                        <div className="min-h-screen flex flex-col pt-20">
-                            <div className="flex-1 flex items-center justify-center text-gray-500 font-bold">준비 중인 서비스입니다 ✨</div>
-                        </div>
-                    } />
+                    <Route path="*" element={<NotFoundOrDevPage />} />
                 </Routes>
                 <MobileTabBar />
             </UserPreferenceProvider>

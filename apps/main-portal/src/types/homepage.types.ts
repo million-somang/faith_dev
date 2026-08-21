@@ -53,9 +53,9 @@ export interface HomepageConfig {
 export const MAX_MOBILE_TABS = 5;
 
 export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
-    quickMenuItems: ['news', 'utility', 'game', 'finance', 'lounge'],
-    quickMenuOrder: ['news', 'utility', 'game', 'finance', 'lounge', 'shopping', 'entertainment', 'education'],
-    mobileTabs: ['home', 'news', 'shopping', 'lifestyle', 'mypage'],
+    quickMenuItems: ['news', 'guides', 'utility', 'game', 'finance', 'lounge'],
+    quickMenuOrder: ['news', 'guides', 'utility', 'game', 'finance', 'lounge', 'entertainment'],
+    mobileTabs: ['home', 'news', 'guides', 'lifestyle', 'mypage'],
     preferences: {
         mainInterest: 'news',
         newsCategories: ['politics', 'economy'],
@@ -75,26 +75,25 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
 
 export const ALL_QUICK_MENU_ITEMS: QuickMenuItem[] = [
     { id: 'news', label: '뉴스', icon: 'fa-newspaper', href: '/news', color: 'text-blue-600', bg: 'bg-blue-50' },
+    { id: 'guides', label: '가이드', icon: 'fa-book-open-reader', href: '/guides', color: 'text-teal-600', bg: 'bg-teal-50' },
     { id: 'utility', label: '유틸리티', icon: 'fa-tools', href: '/lifestyle', color: 'text-green-600', bg: 'bg-green-50' },
     { id: 'game', label: '게임', icon: 'fa-gamepad', href: '/game', color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'finance', label: '금융', icon: 'fa-won-sign', href: '/finance', color: 'text-orange-600', bg: 'bg-orange-50' },
     { id: 'lounge', label: '라운지', icon: 'fa-comments', href: '/lounge', color: 'text-violet-600', bg: 'bg-violet-50' },
-    { id: 'shopping', label: '쇼핑', icon: 'fa-shopping-bag', href: '/shopping', color: 'text-pink-600', bg: 'bg-pink-50' },
     { id: 'entertainment', label: '엔터', icon: 'fa-film', href: '/entertainment', color: 'text-red-600', bg: 'bg-red-50' },
-    { id: 'education', label: '교육', icon: 'fa-graduation-cap', href: '/education', color: 'text-indigo-600', bg: 'bg-indigo-50' },
 ];
 
 // 모바일 하단 탭에 선택 가능한 후보 (전체메뉴 버튼은 항상 마지막에 고정)
 export const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
     { id: 'home', label: '홈', icon: 'fas fa-home', path: '/', color: '#2563eb' },
     { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news', color: '#0ea5e9' },
-    { id: 'shopping', label: '쇼핑', icon: 'fas fa-bag-shopping', path: '/shopping', color: '#ec4899' },
+    { id: 'guides', label: '가이드', icon: 'fas fa-book-open-reader', path: '/guides', color: '#0d9488' },
     { id: 'lifestyle', label: '도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
     { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
     { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance', color: '#f97316' },
     { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
-    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
     { id: 'lounge', label: '라운지', icon: 'fas fa-comments', path: '/lounge', color: '#8b5cf6' },
+    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
 ];
 
 // API 응답 타입
