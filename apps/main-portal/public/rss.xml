@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>VERA 지식 가이드 &amp; 전문 칼럼</title>
+    <link>https://veranex.app/guides</link>
+    <description>금융, 명리학, 웹소설 작법, 생활계산, 게임 전략 등 일상과 지적 성장에 도움을 주는 고품질 지식 아티클</description>
+    <language>ko-KR</language>
+    <lastBuildDate>Fri, 21 Aug 2026 11:30:00 +0900</lastBuildDate>
+    <atom:link href="https://veranex.app/rss.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>2026 글로벌 금리 인하기, 초보자를 위한 미국 배당주 포트폴리오 구축 전략</title>
+      <link>https://veranex.app/guides/2026-global-interest-rate-dividend-strategy</link>
+      <guid isPermaLink="true">https://veranex.app/guides/2026-global-interest-rate-dividend-strategy</guid>
+      <description>글로벌 통화 정책 완화기에 안정적인 현금 흐름을 창출할 수 있는 미국 배당 귀족주 및 월배당 ETF 포트폴리오 구성 원칙과 주의점을 심층 분석합니다.</description>
+      <pubDate>Sat, 15 Aug 2026 09:00:00 +0900</pubDate>
+      <category>금융 &amp; 재테크</category>
+    </item>
+
+    <item>
+      <title>원/달러 환율 변동 원리와 개인 투자자의 스마트한 외환 리스크 관리법</title>
+      <link>https://veranex.app/guides/foreign-exchange-rate-and-macro-investment</link>
+      <guid isPermaLink="true">https://veranex.app/guides/foreign-exchange-rate-and-macro-investment</guid>
+      <description>글로벌 거시 경제 지표와 원/달러 환율의 상관관계를 이해하고, 개인 투자자가 환율 변동 시기 자산을 지키고 불리는 실전 외환 포트폴리오 기법을 안내합니다.</description>
+      <pubDate>Sun, 16 Aug 2026 09:00:00 +0900</pubDate>
+      <category>금융 &amp; 재테크</category>
+    </item>
+
+    <item>
+      <title>복리의 마법과 스마트한 시드머니 불리기: 적립식 투자의 기초 원리</title>
+      <link>https://veranex.app/guides/magic-of-compound-interest-and-dollar-cost-averaging</link>
+      <guid isPermaLink="true">https://veranex.app/guides/magic-of-compound-interest-and-dollar-cost-averaging</guid>
+      <description>시간이 지날수록 기하급수적으로 자산이 불어나는 복리의 수학적 메커니즘과 일반 직장인이 실천할 수 있는 정액적립식(DCA) 자산 형성 비결을 안내합니다.</description>
+      <pubDate>Mon, 17 Aug 2026 09:00:00 +0900</pubDate>
+      <category>금융 &amp; 재테크</category>
+    </item>
+
+    <item>
+      <title>복리 계산기 200% 활용법: 1억 만들기 5년 적금 vs ETF 투자 시뮬레이션</title>
+      <link>https://veranex.app/guides/compound-interest-calculator-guide-and-wealth-building</link>
+      <guid isPermaLink="true">https://veranex.app/guides/compound-interest-calculator-guide-and-wealth-building</guid>
+      <description>사회초년생의 첫 번째 자산 목표인 1억 원을 모으기 위한 일반 시중은행 정기적금과 글로벌 지수 ETF 투자의 복리 수익률 격차를 실측 데이터로 비교 분석합니다.</description>
+      <pubDate>Thu, 30 Jul 2026 09:00:00 +0900</pubDate>
+      <category>금융 &amp; 재테크</category>
+    </item>
+
+    <item>
+      <title>워런 버핏이 추천한 S&amp;P 500 인덱스 펀드 무지성 적립식 투자의 역사적 수익률</title>
+      <link>https://veranex.app/guides/sp500-index-fund-dollar-investing-principles</link>
+      <guid isPermaLink="true">https://veranex.app/guides/sp500-index-fund-dollar-investing-principles</guid>
+      <description>오마하의 현인 워런 버핏이 유언장에 남긴 S&amp;P 500 지수 투자의 100년 역사적 연평균 수익률(CAGR 10%), 변동성 극복 원리, 무지성 매수 원칙을 해설합니다.</description>
+      <pubDate>Fri, 24 Jul 2026 09:00:00 +0900</pubDate>
+      <category>금융 &amp; 재테크</category>
+    </item>
+
+    <item>
+      <title>사주팔자(四柱八字)와 만세력의 기본 원리: 천간과 지지가 말하는 나의 기운</title>
+      <link>https://veranex.app/guides/saju-manseryeok-principles-and-four-pillars</link>
+      <guid isPermaLink="true">https://veranex.app/guides/saju-manseryeok-principles-and-four-pillars</guid>
+      <description>생년월일시로 구성되는 사주팔자의 천문학적 기원과 10간 12지의 상호작용 원리를 현대적 관점에서 알기 쉽게 해설합니다.</description>
+      <pubDate>Fri, 14 Aug 2026 09:00:00 +0900</pubDate>
+      <category>명리학 &amp; 전통문화</category>
+    </item>
+
+    <item>
+      <title>음양오행(陰陽五行)의 균형과 일상 속 운세 보완법: 목·화·토·금·수 해석</title>
+      <link>https://veranex.app/guides/five-elements-harmony-and-lifestyle-balance</link>
+      <guid isPermaLink="true">https://veranex.app/guides/five-elements-harmony-and-lifestyle-balance</guid>
+      <description>오행(목·화·토·금·수)의 상생과 상극 원리를 일상 식습관, 인테리어, 패션 컬러, 심리 건강 관리에 적용하여 삶의 밸런스를 찾는 실용 팁을 제공합니다.</description>
+      <pubDate>Thu, 13 Aug 2026 09:00:00 +0900</pubDate>
+      <category>명리학 &amp; 전통문화</category>
+    </item>
+
+    <item>
+      <title>십신(十神)으로 알아보는 나의 성향과 직업 적성 분석 가이드</title>
+      <link>https://veranex.app/guides/ten-gods-personality-career-aptitude-guide</link>
+      <guid isPermaLink="true">https://veranex.app/guides/ten-gods-personality-career-aptitude-guide</guid>
+      <description>사주명리학의 심화 분석 도구인 십신을 통해 개인의 재능과 최적의 커리어 패스를 탐색합니다.</description>
+      <pubDate>Wed, 12 Aug 2026 09:00:00 +0900</pubDate>
+      <category>명리학 &amp; 전통문화</category>
+    </item>
+
+    <item>
+      <title>웹소설 트렌드 분석: 회빙환(회귀·빙의·환생) 클리셰와 독자 몰입의 비밀</title>
+      <link>https://veranex.app/guides/webnovel-trends-regression-possession-reincarnation</link>
+      <guid isPermaLink="true">https://veranex.app/guides/webnovel-trends-regression-possession-reincarnation</guid>
+      <description>K-웹소설 시장을 지배하는 회귀, 빙의, 환생 서사 구조가 대중 독자들에게 폭발적인 카타르시스를 제공하는 심리학적 원인과 최신 변주 트렌드를 분석합니다.</description>
+      <pubDate>Tue, 11 Aug 2026 09:00:00 +0900</pubDate>
+      <category>웹소설 &amp; 작법</category>
+    </item>
+
+    <item>
+      <title>평수(坪)와 제곱미터(㎡) 완전 정복: 아파트 공급면적과 전용면적의 차이점</title>
+      <link>https://veranex.app/guides/pyeong-to-square-meter-conversion-and-real-estate</link>
+      <guid isPermaLink="true">https://veranex.app/guides/pyeong-to-square-meter-conversion-and-real-estate</guid>
+      <description>부동산 거래 시 필수적인 ㎡와 평(坪) 단위 환산 계산 공식, 59㎡와 84㎡의 실제 체감 평수, 전용·공급·계약면적의 개념을 알기 쉽게 정리합니다.</description>
+      <pubDate>Sun, 09 Aug 2026 09:00:00 +0900</pubDate>
+      <category>생활도구 &amp; 계산</category>
+    </item>
+
+    <item>
+      <title>대한민국 '만 나이 통일법' 총정리: 연 나이와의 차이 및 법적 효력</title>
+      <link>https://veranex.app/guides/korean-age-unification-act-guide-and-legal-effects</link>
+      <guid isPermaLink="true">https://veranex.app/guides/korean-age-unification-act-guide-and-legal-effects</guid>
+      <description>만 나이 통일법 시행에 따른 정확한 만 나이 계산법, 예외적으로 연 나이가 적용되는 병역·청소년보호법 사례를 정리합니다.</description>
+      <pubDate>Sat, 08 Aug 2026 09:00:00 +0900</pubDate>
+      <category>생활도구 &amp; 계산</category>
+    </item>
+
+    <item>
+      <title>테트리스 마스터 가이드: T-스핀 원리와 고득점 라인 클리어 전략</title>
+      <link>https://veranex.app/guides/tetris-master-guide-t-spin-and-line-clear-strategy</link>
+      <guid isPermaLink="true">https://veranex.app/guides/tetris-master-guide-t-spin-and-line-clear-strategy</guid>
+      <description>40년 역사의 블록 퍼즐 테트리스(Tetris)의 현대 가이드라인 룰, 회전 메커니즘(SRS), T-스핀 공식과 스태킹 빌드를 심층 해설합니다.</description>
+      <pubDate>Thu, 06 Aug 2026 09:00:00 +0900</pubDate>
+      <category>두뇌게임 &amp; 공략</category>
+    </item>
+
+    <item>
+      <title>웹 개발자를 위한 JSON 포맷팅 가이드: 데이터 구조와 유효성 검증 팁</title>
+      <link>https://veranex.app/guides/json-formatting-and-syntax-validation-guide</link>
+      <guid isPermaLink="true">https://veranex.app/guides/json-formatting-and-syntax-validation-guide</guid>
+      <description>현대 웹/앱 통신의 표준인 JSON의 문법 규칙, 흔히 발생하는 파싱 오류 해결법, 대용량 JSON 포맷팅 툴 활용 팁을 안내합니다.</description>
+      <pubDate>Sun, 02 Aug 2026 09:00:00 +0900</pubDate>
+      <category>IT &amp; 개발자 도구</category>
+    </item>
+  </channel>
+</rss>

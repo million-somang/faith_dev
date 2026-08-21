@@ -160,6 +160,7 @@ const FULL_MENU_ITEMS = [
     { label: '재미', icon: 'fa-masks-theater', bg: 'bg-rose-50', color: 'text-rose-600', path: '/entertainment' },
     { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
     { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
+    { label: '가이드', icon: 'fa-book-open-reader', bg: 'bg-teal-50', color: 'text-teal-600', path: '/guides' },
     { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
@@ -598,6 +599,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                             <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스 바로가기</h4>
                             <ul className="space-y-2 text-sm text-gray-500">
                                 <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">실시간 뉴스</a></li>
+                                <li><a href={`${baseUrl}/guides`} className="hover:text-brand-green transition-colors font-medium text-slate-800">지식 가이드 & 칼럼</a></li>
                                 <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">생활 유틸리티</a></li>
                                 <li><a href={`${baseUrl}/game`} className="hover:text-brand-green transition-colors">미니게임 센터</a></li>
                                 <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융 대시보드</a></li>
@@ -616,6 +618,8 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                 </div>
                 <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                        <a href={`${baseUrl}/guides`} className="text-gray-700 hover:underline">가이드/칼럼</a>
+                        <span>|</span>
                         <a href={`${baseUrl}/privacy`} className="font-bold text-gray-700 hover:underline">개인정보처리방침</a>
                         <span>|</span>
                         <a href={`${baseUrl}/terms`} className="hover:underline">이용약관</a>

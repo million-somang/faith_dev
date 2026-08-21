@@ -39,6 +39,9 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import AboutUsPage from './pages/AboutUsPage';
 import ContactUsPage from './pages/ContactUsPage';
+import GuidesHubPage from './pages/GuidesHubPage';
+import GuideDetailPage from './pages/GuideDetailPage';
+import { GUIDES_DATA } from './data/guidesData';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
 import { useUserPreferenceContext } from './context/UserPreferenceContext';
@@ -213,6 +216,45 @@ function HomePage() {
                                         )}
                                     </div>
                                 </Card>
+
+                                {/* 지식 가이드 & 실전 칼럼 섹션 (AdSense 고가치 콘텐츠) */}
+                                <Card className="p-8">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3 text-white">
+                                                <i className="fas fa-book-open text-lg"></i>
+                                            </div>
+                                            <span>{lang === 'en' ? 'Guides & Columns' : '지식 가이드 & 칼럼'}</span>
+                                            <span className="ml-3 text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-full font-bold">18편</span>
+                                        </h3>
+                                        <a href="/guides" className="text-sm font-medium text-gray-500 hover:text-brand-green flex items-center gap-1 transition-colors">
+                                            {lang === 'en' ? 'All Guides' : '전체보기'} <i className="fas fa-chevron-right text-xs"></i>
+                                        </a>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {GUIDES_DATA.slice(0, 4).map(guide => (
+                                            <a
+                                                key={guide.slug}
+                                                href={`/guides/${guide.slug}`}
+                                                className="p-4 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all group block"
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${guide.categoryColor}`}>
+                                                        {guide.categoryLabel}
+                                                    </span>
+                                                    <span className="text-gray-400 text-[11px] font-medium">{guide.readTime}</span>
+                                                </div>
+                                                <h4 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors text-sm line-clamp-2 leading-snug mb-1">
+                                                    {guide.title}
+                                                </h4>
+                                                <p className="text-gray-500 text-xs line-clamp-2 font-normal">
+                                                    {guide.description}
+                                                </p>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </Card>
                             </div>
 
                             {/* Right Column: Widgets — 모바일에서는 베너 위로 올림(order-first) */}
@@ -373,6 +415,10 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
+                    <Route path="/guides" element={<GuidesHubPage />} />
+                    <Route path="/guides/:slug" element={<GuideDetailPage />} />
+                    <Route path="/blog" element={<GuidesHubPage />} />
+                    <Route path="/blog/:slug" element={<GuideDetailPage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/about" element={<AboutUsPage />} />

@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = new Hono();
 
-// Explicit CORS
+// Explicit CORS (updated)
 app.use('*', cors({
     origin: (origin) => origin || '*',
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
