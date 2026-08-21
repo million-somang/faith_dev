@@ -422,30 +422,70 @@ function generateFinanceUtilPages(template) {
         {
             route: 'finance/util',
             title: 'VERA 금융Util - 미국 배당주 세금, 주담대 DSR/LTV, 퇴직금 계산기',
-            description: '미국 배당주 배당소득세(15.4%) 및 월배당 캘린더, 주택담보대출 스트레스 DSR 한도, 퇴직금 및 2026 실업급여 실수령액 시뮬레이터를 무료로 제공합니다.',
-            heading: 'VERA 금융Util (스마트 금융 계산기)',
+            description: '미국 배당주 배당소득세(15.4%) 및 월배당 캘린더, 주택담보대출 스트레스 DSR 한도, 퇴직금 및 2026 실업급여 실수령액 시뮬레이터와 상세 설명서를 무료로 제공합니다.',
+            heading: 'VERA 금융Util (스마트 금융 계산기 & 완벽 가이드)',
+            faqJson: {
+                "@context": "https://schema.org",
+                "@type": "FAQPage",
+                "mainEntity": [
+                    {
+                        "@type": "Question",
+                        "name": "미국 배당주 배당금에 부과되는 세금은 얼마인가요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "미국 주식 배당금은 한미 조세조약에 따라 미국 국세청(IRS)에서 15%를 원천징수하며, 한국 기본 배당세율(15.4%)과 조율되어 15.4% 분리과세로 종결됩니다. 단, 연간 금융소득이 2,000만 원을 초과하면 종합과세 대상이 됩니다."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "스트레스 DSR 2단계가 주택담보대출 한도에 미치는 영향은 무엇인가요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "스트레스 DSR은 향후 금리 인상 위험을 고려해 약정금리에 가산금리(수도권 +1.20%p, 비수도권 +0.75%p)를 더해 DSR을 산정하므로, 실제 빌릴 수 있는 최대 대출 원금 한도가 축소됩니다."
+                        }
+                    },
+                    {
+                        "@type": "Question",
+                        "name": "퇴직금을 IRP 계좌로 수령하면 어떤 절세 혜택이 있나요?",
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": "퇴직금을 IRP(개인형 퇴직연금)로 이전한 뒤 55세 이후 연금으로 수령하면 퇴직소득세의 30%(10년 초과 수령 시 40%)를 감면받으며 과세이연 복리 효과를 누릴 수 있습니다."
+                        }
+                    }
+                ]
+            },
             content: `
-                <div class="space-y-6">
+                <div class="space-y-8">
                     <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 금융Util은 일상생활 및 자산 관리에 직결되는 핵심 금융 시뮬레이터를 100% 무료로 제공합니다.
-                        미국 배당주 세후 실수령액, 주택담보대출 DSR/LTV 한도, 법정 퇴직금 및 실업급여를 손쉽게 계산해 보세요.
+                        VERA 금융Util은 일상생활 및 자산 관리에 직결되는 3대 핵심 금융 시뮬레이터와 상세 이용 설명서를 100% 무료로 제공합니다.
+                        미국 배당주 세후 실수령액, 주택담보대출 DSR/LTV 한도, 법정 퇴직금 및 실업급여를 정밀하게 계산하고 금융 절세 전략을 확인하세요.
                     </p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
-                            <h3 class="font-bold text-amber-900 text-lg mb-2">💵 미국 배당주 세금 & 월배당</h3>
-                            <p class="text-sm text-gray-600 mb-4">SCHD, JEPI 등 인기 ETF 배당소득세(15.4%) 공제 및 종합과세 한도 체크</p>
-                            <a href="/finance/util?tab=dividend" class="text-xs font-bold text-amber-700 hover:underline">계산기 바로가기 →</a>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-6 bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
+                            <h3 class="font-bold text-amber-900 text-lg">💵 미국 배당주 세금 & 월배당</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">SCHD, JEPI 등 인기 ETF 배당소득세(15.4%) 공제, 12개월 입금 캘린더, 금융소득종합과세 2,000만원 한도 체크 및 ISA/IRP 절세 가이드</p>
+                            <a href="/finance/util?tab=dividend" class="inline-block text-xs font-bold text-amber-700 hover:underline">계산기 & 설명서 보기 →</a>
                         </div>
-                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-200">
-                            <h3 class="font-bold text-blue-900 text-lg mb-2">🏠 주택담보대출 DSR / LTV</h3>
-                            <p class="text-sm text-gray-600 mb-4">2026 스트레스 DSR 2단계 적용 최대 한도 및 상환방식별 이자 비교</p>
-                            <a href="/finance/util?tab=dsr" class="text-xs font-bold text-blue-700 hover:underline">계산기 바로가기 →</a>
+                        <div class="p-6 bg-blue-50 rounded-2xl border border-blue-200 space-y-3">
+                            <h3 class="font-bold text-blue-900 text-lg">🏠 주택담보대출 DSR / LTV</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">2026 스트레스 DSR 2단계(수도권 +1.20%p) 적용 최대 대출 한도, 원리금/원금/만기일시 3대 상환방식별 월 납입금 및 총이자 비교</p>
+                            <a href="/finance/util?tab=dsr" class="inline-block text-xs font-bold text-blue-700 hover:underline">계산기 & 설명서 보기 →</a>
                         </div>
-                        <div class="p-5 bg-teal-50 rounded-2xl border border-teal-200">
-                            <h3 class="font-bold text-teal-900 text-lg mb-2">💼 퇴직금 & 실업급여</h3>
-                            <p class="text-sm text-gray-600 mb-4">근속연수별 법정 퇴직금 세후 실수령액 및 2026 고용보험 구직급여</p>
-                            <a href="/finance/util?tab=severance" class="text-xs font-bold text-teal-700 hover:underline">계산기 바로가기 →</a>
+                        <div class="p-6 bg-teal-50 rounded-2xl border border-teal-200 space-y-3">
+                            <h3 class="font-bold text-teal-900 text-lg">💼 퇴직금 & 실업급여</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">근속연수/통상임금 기준 법정 퇴직금 및 IRP 30% 감면 혜택, 2026 고용보험 실업급여(구직급여) 연령/가입기간별 지급일수(120~270일) 시뮬레이션</p>
+                            <a href="/finance/util?tab=severance" class="inline-block text-xs font-bold text-teal-700 hover:underline">계산기 & 설명서 보기 →</a>
                         </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-xs text-gray-700 space-y-4">
+                        <h4 class="font-bold text-sm text-gray-900">💡 VERA 금융 계산기 3대 핵심 요약</h4>
+                        <ul class="list-disc pl-5 space-y-1.5 leading-relaxed">
+                            <li><strong>미국 배당주 세금:</strong> 원천징수 15%와 금융소득종합과세 2,000만원 기준선을 한눈에 게이지로 파악할 수 있습니다.</li>
+                            <li><strong>주택담보대출 한도:</strong> 담보가치(LTV)와 소득기준(DSR) 중 어떤 규제가 대출을 제한하는지 실시간 분석합니다.</li>
+                            <li><strong>퇴직금 및 구직급여:</strong> 1일 평균임금 기반 법정 퇴직금과 고용보험 비과세 실업급여 총수령액을 동시 비교합니다.</li>
+                        </ul>
                     </div>
                 </div>
             `
@@ -484,6 +524,7 @@ function generateFinanceUtilPages(template) {
             description: page.description,
             canonical,
             ogType: 'website',
+            jsonLd: page.faqJson,
             bodyHtml: prerenderBody
         });
 

@@ -395,43 +395,152 @@ export default function DividendTaxCalculator() {
                 </a>
             </div>
 
-            {/* SEO 지식 아티클 & FAQ 섹션 */}
-            <section className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm space-y-6 text-slate-700">
-                <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                    <i className="fas fa-book-open text-amber-500"></i> 미국 배당주 투자 및 배당소득세 완전 정복
-                </h3>
+            {/* 상세 사용자 설명서 & 완벽 가이드 섹션 */}
+            <section className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8 text-slate-700">
+                <div className="border-b border-slate-100 pb-5">
+                    <span className="text-xs font-extrabold text-amber-600 uppercase tracking-wider bg-amber-50 px-3 py-1 rounded-full border border-amber-200/60">
+                        Detailed Manual & Guide
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 flex items-center gap-2">
+                        <i className="fas fa-book-open text-amber-500"></i> 미국 배당주 세금 & 월배당 계산기 상세 이용 설명서
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                        본 계산기는 미국 주식 및 ETF 투자자가 실제로 통장에 입금받는 세후 순수령액과 세법상 주의사항을 정밀하게 계산해 주는 전문 시뮬레이터입니다.
+                    </p>
+                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-xs leading-relaxed">
-                    <div className="space-y-2 bg-slate-50 p-4.5 rounded-2xl border border-slate-200/70">
-                        <h4 className="font-extrabold text-slate-900 text-sm">1. 미국 배당소득세율은 왜 15.4%인가요?</h4>
-                        <p>
-                            한미 조세협정에 따라 미국 주식에서 발생하는 배당금은 미국 국세청(IRS)에서 <strong>15%를 원천징수</strong>합니다.
-                            한국의 기본 배당소득세율은 14%(지방소득세 포함 15.4%)이며, 외국납부세액 공제가 적용되어 추가 과세 없이 미국 15% 징수로 대부분 완료됩니다.
-                        </p>
-                    </div>
-
-                    <div className="space-y-2 bg-slate-50 p-4.5 rounded-2xl border border-slate-200/70">
-                        <h4 className="font-extrabold text-slate-900 text-sm">2. 금융소득종합과세 2,000만 원 초과 시 불이익</h4>
-                        <p>
-                            1년간 은행 이자와 주식 배당금의 합계가 2,000만 원을 초과하면 초과분이 <strong>종합소득세율(6%~45%)</strong>에 합산됩니다.
-                            특히 건보료 피부양자 자격이 박탈되고 지역가입자로 전환되어 건강보험료 부담이 크게 늘어날 수 있습니다.
-                        </p>
+                {/* 1. 계산기 사용 프로세스 가이드 */}
+                <div className="space-y-4">
+                    <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">1</span>
+                        계산기 단계별 사용 방법
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <span className="font-extrabold text-amber-700 block text-sm">STEP 1. 종목 선택</span>
+                            <p className="text-slate-600 leading-relaxed">
+                                SCHD, JEPI, JEPQ, O, QYLD, VOO 등 미국을 대표하는 배당 ETF 버튼을 누르거나, <strong>[직접 입력]</strong>을 선택하여 보유 종목의 배당수익률과 지급 주기를 입력합니다.
+                            </p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <span className="font-extrabold text-amber-700 block text-sm">STEP 2. 투자 금액 & 환율 설정</span>
+                            <p className="text-slate-600 leading-relaxed">
+                                투자 원금(원화 기준)을 입력하고 현재 환율(USD/KRW)을 반영합니다. +1천만 원 단위 퀵 버튼을 누르면 빠른 시뮬레이션이 가능합니다.
+                            </p>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                            <span className="font-extrabold text-amber-700 block text-sm">STEP 3. 세후 실수령액 & 캘린더 확인</span>
+                            <p className="text-slate-600 leading-relaxed">
+                                15.4% 배당소득세 공제 후 매월 통장에 꽂히는 실수령액, 12개월 입금 스케줄, 금융소득종합과세 2,000만원 한도 소진율을 확인합니다.
+                            </p>
+                        </div>
                     </div>
                 </div>
 
+                {/* 2. 세법 및 과세 체계 상세 분석 */}
+                <div className="space-y-4 pt-2">
+                    <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">2</span>
+                        미국 배당주 세금(15.4%) 및 종합과세 핵심 원리
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs leading-relaxed">
+                        <div className="p-5 rounded-2xl bg-amber-50/40 border border-amber-200/80 space-y-2">
+                            <h5 className="font-extrabold text-amber-900 text-sm">💡 한미 조세조약에 따른 15% 원천징수</h5>
+                            <p className="text-slate-700">
+                                미국 주식 배당금은 한국 계좌로 들어오기 전 미국 국세청(IRS)에서 <strong>15%</strong>를 먼저 떼어갑니다. 한국의 기본 배당소득세(14% + 지방소득세 1.4% = 15.4%)보다 미국 원천세율이 높거나 같으므로, <strong>외국납부세액공제</strong>가 적용되어 추가 이중과세 없이 미국 15% 징수로 종결됩니다.
+                            </p>
+                        </div>
+                        <div className="p-5 rounded-2xl bg-rose-50/40 border border-rose-200/80 space-y-2">
+                            <h5 className="font-extrabold text-rose-900 text-sm">⚠️ 금융소득종합과세 2,000만 원 초과 시 파급 효과</h5>
+                            <p className="text-slate-700">
+                                1년간 은행 이자와 국내/해외 주식 배당금 합계가 <strong>연 2,000만 원</strong>을 초과하면 초과액이 타 소득(근로·사업소득 등)과 합산되어 <strong>최고 45% 누진세율</strong>이 적용됩니다. 또한 <strong>건강보험 피부양자 자격 박탈</strong>(지역가입자 전환)로 월 수십만 원의 보험료가 추가 부과될 수 있습니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. 배당주 투자 핵심 용어 정리 */}
+                <div className="space-y-4 pt-2">
+                    <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">3</span>
+                        배당 투자 필수 금융 용어 사전
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <div className="font-extrabold text-slate-900 mb-1">배당락일 (Ex-Dividend)</div>
+                            <p className="text-slate-600 text-[11px]">이 날짜 이전에 주식을 매수해야 해당 분기/월의 배당금을 받을 권리가 주어집니다.</p>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <div className="font-extrabold text-slate-900 mb-1">시가배당률 (Dividend Yield)</div>
+                            <p className="text-slate-600 text-[11px]">주가 대비 연간 지급되는 배당금의 비율(%)로, 주가가 하락하면 배당률은 상승합니다.</p>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <div className="font-extrabold text-slate-900 mb-1">배당성향 (Payout Ratio)</div>
+                            <p className="text-slate-600 text-[11px]">기업의 당기순이익 중 얼마를 주주에게 배당으로 환원하는지 나타내는 지표(70% 이하 안정적).</p>
+                        </div>
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                            <div className="font-extrabold text-slate-900 mb-1">커버드콜 (Covered Call)</div>
+                            <p className="text-slate-600 text-[11px]">주식을 보유하면서 콜옵션을 매도하여 연 8~12% 수준의 높은 월배당 재원을 확보하는 전략.</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. 절세 전략: ISA & IRP 계좌 활용 비교표 */}
+                <div className="space-y-4 pt-2">
+                    <h4 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs font-bold">4</span>
+                        배당소득세 15.4%를 0%로 줄이는 계좌별 절세 전략
+                    </h4>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left border border-slate-200 rounded-2xl overflow-hidden">
+                            <thead className="bg-slate-100 text-slate-800 font-extrabold border-b border-slate-200">
+                                <tr>
+                                    <th className="p-3">계좌 유형</th>
+                                    <th className="p-3">투자 가능 종목</th>
+                                    <th className="p-3">배당소득세 혜택</th>
+                                    <th className="p-3">종합과세 합산 여부</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-200 text-slate-700 bg-white">
+                                <tr>
+                                    <td className="p-3 font-bold text-slate-900">일반 위탁계좌</td>
+                                    <td className="p-3">미국 직투(SCHD, JEPI 등)</td>
+                                    <td className="p-3 text-rose-600 font-bold">15.4% 무조건 원천징수</td>
+                                    <td className="p-3">연 2천만 원 초과 시 합산</td>
+                                </tr>
+                                <tr className="bg-amber-50/40">
+                                    <td className="p-3 font-bold text-amber-900">중개형 ISA</td>
+                                    <td className="p-3">국내상장 미국ETF (TIGER 등)</td>
+                                    <td className="p-3 text-emerald-700 font-bold">최대 500만 원 비과세 (초과분 9.9% 분리과세)</td>
+                                    <td className="p-3 text-emerald-700 font-bold">전액 비과세/분리과세 (종합과세 미포함)</td>
+                                </tr>
+                                <tr className="bg-teal-50/40">
+                                    <td className="p-3 font-bold text-teal-900">연금저축 / IRP</td>
+                                    <td className="p-3">국내상장 미국ETF (배당형)</td>
+                                    <td className="p-3 text-teal-700 font-bold">과세이연 (55세 이후 연금 수령 시 3.3~5.5%)</td>
+                                    <td className="p-3 text-teal-700 font-bold">연 1,500만 원 한도 분리과세</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* 5. 자주 묻는 질문 (FAQ) */}
                 <div className="border-t border-slate-100 pt-6">
-                    <h4 className="font-extrabold text-slate-900 text-base mb-3">자주 묻는 질문 (FAQ)</h4>
-                    <dl className="space-y-3 text-xs">
-                        <div>
-                            <dt className="font-bold text-slate-900">Q. 환율 변동에 따라 배당금도 바뀌나요?</dt>
-                            <dd className="text-slate-600 mt-0.5">
-                                A. 네, 미국 배당주는 달러($)로 지급되므로, 원화 환산 시 입금 당일의 전신환매도율(송금받을 때 환율)에 따라 최종 원화 수령액이 달라집니다.
+                    <h4 className="font-extrabold text-slate-900 text-base mb-4 flex items-center gap-2">
+                        <i className="fas fa-question-circle text-amber-500"></i> 자주 묻는 질문 (FAQ)
+                    </h4>
+                    <dl className="space-y-4 text-xs">
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                            <dt className="font-bold text-slate-900 text-sm">Q. 미국 주식 배당금은 언제 입금되나요?</dt>
+                            <dd className="text-slate-600 mt-1 leading-relaxed">
+                                A. 미국 현지 지급일(Payable Date) 기준으로 국내 증권사 시차 및 예탁결제원 환전·정산 절차를 거쳐 <strong>통상 1~3영업일 뒤</strong> 원화 또는 달러 계좌로 자동 입금됩니다.
                             </dd>
                         </div>
-                        <div>
-                            <dt className="font-bold text-slate-900">Q. 분기 배당 ETF(SCHD)와 월배당 ETF(JEPI)의 차이는 무엇인가요?</dt>
-                            <dd className="text-slate-600 mt-0.5">
-                                A. SCHD는 연 3~4%대의 배당을 3, 6, 9, 12월에 지급하며 장기적인 배당 증액(배당 성장)에 특화되어 있고, JEPI는 옵션 프리미엄을 활용해 매월 7~9%대의 높은 인컴을 즉시 지급하는 데 특화되어 있습니다.
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+                            <dt className="font-bold text-slate-900 text-sm">Q. 미국 직투(SCHD)와 국내 상장 ETF(TIGER 미국배당다우존스) 중 무엇이 유리한가요?</dt>
+                            <dd className="text-slate-600 mt-1 leading-relaxed">
+                                A. ISA나 IRP 등 절세 계좌를 활용할 수 있다면 <strong>국내 상장 ETF</strong>가 세제 혜택(비과세 및 저율과세) 측면에서 압도적으로 유리합니다. 단, 일반 계좌에서는 미국 직투 시 금융소득종합과세를 피하면서 양도소득세 250만 원 기본공제를 활용할 수 있는 장점이 있습니다.
                             </dd>
                         </div>
                     </dl>
