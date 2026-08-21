@@ -333,6 +333,42 @@ export default function UtilityPage() {
                                 자기소개서 및 공문서 작성 시 <strong>공백 포함 글자수</strong>와 <strong>공백 제외 글자수</strong>, 바이트(Byte) 수가 다르게 정해집니다. 한글은 1자당 2~3Byte, 영문·숫자·공백은 1자당 1Byte로 처리되므로 자소서 제출 전 VERA 글자수 검사기로 한도를 확인하세요.
                             </p>
                         </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-calculator text-indigo-500"></i> 다기능 스마트 계산기 활용법
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                일상적인 사칙연산뿐만 아니라 <strong>할인율(세일가) 계산, 백분율(%), 부가세(VAT), 비만도(BMI)</strong>까지 원스톱으로 지원합니다. 직관적인 키패드와 계산 기록 히스토리 저장 기능을 제공하여 복잡한 영수증 정산이나 쇼핑 시 유용하게 사용할 수 있습니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-code text-cyan-600"></i> Pro JSON 스튜디오 & 문법 검증
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                들여쓰기가 깨진 복잡한 JSON 데이터를 <strong>2스페이스/4스페이스로 깔끔하게 포매팅(Prettify)</strong>하고 문법 에러 위치를 실시간 검출합니다. 또한 공백을 제거하는 <strong>압축(Minify) 기능과 YAML, XML, CSV 상호 변환</strong>을 지원하여 개발 생산성을 높입니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-exchange-alt text-amber-500"></i> Base64 인코더 / 디코더 & JWT 분석
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                문자열 텍스트 및 이미지 파일을 안전하게 Base64 형식으로 <strong>인코딩하거나 역으로 디코딩</strong>합니다. 웹 개발 시 자주 사용되는 <strong>JWT(JSON Web Token) 페이로드 파싱</strong> 및 Base64 이미지 미리보기 기능을 100% 클라이언트 브라우저에서 안전하게 처리합니다.
+                            </p>
+                        </div>
+
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-bezier-curve text-rose-500"></i> Vector Studio (이미지 to SVG 벡터 변환)
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                픽셀이 깨지는 비트맵 이미지(PNG, JPG, WEBP)를 <strong>확대해도 깨지지 않는 깨끗한 SVG 벡터 그래픽으로 실시간 변환</strong>합니다. 로고, 아이콘, 서명 이미지의 배경을 투명화하고 최적화된 SVG 코드 및 Data URI를 다운로드할 수 있습니다.
+                            </p>
+                        </div>
                     </div>
 
                     <div className="border-t border-slate-100 pt-6">
