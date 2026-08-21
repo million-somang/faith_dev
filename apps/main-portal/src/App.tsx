@@ -458,6 +458,8 @@ function App() {
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
                     <Route path="/entertainment/novel" element={<NovelPage />} />
+                    <Route path="/entertainment/novel/:novelId" element={<NovelPage />} />
+                    <Route path="/novel" element={<NovelPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
 
