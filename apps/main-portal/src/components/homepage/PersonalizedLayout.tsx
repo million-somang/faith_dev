@@ -312,9 +312,6 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
 
 
 
-            {/* VERA 핵심 3대 서비스 쇼케이스 카드 (유틸리티 · 게임 · 사주/재미) */}
-            <CoreServicesShowcase />
-
             {/* 레이아웃 분기 */}
             {layout === 'portal' && <PortalLayout {...props} />}
             {layout === 'minimal' && (
@@ -332,6 +329,11 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
                     news={props.news}
                 />
             )}
+
+            {/* VERA 핵심 3대 서비스 쇼케이스 카드 (페이지 하단 배치) */}
+            <div className="mt-12">
+                <CoreServicesShowcase />
+            </div>
 
             {/* 홈 꾸미기 플로팅 버튼 */}
             <button

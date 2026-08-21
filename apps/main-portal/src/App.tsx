@@ -182,12 +182,8 @@ function HomePage() {
                             </div>
                         </section>
 
-                        {/* 포털 3대 핵심 서비스 쇼케이스 카드 (생활도구 · 미니게임 · 사주/재미) */}
-                        <CoreServicesShowcase />
-
-
                         {/* 2-Column Layout */}
-                        <div className="flex flex-col lg:flex-row gap-8">
+                        <div className="flex flex-col lg:flex-row gap-8 mb-12">
                             {/* Left Column: News */}
                             <div className="w-full lg:w-[728px] shrink-0 flex flex-col gap-8">
                                 {/* 배너 슬롯: 홈 메인 상단 (관리자 > 배너관리에서 관리) */}
@@ -283,6 +279,9 @@ function HomePage() {
                                 </Card>
                             </div>
                         </div>
+
+                        {/* 포털 3대 핵심 서비스 쇼케이스 카드 (페이지 하단에 위치) */}
+                        <CoreServicesShowcase />
 
                         {/* 홈 꾸미기 플로팅 버튼 (미설정 사용자 유도) */}
                         <button
