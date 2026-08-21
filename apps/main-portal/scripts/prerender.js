@@ -119,10 +119,13 @@ async function prerender() {
     // 4. Generate static pages for Finance Util Calculators
     generateFinanceUtilPages(templateHtml);
 
-    // 5. Generate RSS 2.0 Feed
+    // 5. Generate static page for Saju Pro
+    generateSajuPage(templateHtml);
+
+    // 6. Generate RSS 2.0 Feed
     await generateRssFeed();
 
-    console.log('✅ Static Prerendering completed successfully! All 18 articles, Finance Util pages, and RSS 2.0 Feed generated.');
+    console.log('✅ Static Prerendering completed successfully! All 18 articles, Finance Util, and Saju Pro pages generated.');
 }
 
 function writeHtmlFile(filePath, content) {
@@ -416,7 +419,6 @@ function generateLegalPages(template) {
             ogType: 'website',
             bodyHtml: prerenderBody
         });
-
         writeHtmlFile(path.resolve(distDir, `${page.route}/index.html`), html);
     }
 }
@@ -534,6 +536,93 @@ function generateFinanceUtilPages(template) {
 
         writeHtmlFile(path.resolve(distDir, `${page.route}/index.html`), html);
     }
+}
+
+function generateSajuPage(template) {
+    const route = 'entertainment/saju';
+    const title = 'Veranex Saju Pro - 차세대 만세력 & 2인 궁합 & 비즈니스 명리';
+    const description = '정통 만세력 8글자, 5대 오행 레이더 차트, 비즈니스/창업운, 2인 정밀 궁합 티어표, 12시진 마이크로 운세, 주식 섹터 연동까지 제공하는 Veranex Saju Pro를 무료로 이용하세요.';
+    const canonical = `https://veranex.app/${route}`;
+
+    const faqJson = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': [
+            {
+                '@type': 'Question',
+                'name': 'Veranex Saju Pro는 기존 사주와 무엇이 다른가요?',
+                'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': '고리타분한 한자투 풀이 대신, 현대 2040 세대의 라이프스타일에 맞춘 실용 명리 데이터를 제공합니다. 5대 오행 레이더 차트, 비즈니스/창업 기질 점수, 2인 정밀 궁합 티어표(S~D), 주식 투자 테마(/finance) 연동, 12시진(24시간) 에너지 바이오리듬과 로또/점심 룰렛까지 완벽 지원합니다.'
+                }
+            },
+            {
+                '@type': 'Question',
+                'name': '2인 정밀 사주 궁합은 어떤 원리로 계산되나요?',
+                'acceptedAnswer': {
+                    '@type': 'Answer',
+                    'text': '단순한 띠 궁합이 아닌, 본인과 상대방의 사주팔자 오행(목화토금수) 상호 보완도(%), 일간(日干) 합·충 관계, 속궁합 및 갈등 지수를 종합 연산하여 S/A/B/C/D 5단계 티어와 맞춤 솔루션을 산출합니다.'
+                }
+            }
+        ]
+    };
+
+    const prerenderBody = `
+        <div class="min-h-screen bg-slate-50 font-sans">
+            <header class="bg-white border-b border-gray-200 py-4 px-6">
+                <div class="max-w-5xl mx-auto flex items-center justify-between">
+                    <a href="/" class="text-2xl font-black text-indigo-700">VERA</a>
+                    <nav class="flex gap-4 text-sm font-medium text-gray-600">
+                        <a href="/" class="hover:text-indigo-700">홈</a>
+                        <a href="/entertainment" class="hover:text-indigo-700">엔터테인먼트</a>
+                        <a href="/entertainment/saju" class="text-indigo-700 font-bold">사주 Pro</a>
+                        <a href="/finance" class="hover:text-indigo-700">금융</a>
+                        <a href="/guides" class="hover:text-indigo-700">지식 가이드</a>
+                    </nav>
+                </div>
+            </header>
+            <main class="max-w-5xl mx-auto px-4 py-12 space-y-8">
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900">Veranex Saju Pro - 차세대 모던 명리 & 2인 궁합 플랫폼</h1>
+                <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm leading-relaxed text-gray-800 space-y-6">
+                    <p class="text-lg font-bold text-indigo-900">
+                        "고리타분한 옛날 사주는 끝, 내 삶과 비즈니스를 바꾸는 모던 명리 데이터"
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-1">1. 정통 만세력 & 5대 오행 레이더 차트</h3>
+                            <p class="text-xs text-slate-600">사주 8글자 천간·지지 색상 카드와 십신/지장간 표기, 5각 오행 밸런스 및 10년 대운 타임라인을 제공합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-1">2. 비즈니스 · 재물운 & 주식 투자 연계</h3>
+                            <p class="text-xs text-slate-600">창업/사업가형 vs 전문직형 기질 게이지와 내 오행 맞춤형 유망 주식 섹터(/finance)를 연계 추천합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-1">3. 2인 정밀 사주 궁합 & 3대 신살 매력도</h3>
+                            <p class="text-xs text-slate-600">오행 상호 보완율(%)과 일간 합충 분석을 통한 S/A/B/C/D 궁합 티어표와 도화살·홍염살·화개살 지수를 진단합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                            <h3 class="font-bold text-slate-900 mb-1">4. 초밀착 12시진 마이크로 운세</h3>
+                            <p class="text-xs text-slate-600">24시간 시간대별 바이오리듬 그래프, 6종 행운 아이템(컬러/숫자/메뉴/방위), 오행 로또 번호 추첨기를 지원합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500">
+                <p>© 2026 VERA - All rights reserved.</p>
+            </footer>
+        </div>
+    `;
+
+    const html = replaceMetaTags(template, {
+        title,
+        description,
+        canonical,
+        ogType: 'website',
+        jsonLd: faqJson,
+        bodyHtml: prerenderBody
+    });
+
+    writeHtmlFile(path.resolve(distDir, `${route}/index.html`), html);
 }
 
 function replaceMetaTags(template, { title, description, canonical, ogType, jsonLd, bodyHtml }) {
