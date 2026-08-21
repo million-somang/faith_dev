@@ -7,6 +7,7 @@ const menuItems = [
     { path: '/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
     { path: '/banking', label: '은행', icon: 'fas fa-university' },
     { path: '/insurance', label: '보험', icon: 'fas fa-umbrella' },
+    { path: '/finance/util', label: '금융Util', icon: 'fas fa-chart-pie', isDirect: true },
 ];
 
 export default function FinanceSubMenu() {
@@ -19,6 +20,18 @@ export default function FinanceSubMenu() {
                 <div className="fin-menu-mobile gap-1.5 py-2.5 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
+                        if ((item as any).isDirect) {
+                            return (
+                                <a
+                                    key={item.path}
+                                    href={item.path}
+                                    className="flex-1 flex flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-semibold whitespace-nowrap transition-all bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                >
+                                    <i className={`${item.icon} text-base`}></i>
+                                    {t(item.label)}
+                                </a>
+                            );
+                        }
                         return (
                             <Link
                                 key={item.path}
@@ -40,6 +53,18 @@ export default function FinanceSubMenu() {
                 <div className="fin-menu-desktop space-x-8 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
+                        if ((item as any).isDirect) {
+                            return (
+                                <a
+                                    key={item.path}
+                                    href={item.path}
+                                    className="px-4 py-4 whitespace-nowrap transition-all flex items-center gap-2 text-amber-700 hover:text-amber-800 font-bold hover:border-b-2 hover:border-amber-600"
+                                >
+                                    <i className={item.icon}></i>
+                                    {t(item.label)}
+                                </a>
+                            );
+                        }
                         return (
                             <Link
                                 key={item.path}

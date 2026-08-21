@@ -11,6 +11,7 @@ import { PageSEO } from './components/PageSEO';
 
 import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
+import FinanceUtilPage from './pages/FinanceUtilPage';
 import RewardLayout from './pages/reward/RewardLayout';
 import RewardHome from './pages/reward/RewardHome';
 import RewardAttendance from './pages/reward/RewardAttendance';
@@ -441,6 +442,8 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/lifestyle" element={<UtilityPage />} />
                     <Route path="/finance" element={<FinancePage />} />
+                    <Route path="/finance/util" element={<FinanceUtilPage />} />
+                    <Route path="/finance-util" element={<FinanceUtilPage />} />
                     <Route path="/reward" element={
                         <RewardGuard>
                             <RewardLayout />

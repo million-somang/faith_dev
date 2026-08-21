@@ -115,7 +115,10 @@ async function prerender() {
     // 3. Generate static pages for Core Legal & Info pages
     generateLegalPages(templateHtml);
 
-    console.log('✅ Static Prerendering completed successfully! All 18 articles have full static HTML.');
+    // 4. Generate static pages for Finance Util Calculators
+    generateFinanceUtilPages(templateHtml);
+
+    console.log('✅ Static Prerendering completed successfully! All 18 articles and Finance Util pages have full static HTML.');
 }
 
 function writeHtmlFile(filePath, content) {
@@ -393,6 +396,80 @@ function generateLegalPages(template) {
                 <main class="max-w-4xl mx-auto px-4 py-12">
                     <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-8">${page.heading}</h1>
                     <div class="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm leading-relaxed text-gray-800">
+                        ${page.content}
+                    </div>
+                </main>
+                <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500">
+                    <p>© 2026 VERA - All rights reserved.</p>
+                </footer>
+            </div>
+        `;
+
+        const html = replaceMetaTags(template, {
+            title: page.title,
+            description: page.description,
+            canonical,
+            ogType: 'website',
+            bodyHtml: prerenderBody
+        });
+
+        writeHtmlFile(path.resolve(distDir, `${page.route}/index.html`), html);
+    }
+}
+
+function generateFinanceUtilPages(template) {
+    const pages = [
+        {
+            route: 'finance/util',
+            title: 'VERA 금융Util - 미국 배당주 세금, 주담대 DSR/LTV, 퇴직금 계산기',
+            description: '미국 배당주 배당소득세(15.4%) 및 월배당 캘린더, 주택담보대출 스트레스 DSR 한도, 퇴직금 및 2026 실업급여 실수령액 시뮬레이터를 무료로 제공합니다.',
+            heading: 'VERA 금융Util (스마트 금융 계산기)',
+            content: `
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 금융Util은 일상생활 및 자산 관리에 직결되는 핵심 금융 시뮬레이터를 100% 무료로 제공합니다.
+                        미국 배당주 세후 실수령액, 주택담보대출 DSR/LTV 한도, 법정 퇴직금 및 실업급여를 손쉽게 계산해 보세요.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
+                            <h3 class="font-bold text-amber-900 text-lg mb-2">💵 미국 배당주 세금 & 월배당</h3>
+                            <p class="text-sm text-gray-600 mb-4">SCHD, JEPI 등 인기 ETF 배당소득세(15.4%) 공제 및 종합과세 한도 체크</p>
+                            <a href="/finance/util?tab=dividend" class="text-xs font-bold text-amber-700 hover:underline">계산기 바로가기 →</a>
+                        </div>
+                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-200">
+                            <h3 class="font-bold text-blue-900 text-lg mb-2">🏠 주택담보대출 DSR / LTV</h3>
+                            <p class="text-sm text-gray-600 mb-4">2026 스트레스 DSR 2단계 적용 최대 한도 및 상환방식별 이자 비교</p>
+                            <a href="/finance/util?tab=dsr" class="text-xs font-bold text-blue-700 hover:underline">계산기 바로가기 →</a>
+                        </div>
+                        <div class="p-5 bg-teal-50 rounded-2xl border border-teal-200">
+                            <h3 class="font-bold text-teal-900 text-lg mb-2">💼 퇴직금 & 실업급여</h3>
+                            <p class="text-sm text-gray-600 mb-4">근속연수별 법정 퇴직금 세후 실수령액 및 2026 고용보험 구직급여</p>
+                            <a href="/finance/util?tab=severance" class="text-xs font-bold text-teal-700 hover:underline">계산기 바로가기 →</a>
+                        </div>
+                    </div>
+                </div>
+            `
+        }
+    ];
+
+    for (const page of pages) {
+        const canonical = `https://veranex.app/${page.route}`;
+        const prerenderBody = `
+            <div class="min-h-screen bg-slate-50 font-sans">
+                <header class="bg-white border-b border-gray-200 py-4 px-6">
+                    <div class="max-w-5xl mx-auto flex items-center justify-between">
+                        <a href="/" class="text-2xl font-black text-amber-600">VERA</a>
+                        <nav class="flex gap-4 text-sm font-medium text-gray-600">
+                            <a href="/" class="hover:text-amber-600">홈</a>
+                            <a href="/finance" class="hover:text-amber-600">금융</a>
+                            <a href="/finance/util" class="text-amber-600 font-bold">금융Util</a>
+                            <a href="/guides" class="hover:text-amber-600">지식 가이드</a>
+                        </nav>
+                    </div>
+                </header>
+                <main class="max-w-5xl mx-auto px-4 py-12">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6">${page.heading}</h1>
+                    <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm leading-relaxed text-gray-800">
                         ${page.content}
                     </div>
                 </main>
