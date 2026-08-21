@@ -152,6 +152,79 @@ export default function FinancePage() {
                     ))}
                 </div>
 
+                {/* 💡 금융Util 3대 킬러 계산기 섹션 */}
+                <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-sm">
+                                📊
+                            </div>
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                                    스마트 금융Util 시뮬레이터
+                                </h2>
+                                <p className="text-xs text-slate-600">
+                                    세금, 대출 한도, 퇴직금/실업급여를 1초 만에 무료로 자동 계산해보세요.
+                                </p>
+                            </div>
+                        </div>
+                        <a
+                            href={`${MAIN_PORTAL_URL}/finance/util`}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm w-fit"
+                        >
+                            <span>금융Util 전체보기</span>
+                            <i className="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <a
+                            href={`${MAIN_PORTAL_URL}/finance/util?tab=dividend`}
+                            className="p-4 bg-white rounded-2xl border border-amber-200/60 hover:border-amber-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">💵</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">
+                                    미국 배당주 & 세금 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                SCHD, JEPI 등 배당소득세(15.4%) 공제 후 실제 월 수령액 및 12개월 캘린더
+                            </p>
+                        </a>
+
+                        <a
+                            href={`${MAIN_PORTAL_URL}/finance/util?tab=dsr`}
+                            className="p-4 bg-white rounded-2xl border border-blue-200/60 hover:border-blue-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">🏠</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                    주담대 DSR / LTV 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                2026 스트레스 DSR 2단계 적용 최대 한도 및 상환방식별 이자 총액 비교
+                            </p>
+                        </a>
+
+                        <a
+                            href={`${MAIN_PORTAL_URL}/finance/util?tab=severance`}
+                            className="p-4 bg-white rounded-2xl border border-teal-200/60 hover:border-teal-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">💼</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-teal-600 transition-colors">
+                                    퇴직금 & 실업급여 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                근속연수별 법정 퇴직금 세후 실수령액 및 2026 고용보험 구직급여 총액
+                            </p>
+                        </a>
+                    </div>
+                </div>
+
                 {/* 거시 경제 지표 */}
                 {macro.length > 0 && (
                     <div className="mb-10">
