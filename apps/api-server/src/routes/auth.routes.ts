@@ -33,7 +33,11 @@ authRoutes.get('/api/auth/me', async (c: Context) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
-                level: user.level
+                level: user.level,
+                birth_date: user.birth_date || null,
+                birth_time: user.birth_time || null,
+                gender: user.gender || 'M',
+                is_solar: user.is_solar !== 0
             }
         })
     } catch (error) {
@@ -110,7 +114,11 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
                 email: user.email,
                 name: user.name,
                 role: user.role,
-                level: user.level
+                level: user.level,
+                birth_date: user.birth_date || null,
+                birth_time: user.birth_time || null,
+                gender: user.gender || 'M',
+                is_solar: user.is_solar !== 0
             }
         })
     } catch (error) {
@@ -147,7 +155,11 @@ const handleAuthCheck = async (c: Context) => {
                 name: user.name,
                 role: user.role,
                 level: user.level,
-                status: user.status // Assuming status exists on SessionUser, add it there if not
+                status: user.status,
+                birth_date: user.birth_date || null,
+                birth_time: user.birth_time || null,
+                gender: user.gender || 'M',
+                is_solar: user.is_solar !== 0
             }
         })
     } catch (error) {
@@ -184,7 +196,8 @@ authRoutes.post('/api/auth/logout', async (c: Context) => {
 // 회원가입 API
 authRoutes.post('/api/auth/signup', async (c: Context) => {
     try {
-        const { email, password, name, phone } = await c.req.json()
+        const body = await c.req.json()
+        const { email, password, name, phone, birth_date, birthDate, birth_time, birthTime, gender, is_solar, isSolar } = body
 
         // 입력 검증
         if (!email || !password || !name) {
@@ -223,12 +236,16 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
 
         // 비밀번호 해싱
         const hashedPassword = await hashPassword(password)
+        const finalBirthDate = birthDate || birth_date || null
+        const finalBirthTime = birthTime !== undefined ? birthTime : (birth_time !== undefined ? birth_time : null)
+        const finalGender = gender || 'M'
+        const finalIsSolar = (isSolar === false || is_solar === 0 || is_solar === false) ? 0 : 1
 
-        // 사용자 생성
+        // 사용자 생성 (생년월일 및 사주 정보 컬럼 포함)
         const result = await query(`
-            INSERT INTO users (email, password, name, phone, level, status, role) 
-            VALUES ($1, $2, $3, $4, 1, 'active', 'user')
-        `, [email, hashedPassword, name, phone || null])
+            INSERT INTO users (email, password, name, phone, birth_date, birth_time, gender, is_solar, level, status, role) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, 'active', 'user')
+        `, [email, hashedPassword, name, phone || null, finalBirthDate, finalBirthTime, finalGender, finalIsSolar])
 
         const userId = Number(result.lastInsertRowid)
 
@@ -243,7 +260,11 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
                 email,
                 name,
                 role: 'user',
-                level: 1
+                level: 1,
+                birth_date: finalBirthDate,
+                birth_time: finalBirthTime,
+                gender: finalGender,
+                is_solar: finalIsSolar === 1
             }
         })
     } catch (error) {
@@ -254,5 +275,56 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
         }, 500)
     }
 })
+
+// 사주 프로필(생년월일, 태어난시, 성별 등) 업데이트 API
+const handleUpdateSajuProfile = async (c: Context) => {
+    try {
+        const user = await checkSession(c)
+        if (!user) {
+            return c.json({ success: false, message: '로그인이 필요합니다' }, 401)
+        }
+
+        const body = await c.req.json()
+        const { birth_date, birthDate, birth_time, birthTime, gender, is_solar, isSolar, name } = body
+
+        const finalBirthDate = birthDate !== undefined ? birthDate : (birth_date !== undefined ? birth_date : user.birth_date)
+        const finalBirthTime = birthTime !== undefined ? birthTime : (birth_time !== undefined ? birth_time : user.birth_time)
+        const finalGender = gender !== undefined ? gender : (user.gender || 'M')
+        const finalIsSolar = isSolar !== undefined 
+            ? (isSolar ? 1 : 0) 
+            : (is_solar !== undefined ? (is_solar ? 1 : 0) : (user.is_solar ? 1 : 0))
+        const finalName = (name && typeof name === 'string' && name.trim()) ? name.trim() : user.name
+
+        await query(`
+            UPDATE users 
+            SET birth_date = $1, birth_time = $2, gender = $3, is_solar = $4, name = $5
+            WHERE id = $6
+        `, [finalBirthDate, finalBirthTime, finalGender, finalIsSolar, finalName, user.id])
+
+        return c.json({
+            success: true,
+            message: '사주 프로필이 성공적으로 저장되었습니다',
+            user: {
+                id: user.id,
+                email: user.email,
+                name: finalName,
+                role: user.role,
+                level: user.level,
+                birth_date: finalBirthDate,
+                birth_time: finalBirthTime,
+                gender: finalGender,
+                is_solar: finalIsSolar === 1
+            }
+        })
+    } catch (error) {
+        console.error('사주 프로필 업데이트 오류:', error)
+        return c.json({ success: false, message: '사주 프로필 저장 실패' }, 500)
+    }
+}
+
+authRoutes.post('/api/user/saju-profile', handleUpdateSajuProfile)
+authRoutes.put('/api/user/saju-profile', handleUpdateSajuProfile)
+authRoutes.post('/api/auth/profile', handleUpdateSajuProfile)
+authRoutes.put('/api/auth/profile', handleUpdateSajuProfile)
 
 export default authRoutes

@@ -46,34 +46,34 @@ export default function SajuShareModal({ result, saju, isOpen, onClose }: SajuSh
                     </button>
                 </div>
 
-                {/* 정갈한 요약 카드 프리뷰 */}
-                <div className="p-5 bg-stone-900 text-stone-100 rounded-2xl mb-4 space-y-3">
-                    <div className="flex items-center justify-between border-b border-stone-800 pb-2">
-                        <span className="text-[10px] font-semibold tracking-wider text-stone-400 uppercase">VERA MANSERYEOK</span>
-                        <span className="text-xs text-stone-300">{mainSaju.basic.zodiac}</span>
+                {/* 정갈한 요약 카드 프리뷰 (화이트 테마) */}
+                <div className="p-5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl mb-4 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                        <span className="text-[10px] font-bold tracking-wider text-indigo-600 uppercase">VERA MANSERYEOK</span>
+                        <span className="text-xs text-slate-500 font-bold">{mainSaju.basic.zodiac}</span>
                     </div>
 
                     <div className="text-center py-1">
-                        <h4 className="text-lg font-serif font-bold text-white">{mainSaju.basic.name} 님의 사주</h4>
-                        <p className="text-xs text-amber-300/90 font-medium mt-0.5">{mainSaju.businessWealth.typeTitle}</p>
+                        <h4 className="text-lg font-serif font-bold text-slate-900">{mainSaju.basic.name} 님의 사주</h4>
+                        <p className="text-xs text-indigo-700 font-semibold mt-0.5">{mainSaju.businessWealth.typeTitle}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 bg-stone-800/80 p-3 rounded-xl text-xs">
+                    <div className="grid grid-cols-2 gap-2 bg-white border border-slate-200/80 p-3 rounded-xl text-xs">
                         <div>
-                            <span className="text-stone-400 block text-[10px]">주도 오행</span>
-                            <strong className="text-stone-100">{mainSaju.elementsSummary.dominant}</strong>
+                            <span className="text-slate-400 block text-[10px] font-medium">주도 오행</span>
+                            <strong className="text-slate-800 font-bold">{mainSaju.elementsSummary.dominant}</strong>
                         </div>
                         <div>
-                            <span className="text-stone-400 block text-[10px]">도움 오행 (용신)</span>
-                            <strong className="text-amber-300">{mainSaju.elementsSummary.yongshin}</strong>
+                            <span className="text-slate-400 block text-[10px] font-medium">도움 오행 (용신)</span>
+                            <strong className="text-amber-800 font-bold">{mainSaju.elementsSummary.yongshin}</strong>
                         </div>
                         <div>
-                            <span className="text-stone-400 block text-[10px]">행운의 색상</span>
-                            <strong className="text-stone-100">{mainSaju.microDaily.luckyColorName.split(' ')[0]}</strong>
+                            <span className="text-slate-400 block text-[10px] font-medium">행운의 색상</span>
+                            <strong className="text-slate-800 font-bold">{mainSaju.microDaily.luckyColorName.split(' ')[0]}</strong>
                         </div>
                         <div>
-                            <span className="text-stone-400 block text-[10px]">행운의 숫자</span>
-                            <strong className="text-stone-100">{mainSaju.microDaily.luckyNumbers.join(', ')}</strong>
+                            <span className="text-slate-400 block text-[10px] font-medium">행운의 숫자</span>
+                            <strong className="text-indigo-700 font-mono font-bold">{mainSaju.microDaily.luckyNumbers.join(', ')}</strong>
                         </div>
                     </div>
                 </div>
@@ -81,13 +81,13 @@ export default function SajuShareModal({ result, saju, isOpen, onClose }: SajuSh
                 <div className="space-y-2">
                     <button
                         onClick={handleCopy}
-                        className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs rounded-xl shadow-sm transition-all"
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                     >
                         {copied ? '결과 텍스트가 복사되었습니다.' : '공유 텍스트 복사하기'}
                     </button>
                     <button
                         onClick={onClose}
-                        className="w-full py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs rounded-xl transition-colors"
+                        className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
                     >
                         닫기
                     </button>

@@ -150,7 +150,7 @@ export default function CoupleMatchModal({ person1, userSaju, isOpen, onClose }:
                         <button
                             type="submit"
                             disabled={isAnalyzing}
-                            className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-sm rounded-xl transition-all shadow-sm active:scale-[0.99] mt-2"
+                            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-sm active:scale-[0.99] mt-2 cursor-pointer"
                         >
                             {isAnalyzing ? '궁합 데이터 연산 중...' : '궁합 풀이 보기'}
                         </button>
@@ -158,14 +158,14 @@ export default function CoupleMatchModal({ person1, userSaju, isOpen, onClose }:
                 ) : (
                     <div className="space-y-6">
                         {/* 결과 점수 및 티어 */}
-                        <div className="p-6 bg-stone-50 rounded-2xl border border-stone-200/80 text-center space-y-2">
-                            <span className="text-xs font-semibold text-stone-500">
+                        <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 text-center space-y-2">
+                            <span className="text-xs font-semibold text-slate-500">
                                 {matchResult.person1Name} & {matchResult.person2Name}
                             </span>
-                            <div className="text-3xl font-serif font-bold text-stone-900">
+                            <div className="text-3xl font-serif font-bold text-slate-900">
                                 {matchResult.totalScore}점
                             </div>
-                            <span className="inline-block px-3 py-1 bg-stone-900 text-white text-xs font-semibold rounded-full">
+                            <span className="inline-block px-3.5 py-1 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-2xs">
                                 {matchResult.tierTitle}
                             </span>
                         </div>
@@ -173,20 +173,20 @@ export default function CoupleMatchModal({ person1, userSaju, isOpen, onClose }:
                         {/* 상호 보완도 게이지 */}
                         <div className="space-y-2">
                             <div className="flex justify-between text-xs font-bold">
-                                <span className="text-stone-700">오행 상호 보완율</span>
-                                <span className="text-stone-900">{matchResult.complementRate}%</span>
+                                <span className="text-slate-700">오행 상호 보완율</span>
+                                <span className="text-slate-900 font-mono">{matchResult.complementRate}%</span>
                             </div>
-                            <div className="w-full h-2.5 bg-stone-100 rounded-full overflow-hidden">
+                            <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-stone-800 rounded-full transition-all duration-700"
+                                    className="h-full bg-indigo-600 rounded-full transition-all duration-700"
                                     style={{ width: `${matchResult.complementRate}%` }}
                                 ></div>
                             </div>
                         </div>
 
                         {/* 상세 해설 */}
-                        <div className="p-4 bg-stone-50 rounded-2xl border border-stone-200/60 space-y-2 text-xs leading-relaxed text-stone-700">
-                            <strong className="text-stone-900 font-bold block">케미스트리 분석</strong>
+                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2 text-xs leading-relaxed text-slate-700">
+                            <strong className="text-slate-900 font-bold block">케미스트리 분석</strong>
                             <p>{matchResult.chemistryAnalysis}</p>
                         </div>
 
@@ -197,7 +197,7 @@ export default function CoupleMatchModal({ person1, userSaju, isOpen, onClose }:
 
                         <button
                             onClick={() => setMatchResult(null)}
-                            className="w-full py-3 bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold text-xs rounded-xl transition-colors"
+                            className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-colors cursor-pointer"
                         >
                             다른 사람과 다시 비교하기
                         </button>

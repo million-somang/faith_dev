@@ -8,15 +8,14 @@
 }
 
 /* ========================================
-   VERA Fortune — Toss-style Glassmorphism
-   짙은 남색(Navy) 오로라 다크모드 디자인 테마
+   VERA Fortune — Toss-style Clean White Theme
+   밝고 단아한 화이트 & 크림 한지 에디토리얼 디자인 테마
    ======================================== */
 
 :root {
-  --navy-bg: #090b1e;
-  --aurora-gradient: linear-gradient(145deg, #090b1e 0%, #0d1235 45%, #180f33 100%);
-  --accent-color: #7c3aed;
-  
+  --light-bg: #FAF9F6;
+  --card-bg: #FFFFFF;
+  --accent-color: #4f46e5;
   --font-main: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
 }
 
@@ -25,31 +24,28 @@ html, body, #root {
   margin: 0;
   padding: 0;
   font-family: var(--font-main);
-  background-color: var(--navy-bg);
-  background: var(--aurora-gradient);
-  color: #f1f5f9;
+  background-color: var(--light-bg);
+  background: #FAF9F6;
+  color: #1e293b;
   overflow-x: hidden;
 }
 
-/* --- 글래스모피즘 카드 --- */
+/* --- 화이트 클린 카드 --- */
 .glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card-hover:hover {
-  transform: translateY(-4px);
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 12px 40px 0 rgba(124, 58, 237, 0.15);
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
 }
 
-/* --- 3D 카드 뒤집기 애니메이션 (Pure CSS / Tailwind) --- */
+/* --- 3D 카드 뒤집기 애니메이션 --- */
 .perspective-1000 {
   perspective: 1000px;
 }
@@ -67,21 +63,21 @@ html, body, #root {
   transform: rotateY(180deg);
 }
 
-/* --- 로딩 스크린 다크모드 --- */
-.loading-screen-dark {
+/* --- 화이트 로딩 스크린 --- */
+.loading-screen-dark, .loading-screen-light {
   display: flex;
   flex-direction: column;
   position: relative;
   flex: 1;
   width: 100%;
   height: 100vh !important;
-  background: var(--aurora-gradient);
+  background: #FAF9F6;
   animation: fadeIn 0.4s ease-out;
   box-sizing: border-box;
   overflow: hidden !important;
 }
 
-.loading-body-dark {
+.loading-body-dark, .loading-body-light {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -93,20 +89,17 @@ html, body, #root {
   gap: 1.5rem;
 }
 
-/* 로딩 오로라 원 */
+/* 로딩 원 */
 .loading-icon-glow {
-  width: 150px;
-  height: 150px;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: 120px;
+  height: 120px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 
-    0 8px 32px 0 rgba(0, 0, 0, 0.3),
-    0 0 40px 0 rgba(124, 58, 237, 0.3);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
   margin-bottom: 1rem;
   animation: loadingFloat 3s ease-in-out infinite;
   padding: 20px;
@@ -114,82 +107,43 @@ html, body, #root {
 }
 
 .loading-logo-spin {
-  font-size: 4.5rem;
-  background: linear-gradient(135deg, #a78bfa, #7c3aed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-size: 3.5rem;
+  color: #4f46e5;
   animation: spinSlow 10s linear infinite;
 }
 
-.loading-title-dark {
-  font-size: 1.7rem;
-  font-weight: 900;
-  color: #ffffff;
+.loading-title-dark, .loading-title-light {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
   margin: 0;
   letter-spacing: -0.03em;
   text-align: center;
-  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
 
-.loading-subtitle-dark {
-  font-size: 0.95rem;
+.loading-subtitle-dark, .loading-subtitle-light {
+  font-size: 0.9rem;
   font-weight: 500;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
   text-align: center;
 }
 
-.loading-spinner-dark {
+.loading-spinner-dark, .loading-spinner-light {
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
-.spinner-dot-dark {
-  width: 10px;
-  height: 10px;
-  background: #a78bfa;
+.spinner-dot-dark, .spinner-dot-light {
+  width: 8px;
+  height: 8px;
+  background: #4f46e5;
   border-radius: 50%;
-  box-shadow: 0 0 10px #7c3aed;
   animation: dotBounce 1.2s ease-in-out infinite;
 }
 
-.spinner-dot-dark:nth-child(2) { animation-delay: 0.15s; }
-.spinner-dot-dark:nth-child(3) { animation-delay: 0.3s; }
-
-/* 광고 영역 다크 */
-.loading-ad-banner-dark {
-  width: 90%;
-  max-width: 420px;
-  margin: 0 auto 2.5rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 18px;
-  padding: 1rem;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  min-height: 60px;
-  box-sizing: border-box;
-}
-
-.ad-badge-dark {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: #a78bfa;
-  background: rgba(124, 58, 237, 0.15);
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.ad-text-dark {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #cbd5e1;
-}
+.spinner-dot-dark:nth-child(2), .spinner-dot-light:nth-child(2) { animation-delay: 0.15s; }
+.spinner-dot-dark:nth-child(3), .spinner-dot-light:nth-child(3) { animation-delay: 0.3s; }
 
 /* 애니메이션 */
 @keyframes fadeIn {
@@ -199,7 +153,7 @@ html, body, #root {
 
 @keyframes loadingFloat {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  50% { transform: translateY(-6px); }
 }
 
 @keyframes dotBounce {
@@ -210,16 +164,4 @@ html, body, #root {
 @keyframes spinSlow {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
-}
-
-/* 오로라 광원 이펙트 배경 */
-.aurora-bg-effect {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 400px;
-  background: radial-gradient(circle at 50% -100px, rgba(124, 58, 237, 0.25) 0%, rgba(13, 18, 53, 0) 60%);
-  pointer-events: none;
-  z-index: 0;
 }
