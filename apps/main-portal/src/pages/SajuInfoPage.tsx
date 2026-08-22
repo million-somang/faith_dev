@@ -98,7 +98,7 @@ export default function SajuInfoPage() {
             <Header user={user} onLogout={logout} />
             <EntertainmentSubMenu />
 
-            <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-12 w-full space-y-16">
+            <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-12 w-full space-y-16">
                 
                 {/* 1. 단아한 한국형 히어로 소개 섹션 */}
                 <section className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-14 shadow-sm relative overflow-hidden">
