@@ -653,39 +653,72 @@ export default function App() {
                         {/* ================= 탭 3: 인연 · 2인 궁합 ================= */}
                         {activeTab === 'love' && (
                             <div className="space-y-6">
-                                {/* 3대 신살 매력도 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-                                    <h3 className="text-base font-serif font-bold text-slate-900">
-                                        나의 매력 신살(神煞) 지수
-                                    </h3>
+                                {/* 종합 매력 지수 & 3대 신살 */}
+                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                                        <div>
+                                            <h3 className="text-base font-serif font-bold text-slate-900">
+                                                나의 매력 신살(神煞) 지수
+                                            </h3>
+                                            <p className="text-xs text-slate-500">사주 속 타고난 이성 매력과 친화력 아우라</p>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs text-slate-500 font-medium">종합 매력 점수:</span>
+                                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full font-mono font-bold text-xs border border-indigo-100">
+                                                {result.loveCharm?.charmScore || 85}점
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 space-y-1.5">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-xs font-bold text-rose-800">도화살 (桃花)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveMarriage.sinsalAppeal.dohwaScore}점</span>
+                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.dohwa?.level || 75}점</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                                                사람의 이목을 끄는 대중적 매력과 친화력입니다.
+                                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                                {result.loveCharm?.dohwa?.desc || '사람의 이목을 끄는 대중적 매력과 친화력입니다.'}
                                             </p>
                                         </div>
                                         <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1.5">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-xs font-bold text-amber-800">홍염살 (紅艶)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveMarriage.sinsalAppeal.hongyeomScore}점</span>
+                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.hongyeom?.level || 70}점</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                                                은근하게 상대를 사로잡는 깊은 유대감과 매혹입니다.
+                                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                                {result.loveCharm?.hongyeom?.desc || '은근하게 상대를 사로잡는 깊은 유대감과 매혹입니다.'}
                                             </p>
                                         </div>
                                         <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-1.5">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-xs font-bold text-indigo-800">화개살 (華蓋)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveMarriage.sinsalAppeal.hwagaeScore}점</span>
+                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.hwagae?.level || 80}점</span>
                                             </div>
-                                            <p className="text-[11px] text-slate-500 leading-relaxed">
-                                                예술적 감수성과 지적인 아우라를 나타냅니다.
+                                            <p className="text-[11px] text-slate-600 leading-relaxed">
+                                                {result.loveCharm?.hwagae?.desc || '예술적 감수성과 지적인 아우라를 나타냅니다.'}
                                             </p>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* 애정운 최적 타이밍 & 조언 */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">최고의 인연 흐름 시기</h4>
+                                        <p className="text-sm font-serif font-bold text-slate-900">
+                                            {result.loveCharm?.loveTiming?.peakMonths || '올해 하반기 & 내년 봄'}
+                                        </p>
+                                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed">
+                                            <strong>나와 잘 맞는 파트너 유형:</strong>
+                                            <p className="mt-1 text-slate-800 font-medium">{result.loveCharm?.loveTiming?.idealType || '안정적인 미래 비전을 공유할 수 있는 파트너'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3">
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">인연을 위한 명리 조언</h4>
+                                        <p className="text-xs text-slate-700 leading-relaxed bg-amber-50/60 p-4 rounded-xl border border-amber-100 font-medium">
+                                            💡 {result.loveCharm?.loveTiming?.advice || '상대방의 사소한 단점에 집중하기보다 큰 가치관과 인생의 방향성에 초점을 맞추세요.'}
+                                        </p>
                                     </div>
                                 </div>
 
