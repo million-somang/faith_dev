@@ -14,9 +14,10 @@ interface NewsRelatedToolsWidgetProps {
     title: string;
     category?: string;
     content?: string;
+    onOpenTool?: (path: string, name: string) => void;
 }
 
-export function NewsRelatedToolsWidget({ title, category = '', content = '' }: NewsRelatedToolsWidgetProps) {
+export function NewsRelatedToolsWidget({ title, category = '', content = '', onOpenTool }: NewsRelatedToolsWidgetProps) {
     const fullText = `${title} ${category} ${content}`.toLowerCase();
 
     // 키워드 정밀 매칭을 통한 연관 도구 추출 (억지 기본값 없음)
@@ -141,6 +142,15 @@ export function NewsRelatedToolsWidget({ title, category = '', content = '' }: N
 
     const recommendedTools = getRecommendedTools();
 
+    const handleToolClick = (e: React.MouseEvent, tool: ToolItem) => {
+        e.preventDefault();
+        if (onOpenTool) {
+            onOpenTool(tool.path, tool.name);
+        } else {
+            window.location.href = tool.path;
+        }
+    };
+
     return (
         <section className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-200/80 shadow-xs my-3" aria-label="기사 연관 추천 도구">
             {/* 상단 타이틀 */}
@@ -154,7 +164,7 @@ export function NewsRelatedToolsWidget({ title, category = '', content = '' }: N
                     </h2>
                 </div>
                 <span className="text-[11px] text-gray-400 font-medium">
-                    무료 온라인 도구
+                    인앱 미니앱 도구
                 </span>
             </div>
 
@@ -167,23 +177,20 @@ export function NewsRelatedToolsWidget({ title, category = '', content = '' }: N
                     </div>
                     <a
                         href="/apps"
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="text-blue-500 hover:text-blue-700 font-semibold flex items-center gap-1 text-[11px]"
                     >
                         <span>전체 도구 보기</span>
-                        <i className="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                        <i className="fas fa-chevron-right text-[8px]"></i>
                     </a>
                 </div>
             ) : (
                 <div className={`grid gap-3 ${recommendedTools.length === 1 ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2'}`}>
                     {recommendedTools.map((tool) => (
-                        <a
+                        <button
                             key={tool.id}
-                            href={tool.path}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-blue-50/40 border border-gray-200/60 hover:border-blue-200 transition-all group"
+                            type="button"
+                            onClick={(e) => handleToolClick(e, tool)}
+                            className="flex items-center justify-between p-3 rounded-xl bg-gray-50/70 hover:bg-blue-50/40 border border-gray-200/60 hover:border-blue-200 transition-all group text-left w-full cursor-pointer"
                         >
                             <div className="flex items-center gap-3 min-w-0 pr-2">
                                 <div className={`w-9 h-9 rounded-xl ${tool.iconBg} border flex items-center justify-center ${tool.iconColor} shrink-0 text-sm`}>
@@ -206,9 +213,9 @@ export function NewsRelatedToolsWidget({ title, category = '', content = '' }: N
 
                             <span className="shrink-0 px-2.5 py-1 bg-white group-hover:bg-blue-600 text-gray-600 group-hover:text-white border border-gray-200 group-hover:border-blue-600 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-2xs">
                                 <span>{tool.ctaText}</span>
-                                <i className="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                                <i className="fas fa-play text-[8px]"></i>
                             </span>
-                        </a>
+                        </button>
                     ))}
                 </div>
             )}
