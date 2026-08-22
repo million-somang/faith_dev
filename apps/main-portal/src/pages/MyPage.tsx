@@ -649,7 +649,7 @@ const DEFAULT_WATCHLIST = [
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
             <Header user={user} onLogout={logout} />
 
-            <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
+            <div className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
                 
                 {/* 상단 히어로 마이포탈 헤더 */}
                 <div className="mb-8 bg-gradient-to-r from-violet-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
