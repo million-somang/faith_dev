@@ -100,7 +100,7 @@ export default function DividendTaxCalculator() {
     }, [principalAmount, currency, exchangeRate, currentStock]);
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 w-full">
             {/* 상단 소개 배너 */}
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
                 <div className="flex items-center gap-3 mb-3">

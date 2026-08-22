@@ -56,7 +56,7 @@ export default function FinanceUtilPage() {
             />
             <Header user={user} onLogout={logout} />
 
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
                 {/* 상단 네비게이션 브레드크럼 */}
                 <div className="flex items-center gap-2 text-xs text-slate-500 font-bold mb-6">
                     <Link to="/" className="hover:text-blue-600">홈</Link>

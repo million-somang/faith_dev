@@ -104,7 +104,7 @@ export default function SeveranceCalculator() {
     }, [age, disabled, insuranceYears, avgMonthlyWage]);
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 w-full">
             {/* 상단 소개 배너 */}
             <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
                 <div className="flex items-center gap-3 mb-3">

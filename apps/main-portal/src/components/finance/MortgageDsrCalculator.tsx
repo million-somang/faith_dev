@@ -89,7 +89,7 @@ export default function MortgageDsrCalculator() {
     }, [annualIncome, housePrice, regionType, loanTermYears, interestRate, stressDsrRate, existingAnnualDebtPayment]);
 
     return (
-        <div className="space-y-8 max-w-5xl mx-auto">
+        <div className="space-y-8 w-full">
             {/* 상단 소개 배너 */}
             <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 rounded-3xl p-6 sm:p-8 text-white shadow-lg">
                 <div className="flex items-center gap-3 mb-3">
