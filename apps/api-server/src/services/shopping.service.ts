@@ -6,23 +6,157 @@ export interface ShoppingCategory {
     name: string;
     icon: string;
     bannerColor: string;
+    isFeatured?: boolean;
 }
 
 export const SHOPPING_CATEGORIES: ShoppingCategory[] = [
+    { id: 2000, code: 'curation', name: '✨ 신박 꿀템 & 아이디어', icon: 'fas fa-wand-magic-sparkles', bannerColor: 'from-purple-600 to-pink-600', isFeatured: true },
     { id: 0, code: 'all', name: '전체 핫딜', icon: 'fas fa-fire', bannerColor: 'from-rose-500 to-red-600' },
     { id: 1010, code: 'digital', name: '가전 · 디지털', icon: 'fas fa-laptop', bannerColor: 'from-blue-600 to-indigo-600' },
     { id: 1001, code: 'food', name: '식품 · 생필품', icon: 'fas fa-utensils', bannerColor: 'from-emerald-500 to-teal-600' },
     { id: 1020, code: 'fashion', name: '패션 · 잡화', icon: 'fas fa-tshirt', bannerColor: 'from-purple-500 to-pink-600' },
     { id: 1030, code: 'beauty', name: '뷰티 · 스킨케어', icon: 'fas fa-spa', bannerColor: 'from-pink-500 to-rose-500' },
     { id: 1040, code: 'home', name: '홈 · 인테리어', icon: 'fas fa-couch', bannerColor: 'from-amber-500 to-orange-600' },
-    { id: 1050, code: 'kitchen', name: '주방용품', icon: 'fas fa-blender', bannerColor: 'from-orange-500 to-amber-600' },
+    { id: 1050, code: 'kitchen', name: '주방 꿀템', icon: 'fas fa-blender', bannerColor: 'from-orange-500 to-amber-600' },
     { id: 1060, code: 'sports', name: '스포츠 · 레저', icon: 'fas fa-running', bannerColor: 'from-cyan-600 to-blue-700' },
     { id: 1070, code: 'pets', name: '반려동물용품', icon: 'fas fa-paw', bannerColor: 'from-yellow-500 to-amber-600' },
 ];
 
-// 정밀 Mock 상품 데이터베이스 (API 키 없을 때 또는 Fallback용)
+// 정밀 Mock 상품 데이터베이스 (신박템 큐레이션 + 실속 핫딜)
 const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] = [
+    // ==========================================
+    // 0. ✨ 신박 꿀템 & 기발한 아이디어 상품 (2000)
+    // ==========================================
+    {
+        productId: 20001,
+        productName: '공중부양 3D 달 무드등 16색 리모컨 터치 조명 (자기부상 무선 충전)',
+        productPrice: 49800,
+        originalPrice: 79000,
+        discountRate: 37,
+        productImage: 'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-levitating-moon',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.9,
+        reviewCount: 3420,
+        tag: '화제의신박템',
+        isViral: true,
+        curationPoint: '자석으로 공중에 둥둥 떠서 360도 회전하는 마법 같은 무드등'
+    },
+    {
+        productId: 20002,
+        productName: '스마트 3in1 머그컵 워머 & 고속 무선충전기 세트 (온도 3단계 조절/방수)',
+        productPrice: 28900,
+        originalPrice: 42000,
+        discountRate: 31,
+        productImage: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-mug-warmer',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.8,
+        reviewCount: 1890,
+        tag: '데스크꿀템',
+        isViral: true,
+        curationPoint: '커피는 하루 종일 따뜻하게 유지하고, 폰은 올려두면 고속 무선충전!'
+    },
+    {
+        productId: 20003,
+        productName: '원터치 무선 미니 진공포장기 & 비닐 자동 열선 밀봉기 (충전식 자취필수템)',
+        productPrice: 19800,
+        originalPrice: 29900,
+        discountRate: 34,
+        productImage: 'https://images.unsplash.com/photo-1584990347449-397a6104c861?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-sealer',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.9,
+        reviewCount: 5210,
+        tag: '자취필수템',
+        isViral: true,
+        curationPoint: '먹다 남은 과자봉지나 식자재를 1초 만에 공장 출고 상태로 완벽 밀봉'
+    },
+    {
+        productId: 20004,
+        productName: '레트로 픽셀 아트 블루투스 스피커 & 감성 알람시계 (Ditoo Pro 디자인)',
+        productPrice: 79000,
+        originalPrice: 119000,
+        discountRate: 34,
+        productImage: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-pixel-speaker',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 5.0,
+        reviewCount: 2840,
+        tag: 'SNS대란템',
+        isViral: true,
+        curationPoint: '귀여운 픽셀 애니메이션 화면과 기계식 키보드 타건감의 명품 스피커'
+    },
+    {
+        productId: 20005,
+        productName: '초음파 다목적 미니 세척기 (안경 / 반지·귀걸이 / 면도기 3분 딥클렌징)',
+        productPrice: 24900,
+        originalPrice: 38000,
+        discountRate: 34,
+        productImage: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-ultrasonic-cleaner',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.8,
+        reviewCount: 4670,
+        tag: '삶의질상승',
+        isViral: true,
+        curationPoint: '물만 붓고 버튼 누르면 안경원처럼 미세 틈새 때까지 3분 만에 싹 제거'
+    },
+    {
+        productId: 20006,
+        productName: 'AI 안면인식 자동 추적 360도 회전 스마트폰 거치대 삼각대 (앱 설치 불필요)',
+        productPrice: 31900,
+        originalPrice: 45000,
+        discountRate: 29,
+        productImage: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-ai-tracker',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.9,
+        reviewCount: 1780,
+        tag: '크리에이터꿀템',
+        isViral: true,
+        curationPoint: '내가 움직이는 방향을 카메라가 자동으로 인식해 부드럽게 360도 따라옴'
+    },
+    {
+        productId: 20007,
+        productName: '차량용 3단 확장 컵홀더 & 360도 회전 간이 식사 트레이 테이블',
+        productPrice: 22800,
+        originalPrice: 34000,
+        discountRate: 33,
+        productImage: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-car-tray',
+        categoryName: '신박 꿀템',
+        categoryId: 2000,
+        isRocket: true,
+        isFreeShipping: true,
+        rating: 4.7,
+        reviewCount: 3120,
+        tag: '차량필수템',
+        isViral: true,
+        curationPoint: '컵홀더 하나로 대용량 텀블러 2개 거치와 차 안 식사 테이블까지 완성'
+    },
+
+    // ==========================================
     // 1. 가전 · 디지털 (1010)
+    // ==========================================
     {
         productId: 10101,
         productName: '삼성전자 갤럭시북4 프로 16인치 인텔 코어 울트라7 (32GB SSD 1TB) 문스톤그레이',
@@ -87,7 +221,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 890,
     },
 
+    // ==========================================
     // 2. 식품 · 생필품 (1001)
+    // ==========================================
     {
         productId: 10011,
         productName: '곰곰 무농약 신선 샐러드 채소 믹스 패밀리팩 1kg (로켓프레시)',
@@ -136,7 +272,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 5670,
     },
 
+    // ==========================================
     // 3. 패션 · 잡화 (1020)
+    // ==========================================
     {
         productId: 10201,
         productName: '나이키 에어포스 1 07 올화이트 로우 스니커즈 (정품 보증 패키지)',
@@ -169,7 +307,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 1450,
     },
 
+    // ==========================================
     // 4. 뷰티 · 스킨케어 (1030)
+    // ==========================================
     {
         productId: 10301,
         productName: '설화수 자음2종 세트 (기초 스킨케어 정품 세트 + 선물용 쇼핑백)',
@@ -203,7 +343,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         tag: '프리미엄'
     },
 
+    // ==========================================
     // 5. 홈 · 인테리어 (1040)
+    // ==========================================
     {
         productId: 10401,
         productName: '시디즈 T50 에어 메쉬 프리미엄 사무용 메쉬 의자 (요추 지지대 장착)',
@@ -235,7 +377,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 980,
     },
 
-    // 6. 주방용품 (1050)
+    // ==========================================
+    // 6. 주방 꿀템 (1050)
+    // ==========================================
     {
         productId: 10501,
         productName: '닌자 블렌더 듀오 자동 스무디 믹서기 푸드 프로세서 풀세트',
@@ -244,7 +388,7 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         discountRate: 25,
         productImage: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=600&auto=format&fit=crop&q=80',
         productUrl: 'https://link.coupang.com/a/sample-ninja',
-        categoryName: '주방용품',
+        categoryName: '주방 꿀템',
         categoryId: 1050,
         isRocket: true,
         isFreeShipping: true,
@@ -260,7 +404,7 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         discountRate: 29,
         productImage: 'https://images.unsplash.com/photo-1584990347449-397a6104c861?w=600&auto=format&fit=crop&q=80',
         productUrl: 'https://link.coupang.com/a/sample-tefal',
-        categoryName: '주방용품',
+        categoryName: '주방 꿀템',
         categoryId: 1050,
         isRocket: true,
         isFreeShipping: true,
@@ -268,7 +412,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 5400,
     },
 
+    // ==========================================
     // 7. 스포츠 · 레저 (1060)
+    // ==========================================
     {
         productId: 10601,
         productName: '가민 포러너 265 GPS 프리미엄 스마트 러닝워치 블랙 (AMOLED 디스플레이)',
@@ -285,7 +431,9 @@ const MOCK_PRODUCTS: (CoupangProduct & { categoryId: number; tag?: string })[] =
         reviewCount: 1200,
     },
 
+    // ==========================================
     // 8. 반려동물용품 (1070)
+    // ==========================================
     {
         productId: 10701,
         productName: '로얄캐닌 인도어 성묘용 건식 사료 10kg (체중 조절 및 헤어볼 케어)',
@@ -337,6 +485,19 @@ export class ShoppingService {
     }
 
     /**
+     * 상단 화제의 신박템 & 아이디어 상품 4선 조회
+     */
+    public async getViralCuratedProducts(limit = 4): Promise<CoupangProduct[]> {
+        const cacheKey = `viral_products_${limit}`;
+        const cached = getFromCache<CoupangProduct[]>(cacheKey);
+        if (cached) return cached;
+
+        const viralItems = MOCK_PRODUCTS.filter(p => p.isViral || p.categoryId === 2000).slice(0, limit);
+        setToCache(cacheKey, viralItems, 30);
+        return viralItems;
+    }
+
+    /**
      * 오늘의 골드박스 타임세일 상품 조회
      */
     public async getGoldBoxProducts(): Promise<CoupangProduct[]> {
@@ -358,7 +519,7 @@ export class ShoppingService {
         }
 
         // Mock 데이터 중 할인율 높은 상품 4종 추출
-        const mockGold = MOCK_PRODUCTS.filter(p => (p.discountRate || 0) >= 20).slice(0, 4);
+        const mockGold = MOCK_PRODUCTS.filter(p => (p.discountRate || 0) >= 20 && p.categoryId !== 2000).slice(0, 4);
         setToCache(cacheKey, mockGold, 15);
         return mockGold;
     }
@@ -373,7 +534,7 @@ export class ShoppingService {
         page?: number;
         limit?: number;
     }): Promise<{ products: CoupangProduct[]; total: number; page: number; limit: number }> {
-        const { keyword = '', category = 'all', sort = 'ranking', page = 1, limit = 20 } = options;
+        const { keyword = '', category = 'curation', sort = 'ranking', page = 1, limit = 20 } = options;
 
         const cacheKey = `products_${keyword}_${category}_${sort}_${page}_${limit}`;
         const cached = getFromCache<{ products: CoupangProduct[]; total: number; page: number; limit: number }>(cacheKey);
@@ -402,7 +563,9 @@ export class ShoppingService {
         let list = [...MOCK_PRODUCTS];
 
         // 1. 카테고리 필터링
-        if (category && category !== 'all' && category !== '0') {
+        if (category === 'curation' || category === 2000 || category === '2000') {
+            list = list.filter(p => p.categoryId === 2000 || p.isViral);
+        } else if (category && category !== 'all' && category !== '0') {
             const catId = Number(category);
             list = list.filter(p => p.categoryId === catId);
         }
@@ -412,7 +575,8 @@ export class ShoppingService {
             const q = keyword.trim().toLowerCase();
             list = list.filter(p => 
                 p.productName.toLowerCase().includes(q) || 
-                (p.categoryName && p.categoryName.toLowerCase().includes(q))
+                (p.categoryName && p.categoryName.toLowerCase().includes(q)) ||
+                (p.curationPoint && p.curationPoint.toLowerCase().includes(q))
             );
         }
 

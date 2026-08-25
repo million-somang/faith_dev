@@ -6,6 +6,7 @@ export interface ShoppingCategoryItem {
     name: string;
     icon: string;
     bannerColor: string;
+    isFeatured?: boolean;
 }
 
 interface ShoppingSearchFilterProps {
@@ -43,7 +44,7 @@ export const ShoppingSearchFilter: React.FC<ShoppingSearchFilterProps> = ({
                         type="text"
                         value={searchKeyword}
                         onChange={(e) => onSearchChange(e.target.value)}
-                        placeholder="찾으시는 상품명이나 브랜드를 검색해보세요..."
+                        placeholder="찾으시는 상품명이나 신박한 키워드를 검색해보세요..."
                         className="w-full pl-11 pr-24 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm placeholder:text-slate-400"
                     />
                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -77,7 +78,7 @@ export const ShoppingSearchFilter: React.FC<ShoppingSearchFilterProps> = ({
                         aria-label="상품 정렬 순서 선택"
                         className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
                     >
-                        <option value="ranking">쿠팡 랭킹순</option>
+                        <option value="ranking">추천 랭킹순</option>
                         <option value="discount">할인율 높은순</option>
                         <option value="price_asc">낮은 가격순</option>
                         <option value="price_desc">높은 가격순</option>
@@ -91,9 +92,9 @@ export const ShoppingSearchFilter: React.FC<ShoppingSearchFilterProps> = ({
                             Live API
                         </span>
                     ) : (
-                        <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-black text-blue-600 bg-blue-50 border border-blue-200 px-2 py-1 rounded-lg">
-                            <i className="fas fa-bolt text-[9px]"></i>
-                            스마트 피드
+                        <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-black text-purple-600 bg-purple-50 border border-purple-200 px-2 py-1 rounded-lg">
+                            <i className="fas fa-wand-magic-sparkles text-[9px]"></i>
+                            큐레이션 피드
                         </span>
                     )}
                 </div>
@@ -103,17 +104,24 @@ export const ShoppingSearchFilter: React.FC<ShoppingSearchFilterProps> = ({
             <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
                 {categories.map((cat) => {
                     const isSelected = selectedCategory === cat.id;
+                    const isFeatured = cat.isFeatured || cat.id === 2000;
+
+                    let buttonStyle = 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80';
+                    if (isSelected) {
+                        buttonStyle = isFeatured 
+                            ? 'bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white shadow-lg shadow-purple-500/20 scale-[1.03] border-transparent font-black'
+                            : 'bg-slate-900 text-white shadow-md shadow-slate-900/10 scale-[1.02] border-transparent';
+                    } else if (isFeatured) {
+                        buttonStyle = 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-900 border border-purple-200 hover:from-purple-100 hover:to-pink-100 font-extrabold';
+                    }
+
                     return (
                         <button
                             key={cat.id}
                             onClick={() => onSelectCategory(cat.id)}
-                            className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all duration-200 shadow-sm ${
-                                isSelected
-                                    ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10 scale-[1.02]'
-                                    : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80'
-                            }`}
+                            className={`flex-shrink-0 px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all duration-200 shadow-sm ${buttonStyle}`}
                         >
-                            <i className={`${cat.icon} ${isSelected ? 'text-yellow-400' : 'text-slate-400'}`}></i>
+                            <i className={`${cat.icon} ${isSelected ? 'text-yellow-300' : isFeatured ? 'text-purple-600' : 'text-slate-400'}`}></i>
                             <span>{cat.name}</span>
                         </button>
                     );

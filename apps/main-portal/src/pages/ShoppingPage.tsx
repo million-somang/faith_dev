@@ -3,6 +3,7 @@ import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext.js';
 import { MobileTabBar } from '../components/MobileTabBar.js';
 import { PageSEO } from '../components/PageSEO.js';
+import { ViralShowcaseBanner } from '../components/shopping/ViralShowcaseBanner.js';
 import { GoldBoxBanner } from '../components/shopping/GoldBoxBanner.js';
 import { ShoppingSearchFilter, type ShoppingCategoryItem } from '../components/shopping/ShoppingSearchFilter.js';
 import { ShoppingProductCard, type ProductItem } from '../components/shopping/ShoppingProductCard.js';
@@ -11,11 +12,12 @@ import { CoupangDisclaimer } from '../components/shopping/CoupangDisclaimer.js';
 export const ShoppingPage: React.FC = () => {
     const { user, logout } = useAuth();
     const [categories, setCategories] = useState<ShoppingCategoryItem[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<number>(0);
+    const [selectedCategory, setSelectedCategory] = useState<number>(2000); // 기본 선택: 신박 꿀템
     const [searchKeyword, setSearchKeyword] = useState<string>('');
     const [submittedKeyword, setSubmittedKeyword] = useState<string>('');
     const [sortBy, setSortBy] = useState<string>('ranking');
     
+    const [viralProducts, setViralProducts] = useState<ProductItem[]>([]);
     const [goldBoxProducts, setGoldBoxProducts] = useState<ProductItem[]>([]);
     const [products, setProducts] = useState<ProductItem[]>([]);
     const [totalCount, setTotalCount] = useState<number>(0);
@@ -23,18 +25,24 @@ export const ShoppingPage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
-    // 1. 카테고리 & 골드박스 데이터 로드
+    // 1. 카테고리 & 바이럴 신박템 & 골드박스 데이터 로드
     useEffect(() => {
         const fetchInitialData = async () => {
             try {
-                const [catRes, goldRes] = await Promise.all([
+                const [catRes, viralRes, goldRes] = await Promise.all([
                     fetch('/api/shopping/categories'),
+                    fetch('/api/shopping/viral'),
                     fetch('/api/shopping/goldbox')
                 ]);
 
                 if (catRes.ok) {
                     const catJson = await catRes.json();
                     if (catJson.data) setCategories(catJson.data);
+                }
+
+                if (viralRes.ok) {
+                    const viralJson = await viralRes.json();
+                    if (viralJson.data) setViralProducts(viralJson.data);
                 }
 
                 if (goldRes.ok) {
@@ -87,14 +95,13 @@ export const ShoppingPage: React.FC = () => {
 
     const handleCategoryChange = (id: number) => {
         setSelectedCategory(id);
-        // 카테고리 변경 시 검색어 초기화하지 않고 카테고리 내 검색 유지 가능
     };
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between">
             <PageSEO 
-                title="스마트 쇼핑 & 핫딜 | VERA 쇼핑"
-                description="쿠팡 파트너스 실시간 골드박스 타임세일, 로켓배송 베스트셀러, 가전/디지털, 식품, 패션 최저가 상품을 한눈에 비교하고 쇼핑하세요."
+                title="스마트 쇼핑 & 신박템 큐레이션 | VERA 쇼핑"
+                description="SNS 화제의 신박한 아이디어 상품부터 쿠팡 파트너스 실시간 골드박스 타임세일, 로켓배송 베스트셀러까지 한눈에 비교하고 쇼핑하세요."
                 path="/shopping"
             />
 
@@ -111,22 +118,28 @@ export const ShoppingPage: React.FC = () => {
                     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-                                <span className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white text-base shadow-md shadow-rose-500/20">
-                                    <i className="fas fa-shopping-bag"></i>
+                                <span className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-600 via-pink-600 to-rose-600 flex items-center justify-center text-white text-base shadow-md shadow-purple-500/20">
+                                    <i className="fas fa-wand-magic-sparkles"></i>
                                 </span>
-                                스마트 쇼핑 & 핫딜
+                                스마트 쇼핑 & 신박템 큐레이션
                             </h1>
                             <p className="text-slate-500 text-xs sm:text-sm mt-1">
-                                매일 업데이트되는 쿠팡 실시간 타임세일과 검증된 카테고리 베스트 아이템
+                                삶의 질을 높여주는 기발한 아이디어 꿀템과 매일 자정 업데이트되는 쿠팡 실시간 타임세일
                             </p>
                         </div>
                     </div>
                 </div>
 
-                {/* 골드박스 타임세일 배너 */}
+                {/* 1단: SNS 화제의 신박템 4선 쇼케이스 */}
+                <ViralShowcaseBanner 
+                    products={viralProducts} 
+                    onSelectCuration={() => setSelectedCategory(2000)}
+                />
+
+                {/* 2단: 골드박스 타임세일 배너 */}
                 <GoldBoxBanner products={goldBoxProducts} />
 
-                {/* 검색 & 카테고리 & 정렬 필터 */}
+                {/* 3단: 검색 & 카테고리 & 정렬 필터 */}
                 <ShoppingSearchFilter 
                     categories={categories}
                     selectedCategory={selectedCategory}
@@ -174,17 +187,17 @@ export const ShoppingPage: React.FC = () => {
                         </div>
                         <h3 className="text-base font-bold text-slate-800 mb-1">검색 결과가 없습니다</h3>
                         <p className="text-xs text-slate-500 mb-6">
-                            다른 검색어를 입력하시거나 카테고리 필터를 '전체'로 변경해보세요.
+                            다른 검색어를 입력하시거나 카테고리 필터를 '신박 꿀템' 또는 '전체'로 변경해보세요.
                         </p>
                         <button
                             onClick={() => {
                                 setSearchKeyword('');
                                 setSubmittedKeyword('');
-                                setSelectedCategory(0);
+                                setSelectedCategory(2000);
                             }}
-                            className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-colors shadow-sm"
+                            className="px-5 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700 transition-colors shadow-sm"
                         >
-                            전체 상품 보기
+                            신박 꿀템 보러가기
                         </button>
                     </div>
                 ) : (

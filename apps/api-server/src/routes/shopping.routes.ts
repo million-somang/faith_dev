@@ -13,6 +13,19 @@ shoppingRoutes.get('/api/shopping/categories', (c) => {
     });
 });
 
+// 1-1. 상단 화제의 신박템 4선 쇼케이스
+shoppingRoutes.get('/api/shopping/viral', async (c) => {
+    try {
+        const products = await shoppingService.getViralCuratedProducts(4);
+        return c.json({
+            status: 'success',
+            data: products,
+        });
+    } catch (err: any) {
+        return c.json({ status: 'error', message: err.message || '신박템 조회 실패' }, 500);
+    }
+});
+
 // 2. 오늘의 골드박스 타임세일
 shoppingRoutes.get('/api/shopping/goldbox', async (c) => {
     try {

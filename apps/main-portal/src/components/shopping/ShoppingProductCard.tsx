@@ -14,6 +14,8 @@ export interface ProductItem {
     rating?: number;
     reviewCount?: number;
     tag?: string;
+    curationPoint?: string;
+    isViral?: boolean;
 }
 
 interface ShoppingProductCardProps {
@@ -24,7 +26,7 @@ export const ShoppingProductCard: React.FC<ShoppingProductCardProps> = ({ produc
     const formatPrice = (price: number) => price.toLocaleString('ko-KR');
 
     return (
-        <div className="group bg-white rounded-2xl border border-slate-200/80 overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+        <div className={`group bg-white rounded-2xl border ${product.isViral ? 'border-purple-200 shadow-purple-500/5' : 'border-slate-200/80'} overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between`}>
             {/* 상단 이미지 영역 */}
             <div className="relative aspect-square w-full bg-slate-100 overflow-hidden">
                 <img 
@@ -37,7 +39,7 @@ export const ShoppingProductCard: React.FC<ShoppingProductCardProps> = ({ produc
                 {/* 뱃지들 */}
                 <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
                     {product.tag && (
-                        <span className="px-2 py-0.5 rounded-md text-[11px] font-black bg-rose-500 text-white shadow-sm">
+                        <span className={`px-2 py-0.5 rounded-md text-[11px] font-black ${product.isViral ? 'bg-gradient-to-r from-purple-600 to-pink-600' : 'bg-rose-500'} text-white shadow-sm`}>
                             {product.tag}
                         </span>
                     )}
@@ -59,6 +61,14 @@ export const ShoppingProductCard: React.FC<ShoppingProductCardProps> = ({ produc
             {/* 본문 정보 영역 */}
             <div className="p-4 flex-1 flex flex-col justify-between">
                 <div>
+                    {/* 신박 포인트 말풍선 */}
+                    {product.curationPoint && (
+                        <div className="bg-purple-50 border border-purple-200/70 rounded-xl p-2 mb-2.5 text-[11px] font-bold text-purple-950 flex items-start gap-1.5 leading-snug">
+                            <span className="text-purple-600 flex-shrink-0 mt-0.5">💡</span>
+                            <span className="line-clamp-2">{product.curationPoint}</span>
+                        </div>
+                    )}
+
                     {/* 카테고리 태그 */}
                     {product.categoryName && (
                         <span className="text-[11px] font-semibold text-slate-400 mb-1 inline-block">

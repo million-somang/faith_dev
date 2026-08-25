@@ -13,6 +13,8 @@ export interface CoupangProduct {
     isFreeShipping?: boolean;
     rating?: number;
     reviewCount?: number;
+    curationPoint?: string;
+    isViral?: boolean;
 }
 
 export interface CoupangApiResponse<T> {
