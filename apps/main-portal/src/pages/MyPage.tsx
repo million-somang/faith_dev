@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Header, Footer, getLang, t } from '@faithportal/ui';
+import { Header, Footer, t } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { CompactDashboardWidgets } from '../components/homepage/CompactDashboard
 import { CalendarScheduleSection } from '../components/mypage/CalendarScheduleSection';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
+import { BannerSlot } from '../components/BannerSlot';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -693,28 +694,31 @@ const DEFAULT_SHOPPING_ITEMS = [
 
             <div className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
                 
-                {/* 상단 히어로 마이포탈 헤더 */}
-                <div className="mb-8 bg-gradient-to-r from-violet-600 to-indigo-700 rounded-3xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
-                    <div className="absolute right-0 bottom-0 w-64 h-64 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black">
-                                Personal Portal
+                {/* 상단 타이틀 & 광고 영역 */}
+                <div className="mb-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="w-8 h-8 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-sm shadow-xs">
+                                <i className="fas fa-user"></i>
                             </span>
-                            <h1 className="text-3xl font-black tracking-tight mt-2 flex items-center gap-2">
-                                <i className="fas fa-house-user"></i> 나만의 홈페이지
+                            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">
+                                {t('마이페이지')}
                             </h1>
-                            <p className="text-violet-100 text-xs sm:text-sm font-semibold mt-1">
-                                {getLang() === 'en' 
-                                    ? `Real-time dashboard for news, stocks, game records and fortune for ${user.name}.`
-                                    : `${user.name}님을 위해 실시간 연동된 뉴스, 주식, 게임 전적 및 사주 오행 대시보드입니다.`}
-                            </p>
+                            <span className="text-xs font-bold text-slate-400 ml-1">
+                                {user.name}{t('님')}
+                            </span>
                         </div>
                         {user.email && (
-                            <div className="text-xs sm:text-right font-medium opacity-90">
-                                <i className="fas fa-envelope mr-1.5"></i>{user.email}
+                            <div className="text-xs font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-1.5">
+                                <i className="fas fa-envelope text-violet-500"></i>
+                                <span>{user.email}</span>
                             </div>
                         )}
+                    </div>
+
+                    {/* 상단 광고 배너 슬롯 */}
+                    <div className="w-full flex flex-col items-center">
+                        <BannerSlot slotKey="mypage_top" fallbackSlotKey="home_main_top" className="w-full" />
                     </div>
                 </div>
 

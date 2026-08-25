@@ -19,8 +19,9 @@ interface Banner {
  * - 여러 개면 일정 간격으로 로테이션
  * - 배너가 없으면 영역 자체를 렌더링하지 않음
  */
-export function BannerSlot({ slotKey, className = '', rotateMs = 8000 }: {
+export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs = 8000 }: {
     slotKey: string;
+    fallbackSlotKey?: string;
     className?: string;
     rotateMs?: number;
 }) {
@@ -31,10 +32,27 @@ export function BannerSlot({ slotKey, className = '', rotateMs = 8000 }: {
     useEffect(() => {
         axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${slotKey}`)
             .then(res => {
-                if (res.data?.success) setBanners(res.data.banners || []);
+                if (res.data?.success && res.data.banners && res.data.banners.length > 0) {
+                    setBanners(res.data.banners);
+                } else if (fallbackSlotKey) {
+                    axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${fallbackSlotKey}`)
+                        .then(fallbackRes => {
+                            if (fallbackRes.data?.success) setBanners(fallbackRes.data.banners || []);
+                        })
+                        .catch(() => {});
+                }
             })
-            .catch(e => console.error(`배너 로드 실패 (${slotKey}):`, e));
-    }, [slotKey]);
+            .catch(e => {
+                console.error(`배너 로드 실패 (${slotKey}):`, e);
+                if (fallbackSlotKey) {
+                    axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${fallbackSlotKey}`)
+                        .then(fallbackRes => {
+                            if (fallbackRes.data?.success) setBanners(fallbackRes.data.banners || []);
+                        })
+                        .catch(() => {});
+                }
+            });
+    }, [slotKey, fallbackSlotKey]);
 
     useEffect(() => {
         if (banners.length < 2) return;
