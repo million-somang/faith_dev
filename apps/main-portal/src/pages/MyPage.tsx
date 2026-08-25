@@ -5,8 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { PreferenceWizard } from '../components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '../components/homepage/MobileTabEditor';
-import { WeatherWidget } from '../components/homepage/WeatherWidget';
-import { StockWidget } from '../components/homepage/StockWidget';
+import { CompactDashboardWidgets } from '../components/homepage/CompactDashboardWidgets';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
 
@@ -798,11 +797,8 @@ const DEFAULT_SHOPPING_ITEMS = [
                                     {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
                                     {activeSection === 'dashboard' && (
                                         <div className="animate-fade-in space-y-6">
-                                            {/* 🌤️📈 날씨 & 금융/증시 위젯 (상단 탭 메뉴와 뉴스 사이 배치) */}
-                                            <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:grid sm:grid-cols-2 sm:gap-6 sm:overflow-x-visible sm:pb-0">
-                                                <WeatherWidget />
-                                                <StockWidget />
-                                            </div>
+                                            {/* 🌤️📈 날씨 & 금융/증시 슬림형 컴팩트 위젯 (상단 탭 메뉴와 뉴스 사이) */}
+                                            <CompactDashboardWidgets />
 
                                             {/* 📰 [맨 윗부분] 내가 구독한 주제의 최신 뉴스 (Subscribed Topic News Feed) */}
                                             <div className="border border-sky-100 rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-sky-50/70 via-white to-indigo-50/40 shadow-2xs flex flex-col gap-5">
