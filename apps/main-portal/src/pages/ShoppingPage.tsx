@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Header, Footer } from '@faithportal/ui';
+import { useAuth } from '../context/AuthContext.js';
+import { MobileTabBar } from '../components/MobileTabBar.js';
 import { PageSEO } from '../components/PageSEO.js';
 import { GoldBoxBanner } from '../components/shopping/GoldBoxBanner.js';
 import { ShoppingSearchFilter, type ShoppingCategoryItem } from '../components/shopping/ShoppingSearchFilter.js';
@@ -6,6 +9,7 @@ import { ShoppingProductCard, type ProductItem } from '../components/shopping/Sh
 import { CoupangDisclaimer } from '../components/shopping/CoupangDisclaimer.js';
 
 export const ShoppingPage: React.FC = () => {
+    const { user, logout } = useAuth();
     const [categories, setCategories] = useState<ShoppingCategoryItem[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<number>(0);
     const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -93,6 +97,8 @@ export const ShoppingPage: React.FC = () => {
                 description="쿠팡 파트너스 실시간 골드박스 타임세일, 로켓배송 베스트셀러, 가전/디지털, 식품, 패션 최저가 상품을 한눈에 비교하고 쇼핑하세요."
                 path="/shopping"
             />
+
+            <Header user={user} onLogout={logout} />
 
             <main className="max-w-6xl w-full mx-auto px-4 py-8 flex-1">
                 {/* 상단 브레드크럼 & 헤더 */}
@@ -192,6 +198,9 @@ export const ShoppingPage: React.FC = () => {
                 {/* 하단 공정위 필수 고지 문구 */}
                 <CoupangDisclaimer className="mt-8 mb-4" />
             </main>
+
+            <Footer />
+            <MobileTabBar />
         </div>
     );
 };
