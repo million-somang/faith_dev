@@ -803,50 +803,49 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                 {/* 메인 컨텐츠 영역 (100% 전체 너비로 확장) */}
                 <div className="w-full">
-                    <div className="bg-white rounded-2xl shadow-sm p-6 sm:p-8 border border-slate-200/80 min-h-[500px]">
-                            {loading ? (
-                                <div className="h-full flex items-center justify-center py-20">
-                                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
-                                </div>
-                            ) : (
-                                <>
-                                    {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
-                                    {activeSection === 'dashboard' && (
-                                        <div className="animate-fade-in space-y-6">
-                                            {/* 🌤️📈 날씨 & 금융/증시 슬림형 컴팩트 위젯 (상단 탭 메뉴와 뉴스 사이) */}
-                                            <CompactDashboardWidgets />
+                    {loading ? (
+                        <div className="bg-white rounded-3xl shadow-sm p-16 border border-slate-200/80 min-h-[400px] flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
+                        </div>
+                    ) : (
+                        <>
+                            {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
+                            {activeSection === 'dashboard' && (
+                                <div className="animate-fade-in space-y-6">
+                                    {/* 🌤️📈 1. 날씨 & 금융/증시 슬림형 컴팩트 위젯 (독립 카드 바) */}
+                                    <CompactDashboardWidgets />
 
-                                            {/* 📅 오늘의 일정 스마트 요약 배너 */}
-                                            <div 
-                                                onClick={() => setActiveSection('schedule')}
-                                                className="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-white border border-emerald-200/80 hover:border-emerald-300 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all hover:shadow-xs group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-xs group-hover:scale-105 transition-transform">
-                                                        <i className="fas fa-calendar-check"></i>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-extrabold text-slate-800 text-sm">오늘의 일정</span>
-                                                            <span className="text-xs font-black font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                                                                {todaySchedules.length > 0 ? `${todaySchedules.length}건` : '일정 없음'}
-                                                            </span>
-                                                        </div>
-                                                        <p className="text-xs text-slate-500 mt-0.5">
-                                                            {todaySchedules.length > 0 
-                                                                ? `${todaySchedules.slice(0, 2).map((s: any) => s.title || s.schedule_text || s.text).join(', ')}${todaySchedules.length > 2 ? ` 외 ${todaySchedules.length - 2}건` : ''}`
-                                                                : '오늘 등록된 일정이 없습니다. 클릭하여 새 일정을 등록하거나 확인해 보세요.'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-xs font-bold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                                    <span>일정 달력 바로가기</span>
-                                                    <i className="fas fa-arrow-right text-[10px]"></i>
-                                                </div>
+                                    {/* 📅 2. 오늘의 일정 독립 카드 */}
+                                    <div 
+                                        onClick={() => setActiveSection('schedule')}
+                                        className="bg-white hover:bg-emerald-50/20 border border-slate-200/80 hover:border-emerald-300 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer transition-all hover:shadow-md group"
+                                    >
+                                        <div className="flex items-center gap-3.5">
+                                            <div className="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform">
+                                                <i className="fas fa-calendar-check"></i>
                                             </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-extrabold text-slate-900 text-base">오늘의 일정</span>
+                                                    <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                                        {todaySchedules.length > 0 ? `${todaySchedules.length}건` : '일정 없음'}
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                                                    {todaySchedules.length > 0 
+                                                        ? `${todaySchedules.slice(0, 2).map((s: any) => s.title || s.schedule_text || s.text).join(', ')}${todaySchedules.length > 2 ? ` 외 ${todaySchedules.length - 2}건` : ''}`
+                                                        : '오늘 등록된 일정이 없습니다. 클릭하여 새 일정을 등록하거나 확인해 보세요.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 group-hover:translate-x-1 transition-all">
+                                            <span>일정 달력 바로가기</span>
+                                            <i className="fas fa-arrow-right text-[10px]"></i>
+                                        </div>
+                                    </div>
 
-                                            {/* 📰 [맨 윗부분] 내가 구독한 주제의 최신 뉴스 (Subscribed Topic News Feed) */}
-                                            <div className="border border-sky-100 rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-sky-50/70 via-white to-indigo-50/40 shadow-2xs flex flex-col gap-5">
+                                    {/* 📰 3. 내가 구독한 주제 최신 뉴스 (독립 카드) */}
+                                    <div className="border border-slate-200/80 rounded-3xl p-6 sm:p-7 bg-white shadow-sm flex flex-col gap-5">
                                                 {/* 상단 헤더 & 구독 키워드 뱃지 목록 */}
                                                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100/80 pb-4">
                                                     <div className="flex items-center gap-3">
@@ -1221,7 +1220,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                     {/* 홈 꾸미기 섹션 */}
                                     {activeSection === 'home-customize' && (
-                                        <div className="animate-fade-in">
+                                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm animate-fade-in">
                                             <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center border-b pb-4">
                                                 <i className="fas fa-magic mr-3 text-green-500 text-3xl"></i>내 홈페이지 꾸미기
                                             </h2>
@@ -1288,7 +1287,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                     {/* 뉴스 섹션 */}
                                     {activeSection === 'news' && (
-                                        <div className="animate-fade-in">
+                                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm animate-fade-in">
                                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4">
                                                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                                                     <i className="fas fa-newspaper mr-3 text-sky-500 text-3xl"></i>뉴스 관리와 구독
@@ -1439,7 +1438,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                     {/* 주식 섹션 */}
                                     {activeSection === 'stocks' && (
-                                        <div className="animate-fade-in">
+                                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm animate-fade-in">
                                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b pb-4">
                                                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                                                     <i className="fas fa-chart-line mr-3 text-green-500 text-3xl"></i>주식 / 금융
@@ -1513,7 +1512,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                     {/* 게임 섹션 */}
                                     {activeSection === 'games' && (
-                                        <div className="animate-fade-in">
+                                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm animate-fade-in">
                                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
                                                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                                                     <i className="fas fa-gamepad mr-3 text-purple-500 text-3xl"></i>게임 전적 및 센터
@@ -1608,7 +1607,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                     {/* 유틸리티 섹션 */}
                                     {activeSection === 'utils' && (
-                                        <div className="animate-fade-in">
+                                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm animate-fade-in">
                                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 border-b pb-4">
                                                 <h2 className="text-2xl font-bold text-gray-900 flex items-center">
                                                     <i className="fas fa-tools mr-3 text-orange-500 text-3xl"></i>유틸리티
@@ -1704,7 +1703,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                                         <div>
                                                                             <span className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">Result</span>
                                                                             <p className="text-gray-600 font-mono text-xs break-all truncate">
-                                                                                {typeof item.result_data === 'object' ? JSON.stringify(item.result_data) : item.result_data}
+                                                                            {typeof item.result_data === 'object' ? JSON.stringify(item.result_data) : item.result_data}
                                                                             </p>
                                                                         </div>
                                                                     )}
@@ -1720,10 +1719,9 @@ const DEFAULT_SHOPPING_ITEMS = [
                                     )}
                                 </>
                             )}
-                        </div>
                     </div>
-            </div>
-            <Footer />
+                </div>
+                <Footer />
 
             {/* 홈 꾸미기 마법사 모달 */}
             {showWizard && (

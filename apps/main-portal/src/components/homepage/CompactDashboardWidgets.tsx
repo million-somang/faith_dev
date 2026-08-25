@@ -128,9 +128,9 @@ export const CompactDashboardWidgets: React.FC = () => {
     const arrow = (status: string) => status === 'up' ? 'fa-caret-up' : 'fa-caret-down';
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-            {/* 1. 컴팩트 날씨 바 */}
-            <div className="bg-gradient-to-r from-sky-50/80 via-white to-blue-50/60 border border-sky-200/70 rounded-2xl px-4 py-3 shadow-xs flex items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* 1. 컴팩트 날씨 카드 */}
+            <div className="bg-white border border-slate-200/80 hover:border-sky-300 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
                 {weatherLoading ? (
                     <div className="flex items-center gap-2 text-xs text-slate-400 py-1">
                         <i className="fas fa-circle-notch fa-spin text-sky-500"></i>
@@ -138,33 +138,33 @@ export const CompactDashboardWidgets: React.FC = () => {
                     </div>
                 ) : weather && ci ? (
                     <>
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white shadow-xs border border-sky-100 flex items-center justify-center text-xl flex-shrink-0">
+                        <div className="flex items-center gap-3.5">
+                            <div className="w-11 h-11 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center text-2xl flex-shrink-0 shadow-2xs">
                                 <i className={`fas ${ci.icon}`}></i>
                             </div>
                             <div>
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-lg font-black text-slate-900 leading-none">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-extrabold text-slate-900 text-base sm:text-lg font-mono">
                                         {weather.temp.toFixed(1)}°
                                     </span>
-                                    <span className="text-xs font-bold text-slate-600">
+                                    <span className="font-bold text-slate-700 text-xs sm:text-sm">
                                         {ci.label}
                                     </span>
-                                    <span className="text-[11px] font-semibold text-slate-400">
+                                    <span className="text-[11px] text-slate-400 font-medium">
                                         ({weather.location})
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-2 mt-1 text-[11px] font-bold">
-                                    <span className="text-blue-500">최저 {weather.min.toFixed(0)}°</span>
+                                <div className="text-[11px] text-slate-500 font-medium flex items-center gap-2 mt-0.5">
+                                    <span className="text-sky-600 font-semibold">최저 {weather.min.toFixed(0)}°</span>
                                     <span className="text-slate-300">/</span>
-                                    <span className="text-red-500">최고 {weather.max.toFixed(0)}°</span>
+                                    <span className="text-rose-500 font-semibold">최고 {weather.max.toFixed(0)}°</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* 미세먼지 뱃지 */}
                         {pmGradeInfo && (
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg border ${pmGradeInfo.color}`}>
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-xl border ${pmGradeInfo.color} shadow-2xs`}>
                                 미세 {pmGradeInfo.label}
                             </span>
                         )}
@@ -177,8 +177,8 @@ export const CompactDashboardWidgets: React.FC = () => {
                 )}
             </div>
 
-            {/* 2. 컴팩트 금융/증시 바 */}
-            <div className="bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/60 border border-emerald-200/70 rounded-2xl px-4 py-3 shadow-xs flex items-center justify-between">
+            {/* 2. 컴팩트 금융/증시 카드 */}
+            <div className="bg-white border border-slate-200/80 hover:border-emerald-300 rounded-3xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
                 {financeLoading ? (
                     <div className="flex items-center gap-2 text-xs text-slate-400 py-1">
                         <i className="fas fa-circle-notch fa-spin text-emerald-500"></i>
@@ -186,8 +186,8 @@ export const CompactDashboardWidgets: React.FC = () => {
                     </div>
                 ) : (
                     <>
-                        <div className="flex items-center gap-3 overflow-hidden">
-                            <div className="w-10 h-10 rounded-xl bg-white shadow-xs border border-emerald-100 flex items-center justify-center text-lg text-emerald-600 flex-shrink-0">
+                        <div className="flex items-center gap-3.5 overflow-hidden">
+                            <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-xl text-emerald-600 flex-shrink-0 shadow-2xs">
                                 <i className="fas fa-chart-line"></i>
                             </div>
 
