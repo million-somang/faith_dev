@@ -328,22 +328,12 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}
                             <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
-                            {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
-                            ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
-                            )}
                         </nav>
                     )}
 
                     {activeMode === 'business' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('홈페이지 제작', currentLang)}</a>
-                            {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
-                            ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
-                            )}
                         </nav>
                     )}
 
