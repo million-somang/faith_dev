@@ -4,6 +4,10 @@ import { generateMsFreeCellDeck, generateRandomDeck } from '../utils/msPrng';
 
 const SUITS: Suit[] = ['spade', 'heart', 'diamond', 'club'];
 
+const RANK_NAMES: Record<number, string> = {
+  1: 'A', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10', 11: 'J', 12: 'Q', 13: 'K'
+};
+
 export function useFreeCell() {
   const [gameSeed, setGameSeed] = useState<number>(() => Math.floor(Math.random() * 32000) + 1);
   const [freecells, setFreecells] = useState<(Card | null)[]>([null, null, null, null]);
@@ -23,6 +27,8 @@ export function useFreeCell() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hintMessage, setHintMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // 이동 규칙 모드: 'relaxed' (자유 이동: 정렬된 뭉치 무제한 이동) | 'classic' (정통 룰: 빈 칸 개수 제한)
+  const [moveRuleMode, setMoveRuleMode] = useState<'relaxed' | 'classic'>('relaxed');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -122,14 +128,17 @@ export function useFreeCell() {
     setHintMessage('이전 상태로 되돌렸습니다.');
   }, [history, isWon]);
 
-  // 이동 가능한 최대 카드 수 계산 (클래식 프리셀 Supermove 공식)
+  // 이동 가능한 최대 카드 수 계산
   const getMaxMovableCards = useCallback((isDestinationEmptyCol: boolean) => {
+    if (moveRuleMode === 'relaxed') {
+      return 52; // 자유 이동 모드: 올바르게 정렬된 시퀀스는 무제한 전체 이동
+    }
     const emptyFreecells = freecells.filter(c => c === null).length;
     const emptyTableaus = tableaus.filter(col => col.length === 0).length;
     const effectiveEmptyTableaus = isDestinationEmptyCol ? Math.max(0, emptyTableaus - 1) : emptyTableaus;
 
     return (1 + emptyFreecells) * Math.pow(2, effectiveEmptyTableaus);
-  }, [freecells, tableaus]);
+  }, [freecells, tableaus, moveRuleMode]);
 
   // 연속된 카드 뭉치가 올바른 내림차순/색상교대 정렬인지 체크
   const isValidSequence = (cards: Card[]) => {
@@ -313,7 +322,7 @@ export function useFreeCell() {
       if (!isTargetEmpty) {
         const targetTopCard = targetCol[targetCol.length - 1];
         if (card.color === targetTopCard.color || card.rank !== targetTopCard.rank - 1) {
-          setHintMessage(`카드는 다른 색상이고 1 작은 숫자(${targetTopCard.rank - 1})만 올릴 수 있습니다.`);
+          setHintMessage(`[${RANK_NAMES[card.rank]}] 카드는 [${RANK_NAMES[targetTopCard.rank]}] 위에 올릴 수 없습니다. (다른 색상, 1 작은 숫자 필요)`);
           return false;
         }
       }
@@ -325,7 +334,8 @@ export function useFreeCell() {
       if (srcCol.length === 0) return false;
 
       if (isTargetEmpty) {
-        // 목적지가 빈 열인 경우: 클릭한 카드부터의 묶음이 유효한지 확인
+        // 목적지가 빈 열인 경우:
+        // 1) 사용자가 직접 선택한 카드부터의 묶음 확인
         let sliceIdx = loc.cardIndex;
         let testSlice = srcCol.slice(sliceIdx);
         if (!isValidSequence(testSlice)) {
@@ -333,63 +343,64 @@ export function useFreeCell() {
           testSlice = srcCol.slice(sliceIdx);
         }
 
-        // 최대 이동 가능 한도 내로 맞춤
         if (testSlice.length > maxMovable) {
-          sliceIdx = srcCol.length - maxMovable;
-          testSlice = srcCol.slice(sliceIdx);
+          if (moveRuleMode === 'classic') {
+            sliceIdx = srcCol.length - maxMovable;
+            testSlice = srcCol.slice(sliceIdx);
+          }
         }
 
         if (testSlice.length === 0 || !isValidSequence(testSlice)) {
-          setHintMessage(`빈 열로 이동할 수 있는 유효한 카드 묶음이 없습니다.`);
+          setHintMessage(`빈 열로 이동할 수 있는 연속 정렬된 카드 묶음이 없습니다.`);
           return false;
         }
 
         fromCardIndex = sliceIdx;
         movingCards = testSlice;
       } else {
-        // 목적지에 카드가 있는 경우: targetCol의 맨 위 카드와 매칭되는 묶음 검색
+        // 목적지에 카드가 있는 경우:
         const targetTopCard = targetCol[targetCol.length - 1];
         const matchRank = targetTopCard.rank - 1;
         const matchColor = targetTopCard.color === 'red' ? 'black' : 'red';
 
-        // 1) srcCol에서 타겟 카드와 완벽하게 연결되는 유효 시퀀스 찾기
-        const longestIdx = getLongestValidSequenceStartIndex(srcCol);
-        const matchIdx = srcCol.findIndex((c, i) => i >= longestIdx && c.rank === matchRank && c.color === matchColor);
-
-        if (matchIdx !== -1) {
-          const sliceToMove = srcCol.slice(matchIdx);
-          if (isValidSequence(sliceToMove)) {
-            if (sliceToMove.length > maxMovable) {
+        // 1) 사용자가 직접 선택한 카드가 바로 목적지 카드와 맞아떨어지는지 최우선 확인
+        const userSlice = srcCol.slice(loc.cardIndex);
+        if (userSlice.length > 0 && isValidSequence(userSlice)) {
+          const bottomCard = userSlice[0];
+          if (bottomCard.color === matchColor && bottomCard.rank === matchRank) {
+            if (userSlice.length > maxMovable) {
               const emptyF = freecells.filter(c => c === null).length;
               const emptyT = tableaus.filter(c => c.length === 0).length;
-              setHintMessage(`빈 프리셀(${emptyF}개)/빈 열(${emptyT}개) 부족으로 최대 ${maxMovable}장까지만 이동 가능합니다 (필요: ${sliceToMove.length}장).`);
+              setHintMessage(`[정통 룰 제한] 빈 프리셀(${emptyF}개)/빈 열(${emptyT}개)로 최대 ${maxMovable}장까지만 이동 가능합니다 (필요: ${userSlice.length}장). '자유 이동' 모드를 켜면 제한 없이 이동할 수 있습니다.`);
               return false;
             }
-            fromCardIndex = matchIdx;
-            movingCards = sliceToMove;
+            fromCardIndex = loc.cardIndex;
+            movingCards = userSlice;
           }
         }
 
-        // 2) 사용자가 직접 선택한 특정 카드부터의 시퀀스 이동 검사
+        // 2) 만약 직접 선택한 카드가 안 맞으면, srcCol 내에서 목적지 카드에 붙을 수 있는 시퀀스 검색
         if (movingCards.length === 0) {
-          const userSlice = srcCol.slice(loc.cardIndex);
-          if (userSlice.length > 0 && isValidSequence(userSlice)) {
-            const bottomCard = userSlice[0];
-            if (bottomCard.color !== targetTopCard.color && bottomCard.rank === targetTopCard.rank - 1) {
-              if (userSlice.length > maxMovable) {
+          const longestIdx = getLongestValidSequenceStartIndex(srcCol);
+          const matchIdx = srcCol.findIndex((c, i) => i >= longestIdx && c.rank === matchRank && c.color === matchColor);
+
+          if (matchIdx !== -1) {
+            const sliceToMove = srcCol.slice(matchIdx);
+            if (isValidSequence(sliceToMove)) {
+              if (sliceToMove.length > maxMovable) {
                 const emptyF = freecells.filter(c => c === null).length;
                 const emptyT = tableaus.filter(c => c.length === 0).length;
-                setHintMessage(`빈 프리셀(${emptyF}개)/빈 열(${emptyT}개) 부족으로 최대 ${maxMovable}장까지만 이동 가능합니다.`);
+                setHintMessage(`[정통 룰 제한] 빈 프리셀(${emptyF}개)/빈 열(${emptyT}개)로 최대 ${maxMovable}장까지만 이동 가능합니다.`);
                 return false;
               }
-              fromCardIndex = loc.cardIndex;
-              movingCards = userSlice;
+              fromCardIndex = matchIdx;
+              movingCards = sliceToMove;
             }
           }
         }
 
         if (movingCards.length === 0) {
-          setHintMessage(`카드는 다른 색상이고 1 작은 숫자(${matchRank})만 올릴 수 있습니다.`);
+          setHintMessage(`[${RANK_NAMES[targetTopCard.rank]}] 카드 위에는 다른 색상의 [${RANK_NAMES[matchRank]}] 카드만 올릴 수 있습니다.`);
           return false;
         }
       }
@@ -413,6 +424,7 @@ export function useFreeCell() {
     setHintMessage('');
     return true;
   };
+
 
   // 원클릭/스마트 카드 클릭 처리
   const handleCardClick = (loc: SelectedCardLocation) => {
@@ -626,6 +638,9 @@ export function useFreeCell() {
     hintMessage,
     historyLength: history.length,
     isLoading,
+    moveRuleMode,
+    setMoveRuleMode,
+    getMaxMovableCards,
     setIsPaused,
     initGame,
     undo,
