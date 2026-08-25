@@ -211,12 +211,38 @@ const DEFAULT_WATCHLIST = [
     { id: 2, stock_symbol: '000660', stock_name: 'SK hynix', market_type: 'KR', target_price: 1759000 }
 ];
 
+const DEFAULT_SHOPPING_ITEMS = [
+    {
+        productId: 20001,
+        productName: '공중부양 3D 달 무드등 16색 리모컨 터치 조명',
+        productPrice: 49800,
+        originalPrice: 79000,
+        discountRate: 37,
+        productImage: 'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-levitating-moon',
+        curationPoint: '360도 공중부양 회전 무드등',
+        tag: '신박템'
+    },
+    {
+        productId: 20002,
+        productName: '스마트 3in1 머그컵 워머 & 고속 무선충전기 세트',
+        productPrice: 28900,
+        originalPrice: 42000,
+        discountRate: 31,
+        productImage: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
+        productUrl: 'https://link.coupang.com/a/sample-mug-warmer',
+        curationPoint: '온도 유지 + 폰 무선충전 2in1',
+        tag: '데스크꿀템'
+    }
+];
+
 // ... inside MyPage component ...
     // 데이터 상태 관리
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
     const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: DEFAULT_WATCHLIST });
     const [gamesData, setGamesData] = useState<{ stats: any, history: any[] }>({ stats: {}, history: [] });
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
+    const [shoppingItems, setShoppingItems] = useState<any[]>(DEFAULT_SHOPPING_ITEMS);
     const [loading, setLoading] = useState(false);
 
     // 뉴스 키워드/주제 추가 및 삭제 처리
@@ -575,6 +601,16 @@ const DEFAULT_WATCHLIST = [
                             activityRatio: veraPointsRes.data.activityRatio ?? 0
                         });
                     }
+
+                    // 쇼핑 신박템 추천 로드
+                    fetch('/api/shopping/viral')
+                        .then(res => res.json())
+                        .then(json => {
+                            if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+                                setShoppingItems(json.data.slice(0, 2));
+                            }
+                        })
+                        .catch(() => {});
                 }
                 
                 // 기존 개별 탭 렌더링용 API 호출
@@ -1366,6 +1402,75 @@ const DEFAULT_WATCHLIST = [
                                                         className="mt-4 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-colors"
                                                     >
                                                         전통 사주 종합 해설 열기
+                                                    </Link>
+                                                </div>
+
+                                                {/* 위젯 5: 나를 위한 맞춤 쇼핑 & 신박템 위젯 */}
+                                                <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[300px]">
+                                                    <div>
+                                                        <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
+                                                            <h3 className="font-black text-slate-800 text-sm flex items-center gap-1.5">
+                                                                <i className="fas fa-shopping-bag text-purple-600"></i> {user.name}님을 위한 맞춤 쇼핑
+                                                            </h3>
+                                                            <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2 py-0.5 rounded font-black shadow-sm flex items-center gap-1">
+                                                                <i className="fas fa-wand-magic-sparkles text-[9px]"></i> 신박 꿀템
+                                                            </span>
+                                                        </div>
+
+                                                        {/* 상품 리스트 */}
+                                                        <div className="space-y-2.5">
+                                                            {shoppingItems && shoppingItems.length > 0 ? (
+                                                                shoppingItems.slice(0, 2).map((item) => (
+                                                                    <a
+                                                                        key={item.productId}
+                                                                        href={item.productUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 hover:bg-purple-50/60 border border-slate-100 hover:border-purple-200 transition-all group"
+                                                                    >
+                                                                        <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 border border-slate-200">
+                                                                            <img 
+                                                                                src={item.productImage} 
+                                                                                alt={item.productName} 
+                                                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                                            />
+                                                                            {item.discountRate && (
+                                                                                <span className="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl">
+                                                                                    {item.discountRate}%
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            {item.curationPoint && (
+                                                                                <div className="text-[10px] font-extrabold text-purple-700 truncate flex items-center gap-0.5 mb-0.5">
+                                                                                    <span>💡</span> {item.curationPoint}
+                                                                                </div>
+                                                                            )}
+                                                                            <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-purple-600 transition-colors leading-tight">
+                                                                                {item.productName}
+                                                                            </h4>
+                                                                            <div className="text-xs font-black text-slate-900 mt-0.5">
+                                                                                {item.productPrice?.toLocaleString()}<span className="text-[10px] font-normal text-slate-500">원</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="text-slate-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all text-xs pr-1">
+                                                                            <i className="fas fa-chevron-right text-[10px]"></i>
+                                                                        </div>
+                                                                    </a>
+                                                                ))
+                                                            ) : (
+                                                                <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                                                                    추천 상품을 불러오는 중입니다...
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    <Link
+                                                        to="/shopping"
+                                                        className="mt-4 w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all"
+                                                    >
+                                                        스마트 쇼핑 & 핫딜 센터 바로가기
                                                     </Link>
                                                 </div>
 
