@@ -6,6 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PreferenceWizard } from '../components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '../components/homepage/MobileTabEditor';
 import { CompactDashboardWidgets } from '../components/homepage/CompactDashboardWidgets';
+import { CalendarScheduleSection } from '../components/mypage/CalendarScheduleSection';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
 
@@ -185,7 +186,7 @@ export default function MyPage() {
     };
 
     // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
-    const [activeSection, setActiveSection] = useState<'dashboard' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
+    const [activeSection, setActiveSection] = useState<'dashboard' | 'schedule' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
     const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
@@ -526,6 +527,10 @@ const DEFAULT_SHOPPING_ITEMS = [
         });
     }, [bizAgenda, selectedDate, calYear, calMonth, todayStr]);
 
+    const todaySchedules = useMemo(() => {
+        return schedulesByDate[todayStr] || [];
+    }, [schedulesByDate, todayStr]);
+
     // 생년월일 관리 로컬 스토리지 연동
     const [birthDate, setBirthDate] = useState(localStorage.getItem('user_birth_date') || '');
     const [tempBirthDate, setTempBirthDate] = useState(birthDate);
@@ -728,6 +733,17 @@ const DEFAULT_SHOPPING_ITEMS = [
                             <span>{t('나의 홈')}</span>
                         </button>
                         <button
+                            onClick={() => setActiveSection('schedule')}
+                            className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'schedule'
+                                    ? 'bg-emerald-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <i className="fas fa-calendar-alt text-sm"></i>
+                            <span>{t('일정/달력')}</span>
+                        </button>
+                        <button
                             onClick={() => setActiveSection('news')}
                             className={`flex-1 min-w-[110px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                 activeSection === 'news'
@@ -799,6 +815,35 @@ const DEFAULT_SHOPPING_ITEMS = [
                                         <div className="animate-fade-in space-y-6">
                                             {/* 🌤️📈 날씨 & 금융/증시 슬림형 컴팩트 위젯 (상단 탭 메뉴와 뉴스 사이) */}
                                             <CompactDashboardWidgets />
+
+                                            {/* 📅 오늘의 일정 스마트 요약 배너 */}
+                                            <div 
+                                                onClick={() => setActiveSection('schedule')}
+                                                className="bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-white border border-emerald-200/80 hover:border-emerald-300 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all hover:shadow-xs group"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-xs group-hover:scale-105 transition-transform">
+                                                        <i className="fas fa-calendar-check"></i>
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="font-extrabold text-slate-800 text-sm">오늘의 일정</span>
+                                                            <span className="text-xs font-black font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                                                                {todaySchedules.length > 0 ? `${todaySchedules.length}건` : '일정 없음'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-slate-500 mt-0.5">
+                                                            {todaySchedules.length > 0 
+                                                                ? `${todaySchedules.slice(0, 2).map((s: any) => s.title || s.schedule_text || s.text).join(', ')}${todaySchedules.length > 2 ? ` 외 ${todaySchedules.length - 2}건` : ''}`
+                                                                : '오늘 등록된 일정이 없습니다. 클릭하여 새 일정을 등록하거나 확인해 보세요.'}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-xs font-bold text-emerald-700 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                                    <span>일정 달력 바로가기</span>
+                                                    <i className="fas fa-arrow-right text-[10px]"></i>
+                                                </div>
+                                            </div>
 
                                             {/* 📰 [맨 윗부분] 내가 구독한 주제의 최신 뉴스 (Subscribed Topic News Feed) */}
                                             <div className="border border-sky-100 rounded-3xl p-5 sm:p-6 bg-gradient-to-br from-sky-50/70 via-white to-indigo-50/40 shadow-2xs flex flex-col gap-5">
@@ -902,355 +947,10 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                 </div>
                                             </div>
 
+                                            {/* ─── 4대 핵심 위젯 2x2 대칭 그리드 ─── */}
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 
-                                                {/* 위젯 1: 나의 월별 일정 달력 (Monthly Calendar & Color-Coded Schedule) */}
-                                                <div className="md:col-span-2 border border-slate-200 rounded-3xl p-5 sm:p-6 bg-white shadow-sm flex flex-col gap-6">
-                                                    {/* 상단 캘린더 헤더 & 월 이동 컨트롤 */}
-                                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-black text-lg border border-emerald-100 shadow-sm">
-                                                                <i className="fas fa-calendar-alt"></i>
-                                                            </div>
-                                                            <div>
-                                                                <h3 className="font-extrabold text-slate-800 text-lg tracking-tight flex items-center gap-2">
-                                                                    나의 일정 달력
-                                                                    {selectedDate && (
-                                                                        <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-                                                                            {selectedDate} 선택됨
-                                                                        </span>
-                                                                    )}
-                                                                </h3>
-                                                                <p className="text-xs text-slate-400">월별 달력과 카테고리 색상으로 일정을 손쉽게 관리하세요.</p>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 월 네비게이션 */}
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                type="button"
-                                                                onClick={handlePrevMonth}
-                                                                className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center text-xs font-bold transition-all"
-                                                                title="이전 달"
-                                                            >
-                                                                <i className="fas fa-chevron-left"></i>
-                                                            </button>
-                                                            <span className="font-extrabold text-slate-800 font-mono text-base px-2">
-                                                                {calYear}년 {calMonth}월
-                                                            </span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleNextMonth}
-                                                                className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 flex items-center justify-center text-xs font-bold transition-all"
-                                                                title="다음 달"
-                                                            >
-                                                                <i className="fas fa-chevron-right"></i>
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleGoToday}
-                                                                className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs hover:bg-emerald-700 transition-all shadow-sm cursor-pointer"
-                                                            >
-                                                                오늘
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleTogglePush}
-                                                                disabled={pushLoading}
-                                                                className={`ml-2 px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
-                                                                    isPushSubscribed
-                                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-300 hover:bg-emerald-100'
-                                                                        : 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-black'
-                                                                }`}
-                                                                title="일정 1시간 전 모바일 푸시 알림 설정"
-                                                            >
-                                                                <i className={`fas ${isPushSubscribed ? 'fa-bell text-emerald-600' : 'fa-bell-slash text-slate-900'} ${pushLoading ? 'animate-spin' : ''}`}></i>
-                                                                {pushLoading ? '설정 중...' : isPushSubscribed ? '1시간 전 알림 켜짐' : '🔔 1시간 전 알림 켜기'}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* 본문: 달력 그리드 (좌측 3열) + 일정 등록/목록 (우측 2열) */}
-                                                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-                                                        {/* 좌측 (3/5): 7×6 월별 달력 그리드 */}
-                                                        <div className="lg:col-span-3 flex flex-col">
-                                                            {/* 요일 헤더 */}
-                                                            <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                                                                {['일', '월', '화', '수', '목', '금', '토'].map((day, idx) => (
-                                                                    <div
-                                                                        key={day}
-                                                                        className={`text-xs font-black py-1.5 rounded-lg ${
-                                                                            idx === 0 ? 'text-rose-500 bg-rose-50/50' : idx === 6 ? 'text-blue-500 bg-blue-50/50' : 'text-slate-500 bg-slate-50'
-                                                                        }`}
-                                                                    >
-                                                                        {day}
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-
-                                                            {/* 날짜 셀 그리드 */}
-                                                            <div className="grid grid-cols-7 gap-1.5">
-                                                                {calendarDays.map((cell: any) => {
-                                                                    const daySchedules = schedulesByDate[cell.dateStr] || [];
-                                                                    const isSelected = selectedDate === cell.dateStr;
-
-                                                                    return (
-                                                                        <div
-                                                                            key={cell.dateStr}
-                                                                            onClick={() => {
-                                                                                setSelectedDate(cell.dateStr);
-                                                                                setNewAgendaDate(cell.dateStr);
-                                                                                setNewAgendaEndDate(cell.dateStr);
-                                                                            }}
-                                                                            className={`min-h-[68px] sm:min-h-[78px] p-1.5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative group ${
-                                                                                !cell.isCurrentMonth
-                                                                                    ? 'bg-slate-50/40 border-slate-100 opacity-40 hover:opacity-80'
-                                                                                    : isSelected
-                                                                                    ? 'bg-emerald-50/60 border-emerald-400 ring-2 ring-emerald-400 shadow-sm'
-                                                                                    : cell.isToday
-                                                                                    ? 'bg-amber-50/60 border-amber-300 font-bold'
-                                                                                    : 'bg-white border-slate-200/80 hover:border-emerald-300 hover:shadow-md'
-                                                                            }`}
-                                                                        >
-                                                                            {/* 날짜 숫자 & 오늘 표시 */}
-                                                                            <div className="flex justify-between items-center w-full">
-                                                                                <span className={`text-xs font-black font-mono leading-none ${
-                                                                                    cell.isToday
-                                                                                        ? 'bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded-md text-[10px]'
-                                                                                        : isSelected
-                                                                                        ? 'text-emerald-700'
-                                                                                        : cell.isCurrentMonth
-                                                                                        ? 'text-slate-700'
-                                                                                        : 'text-slate-400'
-                                                                                }`}>
-                                                                                    {cell.dayNum}
-                                                                                </span>
-                                                                                {daySchedules.length > 0 && (
-                                                                                    <span className="text-[9px] font-mono font-black text-slate-500 bg-slate-100 px-1 rounded-md">
-                                                                                        {daySchedules.length}
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-
-                                                                            {/* 일정을 나타내는 색상 dot / pill 뱃지 */}
-                                                                            <div className="flex flex-col gap-1 mt-1 overflow-hidden max-h-[38px]">
-                                                                                {daySchedules.slice(0, 2).map((sched: any) => {
-                                                                                    const cConfig = SCHEDULE_COLOR_CONFIG[sched.color || 'blue'] || SCHEDULE_COLOR_CONFIG.blue;
-                                                                                    return (
-                                                                                        <div
-                                                                                            key={sched.id}
-                                                                                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md truncate border ${cConfig.bg} ${cConfig.text} ${cConfig.border}`}
-                                                                                        >
-                                                                                            {sched.schedule_text || sched.text}
-                                                                                        </div>
-                                                                                    );
-                                                                                })}
-                                                                                {daySchedules.length > 2 && (
-                                                                                    <span className="text-[8px] font-bold text-slate-400 pl-0.5">
-                                                                                        +{daySchedules.length - 2}개 더보기
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
-                                                            </div>
-                                                        </div>
-
-                                                        {/* 우측 (2/5): 선택 날짜 일정 추가 폼 & 일정 목록 */}
-                                                        <div className="lg:col-span-2 flex flex-col gap-4 bg-slate-50/80 p-4 sm:p-5 rounded-2xl border border-slate-200/80">
-                                                            {/* 일정 추가 폼 */}
-                                                            <div>
-                                                                <h4 className="font-extrabold text-slate-800 text-sm mb-3 flex items-center justify-between">
-                                                                    <span className="flex items-center gap-1.5">
-                                                                        <i className="fas fa-plus-circle text-emerald-600"></i> 일정 추가
-                                                                    </span>
-                                                                    <span className="text-xs font-mono font-semibold text-slate-500">
-                                                                        {newAgendaDate === newAgendaEndDate ? newAgendaDate : `${newAgendaDate} ~ ${newAgendaEndDate}`}
-                                                                    </span>
-                                                                </h4>
-
-                                                                <form onSubmit={handleAddAgenda} className="flex flex-col gap-2.5">
-                                                                    {/* 날짜 입력 (시작일 ~ 종료일 & 퀵 프리셋) */}
-                                                                    <div className="flex flex-col gap-1 bg-white p-2 rounded-xl border border-slate-200">
-                                                                        <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-600">
-                                                                            <span><i className="far fa-calendar-alt text-emerald-500 mr-1"></i> 일정 기간</span>
-                                                                            <div className="flex gap-1">
-                                                                                <button type="button" onClick={() => handleSetPresetDuration(1)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">당일</button>
-                                                                                <button type="button" onClick={() => handleSetPresetDuration(2)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">1박2일</button>
-                                                                                <button type="button" onClick={() => handleSetPresetDuration(3)} className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 hover:bg-emerald-500 hover:text-white transition-colors cursor-pointer">2박3일</button>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1">
-                                                                            <input
-                                                                                type="date"
-                                                                                value={newAgendaDate}
-                                                                                onChange={(e) => {
-                                                                                    setNewAgendaDate(e.target.value);
-                                                                                    if (e.target.value > newAgendaEndDate) {
-                                                                                        setNewAgendaEndDate(e.target.value);
-                                                                                    }
-                                                                                }}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                                                            />
-                                                                            <span className="text-slate-400 text-xs font-bold">~</span>
-                                                                            <input
-                                                                                type="date"
-                                                                                value={newAgendaEndDate}
-                                                                                min={newAgendaDate}
-                                                                                onChange={(e) => setNewAgendaEndDate(e.target.value)}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    {/* 시간 입력 (시작시간 ~ 종료시간 & 종일 설정) */}
-                                                                    <div className="flex flex-col gap-1 bg-white p-2.5 rounded-xl border border-slate-200">
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span className="text-[11px] font-extrabold text-slate-600"><i className="far fa-clock text-blue-500 mr-1"></i> 시간 범위</span>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={handleToggleAllDay}
-                                                                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border transition-all flex items-center gap-1 cursor-pointer ${
-                                                                                    isAllDay
-                                                                                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs font-black'
-                                                                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
-                                                                                }`}
-                                                                            >
-                                                                                <i className={`fas ${isAllDay ? 'fa-check-circle text-white' : 'fa-sun text-amber-500'}`}></i> 종일
-                                                                            </button>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1 mt-0.5">
-                                                                            <input
-                                                                                type="time"
-                                                                                value={newAgendaTime}
-                                                                                disabled={isAllDay}
-                                                                                onChange={(e) => setNewAgendaTime(e.target.value)}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-slate-100 disabled:text-slate-400"
-                                                                            />
-                                                                            <span className="text-slate-400 text-xs font-bold">~</span>
-                                                                            <input
-                                                                                type="time"
-                                                                                value={newAgendaEndTime}
-                                                                                disabled={isAllDay}
-                                                                                onChange={(e) => setNewAgendaEndTime(e.target.value)}
-                                                                                className="w-1/2 px-2 py-1 border border-slate-200 rounded-lg text-xs font-mono font-bold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-slate-100 disabled:text-slate-400"
-                                                                            />
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <input
-                                                                        type="text"
-                                                                        placeholder="일정 내용을 입력하세요 (예: 2박3일 여행, 미팅)"
-                                                                        value={newAgendaText}
-                                                                        onChange={(e) => setNewAgendaText(e.target.value)}
-                                                                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                                                                    />
-
-                                                                    {/* 색상 팔레트 선택 */}
-                                                                    <div className="flex items-center justify-between gap-1 bg-white p-2 rounded-xl border border-slate-200">
-                                                                        <span className="text-[10px] font-bold text-slate-400 pl-1">카테고리:</span>
-                                                                        <div className="flex items-center gap-1.5">
-                                                                            {Object.entries(SCHEDULE_COLOR_CONFIG).map(([cKey, cVal]) => (
-                                                                                <button
-                                                                                    key={cKey}
-                                                                                    type="button"
-                                                                                    onClick={() => setNewAgendaColor(cKey)}
-                                                                                    className={`w-6 h-6 rounded-full flex items-center justify-center transition-all ${cVal.dot} ${
-                                                                                        newAgendaColor === cKey ? 'ring-2 ring-slate-800 scale-110 shadow-sm' : 'opacity-70 hover:opacity-100'
-                                                                                    }`}
-                                                                                    title={cVal.label}
-                                                                                >
-                                                                                    {newAgendaColor === cKey && (
-                                                                                        <i className="fas fa-check text-[9px] text-white"></i>
-                                                                                    )}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <button
-                                                                        type="submit"
-                                                                        className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black transition-all shadow-md active:scale-98 cursor-pointer"
-                                                                    >
-                                                                        <i className="fas fa-check mr-1.5"></i> 일정 등록하기
-                                                                    </button>
-                                                                </form>
-                                                            </div>
-
-                                                            {/* 선택 날짜 일정 리스트 */}
-                                                            <div className="border-t border-slate-200/80 pt-3">
-                                                                <div className="flex justify-between items-center mb-2">
-                                                                    <h5 className="font-extrabold text-slate-800 text-xs flex items-center gap-1.5">
-                                                                        <i className="fas fa-list-ul text-slate-500"></i>
-                                                                        {selectedDate ? `${selectedDate} 일정` : '이번 달 전체 일정'}
-                                                                    </h5>
-                                                                    {selectedDate && (
-                                                                        <button
-                                                                            type="button"
-                                                                            onClick={() => setSelectedDate(null)}
-                                                                            className="text-[10px] text-slate-400 hover:text-slate-600 font-bold underline cursor-pointer"
-                                                                        >
-                                                                            전체 보기
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-
-                                                                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                                                                    {displaySchedules.length > 0 ? (
-                                                                        displaySchedules.map((item: any) => {
-                                                                            const cConfig = SCHEDULE_COLOR_CONFIG[item.color || 'blue'] || SCHEDULE_COLOR_CONFIG.blue;
-                                                                            const sDate = item.schedule_date ? String(item.schedule_date).substring(0, 10) : '';
-                                                                            const eDate = item.end_date ? String(item.end_date).substring(0, 10) : sDate;
-                                                                            const sTime = item.schedule_time || item.time || '09:00';
-                                                                            const eTime = item.end_time || '18:00';
-                                                                            const isMultiDay = sDate && eDate && sDate !== eDate;
-                                                                            const isAllDayItem = (sTime === '00:00' && (eTime === '23:59' || eTime === '24:00')) || sTime === '종일';
-
-                                                                            return (
-                                                                                <div
-                                                                                    key={item.id}
-                                                                                    className={`flex justify-between items-center p-2.5 rounded-xl text-xs border shadow-2xs relative group ${cConfig.bg} ${cConfig.border}`}
-                                                                                >
-                                                                                    <div className="flex flex-col gap-0.5 overflow-hidden pr-6">
-                                                                                        <div className="flex items-center gap-1.5">
-                                                                                            <span className={`font-mono text-[9px] font-black px-1.5 py-0.2 rounded-md shrink-0 ${cConfig.badge}`}>
-                                                                                                {cConfig.label}
-                                                                                            </span>
-                                                                                            <span className={`font-bold truncate ${cConfig.text}`}>
-                                                                                                {item.schedule_text || item.text}
-                                                                                            </span>
-                                                                                        </div>
-                                                                                        <span className="font-bold text-slate-500 font-mono text-[10px]">
-                                                                                            <i className="far fa-clock mr-1 text-[9px]"></i>
-                                                                                            {isAllDayItem
-                                                                                                ? (isMultiDay ? `${sDate.substring(5)} ~ ${eDate.substring(5)} [종일]` : '[종일]')
-                                                                                                : (isMultiDay ? `${sDate.substring(5)} ${sTime} ~ ${eDate.substring(5)} ${eTime}` : `${sTime} ~ ${eTime}`)}
-                                                                                        </span>
-                                                                                    </div>
-                                                                                    <button
-                                                                                        onClick={() => handleRemoveAgenda(item.id)}
-                                                                                        className="absolute right-2.5 top-3 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                                                                                        title="일정 삭제"
-                                                                                    >
-                                                                                        <i className="fas fa-times text-xs"></i>
-                                                                                    </button>
-                                                                                </div>
-                                                                            );
-                                                                        })
-                                                                    ) : (
-                                                                        <div className="text-slate-400 text-xs py-8 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                                                                            {selectedDate ? `${selectedDate}에 등록된 일정이 없습니다.` : '등록된 일정이 없습니다.'}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* 위젯 2: 베라포인트 정산 (Vera Points Settlement) */}
+                                                {/* 위젯 1: 베라포인트 정산 (Vera Points Settlement) */}
                                                 <div className="border border-slate-200 rounded-2xl p-5 bg-white flex flex-col justify-between min-h-[320px]">
                                                     <div>
                                                         <div className="flex justify-between items-center border-b border-slate-100 pb-2 mb-3">
@@ -1480,6 +1180,43 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                             </div>
                                         </div>
+                                    )}
+
+                                    {/* ─── [신설] 📅 일정 / 달력 전용 뷰 ─── */}
+                                    {activeSection === 'schedule' && (
+                                        <CalendarScheduleSection
+                                            calYear={calYear}
+                                            calMonth={calMonth}
+                                            calendarDays={calendarDays}
+                                            selectedDate={selectedDate}
+                                            setSelectedDate={setSelectedDate}
+                                            handlePrevMonth={handlePrevMonth}
+                                            handleNextMonth={handleNextMonth}
+                                            handleGoToday={handleGoToday}
+                                            isPushSubscribed={isPushSubscribed}
+                                            pushLoading={pushLoading}
+                                            handleTogglePush={handleTogglePush}
+                                            schedulesByDate={schedulesByDate}
+                                            displaySchedules={displaySchedules}
+                                            newAgendaDate={newAgendaDate}
+                                            setNewAgendaDate={setNewAgendaDate}
+                                            newAgendaEndDate={newAgendaEndDate}
+                                            setNewAgendaEndDate={setNewAgendaEndDate}
+                                            newAgendaTime={newAgendaTime}
+                                            setNewAgendaTime={setNewAgendaTime}
+                                            newAgendaEndTime={newAgendaEndTime}
+                                            setNewAgendaEndTime={setNewAgendaEndTime}
+                                            isAllDay={isAllDay}
+                                            handleToggleAllDay={handleToggleAllDay}
+                                            newAgendaText={newAgendaText}
+                                            setNewAgendaText={setNewAgendaText}
+                                            newAgendaColor={newAgendaColor}
+                                            setNewAgendaColor={setNewAgendaColor}
+                                            handleSetPresetDuration={handleSetPresetDuration}
+                                            handleAddAgenda={handleAddAgenda}
+                                            handleRemoveAgenda={handleRemoveAgenda}
+                                            SCHEDULE_COLOR_CONFIG={SCHEDULE_COLOR_CONFIG}
+                                        />
                                     )}
 
                                     {/* 홈 꾸미기 섹션 */}
