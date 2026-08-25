@@ -88,7 +88,7 @@ export default function B2BPage() {
 
             {/* B2B 헤더 배너 */}
             <div className="bg-gradient-to-r from-emerald-700 via-teal-800 to-slate-900 py-8 px-4 text-white shadow-md">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <span className="bg-emerald-500/20 text-emerald-300 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black">
                             VERA B2B SaaS
@@ -121,7 +121,7 @@ export default function B2BPage() {
             </div>
 
             {/* 메인 빌더 작업공간 */}
-            <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
                 {/* 1. 좌측 조작 패널 (Control Sidebar) - 4컬럼 */}
                 <div className="lg:col-span-4 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col gap-6 h-fit sticky top-20">
