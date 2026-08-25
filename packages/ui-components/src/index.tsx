@@ -323,11 +323,9 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
                             <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
+                            <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-pink-600 font-extrabold`}>{tr('쇼핑', currentLang)}</a>
                             {user?.email === 'sukman@naver.com' && (
-                                <>
-                                    <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
-                                    <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('쇼핑', currentLang)}</a>
-                                </>
+                                <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}
                             <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                             {user ? (
@@ -385,7 +383,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     </div>
                     <nav className="flex-1 overflow-y-auto p-3">
                         {FULL_MENU_ITEMS.filter((m) => {
-                            if ((m.path === '/reward' || m.path === '/shopping') && user?.email !== 'sukman@naver.com') {
+                            if (m.path === '/reward' && user?.email !== 'sukman@naver.com') {
                                 return false;
                             }
                             if (activeMode === 'business') {

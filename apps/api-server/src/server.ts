@@ -97,6 +97,9 @@ app.route('/', financeRoutes);
 import { geoRoutes } from './routes/geo.routes.js';
 app.route('/', geoRoutes);
 
+import { shoppingRoutes } from './routes/shopping.routes.js';
+app.route('/', shoppingRoutes);
+
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',

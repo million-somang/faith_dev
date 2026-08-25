@@ -42,6 +42,7 @@ import AboutUsPage from './pages/AboutUsPage';
 import ContactUsPage from './pages/ContactUsPage';
 import GuidesHubPage from './pages/GuidesHubPage';
 import GuideDetailPage from './pages/GuideDetailPage';
+import ShoppingPage from './pages/ShoppingPage';
 import { GUIDES_DATA } from './data/guidesData';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
@@ -466,6 +467,7 @@ function App() {
                     <Route path="/entertainment/novel" element={<NovelPage />} />
                     <Route path="/entertainment/novel/:novelId" element={<NovelPage />} />
                     <Route path="/novel" element={<NovelPage />} />
+                    <Route path="/shopping" element={<ShoppingPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
 
