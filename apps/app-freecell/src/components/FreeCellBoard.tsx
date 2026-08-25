@@ -121,8 +121,7 @@ export const FreeCellBoard: React.FC<FreeCellBoardProps> = ({
 
               {/* Column Cards Overlapping Stack */}
               {column.map((card, cardIdx) => {
-                const isSelected = selected?.type === 'tableau' && selected.colIndex === colIdx && selected.cardIndex === cardIdx;
-                const isTopCard = cardIdx === column.length - 1;
+                const isSelected = selected?.type === 'tableau' && selected.colIndex === colIdx && cardIdx >= selected.cardIndex;
 
                 return (
                   <div
@@ -136,11 +135,7 @@ export const FreeCellBoard: React.FC<FreeCellBoardProps> = ({
                       card={card}
                       isSelected={isSelected}
                       onClick={() => onCardClick({ type: 'tableau', colIndex: colIdx, cardIndex: cardIdx })}
-                      onDoubleClick={() => {
-                        if (isTopCard) {
-                          onAutoMoveCard({ type: 'tableau', colIndex: colIdx, cardIndex: cardIdx });
-                        }
-                      }}
+                      onDoubleClick={() => onAutoMoveCard({ type: 'tableau', colIndex: colIdx, cardIndex: cardIdx })}
                     />
                   </div>
                 );
