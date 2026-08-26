@@ -78,7 +78,7 @@ export default function StocksPage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
                 {/* 내 관심종목 (최우선) */}
-                <section className="mb-10">
+                <section className="mb-10 animate-fade-in-up">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-gray-900">
                             <i className="fas fa-star text-yellow-400 mr-2"></i>내 관심종목
@@ -92,11 +92,11 @@ export default function StocksPage() {
                             value={addInput}
                             onChange={(e) => setAddInput(e.target.value)}
                             placeholder="종목 코드 입력 (예: 005930, AAPL, TSLA)"
-                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm shadow-xs"
                         />
                         <button
                             type="submit"
-                            className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap"
+                            className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap shadow-xs cursor-pointer"
                         >
                             <i className="fas fa-plus mr-1"></i>추가
                         </button>
@@ -148,7 +148,7 @@ export default function StocksPage() {
 
                 {/* 국내 대표 기업 */}
                 {krStocks.length > 0 && (
-                    <section className="mb-10">
+                    <section className="mb-10 animate-fade-in-up animation-delay-150">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-blue-600 font-mono text-sm mr-2 bg-blue-50 px-2 py-1 rounded">KR</span>국내 대표 기업
@@ -170,7 +170,7 @@ export default function StocksPage() {
 
                 {/* 미국 빅테크 */}
                 {usStocks.length > 0 && (
-                    <section className="mb-10">
+                    <section className="mb-10 animate-fade-in-up animation-delay-300">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-red-600 font-mono text-sm mr-2 bg-red-50 px-2 py-1 rounded">US</span>미국 빅테크

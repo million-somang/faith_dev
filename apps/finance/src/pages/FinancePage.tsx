@@ -151,9 +151,9 @@ export default function FinancePage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
                 {/* 주요 지수 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 animate-fade-in-up">
                     {indices.map((index) => (
-                        <Card key={index.name} className={`p-6 hover:shadow-md transition-shadow ${loading ? 'animate-pulse' : ''}`}>
+                        <Card key={index.name} className={`p-6 hover:shadow-md transition-all duration-200 ${loading ? 'animate-pulse' : ''}`}>
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-sm font-medium text-gray-600">{index.name}</h3>
                                 <span className={`text-xs px-2 py-1 rounded ${
@@ -183,7 +183,7 @@ export default function FinancePage() {
                 </div>
 
                 {/* 💡 금융Util 3대 킬러 계산기 섹션 */}
-                <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80">
+                <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80 animate-fade-in-up animation-delay-75">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-sm">
@@ -257,7 +257,7 @@ export default function FinancePage() {
 
                 {/* 거시 경제 지표 */}
                 {macro.length > 0 && (
-                    <div className="mb-10">
+                    <div className="mb-10 animate-fade-in-up animation-delay-150">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="mr-2">🌍</span>거시 경제 지표
@@ -297,7 +297,7 @@ export default function FinancePage() {
 
                 {/* KR 국내 대표 기업 */}
                 {krStocks.length > 0 && (
-                    <div className="mb-10">
+                    <div className="mb-10 animate-fade-in-up animation-delay-225">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-blue-600 font-mono text-sm mr-2 bg-blue-50 px-2 py-1 rounded">KR</span>
@@ -313,7 +313,7 @@ export default function FinancePage() {
 
                 {/* US 미국 빅테크 4대장 */}
                 {usStocks.length > 0 && (
-                    <div className="mb-10">
+                    <div className="mb-10 animate-fade-in-up animation-delay-300">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-red-600 font-mono text-sm mr-2 bg-red-50 px-2 py-1 rounded">US</span>
@@ -328,7 +328,7 @@ export default function FinancePage() {
                 )}
 
                 {/* 뉴스 + 빠른 링크 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-in-up animation-delay-375">
                     <Card className="p-6">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-900">
