@@ -7,6 +7,7 @@ import SparklineChart from '../components/SparklineChart';
 import { MOCK_INDICES, MOCK_FINANCE_NEWS } from '../data/mockData';
 import type { MarketIndex } from '../data/mockData';
 import { useAuth } from '../hooks/useAuth';
+import { getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
@@ -38,6 +39,18 @@ interface IndexData extends MarketIndex {
     updatedAt?: string;
 }
 
+interface NewsItem {
+    id: number;
+    title: string;
+    summary?: string;
+    published_at?: string;
+    created_at?: string;
+    thumbnail?: string;
+    link?: string;
+    source?: string;
+    category?: string;
+}
+
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
@@ -45,16 +58,18 @@ export default function FinancePage() {
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
     const [usStocks, setUsStocks] = useState<StockCard[]>([]);
     const [macro, setMacro] = useState<MacroIndicator[]>([]);
+    const [stockNews, setStockNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [indicesRes, krRes, usRes, macroRes] = await Promise.all([
+                const [indicesRes, krRes, usRes, macroRes, newsRes] = await Promise.all([
                     fetch(`${API_BASE}/api/finance/indices`),
                     fetch(`${API_BASE}/api/finance/kr-stocks`),
                     fetch(`${API_BASE}/api/finance/us-stocks`),
                     fetch(`${API_BASE}/api/finance/macro`),
+                    fetch(`${API_BASE}/api/news?category=stock&limit=6`),
                 ]);
                 
                 if (indicesRes.ok) {
@@ -72,6 +87,21 @@ export default function FinancePage() {
                 if (macroRes.ok) {
                     const data = await macroRes.json();
                     if (data.length > 0) setMacro(data);
+                }
+                if (newsRes.ok) {
+                    const newsData = await newsRes.json();
+                    if (newsData.success && Array.isArray(newsData.news) && newsData.news.length > 0) {
+                        setStockNews(newsData.news.slice(0, 4));
+                    } else {
+                        // fallback: economy 뉴스 조회
+                        const fallbackRes = await fetch(`${API_BASE}/api/news?category=economy&limit=4`);
+                        if (fallbackRes.ok) {
+                            const fallbackData = await fallbackRes.json();
+                            if (fallbackData.success && Array.isArray(fallbackData.news) && fallbackData.news.length > 0) {
+                                setStockNews(fallbackData.news.slice(0, 4));
+                            }
+                        }
+                    }
                 }
             } catch (e) {
                 console.warn('실시간 데이터 로드 실패:', e);
@@ -305,17 +335,36 @@ export default function FinancePage() {
                                 <i className="fas fa-newspaper text-blue-500 mr-2"></i>
                                 증시 뉴스
                             </h2>
-                            <a href={`${MAIN_PORTAL_URL}/news`} className="text-sm text-green-600 hover:text-green-700 font-medium">
+                            <a href={`${MAIN_PORTAL_URL}/news?category=stock`} className="text-sm text-green-600 hover:text-green-700 font-medium">
                                 더보기 <i className="fas fa-chevron-right text-xs"></i>
                             </a>
                         </div>
                         <div className="space-y-4">
-                            {MOCK_FINANCE_NEWS.map((news, idx) => (
-                                <a key={idx} href="#" className="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
-                                    <div className="font-medium text-gray-900 mb-1 line-clamp-2">{news.title}</div>
-                                    <div className="text-sm text-gray-500">{news.time}</div>
-                                </a>
-                            ))}
+                            {stockNews.length > 0 ? (
+                                stockNews.map((news) => (
+                                    <a 
+                                        key={news.id} 
+                                        href={`${MAIN_PORTAL_URL}/news/${news.id}`} 
+                                        className="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 group"
+                                    >
+                                        <div className="font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-green-700 transition-colors">
+                                            {decodeHtmlEntities(news.title)}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                            {news.source && <span>{news.source}</span>}
+                                            {news.source && <span>·</span>}
+                                            <span>{getTimeAgo(news.published_at || news.created_at || '')}</span>
+                                        </div>
+                                    </a>
+                                ))
+                            ) : (
+                                MOCK_FINANCE_NEWS.map((news, idx) => (
+                                    <a key={idx} href={`${MAIN_PORTAL_URL}/news?category=stock`} className="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                                        <div className="font-medium text-gray-900 mb-1 line-clamp-2">{news.title}</div>
+                                        <div className="text-sm text-gray-500">{news.time}</div>
+                                    </a>
+                                ))
+                            )}
                         </div>
                     </Card>
                     
