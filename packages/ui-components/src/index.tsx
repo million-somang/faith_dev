@@ -592,9 +592,12 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                             <ul className="space-y-2 text-sm text-gray-500">
                                 <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">실시간 뉴스</a></li>
                                 <li><a href={`${baseUrl}/guides`} className="hover:text-brand-green transition-colors font-medium text-slate-800">지식 가이드 & 칼럼</a></li>
+                                <li><a href={`${baseUrl}/finance/util`} className="hover:text-brand-green transition-colors">금융Util (DSR·배당세금·퇴직금)</a></li>
+                                <li><a href={`${baseUrl}/entertainment/saju`} className="hover:text-brand-green transition-colors">사주 Pro (만세력·궁합)</a></li>
                                 <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">생활 유틸리티</a></li>
                                 <li><a href={`${baseUrl}/game`} className="hover:text-brand-green transition-colors">미니게임 센터</a></li>
                                 <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융 대시보드</a></li>
+                                <li><a href={`${baseUrl}/b2b`} className="hover:text-brand-green transition-colors">비즈니스 & 웹빌더</a></li>
                             </ul>
                         </div>
                         <div>
@@ -609,8 +612,12 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                     </div>
                 </div>
                 <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 text-xs text-gray-500">
                         <a href={`${baseUrl}/guides`} className="text-gray-700 hover:underline">가이드/칼럼</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/finance/util`} className="hover:underline">금융계산기</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/entertainment/saju`} className="hover:underline">사주Pro</a>
                         <span>|</span>
                         <a href={`${baseUrl}/privacy`} className="font-bold text-gray-700 hover:underline">개인정보처리방침</a>
                         <span>|</span>

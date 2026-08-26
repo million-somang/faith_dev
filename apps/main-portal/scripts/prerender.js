@@ -94,7 +94,7 @@ async function loadGuides() {
 }
 
 async function prerender() {
-    console.log('🚀 Starting Static HTML Prerendering (SSG for AdSense & Googlebot)...');
+    console.log('🚀 Starting Enhanced Static HTML Prerendering (SEO & Indexing Optimizer)...');
 
     const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
     const guides = await loadGuides();
@@ -104,28 +104,32 @@ async function prerender() {
     // 1. Generate /guides Hub static page
     const guidesHubHtml = generateGuidesHubHtml(templateHtml, guides);
     writeHtmlFile(path.resolve(distDir, 'guides/index.html'), guidesHubHtml);
-    writeHtmlFile(path.resolve(distDir, 'blog/index.html'), guidesHubHtml);
 
-    // 2. Generate each /guides/:slug article static page
+    // 2. Generate each /guides/:slug article static page (with internal linking network)
     for (const guide of guides) {
-        const articleHtml = generateArticleHtml(templateHtml, guide);
+        const articleHtml = generateArticleHtml(templateHtml, guide, guides);
         writeHtmlFile(path.resolve(distDir, `guides/${guide.slug}/index.html`), articleHtml);
-        writeHtmlFile(path.resolve(distDir, `blog/${guide.slug}/index.html`), articleHtml);
     }
 
-    // 3. Generate static pages for Core Legal & Info pages
+    // 3. Generate 301 / Canonical Redirect pages for legacy /blog/ paths to resolve duplicate index issues
+    generateBlogRedirectPages(templateHtml, guides);
+
+    // 4. Generate static pages for Core Portal Sections (Game, News, Lifestyle, Finance, Lounge, B2B)
+    generatePortalSectionPages(templateHtml);
+
+    // 5. Generate static pages for Core Legal & Info pages
     generateLegalPages(templateHtml);
 
-    // 4. Generate static pages for Finance Util Calculators
+    // 6. Generate static pages for Finance Util Calculators
     generateFinanceUtilPages(templateHtml);
 
-    // 5. Generate static page for Saju Pro
+    // 7. Generate static page for Saju Pro
     generateSajuPage(templateHtml);
 
-    // 6. Generate RSS 2.0 Feed
+    // 8. Generate RSS 2.0 Feed
     await generateRssFeed();
 
-    console.log('✅ Static Prerendering completed successfully! All 18 articles, Finance Util, and Saju Pro pages generated.');
+    console.log('✅ Static Prerendering completed successfully! All core sections, guides, and SEO structures generated.');
 }
 
 function writeHtmlFile(filePath, content) {
@@ -170,6 +174,8 @@ function generateGuidesHubHtml(template, guides) {
                         <a href="/guides" class="text-teal-700 font-bold">지식 가이드</a>
                         <a href="/news" class="hover:text-teal-700">뉴스</a>
                         <a href="/lifestyle" class="hover:text-teal-700">생활도구</a>
+                        <a href="/finance" class="hover:text-teal-700">금융</a>
+                        <a href="/game" class="hover:text-teal-700">미니게임</a>
                     </nav>
                 </div>
             </header>
@@ -199,11 +205,24 @@ function generateGuidesHubHtml(template, guides) {
     });
 }
 
-function generateArticleHtml(template, guide) {
+function generateArticleHtml(template, guide, allGuides) {
     const title = `${guide.title} | VERA 지식 가이드`;
     const description = guide.description;
     const canonical = `https://veranex.app/guides/${guide.slug}`;
     const articleHtmlContent = markdownToHtml(guide.content);
+
+    // 🔗 내부 링크 네트워크: 관련 아티클 3개 추출
+    const relatedGuides = allGuides
+        .filter(g => g.slug !== guide.slug)
+        .slice(0, 3);
+
+    const relatedHtml = relatedGuides.map(r => `
+        <a href="/guides/${r.slug}" class="block p-4 rounded-xl bg-white border border-gray-200 hover:border-teal-400 hover:shadow-md transition-all group">
+            <span class="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded">${r.categoryLabel}</span>
+            <h4 class="font-bold text-sm text-gray-900 group-hover:text-teal-600 mt-2 line-clamp-2">${r.title}</h4>
+            <p class="text-xs text-gray-500 mt-1 line-clamp-1">${r.description}</p>
+        </a>
+    `).join('\n');
 
     const jsonLd = {
         "@context": "https://schema.org",
@@ -239,6 +258,8 @@ function generateArticleHtml(template, guide) {
                     <nav class="flex items-center gap-4 text-sm font-medium text-gray-600">
                         <a href="/" class="hover:text-teal-700">홈</a>
                         <a href="/guides" class="text-teal-700 font-bold">지식 가이드</a>
+                        <a href="/finance" class="hover:text-teal-700">금융</a>
+                        <a href="/lifestyle" class="hover:text-teal-700">생활도구</a>
                         <a href="/news" class="hover:text-teal-700">뉴스</a>
                     </nav>
                 </div>
@@ -280,10 +301,20 @@ function generateArticleHtml(template, guide) {
                     ${articleHtmlContent}
                 </div>
 
+                <!-- 🔗 내부 추천 링크 (Internal Links Network) -->
+                <section class="mt-12 pt-8 border-t border-gray-200">
+                    <h3 class="font-extrabold text-lg text-gray-900 mb-4 flex items-center gap-2">
+                        <span>📚 함께 읽으면 유익한 추천 칼럼</span>
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        ${relatedHtml}
+                    </div>
+                </section>
+
                 <!-- Article Footer -->
-                <footer class="mt-12 pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <footer class="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <a href="/guides" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all">
-                        ← 가이드 목록으로 돌아가기
+                        ← 전체 가이드 목록으로 돌아가기
                     </a>
                     <div class="text-xs text-gray-400">
                         본 콘텐츠는 VERA 편집팀에 의해 작성 및 검수되었습니다.
@@ -305,6 +336,166 @@ function generateArticleHtml(template, guide) {
         jsonLd,
         bodyHtml: prerenderBody
     });
+}
+
+// /blog/ 접근 시 /guides/ 표준 URL로 301/Meta 리디렉션 처리
+function generateBlogRedirectPages(template, guides) {
+    const generateRedirectHtml = (targetUrl) => {
+        return `<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url=${targetUrl}">
+    <link rel="canonical" href="${targetUrl}" />
+    <title>페이지 이동 중... | VERA</title>
+</head>
+<body>
+    <p>새로운 주소로 이동 중입니다. <a href="${targetUrl}">여기를 클릭하세요.</a></p>
+    <script>window.location.replace("${targetUrl}");</script>
+</body>
+</html>`;
+    };
+
+    writeHtmlFile(path.resolve(distDir, 'blog/index.html'), generateRedirectHtml('https://veranex.app/guides'));
+
+    for (const guide of guides) {
+        writeHtmlFile(path.resolve(distDir, `blog/${guide.slug}/index.html`), generateRedirectHtml(`https://veranex.app/guides/${guide.slug}`));
+    }
+}
+
+// 포털 핵심 메인 섹션 정적 HTML 사전 렌더링 (구글봇 Thin Content 방지)
+function generatePortalSectionPages(template) {
+    const sections = [
+        {
+            route: 'game',
+            title: '무료 두뇌 미니게임 센터 - 테트리스, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
+            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 고전 테트리스, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
+            heading: 'VERA 두뇌 미니게임 센터',
+            content: `
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 게임 센터는 회원가입이나 복잡한 설치 없이 브라우저에서 즉시 즐길 수 있는 5대 고품질 두뇌 퍼즐 및 아케이드 게임을 제공합니다.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="p-5 bg-purple-50 rounded-2xl border border-purple-200">
+                            <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 클래식 테트리스</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">블록 회전, 하드드롭, 라인 클리어 전략으로 최고 기록에 도전하세요.</p>
+                        </div>
+                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
+                            <h3 class="font-bold text-amber-900 text-lg mb-1">🔢 2048 숫자 퍼즐</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">상하좌우 타일을 합쳐 2048 타일을 만드는 중독성 강한 두뇌 게임입니다.</p>
+                        </div>
+                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-200">
+                            <h3 class="font-bold text-blue-900 text-lg mb-1">🧩 매일 새로운 스도쿠</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">초급부터 고급까지 논리적 추론으로 9x9 격자를 채워보세요.</p>
+                        </div>
+                        <div class="p-5 bg-emerald-50 rounded-2xl border border-emerald-200">
+                            <h3 class="font-bold text-emerald-900 text-lg mb-1">🃏 정통 프리셀 (FreeCell)</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">자유 이동 모드와 정통 룰을 지원하는 솔리테어 카드 전략 게임입니다.</p>
+                        </div>
+                        <div class="p-5 bg-rose-50 rounded-2xl border border-rose-200">
+                            <h3 class="font-bold text-rose-900 text-lg mb-1">💣 지뢰찾기 클래식</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">확률과 패턴 분석을 통해 안전한 칸을 찾아내는 명작 퍼즐입니다.</p>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        {
+            route: 'news',
+            title: '실시간 주요 뉴스 브리핑 & 이슈 키워드 | VERA',
+            description: '정치, 경제, 사회, IT/과학, 글로벌 주요 뉴스를 실시간으로 수집하고 핵심 3줄 요약과 이슈 키워드로 한눈에 확인하세요.',
+            heading: '실시간 주요 뉴스 & 이슈 브리핑',
+            content: `
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    VERA 뉴스는 신뢰할 수 있는 언론사들의 핵심 속보와 분야별 최신 트렌드를 인공지능 기반으로 큐레이션하여 제공합니다.
+                </p>
+            `
+        },
+        {
+            route: 'lifestyle',
+            title: '스마트 생활 계산기 & 일상 유틸리티 허브 | VERA',
+            description: '만 나이 계산기, 평수 ↔ ㎡ 면적 변환기, D-Day 기념일 계산기, 대출이자 계산기, JSON 포맷터 등 일상에 꼭 필요한 도구 모음입니다.',
+            heading: '스마트 생활 유틸리티 센터',
+            content: `
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    일상생활과 업무에서 자주 쓰이는 법정 만나이 계산, 부동산 평수 변환, 디데이 카운트다운을 무료로 제공합니다.
+                </p>
+            `
+        },
+        {
+            route: 'finance',
+            title: '글로벌 금융 시장 & 자산 관리 센터 | VERA',
+            description: '국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요.',
+            heading: '글로벌 금융 시장 & 자산 관리',
+            content: `
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    글로벌 거시경제 지표, 환율 시세, 미국 ETF 배당 전략 및 DSR 대출 한도 시뮬레이터를 제공합니다.
+                </p>
+            `
+        },
+        {
+            route: 'lounge',
+            title: '회원 라운지 & 커뮤니티 공간 | VERA',
+            description: '다양한 주제로 소통하고 유용한 정보를 나누는 VERA 커뮤니티 라운지입니다.',
+            heading: 'VERA 라운지 & 커뮤니티',
+            content: `
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    지식과 일상을 나누고, 유용한 팁을 공유하는 소통 공간입니다.
+                </p>
+            `
+        },
+        {
+            route: 'b2b',
+            title: 'AI 비즈니스 솔루션 & 스마트 웹 빌더 | VERA B2B',
+            description: '기업 및 비즈니스 고객을 위한 AI 홈페이지 제작, 자동화 솔루션 및 맞춤형 디지털 전환 서비스를 제공합니다.',
+            heading: 'VERA B2B 스마트 비즈니스 솔루션',
+            content: `
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    기업 홈페이지 제작부터 AI 업무 자동화까지 원스톱 비즈니스 솔루션을 경험해 보세요.
+                </p>
+            `
+        }
+    ];
+
+    for (const sec of sections) {
+        const canonical = `https://veranex.app/${sec.route}`;
+        const prerenderBody = `
+            <div class="min-h-screen bg-slate-50 font-sans">
+                <header class="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-30">
+                    <div class="max-w-6xl mx-auto flex items-center justify-between">
+                        <a href="/" class="text-2xl font-black text-indigo-700">VERA</a>
+                        <nav class="flex gap-4 text-sm font-medium text-gray-600">
+                            <a href="/" class="hover:text-indigo-700">홈</a>
+                            <a href="/guides" class="hover:text-indigo-700">가이드</a>
+                            <a href="/finance" class="hover:text-indigo-700">금융</a>
+                            <a href="/game" class="hover:text-indigo-700">게임</a>
+                            <a href="/lifestyle" class="hover:text-indigo-700">생활도구</a>
+                        </nav>
+                    </div>
+                </header>
+                <main class="max-w-6xl mx-auto px-4 py-12">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6">${sec.heading}</h1>
+                    <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm leading-relaxed text-gray-800">
+                        ${sec.content}
+                    </div>
+                </main>
+                <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500">
+                    <p>© 2026 VERA (베라) - All rights reserved.</p>
+                </footer>
+            </div>
+        `;
+
+        const html = replaceMetaTags(template, {
+            title: sec.title,
+            description: sec.description,
+            canonical,
+            ogType: 'website',
+            bodyHtml: prerenderBody
+        });
+
+        writeHtmlFile(path.resolve(distDir, `${sec.route}/index.html`), html);
+    }
 }
 
 function generateLegalPages(template) {
