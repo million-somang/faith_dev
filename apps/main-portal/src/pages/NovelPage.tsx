@@ -34,6 +34,56 @@ interface Episode {
   created_at: string;
 }
 
+/**
+ * 웹소설 본문 가독성 최적화 포맷터:
+ * - 큰따옴표("...", “...”), 낫표(「...」, 『...』) 대화문의 위/아래에 자동으로 한 줄(단락 간격)씩 띄움
+ * - 연속된 대화문이나 이미 공백 줄이 있는 경우 과도하게 벌어지지 않도록 최적화
+ */
+export function formatNovelContent(text?: string): string {
+  if (!text) return '';
+
+  const rawLines = text.split(/\r?\n/);
+  const formattedLines: string[] = [];
+
+  const isDialogueLine = (line: string): boolean => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    return /^["“「『]/.test(trimmed) || /["”」』]$/.test(trimmed);
+  };
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const currentLine = rawLines[i].trim();
+    const prevLine = i > 0 ? rawLines[i - 1].trim() : '';
+
+    if (!currentLine) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+      continue;
+    }
+
+    const isCurrentDialogue = isDialogueLine(currentLine);
+    const isPrevDialogue = isDialogueLine(prevLine);
+
+    // 서술문 -> 대화문 전환 시 대화문 상단에 1칸(빈 줄) 띄움
+    if (isCurrentDialogue && prevLine && !isPrevDialogue) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+    }
+    // 대화문 -> 서술문 전환 시 대화문 하단에 1칸(빈 줄) 띄움
+    else if (!isCurrentDialogue && prevLine && isPrevDialogue) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+    }
+
+    formattedLines.push(currentLine);
+  }
+
+  return formattedLines.join('\n');
+}
+
 export default function NovelPage() {
   const { user, logout, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
@@ -1540,7 +1590,7 @@ export default function NovelPage() {
                   <div className={`leading-relaxed whitespace-pre-wrap font-serif transition-all ${
                     viewerFontSize === 'small' ? 'text-sm leading-7' : viewerFontSize === 'large' ? 'text-lg sm:text-xl leading-9' : 'text-base sm:text-lg leading-8'
                   }`}>
-                    {viewerEpisode?.content || '본문 내용이 비어있습니다.'}
+                    {formatNovelContent(viewerEpisode?.content) || '본문 내용이 비어있습니다.'}
                   </div>
 
                   {/* 회차 끝 후일담 안내 */}
