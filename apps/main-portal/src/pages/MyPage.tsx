@@ -569,6 +569,46 @@ const DEFAULT_SHOPPING_ITEMS = [
         setShowBirthEditor(false);
     };
 
+    // 로그인 회원의 사주 계산 및 가이드 (항상 Early Return 상단에서 호출)
+    const saju = useMemo(() => {
+        return (birthDate && user?.name) ? calculateSaju(user.name, birthDate) : null;
+    }, [birthDate, user?.name]);
+
+    const todaySajuGuide = useMemo(() => {
+        if (!saju) return {
+            score: 91,
+            luckyColor: '에메랄드 그린',
+            luckyDirection: '동남쪽',
+            caution: '중요한 결정 전 3초간 심호흡하고 서두르지 마세요.',
+            goodAction: '가까운 동료나 소중한 사람에게 따뜻한 안부 전하기'
+        };
+        
+        const elemEntries = [
+            { k: 'wood', v: saju.wood },
+            { k: 'fire', v: saju.fire },
+            { k: 'earth', v: saju.earth },
+            { k: 'metal', v: saju.metal },
+            { k: 'water', v: saju.water }
+        ].sort((a, b) => b.v - a.v);
+        const maxElem = elemEntries[0]?.k || 'wood';
+        
+        const guides: Record<string, { score: number; luckyColor: string; luckyDirection: string; caution: string; goodAction: string }> = {
+            wood: { score: 94, luckyColor: '포레스트 그린', luckyDirection: '동쪽', caution: '지나친 고집을 피우고 주변의 조언에 귀를 기울이세요.', goodAction: '새로운 프로젝트 기획이나 산책' },
+            fire: { score: 96, luckyColor: '선셋 오렌지', luckyDirection: '남쪽', caution: '감정적인 언행이나 즉흥적인 소비를 조심하세요.', goodAction: '열정적인 회의나 적극적인 의견 개진' },
+            earth: { score: 92, luckyColor: '웜 옐로우', luckyDirection: '중앙/남서쪽', caution: '우유부단해져 타이밍을 놓치지 않도록 주의하세요.', goodAction: '신뢰 기반의 약속 정리 및 재무 점검' },
+            metal: { score: 90, luckyColor: '클린 화이트/실버', luckyDirection: '서쪽', caution: '날카로운 비판보다 부드러운 화법을 사용하세요.', goodAction: '밀린 문서 정리나 확실한 계약 검토' },
+            water: { score: 95, luckyColor: '딥 오션 블루', luckyDirection: '북쪽', caution: '생각이 너무 많아져 실행이 늦어지는 것을 경계하세요.', goodAction: '유연한 네트워킹 및 트렌드 정보 탐색' },
+        };
+        
+        return guides[maxElem] || guides.wood;
+    }, [saju]);
+
+    const todayQuote = useMemo(() => {
+        const today = new Date();
+        const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
+        return DAILY_QUOTES[Math.abs(dayOfYear) % DAILY_QUOTES.length];
+    }, []);
+
     useEffect(() => {
         if (!isLoading && !user) {
             navigate('/', { replace: true });
@@ -708,44 +748,6 @@ const DEFAULT_SHOPPING_ITEMS = [
     if (!user) {
         return null;
     }
-
-    // 로그인 회원의 사주 계산 작동
-    const saju = birthDate ? calculateSaju(user.name, birthDate) : null;
-
-    const todaySajuGuide = useMemo(() => {
-        if (!saju) return {
-            score: 91,
-            luckyColor: '에메랄드 그린',
-            luckyDirection: '동남쪽',
-            caution: '중요한 결정 전 3초간 심호흡하고 서두르지 마세요.',
-            goodAction: '가까운 동료나 소중한 사람에게 따뜻한 안부 전하기'
-        };
-        
-        const elemEntries = [
-            { k: 'wood', v: saju.wood },
-            { k: 'fire', v: saju.fire },
-            { k: 'earth', v: saju.earth },
-            { k: 'metal', v: saju.metal },
-            { k: 'water', v: saju.water }
-        ].sort((a, b) => b.v - a.v);
-        const maxElem = elemEntries[0]?.k || 'wood';
-        
-        const guides: Record<string, { score: number; luckyColor: string; luckyDirection: string; caution: string; goodAction: string }> = {
-            wood: { score: 94, luckyColor: '포레스트 그린', luckyDirection: '동쪽', caution: '지나친 고집을 피우고 주변의 조언에 귀를 기울이세요.', goodAction: '새로운 프로젝트 기획이나 산책' },
-            fire: { score: 96, luckyColor: '선셋 오렌지', luckyDirection: '남쪽', caution: '감정적인 언행이나 즉흥적인 소비를 조심하세요.', goodAction: '열정적인 회의나 적극적인 의견 개진' },
-            earth: { score: 92, luckyColor: '웜 옐로우', luckyDirection: '중앙/남서쪽', caution: '우유부단해져 타이밍을 놓치지 않도록 주의하세요.', goodAction: '신뢰 기반의 약속 정리 및 재무 점검' },
-            metal: { score: 90, luckyColor: '클린 화이트/실버', luckyDirection: '서쪽', caution: '날카로운 비판보다 부드러운 화법을 사용하세요.', goodAction: '밀린 문서 정리나 확실한 계약 검토' },
-            water: { score: 95, luckyColor: '딥 오션 블루', luckyDirection: '북쪽', caution: '생각이 너무 많아져 실행이 늦어지는 것을 경계하세요.', goodAction: '유연한 네트워킹 및 트렌드 정보 탐색' },
-        };
-        
-        return guides[maxElem] || guides.wood;
-    }, [saju]);
-
-    const todayQuote = useMemo(() => {
-        const today = new Date();
-        const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 1000 / 60 / 60 / 24);
-        return DAILY_QUOTES[Math.abs(dayOfYear) % DAILY_QUOTES.length];
-    }, []);
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
