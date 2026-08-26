@@ -31,11 +31,12 @@ export default function LoungePage() {
     // 2. 검색 쿼리 및 트렌드
     const [searchQuery, setSearchQuery] = useState('');
     const [trends] = useState([
-        { tag: '엔비디아', count: '12.4K', type: 'stock' },
-        { tag: '사다리타기', count: '8.2K', type: 'utility' },
-        { tag: '비트코인', count: '7.1K', type: 'stock' },
-        { tag: 'HBM반도체', count: '5.9K', type: 'news' },
-        { tag: '지뢰찾기1퍼센트', count: '3.4K', type: 'game' }
+        { tag: '테트리스1위도전', count: '14.2K', type: 'game' },
+        { tag: '점심커피사다리', count: '11.8K', type: 'utility' },
+        { tag: '오늘의사주대길', count: '9.4K', type: 'saju' },
+        { tag: '엔비디아', count: '8.1K', type: 'stock' },
+        { tag: '스도쿠3분컷', count: '6.5K', type: 'game' },
+        { tag: '비트코인', count: '5.9K', type: 'stock' }
     ]);
 
     // 3. 독립 페르소나 (멀티 프로필 핸들)
@@ -46,7 +47,7 @@ export default function LoungePage() {
             name: savedName || (user?.name ? `${user.name} 라운지` : '베라 프렌즈'),
             handle: savedHandle || (user?.name ? `@${user.name.toLowerCase()}_king` : '@user_1234'),
             avatar: '🦊',
-            bio: 'VERA 메가 포털에서 투자의 기회를 찾는 똑똑한 유저입니다. 📈'
+            bio: 'VERA 라운지에서 게임, 사주, 유틸 내기와 소통을 즐기는 유저입니다. ✨'
         };
     });
 
@@ -75,7 +76,7 @@ export default function LoungePage() {
         const saved = localStorage.getItem('vera_lounge_followers');
         return saved ? JSON.parse(saved) : [];
     });
-    const [feedFilter, setFeedFilter] = useState<'all' | 'following'>('all');
+    const [feedFilter, setFeedFilter] = useState<'all' | 'game' | 'utility' | 'saju' | 'stock' | 'following'>('all');
 
     interface NotificationItem {
         id: string;
@@ -343,7 +344,20 @@ export default function LoungePage() {
             const isSelf = post.author.handle === persona.handle;
             const isFollowing = followingList.includes(post.author.handle);
             if (!isSelf && !isFollowing) return false;
+        } else if (feedFilter === 'game') {
+            const hasGame = ['테트리스', '스도쿠', '2048', '지뢰찾기', '게임'].some(g => post.content.includes(g));
+            if (!hasGame) return false;
+        } else if (feedFilter === 'utility') {
+            const hasUtil = ['사다리타기', '주사위', '동전', '계산기', '디데이'].some(u => post.content.includes(u));
+            if (!hasUtil) return false;
+        } else if (feedFilter === 'saju') {
+            const hasSaju = ['운세', '사주', '타로', '행운'].some(s => post.content.includes(s));
+            if (!hasSaju) return false;
+        } else if (feedFilter === 'stock') {
+            const hasStock = post.content.includes('$') || ['주식', '코인', '비트코인', '엔비디아', '삼성전자'].some(st => post.content.includes(st));
+            if (!hasStock) return false;
         }
+
         if (!searchQuery.trim()) return true;
         const q = searchQuery.toLowerCase();
         return (
@@ -370,38 +384,86 @@ export default function LoungePage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-8 w-full">
                 {/* VERA Lounge Hero Banner */}
-                <div className="relative mb-8 rounded-2xl overflow-hidden bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 text-white shadow-xl shadow-purple-500/10">
+                <div className="relative mb-8 rounded-3xl overflow-hidden bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl border border-indigo-500/30">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
                     <div className="flex flex-col lg:flex-row items-center justify-between p-6 sm:p-8 lg:p-10 gap-8 relative z-10">
                         {/* Copy & Glassmorphism Badges */}
-                        <div className="flex-1 flex flex-col items-start gap-4">
+                        <div className="flex-1 flex flex-col items-start gap-3.5">
                             <div className="flex flex-wrap gap-2">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-white/90 shadow-sm">
-                                    <i className="fas fa-sparkles text-amber-300"></i> New Updates
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white/10 backdrop-blur-md border border-white/20 text-violet-200 shadow-sm">
+                                    <i className="fas fa-sparkles text-amber-300"></i> 라이프 & 소셜 라운지
                                 </span>
                                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md border border-white/20 text-white/90 shadow-sm">
-                                    <i className="fas fa-users text-sky-300"></i> 12.4K Members
+                                    <i className="fas fa-users text-sky-300"></i> 실시간 참여중
                                 </span>
                             </div>
                             
                             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight text-white">
-                                VERA 라운지에서<br className="hidden sm:inline" />
-                                실시간 경제 트렌드와 미니게임을 즐겨보세요!
+                                게임 챌린지, 점심 내기 사다리, 사주 운세까지!<br className="hidden sm:inline" />
+                                글 속에서 바로 실행되는 인터랙티브 라운지
                             </h2>
                             
-                            <p className="text-sm sm:text-base text-white/80 max-w-lg font-normal leading-relaxed text-left">
-                                포털 회원들과 실시간으로 소통하고 주식, 코인 이슈를 분석하세요. 
-                                대화 중 바로 실행되는 사다리타기와 지뢰찾기 미니게임으로 즐거움을 더해보세요.
+                            <p className="text-sm sm:text-base text-slate-300 max-w-xl font-normal leading-relaxed text-left">
+                                포털 회원들과 자유롭게 일상을 나누고 게임 점수 배틀, 커피 쏘기 사다리타기, 사주 행운 지수를 글 속에서 실시간 위젯으로 함께 즐겨보세요 ✨
                             </p>
-                        </div>
-                        
-                        {/* Image Container with Hover Effect */}
-                        <div className="w-full lg:w-[380px] h-[180px] sm:h-[220px] rounded-2xl overflow-hidden shadow-lg border border-white/10 bg-black/20 shrink-0">
-                            <img 
-                                src="/lounge_hero_banner.jpg" 
-                                alt="VERA Lounge Hero" 
-                                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
-                            />
+
+                            {/* 4대 인기 템플릿 원클릭 퀵 스타트 가이드 바 */}
+                            <div className="w-full pt-2">
+                                <span className="text-xs font-bold text-slate-400 block mb-2">👇 터치 한 번으로 라운지 즉시 체험하기:</span>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <button
+                                        onClick={() => {
+                                            setNewPostContent('#테트리스 12,400점 달성! 나한테 1:1 대결 도전할 사람? 🎮');
+                                            setActiveTab('home');
+                                        }}
+                                        className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-emerald-300 text-xs font-black flex items-center gap-1 mb-0.5">
+                                            <i className="fas fa-cubes"></i> 게임 점수 챌린지
+                                        </div>
+                                        <div className="text-[11px] text-slate-300 truncate">#테트리스 대결</div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setNewPostContent('#사다리타기 오늘 커피 쏠 사람 사다리 타보자! ☕');
+                                            setActiveTab('home');
+                                        }}
+                                        className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-sky-300 text-xs font-black flex items-center gap-1 mb-0.5">
+                                            <i className="fas fa-mug-hot"></i> 커피/점심 사다리
+                                        </div>
+                                        <div className="text-[11px] text-slate-300 truncate">#사다리타기 내기</div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setNewPostContent('#오늘의운세 오늘 내 사주 행운 점수는 몇 점일까? 🔮');
+                                            setActiveTab('home');
+                                        }}
+                                        className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-amber-300 text-xs font-black flex items-center gap-1 mb-0.5">
+                                            <i className="fas fa-sparkles"></i> 오늘 사주 운세
+                                        </div>
+                                        <div className="text-[11px] text-slate-300 truncate">#오늘의운세 카드</div>
+                                    </button>
+
+                                    <button
+                                        onClick={() => {
+                                            setNewPostContent('#주사위굴리기 1~6 주사위 굴려서 높은 사람이 이기는 거야! 🎲');
+                                            setActiveTab('home');
+                                        }}
+                                        className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
+                                    >
+                                        <div className="text-pink-300 text-xs font-black flex items-center gap-1 mb-0.5">
+                                            <i className="fas fa-dice"></i> 즉석 주사위 내기
+                                        </div>
+                                        <div className="text-[11px] text-slate-300 truncate">#주사위 롤링</div>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -486,17 +548,17 @@ export default function LoungePage() {
                         {activeTab === 'home' && (
                             <div className="flex flex-col gap-5">
                                 
-                                {/* 피드 글쓰기 카드 */}
+                                {/* 피드 글쓰기 카드 (원클릭 퀵 액션 툴바 장착) */}
                                 <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
                                     <div className="flex items-start gap-3">
-                                        <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center text-lg">
+                                        <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center text-lg shrink-0">
                                             {persona.avatar}
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 min-w-0">
                                             <textarea
                                                 value={newPostContent}
                                                 onChange={(e) => setNewPostContent(e.target.value)}
-                                                placeholder="주식종목 $엔비디아, 커피내기 #사다리타기, 뉴스기사요약 @링크 등을 적어서 실시간 위젯 카드를 연동해 보세요!"
+                                                placeholder="무슨 생각을 하고 계신가요? 아래 버튼을 눌러 게임 챌린지, 사다리타기, 사주 운세, 주식 위젯을 즉시 첨부해 보세요!"
                                                 rows={3}
                                                 className="w-full bg-transparent border-none outline-none resize-none text-slate-800 placeholder-slate-400 font-bold text-sm leading-relaxed"
                                             />
@@ -513,26 +575,59 @@ export default function LoungePage() {
                                                     </button>
                                                 </div>
                                             )}
-                                            <div className="flex justify-between items-center border-t border-slate-100 pt-3 mt-2">
-                                                <div className="flex items-center gap-3">
-                                                    <label className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-1">
-                                                        <i className="fas fa-camera text-base"></i>
-                                                        <input 
-                                                            type="file" 
-                                                            accept="image/*" 
-                                                            onChange={handleImageChange}
-                                                            className="hidden" 
-                                                        />
-                                                    </label>
-                                                    <div className="flex gap-2 text-[10px] font-black text-slate-400">
-                                                        <span className="text-violet-500">$ 주식</span>
-                                                        <span className="text-sky-500"># 유틸</span>
-                                                        <span className="text-amber-500">@ 뉴스</span>
-                                                    </div>
-                                                </div>
+
+                                            {/* ⚡ 원클릭 스마트 액션 툴바 (Quick Action Bar) */}
+                                            <div className="flex flex-wrap gap-1.5 pt-2.5 pb-1 border-t border-slate-100">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #테트리스` : '#테트리스 12,400점 달성! 1:1 대결 도전해봐 🎮')}
+                                                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                >
+                                                    <i className="fas fa-cubes text-[10px]"></i> 🎮 게임배틀
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #사다리타기` : '#사다리타기 오늘 커피 쏠 사람 누구? ☕')}
+                                                    className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                >
+                                                    <i className="fas fa-mug-hot text-[10px]"></i> ☕ 사다리타기
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #주사위굴리기` : '#주사위굴리기 1~6 주사위 대결! 🎲')}
+                                                    className="px-2.5 py-1 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                >
+                                                    <i className="fas fa-dice text-[10px]"></i> 🎲 주사위
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #오늘의운세` : '#오늘의운세 오늘 내 사주 행운 지수는? 🔮')}
+                                                    className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                >
+                                                    <i className="fas fa-sparkles text-[10px]"></i> 🔮 오늘운세
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} $삼성전자` : '$삼성전자 실시간 시세 체크 📈')}
+                                                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                >
+                                                    <i className="fas fa-chart-line text-[10px]"></i> 📈 종목시세
+                                                </button>
+                                            </div>
+
+                                            <div className="flex justify-between items-center pt-2">
+                                                <label className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-1 text-xs font-bold">
+                                                    <i className="fas fa-camera text-sm"></i> 사진 첨부
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        onChange={handleImageChange}
+                                                        className="hidden" 
+                                                    />
+                                                </label>
                                                 <button
                                                     onClick={handleCreatePost}
-                                                    className="px-4.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-750 text-white font-extrabold text-xs shadow transition-all cursor-pointer"
+                                                    className="px-4.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs shadow transition-all cursor-pointer active:scale-95"
                                                 >
                                                     게시하기
                                                 </button>
@@ -541,27 +636,67 @@ export default function LoungePage() {
                                     </div>
                                 </div>
 
-                                {/* 피드 필터 탭 */}
-                                <div className="flex gap-2.5 text-xs font-black border-b border-slate-100 pb-2.5">
+                                {/* 피드 필터 탭 (6개 카테고리) */}
+                                <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar border-b border-slate-200/80 pb-2.5">
                                     <button 
                                         onClick={() => setFeedFilter('all')}
-                                        className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
                                             feedFilter === 'all' 
-                                                ? 'bg-violet-50 text-violet-600' 
-                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                                                ? 'bg-violet-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
                                         }`}
                                     >
-                                        모든 피드
+                                        🌐 전체 피드
+                                    </button>
+                                    <button 
+                                        onClick={() => setFeedFilter('game')}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                                            feedFilter === 'game' 
+                                                ? 'bg-emerald-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        🎮 게임 & 챌린지
+                                    </button>
+                                    <button 
+                                        onClick={() => setFeedFilter('utility')}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                                            feedFilter === 'utility' 
+                                                ? 'bg-sky-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        🛠️ 사다리 & 내기
+                                    </button>
+                                    <button 
+                                        onClick={() => setFeedFilter('saju')}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                                            feedFilter === 'saju' 
+                                                ? 'bg-amber-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        🔮 사주 & 운세
+                                    </button>
+                                    <button 
+                                        onClick={() => setFeedFilter('stock')}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
+                                            feedFilter === 'stock' 
+                                                ? 'bg-indigo-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        📈 금융 & 시황
                                     </button>
                                     <button 
                                         onClick={() => setFeedFilter('following')}
-                                        className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
                                             feedFilter === 'following' 
-                                                ? 'bg-violet-50 text-violet-600' 
-                                                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                                                ? 'bg-purple-600 text-white shadow-xs' 
+                                                : 'bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50'
                                         }`}
                                     >
-                                        팔로잉 피드 ({followingList.length})
+                                        👥 팔로잉 ({followingList.length})
                                     </button>
                                 </div>
 
@@ -984,29 +1119,38 @@ export default function LoungePage() {
                             </div>
                         </div>
 
-                        {/* AI 여론 요약 리포트 */}
+                        {/* 금주의 게임 챌린지 핫랭킹 */}
                         <div className="p-4 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
-                            <h3 className="text-xs font-black text-violet-600 border-b border-slate-100 pb-2 mb-3 flex items-center gap-1">
-                                <i className="fas fa-chart-line"></i> AI 여론 요약
+                            <h3 className="text-xs font-black text-emerald-600 border-b border-slate-100 pb-2 mb-3 flex items-center gap-1.5">
+                                <i className="fas fa-gamepad"></i> 🎮 주간 게임 랭킹
                             </h3>
-                            <div className="space-y-3">
-                                <div>
-                                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-650 mb-1">
-                                        <span>$엔비디아</span>
-                                        <span className="text-rose-500 font-black">긍정적 (82%)</span>
+                            <div className="space-y-2.5">
+                                <div 
+                                    onClick={() => {
+                                        setNewPostContent('#테트리스 12,400점 달성! 나한테 도전할 사람? 🎮');
+                                        setActiveTab('home');
+                                    }}
+                                    className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex justify-between items-center text-xs font-black text-slate-800 group-hover:text-emerald-700">
+                                        <span>테트리스 1위 배틀</span>
+                                        <span className="text-[10px] text-amber-500 font-mono">12,400P</span>
                                     </div>
-                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-rose-500" style={{ width: '82%' }}></div>
-                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">#테트리스 태그로 도전장 접수중</p>
                                 </div>
-                                <div>
-                                    <div className="flex justify-between items-center text-[10px] font-bold text-slate-650 mb-1">
-                                        <span>$비트코인</span>
-                                        <span className="text-blue-500 font-black">중립/우려 (68%)</span>
+
+                                <div 
+                                    onClick={() => {
+                                        setNewPostContent('#사다리타기 오늘 커피 쏠 사람 사다리 타보자! ☕');
+                                        setActiveTab('home');
+                                    }}
+                                    className="p-2 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-100 transition-all cursor-pointer group"
+                                >
+                                    <div className="flex justify-between items-center text-xs font-black text-slate-800 group-hover:text-sky-700">
+                                        <span>커피 사다리 타기</span>
+                                        <span className="text-[10px] text-sky-500 font-bold">인기 🔥</span>
                                     </div>
-                                    <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-                                        <div className="h-full bg-blue-550" style={{ width: '32%' }}></div>
-                                    </div>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">#사다리타기 4인 즉석 내기</p>
                                 </div>
                             </div>
                         </div>

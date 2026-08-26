@@ -1,6 +1,8 @@
 import { LiveStockWidget } from './LiveStockWidget';
 import { LiveUtilityWidget } from './LiveUtilityWidget';
 import { NewsAiSummaryWidget } from './NewsAiSummaryWidget';
+import { LiveGameChallengeWidget } from './LiveGameChallengeWidget';
+import { LiveSajuHoroscopeWidget } from './LiveSajuHoroscopeWidget';
 
 interface SmartTagParserProps {
     text: string;
@@ -9,8 +11,7 @@ interface SmartTagParserProps {
 export function SmartTagParser({ text }: SmartTagParserProps) {
     if (!text) return null;
 
-    // 정규표현식: $주식명, #유틸리티명, @기사링크 URL 패턴 검출
-    // 공백 또는 줄바꿈을 기준으로 나눈 단어들을 토큰으로 검사
+    // 정규표현식: $주식명, #유틸리티/게임/사주명, @기사링크 URL 패턴 검출
     const lines = text.split('\n');
 
     return (
@@ -23,9 +24,9 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                 words.forEach((word, wordIdx) => {
                     // 1. 주식 태그 감지 ($엔비디아, $삼성전자 등)
                     const stockMatch = word.match(/^\$([a-zA-Z가-힣]+)/);
-                    // 2. 유틸리티 태그 감지 (#사다리타기, #주사위굴리기 등)
-                    const utilityMatch = word.match(/^#([a-zA-Z가-힣]+)/);
-                    // 3. 기사 링크 감지 (@http:// 또는 @https:// 또는 일반 http 링크에 @가 붙은 경우)
+                    // 2. 해시태그 감지 (#테트리스, #사다리타기, #오늘의운세 등)
+                    const hashMatch = word.match(/^#([a-zA-Z가-힣0-9]+)/);
+                    // 3. 기사 링크 감지 (@http:// 또는 @https://)
                     const newsLinkMatch = word.match(/^@(https?:\/\/[^\s]+)/) || word.match(/^(https?:\/\/[^\s]+)/);
 
                     if (stockMatch) {
@@ -36,17 +37,39 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                             </span>
                         );
                         widgets.push(<LiveStockWidget key={`widget-stock-${wordIdx}`} stockName={stockName} />);
-                    } else if (utilityMatch) {
-                        const utilityName = utilityMatch[0];
-                        lineContent.push(
-                            <span key={`text-${wordIdx}`} className="text-sky-400 font-extrabold mr-1">
-                                {utilityName}
-                            </span>
-                        );
-                        widgets.push(<LiveUtilityWidget key={`widget-util-${wordIdx}`} utilityName={utilityName} />);
+                    } else if (hashMatch) {
+                        const tagName = hashMatch[1];
+                        const fullTag = hashMatch[0];
+
+                        // A. 게임 태그 (#테트리스, #스도쿠, #2048, #지뢰찾기, #게임)
+                        if (['테트리스', '스도쿠', '2048', '지뢰찾기', '게임'].some(g => tagName.includes(g))) {
+                            lineContent.push(
+                                <span key={`text-${wordIdx}`} className="text-emerald-400 font-extrabold mr-1">
+                                    {fullTag}
+                                </span>
+                            );
+                            widgets.push(<LiveGameChallengeWidget key={`widget-game-${wordIdx}`} gameTag={fullTag} />);
+                        }
+                        // B. 사주 & 운세 태그 (#오늘의운세, #사주, #운세)
+                        else if (['운세', '사주', '타로', '행운'].some(s => tagName.includes(s))) {
+                            lineContent.push(
+                                <span key={`text-${wordIdx}`} className="text-amber-400 font-extrabold mr-1">
+                                    {fullTag}
+                                </span>
+                            );
+                            widgets.push(<LiveSajuHoroscopeWidget key={`widget-saju-${wordIdx}`} tag={fullTag} />);
+                        }
+                        // C. 생활 유틸리티 태그 (#사다리타기, #주사위, #동전 등)
+                        else {
+                            lineContent.push(
+                                <span key={`text-${wordIdx}`} className="text-sky-400 font-extrabold mr-1">
+                                    {fullTag}
+                                </span>
+                            );
+                            widgets.push(<LiveUtilityWidget key={`widget-util-${wordIdx}`} utilityName={fullTag} />);
+                        }
                     } else if (newsLinkMatch) {
                         const rawUrl = newsLinkMatch[1] || newsLinkMatch[0];
-                        // 텍스트상에는 깔끔하게 링크 아이콘이나 줄인 텍스트 표시
                         lineContent.push(
                             <span key={`text-${wordIdx}`} className="text-amber-400 font-bold hover:underline cursor-pointer mr-1 break-all">
                                 🔗 AI 뉴스분석 링크
@@ -54,7 +77,6 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                         );
                         widgets.push(<NewsAiSummaryWidget key={`widget-news-${wordIdx}`} url={rawUrl} />);
                     } else {
-                        // 일반 단어
                         lineContent.push(<span key={`text-${wordIdx}`} className="mr-1">{word}</span>);
                     }
                 });
