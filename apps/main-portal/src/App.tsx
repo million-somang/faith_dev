@@ -184,15 +184,15 @@ function HomePage() {
                             </div>
                         </section>
 
-                        {/* 2-Column Layout */}
-                        <div className="flex flex-col lg:flex-row gap-8 mb-12">
-                            {/* Left Column: News */}
-                            <div className="w-full lg:w-[728px] shrink-0 flex flex-col gap-8">
+                        {/* 2-Column Layout (12열 반응형 그리드로 상단 헤더 너비와 100% 일치) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+                            {/* Left Column: News & Guides */}
+                            <div className="lg:col-span-8 flex flex-col gap-6">
                                 {/* 배너 슬롯: 홈 메인 상단 (관리자 > 배너관리에서 관리) */}
                                 <BannerSlot slotKey="home_main_top" />
 
                                 {/* News Section */}
-                                <Card className="p-8">
+                                <Card className="p-6 sm:p-8">
                                     <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-2xl font-bold text-gray-900 flex items-center">
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
@@ -221,7 +221,7 @@ function HomePage() {
                                 </Card>
 
                                 {/* 지식 가이드 & 실전 칼럼 섹션 (AdSense 고가치 콘텐츠) */}
-                                <Card className="p-8">
+                                <Card className="p-6 sm:p-8">
                                     <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-2xl font-bold text-gray-900 flex items-center">
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3 text-white">
@@ -260,8 +260,8 @@ function HomePage() {
                                 </Card>
                             </div>
 
-                            {/* Right Column: Widgets — 모바일에서는 베너 위로 올림(order-first) */}
-                            <div className="flex-1 flex flex-col gap-4 order-first sm:order-none">
+                            {/* Right Column: Widgets — 모바일에서는 배너 위로 올림(order-first) */}
+                            <div className="lg:col-span-4 flex flex-col gap-4 order-first lg:order-none">
                                 {/* 날씨·증시 — 모바일: 컴팩트 가로 칩 / PC: 큰 카드 */}
                                 <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
                                     {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
