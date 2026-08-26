@@ -54,6 +54,7 @@ import { MobileTabBar } from './components/MobileTabBar';
 import { BannerSlot } from './components/BannerSlot';
 import { WeatherWidget } from './components/homepage/WeatherWidget';
 import { StockWidget } from './components/homepage/StockWidget';
+import { SidebarShoppingWidget } from './components/homepage/SidebarShoppingWidget';
 import { CoreServicesShowcase } from './components/homepage/CoreServicesShowcase';
 
 function HomePage() {
@@ -269,6 +270,9 @@ function HomePage() {
                                     {/* 증시 위젯 (실제 데이터: 환율/국내 종목) */}
                                     <StockWidget />
                                 </div>
+
+                                {/* 🛍️ 오늘의 핫딜 & 인기 쇼핑 꿀템 위젯 */}
+                                <SidebarShoppingWidget />
 
                                 {/* System Monitor Widget (PC 전용) */}
                                 <Card className="hidden sm:block p-4 bg-gray-50 border-none shadow-none">
