@@ -65,13 +65,13 @@ export function formatNovelContent(text?: string): string {
     const isCurrentDialogue = isDialogueLine(currentLine);
     const isPrevDialogue = isDialogueLine(prevLine);
 
-    // 서술문 -> 대화문 전환 시 대화문 상단에 1칸(빈 줄) 띄움
-    if (isCurrentDialogue && prevLine && !isPrevDialogue) {
+    // 1) 현재 줄이 대화문인 경우: 이전 줄(서술문이든 다른 대화문이든)과의 사이에 1칸(빈 줄) 띄움
+    if (isCurrentDialogue && prevLine) {
       if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
         formattedLines.push('');
       }
     }
-    // 대화문 -> 서술문 전환 시 대화문 하단에 1칸(빈 줄) 띄움
+    // 2) 현재 줄이 서술문이고 이전 줄이 대화문이었던 경우: 대화문 하단에 1칸(빈 줄) 띄움
     else if (!isCurrentDialogue && prevLine && isPrevDialogue) {
       if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
         formattedLines.push('');
