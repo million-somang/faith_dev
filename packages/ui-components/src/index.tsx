@@ -232,16 +232,13 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
 
     let modeColor = 'text-violet-600';
     let modeBg = 'hover:bg-violet-50 hover:text-violet-600';
-    let gradientFrom = 'from-violet-500 to-indigo-600';
 
     if (activeMode === 'business') {
         modeColor = 'text-emerald-600';
         modeBg = 'hover:bg-emerald-50 hover:text-emerald-600';
-        gradientFrom = 'from-emerald-500 to-teal-600';
     } else if (activeMode === 'lounge') {
         modeColor = 'text-fuchsia-600';
         modeBg = 'hover:bg-fuchsia-50 hover:text-fuchsia-600';
-        gradientFrom = 'from-fuchsia-500 to-purple-600';
     }
 
     return (
@@ -254,9 +251,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <i className="fas fa-bars text-lg"></i>
                     </button>
                     <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 md:static md:left-auto md:translate-x-0">
-                        <span className={`w-8 h-8 rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center text-white shadow-sm`}>
-                            <i className="fas fa-sparkles text-sm"></i>
-                        </span>
+                        <img src={`${baseUrl}/logo-192.png`} alt="VERA Logo" className="w-8 h-8 rounded-lg object-contain drop-shadow-xs" />
                         <span className="font-black text-xl tracking-wider text-gray-900">V<span className={modeColor}>ERA</span></span>
                     </a>
 
@@ -581,7 +576,10 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 
                 <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
                     <div>
-                        <h2 className="text-xl font-black text-gray-900 mb-4">VERA</h2>
+                        <div className="flex items-center gap-2 mb-3">
+                            <img src={`${baseUrl}/logo-192.png`} alt="VERA Logo" className="w-7 h-7 rounded-md object-contain" />
+                            <h2 className="text-xl font-black text-gray-900">VERA</h2>
+                        </div>
                         <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
                             세상의 모든 정보를 하나로 묶는 믿음의 포털. 더 나은 내일을 위해 매일 성장합니다.
                         </p>
