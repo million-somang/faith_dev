@@ -4,6 +4,8 @@ import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 import { SmartTagParser } from '../components/lounge/SmartTagParser';
+import { CustomLadderBuilderModal, CustomLadderData } from '../components/lounge/CustomLadderBuilderModal';
+import { CustomLadderWidget } from '../components/lounge/CustomLadderWidget';
 
 export interface Post {
     id: string;
@@ -15,6 +17,7 @@ export interface Post {
     };
     content: string;
     image?: string;
+    ladderData?: CustomLadderData;
     createdAt: string;
     likes: number;
     commentsCount: number;
@@ -57,7 +60,10 @@ export default function LoungePage() {
     const [editHandle, setEditHandle] = useState(persona.handle);
     const [editBio, setEditBio] = useState(persona.bio);
 
-    // 4. 피드 목록 상태
+    // 4. 피드 목록 상태 & 사다리 빌더 상태
+    const [isLadderModalOpen, setIsLadderModalOpen] = useState(false);
+    const [pendingLadderData, setPendingLadderData] = useState<CustomLadderData | null>(null);
+
     const [points] = useState<number>(() => {
         const saved = localStorage.getItem('vera_points');
         return saved ? parseInt(saved, 10) : 120;
@@ -204,6 +210,7 @@ export default function LoungePage() {
             },
             content: newPostContent,
             image: selectedImage || undefined,
+            ladderData: pendingLadderData || undefined,
             createdAt: '방금 전',
             likes: 0,
             commentsCount: 0
@@ -214,6 +221,7 @@ export default function LoungePage() {
         localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
         setNewPostContent('');
         setSelectedImage(null);
+        setPendingLadderData(null);
         setActiveTab('home');
         alert('새 피드 글이 등록되었습니다! 스마트 태그가 실시간 연동됩니다. 🚀');
 
@@ -426,7 +434,7 @@ export default function LoungePage() {
 
                                     <button
                                         onClick={() => {
-                                            setNewPostContent('#사다리타기 오늘 커피 쏠 사람 사다리 타보자! ☕');
+                                            setIsLadderModalOpen(true);
                                             setActiveTab('home');
                                         }}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
@@ -434,7 +442,7 @@ export default function LoungePage() {
                                         <div className="text-sky-300 text-xs font-black flex items-center gap-1 mb-0.5">
                                             <i className="fas fa-mug-hot"></i> 커피/점심 사다리
                                         </div>
-                                        <div className="text-[11px] text-slate-300 truncate">#사다리타기 내기</div>
+                                        <div className="text-[11px] text-slate-300 truncate">#사다리 직접 만들기 🪜</div>
                                     </button>
 
                                     <button
@@ -474,33 +482,33 @@ export default function LoungePage() {
                     {/* 1) 좌측 네비게이션 컬럼 */}
                     <aside className="hidden md:flex md:w-[200px] lg:w-[220px] shrink-0 flex-col gap-4">
                         <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
-                            <h3 className="font-extrabold text-sm text-slate-900 mb-3 px-2 flex items-center gap-1.5" onClick={handleBackToPortal}>
+                            <h3 className="font-extrabold text-sm text-slate-900 mb-3 px-2 flex items-center gap-1.5 cursor-pointer" onClick={handleBackToPortal}>
                                 <i className="fas fa-comments text-violet-500"></i> VERA 라운지
                             </h3>
                             <nav className="flex flex-col gap-1">
                                 <button
                                     onClick={() => setActiveTab('home')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left ${
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
                                         activeTab === 'home'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                                     }`}
                                 >
-                                    <i className="fas fa-home text-sm"></i> 홈 피드
+                                    <i className="fas fa-house-chimney text-sm"></i> 피드 홈
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('search')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left ${
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
                                         activeTab === 'search'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                                     }`}
                                 >
-                                    <i className="fas fa-search text-sm"></i> 검색 / 트렌드
+                                    <i className="fas fa-hashtag text-sm"></i> 트렌드 탐색
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('write')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left ${
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
                                         activeTab === 'write'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -510,7 +518,7 @@ export default function LoungePage() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('notifications')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left ${
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
                                         activeTab === 'notifications'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -520,7 +528,7 @@ export default function LoungePage() {
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('profile')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left ${
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
                                         activeTab === 'profile'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
@@ -558,10 +566,31 @@ export default function LoungePage() {
                                             <textarea
                                                 value={newPostContent}
                                                 onChange={(e) => setNewPostContent(e.target.value)}
-                                                placeholder="무슨 생각을 하고 계신가요? 아래 버튼을 눌러 게임 챌린지, 사다리타기, 사주 운세, 주식 위젯을 즉시 첨부해 보세요!"
+                                                placeholder="무슨 생각을 하고 계신가요? 아래 [☕ 사다리 만들기] 버튼으로 직접 게임을 제작하거나, 게임/운세/주식 위젯을 첨부해 보세요!"
                                                 rows={3}
                                                 className="w-full bg-transparent border-none outline-none resize-none text-slate-800 placeholder-slate-400 font-bold text-sm leading-relaxed"
                                             />
+
+                                            {/* 첨부된 커스텀 사다리타기 미리보기 배지 */}
+                                            {pendingLadderData && (
+                                                <div className="mt-2 p-2.5 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between animate-fade-in">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-base">🪜</span>
+                                                        <div>
+                                                            <span className="text-xs font-black text-sky-850">{pendingLadderData.title}</span>
+                                                            <span className="text-[10px] text-sky-600 font-bold ml-1.5">({pendingLadderData.itemsCount}인용 사다리 첨부됨)</span>
+                                                        </div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPendingLadderData(null)}
+                                                        className="text-slate-400 hover:text-rose-500 text-xs px-2 py-0.5 font-bold transition-colors cursor-pointer"
+                                                    >
+                                                        첨부 취소 ✖
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             {/* 이미지 미리보기 */}
                                             {selectedImage && (
                                                 <div className="relative mt-2 w-20 h-20 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50">
@@ -580,17 +609,17 @@ export default function LoungePage() {
                                             <div className="flex flex-wrap gap-1.5 pt-2.5 pb-1 border-t border-slate-100">
                                                 <button
                                                     type="button"
+                                                    onClick={() => setIsLadderModalOpen(true)}
+                                                    className="px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                                >
+                                                    <i className="fas fa-mug-hot text-[10px]"></i> ☕ 사다리 만들기 🪜
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     onClick={() => setNewPostContent(prev => prev ? `${prev} #테트리스` : '#테트리스 12,400점 달성! 1:1 대결 도전해봐 🎮')}
                                                     className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                                                 >
                                                     <i className="fas fa-cubes text-[10px]"></i> 🎮 게임배틀
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #사다리타기` : '#사다리타기 오늘 커피 쏠 사람 누구? ☕')}
-                                                    className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    <i className="fas fa-mug-hot text-[10px]"></i> ☕ 사다리타기
                                                 </button>
                                                 <button
                                                     type="button"
@@ -778,6 +807,9 @@ export default function LoungePage() {
                                                     ) : (
                                                         <>
                                                             <SmartTagParser text={post.content} />
+                                                            {post.ladderData && (
+                                                                <CustomLadderWidget ladder={post.ladderData} />
+                                                            )}
                                                             {post.image && (
                                                                 <div className="mt-2.5 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center max-h-[300px] w-full">
                                                                     <img 
@@ -1065,6 +1097,9 @@ export default function LoungePage() {
                                                         ) : (
                                                             <>
                                                                 <SmartTagParser text={post.content} />
+                                                                {post.ladderData && (
+                                                                    <CustomLadderWidget ladder={post.ladderData} />
+                                                                )}
                                                                 {post.image && (
                                                                     <div className="mt-2 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center max-h-[220px] w-full">
                                                                         <img 
@@ -1157,6 +1192,18 @@ export default function LoungePage() {
                     </aside>
 
                 </div>
+
+                {/* 사다리타기 직접 만들기 모달 */}
+                <CustomLadderBuilderModal
+                    isOpen={isLadderModalOpen}
+                    onClose={() => setIsLadderModalOpen(false)}
+                    onSubmit={(ladder) => {
+                        setPendingLadderData(ladder);
+                        if (!newPostContent.trim()) {
+                            setNewPostContent(`[${ladder.title}] 사다리타기 게임 시작! 번호를 골라보세요 ☕🪜`);
+                        }
+                    }}
+                />
             </main>
 
             {/* 푸터 유지 */}
