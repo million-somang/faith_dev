@@ -22,6 +22,7 @@ export interface Post {
     likes: number;
     commentsCount: number;
     hasLiked?: boolean;
+    isMine?: boolean;
 }
 
 export default function LoungePage() {
@@ -53,6 +54,13 @@ export default function LoungePage() {
             bio: 'VERA 라운지에서 게임, 사주, 유틸 내기와 소통을 즐기는 유저입니다. ✨'
         };
     });
+
+    // 내가 작성한 글 판별 헬퍼 (isMine 플래그, 핸들 일치, ID 접두사 'post-' 등)
+    const isMyPost = (post: Post) => {
+        return post.isMine === true || 
+               post.author.handle === persona.handle || 
+               (typeof post.id === 'string' && post.id.startsWith('post-'));
+    };
 
     // 프로필 편집 상태
     const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -213,7 +221,8 @@ export default function LoungePage() {
             ladderData: pendingLadderData || undefined,
             createdAt: '방금 전',
             likes: 0,
-            commentsCount: 0
+            commentsCount: 0,
+            isMine: true
         };
 
         const updated = [newPost, ...posts];
@@ -746,11 +755,15 @@ export default function LoungePage() {
                                                             <div className="flex items-center gap-1.5 flex-wrap">
                                                                 <span className="font-extrabold text-sm text-slate-850">{post.author.name}</span>
                                                                 {post.author.badge && (
-                                                                    <span className="bg-rose-50 text-rose-600 border border-rose-200 text-[9px] text-rose-500 font-extrabold px-1.5 py-0.5 rounded">
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 border border-violet-200">
                                                                         {post.author.badge}
                                                                     </span>
                                                                 )}
-                                                                {post.author.handle !== persona.handle && (
+                                                                {isMyPost(post) ? (
+                                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-1">
+                                                                        <i className="fas fa-check-circle text-[8px]"></i> 내 글 👤
+                                                                    </span>
+                                                                ) : (
                                                                     <button
                                                                         onClick={() => handleFollowToggle(post.author.handle)}
                                                                         className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
@@ -768,21 +781,23 @@ export default function LoungePage() {
                                                     </div>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] text-slate-400 font-semibold">{post.createdAt}</span>
-                                                        {post.author.handle === persona.handle && (
-                                                            <div className="flex gap-2 ml-1">
+                                                        {isMyPost(post) && (
+                                                            <div className="flex items-center gap-1.5 ml-1">
                                                                 <button 
+                                                                    type="button"
                                                                     onClick={() => handleStartEdit(post.id, post.content)}
-                                                                    className="text-slate-400 hover:text-violet-650 transition-colors text-[11px]"
+                                                                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-xs font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
                                                                     title="피드 수정"
                                                                 >
-                                                                    <i className="far fa-edit"></i>
+                                                                    <i className="far fa-edit text-[10px]"></i> 수정
                                                                 </button>
                                                                 <button 
+                                                                    type="button"
                                                                     onClick={() => handleDeletePost(post.id)}
-                                                                    className="text-slate-400 hover:text-rose-500 transition-colors text-[11px]"
+                                                                    className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
                                                                     title="피드 삭제"
                                                                 >
-                                                                    <i className="far fa-trash-alt"></i>
+                                                                    <i className="far fa-trash-alt text-[10px]"></i> 삭제
                                                                 </button>
                                                             </div>
                                                         )}
@@ -792,16 +807,34 @@ export default function LoungePage() {
                                                 {/* 피드 본문 */}
                                                 <div className="text-sm font-semibold text-slate-700 border-b border-slate-100 pb-3 leading-relaxed">
                                                     {editingPostId === post.id ? (
-                                                        <div className="flex flex-col gap-2 mt-1">
+                                                        <div className="flex flex-col gap-2.5 my-2 p-3 bg-violet-50/50 border border-violet-200 rounded-2xl animate-fade-in">
+                                                            <div className="flex items-center justify-between">
+                                                                <span className="text-xs font-black text-violet-800 flex items-center gap-1">
+                                                                    <i className="fas fa-edit"></i> 피드 본문 수정
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400 font-bold">태그/텍스트를 자유롭게 수정하세요</span>
+                                                            </div>
                                                             <textarea
                                                                 value={editingContent}
                                                                 onChange={(e) => setEditingContent(e.target.value)}
                                                                 rows={3}
-                                                                className="w-full p-2.5 border border-slate-200 rounded-xl outline-none font-semibold text-xs leading-relaxed focus:ring-1 focus:ring-violet-500 text-slate-800"
+                                                                className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-semibold text-xs leading-relaxed focus:ring-2 focus:ring-violet-500 text-slate-800 shadow-inner"
                                                             />
-                                                            <div className="flex justify-end gap-2 text-[10px] font-black">
-                                                                <button onClick={handleCancelEdit} className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg">취소</button>
-                                                                <button onClick={() => handleSaveEdit(post.id)} className="px-3 py-1 bg-violet-600 hover:bg-violet-750 text-white rounded-lg">저장</button>
+                                                            <div className="flex justify-end gap-2 text-xs font-black">
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={handleCancelEdit} 
+                                                                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-all cursor-pointer"
+                                                                >
+                                                                    취소
+                                                                </button>
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => handleSaveEdit(post.id)} 
+                                                                    className="px-4 py-1.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl shadow-xs transition-all cursor-pointer active:scale-95 flex items-center gap-1"
+                                                                >
+                                                                    <i className="fas fa-check"></i> 저장 완료
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -824,20 +857,42 @@ export default function LoungePage() {
                                                 </div>
 
                                                 {/* 피드 풋 정보바 */}
-                                                <div className="flex items-center gap-5 text-xs text-slate-400 font-extrabold">
-                                                    <button 
-                                                        onClick={() => handleLikeToggle(post.id)}
-                                                        className={`flex items-center gap-1.5 transition-colors ${
-                                                            post.hasLiked ? 'text-rose-500' : 'hover:text-rose-500'
-                                                        }`}
-                                                    >
-                                                        <i className={`${post.hasLiked ? 'fas' : 'far'} fa-heart`}></i>
-                                                        <span>{post.likes}</span>
-                                                    </button>
-                                                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-violet-600">
-                                                        <i className="far fa-comment"></i>
-                                                        <span>{post.commentsCount}</span>
+                                                <div className="flex items-center justify-between text-xs text-slate-400 font-extrabold">
+                                                    <div className="flex items-center gap-5">
+                                                        <button 
+                                                            onClick={() => handleLikeToggle(post.id)}
+                                                            className={`flex items-center gap-1.5 transition-colors ${
+                                                                post.hasLiked ? 'text-rose-500' : 'hover:text-rose-500'
+                                                            }`}
+                                                        >
+                                                            <i className={`${post.hasLiked ? 'fas' : 'far'} fa-heart`}></i>
+                                                            <span>{post.likes}</span>
+                                                        </button>
+                                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-violet-600">
+                                                            <i className="far fa-comment"></i>
+                                                            <span>{post.commentsCount}</span>
+                                                        </div>
                                                     </div>
+
+                                                    {isMyPost(post) && (
+                                                        <div className="flex items-center gap-3 text-[11px]">
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleStartEdit(post.id, post.content)}
+                                                                className="text-violet-600 hover:text-violet-800 font-black cursor-pointer flex items-center gap-1"
+                                                            >
+                                                                <i className="far fa-edit text-[10px]"></i> 본문 수정
+                                                            </button>
+                                                            <span className="text-slate-200">|</span>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleDeletePost(post.id)}
+                                                                className="text-rose-500 hover:text-rose-700 font-black cursor-pointer flex items-center gap-1"
+                                                            >
+                                                                <i className="far fa-trash-alt text-[10px]"></i> 글 삭제
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </article>
                                         ))
@@ -1046,7 +1101,7 @@ export default function LoungePage() {
                                             </div>
                                             <span className="text-[10px] text-slate-500 font-extrabold">새 스토리</span>
                                         </div>
-                                        {posts.filter(p => p.author.handle === persona.handle).slice(0, 5).map((p, idx) => (
+                                        {posts.filter(isMyPost).slice(0, 5).map((p, idx) => (
                                             <div key={p.id} className="flex flex-col items-center gap-1.5 flex-shrink-0">
                                                 <div className="w-12 h-12 rounded-full border-2 border-violet-400 p-0.5 flex items-center justify-center bg-white shadow-inner animate-pulse-slow">
                                                     <span className="w-full h-full rounded-full bg-violet-50 flex items-center justify-center text-base">
@@ -1060,38 +1115,47 @@ export default function LoungePage() {
 
                                     {/* 내가 쓴 피드 리스트 */}
                                     <div className="flex flex-col gap-3">
-                                        {posts.filter(p => p.author.handle === persona.handle).length > 0 ? (
-                                            posts.filter(p => p.author.handle === persona.handle).map((post) => (
-                                                <div key={post.id} className="p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl relative group">
-                                                    <div className="absolute top-3 right-3 flex gap-2">
-                                                        <button 
-                                                            onClick={() => handleStartEdit(post.id, post.content)}
-                                                            className="text-slate-400 hover:text-violet-600 transition-colors cursor-pointer text-xs"
-                                                            title="피드 수정"
-                                                        >
-                                                            <i className="far fa-edit"></i>
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => handleDeletePost(post.id)}
-                                                            className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer text-xs"
-                                                            title="피드 삭제"
-                                                        >
-                                                            <i className="far fa-trash-alt"></i>
-                                                        </button>
+                                        {posts.filter(isMyPost).length > 0 ? (
+                                            posts.filter(isMyPost).map((post) => (
+                                                <div key={post.id} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl relative group">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                                                                내 글 👤
+                                                            </span>
+                                                            <span className="text-[9px] text-slate-400 font-bold">{post.createdAt}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleStartEdit(post.id, post.content)}
+                                                                className="px-2 py-0.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                                title="피드 수정"
+                                                            >
+                                                                <i className="far fa-edit text-[9px]"></i> 수정
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleDeletePost(post.id)}
+                                                                className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                                title="피드 삭제"
+                                                            >
+                                                                <i className="far fa-trash-alt text-[9px]"></i> 삭제
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <span className="text-[9px] text-slate-400 font-bold block mb-1">{post.createdAt}</span>
-                                                    <div className="text-xs font-semibold text-slate-700 break-keep leading-relaxed pr-12">
+                                                    <div className="text-xs font-semibold text-slate-700 break-keep leading-relaxed">
                                                         {editingPostId === post.id ? (
-                                                            <div className="flex flex-col gap-2 mt-1">
+                                                            <div className="flex flex-col gap-2 my-1 p-2.5 bg-white border border-violet-200 rounded-xl">
                                                                 <textarea
                                                                     value={editingContent}
                                                                     onChange={(e) => setEditingContent(e.target.value)}
-                                                                    rows={2}
+                                                                    rows={3}
                                                                     className="w-full p-2 border border-slate-200 rounded-lg outline-none font-semibold text-xs leading-relaxed focus:ring-1 focus:ring-violet-500 text-slate-800"
                                                                 />
-                                                                <div className="flex justify-end gap-1.5 text-[9px] font-black">
-                                                                    <button type="button" onClick={handleCancelEdit} className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded">취소</button>
-                                                                    <button type="button" onClick={() => handleSaveEdit(post.id)} className="px-2 py-0.5 bg-violet-600 hover:bg-violet-750 text-white rounded">저장</button>
+                                                                <div className="flex justify-end gap-1.5 text-[10px] font-black">
+                                                                    <button type="button" onClick={handleCancelEdit} className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg cursor-pointer">취소</button>
+                                                                    <button type="button" onClick={() => handleSaveEdit(post.id)} className="px-3 py-1 bg-violet-600 hover:bg-violet-700 text-white rounded-lg cursor-pointer">저장</button>
                                                                 </div>
                                                             </div>
                                                         ) : (
