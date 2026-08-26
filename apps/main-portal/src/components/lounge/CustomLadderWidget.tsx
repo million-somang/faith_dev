@@ -59,7 +59,7 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
         const { finalCol, pathPoints } = calculateLadderPath(startCol, itemsCount, rungs);
         setActivePath(pathPoints);
 
-        // 1초 후 결과 출력
+        // 0.8초 후 결과 출력
         setTimeout(() => {
             setFinalResult({
                 col: finalCol,
@@ -72,23 +72,20 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
     const colStep = 100 / (itemsCount - 1 || 1);
 
     return (
-        <div className="my-3 p-4 sm:p-5 rounded-3xl bg-slate-900 border border-sky-500/30 text-white shadow-xl relative overflow-hidden">
-            {/* 은은한 네온 배경 효과 */}
-            <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
+        <div className="my-3 p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-sky-50/90 via-slate-50 to-sky-50/80 border border-sky-200/90 text-slate-800 shadow-sm relative overflow-hidden">
             {/* 헤더 바 */}
-            <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+            <div className="flex justify-between items-center border-b border-sky-100 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                     <span className="text-lg">🪜</span>
                     <div>
-                        <h4 className="text-sm font-black text-white tracking-tight">{title}</h4>
-                        <span className="text-[10px] text-sky-400 font-bold">인터랙티브 실시간 사다리판 ({itemsCount}인용)</span>
+                        <h4 className="text-sm font-black text-slate-900 tracking-tight">{title}</h4>
+                        <span className="text-[10px] text-sky-600 font-bold">인터랙티브 실시간 사다리판 ({itemsCount}인용)</span>
                     </div>
                 </div>
                 <button
                     type="button"
                     onClick={() => setShowAllResults(prev => !prev)}
-                    className="px-2.5 py-1 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 text-[10px] font-black transition-all cursor-pointer"
+                    className="px-2.5 py-1 rounded-xl bg-white hover:bg-sky-50 border border-slate-200 text-slate-600 text-[10px] font-black transition-all cursor-pointer shadow-2xs"
                 >
                     {showAllResults ? '사다리판 보기' : '전체 결과 한눈에'}
                 </button>
@@ -96,7 +93,7 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
 
             {/* 상단 시작 번호 버튼들 */}
             <div className="mb-4">
-                <p className="text-xs text-slate-300 font-bold mb-2 text-center">
+                <p className="text-xs text-slate-600 font-bold mb-2 text-center">
                     👇 사다리를 탈 번호를 터치하세요:
                 </p>
                 <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${itemsCount}, minmax(0, 1fr))` }}>
@@ -105,10 +102,10 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                             key={idx}
                             onClick={() => handleSelectStart(idx)}
                             disabled={isTracing}
-                            className={`py-2 rounded-2xl font-black text-xs transition-all cursor-pointer shadow-md ${
+                            className={`py-2 rounded-xl font-black text-xs transition-all cursor-pointer shadow-2xs ${
                                 selectedStart === idx
-                                    ? 'bg-gradient-to-r from-sky-400 to-blue-500 text-white ring-2 ring-sky-300 scale-105'
-                                    : 'bg-white/10 hover:bg-white/20 text-slate-200 border border-white/10'
+                                    ? 'bg-sky-500 text-white border-sky-500 ring-2 ring-sky-300 scale-105'
+                                    : 'bg-white hover:bg-sky-50 text-slate-700 border border-slate-200'
                             }`}
                         >
                             {idx + 1}번
@@ -119,7 +116,7 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
 
             {/* 사다리 보드 그래픽 영역 */}
             {!showAllResults ? (
-                <div className="relative w-full h-44 bg-slate-950/80 rounded-2xl border border-white/10 p-4 mb-4 overflow-hidden">
+                <div className="relative w-full h-44 bg-white rounded-2xl border border-slate-200 p-4 mb-4 overflow-hidden shadow-inner">
                     <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
                         {/* 1. 세로 기준선들 */}
                         {Array.from({ length: itemsCount }).map((_, idx) => (
@@ -129,8 +126,8 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                                 y1="0"
                                 x2={idx * colStep}
                                 y2="100"
-                                stroke="#475569"
-                                strokeWidth="2"
+                                stroke="#cbd5e1"
+                                strokeWidth="2.5"
                                 strokeLinecap="round"
                             />
                         ))}
@@ -143,8 +140,8 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                                 y1={rung.yPercent}
                                 x2={rung.toCol * colStep}
                                 y2={rung.yPercent}
-                                stroke="#38bdf8"
-                                strokeWidth="2.5"
+                                stroke="#0284c7"
+                                strokeWidth="3"
                                 strokeLinecap="round"
                             />
                         ))}
@@ -155,7 +152,7 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                                 points={activePath.map(p => `${p.xPercent},${p.yPercent}`).join(' ')}
                                 fill="none"
                                 stroke="#f59e0b"
-                                strokeWidth="3.5"
+                                strokeWidth="4"
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
                                 className="animate-pulse"
@@ -165,15 +162,15 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                 </div>
             ) : (
                 /* 전체 결과 보기 모드 */
-                <div className="p-3 bg-white/5 rounded-2xl border border-white/10 mb-4 animate-fade-in">
-                    <h5 className="text-xs font-black text-amber-300 mb-2.5 text-center">📋 사다리 전체 결과 표</h5>
+                <div className="p-3 bg-white rounded-2xl border border-slate-200 mb-4 animate-fade-in shadow-2xs">
+                    <h5 className="text-xs font-black text-amber-700 mb-2.5 text-center">📋 사다리 전체 결과 표</h5>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                         {Array.from({ length: itemsCount }).map((_, startIdx) => {
                             const { finalCol } = calculateLadderPath(startIdx, itemsCount, rungs);
                             return (
-                                <div key={startIdx} className="p-2 rounded-xl bg-white/5 border border-white/5 flex justify-between items-center">
-                                    <span className="font-bold text-sky-400 font-mono">{startIdx + 1}번 선택 ➡️</span>
-                                    <span className="font-black text-slate-100 truncate ml-1">{results[finalCol]}</span>
+                                <div key={startIdx} className="p-2 rounded-xl bg-slate-50 border border-slate-100 flex justify-between items-center">
+                                    <span className="font-bold text-sky-600 font-mono">{startIdx + 1}번 선택 ➡️</span>
+                                    <span className="font-black text-slate-800 truncate ml-1">{results[finalCol]}</span>
                                 </div>
                             );
                         })}
@@ -188,8 +185,8 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
                         key={idx}
                         className={`p-1.5 rounded-xl border text-center text-[10px] font-extrabold truncate transition-all ${
                             finalResult && finalResult.col === idx
-                                ? 'bg-amber-500/20 text-amber-300 border-amber-400/50 scale-105 shadow-md animate-bounce-subtle'
-                                : 'bg-white/5 text-slate-400 border-white/5'
+                                ? 'bg-amber-100 text-amber-900 border-amber-300 scale-105 shadow-sm font-black animate-bounce-subtle'
+                                : 'bg-white text-slate-600 border-slate-200 shadow-2xs'
                         }`}
                         title={res}
                     >
@@ -200,17 +197,17 @@ export const CustomLadderWidget: React.FC<CustomLadderWidgetProps> = ({ ladder }
 
             {/* 실시간 주행 중 or 최종 결과 팝업 */}
             {isTracing && (
-                <div className="mt-3 py-2 px-3 bg-sky-500/20 border border-sky-400/30 rounded-xl text-center text-xs font-bold text-sky-300 animate-pulse">
+                <div className="mt-3 py-2 px-3 bg-sky-100 border border-sky-200 rounded-xl text-center text-xs font-bold text-sky-800 animate-pulse">
                     🚶‍♂️ {selectedStart! + 1}번에서 사다리를 타고 내려가는 중...
                 </div>
             )}
 
             {finalResult && !isTracing && (
-                <div className="mt-3 p-3 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border border-amber-400/40 rounded-2xl text-center animate-fade-in">
-                    <span className="text-[11px] text-amber-200 font-bold block">
+                <div className="mt-3 p-3 bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 rounded-2xl text-center animate-fade-in shadow-xs">
+                    <span className="text-[11px] text-amber-800 font-bold block">
                         🎉 [{selectedStart! + 1}번] 사다리 도착 결과:
                     </span>
-                    <div className="text-sm font-black text-amber-300 mt-0.5">
+                    <div className="text-sm font-black text-amber-950 mt-0.5">
                         {finalResult.text}
                     </div>
                 </div>

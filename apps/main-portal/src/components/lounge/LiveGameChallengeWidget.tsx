@@ -47,27 +47,24 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
     };
 
     return (
-        <div className="my-2.5 p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 text-white shadow-lg relative overflow-hidden">
-            {/* 은은한 네온 글로우 */}
-            <div className="absolute -right-8 -top-8 w-32 h-32 bg-violet-500/20 rounded-full blur-2xl pointer-events-none"></div>
-
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="my-2.5 p-4 rounded-2xl bg-gradient-to-br from-violet-50/90 via-indigo-50/50 to-purple-50/80 border border-violet-200/90 text-slate-800 shadow-sm relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${gradient} flex items-center justify-center text-white text-lg shadow-md shrink-0`}>
                         <i className={icon}></i>
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-500/30 text-violet-300 border border-violet-400/30">
+                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
                                 🎮 실시간 게임 챌린지
                             </span>
-                            <span className="text-[11px] font-bold text-slate-400">
+                            <span className="text-[11px] font-bold text-slate-500">
                                 현재 {challengeCount}명 도전 중
                             </span>
                         </div>
-                        <h4 className="text-sm font-black text-white mt-0.5 tracking-tight flex items-center gap-1.5">
+                        <h4 className="text-sm font-black text-slate-850 mt-0.5 tracking-tight flex items-center gap-1.5">
                             {gameTitle} 랭킹 챌린지
-                            <span className="text-xs font-mono font-bold text-amber-300">
+                            <span className="text-xs font-mono font-bold text-violet-600">
                                 ({scoreText || defaultScore})
                             </span>
                         </h4>
@@ -76,7 +73,7 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
 
                 <button
                     onClick={handleChallenge}
-                    className="self-end sm:self-auto px-4 py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white text-xs font-extrabold rounded-xl shadow-md flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                    className="self-end sm:self-auto px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-xs flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
                     <i className="fas fa-gamepad text-xs"></i>
                     <span>{hasChallenged ? '다시 도전하기' : '1:1 대결 도전하기'}</span>

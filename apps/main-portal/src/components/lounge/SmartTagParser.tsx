@@ -32,7 +32,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                     if (stockMatch) {
                         const stockName = stockMatch[0];
                         lineContent.push(
-                            <span key={`text-${wordIdx}`} className="text-violet-400 font-extrabold cursor-pointer hover:underline mr-1">
+                            <span key={`text-${wordIdx}`} className="text-violet-600 font-black cursor-pointer hover:underline mr-1">
                                 {stockName}
                             </span>
                         );
@@ -44,7 +44,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                         // A. 게임 태그 (#테트리스, #스도쿠, #2048, #지뢰찾기, #게임)
                         if (['테트리스', '스도쿠', '2048', '지뢰찾기', '게임'].some(g => tagName.includes(g))) {
                             lineContent.push(
-                                <span key={`text-${wordIdx}`} className="text-emerald-400 font-extrabold mr-1">
+                                <span key={`text-${wordIdx}`} className="text-emerald-600 font-black mr-1">
                                     {fullTag}
                                 </span>
                             );
@@ -53,7 +53,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                         // B. 사주 & 운세 태그 (#오늘의운세, #사주, #운세)
                         else if (['운세', '사주', '타로', '행운'].some(s => tagName.includes(s))) {
                             lineContent.push(
-                                <span key={`text-${wordIdx}`} className="text-amber-400 font-extrabold mr-1">
+                                <span key={`text-${wordIdx}`} className="text-amber-600 font-black mr-1">
                                     {fullTag}
                                 </span>
                             );
@@ -62,7 +62,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                         // C. 생활 유틸리티 태그 (#사다리타기, #주사위, #동전 등)
                         else {
                             lineContent.push(
-                                <span key={`text-${wordIdx}`} className="text-sky-400 font-extrabold mr-1">
+                                <span key={`text-${wordIdx}`} className="text-sky-600 font-black mr-1">
                                     {fullTag}
                                 </span>
                             );
@@ -71,7 +71,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                     } else if (newsLinkMatch) {
                         const rawUrl = newsLinkMatch[1] || newsLinkMatch[0];
                         lineContent.push(
-                            <span key={`text-${wordIdx}`} className="text-amber-400 font-bold hover:underline cursor-pointer mr-1 break-all">
+                            <span key={`text-${wordIdx}`} className="text-amber-600 font-bold hover:underline cursor-pointer mr-1 break-all">
                                 🔗 AI 뉴스분석 링크
                             </span>
                         );
@@ -82,7 +82,7 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                 });
 
                 return (
-                    <div key={lineIdx} className="text-sm leading-relaxed text-slate-200">
+                    <div key={lineIdx} className="text-sm leading-relaxed text-slate-700 font-medium">
                         {/* 텍스트 행 렌더링 */}
                         <div className="flex flex-wrap items-center">
                             {lineContent}
