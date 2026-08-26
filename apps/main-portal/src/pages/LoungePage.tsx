@@ -857,42 +857,20 @@ export default function LoungePage() {
                                                 </div>
 
                                                 {/* 피드 풋 정보바 */}
-                                                <div className="flex items-center justify-between text-xs text-slate-400 font-extrabold">
-                                                    <div className="flex items-center gap-5">
-                                                        <button 
-                                                            onClick={() => handleLikeToggle(post.id)}
-                                                            className={`flex items-center gap-1.5 transition-colors ${
-                                                                post.hasLiked ? 'text-rose-500' : 'hover:text-rose-500'
-                                                            }`}
-                                                        >
-                                                            <i className={`${post.hasLiked ? 'fas' : 'far'} fa-heart`}></i>
-                                                            <span>{post.likes}</span>
-                                                        </button>
-                                                        <div className="flex items-center gap-1.5 cursor-pointer hover:text-violet-600">
-                                                            <i className="far fa-comment"></i>
-                                                            <span>{post.commentsCount}</span>
-                                                        </div>
+                                                <div className="flex items-center gap-5 text-xs text-slate-400 font-extrabold">
+                                                    <button 
+                                                        onClick={() => handleLikeToggle(post.id)}
+                                                        className={`flex items-center gap-1.5 transition-colors ${
+                                                            post.hasLiked ? 'text-rose-500' : 'hover:text-rose-500'
+                                                        }`}
+                                                    >
+                                                        <i className={`${post.hasLiked ? 'fas' : 'far'} fa-heart`}></i>
+                                                        <span>{post.likes}</span>
+                                                    </button>
+                                                    <div className="flex items-center gap-1.5 cursor-pointer hover:text-violet-600">
+                                                        <i className="far fa-comment"></i>
+                                                        <span>{post.commentsCount}</span>
                                                     </div>
-
-                                                    {isMyPost(post) && (
-                                                        <div className="flex items-center gap-3 text-[11px]">
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => handleStartEdit(post.id, post.content)}
-                                                                className="text-violet-600 hover:text-violet-800 font-black cursor-pointer flex items-center gap-1"
-                                                            >
-                                                                <i className="far fa-edit text-[10px]"></i> 본문 수정
-                                                            </button>
-                                                            <span className="text-slate-200">|</span>
-                                                            <button 
-                                                                type="button"
-                                                                onClick={() => handleDeletePost(post.id)}
-                                                                className="text-rose-500 hover:text-rose-700 font-black cursor-pointer flex items-center gap-1"
-                                                            >
-                                                                <i className="far fa-trash-alt text-[10px]"></i> 글 삭제
-                                                            </button>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </article>
                                         ))
