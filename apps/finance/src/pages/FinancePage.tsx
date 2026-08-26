@@ -115,11 +115,12 @@ export default function FinancePage() {
         return () => clearInterval(interval);
     }, []);
 
-    const renderStockCard = (stock: StockCard) => (
+    const renderStockCard = (stock: StockCard, idx: number = 0, baseDelay: number = 0) => (
         <Link
             key={stock.ticker}
             to={`/stock/${stock.ticker}`}
-            className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 transition-all group"
+            style={{ animationDelay: `${baseDelay + idx * 80}ms` }}
+            className="animate-fade-in-up bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 transition-all duration-300 group hover:-translate-y-1"
         >
             <div className="flex items-start justify-between mb-1">
                 <div>
@@ -151,9 +152,12 @@ export default function FinancePage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
                 {/* 주요 지수 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 animate-fade-in-up">
-                    {indices.map((index) => (
-                        <Card key={index.name} className={`p-6 hover:shadow-md transition-all duration-200 ${loading ? 'animate-pulse' : ''}`}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+                    {indices.map((index, idx) => (
+                        <Card 
+                            key={index.name} 
+                            className={`animate-fade-in-up ${idx === 1 ? 'animation-delay-100' : idx === 2 ? 'animation-delay-200' : ''} p-6 hover:shadow-md transition-all duration-300 ${loading ? 'animate-pulse' : ''}`}
+                        >
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-sm font-medium text-gray-600">{index.name}</h3>
                                 <span className={`text-xs px-2 py-1 rounded ${
@@ -257,16 +261,20 @@ export default function FinancePage() {
 
                 {/* 거시 경제 지표 */}
                 {macro.length > 0 && (
-                    <div className="mb-10 animate-fade-in-up animation-delay-150">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-100">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="mr-2">🌍</span>거시 경제 지표
                             </h2>
                             <span className="text-xs text-gray-400">실시간</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {macro.map((item) => (
-                                <div key={item.symbol} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all">
+                            {macro.map((item, idx) => (
+                                <div 
+                                    key={item.symbol} 
+                                    style={{ animationDelay: `${idx * 80 + 100}ms` }}
+                                    className="animate-fade-in-up bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                                >
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-2">
                                             <span className="text-lg">{item.icon}</span>
@@ -297,8 +305,8 @@ export default function FinancePage() {
 
                 {/* KR 국내 대표 기업 */}
                 {krStocks.length > 0 && (
-                    <div className="mb-10 animate-fade-in-up animation-delay-225">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-150">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-blue-600 font-mono text-sm mr-2 bg-blue-50 px-2 py-1 rounded">KR</span>
                                 국내 대표 기업
@@ -306,15 +314,15 @@ export default function FinancePage() {
                             <span className="text-xs text-gray-400">20분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {krStocks.map(renderStockCard)}
+                            {krStocks.map((stock, idx) => renderStockCard(stock, idx, 150))}
                         </div>
                     </div>
                 )}
 
                 {/* US 미국 빅테크 4대장 */}
                 {usStocks.length > 0 && (
-                    <div className="mb-10 animate-fade-in-up animation-delay-300">
-                        <div className="flex items-center justify-between mb-4">
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-250">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-red-600 font-mono text-sm mr-2 bg-red-50 px-2 py-1 rounded">US</span>
                                 미국 빅테크 4대장
@@ -322,14 +330,14 @@ export default function FinancePage() {
                             <span className="text-xs text-gray-400">15분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {usStocks.map(renderStockCard)}
+                            {usStocks.map((stock, idx) => renderStockCard(stock, idx, 250))}
                         </div>
                     </div>
                 )}
 
                 {/* 뉴스 + 빠른 링크 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 animate-fade-in-up animation-delay-375">
-                    <Card className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <Card className="p-6 animate-fade-in-up animation-delay-350">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <i className="fas fa-newspaper text-blue-500 mr-2"></i>
@@ -341,11 +349,12 @@ export default function FinancePage() {
                         </div>
                         <div className="space-y-4">
                             {stockNews.length > 0 ? (
-                                stockNews.map((news) => (
+                                stockNews.map((news, idx) => (
                                     <a 
                                         key={news.id} 
                                         href={`${MAIN_PORTAL_URL}/news/${news.id}`} 
-                                        className="block p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 group"
+                                        style={{ animationDelay: `${idx * 80 + 350}ms` }}
+                                        className="animate-fade-in-up block p-4 rounded-lg hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-100 group"
                                     >
                                         <div className="font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-green-700 transition-colors">
                                             {decodeHtmlEntities(news.title)}
@@ -359,7 +368,12 @@ export default function FinancePage() {
                                 ))
                             ) : (
                                 MOCK_FINANCE_NEWS.map((news, idx) => (
-                                    <a key={idx} href={`${MAIN_PORTAL_URL}/news?category=stock`} className="block p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                                    <a 
+                                        key={idx} 
+                                        href={`${MAIN_PORTAL_URL}/news?category=stock`} 
+                                        style={{ animationDelay: `${idx * 80 + 350}ms` }}
+                                        className="animate-fade-in-up block p-4 rounded-lg hover:bg-gray-50 transition-all duration-300"
+                                    >
                                         <div className="font-medium text-gray-900 mb-1 line-clamp-2">{news.title}</div>
                                         <div className="text-sm text-gray-500">{news.time}</div>
                                     </a>
