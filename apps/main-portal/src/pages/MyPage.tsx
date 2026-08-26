@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { PreferenceWizard } from '../components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '../components/homepage/MobileTabEditor';
 import { CompactDashboardWidgets } from '../components/homepage/CompactDashboardWidgets';
-import { CalendarScheduleSection } from '../components/mypage/CalendarScheduleSection';
+import { MyLifeSection } from '../components/mypage/MyLifeSection';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
 import { BannerSlot } from '../components/BannerSlot';
@@ -753,8 +753,8 @@ const DEFAULT_SHOPPING_ITEMS = [
                                     : 'text-slate-600 hover:bg-slate-100 font-bold'
                             }`}
                         >
-                            <i className="fas fa-calendar-alt text-sm"></i>
-                            <span>{t('일정/달력')}</span>
+                            <i className="fas fa-sparkles text-amber-300 text-sm"></i>
+                            <span>{t('My Life')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('news')}
@@ -855,7 +855,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                             </div>
 
                                             <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 group-hover:translate-x-1 transition-all shrink-0">
-                                                <span>달력 바로가기</span>
+                                                <span>My Life 바로가기</span>
                                                 <i className="fas fa-arrow-right text-[10px]"></i>
                                             </div>
                                         </div>
@@ -1255,9 +1255,17 @@ const DEFAULT_SHOPPING_ITEMS = [
                                         </div>
                                     )}
 
-                                    {/* ─── [신설] 📅 일정 / 달력 전용 뷰 ─── */}
+                                    {/* ─── [신설] 🌟 My Life (사주 주의보, 실시간 날씨, 오늘의 명언, 스마트 일정 달력 통합 뷰) ─── */}
                                     {activeSection === 'schedule' && (
-                                        <CalendarScheduleSection
+                                        <MyLifeSection
+                                            user={user}
+                                            birthDate={birthDate}
+                                            showBirthEditor={showBirthEditor}
+                                            setShowBirthEditor={setShowBirthEditor}
+                                            tempBirthDate={tempBirthDate}
+                                            setTempBirthDate={setTempBirthDate}
+                                            handleSaveBirth={handleSaveBirth}
+                                            saju={saju}
                                             calYear={calYear}
                                             calMonth={calMonth}
                                             calendarDays={calendarDays}
