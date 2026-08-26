@@ -532,6 +532,15 @@ const DEFAULT_SHOPPING_ITEMS = [
         return schedulesByDate[todayStr] || [];
     }, [schedulesByDate, todayStr]);
 
+    const todayFormatted = useMemo(() => {
+        const days = ['일', '월', '화', '수', '목', '금', '토'];
+        const now = new Date();
+        const m = now.getMonth() + 1;
+        const d = now.getDate();
+        const dayName = days[now.getDay()];
+        return `${m}월 ${d}일 (${dayName})`;
+    }, []);
+
     // 생년월일 관리 로컬 스토리지 연동
     const [birthDate, setBirthDate] = useState(localStorage.getItem('user_birth_date') || '');
     const [tempBirthDate, setTempBirthDate] = useState(birthDate);
@@ -819,33 +828,94 @@ const DEFAULT_SHOPPING_ITEMS = [
                                     {/* 🌤️📈 1. 날씨 & 금융/증시 슬림형 컴팩트 위젯 (독립 카드 바) */}
                                     <CompactDashboardWidgets />
 
-                                    {/* 📅 2. 오늘의 일정 독립 카드 */}
+                                    {/* 📅 2. 오늘의 일정 독립 브리핑 카드 */}
                                     <div 
                                         onClick={() => setActiveSection('schedule')}
-                                        className="bg-white hover:bg-emerald-50/20 border border-slate-200/80 hover:border-emerald-300 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center justify-between cursor-pointer transition-all hover:shadow-md group"
+                                        className="bg-white hover:bg-slate-50/50 border border-slate-200/90 hover:border-emerald-300 rounded-3xl p-5 sm:p-6 shadow-sm transition-all hover:shadow-md cursor-pointer group flex flex-col gap-4"
                                     >
-                                        <div className="flex items-center gap-3.5">
-                                            <div className="w-11 h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform">
-                                                <i className="fas fa-calendar-check"></i>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-extrabold text-slate-900 text-base">오늘의 일정</span>
-                                                    <span className="text-xs font-black font-mono px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                                                        {todaySchedules.length > 0 ? `${todaySchedules.length}건` : '일정 없음'}
-                                                    </span>
+                                        {/* 상단: 타이틀, 오늘 날짜 뱃지, 건수 뱃지 및 우측 달력 바로가기 링크 */}
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg sm:text-xl shadow-md shadow-emerald-200 group-hover:scale-105 transition-transform shrink-0">
+                                                    <i className="fas fa-calendar-check"></i>
                                                 </div>
-                                                <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                                                    {todaySchedules.length > 0 
-                                                        ? `${todaySchedules.slice(0, 2).map((s: any) => s.title || s.schedule_text || s.text).join(', ')}${todaySchedules.length > 2 ? ` 외 ${todaySchedules.length - 2}건` : ''}`
-                                                        : '오늘 등록된 일정이 없습니다. 클릭하여 새 일정을 등록하거나 확인해 보세요.'}
-                                                </p>
+                                                <div>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="font-black text-slate-900 text-base sm:text-lg tracking-tight">오늘의 일정</span>
+                                                        <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                                                            {todayFormatted}
+                                                        </span>
+                                                        <span className={`text-xs font-black font-mono px-2.5 py-0.5 rounded-full ${
+                                                            todaySchedules.length > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                                                        }`}>
+                                                            {todaySchedules.length > 0 ? `${todaySchedules.length}건` : '일정 없음'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 group-hover:translate-x-1 transition-all shrink-0">
+                                                <span>달력 바로가기</span>
+                                                <i className="fas fa-arrow-right text-[10px]"></i>
                                             </div>
                                         </div>
-                                        <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3.5 py-2 rounded-xl border border-emerald-200 flex items-center gap-1.5 group-hover:translate-x-1 transition-all">
-                                            <span>일정 달력 바로가기</span>
-                                            <i className="fas fa-arrow-right text-[10px]"></i>
-                                        </div>
+
+                                        {/* 하단: 일정 상세 브리핑 바 (일정이 있을 때 / 없을 때) */}
+                                        {todaySchedules.length > 0 ? (
+                                            <div className="flex flex-col gap-2 pt-1 border-t border-slate-100">
+                                                {todaySchedules.slice(0, 3).map((item: any, idx: number) => {
+                                                    const colorKey = item.color || 'blue';
+                                                    const colorConfig = SCHEDULE_COLOR_CONFIG[colorKey] || SCHEDULE_COLOR_CONFIG.blue;
+                                                    const timeText = item.schedule_time || item.time || (item.is_all_day ? '하루 종일' : '');
+                                                    const titleText = item.schedule_text || item.title || item.text || '제목 없음';
+
+                                                    return (
+                                                        <div 
+                                                            key={item.id || idx}
+                                                            className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl ${colorConfig.bg} border ${colorConfig.border} transition-all`}
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                                {/* 카테고리 뱃지 */}
+                                                                <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg ${colorConfig.badge} shrink-0`}>
+                                                                    {colorConfig.label}
+                                                                </span>
+                                                                {/* 시간대 태그 (있을 경우) */}
+                                                                {timeText && (
+                                                                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1 font-mono shrink-0 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200/60 shadow-2xs">
+                                                                        <i className="far fa-clock text-[10px] text-slate-400"></i>
+                                                                        {timeText}
+                                                                    </span>
+                                                                )}
+                                                                {/* 일정 제목 */}
+                                                                <span className="font-extrabold text-xs sm:text-sm text-slate-800 truncate">
+                                                                    {titleText}
+                                                                </span>
+                                                            </div>
+
+                                                            <span className="text-[11px] font-bold text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
+                                                                확인 <i className="fas fa-chevron-right text-[9px] ml-0.5"></i>
+                                                            </span>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {todaySchedules.length > 3 && (
+                                                    <p className="text-xs font-bold text-slate-400 text-right pr-2">
+                                                        외 {todaySchedules.length - 3}개의 일정이 더 있습니다.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                                                <span className="flex items-center gap-2 text-slate-500">
+                                                    <i className="fas fa-info-circle text-emerald-500"></i>
+                                                    오늘 등록된 일정이 없습니다. 일정을 추가하여 하루를 스마트하게 관리해 보세요.
+                                                </span>
+                                                <span className="font-bold text-emerald-600 hover:underline">
+                                                    + 새 일정 등록
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* 📰 3. 내가 구독한 주제 최신 뉴스 (독립 카드) */}
