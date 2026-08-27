@@ -6,7 +6,7 @@ import { PageSEO } from '../components/PageSEO';
 import { SmartTagParser } from '../components/lounge/SmartTagParser';
 import { CustomLadderBuilderModal, CustomLadderData } from '../components/lounge/CustomLadderBuilderModal';
 import { CustomLadderWidget } from '../components/lounge/CustomLadderWidget';
-import { LoungeBattleModal } from '../components/lounge/LoungeBattleModal';
+import { openLoungeBattlePopup } from '../components/lounge/LoungeBattleModal';
 
 export interface Post {
     id: string;
@@ -69,30 +69,13 @@ export default function LoungePage() {
     const [editHandle, setEditHandle] = useState(persona.handle);
     const [editBio, setEditBio] = useState(persona.bio);
 
-    // 4. 피드 목록 상태 & 사다리 빌더 상태 & 1:1 배틀 모달 상태
+    // 4. 피드 목록 상태 & 사다리 빌더 상태
     const [isLadderModalOpen, setIsLadderModalOpen] = useState(false);
     const [pendingLadderData, setPendingLadderData] = useState<CustomLadderData | null>(null);
 
-    // 실시간 인게임 팝업 배틀 모달 상태
-    const [battleModal, setBattleModal] = useState<{
-        isOpen: boolean;
-        gameTag: string;
-        targetScore: number;
-        challengerName: string;
-    }>({
-        isOpen: false,
-        gameTag: '#테트리스',
-        targetScore: 12400,
-        challengerName: '베라 랭커'
-    });
-
+    // 실시간 독립 브라우저 팝업 창 배틀 실행 함수
     const handleOpenBattle = (gameTag: string, targetScore: number, challengerName?: string) => {
-        setBattleModal({
-            isOpen: true,
-            gameTag,
-            targetScore,
-            challengerName: challengerName || '베라 랭커'
-        });
+        openLoungeBattlePopup(gameTag, targetScore, challengerName || '베라 랭커');
     };
 
     const handleShareBattleResult = (result: {
@@ -121,12 +104,39 @@ export default function LoungePage() {
             isMine: true
         };
 
-        const updated = [newPost, ...posts];
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        setPosts(prev => {
+            const updated = [newPost, ...prev];
+            localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+            return updated;
+        });
         setActiveTab('home');
-        alert(`배틀 결과가 라운지 피드에 성공적으로 등록되었습니다! 🚀 (${result.myScore.toLocaleString()}P)`);
     };
+
+    // 팝업 창과의 실시간 통신 및 스토리지 동기화 리스너
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            if (e.data?.type === 'LOUNGE_BATTLE_SHARE' && e.data?.result) {
+                handleShareBattleResult(e.data.result);
+            }
+        };
+
+        const handleStorageSync = (e: StorageEvent) => {
+            if (e.key === 'vera_lounge_posts' && e.newValue) {
+                try {
+                    setPosts(JSON.parse(e.newValue));
+                } catch {
+                    // ignore
+                }
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        window.addEventListener('storage', handleStorageSync);
+        return () => {
+            window.removeEventListener('message', handleMessage);
+            window.removeEventListener('storage', handleStorageSync);
+        };
+    }, [persona]);
 
     const [points] = useState<number>(() => {
         const saved = localStorage.getItem('vera_points');
@@ -1306,16 +1316,6 @@ export default function LoungePage() {
                             setNewPostContent(`[${ladder.title}] 사다리타기 게임 시작! 번호를 골라보세요 ☕🪜`);
                         }
                     }}
-                />
-
-                {/* 실시간 1:1 인게임 팝업 배틀 모달 */}
-                <LoungeBattleModal
-                    isOpen={battleModal.isOpen}
-                    onClose={() => setBattleModal(prev => ({ ...prev, isOpen: false }))}
-                    gameTag={battleModal.gameTag}
-                    targetScore={battleModal.targetScore}
-                    challengerName={battleModal.challengerName}
-                    onShareResult={handleShareBattleResult}
                 />
             </main>
 

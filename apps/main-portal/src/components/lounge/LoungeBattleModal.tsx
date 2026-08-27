@@ -32,6 +32,27 @@ export const saveStoredBattleRecord = (record: BattleRecord) => {
     localStorage.setItem('vera_lounge_battle_record', JSON.stringify(record));
 };
 
+export const openLoungeBattlePopup = (
+    gameTag: string = '#테트리스',
+    targetScore: number = 12400,
+    challengerName: string = '베라 랭커'
+) => {
+    const width = 480;
+    const height = 750;
+    const left = Math.max(0, Math.floor(window.screenX + (window.outerWidth - width) / 2));
+    const top = Math.max(0, Math.floor(window.screenY + (window.outerHeight - height) / 2));
+    const url = `/lounge/battle-popup?tag=${encodeURIComponent(gameTag)}&target=${targetScore}&challenger=${encodeURIComponent(challengerName)}`;
+    
+    const popup = window.open(
+        url,
+        'VeraLoungeBattlePopup',
+        `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no,location=no`
+    );
+    if (popup) {
+        popup.focus();
+    }
+};
+
 interface LoungeBattleModalProps {
     isOpen: boolean;
     onClose: () => void;

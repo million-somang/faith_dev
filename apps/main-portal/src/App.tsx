@@ -35,6 +35,7 @@ import SajuInfoPage from './pages/SajuInfoPage';
 import NovelPage from './pages/NovelPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
+import LoungeBattlePopupPage from './pages/LoungeBattlePopupPage';
 import B2BPage from './pages/B2BPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
@@ -483,6 +484,7 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
+                    <Route path="/lounge/battle-popup" element={<LoungeBattlePopupPage />} />
                     <Route path="/guides" element={<GuidesHubPage />} />
                     <Route path="/guides/:slug" element={<GuideDetailPage />} />
                     <Route path="/blog" element={<GuidesHubPage />} />

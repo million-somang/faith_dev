@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredBattleRecord, BattleRecord } from './LoungeBattleModal';
+import { getStoredBattleRecord, BattleRecord, openLoungeBattlePopup } from './LoungeBattleModal';
 
 interface LiveGameChallengeWidgetProps {
     gameTag: string;
@@ -53,6 +53,17 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
 
     useEffect(() => {
         setRecord(getStoredBattleRecord());
+
+        const handleStorageUpdate = () => {
+            setRecord(getStoredBattleRecord());
+        };
+
+        window.addEventListener('storage', handleStorageUpdate);
+        window.addEventListener('lounge-record-updated', handleStorageUpdate);
+        return () => {
+            window.removeEventListener('storage', handleStorageUpdate);
+            window.removeEventListener('lounge-record-updated', handleStorageUpdate);
+        };
     }, []);
 
     const handleChallenge = () => {
@@ -60,10 +71,7 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
         if (onOpenBattle) {
             onOpenBattle(gameTag, parsedTargetScore, challengerName || '베라 랭커');
         } else {
-            // 커스텀 이벤트 디스패치 (어디서든 모달 트리거 가능)
-            window.dispatchEvent(new CustomEvent('open-lounge-battle', {
-                detail: { gameTag, targetScore: parsedTargetScore, challengerName: challengerName || '베라 랭커' }
-            }));
+            openLoungeBattlePopup(gameTag, parsedTargetScore, challengerName || '베라 랭커');
         }
     };
 
