@@ -6,9 +6,11 @@ import { LiveSajuHoroscopeWidget } from './LiveSajuHoroscopeWidget';
 
 interface SmartTagParserProps {
     text: string;
+    authorName?: string;
+    onOpenBattle?: (gameTag: string, targetScore: number, challengerName?: string) => void;
 }
 
-export function SmartTagParser({ text }: SmartTagParserProps) {
+export function SmartTagParser({ text, authorName, onOpenBattle }: SmartTagParserProps) {
     if (!text) return null;
 
     // 정규표현식: $주식명, #유틸리티/게임/사주명, @기사링크 URL 패턴 검출
@@ -48,7 +50,14 @@ export function SmartTagParser({ text }: SmartTagParserProps) {
                                     {fullTag}
                                 </span>
                             );
-                            widgets.push(<LiveGameChallengeWidget key={`widget-game-${wordIdx}`} gameTag={fullTag} />);
+                            widgets.push(
+                                <LiveGameChallengeWidget 
+                                    key={`widget-game-${wordIdx}`} 
+                                    gameTag={fullTag}
+                                    challengerName={authorName}
+                                    onOpenBattle={onOpenBattle}
+                                />
+                            );
                         }
                         // B. 사주 & 운세 태그 (#오늘의운세, #사주, #운세)
                         else if (['운세', '사주', '타로', '행운'].some(s => tagName.includes(s))) {

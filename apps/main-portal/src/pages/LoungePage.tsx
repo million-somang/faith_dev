@@ -6,6 +6,7 @@ import { PageSEO } from '../components/PageSEO';
 import { SmartTagParser } from '../components/lounge/SmartTagParser';
 import { CustomLadderBuilderModal, CustomLadderData } from '../components/lounge/CustomLadderBuilderModal';
 import { CustomLadderWidget } from '../components/lounge/CustomLadderWidget';
+import { LoungeBattleModal } from '../components/lounge/LoungeBattleModal';
 
 export interface Post {
     id: string;
@@ -68,9 +69,64 @@ export default function LoungePage() {
     const [editHandle, setEditHandle] = useState(persona.handle);
     const [editBio, setEditBio] = useState(persona.bio);
 
-    // 4. 피드 목록 상태 & 사다리 빌더 상태
+    // 4. 피드 목록 상태 & 사다리 빌더 상태 & 1:1 배틀 모달 상태
     const [isLadderModalOpen, setIsLadderModalOpen] = useState(false);
     const [pendingLadderData, setPendingLadderData] = useState<CustomLadderData | null>(null);
+
+    // 실시간 인게임 팝업 배틀 모달 상태
+    const [battleModal, setBattleModal] = useState<{
+        isOpen: boolean;
+        gameTag: string;
+        targetScore: number;
+        challengerName: string;
+    }>({
+        isOpen: false,
+        gameTag: '#테트리스',
+        targetScore: 12400,
+        challengerName: '베라 랭커'
+    });
+
+    const handleOpenBattle = (gameTag: string, targetScore: number, challengerName?: string) => {
+        setBattleModal({
+            isOpen: true,
+            gameTag,
+            targetScore,
+            challengerName: challengerName || '베라 랭커'
+        });
+    };
+
+    const handleShareBattleResult = (result: {
+        gameTag: string;
+        myScore: number;
+        targetScore: number;
+        isWin: boolean;
+        level: number;
+        lines: number;
+    }) => {
+        const outcomeText = result.isWin ? '승리 달성! 🏆' : '아쉬운 패배 😢';
+        const content = `[${result.gameTag} 배틀 결과] ${result.myScore.toLocaleString()}P로 ${outcomeText} (레벨 ${result.level}, ${result.lines}줄 클리어) 나를 꺾을 랭커 도전해봐! 🎮`;
+        
+        const newPost: Post = {
+            id: `post-${Date.now()}`,
+            author: {
+                name: persona.name,
+                handle: persona.handle,
+                avatar: persona.avatar,
+                badge: result.isWin ? '🎮 배틀승리자' : undefined
+            },
+            content,
+            createdAt: '방금 전',
+            likes: 1,
+            commentsCount: 0,
+            isMine: true
+        };
+
+        const updated = [newPost, ...posts];
+        setPosts(updated);
+        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        setActiveTab('home');
+        alert(`배틀 결과가 라운지 피드에 성공적으로 등록되었습니다! 🚀 (${result.myScore.toLocaleString()}P)`);
+    };
 
     const [points] = useState<number>(() => {
         const saved = localStorage.getItem('vera_points');
@@ -430,7 +486,7 @@ export default function LoungePage() {
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <button
                                         onClick={() => {
-                                            setNewPostContent('#테트리스 12,400점 달성! 나한테 1:1 대결 도전할 사람? 🎮');
+                                            handleOpenBattle('#테트리스', 12400, '테트리스 1위 랭커');
                                             setActiveTab('home');
                                         }}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
@@ -438,7 +494,7 @@ export default function LoungePage() {
                                         <div className="text-emerald-300 text-xs font-black flex items-center gap-1 mb-0.5">
                                             <i className="fas fa-cubes"></i> 게임 점수 챌린지
                                         </div>
-                                        <div className="text-[11px] text-slate-300 truncate">#테트리스 대결</div>
+                                        <div className="text-[11px] text-slate-300 truncate">#테트리스 1:1 대결 🎮</div>
                                     </button>
 
                                     <button
@@ -839,7 +895,11 @@ export default function LoungePage() {
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <SmartTagParser text={post.content} />
+                                                            <SmartTagParser 
+                                                                text={post.content} 
+                                                                authorName={post.author.name}
+                                                                onOpenBattle={handleOpenBattle}
+                                                            />
                                                             {post.ladderData && (
                                                                 <CustomLadderWidget ladder={post.ladderData} />
                                                             )}
@@ -1138,7 +1198,11 @@ export default function LoungePage() {
                                                             </div>
                                                         ) : (
                                                             <>
-                                                                <SmartTagParser text={post.content} />
+                                                                <SmartTagParser 
+                                                                    text={post.content} 
+                                                                    authorName={post.author.name}
+                                                                    onOpenBattle={handleOpenBattle}
+                                                                />
                                                                 {post.ladderData && (
                                                                     <CustomLadderWidget ladder={post.ladderData} />
                                                                 )}
@@ -1203,10 +1267,7 @@ export default function LoungePage() {
                             </h3>
                             <div className="space-y-2.5">
                                 <div 
-                                    onClick={() => {
-                                        setNewPostContent('#테트리스 12,400점 달성! 나한테 도전할 사람? 🎮');
-                                        setActiveTab('home');
-                                    }}
+                                    onClick={() => handleOpenBattle('#테트리스', 12400, '테트리스 1위 랭커')}
                                     className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 transition-all cursor-pointer group"
                                 >
                                     <div className="flex justify-between items-center text-xs font-black text-slate-800 group-hover:text-emerald-700">
@@ -1245,6 +1306,16 @@ export default function LoungePage() {
                             setNewPostContent(`[${ladder.title}] 사다리타기 게임 시작! 번호를 골라보세요 ☕🪜`);
                         }
                     }}
+                />
+
+                {/* 실시간 1:1 인게임 팝업 배틀 모달 */}
+                <LoungeBattleModal
+                    isOpen={battleModal.isOpen}
+                    onClose={() => setBattleModal(prev => ({ ...prev, isOpen: false }))}
+                    gameTag={battleModal.gameTag}
+                    targetScore={battleModal.targetScore}
+                    challengerName={battleModal.challengerName}
+                    onShareResult={handleShareBattleResult}
                 />
             </main>
 
