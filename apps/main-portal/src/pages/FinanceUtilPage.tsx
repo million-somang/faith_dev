@@ -6,10 +6,12 @@ import { PageSEO } from '../components/PageSEO';
 import DividendTaxCalculator from '../components/finance/DividendTaxCalculator';
 import MortgageDsrCalculator from '../components/finance/MortgageDsrCalculator';
 import SeveranceCalculator from '../components/finance/SeveranceCalculator';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 
 export default function FinanceUtilPage() {
     const { user, logout } = useAuth();
     const [searchParams, setSearchParams] = useSearchParams();
+    const [showSoftLock, setShowSoftLock] = useState(false);
     const tabParam = searchParams.get('tab') || 'dividend';
     
     const [activeTab, setActiveTab] = useState<'dividend' | 'dsr' | 'severance'>(
@@ -114,9 +116,44 @@ export default function FinanceUtilPage() {
                     {activeTab === 'dsr' && <MortgageDsrCalculator />}
                     {activeTab === 'severance' && <SeveranceCalculator />}
                 </div>
+
+                {/* 🌟 소프트 락인 넛지 배너 */}
+                <div className="mt-12 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-slate-800">
+                    <div className="space-y-1.5 text-center sm:text-left">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                            <i className="fas fa-bookmark"></i> 스마트 포트폴리오
+                        </span>
+                        <h3 className="text-lg sm:text-xl font-bold">
+                            방금 계산한 금융 시뮬레이션 결과를 저장할까요?
+                        </h3>
+                        <p className="text-xs text-slate-400 max-w-xl leading-relaxed">
+                            {user ? '계산된 포트폴리오는 마이페이지 자산 탭에서 실시간 배당일정과 함께 보관됩니다.' : '로그인하시면 나만의 배당주 포트폴리오와 대출 상환 계획표가 영구 저장되며 실시간 알림을 받아보실 수 있습니다.'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (!user) {
+                                setShowSoftLock(true);
+                            } else {
+                                window.location.href = '/mypage';
+                            }
+                        }}
+                        className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-2"
+                    >
+                        <i className="fas fa-save"></i>
+                        <span>{user ? '마이페이지에서 확인' : '관심 포트폴리오 저장하기'}</span>
+                    </button>
+                </div>
             </main>
 
             <Footer />
+
+            {/* 🌟 소프트 락인 모달 */}
+            <SoftLockModal
+                isOpen={showSoftLock}
+                onClose={() => setShowSoftLock(false)}
+                type="finance"
+            />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Header, Footer } from '@faithportal/ui';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 import axios from 'axios';
 
 // Lucide-react 대신 FontAwesome 또는 간단 SVG/Lucide 엘리먼트 활용
@@ -103,6 +104,7 @@ export default function NovelPage() {
   const [currentNovel, setCurrentNovel] = useState<Novel | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
+  const [showSoftLockModal, setShowSoftLockModal] = useState<boolean>(false);
   
   // 작가 상태
   const [writerNovels, setWriterNovels] = useState<Novel[]>([]);
@@ -270,7 +272,11 @@ export default function NovelPage() {
 
   // 7. 선호작 토글
   const handleToggleBookmark = async () => {
-    if (!user || !currentNovel) return;
+    if (!user) {
+      setShowSoftLockModal(true);
+      return;
+    }
+    if (!currentNovel) return;
     try {
       const { data } = await axios.post('/api/novel/bookmark', { novelId: currentNovel.id }, { withCredentials: true });
       if (data.success) {
@@ -1633,6 +1639,13 @@ export default function NovelPage() {
         </div>
       )}
 
+      {/* 🌟 소프트 락인 넛지 모달 */}
+      <SoftLockModal
+        isOpen={showSoftLockModal}
+        onClose={() => setShowSoftLockModal(false)}
+        type="novel"
+        extraData={{ title: currentNovel?.title }}
+      />
     </div>
   );
 }

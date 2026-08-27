@@ -3,6 +3,7 @@ import { Header, Footer, Card, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { MiniAppButton } from '../components/MiniAppButton';
 import { PageSEO } from '../components/PageSEO';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 import axios from 'axios';
 
 interface MiniApp {
@@ -38,6 +39,7 @@ export default function UtilityPage() {
     const [frequentApps, setFrequentApps] = useState<MiniApp[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [showSoftLock, setShowSoftLock] = useState(false);
 
     // 모달 상태
     const [modalOpen, setModalOpen] = useState(false);
@@ -385,8 +387,43 @@ export default function UtilityPage() {
                         </dl>
                     </div>
                 </section>
+
+                {/* 🌟 소프트 락인 넛지 배너 */}
+                <section className="bg-gradient-to-r from-emerald-800 via-teal-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-emerald-700/40">
+                    <div className="space-y-1.5 text-center sm:text-left">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-300 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                            <i className="fas fa-magic"></i> 빠른 즐겨찾기
+                        </span>
+                        <h3 className="text-lg sm:text-xl font-bold">
+                            자주 쓰는 계산식과 도구를 마이페이지에 저장하세요
+                        </h3>
+                        <p className="text-xs text-emerald-100/80 max-w-xl leading-relaxed">
+                            {user ? '즐겨찾기한 도구와 최근 계산 기록은 마이페이지에서 언제든 빠르게 불러올 수 있습니다.' : '회원가입하시면 자주 쓰는 계산기와 최근 연산 히스토리가 영구 보관되며, 홈 화면에 퀵 위젯으로 배치할 수 있습니다.'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => {
+                            if (!user) {
+                                setShowSoftLock(true);
+                            } else {
+                                window.location.href = '/mypage';
+                            }
+                        }}
+                        className="px-6 py-3.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-2"
+                    >
+                        <i className="fas fa-bookmark"></i>
+                        <span>{user ? '마이페이지 도구함 가기' : '1초 만에 도구함 저장하기'}</span>
+                    </button>
+                </section>
             </main>
             <Footer />
+
+            {/* 🌟 소프트 락인 모달 */}
+            <SoftLockModal
+                isOpen={showSoftLock}
+                onClose={() => setShowSoftLock(false)}
+                type="calc"
+            />
 
             {/* ======== 미니앱 모달 ======== */}
             {modalOpen && (

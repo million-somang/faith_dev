@@ -9,6 +9,7 @@ import InfoPanel from '../components/tetris/InfoPanel';
 import MobileControls from '../components/tetris/MobileControls';
 import Leaderboard from '../components/tetris/Leaderboard';
 import NextPiecePreview from '../components/tetris/NextPiecePreview';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 
 export default function GamePlayPage() {
     const { user, logout } = useAuth();
@@ -22,6 +23,9 @@ export default function GamePlayPage() {
         highScore,
         savingScore,
         refreshBoardToggle,
+        guestScore,
+        showGuestNudge,
+        setShowGuestNudge,
         handleBack,
         handleGameOver
     } = useGamePlay(typedUser);
@@ -199,8 +203,17 @@ export default function GamePlayPage() {
 
                                                 {savingScore && <span className="text-emerald-400 text-sm mb-4 animate-pulse">점수 저장 중...</span>}
                                                 {!savingScore && score >= 0 && user && <span className="text-emerald-400 text-sm mb-4 font-bold">점수 저장 완료! ✓</span>}
+                                                {!user && score > 0 && (
+                                                    <button
+                                                        onClick={() => setShowGuestNudge(true)}
+                                                        className="mb-4 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs rounded-full shadow-lg transition-all flex items-center gap-1.5 cursor-pointer animate-pulse"
+                                                    >
+                                                        <i className="fas fa-trophy"></i>
+                                                        <span>내 최고 점수 랭킹에 등록하기</span>
+                                                    </button>
+                                                )}
 
-                                                <button onClick={startGame} className="px-8 py-3 bg-white text-red-600 hover:bg-slate-200 font-black rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
+                                                <button onClick={startGame} className="px-8 py-3 bg-white text-red-600 hover:bg-slate-200 font-black rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all cursor-pointer">
                                                     다시 시작
                                                 </button>
                                             </div>
@@ -234,6 +247,14 @@ export default function GamePlayPage() {
             <footer className="text-center py-2 text-[10px] text-slate-400 shrink-0">
                 © 2026 FaithPortal. All rights reserved.
             </footer>
+
+            {/* 🌟 비회원 소프트 락인 모달 */}
+            <SoftLockModal
+                isOpen={showGuestNudge}
+                onClose={() => setShowGuestNudge(false)}
+                type="game"
+                extraData={{ score: guestScore || score }}
+            />
         </div>
     );
 }

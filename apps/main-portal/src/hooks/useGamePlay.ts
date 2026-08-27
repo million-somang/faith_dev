@@ -14,6 +14,9 @@ export interface UseGamePlayReturn {
     refreshBoardToggle: boolean;
     scaleValue: number;
     baseHeight: number;
+    guestScore: number | null;
+    showGuestNudge: boolean;
+    setShowGuestNudge: (show: boolean) => void;
     handleBack: () => void;
     handleGoHome: () => void;
     handleGameOver: (score: number, lines: number, level: number) => Promise<void>;
@@ -26,6 +29,8 @@ export function useGamePlay(user: User | null): UseGamePlayReturn {
     const [refreshBoardToggle, setRefreshBoardToggle] = useState<boolean>(false);
     const [scaleValue, setScaleValue] = useState<number>(1);
     const [baseHeight, setBaseHeight] = useState<number>(700);
+    const [guestScore, setGuestScore] = useState<number | null>(null);
+    const [showGuestNudge, setShowGuestNudge] = useState<boolean>(false);
 
     const updateScale = useCallback(() => {
         const width = window.innerWidth;
@@ -94,7 +99,14 @@ export function useGamePlay(user: User | null): UseGamePlayReturn {
 
     const handleGameOver = useCallback(async (score: number, lines: number, level: number) => {
         if (!user) {
-            console.warn("[Tetris] User is guest or auth failed. Score will not be saved.");
+            console.info("[GamePlay] Guest completed game with score:", score);
+            if (score > 0) {
+                setGuestScore(score);
+                // 약간의 여운을 주고 부드럽게 넛지 모달 오픈
+                setTimeout(() => {
+                    setShowGuestNudge(true);
+                }, 700);
+            }
             return;
         }
         
@@ -126,6 +138,9 @@ export function useGamePlay(user: User | null): UseGamePlayReturn {
         refreshBoardToggle,
         scaleValue,
         baseHeight,
+        guestScore,
+        showGuestNudge,
+        setShowGuestNudge,
         handleBack,
         handleGoHome,
         handleGameOver

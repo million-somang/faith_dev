@@ -849,6 +849,42 @@ export default function App() {
                                 </div>
                             </div>
                         )}
+
+                        {/* 🌟 소프트 락인 넛지 배너 (비회원/회원 모두에게 유용한 저장 & 알림 유도) */}
+                        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border border-purple-800/40">
+                            <div className="space-y-1 text-center sm:text-left">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-white/10 px-2.5 py-0.5 rounded-full">
+                                    <i className="fas fa-sparkles"></i> 스마트 락인
+                                </span>
+                                <h4 className="text-base sm:text-lg font-bold">
+                                    내 사주 정보 저장하고 매일 아침 맞춤 운세 알림 받기
+                                </h4>
+                                <p className="text-xs text-purple-200/80">
+                                    {user ? '사주 정보가 안전하게 보관되어 있습니다. 마이페이지에서 언제든 다시 확인하세요.' : '지금 가입하시면 방금 확인한 만세력 원국이 영구 보관되며 매일 아침 행운 리포트를 제공합니다.'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (!user) {
+                                        if (window.top) {
+                                            window.top.location.href = '/signup?redirect=' + encodeURIComponent('/entertainment/saju');
+                                        } else {
+                                            window.location.href = '/signup?redirect=' + encodeURIComponent('/entertainment/saju');
+                                        }
+                                    } else {
+                                        if (window.top) {
+                                            window.top.location.href = '/mypage';
+                                        } else {
+                                            window.location.href = '/mypage';
+                                        }
+                                    }
+                                }}
+                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-bold rounded-xl shadow-md transition-all whitespace-nowrap cursor-pointer shrink-0"
+                            >
+                                <i className="fas fa-bookmark mr-1.5"></i>
+                                {user ? '마이페이지 사주 관리' : '1초 만에 사주 정보 저장하기'}
+                            </button>
+                        </div>
                     </div>
                 )}
 

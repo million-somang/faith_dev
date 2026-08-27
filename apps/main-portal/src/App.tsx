@@ -274,15 +274,6 @@ function HomePage() {
 
                                 {/* 🛍️ 오늘의 핫딜 & 인기 쇼핑 꿀템 위젯 */}
                                 <SidebarShoppingWidget />
-
-                                {/* System Monitor Widget (PC 전용) */}
-                                <Card className="hidden sm:block p-4 bg-gray-50 border-none shadow-none">
-                                    <h4 className="text-xs font-bold text-gray-400 mb-2">SYSTEM MONITOR</h4>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-gray-500">Backend Status</span>
-                                        <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                    </div>
-                                </Card>
                             </div>
                         </div>
 

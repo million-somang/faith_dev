@@ -1,32 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { useAppLauncher } from '../hooks/useAppLauncher';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 
 export default function SajuInfoPage() {
-    const { user, logout, isLoading: isAuthLoading } = useAuth();
+    const { user, logout } = useAuth();
     const { launchApp } = useAppLauncher();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'pillars' | 'elements' | 'faq'>('pillars');
-
-    // 로그인 가드
-    useEffect(() => {
-        if (!isAuthLoading && !user) {
-            alert('사주 풀이 서비스는 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
-            navigate('/login?redirect=/entertainment/saju');
-        }
-    }, [user, isAuthLoading, navigate]);
+    const [showSoftLock, setShowSoftLock] = useState(false);
 
     const handleStartSaju = () => {
-        if (!user) {
-            alert('로그인이 필요한 서비스입니다.');
-            navigate('/login?redirect=/entertainment/saju');
-            return;
-        }
         launchApp('/app/saju/', 'app-saju');
+    };
+
+    const handleNudgeClick = () => {
+        if (!user) {
+            setShowSoftLock(true);
+        } else {
+            navigate('/mypage');
+        }
     };
 
     const handleShare = () => {
@@ -79,14 +76,6 @@ export default function SajuInfoPage() {
         }))
     };
 
-    if (isAuthLoading || !user) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6]">
-                <div className="w-8 h-8 rounded-full border-2 border-stone-300 border-t-stone-800 animate-spin"></div>
-            </div>
-        );
-    }
-
     return (
         <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-stone-800 font-sans antialiased">
             <PageSEO
@@ -121,15 +110,23 @@ export default function SajuInfoPage() {
                         <div className="pt-2 flex flex-wrap items-center gap-3.5">
                             <button
                                 onClick={handleStartSaju}
-                                className="px-8 py-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm sm:text-base font-semibold shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2.5 active:scale-[0.99]"
+                                className="px-8 py-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm sm:text-base font-semibold shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2.5 active:scale-[0.99] cursor-pointer"
                             >
                                 <span>만세력 및 사주 풀이 시작하기</span>
                                 <i className="fas fa-arrow-right text-xs text-stone-400"></i>
                             </button>
                             
                             <button
+                                onClick={handleNudgeClick}
+                                className="px-6 py-4 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-sm font-semibold border border-purple-200/80 transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                                <i className="fas fa-bell text-purple-600"></i>
+                                <span>매일 아침 운세 알림 받기</span>
+                            </button>
+
+                            <button
                                 onClick={handleShare}
-                                className="px-5 py-4 rounded-xl bg-stone-100 hover:bg-stone-200/70 text-stone-700 text-sm font-medium transition-colors"
+                                className="px-5 py-4 rounded-xl bg-stone-100 hover:bg-stone-200/70 text-stone-700 text-sm font-medium transition-colors cursor-pointer"
                             >
                                 <i className="fas fa-share-nodes mr-1.5 text-stone-500"></i>
                                 공유하기
@@ -208,6 +205,31 @@ export default function SajuInfoPage() {
                     </div>
                 </section>
 
+                {/* 🌟 소프트 락인 (Soft Lock-In) 넛지 배너 카드 */}
+                <section className="bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="space-y-3 text-center md:text-left">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-purple-200 border border-white/10">
+                                <i className="fas fa-sparkles text-amber-300"></i> 회원 전용 스마트 락인 혜택
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                                내 사주 정보 저장하고 매일 아침 맞춤 운세 받기
+                            </h2>
+                            <p className="text-purple-200/80 text-xs sm:text-sm max-w-xl leading-relaxed">
+                                번거롭게 매번 생년월일을 입력하지 마세요. 사주 정보를 안전하게 보관하고, 매일 아침 오늘의 행운 컬러와 조언을 마이페이지에서 한눈에 확인하세요.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleNudgeClick}
+                            className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-purple-500/25 transition-all text-sm shrink-0 flex items-center gap-2 cursor-pointer active:scale-95"
+                        >
+                            <i className="fas fa-bookmark"></i>
+                            <span>{user ? '마이페이지 사주 관리 가기' : '1초 만에 사주 정보 저장하기'}</span>
+                        </button>
+                    </div>
+                </section>
+
                 {/* 3. 명리학 이야기 & 기초 상식 (에디토리얼 탭) */}
                 <section className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-10 shadow-sm space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-5">
@@ -219,19 +241,19 @@ export default function SajuInfoPage() {
                         <div className="inline-flex p-1 bg-stone-100 rounded-xl gap-1 self-start sm:self-auto">
                             <button
                                 onClick={() => setActiveTab('pillars')}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${activeTab === 'pillars' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'pillars' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
                             >
                                 사주 4대 기둥
                             </button>
                             <button
                                 onClick={() => setActiveTab('elements')}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${activeTab === 'elements' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'elements' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
                             >
                                 오행의 특성
                             </button>
                             <button
                                 onClick={() => setActiveTab('faq')}
-                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${activeTab === 'faq' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'faq' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
                             >
                                 자주 묻는 질문
                             </button>
@@ -332,7 +354,7 @@ export default function SajuInfoPage() {
                     <div className="pt-2">
                         <button
                             onClick={handleStartSaju}
-                            className="px-8 py-3.5 bg-white text-stone-900 hover:bg-stone-100 font-semibold text-sm rounded-xl shadow-sm transition-all"
+                            className="px-8 py-3.5 bg-white text-stone-900 hover:bg-stone-100 font-semibold text-sm rounded-xl shadow-sm transition-all cursor-pointer"
                         >
                             사주 분석 창 열기
                         </button>
@@ -342,6 +364,13 @@ export default function SajuInfoPage() {
             </main>
 
             <Footer />
+
+            {/* 소프트 락인 모달 */}
+            <SoftLockModal
+                isOpen={showSoftLock}
+                onClose={() => setShowSoftLock(false)}
+                type="saju"
+            />
         </div>
     );
 }
