@@ -1,16 +1,39 @@
 // 주요 지수 데이터
 export interface MarketIndex {
+    symbol?: string;
     name: string;
     value: number;
     change: number;
     rate: number;
     status: 'up' | 'down';
+    country?: 'us' | 'cn' | 'jp' | 'fr' | 'kr';
+    currency?: string;
+    flag?: string;
+    description?: string;
 }
 
 export const MOCK_INDICES: MarketIndex[] = [
-    { name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up' },
-    { name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down' },
-    { name: 'USD/KRW', value: 1305.50, change: 8.20, rate: 0.63, status: 'up' },
+    // 미국
+    { symbol: '^GSPC', name: 'S&P 500', value: 5864.67, change: 24.35, rate: 0.42, status: 'up', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 대형주 500개 지수' },
+    { symbol: '^IXIC', name: '나스닥 종합', value: 18518.61, change: 115.40, rate: 0.63, status: 'up', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 기술주 중심 지수' },
+    { symbol: '^DJI', name: '다우 존스', value: 42863.86, change: -80.12, rate: -0.19, status: 'down', country: 'us', currency: '$', flag: '🇺🇸', description: '다우존스 30 산업평균지수' },
+    { symbol: '^SOX', name: '필라델피아 반도체', value: 5310.25, change: 65.80, rate: 1.25, status: 'up', country: 'us', currency: '$', flag: '🇺🇸', description: '글로벌 반도체 대표 지수' },
+
+    // 중국
+    { symbol: '000001.SS', name: '상해 종합', value: 3261.56, change: 16.80, rate: 0.52, status: 'up', country: 'cn', currency: '¥', flag: '🇨🇳', description: '상하이 증권거래소 종합' },
+    { symbol: '^HSI', name: '홍콩 항셍', value: 20590.15, change: -120.40, rate: -0.58, status: 'down', country: 'cn', currency: 'HK$', flag: '🇭🇰', description: '홍콩 증시 대표 우량주' },
+    { symbol: '399001.SZ', name: '심천 종합', value: 10424.30, change: 35.60, rate: 0.34, status: 'up', country: 'cn', currency: '¥', flag: '🇨🇳', description: '선전 증권거래소 성분지수' },
+
+    // 일본
+    { symbol: '^N225', name: '닛케이 225', value: 38981.75, change: 72.30, rate: 0.19, status: 'up', country: 'jp', currency: '¥', flag: '🇯🇵', description: '도쿄 증시 대표 225개 종목' },
+
+    // 프랑스
+    { symbol: '^FCHI', name: '프랑스 CAC 40', value: 7497.48, change: -12.10, rate: -0.16, status: 'down', country: 'fr', currency: '€', flag: '🇫🇷', description: '파리 증권거래소 40개 우량주' },
+    { symbol: '^STOXX50E', name: '유로 스톡스 50', value: 4940.85, change: 8.50, rate: 0.17, status: 'up', country: 'fr', currency: '€', flag: '🇪🇺', description: '유로존 50대 블루칩 지수' },
+
+    // 한국
+    { symbol: '^KS11', name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 유가증권시장 종합' },
+    { symbol: '^KQ11', name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 코스닥 시장' },
 ];
 
 // 인기 종목 데이터

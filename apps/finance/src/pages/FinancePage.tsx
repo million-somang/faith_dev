@@ -51,10 +51,22 @@ interface NewsItem {
     category?: string;
 }
 
+type CountryKey = 'us' | 'cn' | 'jp' | 'fr' | 'kr' | 'all';
+
+const COUNTRY_TABS: { key: CountryKey; label: string; flag: string; countDesc: string }[] = [
+    { key: 'us', label: '미국', flag: '🇺🇸', countDesc: '다우·S&P·나스닥·필라델피아' },
+    { key: 'cn', label: '중국', flag: '🇨🇳', countDesc: '상해·항셍·심천' },
+    { key: 'jp', label: '일본', flag: '🇯🇵', countDesc: '닛케이 225' },
+    { key: 'fr', label: '프랑스', flag: '🇫🇷', countDesc: 'CAC 40·유로스톡스' },
+    { key: 'kr', label: '한국', flag: '🇰🇷', countDesc: '코스피·코스닥·환율' },
+    { key: 'all', label: '전체 지수', flag: '🌐', countDesc: '글로벌 전 지수' },
+];
+
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
     const [indices, setIndices] = useState<IndexData[]>(MOCK_INDICES);
+    const [selectedCountry, setSelectedCountry] = useState<CountryKey>('us');
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
     const [usStocks, setUsStocks] = useState<StockCard[]>([]);
     const [macro, setMacro] = useState<MacroIndicator[]>([]);
@@ -74,7 +86,7 @@ export default function FinancePage() {
                 
                 if (indicesRes.ok) {
                     const data = await indicesRes.json();
-                    if (data.length > 0) setIndices(data);
+                    if (Array.isArray(data) && data.length > 0) setIndices(data);
                 }
                 if (krRes.ok) {
                     const data = await krRes.json();
@@ -115,6 +127,11 @@ export default function FinancePage() {
         return () => clearInterval(interval);
     }, []);
 
+    // 선택된 국가 지수 필터링
+    const filteredIndices = selectedCountry === 'all'
+        ? indices
+        : indices.filter(idx => idx.country === selectedCountry);
+
     const renderStockCard = (stock: StockCard, idx: number = 0, baseDelay: number = 0) => (
         <Link
             key={stock.ticker}
@@ -150,41 +167,88 @@ export default function FinancePage() {
             <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
-                {/* 주요 지수 */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
-                    {indices.map((index, idx) => (
-                        <Card 
-                            key={index.name} 
-                            className={`animate-fade-in-up ${idx === 1 ? 'animation-delay-100' : idx === 2 ? 'animation-delay-200' : ''} p-6 hover:shadow-md transition-all duration-300 ${loading ? 'animate-pulse' : ''}`}
-                        >
-                            <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-sm font-medium text-gray-600">{index.name}</h3>
-                                <span className={`text-xs px-2 py-1 rounded ${
-                                    index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
-                                }`}>
-                                    {index.status === 'up' ? '상승' : '하락'}
-                                </span>
-                            </div>
-                            <div className="stock-number text-2xl font-bold text-gray-900 mb-1">
-                                {index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className={`stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-medium`}>
-                                        {index.status === 'up' ? '▲' : '▼'} {Math.abs(index.change).toLocaleString('ko-KR', { minimumFractionDigits: 2 })}
-                                    </span>
-                                    <span className={`stock-number ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'} text-sm`}>
-                                        {index.rate > 0 ? '+' : ''}{index.rate.toFixed(2)}%
+            <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
+                {/* 🌟 글로벌 주요 국가 주식 지수 섹션 */}
+                <section className="mb-10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                <i className="fas fa-globe-americas text-blue-600"></i>
+                                <span>주요 국가 주식 지수</span>
+                            </h2>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                미국, 중국, 일본, 프랑스 등 주요국 대표 주가지수 실시간 시세
+                            </p>
+                        </div>
+
+                        {/* 국가 선택 탭 바 */}
+                        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
+                            {COUNTRY_TABS.map(tab => (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    onClick={() => setSelectedCountry(tab.key)}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                        selectedCountry === tab.key
+                                            ? 'bg-slate-900 text-white shadow-xs'
+                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                    }`}
+                                >
+                                    <span>{tab.flag}</span>
+                                    <span>{tab.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 지수 카드 그리드 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {filteredIndices.map(index => (
+                            <Card 
+                                key={index.symbol || index.name} 
+                                className={`animate-fade-in-up p-5 hover:shadow-md transition-all duration-300 border border-slate-200/80 bg-white rounded-2xl ${loading ? 'animate-pulse' : ''}`}
+                            >
+                                <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                        <div className="flex items-center gap-1.5">
+                                            {index.flag && <span className="text-base">{index.flag}</span>}
+                                            <h3 className="text-sm font-bold text-gray-900">{index.name}</h3>
+                                        </div>
+                                        {index.description && (
+                                            <p className="text-[10px] text-gray-400 mt-0.5">{index.description}</p>
+                                        )}
+                                    </div>
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                        index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                                    }`}>
+                                        {index.status === 'up' ? '▲ 상승' : '▼ 하락'}
                                     </span>
                                 </div>
-                                {index.updatedAt && (
-                                    <span className="text-[10px] text-gray-400 font-mono">{index.updatedAt}</span>
-                                )}
-                            </div>
-                        </Card>
-                    ))}
-                </div>
+
+                                <div className="stock-number text-2xl font-black text-gray-900 my-1">
+                                    {index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    {index.currency && (
+                                        <span className="text-xs font-bold text-gray-400 ml-1">{index.currency}</span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className={`stock-number font-extrabold ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
+                                            {index.status === 'up' ? '+' : ''}{index.change.toLocaleString('ko-KR', { minimumFractionDigits: 2 })}
+                                        </span>
+                                        <span className={`stock-number font-bold text-[11px] ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
+                                            ({index.rate > 0 ? '+' : ''}{index.rate.toFixed(2)}%)
+                                        </span>
+                                    </div>
+                                    {index.updatedAt && (
+                                        <span className="text-[10px] text-gray-400 font-mono">{index.updatedAt}</span>
+                                    )}
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                </section>
 
                 {/* 💡 금융Util 3대 킬러 계산기 섹션 */}
                 <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80 animate-fade-in-up animation-delay-75">
