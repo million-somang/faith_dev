@@ -13,6 +13,12 @@ export interface MarketIndex {
 }
 
 export const MOCK_INDICES: MarketIndex[] = [
+    // 한국 (기본)
+    { symbol: '^KS11', name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 유가증권시장 종합' },
+    { symbol: '^KQ11', name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 코스닥 시장' },
+    { symbol: '^KS200', name: 'KOSPI 200', value: 355.20, change: 2.10, rate: 0.60, status: 'up', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 대표 우량 200개 종목' },
+    { symbol: 'KRW=X', name: 'USD/KRW', value: 1375.50, change: -4.20, rate: -0.30, status: 'down', country: 'kr', currency: '₩', flag: '🇰🇷', description: '원/달러 실시간 환율' },
+
     // 미국
     { symbol: '^GSPC', name: 'S&P 500', value: 5864.67, change: 24.35, rate: 0.42, status: 'up', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 대형주 500개 지수' },
     { symbol: '^IXIC', name: '나스닥 종합', value: 18518.61, change: 115.40, rate: 0.63, status: 'up', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 기술주 중심 지수' },
@@ -30,10 +36,6 @@ export const MOCK_INDICES: MarketIndex[] = [
     // 프랑스
     { symbol: '^FCHI', name: '프랑스 CAC 40', value: 7497.48, change: -12.10, rate: -0.16, status: 'down', country: 'fr', currency: '€', flag: '🇫🇷', description: '파리 증권거래소 40개 우량주' },
     { symbol: '^STOXX50E', name: '유로 스톡스 50', value: 4940.85, change: 8.50, rate: 0.17, status: 'up', country: 'fr', currency: '€', flag: '🇪🇺', description: '유로존 50대 블루칩 지수' },
-
-    // 한국
-    { symbol: '^KS11', name: 'KOSPI', value: 2650.12, change: 15.40, rate: 0.58, status: 'up', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 유가증권시장 종합' },
-    { symbol: '^KQ11', name: 'KOSDAQ', value: 845.32, change: -3.25, rate: -0.38, status: 'down', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 코스닥 시장' },
 ];
 
 // 인기 종목 데이터

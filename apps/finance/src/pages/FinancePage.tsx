@@ -51,22 +51,21 @@ interface NewsItem {
     category?: string;
 }
 
-type CountryKey = 'us' | 'cn' | 'jp' | 'fr' | 'kr' | 'all';
+type CountryKey = 'kr' | 'us' | 'cn' | 'jp' | 'fr';
 
-const COUNTRY_TABS: { key: CountryKey; label: string; flag: string; countDesc: string }[] = [
-    { key: 'us', label: '미국', flag: '🇺🇸', countDesc: '다우·S&P·나스닥·필라델피아' },
-    { key: 'cn', label: '중국', flag: '🇨🇳', countDesc: '상해·항셍·심천' },
-    { key: 'jp', label: '일본', flag: '🇯🇵', countDesc: '닛케이 225' },
-    { key: 'fr', label: '프랑스', flag: '🇫🇷', countDesc: 'CAC 40·유로스톡스' },
-    { key: 'kr', label: '한국', flag: '🇰🇷', countDesc: '코스피·코스닥·환율' },
-    { key: 'all', label: '전체 지수', flag: '🌐', countDesc: '글로벌 전 지수' },
+const COUNTRY_TABS: { key: CountryKey; label: string; flag: string; title: string; desc: string }[] = [
+    { key: 'kr', label: '대한민국', flag: '🇰🇷', title: '대한민국 주요 지수', desc: '코스피, 코스닥, 코스피 200, 원/달러 환율' },
+    { key: 'us', label: '미국', flag: '🇺🇸', title: '미국 3대 & 대표 지수', desc: '다우존스, S&P 500, 나스닥 종합, 필라델피아 반도체' },
+    { key: 'cn', label: '중국', flag: '🇨🇳', title: '중화권 대표 지수', desc: '상해 종합, 홍콩 항셍, 심천 종합' },
+    { key: 'jp', label: '일본', flag: '🇯🇵', title: '일본 대표 지수', desc: '닛케이 225 (Nikkei 225)' },
+    { key: 'fr', label: '프랑스', flag: '🇫🇷', title: '프랑스 & 유럽 대표 지수', desc: '프랑스 CAC 40, 유로 스톡스 50' },
 ];
 
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
     const [indices, setIndices] = useState<IndexData[]>(MOCK_INDICES);
-    const [selectedCountry, setSelectedCountry] = useState<CountryKey>('us');
+    const [selectedCountry, setSelectedCountry] = useState<CountryKey>('kr');
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
     const [usStocks, setUsStocks] = useState<StockCard[]>([]);
     const [macro, setMacro] = useState<MacroIndicator[]>([]);
@@ -127,10 +126,9 @@ export default function FinancePage() {
         return () => clearInterval(interval);
     }, []);
 
-    // 선택된 국가 지수 필터링
-    const filteredIndices = selectedCountry === 'all'
-        ? indices
-        : indices.filter(idx => idx.country === selectedCountry);
+    // 선택된 해당 국가 지수만 정확히 필터링
+    const currentTabInfo = COUNTRY_TABS.find(t => t.key === selectedCountry) || COUNTRY_TABS[0];
+    const filteredIndices = indices.filter(idx => idx.country === selectedCountry);
 
     const renderStockCard = (stock: StockCard, idx: number = 0, baseDelay: number = 0) => (
         <Link
@@ -168,45 +166,50 @@ export default function FinancePage() {
             <FinanceSubMenu />
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
-                {/* 🌟 글로벌 주요 국가 주식 지수 섹션 */}
-                <section className="mb-10">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                {/* 🌟 국가별 주식 지수 섹션 (탭 선택 시 해당 국가 지수만 표시) */}
+                <section className="mb-10 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                                <i className="fas fa-globe-americas text-blue-600"></i>
-                                <span>주요 국가 주식 지수</span>
-                            </h2>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                                미국, 중국, 일본, 프랑스 등 주요국 대표 주가지수 실시간 시세
+                            <div className="flex items-center gap-2">
+                                <span className="text-xl">{currentTabInfo.flag}</span>
+                                <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                    {currentTabInfo.title}
+                                </h2>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {currentTabInfo.desc}
                             </p>
                         </div>
 
-                        {/* 국가 선택 탭 바 */}
-                        <div className="flex items-center gap-1.5 p-1 bg-slate-100/90 rounded-2xl border border-slate-200/80 overflow-x-auto">
-                            {COUNTRY_TABS.map(tab => (
-                                <button
-                                    key={tab.key}
-                                    type="button"
-                                    onClick={() => setSelectedCountry(tab.key)}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                                        selectedCountry === tab.key
-                                            ? 'bg-slate-900 text-white shadow-xs'
-                                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
-                                    }`}
-                                >
-                                    <span>{tab.flag}</span>
-                                    <span>{tab.label}</span>
-                                </button>
-                            ))}
+                        {/* 국가 선택 탭 바 (한국 기본, 미국, 중국, 일본, 프랑스) */}
+                        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/60 overflow-x-auto self-start sm:self-auto">
+                            {COUNTRY_TABS.map(tab => {
+                                const isActive = selectedCountry === tab.key;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setSelectedCountry(tab.key)}
+                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-sm font-black'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        <span className="text-sm">{tab.flag}</span>
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {/* 지수 카드 그리드 */}
+                    {/* 선택된 국가의 지수 카드 그리드 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {filteredIndices.map(index => (
-                            <Card 
+                            <div 
                                 key={index.symbol || index.name} 
-                                className={`animate-fade-in-up p-5 hover:shadow-md transition-all duration-300 border border-slate-200/80 bg-white rounded-2xl ${loading ? 'animate-pulse' : ''}`}
+                                className={`p-5 hover:shadow-md transition-all duration-300 border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${loading ? 'animate-pulse' : ''}`}
                             >
                                 <div className="flex items-start justify-between mb-2">
                                     <div>
@@ -215,7 +218,7 @@ export default function FinancePage() {
                                             <h3 className="text-sm font-bold text-gray-900">{index.name}</h3>
                                         </div>
                                         {index.description && (
-                                            <p className="text-[10px] text-gray-400 mt-0.5">{index.description}</p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{index.description}</p>
                                         )}
                                     </div>
                                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
@@ -225,14 +228,14 @@ export default function FinancePage() {
                                     </span>
                                 </div>
 
-                                <div className="stock-number text-2xl font-black text-gray-900 my-1">
+                                <div className="stock-number text-2xl font-black text-gray-900 my-1.5">
                                     {index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     {index.currency && (
                                         <span className="text-xs font-bold text-gray-400 ml-1">{index.currency}</span>
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
                                     <div className="flex items-center gap-1.5">
                                         <span className={`stock-number font-extrabold ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
                                             {index.status === 'up' ? '+' : ''}{index.change.toLocaleString('ko-KR', { minimumFractionDigits: 2 })}
@@ -245,7 +248,7 @@ export default function FinancePage() {
                                         <span className="text-[10px] text-gray-400 font-mono">{index.updatedAt}</span>
                                     )}
                                 </div>
-                            </Card>
+                            </div>
                         ))}
                     </div>
                 </section>
