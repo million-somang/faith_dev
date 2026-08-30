@@ -589,50 +589,83 @@ adminUi.get('/admin', async (c) => {
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
             <!-- 통계 카드 -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <!-- 오늘 방문자 (신규 추가) -->
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-cyan-500">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-xs sm:text-sm">전체 회원</p>
-                            <p id="total-users" class="text-2xl sm:text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm font-medium">오늘 방문자 (UV)</p>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <p id="today-visitors" class="text-2xl sm:text-3xl font-bold text-cyan-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">명</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">오늘 PV: <span id="today-views" class="font-semibold text-gray-600">0</span>회</p>
                         </div>
-                        <div class="bg-blue-100 text-blue-600 rounded-full p-3 sm:p-4">
+                        <div class="bg-cyan-100 text-cyan-600 rounded-full p-3 sm:p-4 shrink-0">
+                            <i class="fas fa-eye text-xl sm:text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-blue-600">
+                    <div class="flex items-center">
+                        <div class="flex-1">
+                            <p class="text-gray-500 text-xs sm:text-sm font-medium">전체 회원</p>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <p id="total-users" class="text-2xl sm:text-3xl font-bold text-gray-800">0</p>
+                                <span class="text-xs text-gray-500 font-medium">명</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">총 누적 가입</p>
+                        </div>
+                        <div class="bg-blue-100 text-blue-600 rounded-full p-3 sm:p-4 shrink-0">
                             <i class="fas fa-users text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-green-500">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-xs sm:text-sm">활성 회원</p>
-                            <p id="active-users" class="text-2xl sm:text-3xl font-bold text-green-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm font-medium">활성 회원</p>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <p id="active-users" class="text-2xl sm:text-3xl font-bold text-green-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">명</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">정상 이용 중</p>
                         </div>
-                        <div class="bg-green-100 text-green-600 rounded-full p-3 sm:p-4">
+                        <div class="bg-green-100 text-green-600 rounded-full p-3 sm:p-4 shrink-0">
                             <i class="fas fa-user-check text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-orange-500">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-xs sm:text-sm">정지 회원</p>
-                            <p id="suspended-users" class="text-2xl sm:text-3xl font-bold text-orange-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm font-medium">정지 회원</p>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <p id="suspended-users" class="text-2xl sm:text-3xl font-bold text-orange-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">명</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">제한 조치 계정</p>
                         </div>
-                        <div class="bg-orange-100 text-orange-600 rounded-full p-3 sm:p-4">
+                        <div class="bg-orange-100 text-orange-600 rounded-full p-3 sm:p-4 shrink-0">
                             <i class="fas fa-user-lock text-xl sm:text-2xl"></i>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-4 sm:p-6">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-purple-500">
                     <div class="flex items-center">
                         <div class="flex-1">
-                            <p class="text-gray-500 text-xs sm:text-sm">오늘 가입</p>
-                            <p id="today-signups" class="text-2xl sm:text-3xl font-bold text-purple-600">0</p>
+                            <p class="text-gray-500 text-xs sm:text-sm font-medium">오늘 가입</p>
+                            <div class="flex items-baseline space-x-1 mt-0.5">
+                                <p id="today-signups" class="text-2xl sm:text-3xl font-bold text-purple-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">명</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">신규 유입 회원</p>
                         </div>
-                        <div class="bg-purple-100 text-purple-600 rounded-full p-3 sm:p-4">
+                        <div class="bg-purple-100 text-purple-600 rounded-full p-3 sm:p-4 shrink-0">
                             <i class="fas fa-user-plus text-xl sm:text-2xl"></i>
                         </div>
                     </div>
@@ -714,10 +747,12 @@ adminUi.get('/admin', async (c) => {
                     });
                     
                     const data = response.data;
-                    document.getElementById('total-users').textContent = data.totalUsers;
-                    document.getElementById('active-users').textContent = data.activeUsers;
-                    document.getElementById('suspended-users').textContent = data.suspendedUsers;
-                    document.getElementById('today-signups').textContent = data.todaySignups;
+                    document.getElementById('today-visitors').textContent = (data.todayVisitors || 0).toLocaleString();
+                    document.getElementById('today-views').textContent = (data.todayViews || 0).toLocaleString();
+                    document.getElementById('total-users').textContent = (data.totalUsers || 0).toLocaleString();
+                    document.getElementById('active-users').textContent = (data.activeUsers || 0).toLocaleString();
+                    document.getElementById('suspended-users').textContent = (data.suspendedUsers || 0).toLocaleString();
+                    document.getElementById('today-signups').textContent = (data.todaySignups || 0).toLocaleString();
                     
                     // 등급별 차트
                     createLevelChart(data.levelDistribution);
