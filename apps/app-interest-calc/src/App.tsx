@@ -29,22 +29,68 @@ export default function App() {
   if (isLoading) {
     return (
       <MiniAppLayout title="">
-        <div className="flex flex-col items-center justify-center min-h-[500px] p-6 text-center animate-fade-in bg-slate-900 text-white min-h-screen">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white flex items-center justify-center text-2xl shadow-xl mb-4 animate-pulse-glow border border-blue-400/30">
-            <i className="fas fa-piggy-bank"></i>
-          </div>
-          <h1 className="text-lg font-black text-white mb-1">예·적금 이자 & 비과세 계산기</h1>
-          <p className="text-xs text-cyan-200/80 mb-6">2026 은행연합회 및 개정 소득세법 데이터 로딩 중...</p>
-          
-          <div className="flex items-center gap-1.5 mb-8">
-            <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+        <div className="min-h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-8 select-none animate-fade-in">
+          {/* 1. 상단 브랜딩 & 기준 배지 영역 */}
+          <div className="w-full max-w-sm flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-xs font-extrabold text-slate-500 tracking-wide uppercase">FAITH PORTAL</span>
+            </div>
+            <span className="text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-full shadow-2xs">
+              2026 은행연합회 기준
+            </span>
           </div>
 
-          <div className="w-full max-w-xs bg-slate-800/80 border border-slate-700/80 rounded-2xl p-3 text-center">
-            <span className="text-[10px] font-bold text-cyan-300 block mb-1">SPONSORED</span>
-            <div className="text-xs text-slate-300 font-medium">최신 고금리 특판 예적금 & 비과세 ISA 비교</div>
+          {/* 2. 중앙 메인 비주얼 & 타이틀 & 로딩 프로그레스 영역 */}
+          <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-6 text-center">
+            {/* 대형 입체 아이콘 */}
+            <div className="relative mb-6">
+              <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-blue-500/20 animate-float border-2 border-white">
+                <i className="fas fa-piggy-bank"></i>
+              </div>
+              <div className="absolute -bottom-1.5 -right-1.5 bg-white text-blue-600 rounded-full p-1.5 shadow-md border border-slate-100 text-xs">
+                <i className="fas fa-coins"></i>
+              </div>
+            </div>
+
+            {/* 선명한 고대비 타이틀 및 설명 */}
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
+              예·적금 이자 & 비과세 계산기
+            </h1>
+            <p className="text-sm font-bold text-slate-700 mb-1">
+              단리·복리 및 3대 과세유형별 절세 혜택 정밀 산정
+            </p>
+            <p className="text-xs text-slate-400 mb-8 max-w-xs leading-relaxed">
+              2026년 최신 은행 금리 산식 및 개정 소득세법 데이터를 실시간으로 동기화하고 있습니다
+            </p>
+
+            {/* 부드러운 프로그레스 바 */}
+            <div className="w-full max-w-xs bg-slate-100 border border-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner mb-3">
+              <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-full animate-pulse-glow" style={{ width: '100%' }}></div>
+            </div>
+
+            {/* 로딩 상태 텍스트 & 도트 */}
+            <div className="flex items-center justify-center gap-2 text-xs font-black text-blue-600">
+              <i className="fas fa-spinner fa-spin text-blue-500 text-xs"></i>
+              <span>금융 데이터 로딩 및 금리 산식 연동 중...</span>
+            </div>
+          </div>
+
+          {/* 3. 하단 스폰서 & 안내 푸터 영역 */}
+          <div className="w-full max-w-sm flex flex-col items-center gap-3 pb-2">
+            <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+              <div className="text-left">
+                <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider block mb-0.5">SPONSORED</span>
+                <span className="text-xs font-bold text-slate-800">최신 고금리 특판 예적금 & 비과세 ISA 비교</span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+                <i className="fas fa-chart-line text-xs"></i>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+              본 도구는 2026년 금융위원회 및 국세청 이자소득세 산정 기준을 준수합니다.
+            </p>
           </div>
         </div>
       </MiniAppLayout>

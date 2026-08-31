@@ -23,6 +23,9 @@ export default function InterestCalc({ onShowToast }: InterestCalcProps) {
   // 선택된 기본 과세 유형: 일반과세(normal: 15.4%), 세금우대(preferential: 9.5%), 비과세(taxFree: 0%)
   const [selectedTax, setSelectedTax] = useState<'normal' | 'preferential' | 'taxFree'>('normal');
 
+  // 화면 모드: 입력 모드('input') vs 결과 모드('result')
+  const [viewMode, setViewMode] = useState<'input' | 'result'>('input');
+
   // 계산 애니메이션 트리거
   const [calcKey, setCalcKey] = useState<number>(0);
 
@@ -208,9 +211,19 @@ export default function InterestCalc({ onShowToast }: InterestCalcProps) {
     };
   }, [productType, principal, months, rate, calcMethod, selectedTax]);
 
-  const handleRecalculate = () => {
+  const handleCalculate = () => {
+    if (!principal || principal <= 0) {
+      onShowToast('예치 또는 납입 금액을 입력해 주세요.');
+      return;
+    }
+    if (!rate || rate <= 0) {
+      onShowToast('약정 이율을 입력해 주세요.');
+      return;
+    }
     setCalcKey((prev) => prev + 1);
-    onShowToast('2026 최신 세법 기준으로 이자가 다시 계산되었습니다! ⚡');
+    setViewMode('result');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    onShowToast('2026 최신 세법 기준으로 이자가 계산되었습니다! ⚡');
   };
 
   const copyResult = () => {
@@ -233,8 +246,10 @@ export default function InterestCalc({ onShowToast }: InterestCalcProps) {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      {/* 안내 배너 */}
-      <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
+      {viewMode === 'input' ? (
+        <>
+          {/* 안내 배너 */}
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
         <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
           <i className="fas fa-piggy-bank text-xs"></i>
         </div>
@@ -428,35 +443,49 @@ export default function InterestCalc({ onShowToast }: InterestCalcProps) {
           </div>
         </div>
 
-        {/* 즉시 계산 버튼 */}
+        {/* 계산하기 버튼 */}
         <button
           type="button"
-          onClick={handleRecalculate}
-          className="w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+          onClick={handleCalculate}
+          className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-black rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
         >
-          <i className="fas fa-bolt text-amber-300"></i>
-          <span>이자 및 만기 수령액 모의계산 다시 실행</span>
+          <i className="fas fa-calculator text-amber-300 text-sm"></i>
+          <span>이자 및 만기 수령액 계산하기</span>
         </button>
       </div>
-
-      {/* 2. 계산 결과 리포트 카드 */}
-      <div key={calcKey} className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-blue-800/40 space-y-5 animate-fade-in">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+    </>
+  ) : (
+    /* 2. 계산 결과 리포트 카드 (결과 모드) */
+    <div key={calcKey} className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-xl border border-blue-800/40 space-y-5 animate-fade-in">
+      <div className="flex items-center justify-between border-b border-white/10 pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode('input');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all cursor-pointer"
+            title="입력 화면으로 돌아가기"
+          >
+            <i className="fas fa-arrow-left text-xs"></i>
+          </button>
           <div>
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-300">INTEREST & MATURITY PAYOUT</span>
             <h4 className="text-base sm:text-lg font-black text-white">
               {productType === 'deposit' ? '정기예금' : '정기적금'} 만기 실수령 리포트
             </h4>
           </div>
-          <button
-            type="button"
-            onClick={copyResult}
-            className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer"
-          >
-            <i className="fas fa-copy"></i>
-            <span>결과 복사</span>
-          </button>
         </div>
+        <button
+          type="button"
+          onClick={copyResult}
+          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/15 transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <i className="fas fa-copy"></i>
+          <span>결과 복사</span>
+        </button>
+      </div>
 
         {/* 메인 결과값: 세후 최종 수령액 */}
         <div className="bg-white/5 rounded-2xl p-4 sm:p-5 border border-white/10 text-center space-y-1">
@@ -600,11 +629,35 @@ export default function InterestCalc({ onShowToast }: InterestCalcProps) {
           </div>
         </div>
 
+        {/* 하단 액션 버튼 바 */}
+        <div className="flex flex-col sm:flex-row gap-2.5 pt-2 border-t border-white/10">
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode('input');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl border border-white/15 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+          >
+            <i className="fas fa-arrow-left"></i>
+            <span>입력값 수정 / 다시 계산하기</span>
+          </button>
+          <button
+            type="button"
+            onClick={copyResult}
+            className="flex-1 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+          >
+            <i className="fas fa-copy"></i>
+            <span>결과 복사하기</span>
+          </button>
+        </div>
+
         <div className="bg-blue-950/60 rounded-xl p-3 border border-blue-800/60 text-[10px] text-blue-200/80 leading-relaxed">
           <i className="fas fa-info-circle mr-1 text-cyan-400"></i>
           본 모의계산 결과는 은행별 이자 계산 일수(365일/366일 윤년) 및 중도해지, 우대금리 조건에 따라 실제 수령액과 약간의 오차가 발생할 수 있습니다.
         </div>
       </div>
+      )}
     </div>
   );
 }
