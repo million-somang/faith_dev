@@ -89,40 +89,100 @@ function formatMarketTime(epochSec?: number, tz?: string): string {
     return `${mm}.${dd} ${hh}:${mi}`;
 }
 
-// 주요 지수(KOSPI, KOSDAQ, USD/KRW)
+// 국가별 주식 지수 설정
+interface CountryIndexConfig {
+    symbol: string;
+    name: string;
+    country: 'us' | 'cn' | 'jp' | 'fr' | 'kr';
+    currency: string;
+    flag: string;
+    description: string;
+}
+
+const COUNTRY_INDICES: CountryIndexConfig[] = [
+    // 한국 (KR) - 기본
+    { symbol: '^KS11', name: 'KOSPI', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 유가증권시장 종합' },
+    { symbol: '^KQ11', name: 'KOSDAQ', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 코스닥 시장' },
+    { symbol: '^KS200', name: 'KOSPI 200', country: 'kr', currency: '₩', flag: '🇰🇷', description: '한국 대표 우량 200개 종목' },
+    { symbol: 'KRW=X', name: 'USD/KRW', country: 'kr', currency: '₩', flag: '🇰🇷', description: '원/달러 실시간 환율' },
+
+    // 미국 (US)
+    { symbol: '^DJI', name: '다우 존스', country: 'us', currency: '$', flag: '🇺🇸', description: '다우존스 30 산업평균지수' },
+    { symbol: '^GSPC', name: 'S&P 500', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 대형주 500개 지수' },
+    { symbol: '^IXIC', name: '나스닥 종합', country: 'us', currency: '$', flag: '🇺🇸', description: '미국 기술주 중심 지수' },
+    { symbol: '^SOX', name: '필라델피아 반도체', country: 'us', currency: '$', flag: '🇺🇸', description: '글로벌 반도체 대표 지수' },
+
+    // 중국 (CN)
+    { symbol: '000001.SS', name: '상해 종합', country: 'cn', currency: '¥', flag: '🇨🇳', description: '상하이 증권거래소 종합' },
+    { symbol: '^HSI', name: '홍콩 항셍', country: 'cn', currency: 'HK$', flag: '🇭🇰', description: '홍콩 증시 대표 우량주' },
+    { symbol: '399001.SZ', name: '심천 종합', country: 'cn', currency: '¥', flag: '🇨🇳', description: '선전 증권거래소 성분지수' },
+
+    // 일본 (JP)
+    { symbol: '^N225', name: '닛케이 225', country: 'jp', currency: '¥', flag: '🇯🇵', description: '도쿄 증시 대표 225개 종목' },
+
+    // 프랑스 (FR)
+    { symbol: '^FCHI', name: '프랑스 CAC 40', country: 'fr', currency: '€', flag: '🇫🇷', description: '파리 증권거래소 40개 우량주' },
+    { symbol: '^STOXX50E', name: '유로 스톡스 50', country: 'fr', currency: '€', flag: '🇪🇺', description: '유로존 50대 블루칩 지수' },
+];
+
+// 주요 지수(국가별 탭 지원: us, cn, jp, fr, kr, all)
 financeRoutes.get('/api/finance/indices', async (c) => {
     const now = Date.now();
-    if (indicesCache && (now - indicesCache.timestamp) < CACHE_TTL) {
-        return c.json(indicesCache.data);
+    const countryParam = c.req.query('country')?.toLowerCase();
+
+    let allIndices = indicesCache ? indicesCache.data : null;
+
+    if (!allIndices || (now - (indicesCache?.timestamp || 0)) >= CACHE_TTL) {
+        const symbols = COUNTRY_INDICES.map(i => i.symbol);
+        const quotes = await fetchYahooQuotes(symbols);
+        const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
+
+        allIndices = COUNTRY_INDICES.map(cfg => {
+            const q = quoteMap.get(cfg.symbol);
+            if (q && q.price) {
+                const change = q.price - q.previousClose;
+                const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+                return {
+                    symbol: cfg.symbol,
+                    name: cfg.name,
+                    country: cfg.country,
+                    currency: cfg.currency,
+                    flag: cfg.flag,
+                    description: cfg.description,
+                    value: Math.round(q.price * 100) / 100,
+                    change: Math.round(change * 100) / 100,
+                    rate: Math.round(rate * 100) / 100,
+                    status: change >= 0 ? 'up' : 'down',
+                    updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
+                };
+            }
+            // fallback if not fetched
+            return {
+                symbol: cfg.symbol,
+                name: cfg.name,
+                country: cfg.country,
+                currency: cfg.currency,
+                flag: cfg.flag,
+                description: cfg.description,
+                value: 0,
+                change: 0,
+                rate: 0,
+                status: 'up',
+                updatedAt: '',
+            };
+        }).filter(item => item.value > 0);
+
+        if (allIndices.length > 0) {
+            indicesCache = { data: allIndices, timestamp: now };
+        }
     }
-    
-    const symbols = ['^KS11', '^KQ11', 'KRW=X'];
-    const quotes = await fetchYahooQuotes(symbols);
-    
-    const nameMap: Record<string, string> = {
-        '^KS11': 'KOSPI',
-        '^KQ11': 'KOSDAQ',
-        'KRW=X': 'USD/KRW',
-    };
-    
-    const indices = quotes.map(q => {
-        const change = q.price - q.previousClose;
-        const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
-        return {
-            name: nameMap[q.symbol] || q.name,
-            value: Math.round(q.price * 100) / 100,
-            change: Math.round(change * 100) / 100,
-            rate: Math.round(rate * 100) / 100,
-            status: change >= 0 ? 'up' : 'down',
-            updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
-        };
-    });
-    
-    if (indices.length > 0) {
-        indicesCache = { data: indices, timestamp: now };
+
+    if (countryParam && countryParam !== 'all') {
+        const filtered = (allIndices || []).filter((idx: any) => idx.country === countryParam);
+        return c.json(filtered);
     }
-    
-    return c.json(indices);
+
+    return c.json(allIndices || []);
 });
 
 // 거시 경제 지표 (달러/원, 비트코인, 금선물, WTI유가)

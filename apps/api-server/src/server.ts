@@ -11,7 +11,7 @@ dotenv.config();
 
 const app = new Hono();
 
-// Explicit CORS
+// Explicit CORS (updated)
 app.use('*', cors({
     origin: (origin) => origin || '*',
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -97,10 +97,13 @@ app.route('/', financeRoutes);
 import { geoRoutes } from './routes/geo.routes.js';
 app.route('/', geoRoutes);
 
+import { shoppingRoutes } from './routes/shopping.routes.js';
+app.route('/', shoppingRoutes);
+
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju'
+    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju', 'novel', 'severance-calc', 'interest-calc'
 ];
 
 miniApps.forEach(appName => {

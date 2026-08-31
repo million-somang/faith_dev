@@ -76,12 +76,41 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
         const levelDistribution = await DB.prepare("SELECT level, COUNT(*) as count FROM users WHERE status != 'deleted' GROUP BY level ORDER BY level").all()
         const recentUsers = await DB.prepare("SELECT id, email, name, level, created_at FROM users WHERE status != 'deleted' ORDER BY created_at DESC LIMIT 10").all()
 
+        // 오늘 방문자(UV) & 오늘 페이지뷰(PV) & 누적 방문자 집계
+        let todayVisitors = 0
+        let todayViews = 0
+        let totalVisitors = 0
+
+        try {
+            const todayPv = await DB.prepare(
+                "SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as visitors FROM page_views WHERE DATE(created_at) = DATE('now')"
+            ).first() as Record<string, number> | null
+
+            todayViews = todayPv?.total || 0
+            todayVisitors = todayPv?.visitors || 0
+
+            const allPvRaw = await DB.prepare(
+                "SELECT COUNT(DISTINCT session_id) as visitors FROM page_views"
+            ).first() as Record<string, number> | null
+
+            const allPvDaily = await DB.prepare(
+                "SELECT COALESCE(SUM(unique_sessions), 0) as visitors FROM page_views_daily"
+            ).first() as Record<string, number> | null
+
+            totalVisitors = (allPvRaw?.visitors || 0) + (allPvDaily?.visitors || 0)
+        } catch (pvErr) {
+            console.warn('Page views query in admin stats warning:', pvErr)
+        }
+
         return c.json({
             success: true,
-            totalUsers: (totalUsers as any).count,
-            activeUsers: (activeUsers as any).count,
-            suspendedUsers: (suspendedUsers as any).count,
-            todaySignups: (todaySignups as any).count,
+            totalUsers: (totalUsers as any)?.count || 0,
+            activeUsers: (activeUsers as any)?.count || 0,
+            suspendedUsers: (suspendedUsers as any)?.count || 0,
+            todaySignups: (todaySignups as any)?.count || 0,
+            todayVisitors,
+            todayViews,
+            totalVisitors,
             levelDistribution: levelDistribution.results,
             recentUsers: recentUsers.results
         })

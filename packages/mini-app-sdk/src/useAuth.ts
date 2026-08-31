@@ -7,6 +7,10 @@ export interface MiniAppUser {
     name: string;
     role: string;
     level: number;
+    birth_date?: string | null;
+    birth_time?: string | null;
+    gender?: string | null;
+    is_solar?: boolean | number | null;
 }
 
 export function useAuth() {

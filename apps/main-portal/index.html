@@ -15,14 +15,19 @@
   
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="VERA" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
-  <link rel="icon" type="image/png" href="/logo-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
 
   <!-- Canonical Domain -->
   <link rel="canonical" href="https://veranex.app/" />
+  <!-- RSS 2.0 Feed for Search Engines & News aggregators -->
+  <link rel="alternate" type="application/rss+xml" title="VERA RSS Feed" href="https://veranex.app/rss.xml" />
   
   <!-- Open Graph (Naver, Kakao, Facebook) -->
   <meta property="og:type" content="website" />

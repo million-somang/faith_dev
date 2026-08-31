@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { BannerSlot } from '../BannerSlot';
 import { WeatherWidget } from './WeatherWidget';
 import { StockWidget } from './StockWidget';
+import { CoreServicesShowcase } from './CoreServicesShowcase';
 import {
     HomepageConfig,
     ALL_QUICK_MENU_ITEMS,
@@ -62,7 +63,7 @@ interface PersonalizedLayoutProps {
     config: HomepageConfig;
     user: { name: string; email: string } | null;
     news: NewsItem[];
-    health: { status: string } | null;
+    health?: { status: string } | null;
     onOpenWizard: () => void;
     logout: () => void;
 }
@@ -84,18 +85,10 @@ function LoungePromoBanner() {
     );
 }
 
-
-
-
-
-
-
-
-
 /**
  * 포털형 레이아웃 (기본)
  */
-function PortalLayout({ config, news, health, user, logout }: Omit<PersonalizedLayoutProps, 'onOpenWizard'>) {
+function PortalLayout({ config, news, user, logout }: Omit<PersonalizedLayoutProps, 'onOpenWizard'>) {
     const isDark = config.theme.colorScheme === 'dark';
     const scheme = getScheme(config);
 
@@ -170,15 +163,6 @@ function PortalLayout({ config, news, health, user, logout }: Omit<PersonalizedL
 
                 {/* 배너 슬롯: 홈 우측 사이드바 */}
                 <BannerSlot slotKey="home_sidebar" />
-
-                {/* 시스템 모니터 */}
-                <Card className="p-4 bg-gray-50 border-none shadow-none">
-                    <h4 className="text-xs font-bold text-gray-400 mb-2">SYSTEM MONITOR</h4>
-                    <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-gray-500">Backend Status</span>
-                        <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    </div>
-                </Card>
             </div>
         </div>
     );
@@ -328,6 +312,11 @@ export function PersonalizedLayout(props: PersonalizedLayoutProps) {
                     news={props.news}
                 />
             )}
+
+            {/* VERA 핵심 3대 서비스 쇼케이스 카드 (페이지 하단 배치) */}
+            <div className="mt-12">
+                <CoreServicesShowcase />
+            </div>
 
             {/* 홈 꾸미기 플로팅 버튼 */}
             <button

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { RotateCcw, Lightbulb, Trophy, Sparkles, RefreshCw, HelpCircle, Play, Pause, CheckCircle2 } from 'lucide-react';
+import { RotateCcw, Lightbulb, Trophy, Sparkles, RefreshCw, HelpCircle, Play, Pause, CheckCircle2, Zap, Lock, Info } from 'lucide-react';
 import { useFreeCell } from './hooks/useFreeCell';
 import { FreeCellBoard } from './components/FreeCellBoard';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -20,6 +20,9 @@ export function App() {
     hintMessage,
     historyLength,
     isLoading,
+    moveRuleMode,
+    setMoveRuleMode,
+    getMaxMovableCards,
     setIsPaused,
     initGame,
     undo,
@@ -37,6 +40,10 @@ export function App() {
   const [showHelp, setShowHelp] = useState<boolean>(false);
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [hasSavedScore, setHasSavedScore] = useState<boolean>(false);
+
+  const emptyFreecellsCount = freecells.filter(c => c === null).length;
+  const emptyTableausCount = tableaus.filter(c => c.length === 0).length;
+  const maxMovableClassic = getMaxMovableCards(false);
 
   // 승리 시 서버에 점수 저장
   useEffect(() => {
@@ -82,53 +89,84 @@ export function App() {
       {isLoading && <LoadingScreen seedNum={gameSeed} />}
 
       {/* Top Header Bar */}
-      <header className="sticky top-0 z-40 bg-emerald-900/90 backdrop-blur-md border-b border-emerald-800/80 px-4 py-3 shadow-lg">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-emerald-950 font-black shadow-md">
-              <i className="fas fa-spade text-lg"></i>
+      <header className="sticky top-0 z-40 bg-emerald-900/90 backdrop-blur-md border-b border-emerald-800/80 px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-emerald-950 font-black shadow-md">
+              <i className="fas fa-spade text-base sm:text-lg"></i>
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-base sm:text-lg tracking-tight text-white">프리셀</h1>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-extrabold text-sm sm:text-lg tracking-tight text-white">프리셀</h1>
                 <button
                   onClick={handleChooseSeed}
-                  className="px-2 py-0.5 rounded-full bg-emerald-800 hover:bg-emerald-700 text-emerald-200 text-[10px] font-bold border border-emerald-600 transition-colors"
+                  className="px-1.5 sm:px-2 py-0.5 rounded-full bg-emerald-800 hover:bg-emerald-700 text-emerald-200 text-[10px] font-bold border border-emerald-600 transition-colors"
                   title="게임 번호 변경"
                 >
                   #{gameSeed}
                 </button>
               </div>
-              <p className="text-[10px] text-emerald-300/80 hidden sm:block">수싸움과 실력의 솔리테어 퍼즐</p>
             </div>
           </div>
 
-          {/* Stats Bar */}
-          <div className="flex items-center gap-4 text-xs font-bold bg-emerald-950/80 px-3 py-1.5 rounded-xl border border-emerald-800/60 shadow-inner">
-            <div className="flex items-center gap-1.5">
-              <span className="text-emerald-400 text-[10px]">이동</span>
-              <span className="text-white font-mono">{moveCount}</span>
-            </div>
-            <div className="w-px h-3 bg-emerald-800"></div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-emerald-400 text-[10px]">시간</span>
-              <span className="text-white font-mono">{formatTime(timeSeconds)}</span>
-            </div>
+          {/* Center Mode Switcher & Move Limit Indicator */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setMoveRuleMode(m => {
+                  const next = m === 'relaxed' ? 'classic' : 'relaxed';
+                  return next;
+                });
+              }}
+              className={`px-2.5 py-1 rounded-xl text-[11px] sm:text-xs font-bold border transition-all flex items-center gap-1.5 shadow-sm ${
+                moveRuleMode === 'relaxed'
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-300 hover:bg-amber-500/30'
+                  : 'bg-indigo-500/20 border-indigo-400 text-indigo-300 hover:bg-indigo-500/30'
+              }`}
+              title="클릭하여 이동 규칙 모드 변경 (자유 이동 / 정통 룰)"
+            >
+              {moveRuleMode === 'relaxed' ? (
+                <>
+                  <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="hidden sm:inline">이동 룰:</span>
+                  <span className="font-extrabold text-amber-300">자유 이동 ⚡</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                  <span className="hidden sm:inline">이동 룰:</span>
+                  <span className="font-extrabold text-indigo-300">정통 (최대 {maxMovableClassic}장)</span>
+                </>
+              )}
+            </button>
           </div>
 
-          {/* Top Actions */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Right Stats & Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            {/* Stats Bar */}
+            <div className="flex items-center gap-2 sm:gap-3 text-xs font-bold bg-emerald-950/80 px-2.5 py-1 sm:py-1.5 rounded-xl border border-emerald-800/60 shadow-inner">
+              <div className="flex items-center gap-1">
+                <span className="text-emerald-400 text-[10px]">이동</span>
+                <span className="text-white font-mono">{moveCount}</span>
+              </div>
+              <div className="w-px h-3 bg-emerald-800"></div>
+              <div className="flex items-center gap-1">
+                <span className="text-emerald-400 text-[10px]">시간</span>
+                <span className="text-white font-mono">{formatTime(timeSeconds)}</span>
+              </div>
+            </div>
+
             <button
               onClick={() => setShowLeaderboard(true)}
-              className="p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-amber-300 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-amber-300 transition-colors"
               title="리더보드 랭킹"
             >
               <Trophy className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowHelp(!showHelp)}
-              className="p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 transition-colors"
-              title="게임 도움말"
+              className="p-1.5 sm:p-2 rounded-lg bg-emerald-800/60 hover:bg-emerald-700 text-emerald-200 transition-colors"
+              title="게임 규칙 및 팁"
             >
               <HelpCircle className="w-4 h-4" />
             </button>
@@ -140,8 +178,8 @@ export function App() {
       <main className="flex-1 flex flex-col items-center justify-start p-2 sm:p-4 max-w-4xl w-full mx-auto">
         {/* Helper Notification / Hint Banner */}
         {hintMessage && (
-          <div className="w-full mb-3 px-4 py-2 rounded-xl bg-emerald-900/60 border border-emerald-700/60 text-emerald-200 text-xs flex items-center justify-between animate-fade-in">
-            <span className="flex items-center gap-2">
+          <div className="w-full mb-3 px-4 py-2.5 rounded-xl bg-emerald-900/80 border border-emerald-600/80 text-emerald-100 text-xs flex items-center justify-between shadow-lg animate-fade-in">
+            <span className="flex items-center gap-2 font-medium">
               <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
               {hintMessage}
             </span>
@@ -217,22 +255,39 @@ export function App() {
           <div className="bg-slate-900 border border-emerald-500/30 rounded-3xl w-full max-w-md p-6 shadow-2xl text-slate-200">
             <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-emerald-400" />
-              프리셀 규칙 안내
+              프리셀 규칙 및 카드 이동 가이드
             </h3>
-            <div className="text-xs space-y-3 leading-relaxed text-slate-300 max-h-96 overflow-y-auto pr-1">
-              <p><strong>1. 목적:</strong> 52장 카드를 우측 상단 홈셀로 ♠, ♥, ♦, ♣ 문양별로 A부터 K까지 올려 쌓으면 승리합니다.</p>
+            <div className="text-xs space-y-3.5 leading-relaxed text-slate-300 max-h-96 overflow-y-auto pr-1">
+              <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                <p className="font-bold text-amber-300 mb-1">⚡ 왜 뭉쳐있는 카드가 2~3장만 가거나 다르게 이동하나요?</p>
+                <p className="text-slate-300">
+                  1) <strong>도착지 열의 맨 위 카드 숫자</strong>에 따라 연결 가능한 시작 카드가 달라집니다.<br />
+                  예: [10-9-8-7] 뭉치가 있을 때, 목적지가 <strong>J(11)</strong>면 <strong>4장 전체</strong>가 이동하지만, 목적지가 <strong>9</strong>면 <strong>[8-7] 2장만</strong> 자동으로 잘려서 붙습니다.
+                </p>
+              </div>
+
+              <div className="bg-slate-800/80 p-3 rounded-2xl border border-slate-700">
+                <p className="font-bold text-teal-300 mb-1">⚙️ 두 가지 이동 모드 안내</p>
+                <p className="mb-1.5">
+                  • <strong>자유 이동 모드 (기본 추천 ⚡):</strong> 올바르게 정렬된 카드 뭉치라면 빈 칸 개수에 상관없이 뭉치 전체를 제한 없이 한 번에 옮길 수 있습니다.
+                </p>
+                <p>
+                  • <strong>정통 프리셀 룰 (🔒):</strong> 빈 프리셀 수와 빈 열 수에 따라 한 번에 옮길 수 있는 최대 카드 수(Supermove 공식: <code className="bg-slate-900 px-1 py-0.5 rounded text-amber-300">(1 + 빈 프리셀) × 2^빈 열</code>)가 엄격히 제한됩니다.
+                </p>
+              </div>
+
+              <p><strong>1. 목적:</strong> 52장 카드를 우측 상단 홈셀(Foundation)로 문양별 A부터 K까지 올려 쌓으면 승리합니다.</p>
               <p><strong>2. 프리셀 (좌측 상단 4칸):</strong> 카드를 1장씩 임시로 보관할 수 있는 공간입니다.</p>
-              <p><strong>3. 카드 배치 (하단 8개 열):</strong> 검은색(♠, ♣)과 빨간색(♥, ♦)을 번갈아가며 내림차순(K ➔ Q ➔ J ...)으로 붙일 수 있습니다.</p>
-              <p><strong>4. 연속 이동:</strong> 비어 있는 프리셀과 비어 있는 열이 많을수록 한 번에 더 많은 카드 뭉치를 옮길 수 있습니다.</p>
+              <p><strong>3. 테이블로 배치:</strong> 검은색과 빨간색을 번갈아가며 내림차순(K ➔ Q ➔ J ➔ 10 ...)으로 정렬합니다.</p>
               <p className="text-emerald-400 font-bold bg-emerald-950 p-2.5 rounded-xl border border-emerald-800">
-                💡 팁: 카드를 두 번 클릭(더블 터치)하면 가능한 위치나 홈셀로 자동 이동합니다!
+                💡 팁: 카드를 더블클릭하면 홈셀이나 가장 적절한 열로 즉시 자동 이동합니다!
               </p>
             </div>
             <button
               onClick={() => setShowHelp(false)}
               className="mt-6 w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors"
             >
-              닫기
+              확인 및 닫기
             </button>
           </div>
         </div>

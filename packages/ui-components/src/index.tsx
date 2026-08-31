@@ -158,10 +158,11 @@ const FULL_MENU_ITEMS = [
     { label: '금융', icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', path: '/finance' },
     { label: '게임', icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', path: '/game' },
     { label: '재미', icon: 'fa-masks-theater', bg: 'bg-rose-50', color: 'text-rose-600', path: '/entertainment' },
-    { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
-    { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
+    { label: '지식 가이드', icon: 'fa-book-open-reader', bg: 'bg-teal-50', color: 'text-teal-600', path: '/guides' },
     { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
+    { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
+    { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
 
@@ -231,16 +232,13 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
 
     let modeColor = 'text-violet-600';
     let modeBg = 'hover:bg-violet-50 hover:text-violet-600';
-    let gradientFrom = 'from-violet-500 to-indigo-600';
 
     if (activeMode === 'business') {
         modeColor = 'text-emerald-600';
         modeBg = 'hover:bg-emerald-50 hover:text-emerald-600';
-        gradientFrom = 'from-emerald-500 to-teal-600';
     } else if (activeMode === 'lounge') {
         modeColor = 'text-fuchsia-600';
         modeBg = 'hover:bg-fuchsia-50 hover:text-fuchsia-600';
-        gradientFrom = 'from-fuchsia-500 to-purple-600';
     }
 
     return (
@@ -253,9 +251,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         <i className="fas fa-bars text-lg"></i>
                     </button>
                     <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 md:static md:left-auto md:translate-x-0">
-                        <span className={`w-8 h-8 rounded-xl bg-gradient-to-br ${gradientFrom} flex items-center justify-center text-white shadow-sm`}>
-                            <i className="fas fa-sparkles text-sm"></i>
-                        </span>
+                        <img src={`${baseUrl}/logo-192.png`} alt="VERA Logo" className="w-8 h-8 rounded-lg object-contain drop-shadow-xs" />
                         <span className="font-black text-xl tracking-wider text-gray-900">V<span className={modeColor}>ERA</span></span>
                     </a>
 
@@ -318,29 +314,21 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                     {activeMode === 'general' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('뉴스', currentLang)}</a>
-                            <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('유틸리티', currentLang)}</a>
+                            <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('생활도구', currentLang)}</a>
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
+                            <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
+                            <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
+                            <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-pink-600 font-extrabold`}>{tr('쇼핑', currentLang)}</a>
                             {user?.email === 'sukman@naver.com' && (
                                 <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}
-                            <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
-                            <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
-                            {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
-                            ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
-                            )}
+                            <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                         </nav>
                     )}
 
                     {activeMode === 'business' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('홈페이지 제작', currentLang)}</a>
-                            {user ? (
-                                <a href={`${baseUrl}/mypage`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('마이페이지', currentLang)}</a>
-                            ) : (
-                                <a href={`${baseUrl}/login`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('로그인', currentLang)}</a>
-                            )}
                         </nav>
                     )}
 
@@ -588,7 +576,10 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
 
                 <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
                     <div>
-                        <h2 className="text-xl font-black text-gray-900 mb-4">VERA</h2>
+                        <div className="flex items-center gap-2 mb-3">
+                            <img src={`${baseUrl}/logo-192.png`} alt="VERA Logo" className="w-7 h-7 rounded-md object-contain" />
+                            <h2 className="text-xl font-black text-gray-900">VERA</h2>
+                        </div>
                         <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
                             세상의 모든 정보를 하나로 묶는 믿음의 포털. 더 나은 내일을 위해 매일 성장합니다.
                         </p>
@@ -598,9 +589,13 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                             <h4 className="font-bold text-gray-900 mb-4 text-sm">서비스 바로가기</h4>
                             <ul className="space-y-2 text-sm text-gray-500">
                                 <li><a href={`${baseUrl}/news`} className="hover:text-brand-green transition-colors">실시간 뉴스</a></li>
+                                <li><a href={`${baseUrl}/guides`} className="hover:text-brand-green transition-colors font-medium text-slate-800">지식 가이드 & 칼럼</a></li>
+                                <li><a href={`${baseUrl}/finance/util`} className="hover:text-brand-green transition-colors">금융Util (DSR·배당세금·퇴직금)</a></li>
+                                <li><a href={`${baseUrl}/entertainment/saju`} className="hover:text-brand-green transition-colors">사주 Pro (만세력·궁합)</a></li>
                                 <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">생활 유틸리티</a></li>
                                 <li><a href={`${baseUrl}/game`} className="hover:text-brand-green transition-colors">미니게임 센터</a></li>
                                 <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융 대시보드</a></li>
+                                <li><a href={`${baseUrl}/b2b`} className="hover:text-brand-green transition-colors">비즈니스 & 웹빌더</a></li>
                             </ul>
                         </div>
                         <div>
@@ -615,7 +610,13 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                     </div>
                 </div>
                 <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div className="flex flex-wrap gap-4 text-xs text-gray-500">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 text-xs text-gray-500">
+                        <a href={`${baseUrl}/guides`} className="text-gray-700 hover:underline">가이드/칼럼</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/finance/util`} className="hover:underline">금융계산기</a>
+                        <span>|</span>
+                        <a href={`${baseUrl}/entertainment/saju`} className="hover:underline">사주Pro</a>
+                        <span>|</span>
                         <a href={`${baseUrl}/privacy`} className="font-bold text-gray-700 hover:underline">개인정보처리방침</a>
                         <span>|</span>
                         <a href={`${baseUrl}/terms`} className="hover:underline">이용약관</a>

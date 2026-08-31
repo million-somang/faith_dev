@@ -78,7 +78,7 @@ export default function StocksPage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
                 {/* 내 관심종목 (최우선) */}
-                <section className="mb-10">
+                <section className="mb-10 animate-fade-in-up">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xl font-bold text-gray-900">
                             <i className="fas fa-star text-yellow-400 mr-2"></i>내 관심종목
@@ -92,11 +92,11 @@ export default function StocksPage() {
                             value={addInput}
                             onChange={(e) => setAddInput(e.target.value)}
                             placeholder="종목 코드 입력 (예: 005930, AAPL, TSLA)"
-                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm"
+                            className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:border-green-500 text-sm shadow-xs"
                         />
                         <button
                             type="submit"
-                            className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap"
+                            className="px-5 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm whitespace-nowrap shadow-xs cursor-pointer"
                         >
                             <i className="fas fa-plus mr-1"></i>추가
                         </button>
@@ -110,7 +110,7 @@ export default function StocksPage() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {favorites.map((ticker) => {
+                            {favorites.map((ticker, idx) => {
                                 const card = findCard(ticker);
                                 if (card) {
                                     return (
@@ -119,12 +119,18 @@ export default function StocksPage() {
                                             stock={card}
                                             isFavorite
                                             onToggleFavorite={toggle}
+                                            index={idx}
+                                            baseDelay={50}
                                         />
                                     );
                                 }
                                 // 시세 미수신/조회중 → 슬림 카드
                                 return (
-                                    <div key={ticker} className="relative bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between min-h-[120px]">
+                                    <div 
+                                        key={ticker} 
+                                        style={{ animationDelay: `${idx * 80 + 50}ms` }}
+                                        className="animate-fade-in-up relative bg-white border border-gray-200 rounded-xl p-5 flex flex-col justify-between min-h-[120px] hover:shadow-md transition-all"
+                                    >
                                         <button
                                             type="button"
                                             onClick={() => remove(ticker)}
@@ -149,19 +155,21 @@ export default function StocksPage() {
                 {/* 국내 대표 기업 */}
                 {krStocks.length > 0 && (
                     <section className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-150">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-blue-600 font-mono text-sm mr-2 bg-blue-50 px-2 py-1 rounded">KR</span>국내 대표 기업
                             </h2>
                             <span className="text-xs text-gray-400">20분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {krStocks.map((s) => (
+                            {krStocks.map((s, idx) => (
                                 <StockListCard
                                     key={s.ticker}
                                     stock={s}
                                     isFavorite={isFavorite(s.ticker)}
                                     onToggleFavorite={toggle}
+                                    index={idx}
+                                    baseDelay={150}
                                 />
                             ))}
                         </div>
@@ -171,19 +179,21 @@ export default function StocksPage() {
                 {/* 미국 빅테크 */}
                 {usStocks.length > 0 && (
                     <section className="mb-10">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-250">
                             <h2 className="text-xl font-bold text-gray-900">
                                 <span className="text-red-600 font-mono text-sm mr-2 bg-red-50 px-2 py-1 rounded">US</span>미국 빅테크
                             </h2>
                             <span className="text-xs text-gray-400">15분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {usStocks.map((s) => (
+                            {usStocks.map((s, idx) => (
                                 <StockListCard
                                     key={s.ticker}
                                     stock={s}
                                     isFavorite={isFavorite(s.ticker)}
                                     onToggleFavorite={toggle}
+                                    index={idx}
+                                    baseDelay={250}
                                 />
                             ))}
                         </div>

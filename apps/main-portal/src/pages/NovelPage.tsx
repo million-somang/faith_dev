@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Header, Footer } from '@faithportal/ui';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
+import { SoftLockModal } from '../components/common/SoftLockModal';
 import axios from 'axios';
 
 // Lucide-react 대신 FontAwesome 또는 간단 SVG/Lucide 엘리먼트 활용
@@ -34,6 +35,56 @@ interface Episode {
   created_at: string;
 }
 
+/**
+ * 웹소설 본문 가독성 최적화 포맷터:
+ * - 큰따옴표("...", “...”), 낫표(「...」, 『...』) 대화문의 위/아래에 자동으로 한 줄(단락 간격)씩 띄움
+ * - 연속된 대화문이나 이미 공백 줄이 있는 경우 과도하게 벌어지지 않도록 최적화
+ */
+export function formatNovelContent(text?: string): string {
+  if (!text) return '';
+
+  const rawLines = text.split(/\r?\n/);
+  const formattedLines: string[] = [];
+
+  const isDialogueLine = (line: string): boolean => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    return /^["“「『]/.test(trimmed) || /["”」』]$/.test(trimmed);
+  };
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const currentLine = rawLines[i].trim();
+    const prevLine = i > 0 ? rawLines[i - 1].trim() : '';
+
+    if (!currentLine) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+      continue;
+    }
+
+    const isCurrentDialogue = isDialogueLine(currentLine);
+    const isPrevDialogue = isDialogueLine(prevLine);
+
+    // 1) 현재 줄이 대화문인 경우: 이전 줄(서술문이든 다른 대화문이든)과의 사이에 1칸(빈 줄) 띄움
+    if (isCurrentDialogue && prevLine) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+    }
+    // 2) 현재 줄이 서술문이고 이전 줄이 대화문이었던 경우: 대화문 하단에 1칸(빈 줄) 띄움
+    else if (!isCurrentDialogue && prevLine && isPrevDialogue) {
+      if (formattedLines.length > 0 && formattedLines[formattedLines.length - 1] !== '') {
+        formattedLines.push('');
+      }
+    }
+
+    formattedLines.push(currentLine);
+  }
+
+  return formattedLines.join('\n');
+}
+
 export default function NovelPage() {
   const { user, logout, isLoading: isAuthLoading } = useAuth();
   const navigate = useNavigate();
@@ -53,6 +104,7 @@ export default function NovelPage() {
   const [currentNovel, setCurrentNovel] = useState<Novel | null>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
+  const [showSoftLockModal, setShowSoftLockModal] = useState<boolean>(false);
   
   // 작가 상태
   const [writerNovels, setWriterNovels] = useState<Novel[]>([]);
@@ -85,18 +137,15 @@ export default function NovelPage() {
   const [isCharging, setIsCharging] = useState(false);
   const [chargeSuccess, setChargeSuccess] = useState(false);
 
-  // 리더 뷰어 상태
-  const [showReaderModal, setShowReaderModal] = useState(false);
-  const [readerNovelId, setReaderNovelId] = useState<number | null>(null);
-  const [readerEpisodeNo, setReaderEpisodeNo] = useState<number | null>(null);
-  const [readerEpisode, setReaderEpisode] = useState<Episode | null>(null);
-  const [readerEpisodesCount, setReaderEpisodesCount] = useState<number>(0);
-  const [readerIsLocked, setReaderIsLocked] = useState<boolean>(false);
-  const [readerFontSize, setReaderFontSize] = useState<'small' | 'medium' | 'large'>('medium');
-  const [readerTheme, setReaderTheme] = useState<'light' | 'sepia' | 'dark'>('light');
-  const [readerSystemMessage, setReaderSystemMessage] = useState('');
-  const [isPurchasingEpisode, setIsPurchasingEpisode] = useState(false);
-  const [isLoadingReaderEpisode, setIsLoadingReaderEpisode] = useState(false);
+  // 📖 인앱 웹소설 뷰어 상태 (팝업 차단 및 모바일 호환 완벽 지원)
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerEpisodeNo, setViewerEpisodeNo] = useState<number | null>(null);
+  const [viewerEpisode, setViewerEpisode] = useState<Episode | null>(null);
+  const [viewerIsLocked, setViewerIsLocked] = useState(false);
+  const [viewerIsLoading, setViewerIsLoading] = useState(false);
+  const [viewerFontSize, setViewerFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [viewerTheme, setViewerTheme] = useState<'light' | 'sepia' | 'dark'>('light');
+  const [isPurchasing, setIsPurchasing] = useState(false);
 
   // 미로그인 가드 (사주 서비스와 일체화)
   useEffect(() => {
@@ -223,7 +272,11 @@ export default function NovelPage() {
 
   // 7. 선호작 토글
   const handleToggleBookmark = async () => {
-    if (!user || !currentNovel) return;
+    if (!user) {
+      setShowSoftLockModal(true);
+      return;
+    }
+    if (!currentNovel) return;
     try {
       const { data } = await axios.post('/api/novel/bookmark', { novelId: currentNovel.id }, { withCredentials: true });
       if (data.success) {
@@ -235,87 +288,87 @@ export default function NovelPage() {
     }
   };
 
-  // 8. 소설 뷰어 (인페이지 및 URL 연동) 오픈
-  const openReader = async (nId: number, epNo: number) => {
-    if (!nId || !epNo) return;
-    setShowReaderModal(true);
-    setIsLoadingReaderEpisode(true);
-    setReaderSystemMessage('');
-    setReaderNovelId(nId);
-    setReaderEpisodeNo(epNo);
+  // 8. 인앱 뷰어로 회차 읽기
+  const loadViewerEpisode = async (novelId: number, epNo: number) => {
+    setViewerIsLoading(true);
     try {
-      const detailRes = await axios.get(`/api/novel/detail?id=${nId}`);
-      if (detailRes.data.success) {
-        setReaderEpisodesCount(detailRes.data.episodes.length);
-      }
+      const res = await axios.get(`/api/novel/episode?novelId=${novelId}&episodeNo=${epNo}`, { withCredentials: true });
+      if (res.data.success) {
+        setViewerEpisode(res.data.episode);
+        setViewerIsLocked(res.data.isLocked || false);
+        setViewerEpisodeNo(epNo);
 
-      const epRes = await axios.get(`/api/novel/episode?novelId=${nId}&episodeNo=${epNo}`, { withCredentials: true });
-      if (epRes.data.success) {
-        setReaderEpisode(epRes.data.episode);
-        setReaderIsLocked(epRes.data.isLocked);
-        fetchGoldBalance();
-        fetchReaderData();
+        // 조회수 및 최근 본 목록 기록
+        axios.post('/api/novel/view', { novelId, episodeNo: epNo }, { withCredentials: true })
+          .then(() => fetchReaderData())
+          .catch(() => {});
+      } else {
+        alert(res.data.message || '에피소드를 불러오지 못했습니다.');
       }
     } catch (e: any) {
-      console.error('[Reader Load Error]', e);
-      alert('에피소드를 불러오지 못했습니다: ' + (e.response?.data?.message || e.message));
-      setShowReaderModal(false);
+      console.error('[Load Episode Error]', e);
+      alert(e.response?.data?.message || '에피소드 데이터를 가져오는 중 오류가 발생했습니다.');
     } finally {
-      setIsLoadingReaderEpisode(false);
+      setViewerIsLoading(false);
     }
   };
 
-  const navigateReaderEpisode = (targetNo: number) => {
-    if (!readerNovelId || targetNo < 1 || targetNo > readerEpisodesCount) return;
-    openReader(readerNovelId, targetNo);
+  const handleSelectEpisode = async (episodeNo: number, novelOverride?: Novel) => {
+    const targetNovel = novelOverride || currentNovel;
+    if (!targetNovel) return;
+
+    if (!currentNovel || currentNovel.id !== targetNovel.id || episodes.length === 0) {
+      await handleSelectNovel(targetNovel);
+    }
+
+    setViewerOpen(true);
+    loadViewerEpisode(targetNovel.id, episodeNo);
   };
 
-  const handlePurchaseReaderEpisode = async () => {
-    if (!user || !readerNovelId || !readerEpisodeNo) return;
-    setIsPurchasingEpisode(true);
-    setReaderSystemMessage('');
+  // 뷰어 내 회차 구매
+  const handlePurchaseCurrentEpisode = async () => {
+    if (!currentNovel || !viewerEpisodeNo) return;
+    setIsPurchasing(true);
     try {
-      const { data } = await axios.post('/api/novel/purchase', {
-        novelId: readerNovelId,
-        episodeNo: readerEpisodeNo
+      const res = await axios.post('/api/novel/purchase', {
+        novelId: currentNovel.id,
+        episodeNo: viewerEpisodeNo
       }, { withCredentials: true });
 
-      if (data.success) {
-        setGoldBalance(data.balance);
-        setReaderSystemMessage('🎉 대여에 성공했습니다! 즉시 열람을 시작합니다.');
-        setTimeout(() => {
-          openReader(readerNovelId, readerEpisodeNo);
-        }, 800);
+      if (res.data.success) {
+        alert('회차 구매가 완료되었습니다! 지금 바로 감상하세요.');
+        fetchGoldBalance();
+        loadViewerEpisode(currentNovel.id, viewerEpisodeNo);
+      } else {
+        if (res.data.needCharge) {
+          if (confirm('골드가 부족합니다. 골드 충전소로 이동하시겠습니까?')) {
+            setShowChargeModal(true);
+          }
+        } else {
+          alert(res.data.message || '구매 처리에 실패했습니다.');
+        }
       }
     } catch (e: any) {
-      console.error(e);
-      if (e.response?.data?.errorCode === 'INSUFFICIENT_GOLD') {
-        setReaderSystemMessage('❌ 골드가 부족합니다. 충전 후 다시 시도해 주세요.');
-        setTimeout(() => {
+      console.error('[Purchase Error]', e);
+      if (e.response?.data?.needCharge) {
+        if (confirm('골드가 부족합니다. 골드 충전소로 이동하시겠습니까?')) {
           setShowChargeModal(true);
-        }, 800);
+        }
       } else {
-        alert('구매 도중 에러가 발생했습니다: ' + (e.response?.data?.message || e.message));
+        alert(e.response?.data?.message || '구매 중 오류가 발생했습니다.');
       }
     } finally {
-      setIsPurchasingEpisode(false);
+      setIsPurchasing(false);
     }
   };
 
-  const handleSelectEpisode = (episodeNo: number) => {
-    if (!currentNovel) return;
-    openReader(currentNovel.id, episodeNo);
+  // 뷰어 내 이전화 / 다음화 이동
+  const handleNavigateEpisode = (direction: 'prev' | 'next') => {
+    if (!currentNovel || viewerEpisodeNo === null) return;
+    const targetEpNo = direction === 'prev' ? viewerEpisodeNo - 1 : viewerEpisodeNo + 1;
+    if (targetEpNo < 1 || targetEpNo > episodes.length) return;
+    loadViewerEpisode(currentNovel.id, targetEpNo);
   };
-
-  // URL 파라미터 감지 시 자동 뷰어 실행
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlNovelId = params.get('novelId');
-    const urlEpisodeNo = params.get('episodeNo');
-    if (urlNovelId && urlEpisodeNo) {
-      openReader(parseInt(urlNovelId, 10), parseInt(urlEpisodeNo, 10));
-    }
-  }, []);
 
   // 9. 작가용 - 내 소설 선택
   const handleSelectWriterNovel = async (novel: Novel) => {
@@ -735,10 +788,7 @@ export default function NovelPage() {
                           </h3>
                           <div 
                             onClick={() => {
-                              handleSelectNovel(recentHistory[0]);
-                              setTimeout(() => {
-                                handleSelectEpisode(recentHistory[0].last_episode_no);
-                              }, 300);
+                              handleSelectEpisode(recentHistory[0].last_episode_no, recentHistory[0]);
                             }}
                             className="bg-slate-50 border border-slate-100 p-4.5 rounded-2xl flex items-center justify-between cursor-pointer hover:border-violet-300 transition-all shadow-sm group"
                           >
@@ -908,10 +958,7 @@ export default function NovelPage() {
                           <div
                             key={h.id}
                             onClick={() => {
-                              handleSelectNovel(h);
-                              setTimeout(() => {
-                                handleSelectEpisode(h.last_episode_no);
-                              }, 300);
+                              handleSelectEpisode(h.last_episode_no, h);
                             }}
                             className="p-5 rounded-2xl bg-slate-50/40 border border-slate-200/50 hover:bg-slate-55 transition-all flex items-center justify-between cursor-pointer group"
                           >
@@ -1005,7 +1052,7 @@ export default function NovelPage() {
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center">
                           {ep.is_free === 1 ? (
                             <span className="text-xs font-black px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                               무료 연재
@@ -1015,12 +1062,6 @@ export default function NovelPage() {
                               유료 ({ep.price} G)
                             </span>
                           )}
-                          <button
-                            onClick={() => selectedWriterNovel && openReader(selectedWriterNovel.id, ep.episode_no)}
-                            className="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black flex items-center gap-1 cursor-pointer transition-all shadow-sm active:scale-95"
-                          >
-                            <i className="fas fa-book-open"></i> 소설 보기
-                          </button>
                         </div>
                       </div>
                     ))}
@@ -1048,39 +1089,18 @@ export default function NovelPage() {
                     {writerNovels.map((novel) => (
                       <div
                         key={novel.id}
-                        className="p-3 bg-slate-50 border border-slate-100 hover:border-violet-250 rounded-2xl flex items-center justify-between gap-3.5 transition-all shadow-sm"
+                        onClick={() => handleSelectWriterNovel(novel)}
+                        className="p-3 bg-slate-50 border border-slate-100 hover:border-violet-250 cursor-pointer rounded-2xl flex gap-3.5 transition-all shadow-sm"
                       >
-                        <div 
-                          onClick={() => handleSelectWriterNovel(novel)}
-                          className="flex items-center gap-3.5 flex-1 cursor-pointer"
-                        >
-                          {renderCover(novel.cover_url, "w-16 h-22")}
-                          <div className="flex-1 flex flex-col justify-center">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
-                                {novel.genre}
-                              </span>
-                              <span className="text-xs sm:text-sm text-slate-500 font-extrabold">필명: {novel.author}</span>
-                            </div>
-                            <h4 className="text-base sm:text-lg font-black text-slate-800 mt-1.5 leading-tight">{novel.title}</h4>
+                        {renderCover(novel.cover_url, "w-16 h-22")}
+                        <div className="flex-1 flex flex-col justify-center">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
+                              {novel.genre}
+                            </span>
+                            <span className="text-xs sm:text-sm text-slate-500 font-extrabold">필명: {novel.author}</span>
                           </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => handleSelectWriterNovel(novel)}
-                            className="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-all"
-                          >
-                            <i className="fas fa-cog"></i> 회차 관리
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleSelectNovel(novel);
-                              setAppMode('reader');
-                            }}
-                            className="px-3 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-xs font-black flex items-center justify-center gap-1 cursor-pointer transition-all shadow-sm"
-                          >
-                            <i className="fas fa-book-open"></i> 소설 보기
-                          </button>
+                          <h4 className="text-base sm:text-lg font-black text-slate-800 mt-1.5 leading-tight">{novel.title}</h4>
                         </div>
                       </div>
                     ))}
@@ -1420,154 +1440,212 @@ export default function NovelPage() {
         </div>
       )}
 
-      {/* 4. 인페이지 소설 뷰어 (리더) 모달 */}
-      {showReaderModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className={`w-full max-w-2xl h-[90vh] rounded-3xl p-5 shadow-2xl flex flex-col transition-colors duration-300 ${
-            readerTheme === 'dark' 
-              ? 'bg-neutral-950 text-neutral-200 border border-neutral-800' 
-              : readerTheme === 'sepia'
-              ? 'bg-[#f4efe6] text-[#433422] border border-[#e5dccb]'
-              : 'bg-white text-slate-900 border border-slate-200'
-          }`}>
-            {/* 상단 네비게이션 & 제어바 */}
-            <div className="flex items-center justify-between border-b border-slate-200/50 pb-3 mb-3 shrink-0">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowReaderModal(false)}
-                  className="p-1.5 rounded-lg hover:bg-slate-200/40 text-slate-500 hover:text-slate-800 transition-colors"
-                  title="닫기"
+      {/* 4. 📖 프리미엄 인앱 웹소설 리더 (팝업 차단 없는 일체형 뷰어) */}
+      {viewerOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-md flex items-center justify-center sm:p-4 animate-fade-in">
+          <div 
+            className={`w-full h-full sm:h-[90vh] sm:max-w-2xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-colors ${
+              viewerTheme === 'dark' 
+                ? 'bg-slate-900 text-slate-100' 
+                : viewerTheme === 'sepia' 
+                  ? 'bg-[#fbf0d9] text-[#5f4b32]' 
+                  : 'bg-white text-slate-900'
+            }`}
+          >
+            {/* 뷰어 상단 바 */}
+            <header className={`px-5 py-3.5 border-b flex items-center justify-between flex-shrink-0 ${
+              viewerTheme === 'dark' ? 'border-slate-800 bg-slate-900/90' : viewerTheme === 'sepia' ? 'border-[#e8dab5] bg-[#f7ebd0]' : 'border-slate-100 bg-white/90'
+            }`}>
+              <div className="flex items-center gap-2 overflow-hidden mr-2">
+                <button 
+                  onClick={() => setViewerOpen(false)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    viewerTheme === 'dark' ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600'
+                  }`}
+                  aria-label="뷰어 닫기"
+                  title="목록으로 돌아가기"
                 >
-                  <i className="fas fa-arrow-left"></i>
+                  <i className="fas fa-arrow-left text-sm"></i>
                 </button>
-                <span className="text-sm sm:text-base font-black truncate max-w-[220px] sm:max-w-[340px]">
-                  {readerEpisode?.title || '에피소드 불러오는 중...'}
-                </span>
+                <div className="truncate">
+                  <h3 className="text-xs font-bold opacity-60 truncate">{currentNovel?.title}</h3>
+                  <h2 className="text-sm sm:text-base font-extrabold truncate">
+                    {viewerEpisode ? `${viewerEpisode.episode_no}화. ${viewerEpisode.title}` : '로딩 중...'}
+                  </h2>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* 뷰어 컨트롤러 (글자 크기 & 테마 & 닫기) */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {/* 폰트 크기 변경 */}
+                <div className={`flex items-center rounded-lg p-0.5 text-xs font-bold border ${
+                  viewerTheme === 'dark' ? 'border-slate-700 bg-slate-800' : viewerTheme === 'sepia' ? 'border-[#e8dab5] bg-[#f0e3c5]' : 'border-slate-200 bg-slate-50'
+                }`}>
+                  <button 
+                    onClick={() => setViewerFontSize('small')} 
+                    className={`px-2 py-0.5 rounded ${viewerFontSize === 'small' ? 'bg-violet-600 text-white' : 'opacity-70'}`}
+                    title="작은 글자"
+                  >
+                    가-
+                  </button>
+                  <button 
+                    onClick={() => setViewerFontSize('medium')} 
+                    className={`px-2 py-0.5 rounded ${viewerFontSize === 'medium' ? 'bg-violet-600 text-white' : 'opacity-70'}`}
+                    title="기본 글자"
+                  >
+                    가
+                  </button>
+                  <button 
+                    onClick={() => setViewerFontSize('large')} 
+                    className={`px-2 py-0.5 rounded ${viewerFontSize === 'large' ? 'bg-violet-600 text-white' : 'opacity-70'}`}
+                    title="큰 글자"
+                  >
+                    가+
+                  </button>
+                </div>
+
+                {/* 테마 스위처 */}
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => setViewerTheme('light')} 
+                    className={`w-6 h-6 rounded-full border ${viewerTheme === 'light' ? 'ring-2 ring-violet-500' : 'opacity-70'} bg-white border-slate-300`}
+                    title="라이트 모드"
+                  />
+                  <button 
+                    onClick={() => setViewerTheme('sepia')} 
+                    className={`w-6 h-6 rounded-full border ${viewerTheme === 'sepia' ? 'ring-2 ring-violet-500' : 'opacity-70'} bg-[#fbf0d9] border-[#e8dab5]`}
+                    title="세피아 모드"
+                  />
+                  <button 
+                    onClick={() => setViewerTheme('dark')} 
+                    className={`w-6 h-6 rounded-full border ${viewerTheme === 'dark' ? 'ring-2 ring-violet-500' : 'opacity-70'} bg-slate-900 border-slate-700`}
+                    title="다크 모드"
+                  />
+                </div>
+
+                {/* 닫기 버튼 */}
                 <button 
-                  onClick={() => {
-                    if (readerFontSize === 'small') setReaderFontSize('medium');
-                    else if (readerFontSize === 'medium') setReaderFontSize('large');
-                    else setReaderFontSize('small');
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-slate-100/60 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors border border-slate-200/60 cursor-pointer"
-                  title="글꼴 크기 조절"
-                >
-                  <i className="fas fa-font mr-1"></i>
-                  {readerFontSize === 'small' ? '작게' : readerFontSize === 'medium' ? '보통' : '크게'}
-                </button>
-                <button 
-                  onClick={() => {
-                    if (readerTheme === 'dark') setReaderTheme('light');
-                    else if (readerTheme === 'light') setReaderTheme('sepia');
-                    else setReaderTheme('dark');
-                  }}
-                  className="w-7 h-7 rounded-full border border-neutral-400/40 bg-amber-50 flex items-center justify-center text-xs font-black text-slate-800 cursor-pointer"
-                  title="테마 변경"
-                >
-                  T
-                </button>
-                <button 
-                  onClick={() => setShowReaderModal(false)} 
-                  className="p-1.5 rounded-lg hover:bg-slate-200/40 text-slate-400 hover:text-slate-700 transition-colors"
+                  onClick={() => setViewerOpen(false)} 
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    viewerTheme === 'dark' ? 'hover:bg-slate-800 text-slate-300' : 'hover:bg-slate-100 text-slate-600'
+                  }`}
+                  aria-label="닫기"
                 >
                   <i className="fas fa-times text-base"></i>
                 </button>
               </div>
-            </div>
+            </header>
 
-            {/* 본문 콘텐츠 */}
-            <div className={`flex-1 p-5 sm:p-7 rounded-2xl border transition-all overflow-y-auto ${
-              readerTheme === 'dark' 
-                ? 'bg-neutral-900/80 border-neutral-800' 
-                : readerTheme === 'sepia'
-                ? 'bg-[#eae3d2] border-[#dfd7c0]'
-                : 'bg-slate-50 border-slate-200'
-            }`}>
-              {isLoadingReaderEpisode ? (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-bold animate-pulse">
-                  스토리를 불러오고 있습니다...
+            {/* 뷰어 본문 스크롤 영역 */}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-12 py-8 select-text">
+              {viewerIsLoading ? (
+                <div className="h-full flex flex-col items-center justify-center py-20">
+                  <div className="w-10 h-10 border-4 border-violet-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-sm font-bold opacity-70">에피소드를 불러오는 중입니다...</p>
                 </div>
-              ) : readerEpisode ? (
-                <>
-                  <p className={`leading-relaxed whitespace-pre-wrap break-keep select-text font-serif ${
-                    readerFontSize === 'small' 
-                      ? 'text-sm sm:text-base' 
-                      : readerFontSize === 'large'
-                      ? 'text-xl sm:text-2xl font-semibold'
-                      : 'text-base sm:text-lg'
-                  }`}>
-                    {readerEpisode.content}
+              ) : viewerIsLocked ? (
+                /* 유료 잠금 화면 */
+                <div className="h-full flex flex-col items-center justify-center py-16 text-center max-w-md mx-auto">
+                  <div className="w-16 h-16 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center text-2xl mb-4 shadow-md">
+                    <i className="fas fa-lock"></i>
+                  </div>
+                  <h3 className="text-xl font-extrabold mb-2">유료 회차입니다</h3>
+                  <p className="text-sm opacity-70 mb-6 leading-relaxed">
+                    본 회차는 작가님의 창작 활동을 후원하는 유료 스토리입니다.<br />
+                    골드를 사용하여 영구 소장 후 감상하실 수 있습니다.
                   </p>
 
-                  {/* 유료 잠금 창 */}
-                  {readerIsLocked && (
-                    <div className="mt-8 p-6 rounded-2xl bg-white border border-slate-200 shadow-md text-center flex flex-col items-center text-slate-800">
-                      <i className="fas fa-lock text-3xl text-indigo-500 mb-3 animate-bounce"></i>
-                      <h3 className="text-sm sm:text-base font-black mb-1">이 에피소드는 유료 회차입니다.</h3>
-                      <p className="text-xs sm:text-sm text-slate-500 mb-4">
-                        대여 요금: <span className="text-indigo-600 font-black">{readerEpisode.price || 100} G</span> (현재 잔액: {goldBalance.toLocaleString()} G)
-                      </p>
-                      
-                      <div className="flex flex-col gap-2 w-full max-w-xs">
-                        {readerSystemMessage && (
-                          <p className="text-xs text-indigo-600 font-extrabold mb-1">{readerSystemMessage}</p>
-                        )}
-                        <button
-                          onClick={handlePurchaseReaderEpisode}
-                          disabled={isPurchasingEpisode}
-                          className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-black rounded-xl transition-all disabled:opacity-40 cursor-pointer shadow-md"
-                        >
-                          {isPurchasingEpisode ? '처리 중...' : `골드로 소설 보기 (${readerEpisode.price || 100}G 소모)`}
-                        </button>
-                        <button
-                          onClick={() => setShowChargeModal(true)}
-                          className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-lg transition-all cursor-pointer border border-slate-200"
-                        >
-                          골드 충전하기
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
+                  <div className={`w-full p-4 rounded-2xl border mb-6 flex items-center justify-between ${
+                    viewerTheme === 'dark' ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <span className="text-sm font-medium opacity-80">내 보유 골드:</span>
+                    <span className="text-base font-black text-violet-500 font-mono">
+                      {goldBalance.toLocaleString()} G
+                    </span>
+                  </div>
+
+                  <div className="w-full flex flex-col gap-3">
+                    <button
+                      onClick={handlePurchaseCurrentEpisode}
+                      disabled={isPurchasing}
+                      className="w-full py-3.5 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white font-extrabold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <i className="fas fa-unlock"></i>
+                      {isPurchasing ? '구매 처리 중...' : `${viewerEpisode?.price || 100}G로 구매 후 열람하기`}
+                    </button>
+                    <button
+                      onClick={() => setShowChargeModal(true)}
+                      className="w-full py-3 bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-bold rounded-2xl transition-all text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-coins text-violet-600"></i> 골드 충전소 열기
+                    </button>
+                  </div>
+                </div>
               ) : (
-                <div className="h-full flex items-center justify-center text-slate-400 text-sm font-bold">
-                  에피소드 정보가 없습니다.
+                /* 소설 본문 표시 */
+                <div className="max-w-prose mx-auto">
+                  <div className="mb-8 pb-4 border-b border-opacity-10 border-current text-center">
+                    <h1 className="text-xl sm:text-2xl font-black mb-2">
+                      {viewerEpisode?.title}
+                    </h1>
+                    <span className="text-xs opacity-50 font-mono">
+                      {viewerEpisode?.created_at && new Date(viewerEpisode.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className={`leading-relaxed whitespace-pre-wrap font-serif transition-all ${
+                    viewerFontSize === 'small' ? 'text-sm leading-7' : viewerFontSize === 'large' ? 'text-lg sm:text-xl leading-9' : 'text-base sm:text-lg leading-8'
+                  }`}>
+                    {formatNovelContent(viewerEpisode?.content) || '본문 내용이 비어있습니다.'}
+                  </div>
+
+                  {/* 회차 끝 후일담 안내 */}
+                  <div className="mt-16 pt-8 border-t border-opacity-10 border-current text-center opacity-60 text-xs">
+                    - {viewerEpisode?.episode_no}화 끝 -
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* 하단 회차 이동 컨트롤 바 */}
-            <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-slate-200/50 shrink-0">
+            {/* 뷰어 하단 내비게이션 바 */}
+            <footer className={`px-5 py-3 border-t flex items-center justify-between flex-shrink-0 ${
+              viewerTheme === 'dark' ? 'border-slate-800 bg-slate-900/90' : viewerTheme === 'sepia' ? 'border-[#e8dab5] bg-[#f7ebd0]' : 'border-slate-100 bg-white/90'
+            }`}>
               <button
-                onClick={() => navigateReaderEpisode((readerEpisodeNo || 1) - 1)}
-                disabled={!readerEpisodeNo || readerEpisodeNo <= 1}
-                className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs sm:text-sm font-black flex items-center gap-1.5 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700 transition-all"
+                onClick={() => handleNavigateEpisode('prev')}
+                disabled={viewerEpisodeNo === null || viewerEpisodeNo <= 1 || viewerIsLoading}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  viewerTheme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
               >
                 <i className="fas fa-chevron-left text-xs"></i> 이전화
               </button>
-              
+
+              <span className="text-xs font-mono font-bold opacity-60">
+                {viewerEpisodeNo} / {episodes.length}화
+              </span>
+
               <button
-                onClick={() => setShowReaderModal(false)}
-                className="px-5 py-2 rounded-xl bg-violet-50 border border-violet-150 text-xs sm:text-sm font-black hover:bg-violet-100 active:scale-95 cursor-pointer text-violet-600 shadow-sm transition-all"
-              >
-                창 닫기
-              </button>
-              
-              <button
-                onClick={() => navigateReaderEpisode((readerEpisodeNo || 1) + 1)}
-                disabled={!readerEpisodeNo || readerEpisodeNo >= readerEpisodesCount}
-                className="px-4 py-2 rounded-xl bg-slate-100 border border-slate-200 text-xs sm:text-sm font-black flex items-center gap-1.5 hover:bg-slate-200 active:scale-95 disabled:opacity-30 cursor-pointer text-slate-700 transition-all"
+                onClick={() => handleNavigateEpisode('next')}
+                disabled={viewerEpisodeNo === null || viewerEpisodeNo >= episodes.length || viewerIsLoading}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                  viewerTheme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                }`}
               >
                 다음화 <i className="fas fa-chevron-right text-xs"></i>
               </button>
-            </div>
+            </footer>
           </div>
         </div>
       )}
 
+      {/* 🌟 소프트 락인 넛지 모달 */}
+      <SoftLockModal
+        isOpen={showSoftLockModal}
+        onClose={() => setShowSoftLockModal(false)}
+        type="novel"
+        extraData={{ title: currentNovel?.title }}
+      />
     </div>
   );
 }

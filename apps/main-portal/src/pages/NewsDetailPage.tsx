@@ -5,6 +5,9 @@ import { getCategoryName, getCategoryColor, getTimeAgo, decodeHtmlEntities } fro
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
+import { NewsInsightWidget } from '../components/news/NewsInsightWidget';
+import { NewsRelatedToolsWidget } from '../components/news/NewsRelatedToolsWidget';
+import { BannerSlot } from '../components/BannerSlot';
 
 const API_BASE_URL = '';
 
@@ -15,6 +18,42 @@ export default function NewsDetailPage() {
     const [news, setNews] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [voting, setVoting] = useState(false);
+
+    // 인앱 미니앱 모달 상태
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalUrl, setModalUrl] = useState('');
+    const [modalTitle, setModalTitle] = useState('');
+
+    const handleOpenMiniApp = (url: string, title: string) => {
+        setModalUrl(url);
+        setModalTitle(title);
+        setModalOpen(true);
+        document.body.classList.add('miniapp-modal-open');
+    };
+
+    const handleCloseMiniApp = () => {
+        setModalOpen(false);
+        setModalUrl('');
+        setModalTitle('');
+        document.body.classList.remove('miniapp-modal-open');
+    };
+
+    // ESC 키로 모달 닫기
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && modalOpen) {
+                handleCloseMiniApp();
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [modalOpen]);
+
+    useEffect(() => {
+        return () => {
+            document.body.classList.remove('miniapp-modal-open');
+        };
+    }, []);
 
     useEffect(() => {
         fetchNewsDetail();
@@ -120,7 +159,7 @@ export default function NewsDetailPage() {
         return (
             <div className="flex flex-col min-h-screen">
                 <Header user={user} onLogout={logout} />
-                <main className="flex-1 max-w-4xl mx-auto px-1 sm:px-4 py-20 text-center">
+                <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-20 text-center">
                     <h2 className="text-2xl font-bold text-gray-900 mb-4">뉴스를 찾을 수 없습니다.</h2>
                     <Button onClick={() => navigate('/news')} className="bg-brand-green text-white">뉴스 목록으로 돌아가기</Button>
                 </main>
@@ -133,7 +172,7 @@ export default function NewsDetailPage() {
         <div className="flex flex-col min-h-screen bg-gray-50">
             {news && (
                 <PageSEO
-                    title={`${news.title} - VERA 뉴스`}
+                    title={`${news.title} - VERA 뉴스 & 실무 분석`}
                     description={(news.content || news.summary || '').replace(/<[^>]*>/g, '').substring(0, 160)}
                     path={`/news/${id}`}
                     type="article"
@@ -141,14 +180,31 @@ export default function NewsDetailPage() {
                         '@context': 'https://schema.org',
                         '@type': 'NewsArticle',
                         headline: news.title,
+                        description: (news.content || news.summary || '').replace(/<[^>]*>/g, '').substring(0, 160),
                         datePublished: news.published_at || news.created_at,
-                        publisher: { '@type': 'Organization', name: 'VERA' },
+                        dateModified: news.updated_at || news.published_at || news.created_at,
+                        author: {
+                            '@type': 'Organization',
+                            name: splitTitle(news.title).publisher || news.publisher || news.source || 'VERA 뉴스데스크'
+                        },
+                        publisher: { 
+                            '@type': 'Organization', 
+                            name: 'VERA',
+                            logo: {
+                                '@type': 'ImageObject',
+                                url: 'https://faithlink.site/logo.png'
+                            }
+                        },
+                        mainEntityOfPage: {
+                            '@type': 'WebPage',
+                            '@id': `https://faithlink.site/news/${id}`
+                        }
                     }}
                 />
             )}
             <Header user={user} onLogout={logout} />
 
-            <main className="flex-1 max-w-4xl mx-auto px-1 sm:px-4 py-8 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
                 {/* Breadcrumb */}
                 <div className="flex items-center gap-2 text-xs text-gray-400 mb-6 font-medium">
                     <a href="/" className="hover:text-gray-600">홈</a>
@@ -158,7 +214,7 @@ export default function NewsDetailPage() {
                     <span className="text-gray-600">{getCategoryName(String(news.category || '').split(',')[0])}</span>
                 </div>
 
-                <article className="space-y-5">
+                <article className="space-y-6">
                     {/* Header Section */}
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -169,7 +225,7 @@ export default function NewsDetailPage() {
                             ))}
                             <span className="text-xs text-gray-400 font-medium">{getTimeAgo(news.published_at)}</span>
                         </div>
-                        <h1 className="text-3xl sm:text-4xl font-black text-gray-900 leading-tight">
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">
                             {splitTitle(news.title).title}
                         </h1>
                         <div className="flex items-center justify-between pb-6 border-b border-gray-100">
@@ -181,23 +237,29 @@ export default function NewsDetailPage() {
                                     <p className="text-sm font-bold text-gray-900">
                                         {splitTitle(news.title).publisher || news.publisher || news.source || '기자 정보 없음'}
                                     </p>
-                                    <p className="text-xs text-gray-400">FaithPortal News Service</p>
+                                    <p className="text-xs text-gray-400">FaithPortal News &amp; Insight</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-blue-500 transition-colors flex items-center justify-center shadow-sm">
+                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-blue-500 transition-colors flex items-center justify-center shadow-xs">
                                     <i className="fas fa-share-alt"></i>
                                 </button>
-                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-yellow-500 transition-colors flex items-center justify-center shadow-sm">
+                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-yellow-500 transition-colors flex items-center justify-center shadow-xs">
                                     <i className="far fa-bookmark"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
 
+                    {/* 상단 Zero CLS 광고 슬롯 */}
+                    <aside className="w-full min-h-[90px] flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-2 overflow-hidden" aria-label="스폰서 광고">
+                        <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-1">ADVERTISEMENT</span>
+                        <BannerSlot slotKey="news_detail_top" className="min-h-[50px] w-full" />
+                    </aside>
+
                     {/* 대표 이미지 */}
                     {news.thumbnail && (
-                        <div className="rounded-2xl overflow-hidden shadow-sm bg-gray-100">
+                        <div className="rounded-2xl overflow-hidden shadow-xs bg-gray-100">
                             <img
                                 src={news.thumbnail}
                                 alt={news.title}
@@ -207,14 +269,22 @@ export default function NewsDetailPage() {
                         </div>
                     )}
 
+                    {/* 1. 기사 내용 맞춤 추천 유틸리티 도구 연계 위젯 (대표 이미지와 본문 사이에 배치하여 시선 유도) */}
+                    <NewsRelatedToolsWidget 
+                        title={news.title}
+                        category={String(news.category || '')}
+                        content={news.content || news.summary || ''}
+                        onOpenTool={handleOpenMiniApp}
+                    />
+
                     {/* Main Content */}
                     <div className="text-gray-800 leading-relaxed space-y-6">
                         {news.content ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
                                 <p className="text-lg leading-loose whitespace-pre-line">{stripDuplicateTitle(news.content)}</p>
                             </div>
                         ) : getSummaryLines().length > 0 ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs divide-y divide-gray-50">
                                 {getSummaryLines().map((line, idx) => (
                                     <p key={idx} className="px-6 py-4 text-base leading-relaxed flex gap-3">
                                         <i className="fas fa-angle-right text-blue-400 mt-1.5 flex-shrink-0"></i>
@@ -223,7 +293,7 @@ export default function NewsDetailPage() {
                                 ))}
                             </div>
                         ) : (news?.summary || news?.description) ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
                                 <p className="text-base leading-relaxed">{cleanEntities(news.summary || news.description)}</p>
                             </div>
                         ) : (
@@ -234,7 +304,7 @@ export default function NewsDetailPage() {
                           <>
                             <p className="mt-6 mb-2 text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
                                 <i className="fas fa-info-circle mt-0.5 flex-shrink-0"></i>
-                                <span>본 뉴스는 전체 내용을 제공하지 않으니, 자세한 사항은 원문보기를 클릭해서 봐 주세요.</span>
+                                <span>본 뉴스는 핵심 팩트 요약과 분석 정보를 제공하며, 전체 심층 보도는 아래 원문보기를 통해 확인하실 수 있습니다.</span>
                             </p>
                             <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
                                 <div className="flex-1 min-w-0">
@@ -245,7 +315,7 @@ export default function NewsDetailPage() {
                                     href={news.link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="shrink-0 px-6 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl font-bold text-sm shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+                                    className="shrink-0 px-6 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl font-bold text-sm shadow-xs hover:shadow-md transition-all flex items-center gap-2"
                                 >
                                     <span>원문보기</span>
                                     <i className="fas fa-external-link-alt text-[10px]"></i>
@@ -255,16 +325,30 @@ export default function NewsDetailPage() {
                         )}
                     </div>
 
+                    {/* 2. AI 핵심 요약 & 실생활 영향 분석 위젯 (기사 본문 바로 아래 배치) */}
+                    <NewsInsightWidget 
+                        title={news.title}
+                        category={String(news.category || '')}
+                        summaryLines={getSummaryLines()}
+                        content={news.content || news.summary || ''}
+                    />
+
+                    {/* 본문 하단 Zero CLS 광고 슬롯 */}
+                    <aside className="w-full min-h-[250px] flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-4 overflow-hidden" aria-label="스폰서 광고">
+                        <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-2">ADVERTISEMENT</span>
+                        <BannerSlot slotKey="news_detail_bottom" className="min-h-[200px] w-full" />
+                    </aside>
+
                     {/* Interaction Bar */}
                     <div className="py-6 border-t border-b border-gray-100 flex flex-col items-center gap-4">
-                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">기사가 도움이 되셨나요?</p>
+                        <p className="text-sm font-bold text-gray-500 uppercase tracking-widest">기사와 분석 정보가 도움이 되셨나요?</p>
                         <div className="flex gap-6">
                             <button
                                 onClick={() => handleVote('up')}
                                 className="flex flex-col items-center gap-2 group"
                                 disabled={voting}
                             >
-                                <div className="w-16 h-16 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center text-gray-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-all shadow-sm">
+                                <div className="w-16 h-16 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center text-gray-400 group-hover:border-blue-500 group-hover:text-blue-500 transition-all shadow-xs">
                                     <i className="fas fa-thumbs-up text-2xl"></i>
                                 </div>
                                 <span className="text-sm font-bold text-gray-500">{news.vote_up || 0}</span>
@@ -274,7 +358,7 @@ export default function NewsDetailPage() {
                                 className="flex flex-col items-center gap-2 group"
                                 disabled={voting}
                             >
-                                <div className="w-16 h-16 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center text-gray-400 group-hover:border-red-500 group-hover:text-red-500 transition-all shadow-sm">
+                                <div className="w-16 h-16 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center text-gray-400 group-hover:border-red-500 group-hover:text-red-500 transition-all shadow-xs">
                                     <i className="fas fa-thumbs-down text-2xl"></i>
                                 </div>
                                 <span className="text-sm font-bold text-gray-500">{news.vote_down || 0}</span>
@@ -295,6 +379,52 @@ export default function NewsDetailPage() {
             </main>
 
             <Footer />
+
+            {/* ======== 인앱 미니앱 모달 ======== */}
+            {modalOpen && (
+                <div
+                    className="mini-app-modal-overlay"
+                    onClick={handleCloseMiniApp}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={modalTitle}
+                >
+                    <div
+                        className="mini-app-modal-container"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
+                            if (iframe) {
+                                iframe.focus();
+                                iframe.contentWindow?.focus();
+                            }
+                        }}
+                    >
+                        {/* 모달 헤더 */}
+                        <div className="mini-app-modal-header">
+                            <span className="mini-app-modal-title">
+                                <i className="fas fa-tools" aria-hidden="true"></i>
+                                {modalTitle}
+                            </span>
+                            <button
+                                className="mini-app-modal-close"
+                                onClick={handleCloseMiniApp}
+                                aria-label="닫기"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                        {/* iframe 콘텐츠 */}
+                        <iframe
+                            key={modalUrl}
+                            src={modalUrl}
+                            className="mini-app-modal-iframe"
+                            title={modalTitle}
+                            allow="clipboard-write"
+                        />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

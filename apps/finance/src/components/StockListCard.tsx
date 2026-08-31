@@ -16,15 +16,20 @@ interface Props {
     stock: StockCard;
     isFavorite: boolean;
     onToggleFavorite: (ticker: string, meta?: { name?: string }) => void;
+    index?: number;
+    baseDelay?: number;
 }
 
 /**
  * 종목 카드 — 가격·등락·미니차트 표시, 우상단 별(★)로 관심종목 지정/해제.
  * 카드 본문 클릭 시 개별 종목 상세(/stock/:ticker)로 이동한다.
  */
-export default function StockListCard({ stock, isFavorite, onToggleFavorite }: Props) {
+export default function StockListCard({ stock, isFavorite, onToggleFavorite, index = 0, baseDelay = 0 }: Props) {
     return (
-        <div className="relative bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 transition-all group">
+        <div 
+            style={{ animationDelay: `${baseDelay + index * 80}ms` }}
+            className="animate-fade-in-up relative bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 hover:-translate-y-1 transition-all duration-300 group"
+        >
             <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); onToggleFavorite(stock.ticker, { name: stock.name }); }}

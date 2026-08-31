@@ -5,8 +5,9 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "tsc && vite build",
-        "preview": "vite preview"
+        "build": "tsc && vite build && node scripts/prerender.js",
+        "preview": "vite preview",
+        "prerender": "node scripts/prerender.js"
     },
     "dependencies": {
         "@faithportal/core-utils": "*",

@@ -10,6 +10,10 @@ export interface SessionUser {
     role: string
     level: number
     status: string
+    birth_date?: string | null
+    birth_time?: string | null
+    gender?: string | null
+    is_solar?: number | boolean | null
 }
 
 export async function checkSession(c: Context): Promise<SessionUser | null> {
@@ -26,7 +30,6 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
         console.log('[DEBUG AUTH] Query returned rows:', res.rows.length)
 
         if (res.rows.length === 0) return null
-        return res.rows[0] as SessionUser
         return res.rows[0] as SessionUser
     } catch (error) {
         console.error('Session check error:', error)

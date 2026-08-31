@@ -33,7 +33,8 @@ CREATE INDEX IF NOT EXISTS idx_banners_slot ON banners(slot_key, is_active, sort
 INSERT OR IGNORE INTO banner_slots (slot_key, name, width, height, description) VALUES
     ('home_main_top', '홈 메인 상단', 728, 90, '메인 페이지 뉴스 칼럼 상단 가로 배너'),
     ('news_list_top', '뉴스 목록 상단', 728, 90, '뉴스 페이지 목록 상단 가로 배너'),
-    ('home_sidebar', '홈 우측 사이드바', 300, 250, '메인 페이지 우측 위젯 영역 사각 배너');
+    ('home_sidebar', '홈 우측 사이드바', 300, 250, '메인 페이지 우측 위젯 영역 사각 배너'),
+    ('mypage_top', '마이페이지 상단', 728, 90, '마이페이지 상단 가로 배너');
 
 -- 기존 하드코딩 쿠팡 배너를 첫 데이터로 이관
 INSERT OR IGNORE INTO banners (slot_key, title, image_url, link_url, open_new_tab, sort_order, is_active)

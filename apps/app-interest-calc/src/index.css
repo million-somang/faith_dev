@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@source "../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../packages/mini-app-sdk/src/**/*.ts";
+
+@layer utilities {
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* ========================================
+   공통 리셋 및 폰트 설정
+   ======================================== */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0b0f19;
+}
+
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 (포털 모달 헤더와 중복 방지) */
+#root > div > header {
+  display: none !important;
+}
+
+/* ========================================
+   애니메이션 키프레임
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+  50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(6, 182, 212, 0.6); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}

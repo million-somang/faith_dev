@@ -170,7 +170,7 @@ export default function StockDetailPage() {
 
             <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
                 {/* 주식 헤더 */}
-                <Card className={`p-6 mb-6 ${loading ? 'animate-pulse' : ''}`}>
+                <Card className={`p-6 mb-6 animate-fade-in-up ${loading ? 'animate-pulse' : ''}`}>
                     <div className="flex items-start justify-between mb-4">
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900 mb-2">{stock.name}</h1>
@@ -196,7 +196,7 @@ export default function StockDetailPage() {
                 </Card>
 
                 {/* 차트 영역 */}
-                <Card className={`p-6 mb-6 ${chartLoading ? 'animate-pulse' : ''}`}>
+                <Card className={`p-6 mb-6 animate-fade-in-up animation-delay-150 ${chartLoading ? 'animate-pulse' : ''}`}>
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold text-gray-900">
                             <i className="fas fa-chart-area text-green-600 mr-2"></i>
@@ -209,7 +209,7 @@ export default function StockDetailPage() {
                 </Card>
 
                 {/* 탭 메뉴 */}
-                <Card className="mb-6">
+                <Card className="mb-6 animate-fade-in-up animation-delay-300">
                     <div className="border-b border-gray-200">
                         <div className="flex gap-8 px-6">
                             {tabs.map((tab) => (

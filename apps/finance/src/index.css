@@ -1,8 +1,8 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 @layer base {
     * {
@@ -294,3 +294,32 @@
     color: #6b7280;
     line-height: 1.3;
 }
+
+/* ========================================
+   은은하고 세련된 진입 애니메이션 (Subtle Fade-in-up)
+   ======================================== */
+@keyframes fadeInUpSubtle {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-up {
+    animation: fadeInUpSubtle 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: opacity, transform;
+}
+
+.animation-delay-75 { animation-delay: 75ms; }
+.animation-delay-100 { animation-delay: 100ms; }
+.animation-delay-150 { animation-delay: 150ms; }
+.animation-delay-200 { animation-delay: 200ms; }
+.animation-delay-250 { animation-delay: 250ms; }
+.animation-delay-300 { animation-delay: 300ms; }
+.animation-delay-350 { animation-delay: 350ms; }
+.animation-delay-400 { animation-delay: 400ms; }
+.animation-delay-500 { animation-delay: 500ms; }

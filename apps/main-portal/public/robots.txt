@@ -1,0 +1,45 @@
+# robots.txt for VERA (https://veranex.app)
+# 구글 검색엔진 및 애드센스 심사 봇 크롤링 전체 허용
+
+User-agent: *
+Allow: /
+Allow: /guides/
+Allow: /blog/
+Allow: /news/
+Allow: /lifestyle/
+Allow: /game/
+Allow: /finance/
+Allow: /about
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+
+# Google AdSense Crawler 전용 권한 허용
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Googlebot-News
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
+User-agent: Daumoa
+Allow: /
+
+# Sitemap & Feeds
+Sitemap: https://veranex.app/sitemap.xml
+# RSS 2.0 Feed
+# https://veranex.app/rss.xml

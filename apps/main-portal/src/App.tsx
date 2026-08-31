@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 import { useEffect, useState } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { trackPageView } from './utils/analytics';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 import { Card, NewsCard, Header, Footer } from '@faithportal/ui';
@@ -11,6 +11,7 @@ import { PageSEO } from './components/PageSEO';
 
 import UtilityPage from './pages/UtilityPage';
 import FinancePage from './pages/FinancePage';
+import FinanceUtilPage from './pages/FinanceUtilPage';
 import RewardLayout from './pages/reward/RewardLayout';
 import RewardHome from './pages/reward/RewardHome';
 import RewardAttendance from './pages/reward/RewardAttendance';
@@ -34,11 +35,16 @@ import SajuInfoPage from './pages/SajuInfoPage';
 import NovelPage from './pages/NovelPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
+import LoungeBattlePopupPage from './pages/LoungeBattlePopupPage';
 import B2BPage from './pages/B2BPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import AboutUsPage from './pages/AboutUsPage';
 import ContactUsPage from './pages/ContactUsPage';
+import GuidesHubPage from './pages/GuidesHubPage';
+import GuideDetailPage from './pages/GuideDetailPage';
+import ShoppingPage from './pages/ShoppingPage';
+import { GUIDES_DATA } from './data/guidesData';
 import { AuthProvider } from './context/AuthContext';
 import { UserPreferenceProvider } from './context/UserPreferenceContext';
 import { useUserPreferenceContext } from './context/UserPreferenceContext';
@@ -49,6 +55,8 @@ import { MobileTabBar } from './components/MobileTabBar';
 import { BannerSlot } from './components/BannerSlot';
 import { WeatherWidget } from './components/homepage/WeatherWidget';
 import { StockWidget } from './components/homepage/StockWidget';
+import { SidebarShoppingWidget } from './components/homepage/SidebarShoppingWidget';
+import { CoreServicesShowcase } from './components/homepage/CoreServicesShowcase';
 
 function HomePage() {
     console.log('HomePage rendering...');
@@ -141,52 +149,51 @@ function HomePage() {
                         </div>
 
                         {/* Hero Section */}
-                        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 via-blue-500 to-indigo-600 text-white px-6 sm:px-12 py-6 sm:py-8 mb-12 shadow-xl">
-                            {/* 장식용 원형 그래픽 */}
-                            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-white/10 pointer-events-none"></div>
-                            <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-indigo-400/20 pointer-events-none"></div>
-                            <div className="absolute top-10 right-1/4 w-20 h-20 rounded-full bg-white/5 pointer-events-none"></div>
+                        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-8 sm:py-10 mb-8 shadow-xl">
+                            <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-indigo-500/10 pointer-events-none blur-3xl"></div>
+                            <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-purple-500/10 pointer-events-none blur-3xl"></div>
 
                             <div className="relative max-w-3xl mx-auto text-center">
-                                <h1 className="text-3xl sm:text-4xl font-black tracking-tight mb-2">
-                                    {lang === 'en' ? 'All Information in One Place' : '세상의 모든 정보를 한곳에서'}
+                                <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold mb-3 border border-white/10">
+                                    VERA All-in-One Portal
+                                </span>
+                                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+                                    {lang === 'en' ? 'All Services in One Place' : '일상과 재미, 정보를 하나로 잇는 포털'}
                                 </h1>
-                                <p className="text-blue-100 text-sm sm:text-base mb-5 font-medium">
-                                    {lang === 'en' ? 'Real-time news, financial rates, mini games & utility tools — all in FaithPortal' : '실시간 뉴스 · 금융 시세 · 미니게임 · 생활 도구까지, FaithPortal 하나면 충분해요'}
+                                <p className="text-slate-300 text-sm sm:text-base mb-6 font-normal">
+                                    {lang === 'en' ? 'Real-time news, lifestyle tools, classic games & saju horoscope — all in VERA' : '실시간 뉴스부터 유용한 생활도구, 클래식 미니게임, 정통 사주명리까지'}
                                 </p>
 
                                 {/* 검색창 */}
-                                <form onSubmit={handleSearch} className="bg-white rounded-full shadow-2xl flex items-center px-6 py-3 max-w-2xl mx-auto">
-                                    <i className="fas fa-search text-blue-500 mr-3"></i>
+                                <form onSubmit={handleSearch} className="bg-white rounded-2xl shadow-xl flex items-center px-5 py-3 max-w-2xl mx-auto">
+                                    <i className="fas fa-search text-slate-400 mr-3"></i>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder={lang === 'en' ? 'Search news, games, tools...' : '무엇을 찾으시나요?'}
-                                        className="flex-1 bg-transparent border-none outline-none text-base text-gray-900 placeholder-gray-400 font-medium"
+                                        placeholder={lang === 'en' ? 'Search news, tools, games, saju...' : '뉴스, 생활도구, 게임, 사주 검색...'}
+                                        className="flex-1 bg-transparent border-none outline-none text-sm sm:text-base text-gray-900 placeholder-gray-400 font-medium"
                                     />
                                     <button
                                         type="submit"
-                                        className="flex items-center justify-center px-5 py-2 rounded-full bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition-all ml-3"
+                                        className="flex items-center justify-center px-5 py-2 rounded-xl bg-slate-900 text-white text-xs sm:text-sm font-semibold hover:bg-slate-800 transition-all ml-2"
                                         aria-label={lang === 'en' ? 'Search' : '검색'}
                                     >
                                         {lang === 'en' ? 'Search' : '검색'}
                                     </button>
                                 </form>
-
-
                             </div>
                         </section>
 
-                        {/* 2-Column Layout */}
-                        <div className="flex flex-col lg:flex-row gap-8">
-                            {/* Left Column: News */}
-                            <div className="w-full lg:w-[728px] shrink-0 flex flex-col gap-8">
+                        {/* 2-Column Layout (12열 반응형 그리드로 상단 헤더 너비와 100% 일치) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+                            {/* Left Column: News & Guides */}
+                            <div className="lg:col-span-8 flex flex-col gap-6">
                                 {/* 배너 슬롯: 홈 메인 상단 (관리자 > 배너관리에서 관리) */}
                                 <BannerSlot slotKey="home_main_top" />
 
                                 {/* News Section */}
-                                <Card className="p-8">
+                                <Card className="p-6 sm:p-8">
                                     <div className="flex items-center justify-between mb-6">
                                         <h3 className="text-2xl font-bold text-gray-900 flex items-center">
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-3">
@@ -213,10 +220,49 @@ function HomePage() {
                                         )}
                                     </div>
                                 </Card>
+
+                                {/* 지식 가이드 & 실전 칼럼 섹션 (AdSense 고가치 콘텐츠) */}
+                                <Card className="p-6 sm:p-8">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <h3 className="text-2xl font-bold text-gray-900 flex items-center">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mr-3 text-white">
+                                                <i className="fas fa-book-open text-lg"></i>
+                                            </div>
+                                            <span>{lang === 'en' ? 'Guides & Columns' : '지식 가이드 & 칼럼'}</span>
+                                            <span className="ml-3 text-[10px] bg-indigo-500 text-white px-2 py-1 rounded-full font-bold">18편</span>
+                                        </h3>
+                                        <a href="/guides" className="text-sm font-medium text-gray-500 hover:text-brand-green flex items-center gap-1 transition-colors">
+                                            {lang === 'en' ? 'All Guides' : '전체보기'} <i className="fas fa-chevron-right text-xs"></i>
+                                        </a>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        {GUIDES_DATA.slice(0, 4).map(guide => (
+                                            <a
+                                                key={guide.slug}
+                                                href={`/guides/${guide.slug}`}
+                                                className="p-4 rounded-2xl border border-gray-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all group block"
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${guide.categoryColor}`}>
+                                                        {guide.categoryLabel}
+                                                    </span>
+                                                    <span className="text-gray-400 text-[11px] font-medium">{guide.readTime}</span>
+                                                </div>
+                                                <h4 className="font-bold text-gray-900 group-hover:text-indigo-600 transition-colors text-sm line-clamp-2 leading-snug mb-1">
+                                                    {guide.title}
+                                                </h4>
+                                                <p className="text-gray-500 text-xs line-clamp-2 font-normal">
+                                                    {guide.description}
+                                                </p>
+                                            </a>
+                                        ))}
+                                    </div>
+                                </Card>
                             </div>
 
-                            {/* Right Column: Widgets — 모바일에서는 베너 위로 올림(order-first) */}
-                            <div className="flex-1 flex flex-col gap-4 order-first sm:order-none">
+                            {/* Right Column: Widgets — 모바일에서는 배너 위로 올림(order-first) */}
+                            <div className="lg:col-span-4 flex flex-col gap-4 order-first lg:order-none">
                                 {/* 날씨·증시 — 모바일: 컴팩트 가로 칩 / PC: 큰 카드 */}
                                 <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
                                     {/* 날씨 위젯 (실제 데이터: Open-Meteo + 자동 위치) */}
@@ -226,16 +272,13 @@ function HomePage() {
                                     <StockWidget />
                                 </div>
 
-                                {/* System Monitor Widget (PC 전용) */}
-                                <Card className="hidden sm:block p-4 bg-gray-50 border-none shadow-none">
-                                    <h4 className="text-xs font-bold text-gray-400 mb-2">SYSTEM MONITOR</h4>
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-gray-500">Backend Status</span>
-                                        <span className={`w-2 h-2 rounded-full ${health?.status === 'ok' ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                                    </div>
-                                </Card>
+                                {/* 🛍️ 오늘의 핫딜 & 인기 쇼핑 꿀템 위젯 */}
+                                <SidebarShoppingWidget />
                             </div>
                         </div>
+
+                        {/* 포털 3대 핵심 서비스 쇼케이스 카드 (페이지 하단에 위치) */}
+                        <CoreServicesShowcase />
 
                         {/* 홈 꾸미기 플로팅 버튼 (미설정 사용자 유도) */}
                         <button
@@ -302,6 +345,56 @@ function AppTracker() {
     return null;
 }
 
+function RewardGuard({ children }: { children: React.ReactNode }) {
+    const { user, isLoading } = useAuth();
+    if (isLoading) return null;
+    if (user?.email !== 'sukman@naver.com') {
+        return <Navigate to="/guides" replace />;
+    }
+    return <>{children}</>;
+}
+
+function NotFoundOrDevPage() {
+    const { user } = useAuth();
+    const isDevAdmin = user?.email === 'sukman@naver.com';
+
+    return (
+        <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+            <Header user={user} />
+            <main className="flex-1 flex items-center justify-center p-4">
+                <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-gray-100 shadow-sm text-center">
+                    <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                        {isDevAdmin ? '🛠️' : '🔍'}
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">
+                        {isDevAdmin ? '개발 중인 서비스 (관리자 모드)' : '요청하신 페이지를 찾을 수 없습니다'}
+                    </h2>
+                    <p className="text-gray-500 text-sm leading-relaxed mb-6">
+                        {isDevAdmin 
+                            ? '현재 sukman@naver.com 관리자 계정으로 접속 중입니다. 해당 기능은 개발 중입니다.' 
+                            : '입력하신 주소가 잘못되었거나 변경되었습니다. 아래 추천 메뉴로 이동해 보세요.'}
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                        <a 
+                            href="/" 
+                            className="px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all"
+                        >
+                            홈으로 이동
+                        </a>
+                        <a 
+                            href="/guides" 
+                            className="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm transition-all shadow-sm"
+                        >
+                            지식 가이드 둘러보기
+                        </a>
+                    </div>
+                </div>
+            </main>
+            <Footer />
+        </div>
+    );
+}
+
 function App() {
     useEffect(() => {
         const handleAdminMessage = (e: MessageEvent) => {
@@ -349,7 +442,13 @@ function App() {
                     <Route path="/signup" element={<SignupPage />} />
                     <Route path="/lifestyle" element={<UtilityPage />} />
                     <Route path="/finance" element={<FinancePage />} />
-                    <Route path="/reward" element={<RewardLayout />}>
+                    <Route path="/finance/util" element={<FinanceUtilPage />} />
+                    <Route path="/finance-util" element={<FinanceUtilPage />} />
+                    <Route path="/reward" element={
+                        <RewardGuard>
+                            <RewardLayout />
+                        </RewardGuard>
+                    }>
                         <Route index element={<RewardHome />} />
                         <Route path="attendance" element={<RewardAttendance />} />
                         <Route path="missions" element={<RewardMissions />} />
@@ -362,8 +461,11 @@ function App() {
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
                     <Route path="/entertainment/novel" element={<NovelPage />} />
+                    <Route path="/entertainment/novel/:novelId" element={<NovelPage />} />
+                    <Route path="/novel" element={<NovelPage />} />
                     <Route path="/app/novel" element={<NovelPage />} />
                     <Route path="/app/novel/*" element={<NovelPage />} />
+                    <Route path="/shopping" element={<ShoppingPage />} />
                     <Route path="/mypage" element={<MyPage />} />
                     <Route path="/b2b" element={<B2BPage />} />
 
@@ -375,6 +477,11 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
+                    <Route path="/lounge/battle-popup" element={<LoungeBattlePopupPage />} />
+                    <Route path="/guides" element={<GuidesHubPage />} />
+                    <Route path="/guides/:slug" element={<GuideDetailPage />} />
+                    <Route path="/blog" element={<GuidesHubPage />} />
+                    <Route path="/blog/:slug" element={<GuideDetailPage />} />
                     <Route path="/privacy" element={<PrivacyPolicyPage />} />
                     <Route path="/terms" element={<TermsOfServicePage />} />
                     <Route path="/about" element={<AboutUsPage />} />
@@ -384,11 +491,7 @@ function App() {
                             google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0
                         </pre>
                     } />
-                    <Route path="*" element={
-                        <div className="min-h-screen flex flex-col pt-20">
-                            <div className="flex-1 flex items-center justify-center text-gray-500 font-bold">준비 중인 서비스입니다 ✨</div>
-                        </div>
-                    } />
+                    <Route path="*" element={<NotFoundOrDevPage />} />
                 </Routes>
                 <MobileTabBar />
             </UserPreferenceProvider>
