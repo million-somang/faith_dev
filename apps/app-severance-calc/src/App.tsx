@@ -16,7 +16,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string>('');
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
+    const timer = setTimeout(() => setIsLoading(false), 3000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -30,38 +30,68 @@ export default function App() {
   if (isLoading) {
     return (
       <MiniAppLayout title="">
-        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-50 via-blue-50/40 to-slate-100 px-4 py-8">
-          <div className="max-w-sm w-full bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/90 shadow-xl p-7 sm:p-8 text-center animate-fade-in flex flex-col items-center justify-center">
-            {/* 상단 플로팅 아이콘 */}
-            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-teal-500 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-indigo-500/25 mb-4 animate-float">
-              <i className="fas fa-file-invoice-dollar"></i>
+        <div className="min-h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-8 select-none animate-fade-in">
+          {/* 1. 상단 브랜딩 & 기준 배지 영역 */}
+          <div className="w-full max-w-sm flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span className="text-xs font-extrabold text-slate-500 tracking-wide uppercase">FAITH PORTAL</span>
+            </div>
+            <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-full shadow-2xs">
+              2026 고용노동부 기준
+            </span>
+          </div>
+
+          {/* 2. 중앙 메인 비주얼 & 타이틀 & 로딩 프로그레스 영역 */}
+          <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-6 text-center">
+            {/* 대형 입체 아이콘 */}
+            <div className="relative mb-6">
+              <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-500 text-white flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-indigo-500/20 animate-float border-2 border-white">
+                <i className="fas fa-file-invoice-dollar"></i>
+              </div>
+              <div className="absolute -bottom-1.5 -right-1.5 bg-white text-emerald-600 rounded-full p-1.5 shadow-md border border-slate-100 text-xs">
+                <i className="fas fa-check-circle"></i>
+              </div>
             </div>
 
-            {/* 기준 배지 */}
-            <span className="text-[11px] font-black tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100/90 px-3 py-1 rounded-full uppercase mb-2">
-              2026 고용노동부 최신 기준
-            </span>
-
-            {/* 선명한 고대비 타이틀 */}
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-1.5">
+            {/* 선명한 고대비 타이틀 및 설명 */}
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
               퇴직금 & 실업급여 계산기
             </h1>
-            <p className="text-xs font-semibold text-slate-500 mb-6">
-              법정 산식 및 개정 세법 데이터를 불러오는 중...
+            <p className="text-sm font-bold text-slate-700 mb-1">
+              법정 산식 및 세후 실수령액 정밀 산정
+            </p>
+            <p className="text-xs text-slate-400 mb-8 max-w-xs leading-relaxed">
+              2026년 최신 고용보험 및 퇴직소득세 개정 데이터를 실시간으로 동기화하고 있습니다
             </p>
 
-            {/* 부드러운 3색 바운스 도트 */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            {/* 부드러운 프로그레스 바 */}
+            <div className="w-full max-w-xs bg-slate-100 border border-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner mb-3">
+              <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-500 rounded-full animate-pulse-glow" style={{ width: '100%' }}></div>
             </div>
 
-            {/* 하단 기능 안내 카드 */}
-            <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-center shadow-xs">
-              <span className="text-[10px] font-extrabold text-indigo-500 tracking-wider block mb-1">PRO-CALCULATOR</span>
-              <div className="text-xs font-bold text-slate-700">세후 실수령액 · 소득세 · 구직급여 정밀 산출</div>
+            {/* 로딩 상태 텍스트 & 도트 */}
+            <div className="flex items-center justify-center gap-2 text-xs font-black text-indigo-600">
+              <i className="fas fa-spinner fa-spin text-indigo-500 text-xs"></i>
+              <span>데이터 로딩 및 산식 연동 중...</span>
             </div>
+          </div>
+
+          {/* 3. 하단 스폰서 & 안내 푸터 영역 */}
+          <div className="w-full max-w-sm flex flex-col items-center gap-3 pb-2">
+            <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+              <div className="text-left">
+                <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider block mb-0.5">SPONSORED</span>
+                <span className="text-xs font-bold text-slate-800">실시간 이직 · 재취업 맞춤 컨설팅 매칭</span>
+              </div>
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                <i className="fas fa-briefcase text-xs"></i>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+              본 도구는 2026년 고용노동부 및 국세청 공식 세법 개정안을 준수합니다.
+            </p>
           </div>
         </div>
       </MiniAppLayout>
