@@ -165,6 +165,19 @@ export default function FinancePage() {
             <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
+            {/* 브레드크럼 */}
+            <div className="bg-white border-b border-gray-100">
+                <div className="max-w-6xl mx-auto px-4 py-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Link to="/" className="hover:text-green-600 transition-colors">홈</Link>
+                        <i className="fas fa-chevron-right text-xs text-gray-300"></i>
+                        <Link to="/" className="hover:text-green-600 transition-colors">금융</Link>
+                        <i className="fas fa-chevron-right text-xs text-gray-300"></i>
+                        <span className="text-gray-900 font-medium">주식</span>
+                    </div>
+                </div>
+            </div>
+
             <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
                 {/* 🌟 국가별 주식 지수 섹션 (탭 선택 시 해당 국가 지수만 표시) */}
                 <section className="mb-10 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
