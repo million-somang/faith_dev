@@ -31,6 +31,14 @@ const CATEGORIES: CategoryInfo[] = [
     { key: 'dev', label: '개발 도구', icon: 'fas fa-code' },
 ];
 
+/** 이용 가이드 전용 카테고리 (전체 제외, 계산기 기본) */
+const GUIDE_CATEGORIES: CategoryInfo[] = [
+    { key: 'calc', label: '계산기', icon: 'fas fa-calculator' },
+    { key: 'finance', label: '금융', icon: 'fas fa-coins' },
+    { key: 'text', label: '텍스트', icon: 'fas fa-font' },
+    { key: 'dev', label: '개발 도구', icon: 'fas fa-code' },
+];
+
 /** 모달로 열어야 하는 앱의 slug 목록 */
 const MODAL_APP_SLUGS = ['text-checker', 'pyeong-calc', 'age-calc', 'dday-calc'];
 
@@ -40,7 +48,7 @@ export default function UtilityPage() {
     const [frequentApps, setFrequentApps] = useState<MiniApp[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [selectedGuideCategory, setSelectedGuideCategory] = useState('all');
+    const [selectedGuideCategory, setSelectedGuideCategory] = useState('calc');
     const [showSoftLock, setShowSoftLock] = useState(false);
 
     // 모달 상태
@@ -369,9 +377,9 @@ export default function UtilityPage() {
                                 <i className="fas fa-info-circle text-blue-600"></i>
                                 VERA 무료 생활 도구 & 계산기 이용 가이드
                             </h2>
-                            {/* 이용 가이드 카테고리 필터 탭 */}
+                            {/* 이용 가이드 카테고리 필터 탭 (전체 제외, 계산기 기본) */}
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                {CATEGORIES.map(cat => (
+                                {GUIDE_CATEGORIES.map(cat => (
                                     <button
                                         key={cat.key}
                                         type="button"
