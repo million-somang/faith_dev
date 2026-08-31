@@ -16,7 +16,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string>('');
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 3000);
+    const timer = setTimeout(() => setIsLoading(false), 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -30,22 +30,38 @@ export default function App() {
   if (isLoading) {
     return (
       <MiniAppLayout title="">
-        <div className="flex flex-col items-center justify-center min-h-[500px] p-6 text-center animate-fade-in">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-lg mb-4 animate-pulse-glow">
-            <i className="fas fa-file-invoice-dollar"></i>
-          </div>
-          <h1 className="text-lg font-black text-slate-900 mb-1">퇴직금 & 실업급여 계산기</h1>
-          <p className="text-xs text-slate-500 mb-6">2026 고용노동부 최신 기준 데이터 로딩 중...</p>
-          
-          <div className="flex items-center gap-1.5 mb-8">
-            <div className="w-2 h-2 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-            <div className="w-2 h-2 rounded-full bg-teal-600 animate-bounce" style={{ animationDelay: '300ms' }}></div>
-          </div>
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-slate-50 via-blue-50/40 to-slate-100 px-4 py-8">
+          <div className="max-w-sm w-full bg-white/95 backdrop-blur-md rounded-3xl border border-slate-200/90 shadow-xl p-7 sm:p-8 text-center animate-fade-in flex flex-col items-center justify-center">
+            {/* 상단 플로팅 아이콘 */}
+            <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-3xl bg-gradient-to-br from-blue-600 via-indigo-600 to-teal-500 text-white flex items-center justify-center text-2xl sm:text-3xl shadow-lg shadow-indigo-500/25 mb-4 animate-float">
+              <i className="fas fa-file-invoice-dollar"></i>
+            </div>
 
-          <div className="w-full max-w-xs bg-slate-100 border border-slate-200 rounded-xl p-3 text-center">
-            <span className="text-[10px] font-bold text-slate-400 block mb-1">SPONSORED</span>
-            <div className="text-xs text-slate-600 font-medium">실시간 이직·재취업 컨설팅 매칭</div>
+            {/* 기준 배지 */}
+            <span className="text-[11px] font-black tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100/90 px-3 py-1 rounded-full uppercase mb-2">
+              2026 고용노동부 최신 기준
+            </span>
+
+            {/* 선명한 고대비 타이틀 */}
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mb-1.5">
+              퇴직금 & 실업급여 계산기
+            </h1>
+            <p className="text-xs font-semibold text-slate-500 mb-6">
+              법정 산식 및 개정 세법 데이터를 불러오는 중...
+            </p>
+
+            {/* 부드러운 3색 바운스 도트 */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+
+            {/* 하단 기능 안내 카드 */}
+            <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 text-center shadow-xs">
+              <span className="text-[10px] font-extrabold text-indigo-500 tracking-wider block mb-1">PRO-CALCULATOR</span>
+              <div className="text-xs font-bold text-slate-700">세후 실수령액 · 소득세 · 구직급여 정밀 산출</div>
+            </div>
           </div>
         </div>
       </MiniAppLayout>
