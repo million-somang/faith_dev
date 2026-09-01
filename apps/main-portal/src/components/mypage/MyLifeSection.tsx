@@ -324,7 +324,7 @@ export const MyLifeSection: React.FC<MyLifeSectionProps> = ({
                                 <i className="fas fa-cake-candles"></i>
                             </div>
                             <div>
-                                <h4 className="font-extrabold text-slate-800 text-sm">생년월일(사주 기준) 등록</h4>
+                                <h4 className="font-extrabold text-slate-800 text-sm">{birthDate ? '생년월일(사주 기준) 수정' : '생년월일(사주 기준) 등록'}</h4>
                                 <p className="text-xs text-slate-400">정확한 맞춤 사주 운세와 오늘의 주의사항 처방을 제공해 드립니다.</p>
                             </div>
                         </div>

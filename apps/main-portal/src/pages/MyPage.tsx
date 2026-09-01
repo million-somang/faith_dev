@@ -132,7 +132,7 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 export default function MyPage() {
-    const { user, logout, isLoading } = useAuth();
+    const { user, logout, isLoading, updateUser } = useAuth();
     const navigate = useNavigate();
 
     const [isPushSubscribed, setIsPushSubscribed] = useState(false);
@@ -556,17 +556,43 @@ const DEFAULT_SHOPPING_ITEMS = [
         return `${m}월 ${d}일 (${dayName})`;
     }, []);
 
-    // 생년월일 관리 로컬 스토리지 연동
-    const [birthDate, setBirthDate] = useState(localStorage.getItem('user_birth_date') || '');
+    // 생년월일 관리: DB(user.birth_date) 우선, 로컬스토리지 백업
+    const [birthDate, setBirthDate] = useState(() => {
+        return user?.birth_date || localStorage.getItem('user_birth_date') || localStorage.getItem('faith_saju_birth_date') || '';
+    });
     const [tempBirthDate, setTempBirthDate] = useState(birthDate);
     const [showBirthEditor, setShowBirthEditor] = useState(!birthDate);
 
-    const handleSaveBirth = (e: React.FormEvent) => {
+    // user 객체의 birth_date가 변경되거나 로드될 때 동기화
+    useEffect(() => {
+        if (user?.birth_date) {
+            setBirthDate(user.birth_date);
+            setTempBirthDate(user.birth_date);
+            setShowBirthEditor(false);
+            localStorage.setItem('user_birth_date', user.birth_date);
+            localStorage.setItem('faith_saju_birth_date', user.birth_date);
+        }
+    }, [user?.birth_date]);
+
+    const handleSaveBirth = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!tempBirthDate) return;
-        localStorage.setItem('user_birth_date', tempBirthDate);
-        setBirthDate(tempBirthDate);
+        const trimmed = tempBirthDate.trim();
+        if (!trimmed) return;
+
+        // 1. 로컬 스토리지 즉시 반영
+        localStorage.setItem('user_birth_date', trimmed);
+        localStorage.setItem('faith_saju_birth_date', trimmed);
+        setBirthDate(trimmed);
         setShowBirthEditor(false);
+
+        // 2. 서버 DB 영구 저장 & AuthContext 전역 동기화
+        if (updateUser) {
+            try {
+                await updateUser({ birth_date: trimmed, birthDate: trimmed } as any);
+            } catch (err) {
+                console.error('Failed to persist birth_date to server DB:', err);
+            }
+        }
     };
 
     // 로그인 회원의 사주 계산 및 가이드 (항상 Early Return 상단에서 호출)
