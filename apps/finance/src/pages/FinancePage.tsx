@@ -4,6 +4,7 @@ import { Header, Footer, Card } from '@faithportal/ui';
 import FinanceSubMenu from '../components/FinanceSubMenu';
 import ProfitCalculator from '../components/ProfitCalculator';
 import SparklineChart from '../components/SparklineChart';
+import BannerSlot from '../components/BannerSlot';
 import { MOCK_INDICES, MOCK_FINANCE_NEWS } from '../data/mockData';
 import type { MarketIndex } from '../data/mockData';
 import { useAuth } from '../hooks/useAuth';
@@ -145,35 +146,62 @@ export default function FinancePage() {
     const currentTabInfo = COUNTRY_TABS.find(t => t.key === selectedCountry) || COUNTRY_TABS[0];
     const filteredIndices = indices.filter(idx => idx.country === selectedCountry);
 
-    const renderStockCard = (stock: StockCard, idx: number = 0, baseDelay: number = 0) => (
-        <Link
-            key={stock.ticker}
-            to={`/stock/${stock.ticker}`}
-            style={{ animationDelay: `${baseDelay + idx * 80}ms` }}
-            className="animate-fade-in-up bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg hover:border-gray-300 transition-all duration-300 group hover:-translate-y-1"
-        >
-            <div className="flex items-start justify-between mb-1">
+    const renderStockCard = (stock: StockCard, idx: number = 0, baseDelay: number = 0, market: 'kr' | 'us' = 'kr') => {
+        const isKR = market === 'kr';
+        return (
+            <Link
+                key={stock.ticker}
+                to={`/stock/${stock.ticker}`}
+                style={{ animationDelay: `${baseDelay + idx * 80}ms` }}
+                className={`animate-fade-in-up bg-white rounded-2xl p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 flex flex-col justify-between ${
+                    isKR 
+                        ? 'border-slate-200/90 border-t-4 border-t-blue-500 hover:border-blue-400' 
+                        : 'border-slate-200/90 border-t-4 border-t-rose-500 hover:border-rose-400'
+                }`}
+            >
                 <div>
-                    <div className="font-bold text-gray-900 text-base group-hover:text-green-700 transition-colors">{stock.name}</div>
-                    <div className="text-xs text-gray-400 font-mono">{stock.ticker}</div>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div>
+                            <div className="font-black text-gray-900 text-base group-hover:text-blue-600 transition-colors">
+                                {stock.name}
+                            </div>
+                            <div className="mt-0.5">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
+                                    isKR ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                                }`}>
+                                    {isKR ? `KRX: ${stock.ticker}` : `NASDAQ: ${stock.ticker}`}
+                                </span>
+                            </div>
+                        </div>
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg shrink-0 ${
+                            stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                        }`}>
+                            {stock.status === 'up' ? '▲' : '▼'} {Math.abs(stock.rate).toFixed(2)}%
+                        </span>
+                    </div>
+
+                    <div className="stock-number text-2xl font-black text-gray-900 mt-2.5">
+                        {stock.currency}{stock.price.toLocaleString('ko-KR')}
+                        {!isKR && (
+                            <span className="text-[11px] font-normal text-slate-400 ml-1.5">
+                                (약 ₩{Math.round(stock.price * 1380).toLocaleString('ko-KR')})
+                            </span>
+                        )}
+                    </div>
+
+                    <div className={`stock-number text-xs font-semibold mt-1 ${stock.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
+                        {stock.change >= 0 ? '+' : ''}{stock.currency === '$' ? '$' : ''}{Math.abs(stock.change).toLocaleString('ko-KR')} ({stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%)
+                    </div>
                 </div>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                    stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+
+                <div className={`mt-3.5 pt-2.5 border-t border-slate-100 rounded-xl p-2 flex justify-center ${
+                    isKR ? 'bg-slate-50/80' : 'bg-rose-50/20'
                 }`}>
-                    {stock.status === 'up' ? '▲' : '▼'} {Math.abs(stock.rate).toFixed(2)}%
-                </span>
-            </div>
-            <div className="stock-number text-2xl font-extrabold text-gray-900 mt-2">
-                {stock.currency}{stock.price.toLocaleString('ko-KR')}
-            </div>
-            <div className={`stock-number text-sm mt-1 ${stock.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
-                {stock.change >= 0 ? '+' : ''}{stock.currency === '$' ? '$' : ''}{Math.abs(stock.change).toLocaleString('ko-KR')} ({stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%)
-            </div>
-            <div className="mt-3">
-                <SparklineChart data={stock.sparkline} status={stock.status} width={160} height={40} />
-            </div>
-        </Link>
-    );
+                    <SparklineChart data={stock.sparkline} status={stock.status} width={170} height={42} />
+                </div>
+            </Link>
+        );
+    };
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -354,23 +382,23 @@ export default function FinancePage() {
                     </div>
                 </div>
 
-                {/* 거시 경제 지표 (카테고리 탭 분류) */}
+                {/* 🌍 1. 글로벌 거시 경제 지표 전용 대시보드 박스 */}
                 {macro.length > 0 && (
-                    <div className="mb-12">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 animate-fade-in-up animation-delay-100">
+                    <div className="mb-8 bg-gradient-to-b from-slate-50/90 via-slate-100/40 to-emerald-50/25 rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm animate-fade-in-up animation-delay-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
                             <div>
                                 <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
                                     <span className="text-2xl">🌍</span>
                                     <span>글로벌 거시 경제 지표</span>
-                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
                                         24종 실시간 연동
                                     </span>
                                 </h2>
                                 <p className="text-xs text-gray-500 mt-1">
-                                    원자재, 곡물, 에너지, 귀금속, 환율 및 국채금리 등 글로벌 시장 핵심 지표를 카테고리별로 확인하세요.
+                                    농산물/곡물, 원유, 귀금속, 환율 및 국채금리 등 글로벌 시장 핵심 원자재·선물 지표
                                 </p>
                             </div>
-                            <span className="text-[11px] text-gray-400 self-start sm:self-auto font-mono">
+                            <span className="text-[11px] text-gray-400 self-start sm:self-auto font-mono bg-white px-2.5 py-1 rounded-lg border border-slate-200">
                                 5분 주기 자동 갱신
                             </span>
                         </div>
@@ -409,7 +437,7 @@ export default function FinancePage() {
                         {(() => {
                             const currentTab = MACRO_CATEGORY_TABS.find(t => t.key === selectedMacroCategory) || MACRO_CATEGORY_TABS[0];
                             return (
-                                <div className="mb-5 p-3.5 bg-gradient-to-r from-slate-50 via-emerald-50/40 to-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-2.5 text-xs text-slate-700">
+                                <div className="mb-5 p-3.5 bg-white rounded-2xl border border-slate-200 flex items-center gap-2.5 text-xs text-slate-700 shadow-xs">
                                     <span className="text-base shrink-0">{currentTab.icon}</span>
                                     <div className="leading-relaxed">
                                         <span className="font-extrabold text-slate-900 mr-1.5">[{currentTab.label}]</span>
@@ -428,7 +456,7 @@ export default function FinancePage() {
                                 <div 
                                     key={item.symbol} 
                                     style={{ animationDelay: `${idx * 50}ms` }}
-                                    className="animate-fade-in bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                    className="animate-fade-in bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 hover:shadow-lg hover:border-emerald-400 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                                 >
                                     <div>
                                         {/* 헤더: 아이콘, 이름, 단위 배지 */}
@@ -488,34 +516,51 @@ export default function FinancePage() {
                     </div>
                 )}
 
-                {/* KR 국내 대표 기업 */}
+                {/* 🌟 2. 금융 중간 스폰서 / 구글 애드센스 광고 슬롯 */}
+                <BannerSlot slotKey="finance_middle" fallbackSlotKey="main_center" className="my-8" />
+
+                {/* 🇰🇷 3. KR 국내 대표 기업 (블루 테마 차별화) */}
                 {krStocks.length > 0 && (
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-150">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                <span className="text-blue-600 font-mono text-sm mr-2 bg-blue-50 px-2 py-1 rounded">KR</span>
-                                국내 대표 기업
-                            </h2>
-                            <span className="text-xs text-gray-400">20분 지연 시세</span>
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                                    KRX
+                                </span>
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900">
+                                        국내 대표 기업 <span className="text-sm font-semibold text-slate-500">(KOSPI 200 대형주)</span>
+                                    </h2>
+                                    <p className="text-[11px] text-slate-400">대한민국 증시를 주도하는 핵심 블루칩 실시간 시세</p>
+                                </div>
+                            </div>
+                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">20분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {krStocks.map((stock, idx) => renderStockCard(stock, idx, 150))}
+                            {krStocks.map((stock, idx) => renderStockCard(stock, idx, 150, 'kr'))}
                         </div>
                     </div>
                 )}
 
-                {/* US 미국 빅테크 4대장 */}
+                {/* 🇺🇸 4. US 미국 빅테크 4대장 (로즈/퍼플 테마 차별화) */}
                 {usStocks.length > 0 && (
                     <div className="mb-10">
                         <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-250">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                <span className="text-red-600 font-mono text-sm mr-2 bg-red-50 px-2 py-1 rounded">US</span>
-                                미국 빅테크 4대장
-                            </h2>
-                            <span className="text-xs text-gray-400">15분 지연 시세</span>
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                                    US
+                                </span>
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900">
+                                        미국 빅테크 주도주 <span className="text-sm font-semibold text-slate-500">(Global Tech Leaders)</span>
+                                    </h2>
+                                    <p className="text-[11px] text-slate-400">전 세계 인공지능과 혁신을 이끄는 매그니피센트 대표주</p>
+                                </div>
+                            </div>
+                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">15분 지연 시세</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {usStocks.map((stock, idx) => renderStockCard(stock, idx, 250))}
+                            {usStocks.map((stock, idx) => renderStockCard(stock, idx, 250, 'us'))}
                         </div>
                     </div>
                 )}
