@@ -2,41 +2,44 @@ import { Hono } from 'hono';
 
 const financeRoutes = new Hono();
 
-// Yahoo Finance 비공식 API로 시세 데이터 가져오기
+// Yahoo Finance 비공식 API로 시세 데이터 병렬 가져오기
 async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
-    const results: any[] = [];
-    
-    for (const symbol of symbols) {
+    const promises = symbols.map(async (symbol) => {
         try {
             const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
             const res = await fetch(url, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
                 }
             });
             
-            if (!res.ok) continue;
+            if (!res.ok) return null;
             
             const data = await res.json();
             const meta = data?.chart?.result?.[0]?.meta;
-            if (meta) {
-                results.push({
+            if (meta && meta.regularMarketPrice !== undefined && meta.regularMarketPrice !== null) {
+                return {
                     symbol: symbol,
                     name: meta.shortName || meta.symbol,
                     price: meta.regularMarketPrice,
-                    previousClose: meta.previousClose || meta.chartPreviousClose,
+                    previousClose: meta.previousClose || meta.chartPreviousClose || meta.regularMarketPrice,
                     currency: meta.currency,
                     exchangeName: meta.exchangeName,
                     regularMarketTime: meta.regularMarketTime,
                     timezone: meta.timezone,
-                });
+                };
             }
+            return null;
         } catch (e) {
             console.error(`Failed to fetch ${symbol}:`, e);
+            return null;
         }
-    }
-    
-    return results;
+    });
+
+    const settled = await Promise.allSettled(promises);
+    return settled
+        .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
+        .map(r => r.value);
 }
 
 // 차트 데이터 가져오기 (1개월)
@@ -185,44 +188,384 @@ financeRoutes.get('/api/finance/indices', async (c) => {
     return c.json(allIndices || []);
 });
 
-// 거시 경제 지표 (달러/원, 비트코인, 금선물, WTI유가)
+interface MacroConfigItem {
+    symbol: string;
+    name: string;
+    icon: string;
+    currency: string;
+    unit: string;
+    category: 'agri' | 'energy' | 'metal' | 'forex' | 'crypto';
+    description: string;
+    fallbackPrice: number;
+    fallbackChange: number;
+    fallbackRate: number;
+}
+
+const MACRO_INDICATOR_CONFIG: MacroConfigItem[] = [
+    // 🌾 농산물 / 곡물 (Agri)
+    {
+        symbol: 'ZS=F',
+        name: '대두 (콩)',
+        icon: '🌱',
+        currency: '¢',
+        unit: '부셸당 ¢',
+        category: 'agri',
+        description: '사료·식용유 원료 / 글로벌 애그플레이션 선행지표',
+        fallbackPrice: 1024.50,
+        fallbackChange: 8.25,
+        fallbackRate: 0.81,
+    },
+    {
+        symbol: 'ZW=F',
+        name: '소맥 (밀)',
+        icon: '🌾',
+        currency: '¢',
+        unit: '부셸당 ¢',
+        category: 'agri',
+        description: '글로벌 제분 및 식량 공급망 핵심 지표',
+        fallbackPrice: 568.75,
+        fallbackChange: -3.50,
+        fallbackRate: -0.61,
+    },
+    {
+        symbol: 'ZC=F',
+        name: '옥수수',
+        icon: '🌽',
+        currency: '¢',
+        unit: '부셸당 ¢',
+        category: 'agri',
+        description: '바이오에탄올 및 배합사료 주원료',
+        fallbackPrice: 428.25,
+        fallbackChange: 2.75,
+        fallbackRate: 0.65,
+    },
+    {
+        symbol: 'KC=F',
+        name: '커피 (아라비카)',
+        icon: '☕',
+        currency: '¢',
+        unit: '파운드당 ¢',
+        category: 'agri',
+        description: '남미·동남아 기후 영향 및 기호식품 원자재',
+        fallbackPrice: 242.60,
+        fallbackChange: 4.10,
+        fallbackRate: 1.72,
+    },
+    {
+        symbol: 'SB=F',
+        name: '원당 (설탕)',
+        icon: '🍬',
+        currency: '¢',
+        unit: '파운드당 ¢',
+        category: 'agri',
+        description: '식품 가공 및 에탄올 생산 주요 원자재',
+        fallbackPrice: 19.85,
+        fallbackChange: -0.15,
+        fallbackRate: -0.75,
+    },
+    {
+        symbol: 'CT=F',
+        name: '면화 (면직물)',
+        icon: '🧶',
+        currency: '¢',
+        unit: '파운드당 ¢',
+        category: 'agri',
+        description: '의류 섬유 제조업 원자재 지표',
+        fallbackPrice: 72.40,
+        fallbackChange: 0.60,
+        fallbackRate: 0.84,
+    },
+
+    // ⚡ 에너지 / 원유 (Energy)
+    {
+        symbol: 'CL=F',
+        name: 'WTI 원유',
+        icon: '🛢️',
+        currency: '$',
+        unit: '배럴당 $',
+        category: 'energy',
+        description: '미 서부 텍사스산 원유 / 세계 3대 유가 기준',
+        fallbackPrice: 73.80,
+        fallbackChange: 0.95,
+        fallbackRate: 1.30,
+    },
+    {
+        symbol: 'BZ=F',
+        name: '브렌트유',
+        icon: '⛽',
+        currency: '$',
+        unit: '배럴당 $',
+        category: 'energy',
+        description: '북해산 원유 / 유럽·아시아 실물 원유 벤치마크',
+        fallbackPrice: 77.25,
+        fallbackChange: 0.88,
+        fallbackRate: 1.15,
+    },
+    {
+        symbol: 'NG=F',
+        name: '천연가스',
+        icon: '🔥',
+        currency: '$',
+        unit: 'MMBtu당 $',
+        category: 'energy',
+        description: '발전 및 난방 에너지 원료',
+        fallbackPrice: 2.18,
+        fallbackChange: -0.04,
+        fallbackRate: -1.80,
+    },
+    {
+        symbol: 'RB=F',
+        name: 'RBOB 휘발유',
+        icon: '🚗',
+        currency: '$',
+        unit: '갤런당 $',
+        category: 'energy',
+        description: '미국 정유 및 차량용 연료 가격 척도',
+        fallbackPrice: 2.12,
+        fallbackChange: 0.02,
+        fallbackRate: 0.95,
+    },
+
+    // 🥇 귀금속 / 산업금속 (Metals)
+    {
+        symbol: 'GC=F',
+        name: '금 선물',
+        icon: '🥇',
+        currency: '$',
+        unit: '트로이온스당 $',
+        category: 'metal',
+        description: '인플레이션 헷지 및 글로벌 대표 안전자산',
+        fallbackPrice: 2512.40,
+        fallbackChange: 14.80,
+        fallbackRate: 0.59,
+    },
+    {
+        symbol: 'SI=F',
+        name: '은 선물',
+        icon: '🥈',
+        currency: '$',
+        unit: '트로이온스당 $',
+        category: 'metal',
+        description: '귀금속 + 태양광/반도체 산업용 필수 금속',
+        fallbackPrice: 29.35,
+        fallbackChange: 0.42,
+        fallbackRate: 1.45,
+    },
+    {
+        symbol: 'HG=F',
+        name: '구리 (Dr. Copper)',
+        icon: '🥉',
+        currency: '$',
+        unit: '파운드당 $',
+        category: 'metal',
+        description: '전기차·전력망 필수 원자재 / 실물 경기 선행지표',
+        fallbackPrice: 4.21,
+        fallbackChange: 0.05,
+        fallbackRate: 1.20,
+    },
+    {
+        symbol: 'PL=F',
+        name: '백금 (Platinum)',
+        icon: '💍',
+        currency: '$',
+        unit: '트로이온스당 $',
+        category: 'metal',
+        description: '수소 연료전지 및 정밀 촉매 산업 원료',
+        fallbackPrice: 945.60,
+        fallbackChange: -6.20,
+        fallbackRate: -0.65,
+    },
+
+    // 💵 환율 & 채권금리 (Forex & Yields)
+    {
+        symbol: 'KRW=X',
+        name: '달러 / 원',
+        icon: '💵',
+        currency: '₩',
+        unit: '달러당 원',
+        category: 'forex',
+        description: '외환시장 원/달러 실시간 환율',
+        fallbackPrice: 1378.50,
+        fallbackChange: -3.20,
+        fallbackRate: -0.23,
+    },
+    {
+        symbol: 'DX-Y.NYB',
+        name: '달러 인덱스 (DXY)',
+        icon: '📈',
+        currency: 'pt',
+        unit: '지수 포인트',
+        category: 'forex',
+        description: '주요 6개국 통화 대비 미국 달러 가치',
+        fallbackPrice: 101.35,
+        fallbackChange: -0.18,
+        fallbackRate: -0.18,
+    },
+    {
+        symbol: '^TNX',
+        name: '미국 10년물 국채금리',
+        icon: '🏛️',
+        currency: '%',
+        unit: '연수익률 %',
+        category: 'forex',
+        description: '글로벌 자산 가격 산정의 기준이 되는 무위험 금리',
+        fallbackPrice: 3.86,
+        fallbackChange: -0.04,
+        fallbackRate: -1.03,
+    },
+    {
+        symbol: '^TYX',
+        name: '미국 30년물 국채금리',
+        icon: '🏦',
+        currency: '%',
+        unit: '연수익률 %',
+        category: 'forex',
+        description: '장기 경제 성장 및 인플레이션 기대치 반영',
+        fallbackPrice: 4.16,
+        fallbackChange: -0.03,
+        fallbackRate: -0.72,
+    },
+    {
+        symbol: 'EURKRW=X',
+        name: '유로 / 원',
+        icon: '💶',
+        currency: '₩',
+        unit: '유로당 원',
+        category: 'forex',
+        description: '유럽연합 유로화 원화 환율',
+        fallbackPrice: 1522.40,
+        fallbackChange: 2.10,
+        fallbackRate: 0.14,
+    },
+    {
+        symbol: 'JPYKRW=X',
+        name: '100엔 / 원',
+        icon: '💴',
+        currency: '₩',
+        unit: '100엔당 원',
+        category: 'forex',
+        description: '일본 엔화 100엔 기준 원화 환율',
+        fallbackPrice: 948.30,
+        fallbackChange: 4.50,
+        fallbackRate: 0.48,
+    },
+
+    // ₿ 디지털 자산 (Crypto)
+    {
+        symbol: 'BTC-KRW',
+        name: '비트코인 (BTC)',
+        icon: '₿',
+        currency: '₩',
+        unit: '1 BTC당 원',
+        category: 'crypto',
+        description: '가장 대표적인 디지털 금 & 탈중앙 자산',
+        fallbackPrice: 84200000,
+        fallbackChange: 1250000,
+        fallbackRate: 1.51,
+    },
+    {
+        symbol: 'ETH-KRW',
+        name: '이더리움 (ETH)',
+        icon: '♦️',
+        currency: '₩',
+        unit: '1 ETH당 원',
+        category: 'crypto',
+        description: '스마트 컨트랙트 및 Web3 생태계 기축 자산',
+        fallbackPrice: 3580000,
+        fallbackChange: 65000,
+        fallbackRate: 1.85,
+    },
+    {
+        symbol: 'SOL-KRW',
+        name: '솔라나 (SOL)',
+        icon: '☀️',
+        currency: '₩',
+        unit: '1 SOL당 원',
+        category: 'crypto',
+        description: '고속 결제 및 디파이 생태계 레이어 1 코인',
+        fallbackPrice: 189000,
+        fallbackChange: -2400,
+        fallbackRate: -1.25,
+    },
+    {
+        symbol: 'XRP-KRW',
+        name: '리플 (XRP)',
+        icon: '✕',
+        currency: '₩',
+        unit: '1 XRP당 원',
+        category: 'crypto',
+        description: '국경 간 글로벌 송금 특화 암호화폐',
+        fallbackPrice: 785,
+        fallbackChange: 12,
+        fallbackRate: 1.55,
+    },
+];
+
+// 거시 경제 지표 (농산물, 에너지, 귀금속, 환율/채권금리, 가상자산)
 let macroCache: { data: any; timestamp: number } | null = null;
 
 financeRoutes.get('/api/finance/macro', async (c) => {
     const now = Date.now();
+    const categoryParam = c.req.query('category');
+
     if (macroCache && (now - macroCache.timestamp) < CACHE_TTL) {
-        return c.json(macroCache.data);
+        let cached = macroCache.data;
+        if (categoryParam && categoryParam !== 'all') {
+            cached = cached.filter((item: any) => item.category === categoryParam);
+        }
+        return c.json(cached);
     }
     
-    // KRW=X(달러/원), BTC-KRW(비트코인), GC=F(금선물), CL=F(WTI유가)
-    const symbols = ['KRW=X', 'BTC-KRW', 'GC=F', 'CL=F'];
+    const symbols = MACRO_INDICATOR_CONFIG.map(item => item.symbol);
     const quotes = await fetchYahooQuotes(symbols);
+    const quoteMap = new Map<string, any>();
+    quotes.forEach(q => quoteMap.set(q.symbol, q));
     
-    const config: Record<string, { name: string; icon: string; currency: string }> = {
-        'KRW=X': { name: '달러/원', icon: '💵', currency: '₩' },
-        'BTC-KRW': { name: '비트코인', icon: '₿', currency: '₩' },
-        'GC=F': { name: '금 선물', icon: '🥇', currency: '$' },
-        'CL=F': { name: 'WTI 유가', icon: '🛢️', currency: '$' },
-    };
-    
-    const macro = quotes.map(q => {
-        const change = q.price - q.previousClose;
-        const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
-        const cfg = config[q.symbol] || { name: q.name, icon: '📊', currency: '$' };
+    const macro = MACRO_INDICATOR_CONFIG.map(cfg => {
+        const q = quoteMap.get(cfg.symbol);
+        if (q && q.price !== undefined) {
+            const change = q.price - q.previousClose;
+            const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+            return {
+                symbol: cfg.symbol,
+                name: cfg.name,
+                icon: cfg.icon,
+                price: Math.round(q.price * 100) / 100,
+                change: Math.round(change * 100) / 100,
+                rate: Math.round(rate * 100) / 100,
+                status: change >= 0 ? 'up' : 'down',
+                currency: cfg.currency,
+                unit: cfg.unit,
+                category: cfg.category,
+                description: cfg.description,
+                updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
+            };
+        }
+
+        // Fallback data
         return {
-            symbol: q.symbol,
+            symbol: cfg.symbol,
             name: cfg.name,
             icon: cfg.icon,
-            price: Math.round(q.price * 100) / 100,
-            change: Math.round(change * 100) / 100,
-            rate: Math.round(rate * 100) / 100,
-            status: change >= 0 ? 'up' : 'down',
+            price: cfg.fallbackPrice,
+            change: cfg.fallbackChange,
+            rate: cfg.fallbackRate,
+            status: cfg.fallbackChange >= 0 ? 'up' : 'down',
             currency: cfg.currency,
-            updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
+            unit: cfg.unit,
+            category: cfg.category,
+            description: cfg.description,
+            updatedAt: '실시간',
         };
     });
     
     if (macro.length > 0) macroCache = { data: macro, timestamp: now };
+
+    if (categoryParam && categoryParam !== 'all') {
+        const filtered = macro.filter(item => item.category === categoryParam);
+        return c.json(filtered);
+    }
+
     return c.json(macro);
 });
 

@@ -32,6 +32,9 @@ interface MacroIndicator {
     rate: number;
     status: 'up' | 'down';
     currency: string;
+    unit?: string;
+    category?: 'agri' | 'energy' | 'metal' | 'forex' | 'crypto';
+    description?: string;
     updatedAt: string;
 }
 
@@ -61,11 +64,23 @@ const COUNTRY_TABS: { key: CountryKey; label: string; flag: string; title: strin
     { key: 'fr', label: '프랑스', flag: '🇫🇷', title: '프랑스 & 유럽 대표 지수', desc: '프랑스 CAC 40, 유로 스톡스 50' },
 ];
 
+export type MacroCategory = 'agri' | 'energy' | 'metal' | 'forex' | 'crypto' | 'all';
+
+export const MACRO_CATEGORY_TABS: { key: MacroCategory; label: string; icon: string; highlight: string; insight: string }[] = [
+    { key: 'agri', label: '농산물/곡물', icon: '🌾', highlight: '대두·밀·옥수수', insight: '곡물 가격은 글로벌 사료, 바이오에너지 및 밥상 물가(애그플레이션)의 척도입니다.' },
+    { key: 'energy', label: '에너지/원유', icon: '⚡', highlight: 'WTI·천연가스', insight: '원유 및 천연가스는 생산·운송 원가와 글로벌 인플레이션을 이끄는 핵심 동력입니다.' },
+    { key: 'metal', label: '귀금속/산업재', icon: '🥇', highlight: '금·은·구리', insight: '금은 대표적 안전자산이며, 닥터 코퍼(구리)는 실물 경기의 확장과 침체를 가장 먼저 선행합니다.' },
+    { key: 'forex', label: '환율/국채금리', icon: '💵', highlight: '달러·미10년국채', insight: '원/달러 환율과 미국 국채금리는 전 세계 자산 가격과 외국인 수급의 결정적 기준입니다.' },
+    { key: 'crypto', label: '가상자산', icon: '₿', highlight: '비트코인·이더', insight: '디지털 금으로 불리는 비트코인과 주요 레이어1 코인의 24시간 실시간 시세입니다.' },
+    { key: 'all', label: '전체 지표', icon: '🌐', highlight: '종합 보기', insight: '글로벌 원자재, 에너지, 금속, 환율 및 가상자산 등 24종 핵심 지표를 종합 조망합니다.' },
+];
+
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
     const [indices, setIndices] = useState<IndexData[]>(MOCK_INDICES);
     const [selectedCountry, setSelectedCountry] = useState<CountryKey>('kr');
+    const [selectedMacroCategory, setSelectedMacroCategory] = useState<MacroCategory>('agri');
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
     const [usStocks, setUsStocks] = useState<StockCard[]>([]);
     const [macro, setMacro] = useState<MacroIndicator[]>([]);
@@ -339,42 +354,132 @@ export default function FinancePage() {
                     </div>
                 </div>
 
-                {/* 거시 경제 지표 */}
+                {/* 거시 경제 지표 (카테고리 탭 분류) */}
                 {macro.length > 0 && (
-                    <div className="mb-10">
-                        <div className="flex items-center justify-between mb-4 animate-fade-in-up animation-delay-100">
-                            <h2 className="text-xl font-bold text-gray-900">
-                                <span className="mr-2">🌍</span>거시 경제 지표
-                            </h2>
-                            <span className="text-xs text-gray-400">실시간</span>
+                    <div className="mb-12">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 animate-fade-in-up animation-delay-100">
+                            <div>
+                                <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                                    <span className="text-2xl">🌍</span>
+                                    <span>글로벌 거시 경제 지표</span>
+                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                        24종 실시간 연동
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    원자재, 곡물, 에너지, 귀금속, 환율 및 국채금리 등 글로벌 시장 핵심 지표를 카테고리별로 확인하세요.
+                                </p>
+                            </div>
+                            <span className="text-[11px] text-gray-400 self-start sm:self-auto font-mono">
+                                5분 주기 자동 갱신
+                            </span>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            {macro.map((item, idx) => (
+
+                        {/* 카테고리 탭 선택 바 */}
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none mb-4">
+                            {MACRO_CATEGORY_TABS.map((tab) => {
+                                const count = tab.key === 'all' 
+                                    ? macro.length 
+                                    : macro.filter(m => m.category === tab.key).length;
+                                const isSelected = selectedMacroCategory === tab.key;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setSelectedMacroCategory(tab.key)}
+                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
+                                            isSelected
+                                                ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.02]'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <span className="text-sm">{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                                            isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
+                                        }`}>
+                                            {count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* 선택된 카테고리 핵심 인사이트 안내 배너 */}
+                        {(() => {
+                            const currentTab = MACRO_CATEGORY_TABS.find(t => t.key === selectedMacroCategory) || MACRO_CATEGORY_TABS[0];
+                            return (
+                                <div className="mb-5 p-3.5 bg-gradient-to-r from-slate-50 via-emerald-50/40 to-slate-50 rounded-2xl border border-slate-200/80 flex items-center gap-2.5 text-xs text-slate-700">
+                                    <span className="text-base shrink-0">{currentTab.icon}</span>
+                                    <div className="leading-relaxed">
+                                        <span className="font-extrabold text-slate-900 mr-1.5">[{currentTab.label}]</span>
+                                        <span className="text-slate-600">{currentTab.insight}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* 지표 카드 그리드 */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {(selectedMacroCategory === 'all' 
+                                ? macro 
+                                : macro.filter(m => m.category === selectedMacroCategory)
+                            ).map((item, idx) => (
                                 <div 
                                     key={item.symbol} 
-                                    style={{ animationDelay: `${idx * 80 + 100}ms` }}
-                                    className="animate-fade-in-up bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
+                                    style={{ animationDelay: `${idx * 50}ms` }}
+                                    className="animate-fade-in bg-white border border-gray-200 rounded-2xl p-4 sm:p-5 hover:shadow-lg hover:border-emerald-300 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                                 >
-                                    <div className="flex items-center justify-between mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-lg">{item.icon}</span>
-                                            <span className="font-bold text-gray-900 text-sm">{item.name}</span>
+                                    <div>
+                                        {/* 헤더: 아이콘, 이름, 단위 배지 */}
+                                        <div className="flex items-start justify-between gap-2 mb-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className="text-xl shrink-0">{item.icon}</span>
+                                                <div className="min-w-0">
+                                                    <div className="font-extrabold text-gray-900 text-sm truncate" title={item.name}>
+                                                        {item.name}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 font-mono">
+                                                        {item.symbol}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {item.unit && (
+                                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap">
+                                                    {item.unit}
+                                                </span>
+                                            )}
                                         </div>
-                                        <span className={`w-0 h-0 border-l-[5px] border-r-[5px] border-l-transparent border-r-transparent ${
-                                            item.status === 'up'
-                                                ? 'border-b-[6px] border-b-red-500'
-                                                : 'border-t-[6px] border-t-blue-500'
-                                        }`}></span>
+
+                                        {/* 현재가 */}
+                                        <div className="stock-number text-xl sm:text-2xl font-black text-gray-900 mt-2">
+                                            {item.currency}{item.price >= 1000 
+                                                ? item.price.toLocaleString('ko-KR') 
+                                                : item.price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                                            }
+                                        </div>
+
+                                        {/* 등락폭 및 등락률 */}
+                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                            <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-lg ${
+                                                item.status === 'up' 
+                                                    ? 'bg-red-50 text-red-600' 
+                                                    : 'bg-blue-50 text-blue-600'
+                                            }`}>
+                                                <span>{item.status === 'up' ? '▲' : '▼'}</span>
+                                                <span>{Math.abs(item.change).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}</span>
+                                                <span>({item.rate >= 0 ? '+' : ''}{item.rate.toFixed(2)}%)</span>
+                                            </span>
+                                        </div>
                                     </div>
-                                    <div className="stock-number text-xl font-extrabold text-gray-900">
-                                        {item.currency}{item.price.toLocaleString('ko-KR')}
-                                    </div>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className={`stock-number text-sm ${item.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
-                                            {item.rate >= 0 ? '+' : ''}{item.rate.toFixed(2)}%
+
+                                    {/* 카드 하단 설명 및 갱신 시각 */}
+                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                                        <span className="truncate pr-2 text-slate-500" title={item.description}>
+                                            {item.description || '글로벌 주요 지표'}
                                         </span>
                                         {item.updatedAt && (
-                                            <span className="text-[10px] text-gray-400 font-mono">{item.updatedAt}</span>
+                                            <span className="shrink-0 font-mono text-[10px] text-slate-400">{item.updatedAt}</span>
                                         )}
                                     </div>
                                 </div>
