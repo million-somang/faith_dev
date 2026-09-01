@@ -14,8 +14,8 @@ import {
 import { Line } from 'react-chartjs-2';
 import FinanceSubMenu from '../components/FinanceSubMenu';
 import ProfitCalculator from '../components/ProfitCalculator';
-import { MOCK_POPULAR_STOCKS, generateMockChartData } from '../data/mockData';
-import type { ChartDataPoint } from '../data/mockData';
+import BannerSlot from '../components/BannerSlot';
+import { useFavorites } from '../hooks/useFavorites';
 import { useAuth } from '../hooks/useAuth';
 
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
@@ -24,97 +24,149 @@ const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
 // Chart.js 등록
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Filler);
 
-type Tab = 'summary' | 'news' | 'discussion' | 'financial';
+type Tab = 'summary' | 'financial' | 'news';
+type ChartRange = '1d' | '1w' | '1mo' | '3mo' | '1y' | '3y';
 
-interface StockQuote {
+interface StockDetailData {
     ticker: string;
+    symbol: string;
     name: string;
+    englishName: string;
+    market: 'KRX' | 'NASDAQ' | 'NYSE';
+    sector: string;
+    currency: string;
     price: number;
+    previousClose: number;
     change: number;
     rate: number;
     status: 'up' | 'down';
-    previousClose?: number;
-    currency?: string;
-    exchangeName?: string;
+    open: number;
+    high: number;
+    low: number;
+    volume: string;
+    tradingValue: string;
+    high52: number;
+    low52: number;
+    rangePercent: number;
+    marketCap: string;
+    marketCapRank: string;
+    sharesCount: string;
+    foreignRate: string;
+    per: number;
+    pbr: number;
+    eps: number;
+    bps: number;
+    roe: number;
+    dividendYield: number;
+    dividendPerShare: number;
+    summary: string;
+    products: string;
+    ceo: string;
+    establishedYear: string;
+    headquarters: string;
+    rivals: { ticker: string; name: string; price: number; rate: number; marketCap: string; per: number }[];
+    financials: {
+        annual: { year: string; revenue: string; opIncome: string; netIncome: string; opMargin: string; roe: string }[];
+        quarterly: { quarter: string; revenue: string; opIncome: string; netIncome: string; opMargin: string }[];
+    };
 }
+
+interface NewsItem {
+    id: number;
+    title: string;
+    summary: string;
+    source: string;
+    time: string;
+    link: string;
+}
+
+interface ChartPoint {
+    date: string;
+    price: number;
+}
+
+const CHART_RANGES: { key: ChartRange; label: string }[] = [
+    { key: '1d', label: '1일' },
+    { key: '1w', label: '1주일' },
+    { key: '1mo', label: '1개월' },
+    { key: '3mo', label: '3개월' },
+    { key: '1y', label: '1년' },
+    { key: '3y', label: '3년' },
+];
 
 export default function StockDetailPage() {
     const { ticker } = useParams<{ ticker: string }>();
     const { user, logout } = useAuth();
+    const { isFavorite, toggle } = useFavorites();
+
     const [activeTab, setActiveTab] = useState<Tab>('summary');
+    const [selectedRange, setSelectedRange] = useState<ChartRange>('1mo');
     const [showCalculator, setShowCalculator] = useState(false);
     const [loading, setLoading] = useState(true);
     const [chartLoading, setChartLoading] = useState(true);
 
-    // Mock fallback 데이터
-    const mockStock = MOCK_POPULAR_STOCKS.find((s) => s.ticker === ticker) || {
-        rank: 0, ticker: ticker || '', name: ticker || '',
-        price: 50000, change: 0, rate: 0, status: 'up' as const,
-    };
+    const [stock, setStock] = useState<StockDetailData | null>(null);
+    const [chartData, setChartData] = useState<ChartPoint[]>([]);
+    const [news, setNews] = useState<NewsItem[]>([]);
 
-    const [stock, setStock] = useState<StockQuote>({
-        ticker: mockStock.ticker, name: mockStock.name,
-        price: mockStock.price, change: mockStock.change,
-        rate: mockStock.rate, status: mockStock.status,
-    });
-
-    const [chartData, setChartData] = useState<ChartDataPoint[]>(generateMockChartData(mockStock.price));
-
-    // 실시간 시세 가져오기
+    // 1. 종목 상세 종합 데이터 가져오기
     useEffect(() => {
-        const fetchQuote = async () => {
-            try {
-                const res = await fetch(`${API_BASE}/api/finance/quote/${ticker}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setStock(data);
-                }
-            } catch (e) {
-                console.warn('시세 조회 실패, Mock 사용:', e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchQuote();
+        if (!ticker) return;
+        setLoading(true);
+        fetch(`${API_BASE}/api/finance/stock-detail/${ticker}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (data) setStock(data);
+            })
+            .catch((e) => console.warn('종목 상세 로드 실패:', e))
+            .finally(() => setLoading(false));
     }, [ticker]);
 
-    // 차트 데이터 가져오기
+    // 2. 멀티 타임프레임 차트 데이터 가져오기
     useEffect(() => {
-        const fetchChart = async () => {
-            try {
-                const res = await fetch(`${API_BASE}/api/finance/chart/${ticker}?range=1mo`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.data && data.data.length > 0) {
-                        setChartData(data.data);
-                    }
+        if (!ticker) return;
+        setChartLoading(true);
+        fetch(`${API_BASE}/api/finance/chart/${ticker}?range=${selectedRange}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((res) => {
+                if (res?.data && Array.isArray(res.data) && res.data.length > 0) {
+                    setChartData(res.data);
                 }
-            } catch (e) {
-                console.warn('차트 데이터 조회 실패, Mock 사용:', e);
-            } finally {
-                setChartLoading(false);
-            }
-        };
-        fetchChart();
+            })
+            .catch((e) => console.warn('차트 로드 실패:', e))
+            .finally(() => setChartLoading(false));
+    }, [ticker, selectedRange]);
+
+    // 3. 종목 실시간 뉴스 가져오기
+    useEffect(() => {
+        if (!ticker) return;
+        fetch(`${API_BASE}/api/finance/stock-news/${ticker}`)
+            .then((r) => (r.ok ? r.json() : []))
+            .then((data) => setNews(Array.isArray(data) ? data : []))
+            .catch(() => setNews([]));
     }, [ticker]);
 
+    const isFav = ticker ? isFavorite(ticker) : false;
+
+    // 차트 설정
     const chartConfig = {
         labels: chartData.map((d) => {
-            const date = new Date(d.date);
-            return `${date.getMonth() + 1}/${date.getDate()}`;
+            if (selectedRange === '1d') return d.date;
+            const parts = d.date.split('-');
+            return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : d.date;
         }),
         datasets: [
             {
                 label: '종가',
                 data: chartData.map((d) => d.price),
-                borderColor: stock.status === 'up' ? 'rgb(220, 38, 38)' : 'rgb(37, 99, 235)',
-                backgroundColor: stock.status === 'up' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(37, 99, 235, 0.1)',
+                borderColor: stock?.status === 'up' ? 'rgb(220, 38, 38)' : 'rgb(37, 99, 235)',
+                backgroundColor: stock?.status === 'up' ? 'rgba(220, 38, 38, 0.08)' : 'rgba(37, 99, 235, 0.08)',
                 borderWidth: 2,
                 fill: true,
-                tension: 0.4,
+                tension: 0.35,
                 pointRadius: 0,
                 pointHoverRadius: 6,
-                pointHoverBackgroundColor: stock.status === 'up' ? 'rgb(220, 38, 38)' : 'rgb(37, 99, 235)',
+                pointHoverBackgroundColor: stock?.status === 'up' ? 'rgb(220, 38, 38)' : 'rgb(37, 99, 235)',
             },
         ],
     };
@@ -128,30 +180,43 @@ export default function StockDetailPage() {
                 mode: 'index' as const,
                 intersect: false,
                 callbacks: {
-                    label: (context: { parsed: { y: number | null } }) => `₩${(context.parsed.y ?? 0).toLocaleString('ko-KR')}`,
+                    label: (context: { parsed: { y: number | null } }) => 
+                        `${stock?.currency || '₩'}${(context.parsed.y ?? 0).toLocaleString('ko-KR')}`,
                 },
             },
         },
         scales: {
-            x: { grid: { display: false } },
+            x: { 
+                grid: { display: false },
+                ticks: { maxTicksLimit: 8, font: { size: 11 } }
+            },
             y: {
-                grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                grid: { color: 'rgba(0, 0, 0, 0.04)' },
                 ticks: {
-                    callback: (value: string | number) => `₩${Number(value).toLocaleString('ko-KR')}`,
+                    callback: (value: string | number) => `${stock?.currency || '₩'}${Number(value).toLocaleString('ko-KR')}`,
+                    font: { size: 11 }
                 },
             },
         },
     };
 
-    const tabs: { key: Tab; label: string }[] = [
-        { key: 'summary', label: '종합' },
-        { key: 'news', label: '뉴스' },
-        { key: 'discussion', label: '토론' },
-        { key: 'financial', label: '재무' },
+    const chartStats = (() => {
+        if (chartData.length === 0) return null;
+        const prices = chartData.map(d => d.price);
+        const high = Math.max(...prices);
+        const low = Math.min(...prices);
+        const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+        return { high, low, avg: Math.round(avg * 100) / 100 };
+    })();
+
+    const tabs: { key: Tab; label: string; icon: string }[] = [
+        { key: 'summary', label: '종합 정보', icon: '📑' },
+        { key: 'financial', label: '기업 재무 분석', icon: '📊' },
+        { key: 'news', label: '관련 뉴스', icon: '📰' },
     ];
 
     return (
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen bg-slate-50/50">
             <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
@@ -159,145 +224,486 @@ export default function StockDetailPage() {
             <div className="bg-white border-b border-gray-100">
                 <div className="max-w-6xl mx-auto px-4 py-2">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <Link to="/" className="hover:text-green-600 transition-colors">홈</Link>
+                        <Link to="/" className="hover:text-blue-600 transition-colors">홈</Link>
                         <i className="fas fa-chevron-right text-xs text-gray-300"></i>
-                        <Link to="/" className="hover:text-green-600 transition-colors">금융</Link>
+                        <Link to="/finance" className="hover:text-blue-600 transition-colors">금융</Link>
                         <i className="fas fa-chevron-right text-xs text-gray-300"></i>
-                        <span className="text-gray-900 font-medium">{stock.name}</span>
+                        <Link to="/stocks" className="hover:text-blue-600 transition-colors">종목</Link>
+                        <i className="fas fa-chevron-right text-xs text-gray-300"></i>
+                        <span className="text-gray-900 font-bold">{stock?.name || ticker}</span>
                     </div>
                 </div>
             </div>
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-12 w-full">
-                {/* 주식 헤더 */}
-                <Card className={`p-6 mb-6 animate-fade-in-up ${loading ? 'animate-pulse' : ''}`}>
-                    <div className="flex items-start justify-between mb-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">{stock.name}</h1>
-                            <p className="text-gray-500">
-                                {stock.ticker}
-                                {stock.exchangeName && <span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">{stock.exchangeName}</span>}
-                            </p>
-                        </div>
-                        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
-                            <i className="far fa-star mr-1"></i>
-                            관심종목
-                        </button>
-                    </div>
-                    <div className="flex items-end gap-4">
-                        <div className="stock-number text-4xl font-bold text-gray-900">
-                            {stock.price.toLocaleString('ko-KR')}
-                        </div>
-                        <div className={`stock-number mb-2 ${stock.status === 'up' ? 'text-red-600' : 'text-blue-600'} font-semibold text-lg`}>
-                            {stock.status === 'up' ? '▲' : '▼'} {Math.abs(stock.change).toLocaleString('ko-KR')}{' '}
-                            ({stock.rate > 0 ? '+' : ''}{stock.rate.toFixed(2)}%)
-                        </div>
-                    </div>
-                </Card>
+            <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+                
+                {/* 🌟 1. 종목 시세 헤더 & 52주 레인지 게이지 카드 */}
+                <div className={`bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-6 ${loading ? 'animate-pulse' : ''}`}>
+                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+                        {/* 좌측: 종목명, 시장태그, 실시간 가격 */}
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2.5 flex-wrap mb-2">
+                                <h1 className="text-2xl sm:text-3xl font-black text-gray-900">
+                                    {stock?.name || ticker}
+                                </h1>
+                                <span className={`text-xs font-black px-2.5 py-0.5 rounded-lg font-mono ${
+                                    stock?.market === 'KRX' ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                }`}>
+                                    {stock?.market || 'KRX'}: {stock?.ticker || ticker}
+                                </span>
+                                {stock?.sector && (
+                                    <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                                        {stock.sector}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-xs text-slate-400 font-mono mb-4">{stock?.englishName}</p>
 
-                {/* 차트 영역 */}
-                <Card className={`p-6 mb-6 animate-fade-in-up animation-delay-150 ${chartLoading ? 'animate-pulse' : ''}`}>
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">
-                            <i className="fas fa-chart-area text-green-600 mr-2"></i>
-                            가격 차트 (1개월)
-                        </h2>
-                    </div>
-                    <div style={{ position: 'relative', height: '400px' }}>
-                        <Line data={chartConfig} options={chartOptions} />
-                    </div>
-                </Card>
+                            {/* 현재가 및 등락폭 */}
+                            <div className="flex items-baseline gap-3 flex-wrap">
+                                <div className="stock-number text-3xl sm:text-4xl font-black text-gray-900">
+                                    {stock?.currency}{stock?.price.toLocaleString('ko-KR')}
+                                </div>
+                                <div className={`inline-flex items-center gap-1 text-base sm:text-lg font-extrabold stock-number px-3 py-1 rounded-xl ${
+                                    stock?.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                                }`}>
+                                    <span>{stock?.status === 'up' ? '▲' : '▼'}</span>
+                                    <span>{Math.abs(stock?.change || 0).toLocaleString('ko-KR')}</span>
+                                    <span>({(stock?.rate || 0) >= 0 ? '+' : ''}{(stock?.rate || 0).toFixed(2)}%)</span>
+                                </div>
+                                <span className="text-xs text-slate-400 font-mono self-center">
+                                    {stock?.market === 'KRX' ? '20분 지연' : '15분 지연'}
+                                </span>
+                            </div>
 
-                {/* 탭 메뉴 */}
-                <Card className="mb-6 animate-fade-in-up animation-delay-300">
-                    <div className="border-b border-gray-200">
-                        <div className="flex gap-8 px-6">
+                            {/* 당일 시가/고가/저가 요약 칩 */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4 pt-4 border-t border-slate-100 text-xs">
+                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">전일종가</span>
+                                    <span className="font-bold text-slate-800 stock-number">{stock?.currency}{stock?.previousClose.toLocaleString('ko-KR')}</span>
+                                </div>
+                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">시가</span>
+                                    <span className="font-bold text-slate-800 stock-number">{stock?.currency}{stock?.open.toLocaleString('ko-KR')}</span>
+                                </div>
+                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">고가 (당일최고)</span>
+                                    <span className="font-bold text-red-600 stock-number">{stock?.currency}{stock?.high.toLocaleString('ko-KR')}</span>
+                                </div>
+                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                    <span className="text-slate-400 block text-[11px]">저가 (당일최저)</span>
+                                    <span className="font-bold text-blue-600 stock-number">{stock?.currency}{stock?.low.toLocaleString('ko-KR')}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 우측: 52주 최고/최저가 게이지 & 관심종목 버튼 */}
+                        <div className="w-full lg:w-80 bg-gradient-to-br from-slate-50 to-indigo-50/20 rounded-2xl p-5 border border-slate-200 flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs font-bold text-slate-700">52주 가격 밴드</span>
+                                <button
+                                    type="button"
+                                    onClick={() => ticker && toggle(ticker, { name: stock?.name })}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                                        isFav 
+                                            ? 'bg-amber-400 text-slate-950 hover:bg-amber-500' 
+                                            : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                    }`}
+                                >
+                                    <i className={`${isFav ? 'fas' : 'far'} fa-star`}></i>
+                                    <span>{isFav ? '관심종목 해제' : '관심종목 담기'}</span>
+                                </button>
+                            </div>
+
+                            {/* 52주 프로그레스 게이지 */}
+                            <div className="my-2">
+                                <div className="flex justify-between text-[11px] text-slate-400 font-mono mb-1">
+                                    <span>52주 최저 {stock?.currency}{stock?.low52.toLocaleString('ko-KR')}</span>
+                                    <span>52주 최고 {stock?.currency}{stock?.high52.toLocaleString('ko-KR')}</span>
+                                </div>
+                                <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden relative">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-blue-500 via-amber-400 to-red-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${stock?.rangePercent || 50}%` }}
+                                    ></div>
+                                </div>
+                                <div className="text-right text-[11px] font-bold text-slate-600 mt-1">
+                                    52주 밴드 내 위치: <span className="text-blue-600 font-mono">{stock?.rangePercent}%</span>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 pt-3 border-t border-slate-200/80 space-y-1.5 text-xs">
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">시가총액</span>
+                                    <span className="font-bold text-slate-900">{stock?.marketCap} ({stock?.marketCapRank})</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-slate-500">외국인 지분율</span>
+                                    <span className="font-bold text-slate-900 font-mono">{stock?.foreignRate}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 📈 2. 멀티 타임프레임 인터랙티브 차트 */}
+                <div className={`bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm mb-6 ${chartLoading ? 'animate-pulse' : ''}`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xl">📈</span>
+                            <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                기간별 시세 차트
+                            </h2>
+                            <span className="text-xs text-slate-400 font-mono">
+                                ({CHART_RANGES.find(r => r.key === selectedRange)?.label})
+                            </span>
+                        </div>
+
+                        {/* 기간 선택 탭 버튼 (1일, 1주일, 1개월, 3개월, 1년, 3년) */}
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-2xl border border-slate-200/60 overflow-x-auto self-start sm:self-auto">
+                            {CHART_RANGES.map((range) => {
+                                const isActive = selectedRange === range.key;
+                                return (
+                                    <button
+                                        key={range.key}
+                                        type="button"
+                                        onClick={() => setSelectedRange(range.key)}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-slate-900 text-white shadow-sm font-black scale-[1.02]'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        {range.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div style={{ position: 'relative', height: '380px' }}>
+                        {chartData.length > 0 ? (
+                            <Line data={chartConfig} options={chartOptions} />
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                                차트 데이터를 불러오는 중입니다…
+                            </div>
+                        )}
+                    </div>
+
+                    {/* 기간 차트 요약 통계 */}
+                    {chartStats && (
+                        <div className="grid grid-cols-3 gap-3 mt-6 pt-4 border-t border-slate-100 text-center text-xs">
+                            <div className="bg-slate-50 p-2.5 rounded-xl">
+                                <span className="text-slate-400 block text-[11px]">기간 최고가</span>
+                                <span className="font-extrabold text-red-600 stock-number">{stock?.currency}{chartStats.high.toLocaleString('ko-KR')}</span>
+                            </div>
+                            <div className="bg-slate-50 p-2.5 rounded-xl">
+                                <span className="text-slate-400 block text-[11px]">기간 최저가</span>
+                                <span className="font-extrabold text-blue-600 stock-number">{stock?.currency}{chartStats.low.toLocaleString('ko-KR')}</span>
+                            </div>
+                            <div className="bg-slate-50 p-2.5 rounded-xl">
+                                <span className="text-slate-400 block text-[11px]">기간 평균가</span>
+                                <span className="font-extrabold text-slate-800 stock-number">{stock?.currency}{chartStats.avg.toLocaleString('ko-KR')}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* 🌟 중간 광고 & 스폰서 배너 슬롯 */}
+                <BannerSlot slotKey="finance_detail_middle" fallbackSlotKey="main_center" className="my-8" />
+
+                {/* 📑 3. 3대 상세 정보 탭 시스템 */}
+                <Card className="rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+                    {/* 탭 네비게이션 */}
+                    <div className="bg-slate-50/80 border-b border-slate-200 px-6 pt-2">
+                        <div className="flex gap-2 overflow-x-auto">
                             {tabs.map((tab) => (
                                 <button
                                     key={tab.key}
+                                    type="button"
                                     onClick={() => setActiveTab(tab.key)}
-                                    className={`tab-button ${activeTab === tab.key ? 'active' : ''}`}
+                                    className={`flex items-center gap-2 px-5 py-3.5 border-b-2 font-black text-sm transition-all cursor-pointer whitespace-nowrap ${
+                                        activeTab === tab.key
+                                            ? 'border-blue-600 text-blue-600 bg-white rounded-t-2xl shadow-xs'
+                                            : 'border-transparent text-slate-500 hover:text-slate-900'
+                                    }`}
                                 >
-                                    {tab.label}
+                                    <span>{tab.icon}</span>
+                                    <span>{tab.label}</span>
                                 </button>
                             ))}
                         </div>
                     </div>
-                    <div className="p-6">
-                        {activeTab === 'summary' && (
-                            <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-4">기업 정보</h3>
-                                        <div className="space-y-3">
-                                            {[
-                                                { label: '현재가', value: stock.price.toLocaleString('ko-KR') },
-                                                { label: '전일 종가', value: (stock.previousClose || stock.price - stock.change).toLocaleString('ko-KR') },
-                                                { label: '등락', value: `${stock.change >= 0 ? '+' : ''}${stock.change.toLocaleString('ko-KR')}` },
-                                                { label: '등락률', value: `${stock.rate >= 0 ? '+' : ''}${stock.rate.toFixed(2)}%` },
-                                            ].map((item) => (
-                                                <div key={item.label} className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">{item.label}</span>
-                                                    <span className="stock-number font-medium">{item.value}</span>
-                                                </div>
-                                            ))}
+
+                    <div className="p-6 sm:p-8">
+                        
+                        {/* 📑 탭 1: 종합 정보 (밸류에이션, 기업개요, 라이벌 비교, 계산기) */}
+                        {activeTab === 'summary' && stock && (
+                            <div className="space-y-8 animate-fade-in">
+                                
+                                {/* 💎 6대 핵심 밸류에이션 지표 */}
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                                        <span>💎</span>
+                                        <span>핵심 투자 밸류에이션 지표</span>
+                                    </h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center">
+                                            <span className="text-[11px] text-slate-400 font-bold block">PER (주가수익)</span>
+                                            <span className="text-lg font-black text-slate-900 stock-number">{stock.per}배</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">업종평균 18.2배</span>
                                         </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-lg font-bold text-gray-900 mb-4">차트 요약</h3>
-                                        <div className="space-y-3">
-                                            {(() => {
-                                                const prices = chartData.map(d => d.price);
-                                                const high = Math.max(...prices);
-                                                const low = Math.min(...prices);
-                                                const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-                                                return [
-                                                    { label: '1개월 최고', value: high.toLocaleString('ko-KR') },
-                                                    { label: '1개월 최저', value: low.toLocaleString('ko-KR') },
-                                                    { label: '1개월 평균', value: Math.round(avg).toLocaleString('ko-KR') },
-                                                    { label: '데이터 기간', value: `${chartData.length}일` },
-                                                ];
-                                            })().map((item) => (
-                                                <div key={item.label} className="flex justify-between py-2 border-b border-gray-100">
-                                                    <span className="text-gray-600">{item.label}</span>
-                                                    <span className="stock-number font-medium">{item.value}</span>
-                                                </div>
-                                            ))}
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center">
+                                            <span className="text-[11px] text-slate-400 font-bold block">PBR (주가순자산)</span>
+                                            <span className="text-lg font-black text-slate-900 stock-number">{stock.pbr}배</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">{stock.pbr < 1 ? '저PBR 수혜' : '적정 자산가치'}</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center">
+                                            <span className="text-[11px] text-slate-400 font-bold block">ROE (자기자본이익)</span>
+                                            <span className="text-lg font-black text-emerald-600 stock-number">{stock.roe}%</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">수익성 우수</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center">
+                                            <span className="text-[11px] text-slate-400 font-bold block">EPS (주당순이익)</span>
+                                            <span className="text-lg font-black text-slate-900 stock-number">{stock.currency}{stock.eps.toLocaleString('ko-KR')}</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">1주당 이익</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-center">
+                                            <span className="text-[11px] text-slate-400 font-bold block">BPS (주당순자산)</span>
+                                            <span className="text-lg font-black text-slate-900 stock-number">{stock.currency}{stock.bps.toLocaleString('ko-KR')}</span>
+                                            <span className="text-[10px] text-slate-400 block mt-0.5">청산가치 기준</span>
+                                        </div>
+                                        <div className="bg-amber-50/70 p-4 rounded-2xl border border-amber-200/80 text-center">
+                                            <span className="text-[11px] text-amber-700 font-bold block">배당수익률</span>
+                                            <span className="text-lg font-black text-amber-700 stock-number">{stock.dividendYield}%</span>
+                                            <span className="text-[10px] text-amber-600 block mt-0.5">주당 {stock.currency}{stock.dividendPerShare.toLocaleString('ko-KR')}</span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h4 className="font-bold text-gray-900 mb-1">
-                                                <i className="fas fa-calculator text-green-600 mr-2"></i>
-                                                이 주식 수익률 계산해 보기
-                                            </h4>
-                                            <p className="text-sm text-gray-600">투자했다면 얼마를 벌었을까?</p>
+                                {/* 🏢 기업 개요 & 비즈니스 요약 */}
+                                <div className="bg-slate-50/80 rounded-2xl p-6 border border-slate-200/80">
+                                    <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
+                                        <span>🏢</span>
+                                        <span>기업 개요 및 주요 사업 모델</span>
+                                    </h3>
+                                    <p className="text-xs sm:text-sm text-slate-700 leading-relaxed mb-4">
+                                        {stock.summary}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-3 border-t border-slate-200/60">
+                                        <div><span className="text-slate-400">주력 제품: </span><span className="font-semibold text-slate-800">{stock.products}</span></div>
+                                        <div><span className="text-slate-400">대표이사: </span><span className="font-semibold text-slate-800">{stock.ceo}</span></div>
+                                        <div><span className="text-slate-400">설립연도: </span><span className="font-semibold text-slate-800">{stock.establishedYear}</span></div>
+                                        <div><span className="text-slate-400">본사위치: </span><span className="font-semibold text-slate-800 truncate block" title={stock.headquarters}>{stock.headquarters}</span></div>
+                                    </div>
+                                </div>
+
+                                {/* ⚔️ 동일 업종 라이벌 비교 */}
+                                <div>
+                                    <h3 className="text-base font-black text-slate-900 mb-3 flex items-center gap-2">
+                                        <span>⚔️</span>
+                                        <span>동일 업종 라이벌 경쟁사 비교</span>
+                                    </h3>
+                                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="bg-slate-100 text-slate-600 font-bold">
+                                                <tr>
+                                                    <th className="p-3">종목명</th>
+                                                    <th className="p-3 text-right">현재가</th>
+                                                    <th className="p-3 text-right">등락률</th>
+                                                    <th className="p-3 text-right">시가총액</th>
+                                                    <th className="p-3 text-right">PER</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 bg-white">
+                                                <tr className="bg-blue-50/40 font-bold">
+                                                    <td className="p-3 text-blue-700">{stock.name} (현재종목)</td>
+                                                    <td className="p-3 text-right stock-number">{stock.currency}{stock.price.toLocaleString('ko-KR')}</td>
+                                                    <td className="p-3 text-right stock-number text-red-600">{stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%</td>
+                                                    <td className="p-3 text-right">{stock.marketCap}</td>
+                                                    <td className="p-3 text-right">{stock.per}배</td>
+                                                </tr>
+                                                {stock.rivals.map((rival) => (
+                                                    <tr key={rival.ticker} className="hover:bg-slate-50">
+                                                        <td className="p-3 font-semibold text-slate-800">
+                                                            <Link to={`/stock/${rival.ticker}`} className="hover:text-blue-600 transition-colors">
+                                                                {rival.name} <span className="text-[10px] text-slate-400 font-mono">({rival.ticker})</span>
+                                                            </Link>
+                                                        </td>
+                                                        <td className="p-3 text-right stock-number">{rival.price.toLocaleString('ko-KR')}</td>
+                                                        <td className={`p-3 text-right stock-number ${rival.rate >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
+                                                            {rival.rate >= 0 ? '+' : ''}{rival.rate.toFixed(2)}%
+                                                        </td>
+                                                        <td className="p-3 text-right text-slate-600">{rival.marketCap}</td>
+                                                        <td className="p-3 text-right text-slate-600">{rival.per}배</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* 🧮 투자 수익률 & 배당 계산기 배너 */}
+                                <div className="p-5 bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50 rounded-2xl border border-blue-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center text-lg font-bold">
+                                            🧮
                                         </div>
+                                        <div>
+                                            <h4 className="font-black text-slate-900 text-sm">{stock.name} 투자 수익률 & 배당금 시뮬레이터</h4>
+                                            <p className="text-xs text-slate-600 mt-0.5">매수 목표가 대비 예상 수익률 및 연간 세후 배당금을 즉시 계산해보세요.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
                                         <button
+                                            type="button"
                                             onClick={() => setShowCalculator(true)}
-                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
                                         >
-                                            계산하기
+                                            수익률 계산하기
                                         </button>
+                                        <Link
+                                            to="/util?tab=dividend"
+                                            className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-800 border border-slate-200 font-bold text-xs rounded-xl transition-all shadow-xs"
+                                        >
+                                            배당금 계산기
+                                        </Link>
+                                    </div>
+                                </div>
+
+                            </div>
+                        )}
+
+                        {/* 📊 탭 2: 기업 재무 분석 (연간 3개년 + 분기 실적 요약) */}
+                        {activeTab === 'financial' && stock && (
+                            <div className="space-y-8 animate-fade-in">
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
+                                        <span>📊</span>
+                                        <span>최근 3개년 연간 실적 추이</span>
+                                    </h3>
+                                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                                        <table className="w-full text-left text-xs sm:text-sm">
+                                            <thead className="bg-slate-100 text-slate-700 font-bold">
+                                                <tr>
+                                                    <th className="p-3.5">주요 재무 항목</th>
+                                                    {stock.financials.annual.map(a => (
+                                                        <th key={a.year} className="p-3.5 text-right font-mono">{a.year}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 bg-white">
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">매출액</td>
+                                                    {stock.financials.annual.map(a => <td key={a.year} className="p-3.5 text-right font-black stock-number">{a.revenue}</td>)}
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">영업이익</td>
+                                                    {stock.financials.annual.map(a => <td key={a.year} className="p-3.5 text-right font-black stock-number text-blue-600">{a.opIncome}</td>)}
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">당기순이익</td>
+                                                    {stock.financials.annual.map(a => <td key={a.year} className="p-3.5 text-right font-black stock-number">{a.netIncome}</td>)}
+                                                </tr>
+                                                <tr className="bg-slate-50/60">
+                                                    <td className="p-3.5 font-semibold text-slate-600">영업이익률</td>
+                                                    {stock.financials.annual.map(a => <td key={a.year} className="p-3.5 text-right font-semibold stock-number">{a.opMargin}</td>)}
+                                                </tr>
+                                                <tr className="bg-slate-50/60">
+                                                    <td className="p-3.5 font-semibold text-slate-600">ROE (자기자본이익률)</td>
+                                                    {stock.financials.annual.map(a => <td key={a.year} className="p-3.5 text-right font-semibold stock-number text-emerald-600">{a.roe}</td>)}
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-lg font-black text-slate-900 mb-3 flex items-center gap-2">
+                                        <span>📅</span>
+                                        <span>최근 4분기 분기별 실적 추이</span>
+                                    </h3>
+                                    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                                        <table className="w-full text-left text-xs sm:text-sm">
+                                            <thead className="bg-slate-100 text-slate-700 font-bold">
+                                                <tr>
+                                                    <th className="p-3.5">주요 재무 항목</th>
+                                                    {stock.financials.quarterly.map(q => (
+                                                        <th key={q.quarter} className="p-3.5 text-right font-mono">{q.quarter}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 bg-white">
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">매출액</td>
+                                                    {stock.financials.quarterly.map(q => <td key={q.quarter} className="p-3.5 text-right font-black stock-number">{q.revenue}</td>)}
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">영업이익</td>
+                                                    {stock.financials.quarterly.map(q => <td key={q.quarter} className="p-3.5 text-right font-black stock-number text-blue-600">{q.opIncome}</td>)}
+                                                </tr>
+                                                <tr>
+                                                    <td className="p-3.5 font-bold text-slate-900">당기순이익</td>
+                                                    {stock.financials.quarterly.map(q => <td key={q.quarter} className="p-3.5 text-right font-black stock-number">{q.netIncome}</td>)}
+                                                </tr>
+                                                <tr className="bg-slate-50/60">
+                                                    <td className="p-3.5 font-semibold text-slate-600">영업이익률</td>
+                                                    {stock.financials.quarterly.map(q => <td key={q.quarter} className="p-3.5 text-right font-semibold stock-number">{q.opMargin}</td>)}
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
                         )}
 
+                        {/* 📰 탭 3: 관련 뉴스 피드 */}
                         {activeTab === 'news' && (
-                            <p className="text-gray-500 text-center py-8">관련 뉴스가 곧 공개될 예정입니다.</p>
+                            <div className="space-y-4 animate-fade-in">
+                                <div className="flex items-center justify-between mb-2">
+                                    <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+                                        <span>📰</span>
+                                        <span>{stock?.name || ticker} 실시간 관련 뉴스</span>
+                                    </h3>
+                                    <a
+                                        href={`https://search.naver.com/search.naver?where=news&query=${encodeURIComponent(stock?.name || ticker || '')}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                    >
+                                        <span>포털 뉴스 더보기</span>
+                                        <i className="fas fa-external-link-alt text-[10px]"></i>
+                                    </a>
+                                </div>
+
+                                {news.map((item) => (
+                                    <a
+                                        key={item.id}
+                                        href={item.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block p-5 bg-white rounded-2xl border border-slate-200 hover:border-blue-300 hover:shadow-md transition-all group"
+                                    >
+                                        <div className="font-extrabold text-slate-900 text-sm sm:text-base mb-1.5 group-hover:text-blue-600 transition-colors">
+                                            {item.title}
+                                        </div>
+                                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 mb-3">
+                                            {item.summary}
+                                        </p>
+                                        <div className="flex items-center gap-3 text-[11px] text-slate-400 font-mono">
+                                            <span className="font-bold text-slate-700">{item.source}</span>
+                                            <span>·</span>
+                                            <span>{item.time}</span>
+                                        </div>
+                                    </a>
+                                ))}
+                            </div>
                         )}
-                        {activeTab === 'discussion' && (
-                            <p className="text-gray-500 text-center py-8">토론 기능이 곧 공개될 예정입니다.</p>
-                        )}
-                        {activeTab === 'financial' && (
-                            <p className="text-gray-500 text-center py-8">재무 정보가 곧 공개될 예정입니다.</p>
-                        )}
+
                     </div>
                 </Card>
+
             </main>
 
             <ProfitCalculator isOpen={showCalculator} onClose={() => setShowCalculator(false)} />
