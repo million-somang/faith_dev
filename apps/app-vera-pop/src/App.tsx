@@ -27,6 +27,7 @@ export default function App() {
         timeLeft,
         isGameOver,
         selectedGem,
+        effects,
         handleCellClick,
         swapGems,
         startNewGame,
@@ -229,6 +230,7 @@ export default function App() {
                         board={board}
                         selectedGem={selectedGem}
                         isFever={isFever}
+                        effects={effects}
                         onCellClick={handleCellClick}
                         onSwipe={swapGems}
                     />
