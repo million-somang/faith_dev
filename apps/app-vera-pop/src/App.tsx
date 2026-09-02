@@ -19,7 +19,10 @@ export default function App() {
 
     const {
         board,
-        score,
+        stage,
+        stageScore,
+        targetScore,
+        totalScore,
         combo,
         maxCombo,
         feverGauge,
@@ -28,6 +31,7 @@ export default function App() {
         isGameOver,
         selectedGem,
         effects,
+        stageClearEvent,
         handleCellClick,
         swapGems,
         startNewGame,
@@ -63,27 +67,27 @@ export default function App() {
 
     // 3. 점수 갱신 및 저장
     useEffect(() => {
-        if (score > highScore) {
-            setHighScore(score);
-            localStorage.setItem('vera_pop_high_score', score.toString());
+        if (totalScore > highScore) {
+            setHighScore(totalScore);
+            localStorage.setItem('vera_pop_high_score', totalScore.toString());
         }
-    }, [score, highScore]);
+    }, [totalScore, highScore]);
 
     // 4. 게임 오버 시 점수 서버 전송
     const saveFinalScore = useCallback(async () => {
-        if (score <= 0) return;
+        if (totalScore <= 0) return;
         try {
             if (user) {
                 await axios.post('/api/games/vera-pop/score', {
-                    score,
-                    metadata: { max_combo: maxCombo },
+                    score: totalScore,
+                    metadata: { max_combo: maxCombo, stage },
                 }, { withCredentials: true });
                 sendToPortal('MISSION_CLEAR');
             }
         } catch (e) {
             console.warn('점수 전송 실패:', e);
         }
-    }, [score, maxCombo, user, sendToPortal]);
+    }, [totalScore, maxCombo, stage, user, sendToPortal]);
 
     useEffect(() => {
         if (isGameOver) {
@@ -109,13 +113,12 @@ export default function App() {
                             <span className="text-xs font-black text-slate-500 tracking-wider uppercase">FAITH PORTAL MINI GAME</span>
                         </div>
                         <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-full">
-                            ⚡ 60s Speed Match-3
+                            ⚡ Stage Speed Match-3
                         </span>
                     </div>
 
                     {/* 중앙 메인 타이틀 & 3D 네온 젬 비주얼 & 프로그레스 */}
                     <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto text-center py-4">
-                        {/* 3D 큐브 네온 젬 비주얼 */}
                         <div className="relative mb-5">
                             <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white flex items-center justify-center text-4xl shadow-2xl shadow-indigo-500/30 animate-pulse-glow border-2 border-white">
                                 💎
@@ -125,15 +128,13 @@ export default function App() {
                             </div>
                         </div>
 
-                        {/* 선명한 게임 타이틀 & 슬로건 */}
                         <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-1.5">
                             Vera Pop <span className="text-indigo-600 font-extrabold text-2xl sm:text-3xl">(베라 팝)</span>
                         </h1>
                         <p className="text-xs text-slate-500 font-semibold mb-6">
-                            터질수록 짜릿한 60초 네온 젬 스피드 퍼즐!
+                            스테이지 목표 점수를 돌파하고 무한 레벨업에 도전하세요!
                         </p>
 
-                        {/* 3초 실시간 로딩 프로그레스 바 */}
                         <div className="w-full max-w-xs space-y-1.5">
                             <div className="w-full h-2.5 bg-slate-200/80 rounded-full overflow-hidden p-0.5 shadow-inner">
                                 <div
@@ -157,6 +158,8 @@ export default function App() {
         );
     }
 
+    const stageProgressPercent = Math.min(100, Math.floor((stageScore / targetScore) * 100));
+
     // 🎮 게임 메인 보드 화면
     return (
         <MiniAppLayout
@@ -174,18 +177,22 @@ export default function App() {
         >
             <div className="min-h-full flex flex-col justify-between p-3 sm:p-4 max-w-md mx-auto relative select-none">
                 
-                {/* 상단 HUD: 시간 / 피버 게이지 / 실시간 점수 */}
+                {/* 상단 HUD: 스테이지 배지 / 타이머 / 최고점수 / 목표 게이지 */}
                 <div className="space-y-2 mb-2">
-                    {/* 시간 & 최고점수 */}
+                    
+                    {/* 1. 스테이지 뱃지 & 시간 & 최고기록 */}
                     <div className="flex items-center justify-between text-xs px-1">
-                        <div className="flex items-center gap-1.5">
-                            <span className="text-slate-400 font-bold">⏱️ 남은 시간:</span>
-                            <span className={`font-black font-mono text-base px-2 py-0.5 rounded-lg ${
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 bg-indigo-600 text-white font-black text-xs rounded-xl shadow-xs tracking-wide flex items-center gap-1">
+                                <span>STAGE</span>
+                                <span className="text-yellow-300 font-black">{stage}</span>
+                            </span>
+                            <span className={`font-black font-mono text-sm px-2 py-0.5 rounded-lg ${
                                 timeLeft <= 10 
                                     ? 'bg-rose-100 text-rose-600 animate-bounce' 
                                     : 'bg-slate-100 text-slate-800'
                             }`}>
-                                00:{String(timeLeft).padStart(2, '0')}
+                                ⏱️ 00:{String(timeLeft).padStart(2, '0')}
                             </span>
                         </div>
                         <div className="text-slate-500 font-mono text-xs">
@@ -193,39 +200,63 @@ export default function App() {
                         </div>
                     </div>
 
-                    {/* 피버 게이지 바 */}
-                    <div className="w-full bg-slate-200/80 h-3 rounded-full overflow-hidden p-0.5 relative shadow-inner">
-                        <div
-                            className={`h-full rounded-full transition-all duration-200 ${
-                                isFever 
-                                    ? 'bg-gradient-to-r from-red-500 via-amber-400 to-yellow-300 animate-pulse' 
-                                    : 'bg-gradient-to-r from-indigo-500 to-purple-600'
-                            }`}
-                            style={{ width: `${isFever ? 100 : feverGauge}%` }}
-                        ></div>
-                        <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white drop-shadow-sm">
-                            {isFever ? '🔥 HYPER FEVER 2X SCORE! 🔥' : `FEVER ${feverGauge}%`}
+                    {/* 2. 🎯 스테이지 목표 점수 프로그레스 바 */}
+                    <div className="bg-slate-900 text-white rounded-2xl p-2.5 shadow-sm border border-slate-800">
+                        <div className="flex justify-between items-center text-[11px] font-bold mb-1.5 px-0.5">
+                            <span className="text-indigo-300 flex items-center gap-1">
+                                <span>🎯 STAGE GOAL:</span>
+                                <span className="text-white font-black">{stageScore.toLocaleString('ko-KR')}</span>
+                                <span className="text-slate-400 font-normal">/ {targetScore.toLocaleString('ko-KR')}</span>
+                            </span>
+                            <span className="text-yellow-400 font-black font-mono">{stageProgressPercent}%</span>
+                        </div>
+                        <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 relative shadow-inner">
+                            <div
+                                className="h-full bg-gradient-to-r from-cyan-400 via-indigo-500 to-emerald-400 rounded-full transition-all duration-300"
+                                style={{ width: `${stageProgressPercent}%` }}
+                            ></div>
                         </div>
                     </div>
 
-                    {/* 실시간 획득 점수 & 콤보 */}
-                    <div className="flex items-center justify-between bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs">
+                    {/* 3. 누적 총점 & 피버 바 */}
+                    <div className="flex items-center justify-between bg-white rounded-2xl p-2.5 sm:p-3 border border-slate-200/80 shadow-xs">
                         <div>
-                            <span className="text-[10px] font-bold text-slate-400 block">현재 점수</span>
-                            <span className="text-2xl font-black text-slate-900 stock-number">
-                                {score.toLocaleString('ko-KR')}
+                            <span className="text-[10px] font-bold text-slate-400 block">누적 합산 총점</span>
+                            <span className="text-xl sm:text-2xl font-black text-slate-900 stock-number">
+                                {totalScore.toLocaleString('ko-KR')}
                             </span>
                         </div>
-                        {combo > 1 && (
-                            <div className="px-3 py-1 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-xs font-black shadow-sm animate-bounce">
-                                🔥 {combo} COMBO!
+
+                        {/* 피버 게이지 미니 */}
+                        <div className="w-36 text-right">
+                            <div className="flex justify-between text-[10px] font-black mb-1">
+                                <span className={isFever ? 'text-red-500 animate-pulse' : 'text-slate-500'}>
+                                    {isFever ? '🔥 FEVER 2X' : 'FEVER GAUGE'}
+                                </span>
+                                <span className="font-mono text-slate-700">{isFever ? 'MAX' : `${feverGauge}%`}</span>
                             </div>
-                        )}
+                            <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                <div
+                                    className={`h-full transition-all duration-200 ${
+                                        isFever ? 'bg-gradient-to-r from-red-500 to-amber-400' : 'bg-indigo-600'
+                                    }`}
+                                    style={{ width: `${isFever ? 100 : feverGauge}%` }}
+                                ></div>
+                            </div>
+                        </div>
                     </div>
+
+                    {combo > 1 && (
+                        <div className="text-center">
+                            <span className="inline-block px-3 py-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full text-xs font-black shadow-sm animate-bounce">
+                                🔥 {combo} COMBO!
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-                {/* 중앙 8x8 보드 캔버스 */}
-                <div className="my-auto flex items-center justify-center">
+                {/* 중앙 8x8 보드 캔버스 & 스테이지 클리어 팝업 */}
+                <div className="my-auto flex items-center justify-center relative">
                     <VeraPopCanvas
                         board={board}
                         selectedGem={selectedGem}
@@ -234,19 +265,35 @@ export default function App() {
                         onCellClick={handleCellClick}
                         onSwipe={swapGems}
                     />
+
+                    {/* 🌟 스테이지 클리어 / 레벨업 축하 오버레이 */}
+                    {stageClearEvent && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none animate-scale-up">
+                            <div className="bg-slate-900/90 text-white px-6 py-4 rounded-3xl border-2 border-yellow-400 shadow-2xl text-center backdrop-blur-md">
+                                <div className="text-3xl mb-1">🌟 STAGE CLEAR! 🌟</div>
+                                <div className="text-lg font-black text-yellow-300">
+                                    STAGE {stageClearEvent.stage} 진입!
+                                </div>
+                                <div className="text-xs text-cyan-300 font-bold mt-1">
+                                    ⏱️ 남은 시간 보너스 +{stageClearEvent.bonus.toLocaleString()}점 & 시간 60초 충전!
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* 하단 팁 & 조작 가이드 */}
                 <div className="mt-2 text-center text-xs text-slate-500 py-1">
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full font-medium">
-                        💡 스와이프하여 같은 색 보석을 3개 이상 연결하세요!
+                        💡 60초 내에 목표 점수를 달성하면 시간이 60초로 다시 충전됩니다!
                     </span>
                 </div>
 
                 {/* 게임 오버 모달 */}
                 {isGameOver && (
                     <GameOverModal
-                        score={score}
+                        score={totalScore}
+                        stage={stage}
                         maxCombo={maxCombo}
                         onRestart={startNewGame}
                         user={user}
@@ -256,3 +303,4 @@ export default function App() {
         </MiniAppLayout>
     );
 }
+

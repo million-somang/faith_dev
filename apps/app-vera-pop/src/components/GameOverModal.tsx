@@ -2,6 +2,7 @@ import React from 'react';
 
 interface GameOverModalProps {
     score: number;
+    stage?: number;
     maxCombo: number;
     onRestart: () => void;
     user: { email: string } | null;
@@ -9,6 +10,7 @@ interface GameOverModalProps {
 
 export default function GameOverModal({
     score,
+    stage = 1,
     maxCombo,
     onRestart,
     user,
@@ -32,19 +34,24 @@ export default function GameOverModal({
                 <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-1">
                     타임오버!
                 </h2>
-                <p className={`text-xs font-black ${tier.color} mb-4`}>
-                    {tier.name}
-                </p>
+                <div className="flex items-center justify-center gap-2 mb-4">
+                    <span className="px-2.5 py-0.5 bg-indigo-600 text-white text-xs font-black rounded-lg">
+                        STAGE {stage} 도달
+                    </span>
+                    <span className={`text-xs font-black ${tier.color}`}>
+                        {tier.name}
+                    </span>
+                </div>
 
-                {/* 최종 점수 박스 */}
+                {/* 최종 누적 점수 박스 */}
                 <div className="bg-gradient-to-br from-slate-50 to-indigo-50/40 rounded-2xl p-4 border border-slate-200/80 mb-4">
-                    <span className="text-xs text-slate-400 font-bold block mb-1">최종 획득 점수</span>
+                    <span className="text-xs text-slate-400 font-bold block mb-1">최종 누적 총점</span>
                     <span className="text-3xl font-black text-indigo-700 tracking-tight stock-number">
                         {score.toLocaleString('ko-KR')}
                     </span>
                     <div className="flex justify-between items-center text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-200/60 font-mono">
                         <span>최대 콤보: {maxCombo} COMBO</span>
-                        <span>피버 보너스 적용</span>
+                        <span>스테이지 보너스 합산</span>
                     </div>
                 </div>
 
@@ -85,3 +92,4 @@ export default function GameOverModal({
         </div>
     );
 }
+

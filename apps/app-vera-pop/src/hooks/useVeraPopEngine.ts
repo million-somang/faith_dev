@@ -2,11 +2,25 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { soundManager } from '../utils/audio';
 
 export const BOARD_SIZE = 8;
-export const NUM_COLORS = 5;
-export const GAME_DURATION = 60; // 60초 타임어택
+export const MAX_COLORS = 5;
+export const GAME_DURATION = 60; // 스테이지당 60초 타임어택
 
 export type GemType = 0 | 1 | 2 | 3 | 4; // 5가지 기본 색상
 export type SpecialType = 'none' | 'laser_h' | 'laser_v' | 'rainbow';
+
+// 스테이지별 목표 점수 계산 (완만한 난이도 곡선)
+export const getTargetScore = (stage: number): number => {
+    if (stage === 1) return 4500;
+    if (stage === 2) return 7500;
+    if (stage === 3) return 11000;
+    if (stage === 4) return 15000;
+    return Math.round(15000 + (stage - 4) * 4500);
+};
+
+// 스테이지별 보석 색상 수 (1~2스테이지: 4색, 3스테이지+: 5색)
+export const getNumColorsForStage = (stage: number): number => {
+    return stage <= 2 ? 4 : 5;
+};
 
 export interface EffectEvent {
     id: string;
@@ -16,6 +30,12 @@ export interface EffectEvent {
     gemType?: GemType;
     score?: number;
     combo?: number;
+}
+
+export interface StageClearEvent {
+    stage: number;
+    bonus: number;
+    nextTarget: number;
 }
 
 export interface Gem {
@@ -37,9 +57,9 @@ export const GEM_COLORS: Record<GemType, { name: string; hex: string; gradient: 
 };
 
 let nextId = 1;
-const createGem = (row: number, col: number, type?: GemType, special: SpecialType = 'none', isNew: boolean = false): Gem => ({
-    id: `gem_${nextId++}_${Date.now().toString(36)}`,
-    type: type !== undefined ? type : (Math.floor(Math.random() * NUM_COLORS) as GemType),
+const createGem = (row: number, col: number, type?: GemType, special: SpecialType = 'none', isNew: boolean = false, numColors: number = 5): Gem => ({
+    id: `gem_${nextId++}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+    type: type !== undefined ? type : (Math.floor(Math.random() * numColors) as GemType),
     special,
     row,
     col,
@@ -54,7 +74,10 @@ interface EngineOptions {
 export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
     const { isActive = true } = options;
     const [board, setBoard] = useState<Gem[][]>([]);
-    const [score, setScore] = useState(0);
+    const [stage, setStage] = useState(1);
+    const [stageScore, setStageScore] = useState(0);
+    const [totalScore, setTotalScore] = useState(0);
+    const [targetScore, setTargetScore] = useState(getTargetScore(1));
     const [combo, setCombo] = useState(0);
     const [maxCombo, setMaxCombo] = useState(0);
     const [feverGauge, setFeverGauge] = useState(0);
@@ -64,39 +87,53 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
     const [isProcessing, setIsProcessing] = useState(false);
     const [selectedGem, setSelectedGem] = useState<{ r: number; c: number } | null>(null);
     const [effects, setEffects] = useState<EffectEvent[]>([]);
+    const [stageClearEvent, setStageClearEvent] = useState<StageClearEvent | null>(null);
 
     const lastMatchTimeRef = useRef<number>(0);
     const feverTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isGameOverRef = useRef<boolean>(false);
     const isFeverRef = useRef<boolean>(false);
+    const stageRef = useRef<number>(1);
+    const timeLeftRef = useRef<number>(GAME_DURATION);
+    const stageScoreRef = useRef<number>(0);
+    const targetScoreRef = useRef<number>(getTargetScore(1));
+
     isFeverRef.current = isFever;
     isGameOverRef.current = isGameOver;
+    stageRef.current = stage;
+    timeLeftRef.current = timeLeft;
+    stageScoreRef.current = stageScore;
+    targetScoreRef.current = targetScore;
 
-    // 1. 초기 무매칭 8x8 보드 생성
-    const initBoard = useCallback(() => {
+    // 1. 초기 무매칭 8x8 보드 생성 (현재 스테이지 난이도 반영)
+    const initBoard = useCallback((curStage: number = 1) => {
+        const numColors = getNumColorsForStage(curStage);
         const newBoard: Gem[][] = [];
         for (let r = 0; r < BOARD_SIZE; r++) {
             newBoard[r] = [];
             for (let c = 0; c < BOARD_SIZE; c++) {
                 let type: GemType;
                 do {
-                    type = Math.floor(Math.random() * NUM_COLORS) as GemType;
+                    type = Math.floor(Math.random() * numColors) as GemType;
                 } while (
                     (c >= 2 && newBoard[r][c - 1].type === type && newBoard[r][c - 2].type === type) ||
                     (r >= 2 && newBoard[r - 1][c].type === type && newBoard[r - 2][c].type === type)
                 );
-                newBoard[r][c] = createGem(r, c, type);
+                newBoard[r][c] = createGem(r, c, type, 'none', false, numColors);
             }
         }
         return newBoard;
     }, []);
 
-    // 새 게임 시작
+    // 새 게임 시작 (Stage 1부터 초기화)
     const startNewGame = useCallback(() => {
         if (feverTimerRef.current) clearTimeout(feverTimerRef.current);
 
-        setBoard(initBoard());
-        setScore(0);
+        setBoard(initBoard(1));
+        setStage(1);
+        setStageScore(0);
+        setTotalScore(0);
+        setTargetScore(getTargetScore(1));
         setCombo(0);
         setMaxCombo(0);
         setFeverGauge(0);
@@ -106,6 +143,12 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         setIsProcessing(false);
         setSelectedGem(null);
         setEffects([]);
+        setStageClearEvent(null);
+
+        stageRef.current = 1;
+        stageScoreRef.current = 0;
+        targetScoreRef.current = getTargetScore(1);
+        timeLeftRef.current = GAME_DURATION;
         isGameOverRef.current = false;
         lastMatchTimeRef.current = Date.now();
     }, [initBoard]);
@@ -147,7 +190,6 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         const matches: { r: number; c: number }[] = [];
         const matchGroups: { r: number; c: number; type: GemType }[][] = [];
 
-        // 가로 탐색
         for (let r = 0; r < BOARD_SIZE; r++) {
             let matchLen = 1;
             for (let c = 0; c < BOARD_SIZE; c++) {
@@ -168,8 +210,6 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 }
             }
         }
-
-        // 세로 탐색
         for (let c = 0; c < BOARD_SIZE; c++) {
             let matchLen = 1;
             for (let r = 0; r < BOARD_SIZE; r++) {
@@ -190,83 +230,61 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 }
             }
         }
-
         return { matches, matchGroups };
     }, []);
 
-    // 연쇄 폭발 및 드롭 처리 (깨짐 애니메이션 + 중력 낙하 트랜지션)
+    // 연쇄 폭발 및 드롭 처리 (스테이지 클리어 및 점수 합산 동기화)
     const processMatches = useCallback(async (initialBoard: Gem[][]) => {
         setIsProcessing(true);
         let currentBoard = initialBoard.map(row => [...row]);
-        let cascadeCombo = 1;
+        let cascadeCombo = 0;
 
-        while (!isGameOverRef.current) {
+        while (true) {
             const { matches, matchGroups } = findMatches(currentBoard);
             if (matches.length === 0) break;
 
-            const destroyedMap = new Map<string, { r: number; c: number; type: GemType }>();
-            const newSpecialsToSpawn: { r: number; c: number; type: GemType; special: SpecialType }[] = [];
+            const now = Date.now();
+            let currentCombo = 1;
+            if (now - lastMatchTimeRef.current < 2600) {
+                currentCombo = combo + 1 + cascadeCombo;
+            }
+            lastMatchTimeRef.current = now;
+            setCombo(currentCombo);
+            setMaxCombo(m => Math.max(m, currentCombo));
 
-            // 특수 젬 생성 판정 (4매치 = 레이저, 5매치/TL자 = 무지개 폭탄)
+            soundManager.playPop(currentCombo);
+
+            const newSpecialsToSpawn: { r: number; c: number; type: GemType; special: SpecialType }[] = [];
+            const destroyedMap = new Map<string, { r: number; c: number; type: GemType }>();
+
             matchGroups.forEach(group => {
+                const centerGem = group[Math.floor(group.length / 2)];
                 if (group.length === 4) {
-                    const center = group[1] || group[0];
                     const isHorizontal = group[0].r === group[1].r;
                     newSpecialsToSpawn.push({
-                        r: center.r,
-                        c: center.c,
-                        type: center.type,
-                        special: isHorizontal ? 'laser_h' : 'laser_v'
+                        r: centerGem.r,
+                        c: centerGem.c,
+                        type: centerGem.type,
+                        special: isHorizontal ? 'laser_h' : 'laser_v',
                     });
                 } else if (group.length >= 5) {
-                    const center = group[2] || group[0];
                     newSpecialsToSpawn.push({
-                        r: center.r,
-                        c: center.c,
-                        type: center.type,
-                        special: 'rainbow'
+                        r: centerGem.r,
+                        c: centerGem.c,
+                        type: centerGem.type,
+                        special: 'rainbow',
                     });
                 }
-            });
 
-            matches.forEach(({ r, c }) => {
-                destroyedMap.set(`${r},${c}`, { r, c, type: currentBoard[r][c].type });
-            });
-
-            // 피버 모드일 때 3x3 스플래시 추가 파괴
-            if (isFeverRef.current) {
-                matches.forEach(({ r, c }) => {
-                    for (let dr = -1; dr <= 1; dr++) {
-                        for (let dc = -1; dc <= 1; dc++) {
-                            const nr = r + dr;
-                            const nc = c + dc;
-                            if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                                destroyedMap.set(`${nr},${nc}`, { r: nr, c: nc, type: currentBoard[nr][nc].type });
-                            }
-                        }
-                    }
+                group.forEach(g => {
+                    destroyedMap.set(`${g.r},${g.c}`, g);
                 });
-            }
-
-            // 점수 계산
-            const feverMultiplier = isFeverRef.current ? 2 : 1;
-            const addedScore = destroyedMap.size * 100 * cascadeCombo * feverMultiplier;
-
-            // 사운드 재생
-            soundManager.playPop(cascadeCombo);
-
-            // 콤보 및 피버 게이지 갱신
-            const now = Date.now();
-            const timeDiff = now - lastMatchTimeRef.current;
-            lastMatchTimeRef.current = now;
-
-            let currentCombo = cascadeCombo;
-            setCombo(prev => {
-                const next = timeDiff < 2200 ? prev + 1 : 1;
-                currentCombo = next;
-                setMaxCombo(m => Math.max(m, next));
-                return next;
             });
+
+            const baseScore = destroyedMap.size * 100;
+            const comboBonus = Math.floor(baseScore * (currentCombo * 0.2));
+            const feverMultiplier = isFeverRef.current ? 2 : 1;
+            const addedScore = (baseScore + comboBonus) * feverMultiplier;
 
             setFeverGauge(prev => {
                 const next = Math.min(100, prev + 12);
@@ -276,13 +294,39 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 return next;
             });
 
-            setScore(s => s + addedScore);
+            setTotalScore(t => t + addedScore);
+            setStageScore(prev => {
+                const newScore = prev + addedScore;
+                const curTarget = targetScoreRef.current;
+                const curStage = stageRef.current;
 
-            // 💥 1단계: 매칭된 보석 깨짐(isMatched) 상태 설정 및 파티클/스코어 이벤트 생성
+                if (newScore >= curTarget && !isGameOverRef.current) {
+                    const nextStage = curStage + 1;
+                    const nextTarget = getTargetScore(nextStage);
+                    const timeBonus = timeLeftRef.current * 50;
+
+                    setTotalScore(tot => tot + timeBonus);
+                    setStage(nextStage);
+                    setTargetScore(nextTarget);
+                    setTimeLeft(GAME_DURATION);
+                    soundManager.playRainbow();
+
+                    setStageClearEvent({
+                        stage: nextStage,
+                        bonus: timeBonus,
+                        nextTarget,
+                    });
+
+                    stageRef.current = nextStage;
+                    targetScoreRef.current = nextTarget;
+                    return 0;
+                }
+                return newScore;
+            });
+
             const breakingBoard = currentBoard.map(row => row.map(g => ({ ...g })));
             const newEffects: EffectEvent[] = [];
 
-            // 각 파괴 위치에 파티클 및 중앙 대표 위치에 점수 팝업 추가
             let sumR = 0;
             let sumC = 0;
             destroyedMap.forEach(({ r, c, type }) => {
@@ -299,13 +343,11 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
             });
 
             if (destroyedMap.size > 0) {
-                const avgR = Math.round(sumR / destroyedMap.size);
-                const avgC = Math.round(sumC / destroyedMap.size);
                 newEffects.push({
                     id: `score_${Date.now()}_${Math.random()}`,
                     type: 'score',
-                    r: avgR,
-                    c: avgC,
+                    r: Math.round(sumR / destroyedMap.size),
+                    c: Math.round(sumC / destroyedMap.size),
                     score: addedScore,
                     combo: currentCombo,
                 });
@@ -314,11 +356,10 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
             setEffects(prev => [...prev.slice(-30), ...newEffects]);
             setBoard(breakingBoard);
 
-            // ⏱️ 깨짐 연출 대기 (220ms)
             await new Promise(res => setTimeout(res, 220));
 
-            // ⬇️ 2단계: 파괴된 셀 제거 및 상단 보석 중력 드롭 + 새 보석 스폰
             const droppedBoard: Gem[][] = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+            const curNumColors = getNumColorsForStage(stageRef.current);
 
             for (let c = 0; c < BOARD_SIZE; c++) {
                 const survivors: Gem[] = [];
@@ -329,7 +370,6 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 }
 
                 let targetRow = BOARD_SIZE - 1;
-                // 살아남은 보석들: id를 유지하며 새 row를 부여 (CSS top transition 발동!)
                 survivors.forEach(g => {
                     droppedBoard[targetRow][c] = {
                         ...g,
@@ -341,28 +381,25 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                     targetRow--;
                 });
 
-                // 빈 위쪽 공간에 새 보석 생성 (isNew: true로 상단 젤리 스쿼시 낙하 모션)
                 while (targetRow >= 0) {
-                    droppedBoard[targetRow][c] = createGem(targetRow, c, undefined, 'none', true);
+                    droppedBoard[targetRow][c] = createGem(targetRow, c, undefined, 'none', true, curNumColors);
                     targetRow--;
                 }
             }
 
-            // 새로 생성된 특수 젬 배치
             newSpecialsToSpawn.forEach(sp => {
-                droppedBoard[sp.r][sp.c] = createGem(sp.r, sp.c, sp.type, sp.special, true);
+                droppedBoard[sp.r][sp.c] = createGem(sp.r, sp.c, sp.type, sp.special, true, curNumColors);
             });
 
             currentBoard = droppedBoard;
             setBoard(currentBoard);
             cascadeCombo++;
 
-            // ⏱️ 젤리 착지 스쿼시 & 바운스 안정화 대기 (260ms)
             await new Promise(res => setTimeout(res, 260));
         }
 
         setIsProcessing(false);
-    }, [findMatches, triggerFever]);
+    }, [findMatches, triggerFever, combo]);
 
     // 보석 스왑 처리 (애니메이션 동기화)
     const swapGems = useCallback(async (r1: number, c1: number, r2: number, c2: number) => {
@@ -372,12 +409,10 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         const g1 = board[r1][c1];
         const g2 = board[r2][c2];
 
-        // 1. 특수 젬 교차 조합 처리
         if (g1.special !== 'none' || g2.special !== 'none') {
             soundManager.playSwap();
             const tempBoard = board.map(r => [...r]);
 
-            // [라인] + [라인] ➔ 십자 전체 삭제
             if ((g1.special === 'laser_h' || g1.special === 'laser_v') && (g2.special === 'laser_h' || g2.special === 'laser_v')) {
                 soundManager.playLaser();
                 const laserEffects: EffectEvent[] = [
@@ -394,7 +429,6 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 return;
             }
 
-            // [무지개] + [라인/기본] ➔ 해당 색상 전체 폭파
             if (g1.special === 'rainbow' || g2.special === 'rainbow') {
                 soundManager.playRainbow();
                 const targetType = g1.special === 'rainbow' ? g2.type : g1.type;
@@ -417,33 +451,26 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
             }
         }
 
-        // 2. 일반 스왑 애니메이션 (두 보석의 row/col을 맞바꿔 렌더링)
         soundManager.playSwap();
         const swappedBoard = board.map(row => [...row]);
         swappedBoard[r1][c1] = { ...g2, row: r1, col: c1 };
         swappedBoard[r2][c2] = { ...g1, row: r2, col: c2 };
 
         setBoard(swappedBoard);
-
-        // ⏱️ 스와프 슬라이딩 애니메이션 시간(200ms) 대기
         await new Promise(res => setTimeout(res, 200));
 
         const { matches } = findMatches(swappedBoard);
-
         if (matches.length > 0) {
             await processMatches(swappedBoard);
         } else {
-            // 매칭 실패 시 원위치로 부드럽게 되돌리기
             setBoard(board);
             await new Promise(res => setTimeout(res, 200));
             setIsProcessing(false);
         }
     }, [board, isProcessing, isGameOver, findMatches, processMatches]);
 
-    // 셀 클릭/터치 조작
     const handleCellClick = useCallback((r: number, c: number) => {
         if (isProcessing || isGameOver) return;
-
         if (!selectedGem) {
             setSelectedGem({ r, c });
         } else {
@@ -458,7 +485,6 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         }
     }, [isProcessing, isGameOver, selectedGem, swapGems]);
 
-    // 오래된 이펙트 자동 정리
     useEffect(() => {
         if (effects.length === 0) return;
         const timer = setTimeout(() => {
@@ -467,6 +493,15 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         return () => clearTimeout(timer);
     }, [effects]);
 
+    // 스테이지 클리어 팝업 타이머
+    useEffect(() => {
+        if (!stageClearEvent) return;
+        const timer = setTimeout(() => {
+            setStageClearEvent(null);
+        }, 1600);
+        return () => clearTimeout(timer);
+    }, [stageClearEvent]);
+
     // 초기 실행
     useEffect(() => {
         startNewGame();
@@ -474,7 +509,11 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
 
     return {
         board,
-        score,
+        stage,
+        stageScore,
+        targetScore,
+        totalScore,
+        score: totalScore, // 하위 호환성 유지
         combo,
         maxCombo,
         feverGauge,
@@ -484,9 +523,11 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         isProcessing,
         selectedGem,
         effects,
+        stageClearEvent,
         handleCellClick,
         swapGems,
         startNewGame,
     };
 }
+
 
