@@ -60,104 +60,124 @@
   animation: feverFlash 0.5s infinite alternate;
 }
 
-/* 젬 파괴/깨짐(Shatter) 애니메이션: 강렬한 섬광 + 회전 파편 폭발 */
-@keyframes gemShatter {
+/* 💥 4등분 조각 비산(4-Piece Slice Shatter) 애니메이션 */
+@keyframes pieceFlyTL {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; filter: brightness(2.5); }
+  100% { transform: translate(-140%, -140%) rotate(-120deg) scale(0); opacity: 0; filter: brightness(3); }
+}
+
+@keyframes pieceFlyTR {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; filter: brightness(2.5); }
+  100% { transform: translate(140%, -140%) rotate(120deg) scale(0); opacity: 0; filter: brightness(3); }
+}
+
+@keyframes pieceFlyBL {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; filter: brightness(2.5); }
+  100% { transform: translate(-140%, 140%) rotate(-160deg) scale(0); opacity: 0; filter: brightness(3); }
+}
+
+@keyframes pieceFlyBR {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; filter: brightness(2.5); }
+  100% { transform: translate(140%, 140%) rotate(160deg) scale(0); opacity: 0; filter: brightness(3); }
+}
+
+.piece-tl { animation: pieceFlyTL 0.32s cubic-bezier(0.15, 0.9, 0.3, 1) forwards; }
+.piece-tr { animation: pieceFlyTR 0.32s cubic-bezier(0.15, 0.9, 0.3, 1) forwards; }
+.piece-bl { animation: pieceFlyBL 0.32s cubic-bezier(0.15, 0.9, 0.3, 1) forwards; }
+.piece-br { animation: pieceFlyBR 0.32s cubic-bezier(0.15, 0.9, 0.3, 1) forwards; }
+
+/* 🌊 쇼크웨이브 충격파 링 */
+@keyframes shockwaveRing {
   0% {
-    transform: scale(1);
+    transform: translate(-50%, -50%) scale(0.2);
     opacity: 1;
-    filter: brightness(1.8) drop-shadow(0 0 16px white);
-  }
-  25% {
-    transform: scale(1.35) rotate(-12deg);
-    opacity: 1;
-    filter: brightness(2.5) drop-shadow(0 0 25px white);
-  }
-  60% {
-    transform: scale(0.8) rotate(35deg);
-    opacity: 0.7;
-    filter: brightness(1.5) drop-shadow(0 0 10px white);
+    border-width: 6px;
   }
   100% {
-    transform: scale(0) rotate(90deg);
+    transform: translate(-50%, -50%) scale(2.6);
     opacity: 0;
-    filter: brightness(3) drop-shadow(0 0 30px white);
+    border-width: 1px;
   }
 }
 
-.gem-breaking {
-  animation: gemShatter 0.28s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+.shockwave-ring {
+  animation: shockwaveRing 0.38s cubic-bezier(0.2, 0.8, 0.4, 1) forwards;
   pointer-events: none;
-  z-index: 40 !important;
 }
 
-/* 새로 스폰되어 위에서 아래로 쏟아져 내리는 보석 애니메이션 */
-@keyframes gemDropIn {
+/* 🍮 젤리 착지 스쿼시(Squash & Stretch Drop) 애니메이션 */
+@keyframes gemSquashDrop {
   0% {
-    transform: translateY(-200%) scale(0.7);
-    opacity: 0.3;
+    transform: translateY(-220%) scaleX(0.75) scaleY(1.35);
+    opacity: 0;
   }
-  70% {
-    transform: translateY(8%) scale(1.05);
+  40% {
     opacity: 1;
+  }
+  65% {
+    transform: translateY(12%) scaleX(1.4) scaleY(0.65);
+  }
+  82% {
+    transform: translateY(-8%) scaleX(0.9) scaleY(1.15);
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateY(0) scale(1.0);
     opacity: 1;
   }
 }
 
-.gem-drop-in {
-  animation: gemDropIn 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+.gem-squash-drop {
+  animation: gemSquashDrop 0.42s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* 보드 화면 진동 효과 (피버 또는 대량 매칭) */
+/* 보드 화면 진동 효과 */
 @keyframes boardShake {
   0%, 100% { transform: translate(0, 0); }
-  20% { transform: translate(-3px, 2px); }
-  40% { transform: translate(3px, -2px); }
-  60% { transform: translate(-2px, -1px); }
-  80% { transform: translate(2px, 1px); }
+  20% { transform: translate(-4px, 3px); }
+  40% { transform: translate(4px, -3px); }
+  60% { transform: translate(-3px, -2px); }
+  80% { transform: translate(3px, 2px); }
 }
 
 .board-shake {
-  animation: boardShake 0.25s ease-in-out;
+  animation: boardShake 0.28s ease-in-out;
 }
 
 /* 플로팅 점수 텍스트 팝업 */
 @keyframes floatScoreUp {
   0% {
     opacity: 0;
-    transform: translate(-50%, 10%) scale(0.5);
+    transform: translate(-50%, 20%) scale(0.4);
   }
   25% {
     opacity: 1;
-    transform: translate(-50%, -40%) scale(1.3);
+    transform: translate(-50%, -40%) scale(1.4);
   }
   75% {
     opacity: 1;
-    transform: translate(-50%, -90%) scale(1.05);
+    transform: translate(-50%, -100%) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -150%) scale(0.8);
+    transform: translate(-50%, -160%) scale(0.7);
   }
 }
 
 .floating-score {
-  animation: floatScoreUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: floatScoreUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: none;
 }
 
 /* 레이저 빔 섬광 애니메이션 */
 @keyframes laserFlashH {
   0% {
-    transform: scaleY(0.1) scaleX(0.5);
+    transform: scaleY(0.1) scaleX(0.4);
     opacity: 0;
   }
   30% {
-    transform: scaleY(1.8) scaleX(1);
+    transform: scaleY(2.2) scaleX(1);
     opacity: 1;
-    filter: brightness(2);
+    filter: brightness(2.5);
   }
   100% {
     transform: scaleY(0) scaleX(1);
@@ -167,13 +187,13 @@
 
 @keyframes laserFlashV {
   0% {
-    transform: scaleX(0.1) scaleY(0.5);
+    transform: scaleX(0.1) scaleY(0.4);
     opacity: 0;
   }
   30% {
-    transform: scaleX(1.8) scaleY(1);
+    transform: scaleX(2.2) scaleY(1);
     opacity: 1;
-    filter: brightness(2);
+    filter: brightness(2.5);
   }
   100% {
     transform: scaleX(0) scaleY(1);
@@ -182,11 +202,12 @@
 }
 
 .laser-beam-h {
-  animation: laserFlashH 0.4s ease-out forwards;
+  animation: laserFlashH 0.45s ease-out forwards;
 }
 
 .laser-beam-v {
-  animation: laserFlashV 0.4s ease-out forwards;
+  animation: laserFlashV 0.45s ease-out forwards;
 }
+
 
 

@@ -36,6 +36,7 @@ export default function VeraPopCanvas({
     const particlesRef = useRef<Particle[]>([]);
     const animationFrameRef = useRef<number | null>(null);
     const [isShaking, setIsShaking] = useState(false);
+    const [shockwaves, setShockwaves] = useState<{ id: string; r: number; c: number; color: string }[]>([]);
 
     const touchStartRef = useRef<{ r: number; c: number; x: number; y: number } | null>(null);
     const [, setDragOverCell] = useState<{ r: number; c: number } | null>(null);
@@ -65,10 +66,10 @@ export default function VeraPopCanvas({
 
                 p.x += p.vx;
                 p.y += p.vy;
-                p.vy += 0.32; // 강력한 중력 가속도
-                p.vx *= 0.96; // 공기 저항
+                p.vy += 0.35; // 중력 가속도
+                p.vx *= 0.95; // 공기 저항
                 p.rotation += p.vRot;
-                p.alpha -= 0.022; // 부드러운 페이드 아웃
+                p.alpha -= 0.020; // 페이드 아웃
 
                 if (p.alpha <= 0) {
                     particles.splice(i, 1);
@@ -79,7 +80,7 @@ export default function VeraPopCanvas({
                 ctx.globalAlpha = Math.max(0, p.alpha);
                 ctx.fillStyle = p.color;
                 ctx.shadowColor = p.color;
-                ctx.shadowBlur = 8;
+                ctx.shadowBlur = 10;
                 ctx.translate(p.x, p.y);
                 ctx.rotate(p.rotation);
 
@@ -113,7 +114,7 @@ export default function VeraPopCanvas({
         };
     }, []);
 
-    // 💥 새 이펙트 이벤트 발생 시 대량 파티클 방출 & 화면 진동
+    // 💥 새 이펙트 이벤트 발생 시 대량 파티클 방출 & 쇼크웨이브 링 & 화면 진동
     useEffect(() => {
         if (!effects || effects.length === 0) return;
         const canvas = canvasRef.current;
@@ -123,6 +124,7 @@ export default function VeraPopCanvas({
         const cellSize = w / BOARD_SIZE;
 
         let hasPop = false;
+        const newWaves: { id: string; r: number; c: number; color: string }[] = [];
 
         effects.forEach((eff) => {
             if (eff.type === 'pop') {
@@ -131,23 +133,31 @@ export default function VeraPopCanvas({
                 const cy = (eff.r + 0.5) * cellSize;
                 const gemColorMeta = eff.gemType !== undefined ? GEM_COLORS[eff.gemType] : null;
                 const palette = gemColorMeta ? gemColorMeta.particleColors : ['#FFFFFF', '#FCD34D', '#60A5FA', '#F43F5E'];
+                const waveColor = gemColorMeta ? gemColorMeta.hex : '#FFFFFF';
 
-                // 20~28개의 대량 컬러 파편 조각 방출
-                const count = 20 + Math.floor(Math.random() * 8);
+                newWaves.push({
+                    id: `wave_${eff.id}`,
+                    r: eff.r,
+                    c: eff.c,
+                    color: waveColor,
+                });
+
+                // 24~32개의 대형 컬러 파편 조각 방출
+                const count = 24 + Math.floor(Math.random() * 8);
                 for (let i = 0; i < count; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    const speed = 3.5 + Math.random() * 7.5;
+                    const speed = 4.0 + Math.random() * 8.5;
                     const shapeChoices: ('square' | 'diamond' | 'circle')[] = ['diamond', 'square', 'circle', 'diamond'];
 
                     particlesRef.current.push({
                         x: cx + (Math.random() - 0.5) * (cellSize * 0.5),
                         y: cy + (Math.random() - 0.5) * (cellSize * 0.5),
                         vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed - 3.2, // 위로 펑 솟구침
+                        vy: Math.sin(angle) * speed - 3.5, // 위로 펑 솟구침
                         color: palette[Math.floor(Math.random() * palette.length)],
-                        size: 6 + Math.random() * 8, // 큼직하고 뚜렷한 파편 크기
+                        size: 7 + Math.random() * 9, // 큼직하고 뚜렷한 파편 크기
                         rotation: Math.random() * Math.PI * 2,
-                        vRot: (Math.random() - 0.5) * 0.45,
+                        vRot: (Math.random() - 0.5) * 0.5,
                         alpha: 1.0,
                         shape: shapeChoices[Math.floor(Math.random() * shapeChoices.length)],
                     });
@@ -155,9 +165,16 @@ export default function VeraPopCanvas({
             }
         });
 
+        if (newWaves.length > 0) {
+            setShockwaves(prev => [...prev, ...newWaves]);
+            setTimeout(() => {
+                setShockwaves([]);
+            }, 400);
+        }
+
         if (hasPop) {
             setIsShaking(true);
-            const shakeTimer = setTimeout(() => setIsShaking(false), 260);
+            const shakeTimer = setTimeout(() => setIsShaking(false), 280);
             return () => clearTimeout(shakeTimer);
         }
     }, [effects]);
@@ -225,7 +242,7 @@ export default function VeraPopCanvas({
                     ))}
                 </div>
 
-                {/* 2. 절대 좌표 기반 보석 레이어 (스왑 & 중력 바운스 낙하 & 깨짐 애니메이션) */}
+                {/* 2. 절대 좌표 기반 보석 레이어 (스왑 & 젤리 바운스 낙하 & 4등분 파쇄 애니메이션) */}
                 <div className="absolute inset-0 p-2.5 sm:p-3">
                     {allGems.map((gem) => {
                         const isSelected = selectedGem?.r === gem.row && selectedGem?.c === gem.col;
@@ -239,8 +256,8 @@ export default function VeraPopCanvas({
                                 onMouseDown={(e) => handleTouchStart(gem.row, gem.col, e)}
                                 onTouchStart={(e) => handleTouchStart(gem.row, gem.col, e)}
                                 className={`absolute p-0.5 sm:p-1 cursor-pointer select-none ${
-                                    isMatched ? 'gem-breaking' : isNew ? 'gem-drop-in' : ''
-                                } ${isSelected ? 'z-30' : 'z-10'}`}
+                                    isNew ? 'gem-squash-drop' : ''
+                                } ${isSelected ? 'z-30' : isMatched ? 'z-40' : 'z-10'}`}
                                 style={{
                                     left: `${(gem.col / BOARD_SIZE) * 100}%`,
                                     top: `${(gem.row / BOARD_SIZE) * 100}%`,
@@ -248,93 +265,132 @@ export default function VeraPopCanvas({
                                     height: `${100 / BOARD_SIZE}%`,
                                     transition: isMatched
                                         ? 'none'
-                                        : 'top 260ms cubic-bezier(0.175, 0.885, 0.32, 1.275), left 200ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 180ms ease-out',
+                                        : 'top 300ms cubic-bezier(0.175, 0.885, 0.32, 1.275), left 220ms cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 180ms ease-out',
                                 }}
                             >
-                                <div
-                                    className={`w-full h-full rounded-2xl flex items-center justify-center relative transition-transform duration-150 ${
-                                        isSelected
-                                            ? 'scale-110 ring-4 ring-white ring-offset-2 ring-offset-slate-950 shadow-2xl'
-                                            : 'hover:scale-105 active:scale-95'
-                                    }`}
-                                    style={{
-                                        background: `radial-gradient(circle at 35% 35%, ${gemMeta.hex} 0%, #0f172a 100%)`,
-                                        boxShadow: isSelected
-                                            ? `0 0 20px ${gemMeta.glow}`
-                                            : `0 4px 8px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4)`,
-                                    }}
-                                >
-                                    {/* 1. 사파이어 블루: 다이아몬드 형태 */}
-                                    {gem.type === 0 && (
-                                        <div className="w-3/5 h-3/5 rotate-45 rounded-sm bg-gradient-to-tr from-blue-300 to-white shadow-inner flex items-center justify-center">
-                                            <div className="w-1/2 h-1/2 bg-blue-600 rounded-2xs shadow-sm"></div>
-                                        </div>
-                                    )}
-
-                                    {/* 2. 에메랄드 그린: 팔각형 / 에메랄드 컷 */}
-                                    {gem.type === 1 && (
-                                        <div className="w-3/5 h-3/5 rounded-lg bg-gradient-to-tr from-emerald-300 to-white shadow-inner flex items-center justify-center">
-                                            <div className="w-1/2 h-1/2 bg-emerald-600 rounded-sm shadow-sm"></div>
-                                        </div>
-                                    )}
-
-                                    {/* 3. 아메지스트 퍼플: 육각형 / 원형 보석 */}
-                                    {gem.type === 2 && (
-                                        <div className="w-3/5 h-3/5 rounded-full bg-gradient-to-tr from-purple-300 to-white shadow-inner flex items-center justify-center">
-                                            <div className="w-1/2 h-1/2 bg-purple-600 rounded-full shadow-sm"></div>
-                                        </div>
-                                    )}
-
-                                    {/* 4. 토파즈 옐로우: 피라미드 삼각형 */}
-                                    {gem.type === 3 && (
-                                        <div className="w-3/5 h-3/5 bg-gradient-to-tr from-amber-300 to-white clip-triangle shadow-inner flex items-center justify-center rounded-sm">
-                                            <div className="w-1/2 h-1/2 bg-amber-600 rounded-2xs shadow-sm"></div>
-                                        </div>
-                                    )}
-
-                                    {/* 5. 루비 레드: 하트 / 각진 젬 */}
-                                    {gem.type === 4 && (
-                                        <div className="w-3/5 h-3/5 rotate-12 rounded-md bg-gradient-to-tr from-rose-300 to-white shadow-inner flex items-center justify-center">
-                                            <div className="w-1/2 h-1/2 bg-red-600 rounded-2xs shadow-sm"></div>
-                                        </div>
-                                    )}
-
-                                    {/* 특수 젬 오버레이: 라인 레이저 (4매칭) */}
-                                    {(gem.special === 'laser_h' || gem.special === 'laser_v') && (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className="text-white text-xs font-black drop-shadow-[0_0_8px_white] animate-pulse">
-                                                {gem.special === 'laser_h' ? '⚡━' : '⚡┃'}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* 특수 젬 오버레이: 무지개 폭탄 (5매칭) */}
-                                    {gem.special === 'rainbow' && (
-                                        <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500 p-0.5 animate-spin">
-                                            <div className="w-full h-full bg-slate-900 rounded-2xl flex items-center justify-center">
-                                                <span className="text-xs">🌈</span>
+                                {isMatched ? (
+                                    /* 💥 4조각 파쇄(Shatter) 비산 연출 */
+                                    <div className="w-full h-full relative flex flex-wrap pointer-events-none">
+                                        <div
+                                            className="w-1/2 h-1/2 piece-tl rounded-tl-xl border border-white/60 shadow-lg"
+                                            style={{ background: gemMeta.hex }}
+                                        />
+                                        <div
+                                            className="w-1/2 h-1/2 piece-tr rounded-tr-xl border border-white/60 shadow-lg"
+                                            style={{ background: gemMeta.hex }}
+                                        />
+                                        <div
+                                            className="w-1/2 h-1/2 piece-bl rounded-bl-xl border border-white/60 shadow-lg"
+                                            style={{ background: gemMeta.hex }}
+                                        />
+                                        <div
+                                            className="w-1/2 h-1/2 piece-br rounded-br-xl border border-white/60 shadow-lg"
+                                            style={{ background: gemMeta.hex }}
+                                        />
+                                    </div>
+                                ) : (
+                                    /* 💎 일반 보석 본체 */
+                                    <div
+                                        className={`w-full h-full rounded-2xl flex items-center justify-center relative transition-transform duration-150 ${
+                                            isSelected
+                                                ? 'scale-110 ring-4 ring-white ring-offset-2 ring-offset-slate-950 shadow-2xl'
+                                                : 'hover:scale-105 active:scale-95'
+                                        }`}
+                                        style={{
+                                            background: `radial-gradient(circle at 35% 35%, ${gemMeta.hex} 0%, #0f172a 100%)`,
+                                            boxShadow: isSelected
+                                                ? `0 0 20px ${gemMeta.glow}`
+                                                : `0 4px 8px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.4)`,
+                                        }}
+                                    >
+                                        {/* 1. 사파이어 블루: 다이아몬드 형태 */}
+                                        {gem.type === 0 && (
+                                            <div className="w-3/5 h-3/5 rotate-45 rounded-sm bg-gradient-to-tr from-blue-300 to-white shadow-inner flex items-center justify-center">
+                                                <div className="w-1/2 h-1/2 bg-blue-600 rounded-2xs shadow-sm"></div>
                                             </div>
-                                        </div>
-                                    )}
-                                </div>
+                                        )}
+
+                                        {/* 2. 에메랄드 그린: 팔각형 / 에메랄드 컷 */}
+                                        {gem.type === 1 && (
+                                            <div className="w-3/5 h-3/5 rounded-lg bg-gradient-to-tr from-emerald-300 to-white shadow-inner flex items-center justify-center">
+                                                <div className="w-1/2 h-1/2 bg-emerald-600 rounded-sm shadow-sm"></div>
+                                            </div>
+                                        )}
+
+                                        {/* 3. 아메지스트 퍼플: 육각형 / 원형 보석 */}
+                                        {gem.type === 2 && (
+                                            <div className="w-3/5 h-3/5 rounded-full bg-gradient-to-tr from-purple-300 to-white shadow-inner flex items-center justify-center">
+                                                <div className="w-1/2 h-1/2 bg-purple-600 rounded-full shadow-sm"></div>
+                                            </div>
+                                        )}
+
+                                        {/* 4. 토파즈 옐로우: 피라미드 삼각형 */}
+                                        {gem.type === 3 && (
+                                            <div className="w-3/5 h-3/5 bg-gradient-to-tr from-amber-300 to-white clip-triangle shadow-inner flex items-center justify-center rounded-sm">
+                                                <div className="w-1/2 h-1/2 bg-amber-600 rounded-2xs shadow-sm"></div>
+                                            </div>
+                                        )}
+
+                                        {/* 5. 루비 레드: 하트 / 각진 젬 */}
+                                        {gem.type === 4 && (
+                                            <div className="w-3/5 h-3/5 rotate-12 rounded-md bg-gradient-to-tr from-rose-300 to-white shadow-inner flex items-center justify-center">
+                                                <div className="w-1/2 h-1/2 bg-red-600 rounded-2xs shadow-sm"></div>
+                                            </div>
+                                        )}
+
+                                        {/* 특수 젬 오버레이: 라인 레이저 (4매칭) */}
+                                        {(gem.special === 'laser_h' || gem.special === 'laser_v') && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-white text-xs font-black drop-shadow-[0_0_8px_white] animate-pulse">
+                                                    {gem.special === 'laser_h' ? '⚡━' : '⚡┃'}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {/* 특수 젬 오버레이: 무지개 폭탄 (5매칭) */}
+                                        {gem.special === 'rainbow' && (
+                                            <div className="absolute inset-0 flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-500 p-0.5 animate-spin">
+                                                <div className="w-full h-full bg-slate-900 rounded-2xl flex items-center justify-center">
+                                                    <span className="text-xs">🌈</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
 
-                {/* 3. 파티클 캔버스 레이어 (보석 깨짐 파편) */}
+                {/* 3. 쇼크웨이브 충격파 링 레이어 */}
+                {shockwaves.map((sw) => (
+                    <div
+                        key={sw.id}
+                        className="absolute rounded-full border-solid shockwave-ring pointer-events-none z-30"
+                        style={{
+                            left: `${((sw.c + 0.5) / BOARD_SIZE) * 100}%`,
+                            top: `${((sw.r + 0.5) / BOARD_SIZE) * 100}%`,
+                            width: `${(1 / BOARD_SIZE) * 100}%`,
+                            height: `${(1 / BOARD_SIZE) * 100}%`,
+                            borderColor: sw.color,
+                            boxShadow: `0 0 15px ${sw.color}`,
+                        }}
+                    />
+                ))}
+
+                {/* 4. 파티클 캔버스 레이어 (보석 깨짐 파편) */}
                 <canvas
                     ref={canvasRef}
-                    className="absolute inset-0 pointer-events-none z-30 w-full h-full"
+                    className="absolute inset-0 pointer-events-none z-35 w-full h-full"
                 />
 
-                {/* 4. 특수 레이저 빔 이펙트 오버레이 */}
+                {/* 5. 특수 레이저 빔 이펙트 오버레이 */}
                 {effects.map((eff) => {
                     if (eff.type === 'laser_h') {
                         return (
                             <div
                                 key={eff.id}
-                                className="absolute left-0 right-0 h-6 bg-gradient-to-r from-transparent via-cyan-300 to-transparent laser-beam-h pointer-events-none z-35 shadow-[0_0_30px_#38bdf8]"
+                                className="absolute left-0 right-0 h-6 bg-gradient-to-r from-transparent via-cyan-300 to-transparent laser-beam-h pointer-events-none z-40 shadow-[0_0_30px_#38bdf8]"
                                 style={{ top: `${((eff.r + 0.5) / BOARD_SIZE) * 100}%` }}
                             />
                         );
@@ -343,7 +399,7 @@ export default function VeraPopCanvas({
                         return (
                             <div
                                 key={eff.id}
-                                className="absolute top-0 bottom-0 w-6 bg-gradient-to-b from-transparent via-cyan-300 to-transparent laser-beam-v pointer-events-none z-35 shadow-[0_0_30px_#38bdf8]"
+                                className="absolute top-0 bottom-0 w-6 bg-gradient-to-b from-transparent via-cyan-300 to-transparent laser-beam-v pointer-events-none z-40 shadow-[0_0_30px_#38bdf8]"
                                 style={{ left: `${((eff.c + 0.5) / BOARD_SIZE) * 100}%` }}
                             />
                         );
@@ -351,13 +407,13 @@ export default function VeraPopCanvas({
                     return null;
                 })}
 
-                {/* 5. 플로팅 스코어 텍스트 오버레이 */}
+                {/* 6. 플로팅 스코어 텍스트 오버레이 */}
                 {effects.map((eff) => {
                     if (eff.type === 'score' && eff.score) {
                         return (
                             <div
                                 key={eff.id}
-                                className="absolute floating-score z-40 text-center font-black pointer-events-none"
+                                className="absolute floating-score z-50 text-center font-black pointer-events-none"
                                 style={{
                                     left: `${((eff.c + 0.5) / BOARD_SIZE) * 100}%`,
                                     top: `${((eff.r + 0.5) / BOARD_SIZE) * 100}%`,
@@ -380,5 +436,6 @@ export default function VeraPopCanvas({
         </div>
     );
 }
+
 
 

@@ -314,8 +314,8 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
             setEffects(prev => [...prev, ...newEffects]);
             setBoard(breakingBoard);
 
-            // ⏱️ 깨지는 애니메이션을 충분히 보여주기 위해 280ms 대기
-            await new Promise(res => setTimeout(res, 280));
+            // ⏱️ 4조각 파쇄(Shatter) 및 쇼크웨이브 연출 대기 (320ms)
+            await new Promise(res => setTimeout(res, 320));
 
             // ⬇️ 2단계: 파괴된 셀 제거 및 상단 보석 중력 드롭 + 새 보석 스폰
             const droppedBoard: Gem[][] = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
@@ -341,7 +341,7 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                     targetRow--;
                 });
 
-                // 빈 위쪽 공간에 새 보석 생성 (isNew: true로 상단에서 낙하 모션)
+                // 빈 위쪽 공간에 새 보석 생성 (isNew: true로 상단 젤리 스쿼시 낙하 모션)
                 while (targetRow >= 0) {
                     droppedBoard[targetRow][c] = createGem(targetRow, c, undefined, 'none', true);
                     targetRow--;
@@ -357,8 +357,8 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
             setBoard(currentBoard);
             cascadeCombo++;
 
-            // ⏱️ 낙하 및 바운스 안정화 대기 (320ms)
-            await new Promise(res => setTimeout(res, 320));
+            // ⏱️ 젤리 착지 스쿼시 & 바운스 안정화 대기 (380ms)
+            await new Promise(res => setTimeout(res, 380));
         }
 
         setIsProcessing(false);
@@ -389,7 +389,7 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                 for (let c = 0; c < BOARD_SIZE; c++) tempBoard[r1][c] = { ...tempBoard[r1][c], isMatched: true };
                 for (let r = 0; r < BOARD_SIZE; r++) tempBoard[r][c1] = { ...tempBoard[r][c1], isMatched: true };
                 setBoard(tempBoard);
-                await new Promise(res => setTimeout(res, 220));
+                await new Promise(res => setTimeout(res, 300));
                 await processMatches(tempBoard);
                 return;
             }
@@ -411,7 +411,7 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
                     }
                 }
                 setBoard(tempBoard);
-                await new Promise(res => setTimeout(res, 220));
+                await new Promise(res => setTimeout(res, 300));
                 await processMatches(tempBoard);
                 return;
             }
@@ -425,8 +425,8 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
 
         setBoard(swappedBoard);
 
-        // ⏱️ 스와프 슬라이딩 애니메이션 시간(180ms) 대기
-        await new Promise(res => setTimeout(res, 190));
+        // ⏱️ 스와프 슬라이딩 애니메이션 시간(220ms) 대기
+        await new Promise(res => setTimeout(res, 220));
 
         const { matches } = findMatches(swappedBoard);
 
@@ -435,7 +435,7 @@ export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
         } else {
             // 매칭 실패 시 원위치로 부드럽게 되돌리기
             setBoard(board);
-            await new Promise(res => setTimeout(res, 190));
+            await new Promise(res => setTimeout(res, 220));
             setIsProcessing(false);
         }
     }, [board, isProcessing, isGameOver, findMatches, processMatches]);
