@@ -476,8 +476,29 @@ export default function GamePage() {
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* 1. 베라 팝 (Vera Pop) */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-indigo-200/80 space-y-2 hover:border-indigo-400 transition-all">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-gem text-indigo-600"></i> 베라 팝 (Vera Pop) 공략법
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                60초 내 목표 점수를 돌파하면 +60초 시간 충전과 함께 다음 스테이지로 진입하는 스피드 매치-3 퍼즐입니다. 4매칭 라인 레이저, 5매칭 하이퍼 노바 폭탄, 연속 콤보로 발동되는 '하이퍼 피버(점수 2배 & 3×3 스플래시)'를 연계해 최고 점수에 도전하세요.
+                            </p>
+                        </div>
+
+                        {/* 2. 클래식 프리셀 (FreeCell) */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-emerald-200/80 space-y-2 hover:border-emerald-400 transition-all">
+                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                <i className="fas fa-spade text-emerald-600"></i> 클래식 프리셀 (FreeCell) 전략
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                4개의 프리셀(임시 보관소)과 빈 열을 전략적으로 활용해 52장의 트럼프 카드를 에이스(A)부터 킹(K)까지 4개 홈셀로 수집하는 정통 솔리테어입니다. 카드 이동 공식(빈 셀 개수 + 1)을 계산하여 99.9% 이상의 퍼즐을 클리어해보세요.
+                            </p>
+                        </div>
+
+                        {/* 3. 테트리스 (Tetris) */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-emerald-300 transition-all">
                             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                                 <i className="fas fa-cubes text-emerald-600"></i> 테트리스 (Tetris) 게임 전략
                             </h3>
@@ -486,7 +507,8 @@ export default function GamePage() {
                             </p>
                         </div>
 
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                        {/* 4. 스도쿠 (Sudoku) */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-violet-300 transition-all">
                             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                                 <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 (Sudoku) 규칙 및 해법
                             </h3>
@@ -495,7 +517,8 @@ export default function GamePage() {
                             </p>
                         </div>
 
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                        {/* 5. 2048 퍼즐 */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-cyan-300 transition-all">
                             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                                 <i className="fas fa-layer-group text-cyan-600"></i> 2048 퍼즐 공략법
                             </h3>
@@ -504,12 +527,13 @@ export default function GamePage() {
                             </p>
                         </div>
 
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                        {/* 6. 스피드 지뢰찾기 */}
+                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-red-300 transition-all">
                             <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-bomb text-red-500"></i> 지뢰찾기 & 프리셀 솔리테어
+                                <i className="fas fa-bomb text-red-500"></i> 스피드 지뢰찾기 (Minesweeper)
                             </h3>
                             <p className="text-xs text-slate-600 leading-relaxed">
-                                숫자가 의미하는 주변 8칸의 지뢰 개수를 추론하여 안전한 칸을 여는 '지뢰찾기'와, 4개의 임시 저장소(Freecell)를 활용해 카드를 문양별로 수집하는 '프리셀'은 논리적 판단력과 몰입감을 제공하는 최고의 고전 솔리테어 게임입니다.
+                                숫자가 의미하는 주변 8칸의 지뢰 개수를 논리적으로 추론하여 안전한 칸을 빠르게 열어가는 고전 명작입니다. 첫 클릭 안전 보장과 빠른 깃발 표시 기능을 활용해 최단 시간 클리어 기록에 도전해보세요.
                             </p>
                         </div>
                     </div>
