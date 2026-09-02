@@ -153,6 +153,59 @@ export function CoreServicesShowcase() {
 
                         {/* 게임 링크 리스트 */}
                         <div className="space-y-2.5">
+                            {/* 1. Vera Pop (베라 팝) */}
+                            <a
+                                href="/game/vera-pop"
+                                className="flex items-center justify-between p-3 rounded-2xl bg-indigo-50/50 hover:bg-indigo-50 border border-indigo-100 hover:border-indigo-300 transition-all group/item shadow-xs"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-pink-500 text-white flex items-center justify-center text-sm shadow-sm">
+                                        <i className="fas fa-gem"></i>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-indigo-900 group-hover/item:text-indigo-700">
+                                                Vera Pop (베라 팝)
+                                            </span>
+                                            <span className="text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.2 rounded animate-pulse">
+                                                HOT 🔥
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-indigo-700/70 font-medium">60초 무한 스테이지 매치-3 퍼즐</div>
+                                    </div>
+                                </div>
+                                <span className="text-[11px] font-bold text-white bg-indigo-600 px-2 py-0.5 rounded-lg group-hover/item:bg-indigo-700 transition-all">
+                                    플레이
+                                </span>
+                            </a>
+
+                            {/* 2. 클래식 프리셀 (FreeCell) */}
+                            <a
+                                href="/game/freecell"
+                                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-100 hover:border-emerald-200 transition-all group/item"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shadow-sm">
+                                        <i className="fas fa-spade"></i>
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-slate-900 group-hover/item:text-emerald-900">
+                                                클래식 프리셀 (FreeCell)
+                                            </span>
+                                            <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">
+                                                인기
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] text-slate-400">52장 카드 수집 정통 솔리테어</div>
+                                    </div>
+                                </div>
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-lg group-hover/item:bg-emerald-600 group-hover/item:text-white transition-all">
+                                    플레이
+                                </span>
+                            </a>
+
+                            {/* 3. 테트리스 마스터 */}
                             <a
                                 href="/game/tetris"
                                 className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-100 hover:border-indigo-200 transition-all group/item"
@@ -166,9 +219,6 @@ export function CoreServicesShowcase() {
                                             <span className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-900">
                                                 테트리스 마스터 (Tetris)
                                             </span>
-                                            <span className="text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.2 rounded">
-                                                HIT 🔥
-                                            </span>
                                         </div>
                                         <div className="text-[10px] text-slate-400">정통 7-Bag 시스템 & 라인 클리어</div>
                                     </div>
@@ -178,6 +228,7 @@ export function CoreServicesShowcase() {
                                 </span>
                             </a>
 
+                            {/* 4. 2048 넘버 퍼즐 */}
                             <a
                                 href="/game/2048"
                                 className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-100 hover:border-indigo-200 transition-all group/item"
@@ -198,26 +249,7 @@ export function CoreServicesShowcase() {
                                 </span>
                             </a>
 
-                            <a
-                                href="/game/sudoku"
-                                className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-100 hover:border-indigo-200 transition-all group/item"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-xl bg-white text-indigo-600 flex items-center justify-center text-sm shadow-sm">
-                                        <i className="fas fa-chess-board"></i>
-                                    </div>
-                                    <div>
-                                        <div className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-900">
-                                            일일 두뇌 스도쿠
-                                        </div>
-                                        <div className="text-[10px] text-slate-400">초급부터 고급까지 논리 숫자 퍼즐</div>
-                                    </div>
-                                </div>
-                                <span className="text-[11px] font-bold text-indigo-600 bg-indigo-100/70 px-2 py-0.5 rounded-lg group-hover/item:bg-indigo-600 group-hover/item:text-white transition-all">
-                                    플레이
-                                </span>
-                            </a>
-
+                            {/* 5. 스도쿠 & 지뢰찾기 */}
                             <a
                                 href="/game"
                                 className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-100 hover:border-indigo-200 transition-all group/item"
@@ -228,9 +260,9 @@ export function CoreServicesShowcase() {
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-900">
-                                            지뢰찾기 & 프리셀 솔리테어
+                                            스도쿠 & 지뢰찾기 등
                                         </div>
-                                        <div className="text-[10px] text-slate-400">추억의 윈도우 명작 게임</div>
+                                        <div className="text-[10px] text-slate-400">두뇌 퍼즐 & 고전 에뮬레이터 모음</div>
                                     </div>
                                 </div>
                                 <i className="fas fa-chevron-right text-xs text-slate-300 group-hover/item:text-indigo-600 group-hover/item:translate-x-0.5 transition-all"></i>

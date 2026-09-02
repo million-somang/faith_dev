@@ -194,6 +194,77 @@ function MinesweeperThumb() {
     );
 }
 
+// 프리셀: 녹색 펠트 테이블 위 프리셀/홈셀 및 에이스/킹 플레잉 카드
+function FreeCellThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="fcBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#064e3b" />
+                    <stop offset="50" stopColor="#047857" />
+                    <stop offset="100" stopColor="#0f766e" />
+                </linearGradient>
+                <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="130%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.4" />
+                </filter>
+            </defs>
+            <rect width="320" height="120" fill="url(#fcBg)" />
+
+            {/* 상단 4 프리셀 & 4 홈셀 슬롯 테두리 */}
+            <g transform="translate(18, 12)" stroke="#10b981" strokeWidth="1.5" strokeDasharray="3,3" fill="none" opacity="0.6">
+                <rect x="0" y="0" width="28" height="38" rx="4" />
+                <rect x="34" y="0" width="28" height="38" rx="4" />
+                <rect x="68" y="0" width="28" height="38" rx="4" />
+                <rect x="102" y="0" width="28" height="38" rx="4" />
+
+                <rect x="150" y="0" width="28" height="38" rx="4" />
+                <rect x="184" y="0" width="28" height="38" rx="4" />
+                <rect x="218" y="0" width="28" height="38" rx="4" />
+                <rect x="252" y="0" width="28" height="38" rx="4" />
+            </g>
+
+            {/* 홈셀 수집 카드 (A♠, A♥) */}
+            <g transform="translate(168, 12)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="28" height="38" rx="4" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                <text x="5" y="12" fontSize="9" fontWeight="900" fill="#1e293b" fontFamily="sans-serif">A</text>
+                <text x="14" y="24" fontSize="14" textAnchor="middle" fill="#1e293b">♠</text>
+            </g>
+            <g transform="translate(202, 12)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="28" height="38" rx="4" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1" />
+                <text x="5" y="12" fontSize="9" fontWeight="900" fill="#dc2626" fontFamily="sans-serif">A</text>
+                <text x="14" y="24" fontSize="14" textAnchor="middle" fill="#dc2626">♥</text>
+            </g>
+
+            {/* 하단 캐스케이드 카드 스택 (K♠, Q♥, J♣, 10♦) */}
+            <g transform="translate(45, 52)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="34" height="48" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="5" y="13" fontSize="10" fontWeight="900" fill="#1e293b" fontFamily="sans-serif">K</text>
+                <text x="17" y="30" fontSize="16" textAnchor="middle" fill="#1e293b">♠</text>
+            </g>
+            <g transform="translate(95, 52)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="34" height="48" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="5" y="13" fontSize="10" fontWeight="900" fill="#dc2626" fontFamily="sans-serif">Q</text>
+                <text x="17" y="30" fontSize="16" textAnchor="middle" fill="#dc2626">♥</text>
+            </g>
+            <g transform="translate(145, 52)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="34" height="48" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="5" y="13" fontSize="10" fontWeight="900" fill="#1e293b" fontFamily="sans-serif">J</text>
+                <text x="17" y="30" fontSize="16" textAnchor="middle" fill="#1e293b">♣</text>
+            </g>
+            <g transform="translate(195, 52)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="34" height="48" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="4" y="13" fontSize="10" fontWeight="900" fill="#dc2626" fontFamily="sans-serif">10</text>
+                <text x="17" y="30" fontSize="16" textAnchor="middle" fill="#dc2626">♦</text>
+            </g>
+            <g transform="translate(245, 52)" filter="url(#cardShadow)">
+                <rect x="0" y="0" width="34" height="48" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+                <text x="5" y="13" fontSize="10" fontWeight="900" fill="#1e293b" fontFamily="sans-serif">9</text>
+                <text x="17" y="30" fontSize="16" textAnchor="middle" fill="#1e293b">♠</text>
+            </g>
+        </svg>
+    );
+}
+
 // 베라 팝: 네온 보석 매치-3
 function VeraPopThumb() {
     return (
@@ -249,8 +320,8 @@ export default function GamePage() {
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
             <PageSEO
-                title="미니게임 - 베라 팝, 테트리스, 스도쿠, 2048, 지뢰찾기"
-                description="베라 팝(Vera Pop), 테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
+                title="미니게임 - 베라 팝, 프리셀, 테트리스, 스도쿠, 2048, 지뢰찾기"
+                description="베라 팝(Vera Pop), 클래식 프리셀(FreeCell), 테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
                 path="/game"
             />
             <Header user={user} onLogout={logout} />
@@ -268,7 +339,7 @@ export default function GamePage() {
                             {t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
-                            {t('베라 팝 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
+                            {t('베라 팝 · 클래식 프리셀 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
                 </section>
@@ -296,7 +367,7 @@ export default function GamePage() {
 
                     {genre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {/* 🌟 1. 베라 팝 (Vera Pop) 신규 미니게임 */}
+                            {/* 🌟 1. 베라 팝 (Vera Pop) - 60초 스테이지 무한 타임어택 */}
                             <button onClick={() => navigate('/game/vera-pop')} className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative">
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-400 to-rose-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
                                     NEW 60s
@@ -305,12 +376,28 @@ export default function GamePage() {
                                 <div className="p-5">
                                     <h3 className="font-black text-xl text-indigo-700 mb-1 group-hover:text-indigo-800 transition-colors flex items-center gap-2">
                                         <span>Vera Pop (베라 팝)</span>
-                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">스피드 매치-3</span>
+                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">무한 스테이지 매치-3</span>
                                     </h3>
-                                    <p className="text-slate-500 text-xs leading-relaxed">60초 타임어택! 5가지 네온 보석을 매칭하고 하이퍼 피버로 최고 점수에 도전하세요!</p>
+                                    <p className="text-slate-500 text-xs leading-relaxed">60초 안에 목표 점수를 돌파하면 시간 충전! 점진적 난이도와 누적 총점에 도전하세요.</p>
                                 </div>
                             </button>
 
+                            {/* 🌟 2. 클래식 프리셀 (FreeCell) - 전략 카드 솔리테어 */}
+                            <button onClick={() => navigate('/game/freecell')} className="bg-white border-2 text-left border-emerald-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md">
+                                    CLASSIC
+                                </div>
+                                <div className="overflow-hidden bg-[#064e3b]"><FreeCellThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-emerald-700 mb-1 group-hover:text-emerald-800 transition-colors flex items-center gap-2">
+                                        <span>클래식 프리셀 (FreeCell)</span>
+                                        <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">정통 솔리테어</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">4개의 프리셀을 전략적으로 활용해 52장 카드를 홈셀로 완벽 수집하세요!</p>
+                                </div>
+                            </button>
+
+                            {/* 3. 클래식 테트리스 */}
                             <button onClick={() => navigate('/game/tetris')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#065f46]"><TetrisThumb /></div>
                                 <div className="p-5">
@@ -319,6 +406,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
+                            {/* 4. 스도쿠 */}
                             <button onClick={() => navigate('/game/sudoku')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#ddd6fe]"><SudokuThumb /></div>
                                 <div className="p-5">
@@ -327,6 +415,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
+                            {/* 5. 2048 */}
                             <button onClick={() => navigate('/game/2048')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-cyan-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#f3ebd9]"><Game2048Thumb /></div>
                                 <div className="p-5">
@@ -335,6 +424,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
+                            {/* 6. 지뢰찾기 */}
                             <button onClick={() => navigate('/game/minesweeper')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-red-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#e2e8f0]"><MinesweeperThumb /></div>
                                 <div className="p-5">
@@ -342,18 +432,9 @@ export default function GamePage() {
                                     <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
                                 </div>
                             </button>
-
-                            <button onClick={() => navigate('/game/freecell')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-teal-300 hover:shadow-lg transition-all group">
-                                <div className="h-28 bg-gradient-to-r from-emerald-800 to-teal-900 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
-                                    <i className="fas fa-spade mr-2 text-emerald-400"></i> 클래식 프리셀
-                                </div>
-                                <div className="p-5">
-                                    <h3 className="font-extrabold text-xl text-teal-600 mb-1 group-hover:text-teal-700 transition-colors">클래식 프리셀</h3>
-                                    <p className="text-slate-500 text-xs leading-relaxed">실력과 수싸움으로 52장 카드를 홈셀로 수집하세요!</p>
-                                </div>
-                            </button>
                         </div>
                     ) : genre === 'emulator' ? (
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <button onClick={() => navigate('/game/comboy')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group">
                                 <div className="h-28 bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
