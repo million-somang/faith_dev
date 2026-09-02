@@ -34,7 +34,12 @@ const createGem = (row: number, col: number, type?: GemType, special: SpecialTyp
     col,
 });
 
-export function useVeraPopEngine() {
+interface EngineOptions {
+    isActive?: boolean;
+}
+
+export function useVeraPopEngine(options: EngineOptions = { isActive: true }) {
+    const { isActive = true } = options;
     const [board, setBoard] = useState<Gem[][]>([]);
     const [score, setScore] = useState(0);
     const [combo, setCombo] = useState(0);
@@ -48,7 +53,6 @@ export function useVeraPopEngine() {
 
     const lastMatchTimeRef = useRef<number>(0);
     const feverTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
     const isGameOverRef = useRef<boolean>(false);
     const isFeverRef = useRef<boolean>(false);
     isFeverRef.current = isFever;
@@ -76,7 +80,6 @@ export function useVeraPopEngine() {
     // 새 게임 시작
     const startNewGame = useCallback(() => {
         if (feverTimerRef.current) clearTimeout(feverTimerRef.current);
-        if (gameTimerRef.current) clearInterval(gameTimerRef.current);
 
         setBoard(initBoard());
         setScore(0);
@@ -92,13 +95,14 @@ export function useVeraPopEngine() {
         lastMatchTimeRef.current = Date.now();
     }, [initBoard]);
 
-    // 60초 타이머
+    // 60초 타이머 (isActive 상태 및 !isGameOver 일 때 1초마다 정확히 감소)
     useEffect(() => {
-        if (isGameOver) return;
-        gameTimerRef.current = setInterval(() => {
+        if (!isActive || isGameOver) return;
+
+        const timer = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 1) {
-                    clearInterval(gameTimerRef.current!);
+                    clearInterval(timer);
                     setIsGameOver(true);
                     isGameOverRef.current = true;
                     return 0;
@@ -108,9 +112,9 @@ export function useVeraPopEngine() {
         }, 1000);
 
         return () => {
-            if (gameTimerRef.current) clearInterval(gameTimerRef.current);
+            clearInterval(timer);
         };
-    }, [isGameOver]);
+    }, [isActive, isGameOver]);
 
     // 피버 모드 발동
     const triggerFever = useCallback(() => {

@@ -30,7 +30,7 @@ export default function App() {
         handleCellClick,
         swapGems,
         startNewGame,
-    } = useVeraPopEngine();
+    } = useVeraPopEngine({ isActive: !isLoading });
 
     // 1. 정확히 3초 (3000ms) 로딩 타이머 및 프로그레스 바
     useEffect(() => {
