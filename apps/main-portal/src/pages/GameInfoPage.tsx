@@ -23,6 +23,24 @@ interface GameConfig {
 
 // 테트리스는 별도 페이지(TetrisInfoPage)에서 처리. 여기서는 나머지 미니게임을 다룬다.
 const GAME_CONFIGS: Record<string, GameConfig> = {
+    'vera-pop': {
+        label: 'Vera Pop (베라 팝)',
+        icon: 'fas fa-gem',
+        gradient: 'from-indigo-600 via-purple-600 to-pink-500',
+        buttonGradient: 'from-indigo-600 via-purple-600 to-pink-500 hover:from-indigo-700 hover:to-pink-600',
+        tagline: '터질수록 짜릿한 60초 네온 젬 스피드 매치-3 퍼즐!',
+        description: '60초 제한 시간 동안 5가지 네온 보석을 스와이프하여 매칭하는 초경량 스피드 퍼즐 게임입니다. 4매칭 라인 레이저와 5매칭 하이퍼 노바 폭탄, 연속 콤보로 발동되는 하이퍼 피버(2배 점수 & 3×3 스플래시)로 폭발적인 고득점에 도전하세요.',
+        controls: [
+            { keys: '스와이프 / 드래그', desc: '인접한 보석을 상하좌우로 스왑하여 3개 이상 연결' },
+            { keys: '클릭 / 터치', desc: '보석을 선택한 후 인접한 보석을 눌러 교체' },
+            { keys: '라인 레이저 (4매칭)', desc: '가로/세로 한 줄을 빛의 빔으로 전격 관통 삭제' },
+            { keys: '하이퍼 노바 (5매칭)', desc: '원하는 보석과 스왑 시 해당 색상 전체를 연쇄 폭발' },
+            { keys: '하이퍼 피버 (1.5초 콤보)', desc: '100% 충전 시 5초간 점수 2배 + 3×3 스플래시 폭발' },
+        ],
+        appUrl: '/app/vera-pop/',
+        appName: 'app-vera-pop',
+        leaderboardUrl: '/api/games/vera-pop/leaderboard',
+    },
     sudoku: {
         label: '스도쿠',
         icon: 'fas fa-table-cells',

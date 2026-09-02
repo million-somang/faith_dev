@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    box-sizing: border-box;
+  }
+  
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    touch-action: none;
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  }
+}
+
+/* 뉴모피즘 토큰 */
+.nm-raised {
+  box-shadow: 5px 5px 10px rgba(163, 177, 198, 0.4), -5px -5px 10px rgba(255, 255, 255, 0.8);
+}
+
+.nm-raised-sm {
+  box-shadow: 3px 3px 6px rgba(163, 177, 198, 0.35), -3px -3px 6px rgba(255, 255, 255, 0.8);
+}
+
+.nm-inset {
+  box-shadow: inset 3px 3px 6px rgba(163, 177, 198, 0.35), inset -3px -3px 6px rgba(255, 255, 255, 0.7);
+}
+
+.nm-btn-active:active {
+  box-shadow: inset 2px 2px 4px rgba(163, 177, 198, 0.5), inset -2px -2px 4px rgba(255, 255, 255, 0.8);
+  transform: scale(0.97);
+}
+
+/* 애니메이션 */
+@keyframes pulseGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.6));
+  }
+  50% {
+    filter: drop-shadow(0 0 18px rgba(236, 72, 153, 0.9));
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes feverFlash {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.8); box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+  50% { border-color: rgba(245, 158, 11, 0.9); box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+}
+
+.fever-active-border {
+  animation: feverFlash 0.5s infinite alternate;
+}

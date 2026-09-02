@@ -194,6 +194,52 @@ function MinesweeperThumb() {
     );
 }
 
+// 베라 팝: 네온 보석 매치-3
+function VeraPopThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="vpBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#312e81" />
+                    <stop offset="50" stopColor="#4c1d95" />
+                    <stop offset="100" stopColor="#831843" />
+                </linearGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#vpBg)" />
+            {/* 네온 배경 그리드 선 */}
+            <g opacity="0.15" stroke="#ffffff" strokeWidth="1">
+                <path d="M0 30H320M0 60H320M0 90H320M40 0V120M80 0V120M120 0V120M160 0V120M200 0V120M240 0V120M280 0V120" />
+            </g>
+            {/* 5종 네온 보석 */}
+            {/* 1. 블루 사파이어 */}
+            <g transform="translate(45, 60)">
+                <rect x="-18" y="-18" width="36" height="36" rx="6" fill="#3b82f6" transform="rotate(45)" filter="drop-shadow(0 0 8px #3b82f6)" />
+                <circle cx="0" cy="0" r="8" fill="#93c5fd" />
+            </g>
+            {/* 2. 에메랄드 그린 */}
+            <g transform="translate(105, 60)">
+                <rect x="-18" y="-18" width="36" height="36" rx="10" fill="#10b981" filter="drop-shadow(0 0 8px #10b981)" />
+                <rect x="-8" y="-8" width="16" height="16" rx="4" fill="#a7f3d0" />
+            </g>
+            {/* 3. 퍼플 아메지스트 */}
+            <g transform="translate(160, 60)">
+                <circle cx="0" cy="0" r="20" fill="#8b5cf6" filter="drop-shadow(0 0 10px #8b5cf6)" />
+                <circle cx="0" cy="0" r="10" fill="#ddd6fe" />
+            </g>
+            {/* 4. 옐로우 토파즈 */}
+            <g transform="translate(215, 60)">
+                <polygon points="0,-22 20,16 -20,16" fill="#f59e0b" filter="drop-shadow(0 0 8px #f59e0b)" />
+                <circle cx="0" cy="4" r="6" fill="#fef3c7" />
+            </g>
+            {/* 5. 레드 루비 */}
+            <g transform="translate(270, 60)">
+                <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#ef4444" transform="rotate(15)" filter="drop-shadow(0 0 8px #ef4444)" />
+                <circle cx="0" cy="0" r="7" fill="#fecaca" />
+            </g>
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -203,8 +249,8 @@ export default function GamePage() {
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
             <PageSEO
-                title="미니게임 - 테트리스, 스도쿠, 2048, 지뢰찾기"
-                description="테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
+                title="미니게임 - 베라 팝, 테트리스, 스도쿠, 2048, 지뢰찾기"
+                description="베라 팝(Vera Pop), 테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
                 path="/game"
             />
             <Header user={user} onLogout={logout} />
@@ -222,7 +268,7 @@ export default function GamePage() {
                             {t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
-                            {t('테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
+                            {t('베라 팝 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
                 </section>
@@ -250,6 +296,21 @@ export default function GamePage() {
 
                     {genre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {/* 🌟 1. 베라 팝 (Vera Pop) 신규 미니게임 */}
+                            <button onClick={() => navigate('/game/vera-pop')} className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-400 to-rose-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    NEW 60s
+                                </div>
+                                <div className="overflow-hidden bg-[#312e81]"><VeraPopThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-indigo-700 mb-1 group-hover:text-indigo-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Pop (베라 팝)</span>
+                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">스피드 매치-3</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">60초 타임어택! 5가지 네온 보석을 매칭하고 하이퍼 피버로 최고 점수에 도전하세요!</p>
+                                </div>
+                            </button>
+
                             <button onClick={() => navigate('/game/tetris')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#065f46]"><TetrisThumb /></div>
                                 <div className="p-5">
