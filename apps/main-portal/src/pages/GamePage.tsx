@@ -333,13 +333,22 @@ export default function GamePage() {
                     <i className="fas fa-gamepad absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
                     <div className="relative">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
-                            <i className="fas fa-bolt"></i> {t('미니게임')}
+                            <i className={genre === 'mini' ? 'fas fa-bolt' : genre === 'emulator' ? 'fas fa-gamepad' : 'fas fa-ghost'}></i>{' '}
+                            {t(GENRES.find(g => g.id === genre)?.label || '미니게임')}
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            {t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
+                            {genre === 'emulator'
+                                ? t('추억의 8비트 & 16비트 레트로 콘솔 에뮬레이터')
+                                : genre === 'classic'
+                                ? t('시대를 초월한 감동, 추억의 레트로 고전게임')
+                                : t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
-                            {t('베라 팝 · 클래식 프리셀 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
+                            {genre === 'emulator'
+                                ? t('베라 컴보이(NES) · 베라 슈퍼컴보이(SNES) — 소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행')
+                                : genre === 'classic'
+                                ? t('추억의 레트로 명작 아케이드와 보드 게임 라인업을 준비하고 있습니다')
+                                : t('베라 팝 · 클래식 프리셀 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
                 </section>
@@ -434,7 +443,6 @@ export default function GamePage() {
                             </button>
                         </div>
                     ) : genre === 'emulator' ? (
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <button onClick={() => navigate('/game/comboy')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group">
                                 <div className="h-28 bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
@@ -458,100 +466,203 @@ export default function GamePage() {
                     ) : (
                         <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
                             <i className="fas fa-screwdriver-wrench text-4xl mb-4 text-slate-300"></i>
-                            <p className="font-semibold text-slate-600">게임 준비중입니다.</p>
-                            <p className="text-sm mt-1 text-slate-400">곧 새로운 {GENRES.find(g => g.id === genre)?.label}을(를) 만나보실 수 있어요!</p>
+                            <p className="font-semibold text-slate-600">고전게임 라인업 준비중입니다.</p>
+                            <p className="text-sm mt-1 text-slate-400">추억의 명작 고전 아케이드 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 클래식 테트리스와 프리셀을 먼저 즐겨보세요!</p>
                         </div>
                     )}
                 </div>
 
-                {/* 구글 애드센스 및 검색 엔진(SEO)용 고밀도 미니게임 소개 & 가이드 (300~500자 이상) */}
-                <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8">
-                    <div>
-                        <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
-                            <i className="fas fa-gamepad text-purple-600"></i>
-                            VERA 무설치 브라우저 미니게임 가이드 & 플레이 규칙
-                        </h2>
-                        <p className="text-sm text-slate-600 leading-relaxed">
-                            VERA 게임 센터는 별도의 프로그램 설치나 회원가입 절차 없이 크롬, 사파리, 웨일 등 모든 웹 브라우저에서 즉시 실행되는 고품질 무료 미니게임을 수록하고 있습니다.
-                        </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* 1. 베라 팝 (Vera Pop) */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-indigo-200/80 space-y-2 hover:border-indigo-400 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-gem text-indigo-600"></i> 베라 팝 (Vera Pop) 공략법
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                60초 내 목표 점수를 돌파하면 +60초 시간 충전과 함께 다음 스테이지로 진입하는 스피드 매치-3 퍼즐입니다. 4매칭 라인 레이저, 5매칭 하이퍼 노바 폭탄, 연속 콤보로 발동되는 '하이퍼 피버(점수 2배 & 3×3 스플래시)'를 연계해 최고 점수에 도전하세요.
+                {/* 탭별 맞춤 가이드 & 규칙 섹션 */}
+                {genre === 'mini' ? (
+                    /* 1. 미니게임 전용 가이드 & 규칙 */
+                    <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8 animate-fade-in">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
+                                <i className="fas fa-gamepad text-purple-600"></i>
+                                VERA 무설치 브라우저 미니게임 가이드 & 플레이 규칙
+                            </h2>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                VERA 게임 센터는 별도의 프로그램 설치나 회원가입 절차 없이 크롬, 사파리, 웨일 등 모든 웹 브라우저에서 즉시 실행되는 고품질 무료 미니게임을 수록하고 있습니다.
                             </p>
                         </div>
 
-                        {/* 2. 클래식 프리셀 (FreeCell) */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-emerald-200/80 space-y-2 hover:border-emerald-400 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-spade text-emerald-600"></i> 클래식 프리셀 (FreeCell) 전략
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                4개의 프리셀(임시 보관소)과 빈 열을 전략적으로 활용해 52장의 트럼프 카드를 에이스(A)부터 킹(K)까지 4개 홈셀로 수집하는 정통 솔리테어입니다. 카드 이동 공식(빈 셀 개수 + 1)을 계산하여 99.9% 이상의 퍼즐을 클리어해보세요.
-                            </p>
-                        </div>
-
-                        {/* 3. 테트리스 (Tetris) */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-emerald-300 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-cubes text-emerald-600"></i> 테트리스 (Tetris) 게임 전략
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                하늘에서 떨어지는 7가지 모양의 블록(테트로미노)을 수평으로 빈틈없이 채워 라인을 삭제하는 고전 명작 퍼즐 게임입니다. 방향키로 이동 및 회전이 가능하며, 4줄을 한 번에 없애는 '테트리스' 기술과 'T-스핀'을 활용해 최고 득점에 도전하세요.
-                            </p>
-                        </div>
-
-                        {/* 4. 스도쿠 (Sudoku) */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-violet-300 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 (Sudoku) 규칙 및 해법
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                9×9 격자판의 가로줄, 세로줄, 그리고 3×3 소형 격자 안에 1부터 9까지의 숫자가 중복 없이 하나씩 들어가도록 빈칸을 채우는 두뇌 논리 퍼즐입니다. 소거법과 후보 숫자 메모 기능을 활용해 두뇌 회전과 집중력을 향상시켜보세요.
-                            </p>
-                        </div>
-
-                        {/* 5. 2048 퍼즐 */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-cyan-300 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-layer-group text-cyan-600"></i> 2048 퍼즐 공략법
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                방향키나 슬라이드 조작을 통해 같은 숫자가 적힌 타일을 합쳐 마침내 '2048' 타일을 완성하는 숫자 퍼즐입니다. 가장 큰 숫자를 한쪽 구석(예: 좌측 하단)에 고정하고 계단식으로 배치하는 전략을 사용하면 성공률이 급격히 올라갑니다.
-                            </p>
-                        </div>
-
-                        {/* 6. 스피드 지뢰찾기 */}
-                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-red-300 transition-all">
-                            <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                <i className="fas fa-bomb text-red-500"></i> 스피드 지뢰찾기 (Minesweeper)
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                숫자가 의미하는 주변 8칸의 지뢰 개수를 논리적으로 추론하여 안전한 칸을 빠르게 열어가는 고전 명작입니다. 첫 클릭 안전 보장과 빠른 깃발 표시 기능을 활용해 최단 시간 클리어 기록에 도전해보세요.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="border-t border-slate-100 pt-6">
-                        <h3 className="font-bold text-slate-900 text-lg mb-3">자주 묻는 질문 (FAQ)</h3>
-                        <dl className="space-y-3 text-xs text-slate-600">
-                            <div>
-                                <dt className="font-bold text-slate-800">Q. 최고 점수 및 기록은 저장되나요?</dt>
-                                <dd className="mt-1">A. 네, VERA 브라우저 게임은 플레이 기록과 최고 점수가 로컬 스토리지 및 계정에 자동 저장되어 언제든 랭킹 기록을 갱신하실 수 있습니다.</dd>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* 1. 베라 팝 (Vera Pop) */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-indigo-200/80 space-y-2 hover:border-indigo-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-gem text-indigo-600"></i> 베라 팝 (Vera Pop) 공략법
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    60초 내 목표 점수를 돌파하면 +60초 시간 충전과 함께 다음 스테이지로 진입하는 스피드 매치-3 퍼즐입니다. 4매칭 라인 레이저, 5매칭 하이퍼 노바 폭탄, 연속 콤보로 발동되는 '하이퍼 피버(점수 2배 & 3×3 스플래시)'를 연계해 최고 점수에 도전하세요.
+                                </p>
                             </div>
-                            <div>
-                                <dt className="font-bold text-slate-800">Q. 모바일 스마트폰 터치 조작이 지원되나요?</dt>
-                                <dd className="mt-1">A. 모든 미니게임은 터치 스와이프 조작 및 모바일 가상 패드를 지원하여 스마트폰에서도 쾌적하게 플레이할 수 있습니다.</dd>
+
+                            {/* 2. 클래식 프리셀 (FreeCell) */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-emerald-200/80 space-y-2 hover:border-emerald-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-spade text-emerald-600"></i> 클래식 프리셀 (FreeCell) 전략
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    4개의 프리셀(임시 보관소)과 빈 열을 전략적으로 활용해 52장의 트럼프 카드를 에이스(A)부터 킹(K)까지 4개 홈셀로 수집하는 정통 솔리테어입니다. 카드 이동 공식(빈 셀 개수 + 1)을 계산하여 99.9% 이상의 퍼즐을 클리어해보세요.
+                                </p>
                             </div>
-                        </dl>
-                    </div>
-                </section>
+
+                            {/* 3. 테트리스 (Tetris) */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-emerald-300 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-cubes text-emerald-600"></i> 테트리스 (Tetris) 게임 전략
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    하늘에서 떨어지는 7가지 모양의 블록(테트로미노)을 수평으로 빈틈없이 채워 라인을 삭제하는 고전 명작 퍼즐 게임입니다. 방향키로 이동 및 회전이 가능하며, 4줄을 한 번에 없애는 '테트리스' 기술과 'T-스핀'을 활용해 최고 득점에 도전하세요.
+                                </p>
+                            </div>
+
+                            {/* 4. 스도쿠 (Sudoku) */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-violet-300 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 (Sudoku) 규칙 및 해법
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    9×9 격자판의 가로줄, 세로줄, 그리고 3×3 소형 격자 안에 1부터 9까지의 숫자가 중복 없이 하나씩 들어가도록 빈칸을 채우는 두뇌 논리 퍼즐입니다. 소거법과 후보 숫자 메모 기능을 활용해 두뇌 회전과 집중력을 향상시켜보세요.
+                                </p>
+                            </div>
+
+                            {/* 5. 2048 퍼즐 */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-cyan-300 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-layer-group text-cyan-600"></i> 2048 퍼즐 공략법
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    방향키나 슬라이드 조작을 통해 같은 숫자가 적힌 타일을 합쳐 마침내 '2048' 타일을 완성하는 숫자 퍼즐입니다. 가장 큰 숫자를 한쪽 구석(예: 좌측 하단)에 고정하고 계단식으로 배치하는 전략을 사용하면 성공률이 급격히 올라갑니다.
+                                </p>
+                            </div>
+
+                            {/* 6. 스피드 지뢰찾기 */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-red-300 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-bomb text-red-500"></i> 스피드 지뢰찾기 (Minesweeper)
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    숫자가 의미하는 주변 8칸의 지뢰 개수를 논리적으로 추론하여 안전한 칸을 빠르게 열어가는 고전 명작입니다. 첫 클릭 안전 보장과 빠른 깃발 표시 기능을 활용해 최단 시간 클리어 기록에 도전해보세요.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-6">
+                            <h3 className="font-bold text-slate-900 text-lg mb-3">자주 묻는 질문 (FAQ)</h3>
+                            <dl className="space-y-3 text-xs text-slate-600">
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. 최고 점수 및 기록은 저장되나요?</dt>
+                                    <dd className="mt-1">A. 네, VERA 브라우저 게임은 플레이 기록과 최고 점수가 로컬 스토리지 및 계정에 자동 저장되어 언제든 랭킹 기록을 갱신하실 수 있습니다.</dd>
+                                </div>
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. 모바일 스마트폰 터치 조작이 지원되나요?</dt>
+                                    <dd className="mt-1">A. 모든 미니게임은 터치 스와이프 조작 및 모바일 가상 패드를 지원하여 스마트폰에서도 쾌적하게 플레이할 수 있습니다.</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+                ) : genre === 'emulator' ? (
+                    /* 2. 에뮬레이터 전용 구동 가이드 & 사용자 안내 */
+                    <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8 animate-fade-in">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
+                                <i className="fas fa-gamepad text-indigo-600"></i>
+                                VERA 레트로 콘솔 에뮬레이터 구동 가이드 & 사용자 안내
+                            </h2>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                VERA 에뮬레이터는 별도의 외부 프로그램 설치 없이 최신 브라우저 WebAssembly 엔진을 통해 8비트 패미콤(NES) 및 16비트 슈퍼패미콤(SNES) 하드웨어를 웹상에서 정밀하게 에뮬레이션합니다.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* 1. Vera Comboy (NES 8비트) */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200/90 space-y-3 hover:border-slate-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-gamepad text-slate-700"></i> Vera Comboy (8비트 패미콤/NES)
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    개인 소장 <code className="bg-slate-200 text-slate-800 px-1.5 py-0.5 rounded font-mono text-[11px]">.nes</code> ROM 파일을 게임 캔버스 위로 드래그 앤 드롭하거나 파일 선택 버튼을 눌러 즉시 실행할 수 있습니다. 정통 8비트 사운드와 키보드/터치 가상 패드를 완벽 지원합니다.
+                                </p>
+                                <div className="text-[11px] text-slate-500 bg-white p-3 rounded-xl border border-slate-100 font-mono space-y-1">
+                                    <div>• 방향키: <span className="font-bold text-slate-700">← ↑ → ↓</span></div>
+                                    <div>• A / B 버튼: <span className="font-bold text-slate-700">Z / X 키</span></div>
+                                    <div>• Select / Start: <span className="font-bold text-slate-700">Space / Enter 키</span></div>
+                                </div>
+                            </div>
+
+                            {/* 2. Vera Super Comboy (SNES 16비트) */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-indigo-200/90 space-y-3 hover:border-indigo-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-gamepad text-indigo-600"></i> Vera Super Comboy (16비트 슈퍼패미콤/SNES)
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    개인 소장 <code className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-mono text-[11px]">.sfc</code>, <code className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-mono text-[11px]">.smc</code> ROM 파일을 지원합니다. 모드 7 그래픽 렌더링, 6버튼 시스템(A/B/X/Y/L/R), USB/블루투스 외장 게임패드 자동 인식을 지원합니다.
+                                </p>
+                                <div className="text-[11px] text-slate-500 bg-white p-3 rounded-xl border border-slate-100 font-mono space-y-1">
+                                    <div>• 방향키: <span className="font-bold text-slate-700">← ↑ → ↓</span></div>
+                                    <div>• A / B / X / Y: <span className="font-bold text-slate-700">Z / X / A / S 키</span></div>
+                                    <div>• L / R 트리거: <span className="font-bold text-slate-700">Q / W 키</span></div>
+                                </div>
+                            </div>
+
+                            {/* 3. 클라우드 & 로컬 세이브 스테이트 */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200/90 space-y-3 hover:border-slate-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-floppy-disk text-emerald-600"></i> 스마트 세이브 스테이트 (Save State)
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    플레이 도중 언제든 원하는 순간에 상태를 저장하고 복원할 수 있습니다. 배터리 백업 세이브는 물론, 순간 저장 슬롯을 통해 어려운 구간을 편리하게 공략할 수 있습니다.
+                                </p>
+                            </div>
+
+                            {/* 4. ROM 라이선스 및 합법적 이용 안내 */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-amber-200/90 space-y-3 hover:border-amber-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-shield-halved text-amber-600"></i> 합법적 ROM 이용 및 저작권 준수 정책
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    VERA 에뮬레이터는 사용자의 브라우저 로컬 메모리상에서 하드웨어 기능을 시뮬레이션하는 구동기만 제공하며, <strong>어떠한 저작권 보호 ROM 파일도 서버에 보관하거나 유포하지 않습니다.</strong> 사용자가 합법적으로 소장한 백업본을 직접 로드해 이용해 주시기 바랍니다.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-6">
+                            <h3 className="font-bold text-slate-900 text-lg mb-3">에뮬레이터 이용 FAQ</h3>
+                            <dl className="space-y-3 text-xs text-slate-600">
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. USB 또는 블루투스 게임패드(조이스틱) 연결이 가능한가요?</dt>
+                                    <dd className="mt-1">A. 네, PC나 스마트폰에 게임패드를 연결한 상태에서 아무 버튼을 누르면 표준 Gamepad API를 통해 자동으로 인식되어 콘솔 패드로 조작할 수 있습니다.</dd>
+                                </div>
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. 모바일 스마트폰에서도 플레이할 수 있나요?</dt>
+                                    <dd className="mt-1">A. 네, 모바일 기기 접속 시 화면 하단에 방향키와 A/B 액션 버튼이 포함된 터치 가상 패드가 자동 활성화되며, 조작 시 햅틱(진동) 피드백이 지원됩니다.</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
+                ) : (
+                    /* 3. 고전게임 안내 섹션 */
+                    <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-6 animate-fade-in text-center">
+                        <div className="max-w-xl mx-auto py-6">
+                            <div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                                <i className="fas fa-ghost"></i>
+                            </div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-2">
+                                VERA 고전 명작 아케이드 센터 안내
+                            </h2>
+                            <p className="text-sm text-slate-500 leading-relaxed mb-6">
+                                시대를 풍미한 레트로 아케이드 게임과 고전 보드 게임 컬렉션을 준비하고 있습니다. 현재 정통 클래식 게임인 <strong>테트리스</strong>와 <strong>프리셀 솔리테어</strong>는 [미니게임] 탭에서 바로 즐기실 수 있습니다.
+                            </p>
+                            <button
+                                onClick={() => setGenre('mini')}
+                                className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95"
+                            >
+                                미니게임 탭으로 이동하기
+                            </button>
+                        </div>
+                    </section>
+                )}
             </main>
             <Footer />
         </div>
