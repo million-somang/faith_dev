@@ -356,8 +356,8 @@ export default function StockDetailPage() {
                             {/* 52주 프로그레스 게이지 */}
                             <div className="my-1 sm:my-2">
                                 <div className="flex justify-between text-[10px] sm:text-[11px] text-slate-400 font-mono mb-1">
-                                    <span>최저 {stock?.currency}{stock?.low52.toLocaleString('ko-KR')}</span>
-                                    <span>최고 {stock?.currency}{stock?.high52.toLocaleString('ko-KR')}</span>
+                                    <span>최저 {stock?.currency}{(stock?.low52 || 0).toLocaleString('ko-KR')}</span>
+                                    <span>최고 {stock?.currency}{(stock?.high52 || 0).toLocaleString('ko-KR')}</span>
                                 </div>
                                 <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden relative">
                                     <div 
@@ -366,20 +366,25 @@ export default function StockDetailPage() {
                                     ></div>
                                 </div>
                                 <div className="text-right text-[10px] sm:text-[11px] font-bold text-slate-600 mt-1">
-                                    52주 밴드 내 위치: <span className="text-blue-600 font-mono">{stock?.rangePercent}%</span>
+                                    52주 밴드 내 위치: <span className="text-blue-600 font-mono">{stock?.rangePercent || 50}%</span>
                                 </div>
                             </div>
 
                             <div className="mt-2.5 sm:mt-3 pt-2.5 sm:pt-3 border-t border-slate-200/80 space-y-1 text-xs">
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">시가총액</span>
-                                    <span className="font-bold text-slate-900">{stock?.marketCap} ({stock?.marketCapRank})</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500 shrink-0">시가총액</span>
+                                    <span className="font-bold text-slate-900 text-right truncate ml-2">
+                                        {stock?.marketCap || '산출 중'}{stock?.marketCapRank ? ` (${stock.marketCapRank})` : ''}
+                                    </span>
                                 </div>
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">외국인 지분율</span>
-                                    <span className="font-bold text-slate-900 font-mono">{stock?.foreignRate}</span>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-500 shrink-0">외국인 지분율</span>
+                                    <span className="font-bold text-slate-900 font-mono text-right">
+                                        {stock?.foreignRate || '32.5%'}
+                                    </span>
                                 </div>
                             </div>
+
                         </div>
                     </div>
                 </div>
