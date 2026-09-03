@@ -1744,7 +1744,7 @@ async function fetchNaverStockDetail(ticker: string): Promise<any> {
                             low: Number(String(map.lowPrice || '0').replace(/,/g, '')) || priceNum,
                             volume: map.accumulatedTradingVolume ? `${map.accumulatedTradingVolume} 주` : undefined,
                             tradingValue: map.accumulatedTradingValue,
-                            marketCap: map.marketValue ? `${map.marketValue} USD` : undefined,
+                            marketCap: map.marketValue ? (map.marketValue.includes('USD') ? map.marketValue : `${map.marketValue} USD`) : undefined,
                             foreignRate: '글로벌 유동',
                             high52: high52Num || undefined,
                             low52: low52Num || undefined,
