@@ -18,6 +18,7 @@ const DEFAULT_RATES: ExchangeRateMap = {
 };
 
 export default function CustomsCalc() {
+    const [viewMode, setViewMode] = useState<'input' | 'result'>('input');
     const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(COUNTRIES[0]);
     const [selectedCategory, setSelectedCategory] = useState<CustomsCategory>(CATEGORIES[1]); // 기본 의류
     const [currency, setCurrency] = useState<string>('USD');
@@ -26,6 +27,7 @@ export default function CustomsCalc() {
     const [shippingUSD, setShippingUSD] = useState<string>('15');
     const [rates, setRates] = useState<ExchangeRateMap>(DEFAULT_RATES);
     const [ratesLoading, setRatesLoading] = useState<boolean>(true);
+    const [copied, setCopied] = useState<boolean>(false);
 
     // 실시간 환율 수신
     useEffect(() => {
@@ -57,9 +59,6 @@ export default function CustomsCalc() {
     };
 
     // 1. 적용 면세 한도(USD) 결정
-    // - 카테고리가 일반통관(영양제, 식품 등)인 경우: 무조건 $150
-    // - 미국 + 목록통관: $200
-    // - 일반국가: $150
     const applicableLimitUSD = useMemo(() => {
         if (selectedCategory.isGeneralClearance) return 150;
         return selectedCountry.limitUSD;
@@ -81,11 +80,9 @@ export default function CustomsCalc() {
     }, [parsedAmount, currency, currentRateToKRW, usdRateToKRW]);
 
     // 3. 면세 여부 판별
-    // 물품가격(USD)이 면세한도 이하인지 판정
     const isDutyFree = amountInUSD <= applicableLimitUSD;
 
     // 4. 과세가격(원화 CIF) 산출
-    // 총 결제 원화 = (물품가 + 국제배송비) 환산 원화
     const itemKRW = Math.round(parsedAmount * currentRateToKRW);
     const shippingKRW = Math.round(parsedShipping * usdRateToKRW);
     const totalCIF_KRW = itemKRW + shippingKRW;
@@ -98,15 +95,236 @@ export default function CustomsCalc() {
 
     const vatAmount = useMemo(() => {
         if (isDutyFree) return 0;
-        // 부가세 = (과세가격 + 관세) * 10%
         return Math.round(((totalCIF_KRW + customsAmount) * selectedCategory.vatRate) / 100);
     }, [isDutyFree, totalCIF_KRW, customsAmount, selectedCategory.vatRate]);
 
     const totalTax = customsAmount + vatAmount;
     const totalPayment = totalCIF_KRW + totalTax;
 
+    // 계산 실행 버튼 핸들러 (결과 화면 전환)
+    const handleCalculate = () => {
+        if (parsedAmount <= 0) {
+            alert('결제 금액을 0보다 크게 입력해주세요.');
+            return;
+        }
+        setViewMode('result');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // 결과 복사 기능
+    const handleCopyResult = () => {
+        const text = `[해외직구 관·부가세 계산 결과]\n구매처: ${selectedCountry.flag} ${selectedCountry.name}\n품목: ${selectedCategory.name}\n결제금액: ${parsedAmount.toLocaleString('ko-KR')} ${currency} (약 ₩${itemKRW.toLocaleString('ko-KR')})\n통관결과: ${isDutyFree ? '면세 통과 ($0)' : `과세 대상 (₩${totalTax.toLocaleString('ko-KR')})`}\n총 예상 지출액: 약 ₩${totalPayment.toLocaleString('ko-KR')}`;
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
+
+    // ========================================================
+    // 1. 결과 화면 (Result View)
+    // ========================================================
+    if (viewMode === 'result') {
+        return (
+            <div className="space-y-6 animate-fadeIn">
+                
+                {/* 상단 액션 바: 다시 계산하기 & 입력 조건 요약 */}
+                <div className="flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setViewMode('input');
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className="nm-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-2 cursor-pointer"
+                    >
+                        <i className="fas fa-arrow-left text-xs"></i>
+                        <span>조건 다시 수정하기</span>
+                    </button>
+
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 nm-pill px-3 py-1.5">
+                        <span>{selectedCountry.flag} {selectedCountry.name}</span>
+                        <span className="text-slate-300">·</span>
+                        <span className="truncate max-w-[120px]">{selectedCategory.name.split('·')[0]}</span>
+                    </div>
+                </div>
+
+                {/* 🚦 통관 판정 신호등 히어로 카드 */}
+                <div className={`nm-card p-6 sm:p-7 transition-all duration-300 border-2 ${
+                    isDutyFree 
+                        ? 'border-emerald-400 bg-gradient-to-br from-emerald-50/70 via-teal-50/40 to-slate-50' 
+                        : 'border-red-400 bg-gradient-to-br from-red-50/70 via-rose-50/40 to-slate-50'
+                }`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                        <div className="flex items-start gap-4">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-md ${
+                                isDutyFree ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                            }`}>
+                                <i className={`fas ${isDutyFree ? 'fa-check-double' : 'fa-triangle-exclamation'}`}></i>
+                            </div>
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
+                                        isDutyFree ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                                    }`}>
+                                        {isDutyFree ? '면세 통과 (TAX-FREE)' : '관·부가세 과세 대상'}
+                                    </span>
+                                    <span className="text-xs text-slate-500 font-mono">
+                                        결제액: 약 ${amountInUSD.toFixed(2)} (면세 한도: ${applicableLimitUSD})
+                                    </span>
+                                </div>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                                    {isDutyFree 
+                                        ? '예상 관세 및 부가세 0원 (면세)' 
+                                        : `면세 한도($${applicableLimitUSD}) 초과로 관·부가세 부과`}
+                                </h2>
+                                <p className="text-xs sm:text-sm text-slate-600">
+                                    {isDutyFree 
+                                        ? '결제 금액이 면세 한도 이내이므로 세관 통관 시 추가 납부할 세금이 없습니다.' 
+                                        : '자가사용 면세 기준을 초과하여 입항 시 관세청에 세액을 납부하셔야 반출됩니다.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="sm:border-l sm:border-slate-200/80 sm:pl-6 text-left sm:text-right shrink-0">
+                            <div className="text-xs font-bold text-slate-400">총 예상 납부세액</div>
+                            <div className={`stock-number text-3xl sm:text-4xl font-black mt-0.5 ${
+                                isDutyFree ? 'text-emerald-600' : 'text-red-600'
+                            }`}>
+                                ₩{totalTax.toLocaleString('ko-KR')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 🧾 상세 예상 세액 내역서 영수증 */}
+                <div className="nm-card p-6 sm:p-7 space-y-5">
+                    <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
+                        <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i className="fas fa-receipt text-indigo-500"></i>
+                            예상 세액 상세 영수증
+                        </h3>
+                        <span className="text-[11px] text-slate-400 font-mono">
+                            실시간 환율: 1 {currency} = {currentRateToKRW.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}원
+                        </span>
+                    </div>
+
+                    <div className="nm-inset p-5 rounded-2xl space-y-3.5 text-xs sm:text-sm">
+                        <div className="flex justify-between items-center text-slate-600">
+                            <span>물품 결제 금액</span>
+                            <span className="font-bold stock-number text-slate-900">
+                                {parsedAmount.toLocaleString('ko-KR')} {currency} <span className="text-slate-400 font-normal">(약 ₩{itemKRW.toLocaleString('ko-KR')})</span>
+                            </span>
+                        </div>
+
+                        {includeShipping && parsedShipping > 0 && (
+                            <div className="flex justify-between items-center text-slate-600">
+                                <span>국제 배송비 (운임)</span>
+                                <span className="font-bold stock-number text-slate-900">
+                                    ${parsedShipping} USD <span className="text-slate-400 font-normal">(약 ₩{shippingKRW.toLocaleString('ko-KR')})</span>
+                                </span>
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-slate-700 pt-2 border-t border-slate-200/50">
+                            <span className="font-bold">과세가격 (CIF 원화 환산액)</span>
+                            <span className="font-extrabold stock-number text-slate-900 text-sm sm:text-base">
+                                ₩{totalCIF_KRW.toLocaleString('ko-KR')}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                                예상 관세
+                                <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
+                                    {isDutyFree ? '면세' : `${selectedCategory.customsRate}%`}
+                                </span>
+                            </span>
+                            <span className={`font-bold stock-number ${customsAmount > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                {isDutyFree ? '0원 (면세)' : `₩${customsAmount.toLocaleString('ko-KR')}`}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-slate-600">
+                            <span className="flex items-center gap-1.5">
+                                예상 부가세
+                                <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">
+                                    {isDutyFree ? '면세' : '10%'}
+                                </span>
+                            </span>
+                            <span className={`font-bold stock-number ${vatAmount > 0 ? 'text-red-600' : 'text-slate-500'}`}>
+                                {isDutyFree ? '0원 (면세)' : `₩${vatAmount.toLocaleString('ko-KR')}`}
+                            </span>
+                        </div>
+
+                        <div className="pt-4 border-t-2 border-dashed border-slate-300 flex justify-between items-center">
+                            <div>
+                                <div className="font-black text-slate-900 text-sm sm:text-base">총 예상 납부 세액</div>
+                                <div className="text-[10px] text-slate-400">관세 + 부가세 합계</div>
+                            </div>
+                            <span className={`font-black stock-number text-xl sm:text-2xl ${
+                                isDutyFree ? 'text-emerald-600' : 'text-red-600'
+                            }`}>
+                                ₩{totalTax.toLocaleString('ko-KR')}
+                            </span>
+                        </div>
+
+                        <div className="flex justify-between items-center text-xs text-slate-600 pt-2 border-t border-slate-200/50">
+                            <span>직구 총 예상 지출액 (물품가 + 관부가세)</span>
+                            <span className="font-extrabold stock-number text-slate-800 text-sm">
+                                약 ₩{totalPayment.toLocaleString('ko-KR')}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 유의사항 알림 박스 */}
+                    <div className="bg-amber-50/70 border border-amber-200/60 p-4 rounded-xl text-xs text-amber-900 space-y-1.5">
+                        <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                            <i className="fas fa-lightbulb"></i> 통관 필수 유의사항
+                        </div>
+                        <p className="leading-relaxed">
+                            💡 <strong>합산과세 주의:</strong> 둘 이상의 해외 주문건이 같은 날짜에 국내 공항/항만에 동시 도착(입항)하면 물품 금액이 합산되어 면세 한도를 초과할 수 있습니다.
+                        </p>
+                        {selectedCategory.isGeneralClearance && (
+                            <p className="leading-relaxed text-amber-950 font-semibold">
+                                💊 <strong>{selectedCategory.name}:</strong> 이 품목은 일반통관 대상으로 <strong>자가사용 6병 제한</strong> 규정이 엄격히 적용됩니다.
+                            </p>
+                        )}
+                    </div>
+
+                    {/* 하단 버튼 세트 */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setViewMode('input');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="nm-btn py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-700 hover:text-indigo-600 flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <i className="fas fa-redo text-xs"></i>
+                            <span>다른 물품/금액 계산하기</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleCopyResult}
+                            className="nm-btn-accent py-3.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                            <i className={`fas ${copied ? 'fa-check' : 'fa-share-nodes'} text-xs`}></i>
+                            <span>{copied ? '결과가 복사되었습니다!' : '계산 결과 텍스트 복사'}</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        );
+    }
+
+    // ========================================================
+    // 2. 입력 화면 (Input View)
+    // ========================================================
     return (
-        <div className="space-y-6 sm:space-y-8">
+        <div className="space-y-6 animate-fadeIn">
             
             {/* 1. 구매 국가 선택 칩 */}
             <div className="nm-card p-5 sm:p-6 space-y-3">
@@ -206,7 +424,7 @@ export default function CustomsCalc() {
             <div className="nm-card p-5 sm:p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <label className="text-xs sm:text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                        <i className="fas fa-receipt text-indigo-500"></i>
+                        <i className="fas fa-coins text-indigo-500"></i>
                         3. 결제 금액 입력
                     </label>
                     <span className="text-xs text-slate-500">
@@ -293,132 +511,19 @@ export default function CustomsCalc() {
                 </div>
             </div>
 
-            {/* 4. 🚦 통관 판정 신호등 배너 (Status Banner) */}
-            <div className={`nm-card p-5 sm:p-6 transition-all duration-500 border-2 ${
-                isDutyFree 
-                    ? 'border-emerald-400/80 bg-gradient-to-r from-emerald-50/50 to-teal-50/20' 
-                    : 'border-red-400/80 bg-gradient-to-r from-red-50/50 to-rose-50/20'
-            }`}>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-sm ${
-                            isDutyFree ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
-                        }`}>
-                            <i className={`fas ${isDutyFree ? 'fa-check' : 'fa-triangle-exclamation'}`}></i>
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                                    isDutyFree ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
-                                }`}>
-                                    {isDutyFree ? '면세 통과 (TAX-FREE)' : '관·부가세 과세 대상'}
-                                </span>
-                                <span className="text-xs text-slate-500 font-mono">
-                                    결제액: 약 ${amountInUSD.toFixed(2)} (면세 한도: ${applicableLimitUSD})
-                                </span>
-                            </div>
-                            <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mt-1">
-                                {isDutyFree 
-                                    ? '예상 관세 및 부가세가 0원입니다!' 
-                                    : `면세 한도($${applicableLimitUSD})를 초과하여 관·부가세가 부과됩니다.`}
-                            </h3>
-                        </div>
-                    </div>
-
-                    <div className="text-right sm:border-l sm:border-slate-200 sm:pl-6">
-                        <div className="text-xs text-slate-400">총 예상 납부세액</div>
-                        <div className={`stock-number text-2xl sm:text-3xl font-black ${
-                            isDutyFree ? 'text-emerald-600' : 'text-red-600'
-                        }`}>
-                            ₩{totalTax.toLocaleString('ko-KR')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* 5. 🧾 예상 세액 상세 영수증 (Neumorphic Inset Receipt) */}
-            <div className="nm-card p-5 sm:p-7 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-200/70 pb-3">
-                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <i className="fas fa-file-invoice-dollar text-indigo-500"></i>
-                        상세 예상 세액 내역서
-                    </h3>
-                    <span className="text-xs text-slate-400 font-mono">
-                        실시간 환율 기준 산출
-                    </span>
-                </div>
-
-                <div className="nm-inset p-4 sm:p-5 rounded-2xl space-y-3 text-xs sm:text-sm">
-                    <div className="flex justify-between items-center text-slate-600">
-                        <span>물품 결제 금액</span>
-                        <span className="font-bold stock-number text-slate-900">
-                            {parsedAmount.toLocaleString('ko-KR')} {currency} (약 ₩{itemKRW.toLocaleString('ko-KR')})
-                        </span>
-                    </div>
-
-                    {includeShipping && parsedShipping > 0 && (
-                        <div className="flex justify-between items-center text-slate-600">
-                            <span>국제 배송비 (운임)</span>
-                            <span className="font-bold stock-number text-slate-900">
-                                ${parsedShipping} (약 ₩{shippingKRW.toLocaleString('ko-KR')})
-                            </span>
-                        </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-slate-600 pt-2 border-t border-slate-200/50">
-                        <span>과세가격 (CIF 원화 환산액)</span>
-                        <span className="font-extrabold stock-number text-slate-900">
-                            ₩{totalCIF_KRW.toLocaleString('ko-KR')}
-                        </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-slate-600">
-                        <span className="flex items-center gap-1">
-                            예상 관세
-                            <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-1.5 rounded">
-                                {isDutyFree ? '면세' : `${selectedCategory.customsRate}%`}
-                            </span>
-                        </span>
-                        <span className={`font-bold stock-number ${customsAmount > 0 ? 'text-red-600' : 'text-slate-500'}`}>
-                            {isDutyFree ? '0원 (면세)' : `₩${customsAmount.toLocaleString('ko-KR')}`}
-                        </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-slate-600">
-                        <span className="flex items-center gap-1">
-                            예상 부가세
-                            <span className="text-[11px] text-indigo-600 font-bold bg-indigo-50 px-1.5 rounded">
-                                {isDutyFree ? '면세' : '10%'}
-                            </span>
-                        </span>
-                        <span className={`font-bold stock-number ${vatAmount > 0 ? 'text-red-600' : 'text-slate-500'}`}>
-                            {isDutyFree ? '0원 (면세)' : `₩${vatAmount.toLocaleString('ko-KR')}`}
-                        </span>
-                    </div>
-
-                    <div className="pt-3 border-t-2 border-dashed border-slate-300 flex justify-between items-center text-sm sm:text-base">
-                        <span className="font-extrabold text-slate-900">총 예상 납부 세액</span>
-                        <span className={`font-black stock-number text-lg sm:text-xl ${
-                            isDutyFree ? 'text-emerald-600' : 'text-red-600'
-                        }`}>
-                            ₩{totalTax.toLocaleString('ko-KR')}
-                        </span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-xs text-slate-500 pt-1">
-                        <span>직구 총 예상 지출액 (물품대금 + 관부가세)</span>
-                        <span className="font-bold stock-number text-slate-700">
-                            약 ₩{totalPayment.toLocaleString('ko-KR')}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="bg-slate-100/60 p-3.5 rounded-xl text-[11px] text-slate-500 space-y-1">
-                    <p>💡 <strong>합산과세 주의:</strong> 같은 날짜에 국내 공항/항만에 둘 이상의 해외직구 화물이 동시에 도착(입항)하는 경우, 두 물품의 결제금액이 합산되어 면세 한도를 초과하면 세금이 부과될 수 있습니다. (출고일을 2~3일 간격으로 조절하세요.)</p>
-                    <p>※ 본 계산 결과는 관세청 통관 기준에 기반한 예상 세액이며, 실제 통관 시 적용되는 고시환율 변동 및 관세청 감정가격에 따라 약간의 차이가 발생할 수 있습니다.</p>
-                </div>
+            {/* 4. 🚀 대형 계산하기 액션 버튼 */}
+            <div className="pt-2">
+                <button
+                    type="button"
+                    onClick={handleCalculate}
+                    className="w-full nm-btn-accent py-4 px-6 rounded-2xl font-black text-base sm:text-lg flex items-center justify-center gap-2.5 cursor-pointer shadow-lg hover:shadow-indigo-500/30 transition-all active:scale-[0.99]"
+                >
+                    <i className="fas fa-calculator"></i>
+                    <span>예상 관·부가세 계산하기</span>
+                </button>
             </div>
 
         </div>
     );
 }
+
