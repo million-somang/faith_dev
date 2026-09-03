@@ -10,7 +10,32 @@ export const miniappRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 miniappRoutes.get('/api/mini-apps', async (c) => {
     const DB = getDB(c);
     try {
-        const apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+        let apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+
+        // 해외직구 관·부가세 계산기(customs-calc)가 DB에 없으면 자동 시딩
+        const hasCustomsCalc = apps.results.some((a: any) => a.slug === 'customs-calc');
+        if (!hasCustomsCalc) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    '해외직구 관·부가세 계산기',
+                    'customs-calc',
+                    'fas fa-plane-arrival',
+                    '미국($200)/일반($150) 목록통관 기준 및 품목별 예상 관세·부가세 실시간 환율 계산',
+                    '/app/customs-calc/',
+                    0,
+                    3,
+                    'calc',
+                    'active'
+                ).run();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+            } catch (seedErr) {
+                console.error('Failed to auto-seed customs-calc:', seedErr);
+            }
+        }
+
         return c.json({ success: true, apps: apps.results });
     } catch (error) {
         console.error('MiniApp API Error:', error);

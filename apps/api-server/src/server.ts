@@ -103,7 +103,7 @@ app.route('/', shoppingRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop'
+    'base64-converter', 'svg-converter', 'news', 'comboy', 'sfc', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc'
 ];
 
 miniApps.forEach(appName => {

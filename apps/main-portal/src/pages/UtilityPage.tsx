@@ -40,7 +40,8 @@ const GUIDE_CATEGORIES: CategoryInfo[] = [
 ];
 
 /** 모달로 열어야 하는 앱의 slug 목록 */
-const MODAL_APP_SLUGS = ['text-checker', 'pyeong-calc', 'age-calc', 'dday-calc'];
+const MODAL_APP_SLUGS = ['text-checker', 'pyeong-calc', 'age-calc', 'dday-calc', 'customs-calc'];
+
 
 export default function UtilityPage() {
     const { user, logout } = useAuth();
@@ -235,6 +236,13 @@ export default function UtilityPage() {
             iconColor: 'text-purple-500',
             title: 'D-Day 및 날짜 계산 원리',
             desc: 'D-Day 계산기는 시험, 연애 기념일, 출산 예정일, 군 전역일 등 중요한 날짜까지 남은 일수(D-) 또는 지난 일수(D+)를 계산합니다. 시작일 당일을 1일로 포함하는 기준과 포함하지 않는 기준을 모두 지원하여 상황에 맞게 정확한 일수를 확인할 수 있습니다.'
+        },
+        {
+            category: 'calc',
+            icon: 'fas fa-plane-arrival',
+            iconColor: 'text-indigo-600',
+            title: '해외직구 관·부가세 면세 판별 및 세액 계산 가이드',
+            desc: '미국 직구 목록통관 $200 이하, 일반국가(일본·유럽·중국) $150 이하 면세 기준을 실시간 외환 환율과 연계하여 즉시 판별합니다. 전자기기(0%), 의류(13%), 영양제(8%·일반통관 $150 강제) 등 11대 카테고리별 예상 관세와 부가세 10%를 원스톱 계산하세요.'
         },
         {
             category: 'calc',

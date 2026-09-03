@@ -1,0 +1,304 @@
+@import "tailwindcss";
+@source "../../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../../packages/mini-app-sdk/src/**/*.ts";
+
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 */
+#root > div > header {
+  display: none !important;
+}
+
+/* ========================================
+   FaithPortal Design System — Neumorphism
+   ======================================== */
+:root {
+  --nm-bg: #e8edf2;
+  --nm-bg-light: #f0f4f8;
+  --nm-bg-white: #ffffff;
+  --nm-shadow-light: rgba(255, 255, 255, 0.85);
+  --nm-shadow-dark: rgba(163, 177, 198, 0.55);
+  --nm-shadow-inset-light: rgba(255, 255, 255, 0.65);
+  --nm-shadow-inset-dark: rgba(163, 177, 198, 0.35);
+
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-dark: #4f46e5;
+  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --accent-glow: rgba(99, 102, 241, 0.25);
+
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  --font-main: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-main);
+  background-color: var(--nm-bg);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+.stock-number {
+  font-family: var(--font-main);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* ========================================
+   ⏳ 3초 필수 로딩 스크린 (FaithPortal 표준)
+   ======================================== */
+.loading-screen {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  background: #eef1f6;
+  animation: fadeIn 0.4s ease-out;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.loading-header {
+  height: 56px;
+  background: #5d5fef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loading-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.loading-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 1rem;
+}
+
+.loading-icon-wrapper {
+  width: 160px;
+  height: 160px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 20px 40px rgba(93, 95, 239, 0.18),
+    0 4px 10px rgba(0, 0, 0, 0.03);
+  margin-bottom: 1.2rem;
+  animation: loadingFloat 3s ease-in-out infinite;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.loading-icon-inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff, #ede9fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  color: #6366f1;
+}
+
+.loading-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #101e35;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+
+.loading-subtitle {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #8a9bb0;
+  margin: 0 0 1.2rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.spinner-dot {
+  width: 12px;
+  height: 12px;
+  background: #9b9cff;
+  border-radius: 50%;
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+
+.spinner-dot:nth-child(2) { animation-delay: 0.15s; }
+.spinner-dot:nth-child(3) { animation-delay: 0.3s; }
+
+.loading-ad-banner {
+  width: 100%;
+  max-width: 440px;
+  animation: fadeIn 0.8s ease-out both;
+  animation-delay: 0.2s;
+  box-sizing: border-box;
+}
+
+.ad-placeholder {
+  height: 60px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px dashed rgba(93, 95, 239, 0.25);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ad-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  background: #6366f1;
+  color: #fff;
+  border-radius: 4px;
+}
+
+.ad-text {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ========================================
+   키프레임 애니메이션
+   ======================================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loadingFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes dotBounce {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* ========================================
+   뉴모피즘 유틸리티 클래스
+   ======================================== */
+.nm-card {
+  background: var(--nm-bg-light);
+  border-radius: 20px;
+  box-shadow: 6px 6px 14px var(--nm-shadow-dark), -6px -6px 14px var(--nm-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.nm-card-sm {
+  background: var(--nm-bg-light);
+  border-radius: 16px;
+  box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.nm-inset {
+  background: var(--nm-bg-light);
+  border-radius: 14px;
+  box-shadow: inset 3px 3px 6px var(--nm-shadow-inset-dark), inset -3px -3px 6px var(--nm-shadow-inset-light);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.nm-inset-white {
+  background: var(--nm-bg-white);
+  border-radius: 14px;
+  box-shadow: inset 2px 2px 5px var(--nm-shadow-inset-dark), inset -2px -2px 5px var(--nm-shadow-inset-light);
+  border: 1px solid rgba(163, 177, 198, 0.2);
+}
+
+.nm-btn {
+  background: var(--nm-bg-light);
+  border-radius: 14px;
+  box-shadow: 4px 4px 8px var(--nm-shadow-dark), -4px -4px 8px var(--nm-shadow-light);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.nm-btn:hover {
+  box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+  transform: translateY(-1px);
+}
+
+.nm-btn:active {
+  box-shadow: inset 2px 2px 4px var(--nm-shadow-inset-dark), inset -2px -2px 4px var(--nm-shadow-inset-light);
+  transform: translateY(0);
+}
+
+.nm-btn-accent {
+  background: var(--accent-gradient);
+  color: white;
+  border-radius: 14px;
+  box-shadow: 4px 4px 12px rgba(99, 102, 241, 0.35), -2px -2px 8px var(--nm-shadow-light);
+  border: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nm-btn-accent:hover {
+  box-shadow: 6px 6px 16px rgba(99, 102, 241, 0.45), -3px -3px 10px var(--nm-shadow-light);
+  transform: translateY(-1px);
+}
+
+.nm-btn-accent:active {
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+}
+
+.nm-pill {
+  background: var(--nm-bg-light);
+  border-radius: 9999px;
+  box-shadow: 3px 3px 6px var(--nm-shadow-dark), -3px -3px 6px var(--nm-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
