@@ -1659,44 +1659,164 @@ const STOCK_DETAIL_DB: Record<string, Partial<DetailedCompanyInfo>> = {
 };
 
 
+// =========================================================================
+// 🚀 네이버 증권 실시간 기업 데이터 조회 (52주 고/저, 실제 시총, 외인소진율 공식 데이터)
+// =========================================================================
+async function fetchNaverStockDetail(ticker: string): Promise<any> {
+    try {
+        if (/^\d+$/.test(ticker)) {
+            // 대한민국 KOSPI/KOSDAQ 주식
+            const url = `https://m.stock.naver.com/api/stock/${ticker}/integration`;
+            const res = await fetch(url, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+            });
+            if (!res.ok) return null;
+            const data = await res.json();
+            const map: Record<string, string> = {};
+            (data.totalInfos || []).forEach((item: any) => {
+                map[item.code] = item.value;
+            });
+
+            const basicRes = await fetch(`https://m.stock.naver.com/api/stock/${ticker}/basic`, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+            }).then(r => r.ok ? r.json() : null).catch(() => null);
+
+            const priceNum = Number(String(basicRes?.closePrice || map.lastClosePrice || '0').replace(/,/g, ''));
+            const prevNum = Number(String(map.lastClosePrice || basicRes?.closePrice || '0').replace(/,/g, ''));
+            const high52Num = Number(String(map.highPriceOf52Weeks || '0').replace(/,/g, ''));
+            const low52Num = Number(String(map.lowPriceOf52Weeks || '0').replace(/,/g, ''));
+            const changeNum = Number(String(basicRes?.compareToPreviousClosePrice || '0').replace(/,/g, ''));
+            const rateNum = Number(String(basicRes?.fluctuationsRatio || '0').replace(/,/g, ''));
+
+            return {
+                name: data.stockName || basicRes?.stockName,
+                price: priceNum || prevNum,
+                previousClose: prevNum || priceNum,
+                change: changeNum,
+                rate: rateNum,
+                status: changeNum >= 0 ? 'up' : 'down',
+                open: Number(String(map.openPrice || '0').replace(/,/g, '')) || priceNum,
+                high: Number(String(map.highPrice || '0').replace(/,/g, '')) || priceNum,
+                low: Number(String(map.lowPrice || '0').replace(/,/g, '')) || priceNum,
+                volume: map.accumulatedTradingVolume ? `${map.accumulatedTradingVolume} 주` : undefined,
+                tradingValue: map.accumulatedTradingValue ? (map.accumulatedTradingValue.includes('원') ? map.accumulatedTradingValue : `${map.accumulatedTradingValue}원`) : undefined,
+                marketCap: map.marketValue ? (map.marketValue.includes('원') ? map.marketValue : `${map.marketValue}원`) : undefined,
+                foreignRate: map.foreignRate,
+                high52: high52Num || undefined,
+                low52: low52Num || undefined,
+                per: map.per ? parseFloat(map.per) : undefined,
+                pbr: map.pbr ? parseFloat(map.pbr) : undefined,
+                eps: map.eps ? Number(map.eps.replace(/[^\d.-]/g, '')) : undefined,
+                bps: map.bps ? Number(map.bps.replace(/[^\d.-]/g, '')) : undefined,
+                dividendYield: map.dividendYieldRatio ? parseFloat(map.dividendYieldRatio) : undefined,
+                dividendPerShare: map.dividend ? Number(map.dividend.replace(/[^\d.-]/g, '')) : undefined,
+            };
+        } else {
+            // 미국/해외 주식 (나스닥, NYSE)
+            for (const sfx of ['.O', '.N', '']) {
+                try {
+                    const res = await fetch(`https://api.stock.naver.com/stock/${ticker}${sfx}/basic`, {
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        const map: Record<string, string> = {};
+                        (data.stockItemTotalInfos || []).forEach((item: any) => {
+                            map[item.code] = item.value;
+                        });
+                        const priceNum = Number(String(data.closePrice || '0').replace(/,/g, ''));
+                        const prevNum = Number(String(map.basePrice || data.closePrice || '0').replace(/,/g, ''));
+                        const changeNum = Number(String(data.compareToPreviousClosePriceRaw || '0'));
+                        const rateNum = Number(String(data.fluctuationsRatioRaw || '0'));
+                        const high52Num = Number(String(map.highPriceOf52Weeks || '0').replace(/,/g, ''));
+                        const low52Num = Number(String(map.lowPriceOf52Weeks || '0').replace(/,/g, ''));
+
+                        return {
+                            name: data.stockName,
+                            englishName: data.stockNameEng,
+                            price: priceNum,
+                            previousClose: prevNum,
+                            change: changeNum,
+                            rate: rateNum,
+                            status: changeNum >= 0 ? 'up' : 'down',
+                            open: Number(String(map.openPrice || '0').replace(/,/g, '')) || priceNum,
+                            high: Number(String(map.highPrice || '0').replace(/,/g, '')) || priceNum,
+                            low: Number(String(map.lowPrice || '0').replace(/,/g, '')) || priceNum,
+                            volume: map.accumulatedTradingVolume ? `${map.accumulatedTradingVolume} 주` : undefined,
+                            tradingValue: map.accumulatedTradingValue,
+                            marketCap: map.marketValue ? `${map.marketValue} USD` : undefined,
+                            foreignRate: '글로벌 유동',
+                            high52: high52Num || undefined,
+                            low52: low52Num || undefined,
+                            per: map.per ? parseFloat(map.per) : undefined,
+                            pbr: map.pbr ? parseFloat(map.pbr) : undefined,
+                            eps: map.eps ? parseFloat(map.eps) : undefined,
+                            bps: map.bps ? parseFloat(map.bps) : undefined,
+                            dividendYield: map.dividendYieldRatio ? parseFloat(map.dividendYieldRatio) : undefined,
+                            dividendPerShare: map.dividend ? parseFloat(map.dividend) : undefined,
+                        };
+                    }
+                } catch (_) {}
+            }
+        }
+        return null;
+    } catch (e) {
+        console.warn('fetchNaverStockDetail failed:', e);
+        return null;
+    }
+}
+
 financeRoutes.get('/api/finance/stock-detail/:symbol', async (c) => {
     const symbol = c.req.param('symbol');
     const ticker = symbol.toUpperCase().replace(/\.KS|\.KQ/, '');
-    const yahooSymbol = /^\d+$/.test(symbol) ? `${symbol}.KS` : symbol;
+    const isKorean = /^\d+$/.test(ticker);
+    const yahooSymbol = isKorean ? `${ticker}.KS` : ticker;
 
-    // 1. 실시간 시세 조회
-    const quotes = await fetchYahooQuotes([yahooSymbol]);
-    const q = quotes.length > 0 ? quotes[0] : null;
+    // 1. 네이버 증권 1차 실시간 공식 데이터 조회
+    const naver = await fetchNaverStockDetail(ticker);
+
+    // 2. 야후 파이낸스 보조 데이터 조회 (실패 대비)
+    let q: any = null;
+    if (!naver || !naver.price) {
+        const quotes = await fetchYahooQuotes([yahooSymbol]);
+        q = quotes.length > 0 ? quotes[0] : null;
+    }
 
     const baseDb = STOCK_DETAIL_DB[ticker] || {};
-    const price = q?.price || 50000;
-    const previousClose = q?.previousClose || price;
-    const change = price - previousClose;
-    const rate = previousClose ? (change / previousClose) * 100 : 0;
-    const status = change >= 0 ? 'up' : 'down';
+    const price = naver?.price || q?.price || 50000;
+    const previousClose = naver?.previousClose || q?.previousClose || price;
+    const change = naver?.change !== undefined ? naver.change : (price - previousClose);
+    const rate = naver?.rate !== undefined ? naver.rate : (previousClose ? (change / previousClose) * 100 : 0);
+    const status = (naver?.status || (change >= 0 ? 'up' : 'down')) as 'up' | 'down';
 
-    const high52 = q?.fiftyTwoWeekHigh || baseDb.high52 || Math.round(price * 1.25);
-    const low52 = q?.fiftyTwoWeekLow || baseDb.low52 || Math.round(price * 0.75);
+    // 52주 최고가 / 최저가 (네이버 실제 데이터 최우선)
+    const high52 = naver?.high52 || q?.fiftyTwoWeekHigh || baseDb.high52 || Math.round(price * 1.25);
+    const low52 = naver?.low52 || q?.fiftyTwoWeekLow || baseDb.low52 || Math.round(price * 0.75);
     const rangePercent = high52 > low52 ? Math.min(100, Math.max(0, ((price - low52) / (high52 - low52)) * 100)) : 50;
 
-    const isKorean = /^\d+$/.test(ticker);
-    const fallbackMarketCap = isKorean
-        ? (price >= 10000 ? `${Math.round((price * 75000000) / 1000000000000 * 10) / 10}조원` : `${Math.round((price * 50000000) / 100000000).toLocaleString('ko-KR')}억원`)
-        : `${Math.round((price * 450000000) / 100000000).toLocaleString('en-US')}억 달러`;
+    // 실제 시가총액 (네이버 증권 공식 데이터 최우선)
+    const marketCap = naver?.marketCap || baseDb.marketCap || (
+        isKorean
+            ? (price >= 10000 ? `${Math.round((price * 75000000) / 1000000000000 * 10) / 10}조원` : `${Math.round((price * 50000000) / 100000000).toLocaleString('ko-KR')}억원`)
+            : `${Math.round((price * 450000000) / 100000000).toLocaleString('en-US')}억 달러`
+    );
 
-    const openPrice = q?.dayLow && q?.dayHigh ? Math.round(((q.dayLow + q.dayHigh) / 2) * 100) / 100 : previousClose;
-    const dayHigh = q?.dayHigh || Math.round(Math.max(price, previousClose) * 100) / 100;
-    const dayLow = q?.dayLow || Math.round(Math.min(price, previousClose) * 100) / 100;
-    const volumeStr = q?.volume ? `${Number(q.volume).toLocaleString('ko-KR')} 주` : '1,420,580 주';
-    const tradingValueStr = q?.volume && isKorean 
+    // 실제 외국인 지분율 (네이버 증권 공식 데이터 최우선)
+    const foreignRate = naver?.foreignRate || baseDb.foreignRate || (isKorean ? '32.5%' : '글로벌 유동');
+
+    const openPrice = naver?.open || (q?.dayLow && q?.dayHigh ? Math.round(((q.dayLow + q.dayHigh) / 2) * 100) / 100 : previousClose);
+    const dayHigh = naver?.high || q?.dayHigh || Math.round(Math.max(price, previousClose) * 100) / 100;
+    const dayLow = naver?.low || q?.dayLow || Math.round(Math.min(price, previousClose) * 100) / 100;
+    const volumeStr = naver?.volume || (q?.volume ? `${Number(q.volume).toLocaleString('ko-KR')} 주` : '1,420,580 주');
+    const tradingValueStr = naver?.tradingValue || (q?.volume && isKorean 
         ? `${Math.round((q.volume * price) / 100000000).toLocaleString('ko-KR')} 억원`
-        : (isKorean ? '1,120 억원' : `${Math.round((price * 2500000) / 1000000)}백만 달러`);
+        : (isKorean ? '1,120 억원' : `${Math.round((price * 2500000) / 1000000)}백만 달러`));
 
     const detailData = {
         ticker: ticker,
         symbol: yahooSymbol,
-        name: baseDb.name || q?.name || ticker,
-        englishName: baseDb.englishName || ticker,
+        name: naver?.name || baseDb.name || q?.name || ticker,
+        englishName: naver?.englishName || baseDb.englishName || ticker,
         market: baseDb.market || (isKorean ? 'KRX' : 'NASDAQ'),
         sector: baseDb.sector || '글로벌 주요 산업',
         currency: q?.currency ? (q.currency === 'KRW' ? '₩' : '$') : (isKorean ? '₩' : '$'),
@@ -1713,17 +1833,18 @@ financeRoutes.get('/api/finance/stock-detail/:symbol', async (c) => {
         high52: Math.round(high52 * 100) / 100,
         low52: Math.round(low52 * 100) / 100,
         rangePercent: Math.round(rangePercent),
-        marketCap: baseDb.marketCap || fallbackMarketCap,
+        marketCap: marketCap,
         marketCapRank: baseDb.marketCapRank || (isKorean ? '코스피/코스닥 상위' : '글로벌 주요 우량주'),
         sharesCount: baseDb.sharesCount || (isKorean ? '1억 주 이상' : '5억 주 이상'),
-        foreignRate: baseDb.foreignRate || (isKorean ? '32.5%' : '글로벌 유동'),
-        per: baseDb.per || 15.2,
-        pbr: baseDb.pbr || 1.45,
-        eps: baseDb.eps || Math.round(price / 15),
-        bps: baseDb.bps || Math.round(price / 1.5),
+        foreignRate: foreignRate,
+        per: naver?.per || baseDb.per || 15.2,
+        pbr: naver?.pbr || baseDb.pbr || 1.45,
+        eps: naver?.eps || baseDb.eps || Math.round(price / 15),
+        bps: naver?.bps || baseDb.bps || Math.round(price / 1.5),
         roe: baseDb.roe || 12.4,
-        dividendYield: baseDb.dividendYield || 2.1,
-        dividendPerShare: baseDb.dividendPerShare || Math.round(price * 0.02),
+        dividendYield: naver?.dividendYield || baseDb.dividendYield || 2.1,
+        dividendPerShare: naver?.dividendPerShare || baseDb.dividendPerShare || Math.round(price * 0.02),
+
 
         summary: baseDb.summary || `${ticker}는 해당 산업군에서 견고한 시장 점유율과 글로벌 경쟁력을 갖춘 기업입니다.`,
         products: baseDb.products || '주요 핵심 제품군 및 글로벌 서비스',
