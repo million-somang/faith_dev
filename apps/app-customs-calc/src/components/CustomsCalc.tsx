@@ -22,9 +22,9 @@ export default function CustomsCalc() {
     const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(COUNTRIES[0]);
     const [selectedCategory, setSelectedCategory] = useState<CustomsCategory>(CATEGORIES[1]); // 기본 의류
     const [currency, setCurrency] = useState<string>('USD');
-    const [amount, setAmount] = useState<string>('180');
+    const [amount, setAmount] = useState<string>('');
     const [includeShipping, setIncludeShipping] = useState<boolean>(false);
-    const [shippingUSD, setShippingUSD] = useState<string>('15');
+    const [shippingUSD, setShippingUSD] = useState<string>('');
     const [rates, setRates] = useState<ExchangeRateMap>(DEFAULT_RATES);
     const [ratesLoading, setRatesLoading] = useState<boolean>(true);
     const [copied, setCopied] = useState<boolean>(false);
@@ -437,7 +437,10 @@ export default function CustomsCalc() {
                         <input
                             type="text"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9.]/g, '');
+                                setAmount(val);
+                            }}
                             inputMode="decimal"
                             placeholder="0"
                             className="w-full bg-transparent text-right font-black stock-number text-2xl text-slate-900 outline-none pr-2"
@@ -476,7 +479,7 @@ export default function CustomsCalc() {
                     ))}
                     <button
                         type="button"
-                        onClick={() => setAmount('0')}
+                        onClick={() => setAmount('')}
                         className="nm-btn px-2.5 py-1 text-red-500 hover:text-red-700 transition-all rounded-lg text-xs"
                     >
                         초기화
@@ -501,8 +504,12 @@ export default function CustomsCalc() {
                             <input
                                 type="text"
                                 value={shippingUSD}
-                                onChange={(e) => setShippingUSD(e.target.value)}
+                                onChange={(e) => {
+                                    const val = e.target.value.replace(/[^0-9.]/g, '');
+                                    setShippingUSD(val);
+                                }}
                                 inputMode="decimal"
+                                placeholder="0"
                                 className="flex-1 bg-transparent text-right font-bold stock-number text-sm text-slate-800 outline-none pr-1"
                             />
                             <span className="text-xs font-bold text-slate-400 pr-2">USD</span>
