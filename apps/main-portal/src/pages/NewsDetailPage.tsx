@@ -8,6 +8,7 @@ import { PageSEO } from '../components/PageSEO';
 import { NewsInsightWidget } from '../components/news/NewsInsightWidget';
 import { NewsRelatedToolsWidget } from '../components/news/NewsRelatedToolsWidget';
 import { BannerSlot } from '../components/BannerSlot';
+import { useAppLauncher } from '../hooks/useAppLauncher';
 
 const API_BASE_URL = '';
 
@@ -18,42 +19,12 @@ export default function NewsDetailPage() {
     const [news, setNews] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [voting, setVoting] = useState(false);
+    const { launchApp } = useAppLauncher();
 
-    // 인앱 미니앱 모달 상태
-    const [modalOpen, setModalOpen] = useState(false);
-    const [modalUrl, setModalUrl] = useState('');
-    const [modalTitle, setModalTitle] = useState('');
-
-    const handleOpenMiniApp = (url: string, title: string) => {
-        setModalUrl(url);
-        setModalTitle(title);
-        setModalOpen(true);
-        document.body.classList.add('miniapp-modal-open');
+    const handleOpenMiniApp = (url: string) => {
+        const appId = url.replace(/\/$/, '').split('/').pop() || 'miniapp';
+        launchApp(url, appId);
     };
-
-    const handleCloseMiniApp = () => {
-        setModalOpen(false);
-        setModalUrl('');
-        setModalTitle('');
-        document.body.classList.remove('miniapp-modal-open');
-    };
-
-    // ESC 키로 모달 닫기
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && modalOpen) {
-                handleCloseMiniApp();
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [modalOpen]);
-
-    useEffect(() => {
-        return () => {
-            document.body.classList.remove('miniapp-modal-open');
-        };
-    }, []);
 
     useEffect(() => {
         fetchNewsDetail();
@@ -379,52 +350,6 @@ export default function NewsDetailPage() {
             </main>
 
             <Footer />
-
-            {/* ======== 인앱 미니앱 모달 ======== */}
-            {modalOpen && (
-                <div
-                    className="mini-app-modal-overlay"
-                    onClick={handleCloseMiniApp}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={modalTitle}
-                >
-                    <div
-                        className="mini-app-modal-container"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
-                            if (iframe) {
-                                iframe.focus();
-                                iframe.contentWindow?.focus();
-                            }
-                        }}
-                    >
-                        {/* 모달 헤더 */}
-                        <div className="mini-app-modal-header">
-                            <span className="mini-app-modal-title">
-                                <i className="fas fa-tools" aria-hidden="true"></i>
-                                {modalTitle}
-                            </span>
-                            <button
-                                className="mini-app-modal-close"
-                                onClick={handleCloseMiniApp}
-                                aria-label="닫기"
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        {/* iframe 콘텐츠 */}
-                        <iframe
-                            key={modalUrl}
-                            src={modalUrl}
-                            className="mini-app-modal-iframe"
-                            title={modalTitle}
-                            allow="clipboard-write"
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

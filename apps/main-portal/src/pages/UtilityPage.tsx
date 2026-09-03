@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { Header, Footer, Card, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { MiniAppButton } from '../components/MiniAppButton';
@@ -39,10 +39,6 @@ const GUIDE_CATEGORIES: CategoryInfo[] = [
     { key: 'dev', label: '개발 도구', icon: 'fas fa-code' },
 ];
 
-/** 모달로 열어야 하는 앱의 slug 목록 */
-const MODAL_APP_SLUGS = ['text-checker', 'pyeong-calc', 'age-calc', 'dday-calc', 'customs-calc'];
-
-
 export default function UtilityPage() {
     const { user, logout } = useAuth();
     const [apps, setApps] = useState<MiniApp[]>([]);
@@ -52,10 +48,6 @@ export default function UtilityPage() {
     const [selectedGuideCategory, setSelectedGuideCategory] = useState('calc');
     const [showSoftLock, setShowSoftLock] = useState(false);
 
-    // 모달 상태
-    const [modalOpen, setModalOpen] = useState(false);
-    const [modalUrl, setModalUrl] = useState('');
-    const [modalTitle, setModalTitle] = useState('');
 
     const loadFrequentApps = () => {
         axios.get('/api/mini-apps/frequent')
@@ -87,84 +79,6 @@ export default function UtilityPage() {
         return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
-    // 모달 오픈 시 body 스크롤 방지
-    useEffect(() => {
-        document.body.classList.toggle('miniapp-modal-open', modalOpen);
-        return () => {
-            document.body.classList.remove('miniapp-modal-open');
-        };
-    }, [modalOpen]);
-
-    // ESC로 모달 닫기
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && modalOpen) setModalOpen(false);
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [modalOpen]);
-
-    // 모달이 오픈될 때 자동으로 iframe 엘리먼트와 그 내부 Window에 포커스를 집행하여 물리 키보드/키패드가 즉시 동작하도록 보장
-    useEffect(() => {
-        if (modalOpen) {
-            const timer = setTimeout(() => {
-                const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
-                if (iframe) {
-                    iframe.focus();
-                    iframe.contentWindow?.focus();
-                }
-            }, 150); // DOM 페인팅 대기 후 완벽 집행
-            return () => clearTimeout(timer);
-        }
-    }, [modalOpen]);
-
-    // 자식 계산기로부터 로딩 완료/상태 변경 신호를 받아 포커스를 확실히 iframe에 집행
-    useEffect(() => {
-        const handleMessage = (e: MessageEvent) => {
-            if (e.data && (e.data.type === 'CALCULATOR_READY' || e.data.type === 'MINI_APP_READY')) {
-                const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
-                if (iframe) {
-                    iframe.focus();
-                    iframe.contentWindow?.focus();
-                }
-            }
-        };
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, []);
-
-    // 모달이 열려 있을 때 부모 창에서 발생하는 모든 keydown 이벤트를 가로채어 자식 iframe으로 릴레이 전송
-    useEffect(() => {
-        if (!modalOpen) return;
-
-        const handleGlobalKeyDown = (e: KeyboardEvent) => {
-            const activeEl = document.activeElement;
-            if (activeEl && (
-                activeEl.tagName === 'INPUT' ||
-                activeEl.tagName === 'SELECT' ||
-                activeEl.tagName === 'TEXTAREA'
-            )) {
-                return;
-            }
-
-            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({
-                    type: 'PARENT_KEYBOARD_EVENT',
-                    key: e.key,
-                    code: e.code,
-                    shiftKey: e.shiftKey,
-                    ctrlKey: e.ctrlKey,
-                    altKey: e.altKey,
-                    metaKey: e.metaKey
-                }, '*');
-            }
-        };
-
-        window.addEventListener('keydown', handleGlobalKeyDown);
-        return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-    }, [modalOpen]);
-
     const getDevUrl = (app: MiniApp): string => {
         const lang = t('홈') === 'Home' ? 'en' : 'ko';
         let baseUrl = app.app_url;
@@ -176,25 +90,11 @@ export default function UtilityPage() {
             else if (app.app_url.includes('dday-calc')) baseUrl = 'http://localhost:5018/app/dday-calc/';
             else if (app.app_url.includes('severance-calc')) baseUrl = 'http://localhost:5028/app/severance-calc/';
             else if (app.app_url.includes('interest-calc')) baseUrl = 'http://localhost:5029/app/interest-calc/';
+            else if (app.app_url.includes('customs-calc')) baseUrl = 'http://localhost:5035/app/customs-calc/';
         }
         const separator = baseUrl.includes('?') ? '&' : '?';
         return baseUrl.includes('lang=') ? baseUrl : `${baseUrl}${separator}lang=${lang}`;
     };
-
-    /** 이 앱이 모달로 열어야 하는 앱인지 판별 */
-    const isModalApp = (app: MiniApp): boolean => {
-        return MODAL_APP_SLUGS.some(slug => app.app_url.includes(slug) || app.slug === slug);
-    };
-
-    /** 모달 열기 콜백 */
-    const handleModalOpen = useCallback((url: string, title: string) => {
-        const lang = t('홈') === 'Home' ? 'en' : 'ko';
-        const separator = url.includes('?') ? '&' : '?';
-        const finalUrl = url.includes('lang=') ? url : `${url}${separator}lang=${lang}`;
-        setModalUrl(finalUrl);
-        setModalTitle(t(title));
-        setModalOpen(true);
-    }, []);
 
     const filteredApps = selectedCategory === 'all'
         ? apps.filter(app => app.category !== 'game')
@@ -285,7 +185,7 @@ export default function UtilityPage() {
         ? GUIDE_CARDS
         : GUIDE_CARDS.filter(g => g.category === selectedGuideCategory);
 
-    /** 앱별 MiniAppButton을 렌더링하면서, 모달 앱이면 onModalOpen 콜백을 전달 */
+    /** 앱별 MiniAppButton을 렌더링 (모든 미니앱은 일반 팝업으로 실행) */
     const renderAppButton = (app: MiniApp, keyPrefix = '') => (
         <MiniAppButton
             key={`${keyPrefix}${app.id}`}
@@ -295,7 +195,6 @@ export default function UtilityPage() {
             url={getDevUrl(app)}
             requireAuth={app.require_auth === 1}
             isLoggedIn={!!user}
-            onModalOpen={isModalApp(app) ? handleModalOpen : undefined}
         />
     );
 
@@ -482,52 +381,6 @@ export default function UtilityPage() {
                 onClose={() => setShowSoftLock(false)}
                 type="calc"
             />
-
-            {/* ======== 미니앱 모달 ======== */}
-            {modalOpen && (
-                <div
-                    className="mini-app-modal-overlay"
-                    onClick={() => setModalOpen(false)}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={modalTitle}
-                >
-                    <div
-                        className="mini-app-modal-container"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            const iframe = document.querySelector('.mini-app-modal-iframe') as HTMLIFrameElement;
-                            if (iframe) {
-                                iframe.focus();
-                                iframe.contentWindow?.focus();
-                            }
-                        }}
-                    >
-                        {/* 모달 헤더 */}
-                        <div className="mini-app-modal-header">
-                            <span className="mini-app-modal-title">
-                                <i className="fas fa-calculator" aria-hidden="true"></i>
-                                {modalTitle}
-                            </span>
-                            <button
-                                className="mini-app-modal-close"
-                                onClick={() => setModalOpen(false)}
-                                aria-label="닫기"
-                            >
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        {/* iframe 콘텐츠 */}
-                        <iframe
-                            key={modalUrl}
-                            src={modalUrl}
-                            className="mini-app-modal-iframe"
-                            title={modalTitle}
-                            allow="clipboard-write"
-                        />
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

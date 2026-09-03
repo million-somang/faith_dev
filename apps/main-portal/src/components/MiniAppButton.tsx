@@ -10,11 +10,9 @@ interface MiniAppButtonProps {
     url: string;
     requireAuth?: boolean;
     isLoggedIn?: boolean;
-    /** 모달로 열어야 하는 앱인 경우 이 콜백을 전달 */
-    onModalOpen?: (url: string, title: string) => void;
 }
 
-export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title, url, requireAuth, isLoggedIn, onModalOpen }) => {
+export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title, url, requireAuth, isLoggedIn }) => {
     const { launchApp } = useAppLauncher();
 
     const handleClick = async () => {
@@ -34,12 +32,8 @@ export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title
             console.error('Failed to log app launch', e);
         }
 
-        // 모달 콜백이 있으면 모달로 열기, 없으면 기존 팝업 방식
-        if (onModalOpen) {
-            onModalOpen(url, title);
-        } else {
-            launchApp(url, appId);
-        }
+        // 모든 미니앱은 일반 팝업(window.open)으로 실행
+        launchApp(url, appId);
     };
 
     return (
