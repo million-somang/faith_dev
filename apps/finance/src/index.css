@@ -45,6 +45,103 @@
         @apply text-blue-600 font-semibold;
         border-bottom: 2px solid #2563eb;
     }
+
+    /* ========================================
+       FaithPortal Design System — Clean Neumorphism
+       ======================================== */
+    .nm-bg-main {
+        background-color: var(--nm-bg);
+    }
+
+    .nm-card {
+        background: var(--nm-bg-light);
+        border-radius: 20px;
+        box-shadow: 6px 6px 14px var(--nm-shadow-dark), -6px -6px 14px var(--nm-shadow-light);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+    }
+
+    .nm-card-sm {
+        background: var(--nm-bg-light);
+        border-radius: 16px;
+        box-shadow: 4px 4px 10px var(--nm-shadow-dark), -4px -4px 10px var(--nm-shadow-light);
+        border: 1px solid rgba(255, 255, 255, 0.65);
+    }
+
+    .nm-inset {
+        background: var(--nm-bg-light);
+        border-radius: 14px;
+        box-shadow: inset 3px 3px 6px var(--nm-shadow-inset-dark), inset -3px -3px 6px var(--nm-shadow-inset-light);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .nm-inset-white {
+        background: var(--nm-bg-white);
+        border-radius: 14px;
+        box-shadow: inset 2px 2px 5px var(--nm-shadow-inset-dark), inset -2px -2px 5px var(--nm-shadow-inset-light);
+        border: 1px solid rgba(163, 177, 198, 0.2);
+    }
+
+    .nm-btn {
+        background: var(--nm-bg-light);
+        border-radius: 14px;
+        box-shadow: 4px 4px 8px var(--nm-shadow-dark), -4px -4px 8px var(--nm-shadow-light);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+
+    .nm-btn:hover {
+        box-shadow: 5px 5px 12px var(--nm-shadow-dark), -5px -5px 12px var(--nm-shadow-light);
+        transform: translateY(-1px);
+    }
+
+    .nm-btn:active {
+        box-shadow: inset 2px 2px 4px var(--nm-shadow-inset-dark), inset -2px -2px 4px var(--nm-shadow-inset-light);
+        transform: translateY(0);
+    }
+
+    .nm-btn-accent {
+        background: var(--accent-gradient);
+        color: white;
+        border-radius: 14px;
+        box-shadow: 4px 4px 12px rgba(99, 102, 241, 0.35), -2px -2px 8px var(--nm-shadow-light);
+        border: none;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nm-btn-accent:hover {
+        box-shadow: 6px 6px 16px rgba(99, 102, 241, 0.45), -3px -3px 10px var(--nm-shadow-light);
+        transform: translateY(-1px);
+    }
+
+    .nm-btn-accent:active {
+        box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.2);
+        transform: translateY(0);
+    }
+
+    .nm-pill {
+        background: var(--nm-bg-light);
+        border-radius: 9999px;
+        box-shadow: 3px 3px 6px var(--nm-shadow-dark), -3px -3px 6px var(--nm-shadow-light);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+}
+
+:root {
+    --nm-bg: #e8edf2;
+    --nm-bg-light: #f0f4f8;
+    --nm-bg-white: #ffffff;
+    --nm-shadow-light: rgba(255, 255, 255, 0.85);
+    --nm-shadow-dark: rgba(163, 177, 198, 0.55);
+    --nm-shadow-inset-light: rgba(255, 255, 255, 0.65);
+    --nm-shadow-inset-dark: rgba(163, 177, 198, 0.35);
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --accent-dark: #4f46e5;
+    --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --accent-glow: rgba(99, 102, 241, 0.25);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
 }
 
 /* ========================================

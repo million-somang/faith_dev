@@ -614,7 +614,7 @@ financeRoutes.get('/api/finance/exchange', async (c) => {
     }
 
     // KRW=X = USD/KRW, 나머지는 <통화>KRW=X. JPY는 관례상 100엔 기준 표시(unit=100).
-    const symbols = ['KRW=X', 'EURKRW=X', 'JPYKRW=X', 'CNYKRW=X', 'GBPKRW=X', 'AUDKRW=X'];
+    const symbols = ['KRW=X', 'EURKRW=X', 'JPYKRW=X', 'CNYKRW=X', 'GBPKRW=X', 'AUDKRW=X', 'CADKRW=X', 'CHFKRW=X'];
     const config: Record<string, { code: string; name: string; flag: string; unit: number }> = {
         'KRW=X': { code: 'USD', name: '미국 달러', flag: '🇺🇸', unit: 1 },
         'EURKRW=X': { code: 'EUR', name: '유로', flag: '🇪🇺', unit: 1 },
@@ -622,23 +622,36 @@ financeRoutes.get('/api/finance/exchange', async (c) => {
         'CNYKRW=X': { code: 'CNY', name: '중국 위안', flag: '🇨🇳', unit: 1 },
         'GBPKRW=X': { code: 'GBP', name: '영국 파운드', flag: '🇬🇧', unit: 1 },
         'AUDKRW=X': { code: 'AUD', name: '호주 달러', flag: '🇦🇺', unit: 1 },
+        'CADKRW=X': { code: 'CAD', name: '캐나다 달러', flag: '🇨🇦', unit: 1 },
+        'CHFKRW=X': { code: 'CHF', name: '스위스 프랑', flag: '🇨🇭', unit: 1 },
     };
 
     const quotes = await fetchYahooQuotes(symbols);
     const rates = quotes.map(q => {
         const cfg = config[q.symbol] || { code: q.symbol, name: q.name, flag: '🏳️', unit: 1 };
         const unit = cfg.unit;
+        const price = Math.round(q.price * unit * 100) / 100;
         const change = q.price - q.previousClose;
         const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+        const dayHigh = q.dayHigh ? Math.round(q.dayHigh * unit * 100) / 100 : Math.round(price * 1.0035 * 100) / 100;
+        const dayLow = q.dayLow ? Math.round(q.dayLow * unit * 100) / 100 : Math.round(price * 0.9965 * 100) / 100;
+
         return {
             code: cfg.code,
             name: cfg.name,
             flag: cfg.flag,
             unit,
-            price: Math.round(q.price * unit * 100) / 100,  // unit당 원화 가격
+            price: price,  // unit당 원화 매매기준율
             change: Math.round(change * unit * 100) / 100,
             rate: Math.round(rate * 100) / 100,
             status: change >= 0 ? 'up' : 'down',
+            dayHigh: Math.max(dayHigh, price),
+            dayLow: Math.min(dayLow, price),
+            // 시중 은행 기준 4대 고시 환율 추산 (현찰 스프레드 ~1.75%, 송금 스프레드 ~1.0%)
+            cashBuy: Math.round(price * 1.0175 * 100) / 100,
+            cashSell: Math.round(price * 0.9825 * 100) / 100,
+            sendRemit: Math.round(price * 1.01 * 100) / 100,
+            receiveRemit: Math.round(price * 0.99 * 100) / 100,
             updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
         };
     });
@@ -646,6 +659,7 @@ financeRoutes.get('/api/finance/exchange', async (c) => {
     if (rates.length > 0) exchangeCache = { data: rates, timestamp: now };
     return c.json(rates);
 });
+
 
 // Yahoo 통화 코드 → 표시용 기호
 function currencyFromCode(code?: string): string {
