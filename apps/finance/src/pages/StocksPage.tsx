@@ -239,10 +239,10 @@ export default function StocksPage() {
                 </div>
             </div>
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full">
                 
                 {/* 🔍 HERO: 스마트 종목 검색 & 인기 급상승 키워드 */}
-                <section className="mb-10 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl relative overflow-hidden">
+                <section className="mb-8 sm:mb-10 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-5 sm:p-10 text-white shadow-xl relative overflow-hidden">
                     <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="absolute -left-10 -top-10 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     
@@ -251,10 +251,10 @@ export default function StocksPage() {
                             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                             실시간 글로벌 주식 & 테마 분석
                         </div>
-                        <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight mb-2">
+                        <h1 className="text-xl sm:text-4xl font-black tracking-tight leading-tight mb-2">
                             어떤 종목의 정보를 찾으시나요?
                         </h1>
-                        <p className="text-xs sm:text-sm text-slate-300 mb-6">
+                        <p className="text-xs sm:text-sm text-slate-300 mb-4 sm:mb-6 leading-relaxed">
                             국내 KOSPI·KOSDAQ 우량주부터 미국 나스닥 빅테크, 실시간 급등주 및 테마별 대장주를 검색하세요.
                         </p>
 
@@ -262,18 +262,18 @@ export default function StocksPage() {
                         <div ref={searchRef} className="relative w-full">
                             <form onSubmit={handleSearchSubmit} className="relative">
                                 <div className="relative flex items-center">
-                                    <i className="fas fa-search absolute left-4 text-slate-400 text-base"></i>
+                                    <i className="fas fa-search absolute left-3.5 sm:left-4 text-slate-400 text-sm sm:text-base"></i>
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         onFocus={() => { if (searchResults.length > 0) setShowSearchDropdown(true); }}
-                                        placeholder="종목명 또는 코드 입력 (예: 삼성전자, 005930, 엔비디아, NVDA, 애플, 테슬라)"
-                                        className="w-full pl-11 pr-24 py-3.5 sm:py-4 bg-white/95 text-slate-900 placeholder-slate-400 rounded-2xl text-sm sm:text-base font-semibold focus:outline-none focus:ring-4 focus:ring-blue-500/40 shadow-lg border border-white/20 transition-all"
+                                        placeholder="종목명 또는 코드 (예: 삼성전자, NVDA, 테슬라)"
+                                        className="w-full pl-10 sm:pl-11 pr-20 sm:pr-24 py-3 sm:py-4 bg-white/95 text-slate-900 placeholder-slate-400 rounded-2xl text-xs sm:text-base font-semibold focus:outline-none focus:ring-4 focus:ring-blue-500/40 shadow-lg border border-white/20 transition-all"
                                     />
                                     <button
                                         type="submit"
-                                        className="absolute right-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md cursor-pointer"
+                                        className="absolute right-1.5 sm:right-2 px-3.5 sm:px-5 py-2 sm:py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm rounded-xl transition-all shadow-md cursor-pointer"
                                     >
                                         검색
                                     </button>
@@ -295,25 +295,25 @@ export default function StocksPage() {
                                                     navigate(`/stock/${item.ticker}`);
                                                     setShowSearchDropdown(false);
                                                 }}
-                                                className="p-3.5 hover:bg-blue-50/70 transition-colors flex items-center justify-between cursor-pointer group"
+                                                className="p-3 sm:p-3.5 hover:bg-blue-50/70 transition-colors flex items-center justify-between cursor-pointer group"
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded font-mono ${
+                                                <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 mr-2">
+                                                    <span className={`text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded font-mono shrink-0 ${
                                                         item.market === 'KRX' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
                                                     }`}>
                                                         {item.market}
                                                     </span>
-                                                    <div>
-                                                        <div className="font-extrabold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-extrabold text-xs sm:text-sm text-slate-900 group-hover:text-blue-600 transition-colors truncate">
                                                             {item.name}
                                                         </div>
-                                                        <div className="text-xs text-slate-400 font-mono">
+                                                        <div className="text-[11px] text-slate-400 font-mono truncate">
                                                             {item.ticker} · {item.englishName}
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg">
+                                                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                                    <span className="text-[10px] sm:text-[11px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg whitespace-nowrap hidden sm:inline-block">
                                                         {item.sector}
                                                     </span>
                                                     <i className="fas fa-chevron-right text-xs text-slate-300 group-hover:text-blue-500 transition-colors"></i>
@@ -326,8 +326,8 @@ export default function StocksPage() {
                         </div>
 
                         {/* 인기 해시태그 칩 */}
-                        <div className="flex items-center gap-1.5 flex-wrap mt-4">
-                            <span className="text-xs text-slate-400 font-bold mr-1">인기 검색:</span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-3 sm:mt-4">
+                            <span className="text-xs text-slate-400 font-bold mr-1">인기:</span>
                             {POPULAR_TAGS.map((tag) => (
                                 <button
                                     key={tag.ticker}
@@ -343,35 +343,35 @@ export default function StocksPage() {
                 </section>
 
                 {/* ⭐ 1. 내 관심종목(Watchlist) 스마트 대시보드 */}
-                <section className="mb-10 bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm animate-fade-in-up">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100">
+                <section className="mb-8 sm:mb-10 bg-white rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm animate-fade-in-up">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-100">
                         <div>
-                            <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                <span className="text-yellow-400 text-2xl">★</span>
+                            <h2 className="text-lg sm:text-xl font-black text-gray-900 flex items-center gap-2">
+                                <span className="text-yellow-400 text-xl sm:text-2xl">★</span>
                                 <span>내 관심종목 포트폴리오</span>
                                 {favorites.length > 0 && (
                                     <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200 font-mono">
-                                        {favorites.length}개 종목
+                                        {favorites.length}개
                                     </span>
                                 )}
                             </h2>
                             <p className="text-xs text-gray-500 mt-1">
-                                실시간 시세와 차트를 관심종목으로 저장하고 마이페이지와 자동 동기화됩니다.
+                                실시간 시세와 차트를 관심종목으로 저장하고 자동 동기화됩니다.
                             </p>
                         </div>
 
                         {/* 통계 요약 바 (종목이 있을 때) */}
                         {favStats && (
-                            <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 px-4 py-2 rounded-2xl text-xs">
+                            <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-50 border border-slate-200/80 px-3.5 py-1.5 sm:py-2 rounded-2xl text-xs self-start sm:self-auto">
                                 <div>
-                                    <span className="text-slate-400">당일 평균: </span>
+                                    <span className="text-slate-400 text-[11px] sm:text-xs">당일 평균: </span>
                                     <span className={`font-black font-mono ${favStats.avgRate >= 0 ? 'text-red-600' : 'text-blue-600'}`}>
                                         {favStats.avgRate >= 0 ? '+' : ''}{favStats.avgRate.toFixed(2)}%
                                     </span>
                                 </div>
                                 <div className="w-px h-3 bg-slate-300"></div>
                                 <div>
-                                    <span className="text-slate-400">상승/하락: </span>
+                                    <span className="text-slate-400 text-[11px] sm:text-xs">상승/하락: </span>
                                     <span className="font-bold text-red-600">{favStats.upCount}</span>
                                     <span className="text-slate-400"> / </span>
                                     <span className="font-bold text-blue-600">{favStats.total - favStats.upCount}</span>
@@ -382,25 +382,25 @@ export default function StocksPage() {
 
                     {/* 관심종목 카드 리스트 or 빈 상태 안내 */}
                     {favorites.length === 0 ? (
-                        <div className="bg-gradient-to-b from-slate-50 to-amber-50/20 border-2 border-dashed border-slate-200 rounded-2xl p-8 sm:p-10 text-center">
-                            <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center text-2xl">
+                        <div className="bg-gradient-to-b from-slate-50 to-amber-50/20 border-2 border-dashed border-slate-200 rounded-2xl p-6 sm:p-10 text-center">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 rounded-2xl bg-amber-100 text-amber-500 flex items-center justify-center text-xl sm:text-2xl">
                                 <i className="far fa-star"></i>
                             </div>
-                            <h3 className="font-black text-slate-800 text-base mb-1">아직 등록된 관심종목이 없습니다</h3>
-                            <p className="text-xs text-slate-500 max-w-md mx-auto mb-5 leading-relaxed">
+                            <h3 className="font-black text-slate-800 text-sm sm:text-base mb-1">아직 등록된 관심종목이 없습니다</h3>
+                            <p className="text-xs text-slate-500 max-w-md mx-auto mb-4 sm:mb-5 leading-relaxed">
                                 관심 있는 종목의 별(★) 버튼을 누르면 실시간 시세와 차트가 이곳에 모아집니다.
                             </p>
                             <button
                                 type="button"
                                 onClick={handleAddDefaultFavorites}
-                                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer inline-flex items-center gap-2"
+                                className="px-4 sm:px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer inline-flex items-center gap-1.5 sm:gap-2 max-w-full truncate"
                             >
-                                <span>✨ 국내/해외 대표 6대장 한 번에 담기</span>
-                                <span className="text-[10px] text-slate-300 font-mono">(삼전·하닉·현대차·NVDA·애플·TSLA)</span>
+                                <span>✨ 대표 6대장 한 번에 담기</span>
+                                <span className="text-[10px] text-slate-300 font-mono hidden sm:inline">(삼전·하닉·현대차·NVDA·애플·TSLA)</span>
                             </button>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {favorites.map((ticker, idx) => {
                                 const card = favoriteCards.find((c) => c.ticker.toUpperCase() === ticker.toUpperCase());
                                 if (card) {
@@ -419,20 +419,20 @@ export default function StocksPage() {
                                     <div 
                                         key={ticker} 
                                         style={{ animationDelay: `${idx * 50}ms` }}
-                                        className="animate-fade-in relative bg-white border border-slate-200 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] hover:shadow-md transition-all"
+                                        className="animate-fade-in relative bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[120px] sm:min-h-[140px] hover:shadow-md transition-all"
                                     >
                                         <button
                                             type="button"
                                             onClick={() => remove(ticker)}
                                             aria-label="관심종목 해제"
-                                            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full text-yellow-400 hover:bg-yellow-50 cursor-pointer"
+                                            className="absolute top-2.5 right-2.5 w-7 h-7 flex items-center justify-center rounded-full text-yellow-400 bg-yellow-50/80 cursor-pointer"
                                         >
-                                            <i className="fas fa-star"></i>
+                                            <i className="fas fa-star text-xs"></i>
                                         </button>
-                                        <Link to={`/stock/${ticker}`} className="block pr-8">
-                                            <div className="font-black text-gray-900 text-base font-mono">{ticker}</div>
-                                            <div className="text-xs text-gray-400 mt-1">
-                                                {loadingFav ? '실시간 시세 수신 중…' : '시세 정보 로딩'}
+                                        <Link to={`/stock/${ticker}`} className="block pr-7">
+                                            <div className="font-black text-gray-900 text-sm sm:text-base font-mono truncate">{ticker}</div>
+                                            <div className="text-[11px] text-gray-400 mt-1">
+                                                {loadingFav ? '시세 로딩…' : '시세 정보 로딩'}
                                             </div>
                                         </Link>
                                     </div>
@@ -443,11 +443,11 @@ export default function StocksPage() {
                 </section>
 
                 {/* 🏆 2. 실시간 시장 리더보드 (4대 랭킹 탭) */}
-                <section className="mb-12">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                <section className="mb-10 sm:mb-12">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
                         <div>
-                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
-                                <span className="text-2xl">🏆</span>
+                            <h2 className="text-lg sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                                <span className="text-xl sm:text-2xl">🏆</span>
                                 <span>실시간 시장 리더보드 TOP 10</span>
                             </h2>
                             <p className="text-xs text-gray-500 mt-1">
@@ -456,7 +456,7 @@ export default function StocksPage() {
                         </div>
 
                         {/* 4대 랭킹 선택 탭 바 */}
-                        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl overflow-x-auto self-start sm:self-auto">
+                        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl overflow-x-auto self-start sm:self-auto max-w-full">
                             {LEADER_TABS.map((tab) => {
                                 const isActive = activeLeaderTab === tab.key;
                                 return (
@@ -464,7 +464,7 @@ export default function StocksPage() {
                                         key={tab.key}
                                         type="button"
                                         onClick={() => setActiveLeaderTab(tab.key)}
-                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                                             isActive
                                                 ? 'bg-white text-slate-900 shadow-md font-black scale-[1.02]'
                                                 : 'text-slate-600 hover:text-slate-900'
@@ -479,17 +479,96 @@ export default function StocksPage() {
                     </div>
 
                     {/* 선택된 리더보드 안내 배너 */}
-                    <div className="mb-4 p-3.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-white rounded-2xl border border-blue-100 flex items-center gap-3 text-xs text-slate-700">
-                        <span className="text-lg shrink-0">{currentLeaderTab.icon}</span>
+                    <div className="mb-4 p-3 sm:p-3.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-white rounded-2xl border border-blue-100 flex items-center gap-2.5 sm:gap-3 text-xs text-slate-700">
+                        <span className="text-base sm:text-lg shrink-0">{currentLeaderTab.icon}</span>
                         <div className="leading-relaxed">
                             <span className="font-extrabold text-blue-900 mr-1.5">[{currentLeaderTab.label}]</span>
                             <span className="text-slate-600">{currentLeaderTab.insight}</span>
                         </div>
                     </div>
 
-                    {/* 리더보드 테이블/리스트 */}
+                    {/* 리더보드 컨테이너: 모바일 전용 카드형 리스트 뷰 + 데스크톱 테이블 뷰 */}
                     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div className="overflow-x-auto">
+                        
+                        {/* 📱 모바일 전용 카드 리스트 뷰 (sm 미만) */}
+                        <div className="block sm:hidden divide-y divide-slate-100">
+                            {loadingLeaders ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <div key={i} className="p-4 animate-pulse flex items-center gap-3">
+                                        <div className="w-6 h-6 bg-slate-200 rounded-full"></div>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-4 bg-slate-200 rounded w-28"></div>
+                                            <div className="h-3 bg-slate-100 rounded w-40"></div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                leaders.map((stock) => {
+                                    const isFav = isFavorite(stock.ticker);
+                                    return (
+                                        <div key={stock.ticker} className="p-3.5 hover:bg-blue-50/30 transition-colors flex items-center justify-between gap-2.5">
+                                            {/* 좌측: 순위 + 종목 정보 */}
+                                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs shrink-0 font-black ${
+                                                    stock.rank === 1 ? 'bg-amber-400 text-slate-950 shadow-xs' :
+                                                    stock.rank === 2 ? 'bg-slate-300 text-slate-900' :
+                                                    stock.rank === 3 ? 'bg-amber-700/80 text-white' :
+                                                    'text-slate-400 bg-slate-100'
+                                                }`}>
+                                                    {stock.rank}
+                                                </span>
+                                                <Link to={`/stock/${stock.ticker}`} className="min-w-0 flex-1">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="font-extrabold text-slate-900 text-sm truncate">
+                                                            {stock.name}
+                                                        </span>
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded font-mono shrink-0 ${
+                                                            stock.market === 'KRX' ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
+                                                        }`}>
+                                                            {stock.ticker}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 truncate mt-0.5">
+                                                        시총: {stock.marketCap}
+                                                    </div>
+                                                </Link>
+                                            </div>
+
+                                            {/* 우측: 현재가 + 등락률 + 관심 토글 */}
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <div className="text-right">
+                                                    <div className="stock-number font-black text-slate-900 text-sm whitespace-nowrap">
+                                                        {stock.currency}{stock.price.toLocaleString('ko-KR')}
+                                                    </div>
+                                                    <div className="mt-0.5">
+                                                        <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded whitespace-nowrap ${
+                                                            stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
+                                                        }`}>
+                                                            <span>{stock.status === 'up' ? '▲' : '▼'}</span>
+                                                            <span>{stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggle(stock.ticker, { name: stock.name })}
+                                                    className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+                                                        isFav ? 'text-yellow-400 bg-yellow-50' : 'text-slate-300 hover:text-yellow-400'
+                                                    }`}
+                                                    aria-label={isFav ? '관심종목 해제' : '관심종목 추가'}
+                                                >
+                                                    <i className={`${isFav ? 'fas' : 'far'} fa-star text-xs`}></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* 🖥️ 데스크톱 전용 테이블 뷰 (sm 이상) */}
+                        <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full text-left text-xs sm:text-sm">
                                 <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[11px] uppercase tracking-wider">
                                     <tr>
@@ -552,12 +631,12 @@ export default function StocksPage() {
                                                     </td>
 
                                                     {/* 현재가 */}
-                                                    <td className="py-4 px-4 text-right font-black stock-number text-slate-900 text-sm sm:text-base">
+                                                    <td className="py-4 px-4 text-right font-black stock-number text-slate-900 text-sm sm:text-base whitespace-nowrap">
                                                         {stock.currency}{stock.price.toLocaleString('ko-KR')}
                                                     </td>
 
                                                     {/* 등락률 */}
-                                                    <td className="py-4 px-4 text-right font-bold stock-number">
+                                                    <td className="py-4 px-4 text-right font-bold stock-number whitespace-nowrap">
                                                         <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-lg ${
                                                             stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                                         }`}>
@@ -609,6 +688,7 @@ export default function StocksPage() {
                     </div>
                 </section>
 
+
                 {/* 🌟 중간 광고 & 스폰서 배너 슬롯 */}
                 <BannerSlot slotKey="finance_stocks_middle" fallbackSlotKey="main_center" className="my-10" />
 
@@ -655,14 +735,14 @@ export default function StocksPage() {
 
                     {/* 선택된 테마 카드 컨테이너 */}
                     {currentTheme && (
-                        <div className="bg-gradient-to-b from-slate-50/90 via-slate-100/40 to-slate-50 rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm animate-fade-in">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-4 border-b border-slate-200/80">
-                                <div className="flex items-center gap-3">
-                                    <span className="text-3xl">{currentTheme.icon}</span>
+                        <div className="bg-gradient-to-b from-slate-50/90 via-slate-100/40 to-slate-50 rounded-3xl p-4 sm:p-7 border border-slate-200 shadow-sm animate-fade-in">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-200/80">
+                                <div className="flex items-center gap-2.5 sm:gap-3">
+                                    <span className="text-2xl sm:text-3xl shrink-0">{currentTheme.icon}</span>
                                     <div>
-                                        <h3 className="font-black text-slate-900 text-base sm:text-lg flex items-center gap-2">
+                                        <h3 className="font-black text-slate-900 text-sm sm:text-lg flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                             <span>{currentTheme.name}</span>
-                                            <span className="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
+                                            <span className="text-[10px] sm:text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200">
                                                 {currentTheme.highlight}
                                             </span>
                                         </h3>
@@ -672,38 +752,38 @@ export default function StocksPage() {
                             </div>
 
                             {/* 테마 내 대표 종목 그리드 */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                 {currentTheme.stocks.map((stock) => (
                                     <Link
                                         key={stock.ticker}
                                         to={`/stock/${stock.ticker}`}
-                                        className="bg-white rounded-2xl p-5 border border-slate-200/90 hover:border-blue-400 hover:shadow-lg transition-all group flex flex-col justify-between"
+                                        className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 hover:border-blue-400 hover:shadow-lg transition-all group flex flex-col justify-between"
                                     >
                                         <div>
                                             <div className="flex items-start justify-between gap-2 mb-1.5">
-                                                <div>
-                                                    <div className="font-black text-slate-900 text-base group-hover:text-blue-600 transition-colors">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-extrabold text-slate-900 text-sm sm:text-base group-hover:text-blue-600 transition-colors truncate" title={stock.name}>
                                                         {stock.name}
                                                     </div>
                                                     <div className="text-[10px] text-slate-400 font-mono">
                                                         {stock.ticker}
                                                     </div>
                                                 </div>
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                                                <span className={`text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap ${
                                                     stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                                 }`}>
                                                     {stock.status === 'up' ? '▲' : '▼'} {stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%
                                                 </span>
                                             </div>
 
-                                            <div className="stock-number text-xl font-black text-slate-900 mt-2">
+                                            <div className="stock-number text-lg sm:text-xl font-black text-slate-900 mt-1 sm:mt-2 whitespace-nowrap">
                                                 {stock.currency}{stock.price.toLocaleString('ko-KR')}
                                             </div>
                                         </div>
 
-                                        <div className="mt-3.5 pt-2.5 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
+                                        <div className="mt-3 pt-2.5 border-t border-slate-100 text-[11px] text-slate-500 leading-relaxed">
                                             <span className="font-semibold text-slate-700">포인트: </span>
-                                            {stock.note}
+                                            <span className="line-clamp-2 sm:line-clamp-none">{stock.note}</span>
                                         </div>
                                     </Link>
                                 ))}

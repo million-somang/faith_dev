@@ -153,51 +153,51 @@ export default function FinancePage() {
                 key={stock.ticker}
                 to={`/stock/${stock.ticker}`}
                 style={{ animationDelay: `${baseDelay + idx * 80}ms` }}
-                className={`animate-fade-in-up bg-white rounded-2xl p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 flex flex-col justify-between ${
+                className={`animate-fade-in-up bg-white rounded-2xl p-3.5 sm:p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 flex flex-col justify-between ${
                     isKR 
                         ? 'border-slate-200/90 border-t-4 border-t-blue-500 hover:border-blue-400' 
                         : 'border-slate-200/90 border-t-4 border-t-rose-500 hover:border-rose-400'
                 }`}
             >
                 <div>
-                    <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div>
-                            <div className="font-black text-gray-900 text-base group-hover:text-blue-600 transition-colors">
+                    <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                        <div className="min-w-0 flex-1">
+                            <div className="font-extrabold text-gray-900 text-sm sm:text-base group-hover:text-blue-600 transition-colors truncate" title={stock.name}>
                                 {stock.name}
                             </div>
                             <div className="mt-0.5">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono ${
+                                <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded font-mono inline-block truncate max-w-full ${
                                     isKR ? 'bg-blue-50 text-blue-700' : 'bg-rose-50 text-rose-700'
                                 }`}>
-                                    {isKR ? `KRX: ${stock.ticker}` : `NASDAQ: ${stock.ticker}`}
+                                    {isKR ? stock.ticker : stock.ticker}
                                 </span>
                             </div>
                         </div>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg shrink-0 ${
+                        <span className={`text-[11px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap ${
                             stock.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                         }`}>
                             {stock.status === 'up' ? '▲' : '▼'} {Math.abs(stock.rate).toFixed(2)}%
                         </span>
                     </div>
 
-                    <div className="stock-number text-2xl font-black text-gray-900 mt-2.5">
+                    <div className="stock-number text-lg sm:text-2xl font-black text-gray-900 mt-2 whitespace-nowrap">
                         {stock.currency}{stock.price.toLocaleString('ko-KR')}
                         {!isKR && (
-                            <span className="text-[11px] font-normal text-slate-400 ml-1.5">
+                            <span className="text-[10px] sm:text-[11px] font-normal text-slate-400 ml-1 hidden sm:inline">
                                 (약 ₩{Math.round(stock.price * 1380).toLocaleString('ko-KR')})
                             </span>
                         )}
                     </div>
 
-                    <div className={`stock-number text-xs font-semibold mt-1 ${stock.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
+                    <div className={`stock-number text-[11px] sm:text-xs font-semibold mt-1 whitespace-nowrap truncate ${stock.status === 'up' ? 'text-red-500' : 'text-blue-500'}`}>
                         {stock.change >= 0 ? '+' : ''}{stock.currency === '$' ? '$' : ''}{Math.abs(stock.change).toLocaleString('ko-KR')} ({stock.rate >= 0 ? '+' : ''}{stock.rate.toFixed(2)}%)
                     </div>
                 </div>
 
-                <div className={`mt-3.5 pt-2.5 border-t border-slate-100 rounded-xl p-2 flex justify-center ${
+                <div className={`mt-3 pt-2 border-t border-slate-100 rounded-xl p-1.5 flex justify-center w-full overflow-hidden ${
                     isKR ? 'bg-slate-50/80' : 'bg-rose-50/20'
                 }`}>
-                    <SparklineChart data={stock.sparkline} status={stock.status} width={170} height={42} />
+                    <SparklineChart data={stock.sparkline} status={stock.status} height={34} className="w-full" />
                 </div>
             </Link>
         );
@@ -221,10 +221,10 @@ export default function FinancePage() {
                 </div>
             </div>
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10 w-full">
                 {/* 🌟 국가별 주식 지수 섹션 (탭 선택 시 해당 국가 지수만 표시) */}
-                <section className="mb-10 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-slate-100">
+                <section className="mb-8 sm:mb-10 bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-100">
                         <div>
                             <div className="flex items-center gap-2">
                                 <span className="text-xl">{currentTabInfo.flag}</span>
@@ -238,7 +238,7 @@ export default function FinancePage() {
                         </div>
 
                         {/* 국가 선택 탭 바 (한국 기본, 미국, 중국, 일본, 프랑스) */}
-                        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100 rounded-2xl border border-slate-200/60 overflow-x-auto self-start sm:self-auto">
+                        <div className="flex items-center gap-1.5 p-1 sm:p-1.5 bg-slate-100 rounded-2xl border border-slate-200/60 overflow-x-auto self-start sm:self-auto max-w-full">
                             {COUNTRY_TABS.map(tab => {
                                 const isActive = selectedCountry === tab.key;
                                 return (
@@ -246,7 +246,7 @@ export default function FinancePage() {
                                         key={tab.key}
                                         type="button"
                                         onClick={() => setSelectedCountry(tab.key)}
-                                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                                             isActive
                                                 ? 'bg-blue-600 text-white shadow-sm font-black'
                                                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
@@ -261,30 +261,30 @@ export default function FinancePage() {
                     </div>
 
                     {/* 선택된 국가의 지수 카드 그리드 */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                         {filteredIndices.map(index => (
                             <div 
                                 key={index.symbol || index.name} 
-                                className={`p-5 hover:shadow-md transition-all duration-300 border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${loading ? 'animate-pulse' : ''}`}
+                                className={`p-4 sm:p-5 hover:shadow-md transition-all duration-300 border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${loading ? 'animate-pulse' : ''}`}
                             >
-                                <div className="flex items-start justify-between mb-2">
-                                    <div>
+                                <div className="flex items-start justify-between mb-2 gap-2">
+                                    <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-1.5">
-                                            {index.flag && <span className="text-base">{index.flag}</span>}
-                                            <h3 className="text-sm font-bold text-gray-900">{index.name}</h3>
+                                            {index.flag && <span className="text-base shrink-0">{index.flag}</span>}
+                                            <h3 className="text-sm font-bold text-gray-900 truncate" title={index.name}>{index.name}</h3>
                                         </div>
                                         {index.description && (
                                             <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{index.description}</p>
                                         )}
                                     </div>
-                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                    <span className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
                                         index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                     }`}>
                                         {index.status === 'up' ? '▲ 상승' : '▼ 하락'}
                                     </span>
                                 </div>
 
-                                <div className="stock-number text-2xl font-black text-gray-900 my-1.5">
+                                <div className="stock-number text-xl sm:text-2xl font-black text-gray-900 my-1 whitespace-nowrap">
                                     {index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     {index.currency && (
                                         <span className="text-xs font-bold text-gray-400 ml-1">{index.currency}</span>
@@ -292,7 +292,7 @@ export default function FinancePage() {
                                 </div>
 
                                 <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                                    <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
                                         <span className={`stock-number font-extrabold ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
                                             {index.status === 'up' ? '+' : ''}{index.change.toLocaleString('ko-KR', { minimumFractionDigits: 2 })}
                                         </span>
@@ -301,13 +301,14 @@ export default function FinancePage() {
                                         </span>
                                     </div>
                                     {index.updatedAt && (
-                                        <span className="text-[10px] text-gray-400 font-mono">{index.updatedAt}</span>
+                                        <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">{index.updatedAt}</span>
                                     )}
                                 </div>
                             </div>
                         ))}
                     </div>
                 </section>
+
 
                 {/* 💡 금융Util 3대 킬러 계산기 섹션 */}
                 <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80 animate-fade-in-up animation-delay-75">
@@ -448,7 +449,7 @@ export default function FinancePage() {
                         })()}
 
                         {/* 지표 카드 그리드 */}
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                             {(selectedMacroCategory === 'all' 
                                 ? macro 
                                 : macro.filter(m => m.category === selectedMacroCategory)
@@ -456,31 +457,31 @@ export default function FinancePage() {
                                 <div 
                                     key={item.symbol} 
                                     style={{ animationDelay: `${idx * 50}ms` }}
-                                    className="animate-fade-in bg-white border border-slate-200/90 rounded-2xl p-4 sm:p-5 hover:shadow-lg hover:border-emerald-400 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                    className="animate-fade-in bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-5 hover:shadow-lg hover:border-emerald-400 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
                                 >
                                     <div>
                                         {/* 헤더: 아이콘, 이름, 단위 배지 */}
-                                        <div className="flex items-start justify-between gap-2 mb-2">
-                                            <div className="flex items-center gap-2 min-w-0">
-                                                <span className="text-xl shrink-0">{item.icon}</span>
-                                                <div className="min-w-0">
-                                                    <div className="font-extrabold text-gray-900 text-sm truncate" title={item.name}>
+                                        <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                                <span className="text-lg sm:text-xl shrink-0">{item.icon}</span>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-extrabold text-gray-900 text-xs sm:text-sm truncate" title={item.name}>
                                                         {item.name}
                                                     </div>
-                                                    <div className="text-[10px] text-gray-400 font-mono">
+                                                    <div className="text-[10px] text-gray-400 font-mono truncate">
                                                         {item.symbol}
                                                     </div>
                                                 </div>
                                             </div>
                                             {item.unit && (
-                                                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap">
+                                                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded shrink-0 whitespace-nowrap hidden sm:inline-block">
                                                     {item.unit}
                                                 </span>
                                             )}
                                         </div>
 
                                         {/* 현재가 */}
-                                        <div className="stock-number text-xl sm:text-2xl font-black text-gray-900 mt-2">
+                                        <div className="stock-number text-base sm:text-2xl font-black text-gray-900 mt-1 sm:mt-2 whitespace-nowrap">
                                             {item.currency}{item.price >= 1000 
                                                 ? item.price.toLocaleString('ko-KR') 
                                                 : item.price.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -488,8 +489,8 @@ export default function FinancePage() {
                                         </div>
 
                                         {/* 등락폭 및 등락률 */}
-                                        <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                            <span className={`inline-flex items-center gap-0.5 text-xs font-bold px-2 py-0.5 rounded-lg ${
+                                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                            <span className={`inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${
                                                 item.status === 'up' 
                                                     ? 'bg-red-50 text-red-600' 
                                                     : 'bg-blue-50 text-blue-600'
@@ -502,12 +503,12 @@ export default function FinancePage() {
                                     </div>
 
                                     {/* 카드 하단 설명 및 갱신 시각 */}
-                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                                        <span className="truncate pr-2 text-slate-500" title={item.description}>
+                                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                                        <span className="truncate pr-1 text-slate-500" title={item.description}>
                                             {item.description || '글로벌 주요 지표'}
                                         </span>
                                         {item.updatedAt && (
-                                            <span className="shrink-0 font-mono text-[10px] text-slate-400">{item.updatedAt}</span>
+                                            <span className="shrink-0 font-mono text-[9px] sm:text-[10px] text-slate-400 hidden sm:inline">{item.updatedAt}</span>
                                         )}
                                     </div>
                                 </div>
@@ -528,15 +529,15 @@ export default function FinancePage() {
                                     KRX
                                 </span>
                                 <div>
-                                    <h2 className="text-xl font-black text-gray-900">
-                                        국내 대표 기업 <span className="text-sm font-semibold text-slate-500">(KOSPI 200 대형주)</span>
+                                    <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                        국내 대표 기업 <span className="text-xs sm:text-sm font-semibold text-slate-500">(KOSPI 200 대형주)</span>
                                     </h2>
                                     <p className="text-[11px] text-slate-400">대한민국 증시를 주도하는 핵심 블루칩 실시간 시세</p>
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">20분 지연 시세</span>
+                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg hidden sm:inline-block">20분 지연 시세</span>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {krStocks.map((stock, idx) => renderStockCard(stock, idx, 150, 'kr'))}
                         </div>
                     </div>
@@ -551,15 +552,15 @@ export default function FinancePage() {
                                     US
                                 </span>
                                 <div>
-                                    <h2 className="text-xl font-black text-gray-900">
-                                        미국 빅테크 주도주 <span className="text-sm font-semibold text-slate-500">(Global Tech Leaders)</span>
+                                    <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                        미국 빅테크 주도주 <span className="text-xs sm:text-sm font-semibold text-slate-500">(Global Tech Leaders)</span>
                                     </h2>
                                     <p className="text-[11px] text-slate-400">전 세계 인공지능과 혁신을 이끄는 매그니피센트 대표주</p>
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg">15분 지연 시세</span>
+                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg hidden sm:inline-block">15분 지연 시세</span>
                         </div>
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {usStocks.map((stock, idx) => renderStockCard(stock, idx, 250, 'us'))}
                         </div>
                     </div>
