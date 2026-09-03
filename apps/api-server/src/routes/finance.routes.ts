@@ -779,35 +779,42 @@ interface LeaderConfig {
 }
 
 const MARKET_LEADERS_CONFIG: Record<string, LeaderConfig[]> = {
+    // 👑 국내 시가총액 기준 TOP 10 (대한민국 KOSPI/KOSDAQ 실제 시가총액 순위)
     market_cap: [
-        { ticker: '005930', symbol: '005930.KS', name: '삼성전자', market: 'KRX', currency: '₩', marketCap: '480조', detail: '글로벌 메모리 반도체 1위', fallbackPrice: 80500, fallbackChange: 1200, fallbackRate: 1.51 },
-        { ticker: 'NVDA', symbol: 'NVDA', name: '엔비디아', market: 'NASDAQ', currency: '$', marketCap: '3.4조$', detail: 'AI 가속기 GPU 독점', fallbackPrice: 128.50, fallbackChange: 4.20, fallbackRate: 3.38 },
-        { ticker: 'AAPL', symbol: 'AAPL', name: '애플', market: 'NASDAQ', currency: '$', marketCap: '3.3조$', detail: '아이폰 & 온디바이스 AI', fallbackPrice: 226.80, fallbackChange: 1.80, fallbackRate: 0.80 },
-        { ticker: 'MSFT', symbol: 'MSFT', name: '마이크로소프트', market: 'NASDAQ', currency: '$', marketCap: '3.1조$', detail: '클라우드 애저 & 오픈AI 파트너', fallbackPrice: 422.40, fallbackChange: 3.10, fallbackRate: 0.74 },
-        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', marketCap: '142조', detail: 'HBM3E 고대역폭 메모리 주도', fallbackPrice: 195000, fallbackChange: 6500, fallbackRate: 3.45 },
-        { ticker: 'GOOGL', symbol: 'GOOGL', name: '알파벳(구글)', market: 'NASDAQ', currency: '$', marketCap: '2.0조$', detail: '구글 검색 & 제미나이 AI', fallbackPrice: 165.20, fallbackChange: -0.80, fallbackRate: -0.48 },
-        { ticker: 'AMZN', symbol: 'AMZN', name: '아마존', market: 'NASDAQ', currency: '$', marketCap: '1.9조$', detail: '이커머스 & AWS 클라우드', fallbackPrice: 178.60, fallbackChange: 2.40, fallbackRate: 1.36 },
-        { ticker: '373220', symbol: '373220.KS', name: 'LG에너지솔루션', market: 'KRX', currency: '₩', marketCap: '86조', detail: '글로벌 전기차 배터리 선도', fallbackPrice: 367000, fallbackChange: -2000, fallbackRate: -0.54 },
-        { ticker: 'TSLA', symbol: 'TSLA', name: '테슬라', market: 'NASDAQ', currency: '$', marketCap: '7800억$', detail: '전기차 & FSD 자율주행·로봇', fallbackPrice: 245.80, fallbackChange: 8.50, fallbackRate: 3.58 },
-        { ticker: '005380', symbol: '005380.KS', name: '현대차', market: 'KRX', currency: '₩', marketCap: '52조', detail: '완성차 & 하이브리드·인도법인 상장', fallbackPrice: 251000, fallbackChange: 4000, fallbackRate: 1.62 },
+        { ticker: '005930', symbol: '005930.KS', name: '삼성전자', market: 'KRX', currency: '₩', marketCap: '450조', detail: '글로벌 메모리 반도체 & 파운드리 1위', fallbackPrice: 80500, fallbackChange: 1200, fallbackRate: 1.51 },
+        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', marketCap: '145조', detail: 'HBM3E 고대역폭 메모리 글로벌 독점', fallbackPrice: 195000, fallbackChange: 6500, fallbackRate: 3.45 },
+        { ticker: '373220', symbol: '373220.KS', name: 'LG에너지솔루션', market: 'KRX', currency: '₩', marketCap: '85조', detail: '글로벌 전기차 배터리 선도 셀 메이커', fallbackPrice: 367000, fallbackChange: 2000, fallbackRate: 0.55 },
+        { ticker: '207940', symbol: '207940.KS', name: '삼성바이오로직스', market: 'KRX', currency: '₩', marketCap: '70조', detail: '바이오의약품 글로벌 CDMO 생산능력 1위', fallbackPrice: 980000, fallbackChange: 15000, fallbackRate: 1.55 },
+        { ticker: '005380', symbol: '005380.KS', name: '현대차', market: 'KRX', currency: '₩', marketCap: '52조', detail: '완성차 수익성 극대화 & 인도법인 상장', fallbackPrice: 251000, fallbackChange: 4000, fallbackRate: 1.62 },
+        { ticker: '068270', symbol: '068270.KS', name: '셀트리온', market: 'KRX', currency: '₩', marketCap: '42조', detail: '짐펜트라 미국 신약 직판 & 바이오 챔피언', fallbackPrice: 198000, fallbackChange: 3500, fallbackRate: 1.80 },
+        { ticker: '000270', symbol: '000270.KS', name: '기아', market: 'KRX', currency: '₩', marketCap: '41조', detail: '고수익 레저용 RV 차량 & 고배당 주주환원', fallbackPrice: 104500, fallbackChange: 1800, fallbackRate: 1.75 },
+        { ticker: '105560', symbol: '105560.KS', name: 'KB금융', market: 'KRX', currency: '₩', marketCap: '35조', detail: '국내 1등 금융그룹 & 밸류업 선도주', fallbackPrice: 84500, fallbackChange: 1100, fallbackRate: 1.32 },
+        { ticker: '035420', symbol: '035420.KS', name: 'NAVER', market: 'KRX', currency: '₩', marketCap: '34조', detail: '대한민국 1위 포털 검색 & AI 클라우드', fallbackPrice: 215000, fallbackChange: 4500, fallbackRate: 2.14 },
+        { ticker: '055550', symbol: '055550.KS', name: '신한지주', market: 'KRX', currency: '₩', marketCap: '28조', detail: '대표 리딩금융 & 분기배당 주주환원', fallbackPrice: 56200, fallbackChange: 800, fallbackRate: 1.44 },
     ],
+    // 🚀 실시간 급등주 후보군 (상승률 내림차순 정렬 및 양수(+) 종목만 선별)
     gainers: [
         { ticker: '042700', symbol: '042700.KS', name: '한미반도체', market: 'KRX', currency: '₩', marketCap: '14조', detail: 'HBM 필수 Dual TC 본더 독점', fallbackPrice: 145000, fallbackChange: 12500, fallbackRate: 9.43 },
         { ticker: 'PLTR', symbol: 'PLTR', name: '팔란티어', market: 'NYSE', currency: '$', marketCap: '820억$', detail: '정부·기업용 AI 플랫폼 AIP 급성장', fallbackPrice: 37.40, fallbackChange: 2.85, fallbackRate: 8.25 },
-        { ticker: '277810', symbol: '277810.KQ', name: '천보', market: 'KRX', currency: '₩', marketCap: '1.2조', detail: '2차전지 전해질 신제품 공급', fallbackPrice: 78900, fallbackChange: 5400, fallbackRate: 7.35 },
-        { ticker: 'ARM', symbol: 'ARM', name: 'ARM 홀딩스', market: 'NASDAQ', currency: '$', marketCap: '1400억$', detail: '차세대 AI 스마트폰 CPU IP 설계', fallbackPrice: 138.20, fallbackChange: 8.90, fallbackRate: 6.88 },
+        { ticker: '277810', symbol: '277810.KQ', name: '천보', market: 'KRX', currency: '₩', marketCap: '1.2조', detail: '2차전지 전해질 신제품 공급 계약', fallbackPrice: 78900, fallbackChange: 5400, fallbackRate: 7.35 },
+        { ticker: 'ARM', symbol: 'ARM', name: 'ARM 홀딩스', market: 'NASDAQ', currency: '$', marketCap: '1400억$', detail: '차세대 AI 스마트폰 CPU 아키텍처 독점', fallbackPrice: 138.20, fallbackChange: 8.90, fallbackRate: 6.88 },
         { ticker: '000100', symbol: '000100.KS', name: '유한양행', market: 'KRX', currency: '₩', marketCap: '10조', detail: '렉라자 FDA 승인 후 글로벌 매출 가시화', fallbackPrice: 132000, fallbackChange: 8000, fallbackRate: 6.45 },
-        { ticker: 'AVGO', symbol: 'AVGO', name: '브로드컴', market: 'NASDAQ', currency: '$', marketCap: '7900억$', detail: 'AI ASIC 맞춤형 칩 & 네트워킹', fallbackPrice: 168.40, fallbackChange: 9.20, fallbackRate: 5.78 },
-        { ticker: '003670', symbol: '003670.KS', name: '포스코퓨처엠', market: 'KRX', currency: '₩', marketCap: '18조', detail: '양·음극재 턴어라운드 기대감', fallbackPrice: 236000, fallbackChange: 11500, fallbackRate: 5.12 },
-        { ticker: 'LLY', symbol: 'LLY', name: '일라이릴리', market: 'NYSE', currency: '$', marketCap: '8900억$', detail: '비만치료제 젭바운드 글로벌 수요 폭발', fallbackPrice: 948.50, fallbackChange: 42.00, fallbackRate: 4.63 },
-        { ticker: '035420', symbol: '035420.KS', name: 'NAVER', market: 'KRX', currency: '₩', marketCap: '35조', detail: '클라우드 AI 및 광고 효율화', fallbackPrice: 215000, fallbackChange: 7000, fallbackRate: 3.37 },
-        { ticker: 'TSM', symbol: 'TSM', name: 'TSMC', market: 'NYSE', currency: '$', marketCap: '8800억$', detail: '글로벌 3nm 파운드리 풀가동', fallbackPrice: 172.50, fallbackChange: 5.40, fallbackRate: 3.23 },
+        { ticker: 'AVGO', symbol: 'AVGO', name: '브로드컴', market: 'NASDAQ', currency: '$', marketCap: '7900억$', detail: '빅테크 맞춤형 AI ASIC 칩 수주 폭발', fallbackPrice: 168.40, fallbackChange: 9.20, fallbackRate: 5.78 },
+        { ticker: '003670', symbol: '003670.KS', name: '포스코퓨처엠', market: 'KRX', currency: '₩', marketCap: '18조', detail: '단결정 양극재 수율 개선 턴어라운드', fallbackPrice: 236000, fallbackChange: 11500, fallbackRate: 5.12 },
+        { ticker: 'LLY', symbol: 'LLY', name: '일라이릴리', market: 'NYSE', currency: '$', marketCap: '8900억$', detail: '마운자로·젭바운드 글로벌 수요 폭발', fallbackPrice: 948.50, fallbackChange: 42.00, fallbackRate: 4.63 },
+        { ticker: 'TSLA', symbol: 'TSLA', name: '테슬라', market: 'NASDAQ', currency: '$', marketCap: '7800억$', detail: '로보택시(Cybercab) & FSD 13 배포', fallbackPrice: 245.80, fallbackChange: 8.50, fallbackRate: 3.58 },
+        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', marketCap: '145조', detail: '엔비디아 HBM3E 독점 납품 실적 서프라이즈', fallbackPrice: 195000, fallbackChange: 6500, fallbackRate: 3.45 },
+        { ticker: 'NVDA', symbol: 'NVDA', name: '엔비디아', market: 'NASDAQ', currency: '$', marketCap: '3.4조$', detail: '블랙웰 울트라 GPU 전량 완판', fallbackPrice: 128.50, fallbackChange: 4.20, fallbackRate: 3.38 },
+        { ticker: '035420', symbol: '035420.KS', name: 'NAVER', market: 'KRX', currency: '₩', marketCap: '34조', detail: 'AI 검색 CUE: 및 클라우드 매출 본격화', fallbackPrice: 215000, fallbackChange: 7000, fallbackRate: 3.37 },
+        { ticker: 'TSM', symbol: 'TSM', name: 'TSMC', market: 'NYSE', currency: '$', marketCap: '8800억$', detail: '글로벌 3nm·2nm 파운드리 생산라인 풀가동', fallbackPrice: 172.50, fallbackChange: 5.40, fallbackRate: 3.23 },
+        { ticker: '086520', symbol: '086520.KQ', name: '에코프로', market: 'KRX', currency: '₩', marketCap: '22조', detail: '리튬 가격 반등 기대감 매수세 유입', fallbackPrice: 84500, fallbackChange: 2100, fallbackRate: 2.55 },
+        { ticker: 'AMD', symbol: 'AMD', name: 'AMD', market: 'NASDAQ', currency: '$', marketCap: '2400억$', detail: 'MI325X AI 가속기 시장 점유율 확대', fallbackPrice: 152.40, fallbackChange: 3.80, fallbackRate: 2.56 },
     ],
     volume: [
-        { ticker: '005930', symbol: '005930.KS', name: '삼성전자', market: 'KRX', currency: '₩', marketCap: '480조', detail: '일 거래대금 약 1조 2,000억원', fallbackPrice: 80500, fallbackChange: 1200, fallbackRate: 1.51 },
+        { ticker: '005930', symbol: '005930.KS', name: '삼성전자', market: 'KRX', currency: '₩', marketCap: '450조', detail: '일 거래대금 약 1조 2,000억원', fallbackPrice: 80500, fallbackChange: 1200, fallbackRate: 1.51 },
         { ticker: 'NVDA', symbol: 'NVDA', name: '엔비디아', market: 'NASDAQ', currency: '$', marketCap: '3.4조$', detail: '일 거래대금 약 280억 달러', fallbackPrice: 128.50, fallbackChange: 4.20, fallbackRate: 3.38 },
         { ticker: 'TSLA', symbol: 'TSLA', name: '테슬라', market: 'NASDAQ', currency: '$', marketCap: '7800억$', detail: '개인 및 기관 수급 집중', fallbackPrice: 245.80, fallbackChange: 8.50, fallbackRate: 3.58 },
-        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', marketCap: '142조', detail: '외국인 대량 순매수 지속', fallbackPrice: 195000, fallbackChange: 6500, fallbackRate: 3.45 },
+        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', marketCap: '145조', detail: '외국인 대량 순매수 지속', fallbackPrice: 195000, fallbackChange: 6500, fallbackRate: 3.45 },
         { ticker: '042700', symbol: '042700.KS', name: '한미반도체', market: 'KRX', currency: '₩', marketCap: '14조', detail: '반도체 소부장 거래대금 1위', fallbackPrice: 145000, fallbackChange: 12500, fallbackRate: 9.43 },
         { ticker: 'AAPL', symbol: 'AAPL', name: '애플', market: 'NASDAQ', currency: '$', marketCap: '3.3조$', detail: '글로벌 패시브 자금 유입', fallbackPrice: 226.80, fallbackChange: 1.80, fallbackRate: 0.80 },
         { ticker: '005380', symbol: '005380.KS', name: '현대차', market: 'KRX', currency: '₩', marketCap: '52조', detail: '기업 밸류업 프로그램 수혜', fallbackPrice: 251000, fallbackChange: 4000, fallbackRate: 1.62 },
@@ -818,7 +825,7 @@ const MARKET_LEADERS_CONFIG: Record<string, LeaderConfig[]> = {
     dividend: [
         { ticker: 'SCHD', symbol: 'SCHD', name: '슈왑 미국 배당주 ETF', market: 'NYSE', currency: '$', marketCap: '620억$', detail: '배당수익률 연 3.6% / 10년 연속 배당성장', fallbackPrice: 82.40, fallbackChange: 0.35, fallbackRate: 0.43 },
         { ticker: 'JEPI', symbol: 'JEPI', name: 'JP모건 프리미엄 월배당 ETF', market: 'NYSE', currency: '$', marketCap: '350억$', detail: '월지급식 배당수익률 연 7.8%', fallbackPrice: 58.20, fallbackChange: 0.15, fallbackRate: 0.26 },
-        { ticker: '105560', symbol: '105560.KS', name: 'KB금융', market: 'KRX', currency: '₩', marketCap: '34조', detail: '배당수익률 연 5.8% / 분기배당·자사주 소각', fallbackPrice: 84500, fallbackChange: 1100, fallbackRate: 1.32 },
+        { ticker: '105560', symbol: '105560.KS', name: 'KB금융', market: 'KRX', currency: '₩', marketCap: '35조', detail: '배당수익률 연 5.8% / 분기배당·자사주 소각', fallbackPrice: 84500, fallbackChange: 1100, fallbackRate: 1.32 },
         { ticker: '055550', symbol: '055550.KS', name: '신한지주', market: 'KRX', currency: '₩', marketCap: '28조', detail: '배당수익률 연 5.5% / 주주환원율 40% 목표', fallbackPrice: 56200, fallbackChange: 800, fallbackRate: 1.44 },
         { ticker: '086790', symbol: '086790.KS', name: '하나금융지주', market: 'KRX', currency: '₩', marketCap: '18조', detail: '배당수익률 연 6.2% / 고배당 저평가 대표주', fallbackPrice: 62400, fallbackChange: 600, fallbackRate: 0.97 },
         { ticker: '138040', symbol: '138040.KS', name: '메리츠금융지주', market: 'KRX', currency: '₩', marketCap: '19조', detail: '주주환원율 50% 원칙 / 당기순익 절반 배당·소각', fallbackPrice: 98500, fallbackChange: 2100, fallbackRate: 2.18 },
@@ -844,13 +851,14 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
     const quotes = await fetchYahooQuotes(symbols);
     const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
 
-    const leaders = configList.map((cfg, idx) => {
+    // 1단계: 실시간 시세 매핑
+    let items = configList.map((cfg) => {
         const q = quoteMap.get(cfg.symbol);
-        if (q && q.price !== undefined) {
-            const change = q.price - q.previousClose;
-            const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+        if (q && q.price !== undefined && q.price !== null) {
+            const prev = q.previousClose || q.price;
+            const change = q.price - prev;
+            const rate = prev ? (change / prev) * 100 : 0;
             return {
-                rank: idx + 1,
                 ticker: cfg.ticker,
                 symbol: cfg.symbol,
                 name: cfg.name,
@@ -859,13 +867,13 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
                 price: Math.round(q.price * 100) / 100,
                 change: Math.round(change * 100) / 100,
                 rate: Math.round(rate * 100) / 100,
-                status: change >= 0 ? 'up' : 'down',
+                status: (change >= 0 ? 'up' : 'down') as 'up' | 'down',
                 marketCap: cfg.marketCap,
                 detail: cfg.detail,
                 sparkline: [
-                    q.previousClose * 0.98,
-                    q.previousClose * 0.99,
-                    q.previousClose,
+                    prev * 0.98,
+                    prev * 0.99,
+                    prev,
                     q.price * 0.995,
                     q.price
                 ],
@@ -873,7 +881,6 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
         }
 
         return {
-            rank: idx + 1,
             ticker: cfg.ticker,
             symbol: cfg.symbol,
             name: cfg.name,
@@ -882,7 +889,7 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
             price: cfg.fallbackPrice,
             change: cfg.fallbackChange,
             rate: cfg.fallbackRate,
-            status: cfg.fallbackChange >= 0 ? 'up' : 'down',
+            status: (cfg.fallbackChange >= 0 ? 'up' : 'down') as 'up' | 'down',
             marketCap: cfg.marketCap,
             detail: cfg.detail,
             sparkline: [
@@ -893,9 +900,57 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
         };
     });
 
+    // 2단계: 급등주(gainers) 탭인 경우 하락종목 엄격 배제 & 상승률(rate) 내림차순 실시간 정렬
+    if (type === 'gainers') {
+        // A. 실시간 상승 종목(rate > 0)만 필터링
+        let positiveGainers = items.filter(item => item.rate > 0);
+
+        // B. 만약 전 종목 폭락 등으로 양수 종목이 10개 미만인 경우, 양수 fallback 데이터로 보충하여 하락 종목이 급등주에 절대 들어가지 않도록 보호
+        if (positiveGainers.length < 10) {
+            const existingTickers = new Set(positiveGainers.map(p => p.ticker));
+            for (const cfg of MARKET_LEADERS_CONFIG.gainers) {
+                if (!existingTickers.has(cfg.ticker) && cfg.fallbackRate > 0) {
+                    positiveGainers.push({
+                        ticker: cfg.ticker,
+                        symbol: cfg.symbol,
+                        name: cfg.name,
+                        market: cfg.market,
+                        currency: cfg.currency,
+                        price: cfg.fallbackPrice,
+                        change: cfg.fallbackChange,
+                        rate: cfg.fallbackRate,
+                        status: 'up',
+                        marketCap: cfg.marketCap,
+                        detail: cfg.detail,
+                        sparkline: [
+                            cfg.fallbackPrice - cfg.fallbackChange,
+                            cfg.fallbackPrice - (cfg.fallbackChange * 0.5),
+                            cfg.fallbackPrice
+                        ],
+                    });
+                    existingTickers.add(cfg.ticker);
+                    if (positiveGainers.length >= 10) break;
+                }
+            }
+        }
+
+        // C. 상승률 높은 순서대로 내림차순 정렬 후 상위 10개 추출
+        positiveGainers.sort((a, b) => b.rate - a.rate);
+        items = positiveGainers.slice(0, 10);
+    } else {
+        items = items.slice(0, 10);
+    }
+
+    // 3단계: 최종 순위(rank: 1..10) 부여
+    const leaders = items.map((item, idx) => ({
+        rank: idx + 1,
+        ...item
+    }));
+
     leadersCache[type] = { data: leaders, timestamp: now };
     return c.json(leaders);
 });
+
 
 // =========================================================================
 // 🚀 테마별 주도주 허브 (6대 핵심 산업 테마)

@@ -63,12 +63,13 @@ interface SearchStockItem {
     sector: string;
 }
 
-const LEADER_TABS: { key: LeaderType; label: string; icon: string; highlight: string; insight: string }[] = [
-    { key: 'market_cap', label: '시가총액 TOP 10', icon: '👑', highlight: '글로벌 대장주', insight: '대한민국과 미국 증시를 이끄는 초대형 블루칩 대표 우량주입니다.' },
-    { key: 'gainers', label: '실시간 급등 TOP 10', icon: '🚀', highlight: '상승 탄력주', insight: '실적 호조, 신약 승인, 기술 혁신 등으로 시장의 강력한 매수세가 유입된 종목입니다.' },
-    { key: 'volume', label: '거래대금 TOP 10', icon: '💰', highlight: '자금 집중주', insight: '기관과 외국인, 개인 투자자의 자금이 가장 활발하게 거래되는 시장 핫플레이스입니다.' },
-    { key: 'dividend', label: '고배당 TOP 10', icon: '💵', highlight: '주주환원 배당주', insight: '연 4~8%대의 안정적인 배당수익률과 자사주 소각 등 주주환원율이 높은 종목입니다.' },
+const LEADER_TABS: { key: LeaderType; label: string; shortLabel: string; icon: string; highlight: string; insight: string }[] = [
+    { key: 'market_cap', label: '국내 시가총액 TOP 10', shortLabel: '국내 시총', icon: '👑', highlight: '국내 대표 대장주', insight: '대한민국 KOSPI·KOSDAQ 증시를 이끄는 실제 시가총액 기준 상위 10대 대표 우량주입니다.' },
+    { key: 'gainers', label: '실시간 급등 TOP 10', shortLabel: '실시간 급등', icon: '🚀', highlight: '당일 최고 상승률', insight: '강력한 매수세와 호재로 당일 가장 높은 상승률을 기록 중인 실시간 급등 종목입니다.' },
+    { key: 'volume', label: '거래대금 TOP 10', shortLabel: '거래대금', icon: '💰', highlight: '자금 집중주', insight: '기관과 외국인, 개인 투자자의 자금이 가장 활발하게 거래되는 시장 핫플레이스입니다.' },
+    { key: 'dividend', label: '고배당 TOP 10', shortLabel: '고배당주', icon: '💵', highlight: '주주환원 배당주', insight: '연 4~8%대의 안정적인 배당수익률과 자사주 소각 등 주주환원율이 높은 종목입니다.' },
 ];
+
 
 const POPULAR_TAGS = [
     { label: '#삼성전자', ticker: '005930' },
@@ -471,7 +472,7 @@ export default function StocksPage() {
                                         }`}
                                     >
                                         <span>{tab.icon}</span>
-                                        <span>{tab.label.split(' ')[0]}</span>
+                                        <span>{tab.shortLabel}</span>
                                     </button>
                                 );
                             })}
