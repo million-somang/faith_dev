@@ -422,22 +422,26 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [2. 메인 컨텐츠 화면]: 결제금액 $280 입력
+        // [2. 메인 컨텐츠 화면]: 중간 영역으로 스크롤하여 결제금액 및 카테고리 설정 화면
         await page.evaluate(() => {
+            window.scrollTo({ top: 380, behavior: 'instant' });
             const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
-            if (inputs[0]) {
-                inputs[0].value = '280';
-                inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            const setVal = (window as any).setReactInputValue;
+            if (inputs[0] && setVal) setVal(inputs[0], '280');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 계산하기 클릭 ➡️ 예상 총 납부세액 및 면세 초과 분석 리포트
+        // [3. 결과 화면]: 상단 '통관 가이드' 탭 전환 화면 (확연히 다른 가이드 리포트 뷰)
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const calcBtn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
-            if (calcBtn) calcBtn.click();
+            window.scrollTo({ top: 0, behavior: 'instant' });
+            const tabs = Array.from(document.querySelectorAll('button[role="tab"], nav button')) as HTMLElement[];
+            const guideTab = tabs.find(t => t.textContent && t.textContent.includes('통관 가이드'));
+            if (guideTab) {
+                guideTab.click();
+            } else {
+                window.scrollTo({ top: 650, behavior: 'instant' });
+            }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -822,28 +826,33 @@ async function ensureDistinctScreenshots(page: any, buffers: Buffer[]): Promise<
 
     const isSame12 = Buffer.compare(buffers[0], buffers[1]) === 0;
     if (isSame12) {
-        // 2번이 1번과 동일한 경우: 중앙 영역으로 스크롤하고 탭이나 첫 번째 버튼 클릭
+        // 2번이 1번과 동일한 경우: 중앙 영역으로 확실히 스크롤하고 두 번째 탭이나 인터랙티브 요소 조작
         await page.evaluate(() => {
-            window.scrollTo({ top: 300, behavior: 'instant' });
-            const allBtns = Array.from(document.querySelectorAll('button, a, [role="button"]')) as HTMLElement[];
-            if (allBtns[1]) allBtns[1].click();
+            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn')) as HTMLElement[];
+            if (tabs[1] && tabs[1].offsetWidth > 0) {
+                tabs[1].click();
+            } else {
+                window.scrollTo({ top: 380, behavior: 'instant' });
+            }
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 500));
         buffers[1] = await page.screenshot({ type: 'png', fullPage: false });
     }
 
     const isSame23 = Buffer.compare(buffers[1], buffers[2]) === 0;
     const isSame13 = Buffer.compare(buffers[0], buffers[2]) === 0;
     if (isSame23 || isSame13) {
-        // 3번이 다른 이미지와 동일한 경우: 최하단 스크롤 또는 서브 탭 클릭
+        // 3번이 동일한 경우: 세 번째 탭을 누르거나 최하단 스크롤
         await page.evaluate(() => {
-            const h = document.body.scrollHeight || 800;
-            window.scrollTo({ top: Math.max(500, h - 300), behavior: 'instant' });
-            const allBtns = Array.from(document.querySelectorAll('button, [role="tab"]')) as HTMLElement[];
-            const lastTab = allBtns.reverse().find(b => b.offsetWidth > 0);
-            if (lastTab) lastTab.click();
+            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn')) as HTMLElement[];
+            if (tabs[2] && tabs[2].offsetWidth > 0) {
+                tabs[2].click();
+            } else {
+                const maxScroll = Math.max(500, (document.body.scrollHeight || 1000) - 350);
+                window.scrollTo({ top: maxScroll, behavior: 'instant' });
+            }
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
+        await new Promise((r) => setTimeout(r, 500));
         buffers[2] = await page.screenshot({ type: 'png', fullPage: false });
     }
 
