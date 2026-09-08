@@ -51,8 +51,26 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
     try {
         const puppeteerModule = await import('puppeteer');
         const puppeteer = puppeteerModule.default || puppeteerModule;
+        // Chrome 실행 경로 자동 감지
+        const candidatePaths = [
+            process.env.PUPPETEER_EXECUTABLE_PATH,
+            '/root/.cache/puppeteer/chrome/linux-145.0.7632.77/chrome-linux64/chrome',
+            '/usr/bin/google-chrome',
+            '/usr/bin/chromium-browser',
+            '/usr/bin/chromium'
+        ].filter(Boolean) as string[];
+
+        let executablePath: string | undefined;
+        for (const cp of candidatePaths) {
+            if (fs.existsSync(cp)) {
+                executablePath = cp;
+                break;
+            }
+        }
+
         const browser = await puppeteer.launch({
             headless: true,
+            executablePath,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
