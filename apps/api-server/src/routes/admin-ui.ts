@@ -478,6 +478,7 @@ export function getAdminNavigation(currentPage: string): string {
         { path: '/admin/logs', label: '활동 로그', icon: 'fa-clipboard-list', shortLabel: '로그' },
         { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
         { path: '/admin/mini-apps', label: '미니앱 관리', icon: 'fa-th-large', shortLabel: '미니앱' },
+        { path: '/admin/marketing', label: 'SNS 마케팅', icon: 'fa-paper-plane', shortLabel: '마케팅' },
     ]
     let navHtml = '<div class="flex flex-wrap items-center space-x-2 sm:space-x-4 lg:space-x-8 py-2">'
     for (const item of menuItems) {
@@ -669,6 +670,29 @@ adminUi.get('/admin', async (c) => {
                             <i class="fas fa-user-plus text-xl sm:text-2xl"></i>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- SNS 마케팅 자동화 배너 / 퀵 액션 카드 -->
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg p-5 sm:p-6 mb-6 sm:mb-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-2xl shrink-0">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg sm:text-xl font-black">SNS 자동/반자동 마케팅 파이프라인</h3>
+                            <span class="px-2 py-0.5 bg-blue-400/30 border border-white/30 rounded-full text-xs font-bold">신규 기능</span>
+                        </div>
+                        <p class="text-blue-100 text-xs sm:text-sm mt-1">
+                            베라넥스의 유틸리티·게임·금융 미니앱을 스레드(Threads) & 인스타그램(Instagram)에 Gemini AI로 원클릭 즉시/예약 발행하세요.
+                        </p>
+                    </div>
+                </div>
+                <div class="shrink-0 flex items-center space-x-2">
+                    <a href="/admin/marketing" class="px-5 py-2.5 bg-white hover:bg-blue-50 text-blue-700 font-bold rounded-lg shadow text-sm transition-all flex items-center">
+                        <i class="fas fa-rocket mr-2"></i> 마케팅 대시보드 바로가기
+                    </a>
                 </div>
             </div>
 

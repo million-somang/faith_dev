@@ -64,6 +64,12 @@ app.route('/', bannerRoutes);
 import { bannerAdminUi } from './routes/banner-admin-ui.js';
 app.route('/', bannerAdminUi);
 
+import { marketingRoutes } from './routes/marketing.routes.js';
+app.route('/', marketingRoutes);
+
+import { marketingAdminUi } from './routes/marketing-admin-ui.js';
+app.route('/', marketingAdminUi);
+
 // 배너 업로드 이미지 정적 서빙
 app.use('/uploads/*', serveStatic({ root: './public' }));
 
@@ -593,3 +599,8 @@ startNewsScheduler();
 // 일정 1시간 전 푸시 알림 스케줄러 시작
 import { startSchedulePushScheduler } from './services/schedulePushScheduler.js';
 startSchedulePushScheduler();
+
+// SNS 자동/반자동 마케팅 스케줄러 시작
+import { startMarketingScheduler } from './services/marketing/marketingScheduler.service.js';
+startMarketingScheduler();
+
