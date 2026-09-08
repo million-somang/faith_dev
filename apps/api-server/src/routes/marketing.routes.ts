@@ -4,7 +4,7 @@ import { checkSession } from '../middleware/auth.js';
 import { generateMarketingContent } from '../services/marketing/marketingAi.service.js';
 import { generateCardSvg } from '../services/marketing/ogCardRenderer.service.js';
 import { publishToSocialMedia } from '../services/marketing/metaPublisher.service.js';
-import { getMiniAppScreenshot } from '../services/marketing/screenshot.service.js';
+import { getMiniAppScreenshot, getMiniAppScreenshots } from '../services/marketing/screenshot.service.js';
 
 export const marketingRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 
@@ -70,10 +70,10 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             return c.json({ success: false, message: '등록되지 않은 미니앱입니다.' }, 404);
         }
 
-        // 1. 미니앱 실제 화면 스크린샷 캡처 (캐시 또는 신규 생성)
-        let screenshotUri = '';
+        // 1. 미니앱 실제 화면 3단계 멀티 컷 캡처 (홈, 입력, 결과)
+        let screenshots: string[] = [];
         try {
-            screenshotUri = await getMiniAppScreenshot({
+            screenshots = await getMiniAppScreenshots({
                 slug: app.slug,
                 targetUrl: app.app_url,
                 name: app.name,
@@ -82,6 +82,8 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
         } catch (e: any) {
             console.warn('[MarketingAPI] Screenshot capture error:', e.message);
         }
+
+        const screenshotUri = screenshots[0] || '';
 
         // 2. Gemini AI 마케팅 카피 생성
         const aiResult = await generateMarketingContent({
@@ -92,13 +94,14 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             category: app.category || '유틸리티'
         });
 
-        // 3. 1080x1080 동적 카드뉴스 SVG 생성 (슬라이드 1, 2, 3 캐러셀 세트)
+        // 3. 1080x1080 동적 카드뉴스 SVG 생성 (최소 3개 화면이 담긴 슬라이드 1, 2, 3 세트)
         const cardSvg = generateCardSvg({
             title: aiResult.headline,
             subtitle: aiResult.subtitle,
             tag: aiResult.tag,
             domain: 'veranex.app',
             slug: app.slug,
+            screenshots,
             screenshotUri,
             slideIndex: 1
         });
@@ -109,6 +112,7 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             tag: aiResult.tag,
             domain: 'veranex.app',
             slug: app.slug,
+            screenshots,
             screenshotUri,
             slideIndex: 2
         });
@@ -119,6 +123,7 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             tag: aiResult.tag,
             domain: 'veranex.app',
             slug: app.slug,
+            screenshots,
             screenshotUri,
             slideIndex: 3
         });
@@ -133,6 +138,7 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
                     category: app.category
                 },
                 content: aiResult,
+                screenshots,
                 screenshotUri,
                 cardSvg,
                 cardSet: [cardSvg, cardSvg2, cardSvg3]
@@ -160,7 +166,7 @@ marketingRoutes.post('/api/admin/marketing/screenshot/capture', async (c) => {
             return c.json({ success: false, message: '미니앱을 찾을 수 없습니다.' }, 404);
         }
 
-        const screenshotUri = await getMiniAppScreenshot({
+        const screenshots = await getMiniAppScreenshots({
             slug: app.slug,
             targetUrl: app.app_url,
             name: app.name,
@@ -169,7 +175,8 @@ marketingRoutes.post('/api/admin/marketing/screenshot/capture', async (c) => {
 
         return c.json({
             success: true,
-            screenshotUri
+            screenshots,
+            screenshotUri: screenshots[0] || ''
         });
     } catch (err: any) {
         return c.json({ success: false, message: err.message }, 500);
@@ -180,7 +187,11 @@ marketingRoutes.post('/api/admin/marketing/screenshot/capture', async (c) => {
 marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
     try {
         const body = await c.req.json();
-        const { title, subtitle, tag, domain, slug, screenshotUri, slideIndex = 1 } = body;
+        const { title, subtitle, tag, domain, slug, screenshots, screenshotUri, slideIndex = 1 } = body;
+
+        const resolvedScreenshots = Array.isArray(screenshots) && screenshots.length > 0
+            ? screenshots
+            : (screenshotUri ? [screenshotUri] : []);
 
         const svg = generateCardSvg({
             title: title || '스마트 웹 툴킷',
@@ -188,7 +199,8 @@ marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
             tag: tag || '무료 도구',
             domain: domain || 'veranex.app',
             slug: slug || 'app',
-            screenshotUri: screenshotUri || '',
+            screenshots: resolvedScreenshots,
+            screenshotUri: resolvedScreenshots[0] || '',
             slideIndex: Number(slideIndex)
         });
 

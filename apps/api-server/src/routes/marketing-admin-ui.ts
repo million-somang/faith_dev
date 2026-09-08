@@ -176,106 +176,162 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     </div>
                 </div>
 
-                <div id="workspace-panel" class="hidden pt-4 border-t border-gray-100">
-                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                        <div class="lg:col-span-5 flex flex-col items-center">
-                            <!-- Preview Header & Slide Tabs -->
-                            <div class="w-full flex items-center justify-between mb-2">
-                                <span class="text-xs font-bold text-gray-800 flex items-center">
-                                    <i class="fas fa-camera-retro text-indigo-600 mr-1.5"></i> 비주얼 카드뉴스 (1080x1080)
-                                </span>
-                                <div class="flex items-center space-x-1" id="slide-tabs">
-                                    <button onclick="switchSlide(0)" id="tab-slide-0" class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-indigo-600 text-white shadow-sm transition-all">
-                                        1. 커버
-                                    </button>
-                                    <button onclick="switchSlide(1)" id="tab-slide-1" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
-                                        2. 기능상세
-                                    </button>
-                                    <button onclick="switchSlide(2)" id="tab-slide-2" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
-                                        3. 바로가기
-                                    </button>
-                                </div>
+                <div id="workspace-panel" class="hidden pt-5 border-t border-gray-100 space-y-6">
+                    <!-- 1. 3-Card Side-by-Side Visual Gallery (최소 3장 동시 노출) -->
+                    <div class="bg-slate-50/80 rounded-2xl p-5 border border-slate-200/80 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="text-sm font-black text-gray-900 flex items-center">
+                                    <i class="fas fa-images text-indigo-600 mr-2 text-base"></i>
+                                    비주얼 카드뉴스 3종 세트 (1080x1080 Clean Neumorphism)
+                                </h3>
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    실제 미니앱 구동 화면 3단계(시작·입력·결과)를 3-디바이스 입체 목업으로 완성한 고해상도 에셋입니다.
+                                </p>
                             </div>
-
-                            <!-- Clean Neumorphism Preview Box -->
-                            <div id="card-preview-container" class="w-full aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-100/60 flex items-center justify-center p-2 relative">
-                                <div class="text-center text-gray-400 text-xs">
-                                    <i class="fas fa-image text-3xl mb-2 text-gray-300"></i><br>
-                                    생성된 카드뉴스가 여기에 표시됩니다
-                                </div>
-                            </div>
-
-                            <!-- Controls under Preview -->
-                            <div class="w-full mt-3 flex items-center justify-between text-xs">
-                                <button id="btn-recapture" onclick="recaptureScreenshot()" class="text-indigo-600 hover:text-indigo-800 flex items-center font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-all">
+                            <div class="flex items-center space-x-2">
+                                <button id="btn-recapture" onclick="recaptureScreenshot()" class="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-all flex items-center shadow-sm">
                                     <i class="fas fa-sync-alt mr-1.5" id="icon-recapture"></i>
-                                    <span id="text-recapture">실화면 재캡처</span>
+                                    <span id="text-recapture">3단 실화면 재캡처</span>
                                 </button>
-                                <div class="flex items-center space-x-2">
-                                    <button onclick="downloadCurrentCard()" class="text-gray-700 hover:text-indigo-600 flex items-center font-semibold px-2.5 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
-                                        <i class="fas fa-download mr-1"></i> 현재 슬라이드
-                                    </button>
-                                    <button onclick="downloadAllCards()" class="text-indigo-700 hover:text-indigo-900 flex items-center font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-200 transition-all">
-                                        <i class="fas fa-images mr-1"></i> 전 슬라이드
-                                    </button>
-                                </div>
+                                <button onclick="downloadAllCards()" class="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center">
+                                    <i class="fas fa-download mr-1.5"></i>
+                                    <span>카드 3종 일괄 다운로드</span>
+                                </button>
                             </div>
                         </div>
 
-                        <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">카드뉴스 헤드라인</label>
-                                <input type="text" id="edit-headline" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                        <!-- 3 Cards Side-by-Side Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <!-- Slide Card 1 -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
+                                    <span class="text-xs font-black text-gray-800 flex items-center">
+                                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">1</span>
+                                        3-디바이스 입체 씬
+                                    </span>
+                                    <button onclick="downloadSpecificSlide(0)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+                                        <i class="fas fa-download mr-1"></i>다운로드
+                                    </button>
+                                </div>
+                                <div id="card-preview-0" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                    <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
+                                </div>
+                                <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
+                                    <span class="font-medium text-gray-600">3개 구동화면 입체 노출</span>
+                                    <span class="text-indigo-600 font-bold">인스타/스레드 커버</span>
+                                </div>
                             </div>
 
+                            <!-- Slide Card 2 -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
+                                    <span class="text-xs font-black text-gray-800 flex items-center">
+                                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">2</span>
+                                        3-스텝 상세 씬
+                                    </span>
+                                    <button onclick="downloadSpecificSlide(1)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+                                        <i class="fas fa-download mr-1"></i>다운로드
+                                    </button>
+                                </div>
+                                <div id="card-preview-1" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                    <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
+                                </div>
+                                <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
+                                    <span class="font-medium text-gray-600">입력·분석·결과 3컷 정렬</span>
+                                    <span class="text-indigo-600 font-bold">사용법/기능 안내</span>
+                                </div>
+                            </div>
+
+                            <!-- Slide Card 3 -->
+                            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
+                                    <span class="text-xs font-black text-gray-800 flex items-center">
+                                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">3</span>
+                                        3-화면 CTA 바로가기
+                                    </span>
+                                    <button onclick="downloadSpecificSlide(2)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
+                                        <i class="fas fa-download mr-1"></i>다운로드
+                                    </button>
+                                </div>
+                                <div id="card-preview-2" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                    <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
+                                </div>
+                                <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
+                                    <span class="font-medium text-gray-600">3개 썸네일 + 주소창 버튼</span>
+                                    <span class="text-indigo-600 font-bold">전환 유도/엔딩</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Copywriting & Publishing Controls Form -->
+                    <div class="bg-white rounded-2xl border border-gray-200 p-5 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+                            <h3 class="text-sm font-bold text-gray-900 flex items-center">
+                                <i class="fas fa-feather-alt text-blue-600 mr-2"></i>
+                                SNS 채널별 최적화 카피라이팅 편집
+                            </h3>
+                            <span class="text-xs text-gray-400">자유롭게 문구를 수정하여 발행할 수 있습니다</span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">카드뉴스 공통 헤드라인</label>
+                            <input type="text" id="edit-headline" onchange="refreshAllCardsPreview()" class="w-full bg-gray-50 border border-gray-300 rounded-lg px-3 py-2 text-sm font-semibold text-gray-900 focus:bg-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <div class="flex items-center justify-between mb-1">
                                     <label class="text-xs font-bold text-gray-900 flex items-center">
-                                        <i class="fa-brands fa-threads mr-1.5 text-black"></i> 스레드 본문 
+                                        <i class="fa-brands fa-threads mr-1.5 text-black"></i> 스레드 본문
                                         <span class="ml-2 px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-bold">
-                                            <i class="fas fa-shield-alt mr-0.5"></i> 아웃링크 배제(알고리즘 최적화)
+                                            <i class="fas fa-shield-alt mr-0.5"></i> 아웃링크 배제
                                         </span>
                                     </label>
                                     <span class="text-[11px] text-gray-400" id="threads-char-count">0자</span>
                                 </div>
-                                <textarea id="edit-threads-body" rows="6" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:bg-white focus:ring-2 focus:ring-blue-500 leading-relaxed custom-scrollbar"></textarea>
+                                <textarea id="edit-threads-body" rows="5" class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm text-gray-800 focus:bg-white focus:ring-2 focus:ring-blue-500 leading-relaxed custom-scrollbar"></textarea>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-indigo-700 mb-1 flex items-center">
-                                    <i class="fas fa-reply mr-1.5"></i> 스레드 첫 번째 답글 (첫 댓글 아웃링크 자동 발행)
-                                </label>
-                                <textarea id="edit-threads-first-comment" rows="2" class="w-full bg-indigo-50/50 border border-indigo-200 rounded-lg p-2.5 text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 leading-relaxed"></textarea>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-pink-700 mb-1 flex items-center">
-                                    <i class="fab fa-instagram mr-1.5"></i> 인스타그램 캡션 & 해시태그
-                                </label>
-                                <textarea id="edit-ig-caption" rows="3" class="w-full bg-pink-50/40 border border-pink-200 rounded-lg p-2.5 text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-pink-500 leading-relaxed"></textarea>
-                            </div>
-
-                            <div class="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
-                                <div class="flex items-center space-x-1.5">
-                                    <button onclick="schedulePreset('08:00')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
-                                        🌅 출근(08:00)
-                                    </button>
-                                    <button onclick="schedulePreset('12:30')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
-                                        🍱 점심(12:30)
-                                    </button>
-                                    <button onclick="schedulePreset('18:30')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
-                                        🌆 퇴근(18:30)
-                                    </button>
-                                    <button onclick="saveDraft()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold rounded-lg border border-amber-200 transition-colors">
-                                        <i class="fas fa-save mr-1"></i> 초안 저장
-                                    </button>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-indigo-700 mb-1 flex items-center">
+                                        <i class="fas fa-reply mr-1.5"></i> 스레드 첫 번째 답글 (첫 댓글 아웃링크 자동 발행)
+                                    </label>
+                                    <textarea id="edit-threads-first-comment" rows="2" class="w-full bg-indigo-50/50 border border-indigo-200 rounded-lg p-2.5 text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-indigo-500 leading-relaxed"></textarea>
                                 </div>
 
-                                <button onclick="publishImmediately()" class="px-5 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-black text-sm rounded-lg shadow-md hover:shadow-lg transition-all flex items-center">
-                                    <i class="fas fa-rocket mr-1.5"></i> 지금 1-Click 즉시 발행
-                                </button>
+                                <div>
+                                    <label class="block text-xs font-bold text-pink-700 mb-1 flex items-center">
+                                        <i class="fab fa-instagram mr-1.5"></i> 인스타그램 캡션 &amp; 해시태그
+                                    </label>
+                                    <textarea id="edit-ig-caption" rows="2" class="w-full bg-pink-50/40 border border-pink-200 rounded-lg p-2.5 text-xs text-gray-800 focus:bg-white focus:ring-2 focus:ring-pink-500 leading-relaxed"></textarea>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center space-x-1.5">
+                                <button onclick="schedulePreset('08:00')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                                    🌅 출근(08:00)
+                                </button>
+                                <button onclick="schedulePreset('12:30')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                                    🍱 점심(12:30)
+                                </button>
+                                <button onclick="schedulePreset('18:30')" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition-colors">
+                                    🌆 퇴근(18:30)
+                                </button>
+                                <button onclick="saveDraft()" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold rounded-lg border border-amber-200 transition-colors">
+                                    <i class="fas fa-save mr-1"></i> 초안 저장
+                                </button>
+                            </div>
+
+                            <button onclick="publishImmediately()" class="px-5 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-black text-sm rounded-lg shadow-md hover:shadow-lg transition-all flex items-center">
+                                <i class="fas fa-rocket mr-1.5"></i> 지금 1-Click 즉시 발행
+                            </button>
+                        </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -372,8 +428,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
     <script>
         let currentSvg = '';
         let currentCardSet = [];
-        let currentSlideIndex = 0;
-        let currentScreenshotUri = '';
+        let currentScreenshots = [];
         let currentApp = null;
         let currentFilter = 'ALL';
 
@@ -435,7 +490,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
             btn.disabled = true;
             icon.className = 'fas fa-spinner fa-spin mr-2';
-            text.innerText = 'AI 카피 & 실화면 캡처 중...';
+            text.innerText = 'AI 카피 & 3단 실화면 캡처 중...';
 
             try {
                 const res = await authFetch('/api/admin/marketing/generate', {
@@ -448,10 +503,11 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     const data = result.data;
                     currentApp = data.app;
                     currentCardSet = data.cardSet || [data.cardSvg];
-                    currentScreenshotUri = data.screenshotUri || '';
+                    currentScreenshots = data.screenshots || [data.screenshotUri];
                     currentSvg = currentCardSet[0];
 
-                    switchSlide(0);
+                    // 3장의 카드뉴스 갤러리 동시 렌더링
+                    renderCardSet();
 
                     document.getElementById('edit-headline').value = data.content.headline;
                     document.getElementById('edit-threads-body').value = data.content.threadsBody;
@@ -473,21 +529,40 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             }
         }
 
-        function switchSlide(idx) {
-            currentSlideIndex = idx;
-            [0, 1, 2].forEach(i => {
-                const tab = document.getElementById('tab-slide-' + i);
-                if (!tab) return;
-                if (i === idx) {
-                    tab.className = 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-indigo-600 text-white shadow-sm transition-all';
-                } else {
-                    tab.className = 'px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all';
+        function renderCardSet() {
+            for (let i = 0; i < 3; i++) {
+                const container = document.getElementById('card-preview-' + i);
+                if (container && currentCardSet[i]) {
+                    container.innerHTML = currentCardSet[i];
                 }
-            });
+            }
+        }
 
-            if (currentCardSet && currentCardSet[idx]) {
-                currentSvg = currentCardSet[idx];
-                document.getElementById('card-preview-container').innerHTML = currentSvg;
+        async function refreshAllCardsPreview() {
+            if (!currentApp || !currentScreenshots || currentScreenshots.length === 0) return;
+            const headline = document.getElementById('edit-headline').value;
+
+            try {
+                const reqs = [1, 2, 3].map(slideIdx => 
+                    authFetch('/api/admin/marketing/card-preview', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            title: headline,
+                            subtitle: '로그인 없이 브라우저에서 즉시 실행',
+                            tag: currentApp.category || '무료 도구',
+                            slug: currentApp.slug,
+                            screenshots: currentScreenshots,
+                            slideIndex: slideIdx
+                        })
+                    }).then(r => r.json())
+                );
+
+                const results = await Promise.all(reqs);
+                currentCardSet = results.map((r, i) => r.svg || currentCardSet[i]);
+                currentSvg = currentCardSet[0];
+                renderCardSet();
+            } catch (e) {
+                console.warn('카드 프리뷰 갱신 실패:', e);
             }
         }
 
@@ -503,7 +578,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
             btn.disabled = true;
             icon.className = 'fas fa-spinner fa-spin mr-1.5';
-            text.innerText = '캡처 중...';
+            text.innerText = '3단 캡처 중...';
 
             try {
                 const res = await authFetch('/api/admin/marketing/screenshot/capture', {
@@ -511,29 +586,10 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     body: JSON.stringify({ slug: currentApp.slug, force: true })
                 });
                 const data = await res.json();
-                if (data.success && data.screenshotUri) {
-                    currentScreenshotUri = data.screenshotUri;
-
-                    // 슬라이드 1, 2, 3 재합성 요청
-                    const headline = document.getElementById('edit-headline').value;
-                    const reqSlides = [1, 2, 3].map(slideIdx => 
-                        authFetch('/api/admin/marketing/card-preview', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                title: headline,
-                                subtitle: '로그인 없이 브라우저에서 즉시 실행',
-                                tag: currentApp.category || '무료 도구',
-                                slug: currentApp.slug,
-                                screenshotUri: currentScreenshotUri,
-                                slideIndex: slideIdx
-                            })
-                        }).then(r => r.json())
-                    );
-
-                    const results = await Promise.all(reqSlides);
-                    currentCardSet = results.map((r, i) => r.svg || currentCardSet[i]);
-                    switchSlide(currentSlideIndex);
-                    alert('실화면 재캡처 및 카드뉴스가 성공적으로 갱신되었습니다!');
+                if (data.success && data.screenshots) {
+                    currentScreenshots = data.screenshots;
+                    await refreshAllCardsPreview();
+                    alert('미니앱 3단계 실화면 재캡처 및 카드 3종 세트가 모두 갱신되었습니다!');
                 } else {
                     alert('재캡처 실패: ' + (data.message || '오류 발생'));
                 }
@@ -542,20 +598,17 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             } finally {
                 btn.disabled = false;
                 icon.className = 'fas fa-sync-alt mr-1.5';
-                text.innerText = '실화면 재캡처';
+                text.innerText = '3단 실화면 재캡처';
             }
         }
 
-        function downloadCurrentCard() {
-            if (!currentSvg) return;
-            downloadSvgFile(currentSvg, (currentApp ? currentApp.slug : 'card') + '_slide_' + (currentSlideIndex + 1) + '.svg');
+        function downloadSpecificSlide(idx) {
+            if (!currentCardSet || !currentCardSet[idx]) return;
+            downloadSvgFile(currentCardSet[idx], (currentApp ? currentApp.slug : 'card') + '_slide_' + (idx + 1) + '.svg');
         }
 
         function downloadAllCards() {
-            if (!currentCardSet || currentCardSet.length === 0) {
-                if (currentSvg) downloadCurrentCard();
-                return;
-            }
+            if (!currentCardSet || currentCardSet.length === 0) return;
             currentCardSet.forEach((svg, idx) => {
                 setTimeout(() => {
                     downloadSvgFile(svg, (currentApp ? currentApp.slug : 'card') + '_slide_' + (idx + 1) + '.svg');

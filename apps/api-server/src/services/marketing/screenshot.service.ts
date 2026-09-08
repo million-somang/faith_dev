@@ -17,28 +17,37 @@ function ensureUploadDir(): void {
 }
 
 /**
- * 미니앱의 실제 화면을 모바일 뷰포트(430x860)로 캡처하여 Base64 Data URI로 반환합니다.
- * 캐시가 존재하면 즉시 캐시를 반환하며, Puppeteer 실행 불가 시 밝은 테마 목업으로 안전하게 폴백합니다.
+ * 미니앱의 3단계 멀티 컷(1: 메인 홈, 2: 입력/폼, 3: 결과/상세) 화면을 캡처하여 Base64 Data URI 배열로 반환합니다.
  */
-export async function getMiniAppScreenshot(options: ScreenshotOptions): Promise<string> {
+export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise<string[]> {
     const { slug, targetUrl, force = false, name = slug } = options;
     ensureUploadDir();
 
-    const cacheFilePath = path.join(UPLOAD_DIR, `${slug}.png`);
+    const filePaths = [
+        path.join(UPLOAD_DIR, `${slug}_1.png`),
+        path.join(UPLOAD_DIR, `${slug}_2.png`),
+        path.join(UPLOAD_DIR, `${slug}_3.png`)
+    ];
 
-    // 1. 캐시가 이미 존재하고 강제 갱신이 아닌 경우 캐시 반환
-    if (!force && fs.existsSync(cacheFilePath)) {
+    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 캐시 반환
+    if (!force && filePaths.every(fp => fs.existsSync(fp))) {
         try {
-            const buffer = fs.readFileSync(cacheFilePath);
-            if (buffer.length > 0) {
-                return `data:image/png;base64,${buffer.toString('base64')}`;
+            const results: string[] = [];
+            for (const fp of filePaths) {
+                const buffer = fs.readFileSync(fp);
+                if (buffer.length > 0) {
+                    results.push(`data:image/png;base64,${buffer.toString('base64')}`);
+                }
+            }
+            if (results.length === 3) {
+                return results;
             }
         } catch (e) {
             console.warn(`[ScreenshotService] 캐시 읽기 실패: ${slug}`, e);
         }
     }
 
-    // 2. Puppeteer를 이용한 실제 브라우저 캡처 시도
+    // 2. Puppeteer 멀티 컷 캡처 시도
     try {
         const puppeteerModule = await import('puppeteer');
         const puppeteer = puppeteerModule.default || puppeteerModule;
@@ -63,126 +72,187 @@ export async function getMiniAppScreenshot(options: ScreenshotOptions): Promise<
             hasTouch: true
         });
 
-        // 접속 시도 (타임아웃 15초)
         const effectiveUrl = targetUrl.startsWith('http')
             ? targetUrl
             : `https://veranex.app${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`;
 
-        console.log(`[ScreenshotService] 미니앱 캡처 시작: ${effectiveUrl}`);
+        console.log(`[ScreenshotService] 미니앱 3컷 캡처 시작: ${effectiveUrl}`);
         await page.goto(effectiveUrl, {
             waitUntil: ['domcontentloaded', 'networkidle2'],
             timeout: 15000
         });
 
-        // 렌더링 애니메이션 및 폰트 로딩 대기
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        const screenshotBuffer = await page.screenshot({
-            type: 'png',
-            fullPage: false
-        }) as Buffer;
+        // Cut 1: 상단 메인 뷰
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const buf1 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
+        fs.writeFileSync(filePaths[0], buf1);
+
+        // Cut 2: 중간 인터랙션 / 입력 영역 뷰
+        await page.evaluate(() => window.scrollTo(0, 200));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const buf2 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
+        fs.writeFileSync(filePaths[1], buf2);
+
+        // Cut 3: 하단 산출 결과 / 디테일 뷰
+        await page.evaluate(() => window.scrollTo(0, 420));
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const buf3 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
+        fs.writeFileSync(filePaths[2], buf3);
 
         await browser.close();
 
-        // 캐시 파일 저장
-        fs.writeFileSync(cacheFilePath, screenshotBuffer);
-        console.log(`[ScreenshotService] 미니앱 캡처 완료 및 캐시 저장: ${cacheFilePath}`);
+        // 단일 호환용 메인 캐시도 저장
+        fs.writeFileSync(path.join(UPLOAD_DIR, `${slug}.png`), buf1);
 
-        return `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+        return [
+            `data:image/png;base64,${buf1.toString('base64')}`,
+            `data:image/png;base64,${buf2.toString('base64')}`,
+            `data:image/png;base64,${buf3.toString('base64')}`
+        ];
     } catch (err: any) {
         console.warn(`[ScreenshotService] Puppeteer 캡처 실패 (${slug}):`, err.message);
-        // 3. 브라우저 캡처 실패 시 Clean Neumorphism 라이트 테마 목업으로 폴백
-        return generateLightFallbackDataUri(name, slug);
+        return generateLightFallbackSet(name, slug);
     }
 }
 
 /**
- * 캡처 불가 시 사용할 밝은 뉴모피즘 기반 미니앱 UI 목업 SVG Data URI 생성
+ * 단일 스크린샷 캡처 (기존 호환용)
  */
+export async function getMiniAppScreenshot(options: ScreenshotOptions): Promise<string> {
+    const list = await getMiniAppScreenshots(options);
+    return list[0] || '';
+}
+
+/**
+ * 3개의 서로 다른 화면(1: 메인 화면, 2: 입력 화면, 3: 결과 화면) 라이트 목업 세트 생성
+ */
+export function generateLightFallbackSet(name: string, slug: string): string[] {
+    return [
+        generateLightScreen1(name, slug),
+        generateLightScreen2(name, slug),
+        generateLightScreen3(name, slug)
+    ];
+}
+
 export function generateLightFallbackDataUri(name: string, slug: string): string {
+    return generateLightScreen1(name, slug);
+}
+
+function generateLightScreen1(name: string, slug: string): string {
     const cleanName = escapeXml(name || slug);
     const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="860" height="1720" viewBox="0 0 430 860">
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
   <defs>
-    <linearGradient id="screenBg" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="sBg1" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#FFFFFF" />
       <stop offset="100%" stop-color="#F1F5F9" />
     </linearGradient>
-    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#64748B" flood-opacity="0.12" />
+    <filter id="sh1" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
     </filter>
   </defs>
-
-  <!-- Screen Background -->
-  <rect width="430" height="860" fill="url(#screenBg)" />
-
-  <!-- App Header / Status Bar -->
+  <rect width="430" height="860" fill="url(#sBg1)" />
   <g transform="translate(20, 30)">
-    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#softShadow)" />
+    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh1)" />
     <circle cx="28" cy="28" r="14" fill="#EEF2FF" />
     <text x="28" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="900" fill="#4F46E5" text-anchor="middle">V</text>
     <text x="56" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">${cleanName}</text>
-    <rect x="330" y="16" width="46" height="24" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="353" y="32" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="10" font-weight="700" fill="#64748B" text-anchor="middle">LIVE</text>
   </g>
-
-  <!-- Main Hero Card -->
   <g transform="translate(20, 106)">
-    <rect width="390" height="160" rx="20" fill="#FFFFFF" filter="url(#softShadow)" />
-    <rect x="20" y="20" width="70" height="24" rx="12" fill="#EEF2FF" />
-    <text x="55" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">초간편 유틸</text>
-    <text x="20" y="74" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="22" font-weight="900" fill="#0F172A">${cleanName}</text>
-    <text x="20" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="500" fill="#64748B">원클릭으로 즉시 실행되는 스마트 도구</text>
-    <rect x="20" y="122" width="350" height="24" rx="6" fill="#F8FAFC" />
-    <text x="30" y="138" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="600" fill="#4F46E5">veranex.app/app/${escapeXml(slug)}</text>
+    <rect width="390" height="180" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
+    <rect x="20" y="20" width="80" height="26" rx="13" fill="#EEF2FF" />
+    <text x="60" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">1초 실행</text>
+    <text x="20" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="24" font-weight="900" fill="#0F172A">${cleanName}</text>
+    <text x="20" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="500" fill="#64748B">브라우저에서 로그인 없이 즉시 사용</text>
   </g>
-
-  <!-- Input / Interaction Section Mockup -->
-  <g transform="translate(20, 286)">
-    <rect width="390" height="280" rx="20" fill="#FFFFFF" filter="url(#softShadow)" />
-    <text x="24" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#0F172A">주요 입력 &amp; 설정</text>
-    
-    <!-- Input Box 1 -->
-    <rect x="24" y="56" width="342" height="48" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="40" y="86" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="500" fill="#94A3B8">기본 옵션을 손쉽게 입력하세요</text>
-
-    <!-- Input Box 2 -->
-    <rect x="24" y="116" width="342" height="48" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="40" y="146" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="500" fill="#94A3B8">세부 설정 및 조건 선택</text>
-
-    <!-- Interactive Primary Button -->
-    <rect x="24" y="184" width="342" height="56" rx="16" fill="url(#btnGrad)" />
-    <text x="195" y="219" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" text-anchor="middle">결과 즉시 확인하기 ⚡</text>
+  <g transform="translate(20, 306)">
+    <rect width="390" height="240" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
+    <text x="24" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">주요 옵션 선택</text>
+    <rect x="24" y="60" width="342" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
+    <text x="40" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">기본 조건 설정</text>
+    <rect x="24" y="124" width="342" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
+    <text x="40" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">상세 옵션 선택</text>
   </g>
+</svg>`.trim();
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
-  <!-- Output / Result Highlight Box -->
-  <g transform="translate(20, 586)">
-    <rect width="390" height="230" rx="20" fill="#FFFFFF" filter="url(#softShadow)" />
-    <rect x="24" y="24" width="342" height="120" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
-    <text x="44" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#166534">✨ 계산 및 분석 완료</text>
-    <text x="44" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#15803D">100% 정상 산출</text>
-    <text x="44" y="124" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="600" fill="#166534">모든 항목이 정확하게 계산되었습니다.</text>
-
-    <!-- Chip Row -->
-    <rect x="24" y="164" width="105" height="34" rx="17" fill="#F1F5F9" />
-    <text x="76" y="186" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="700" fill="#475569" text-anchor="middle">무료 이용</text>
-    
-    <rect x="139" y="164" width="105" height="34" rx="17" fill="#F1F5F9" />
-    <text x="191" y="186" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="700" fill="#475569" text-anchor="middle">회원가입 無</text>
-
-    <rect x="254" y="164" width="112" height="34" rx="17" fill="#EEF2FF" />
-    <text x="310" y="186" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">초고속 처리</text>
-  </g>
-
+function generateLightScreen2(name: string, slug: string): string {
+    const cleanName = escapeXml(name || slug);
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
   <defs>
-    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="sBg2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#EEF2F6" />
+    </linearGradient>
+    <linearGradient id="btnG2" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#4F46E5" />
       <stop offset="100%" stop-color="#6366F1" />
     </linearGradient>
+    <filter id="sh2" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
+    </filter>
   </defs>
-</svg>
-    `.trim();
+  <rect width="430" height="860" fill="url(#sBg2)" />
+  <g transform="translate(20, 30)">
+    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh2)" />
+    <text x="28" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#4F46E5">STEP 2</text>
+    <text x="90" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="700" fill="#0F172A">실시간 계산 &amp; 분석</text>
+  </g>
+  <g transform="translate(20, 106)">
+    <rect width="390" height="420" rx="20" fill="#FFFFFF" filter="url(#sh2)" />
+    <rect x="24" y="24" width="342" height="70" rx="14" fill="#EEF2FF" stroke="#C7D2FE" />
+    <text x="44" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#4F46E5">입력 데이터 분석 진행 중</text>
+    <text x="44" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">최신 공식을 적용합니다</text>
+    <rect x="24" y="114" width="342" height="180" rx="14" fill="#F8FAFC" stroke="#E2E8F0" />
+    <text x="44" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">세부 산출 파라미터</text>
+    <line x1="44" y1="168" x2="346" y2="168" stroke="#E2E8F0" stroke-width="1" />
+    <text x="44" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">기준 산정액</text>
+    <text x="346" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">자동 반영</text>
+    <text x="44" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">공제율 / 감면율</text>
+    <text x="346" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">최적 적용</text>
+    <rect x="24" y="324" width="342" height="60" rx="16" fill="url(#btnG2)" />
+    <text x="195" y="360" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" text-anchor="middle">결과 도출 완료 ⚡</text>
+  </g>
+</svg>`.trim();
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
 
+function generateLightScreen3(name: string, slug: string): string {
+    const cleanName = escapeXml(name || slug);
+    const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
+  <defs>
+    <linearGradient id="sBg3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+    <filter id="sh3" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
+    </filter>
+  </defs>
+  <rect width="430" height="860" fill="url(#sBg3)" />
+  <g transform="translate(20, 30)">
+    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh3)" />
+    <text x="28" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#16A34A">STEP 3</text>
+    <text x="90" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="700" fill="#0F172A">최종 결과 리포트</text>
+  </g>
+  <g transform="translate(20, 106)">
+    <rect width="390" height="280" rx="20" fill="#FFFFFF" filter="url(#sh3)" />
+    <rect x="24" y="24" width="342" height="150" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
+    <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#166534">✨ 최종 산출 결과</text>
+    <text x="44" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="34" font-weight="900" fill="#15803D">정확도 100%</text>
+    <text x="44" y="138" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="600" fill="#166534">회원가입 없이 즉시 다운로드 가능</text>
+    <rect x="24" y="196" width="160" height="54" rx="14" fill="#F1F5F9" />
+    <text x="104" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="middle">결과 공유</text>
+    <rect x="196" y="196" width="170" height="54" rx="14" fill="#EEF2FF" />
+    <text x="281" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#4F46E5" text-anchor="middle">상세 저장</text>
+  </g>
+</svg>`.trim();
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
