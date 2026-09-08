@@ -103,7 +103,7 @@ function generateSlide1(options: CardDesignOptions): string {
     </g>
     <!-- Screen 1 Tag Badge -->
     <rect x="20" y="20" width="120" height="34" rx="17" fill="#0F172A" opacity="0.85" />
-    <text x="80" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">1. 시작 · 입력</text>
+    <text x="80" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">1. 진입 화면</text>
   </g>
 
   <!-- Bottom Indicator -->
@@ -179,7 +179,7 @@ function generateSlide2(options: CardDesignOptions): string {
     </g>
     <!-- Screen 2 Tag Badge -->
     <rect x="20" y="20" width="130" height="34" rx="17" fill="#059669" opacity="0.9" />
-    <text x="85" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">2. 실시간 조작</text>
+    <text x="85" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">2. 메인 컨텐츠</text>
   </g>
 
   <!-- Bottom Indicator -->
@@ -255,7 +255,7 @@ function generateSlide3(options: CardDesignOptions): string {
     </g>
     <!-- Screen 3 Tag Badge -->
     <rect x="20" y="20" width="130" height="34" rx="17" fill="#D97706" opacity="0.9" />
-    <text x="85" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">3. 최종 결과</text>
+    <text x="85" y="42" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#FFFFFF" text-anchor="middle">3. 결과 화면</text>
   </g>
 
   <!-- CTA URL BAR (Bottom) -->
