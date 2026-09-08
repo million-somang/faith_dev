@@ -179,21 +179,46 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 <div id="workspace-panel" class="hidden pt-4 border-t border-gray-100">
                     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                         <div class="lg:col-span-5 flex flex-col items-center">
+                            <!-- Preview Header & Slide Tabs -->
                             <div class="w-full flex items-center justify-between mb-2">
-                                <span class="text-xs font-bold text-gray-700 flex items-center">
-                                    <i class="fas fa-image text-blue-500 mr-1.5"></i> 1080x1080 동적 카드뉴스
+                                <span class="text-xs font-bold text-gray-800 flex items-center">
+                                    <i class="fas fa-camera-retro text-indigo-600 mr-1.5"></i> 비주얼 카드뉴스 (1080x1080)
                                 </span>
-                                <span class="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded">고해상도 벡터</span>
+                                <div class="flex items-center space-x-1" id="slide-tabs">
+                                    <button onclick="switchSlide(0)" id="tab-slide-0" class="px-2.5 py-1 text-[11px] font-bold rounded-md bg-indigo-600 text-white shadow-sm transition-all">
+                                        1. 커버
+                                    </button>
+                                    <button onclick="switchSlide(1)" id="tab-slide-1" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
+                                        2. 기능상세
+                                    </button>
+                                    <button onclick="switchSlide(2)" id="tab-slide-2" class="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all">
+                                        3. 바로가기
+                                    </button>
+                                </div>
                             </div>
 
-                            <div id="card-preview-container" class="w-full aspect-square rounded-2xl overflow-hidden border border-gray-300 shadow-lg bg-slate-900 flex items-center justify-center p-1">
+                            <!-- Clean Neumorphism Preview Box -->
+                            <div id="card-preview-container" class="w-full aspect-square rounded-2xl overflow-hidden border border-slate-200 shadow-md bg-slate-100/60 flex items-center justify-center p-2 relative">
+                                <div class="text-center text-gray-400 text-xs">
+                                    <i class="fas fa-image text-3xl mb-2 text-gray-300"></i><br>
+                                    생성된 카드뉴스가 여기에 표시됩니다
+                                </div>
                             </div>
 
-                            <div class="w-full mt-3 flex items-center justify-between text-xs text-gray-500">
-                                <span>* 알고리즘 스크롤 정지용 다크 테마</span>
-                                <button onclick="downloadCardSvg()" class="text-blue-600 hover:underline flex items-center font-medium">
-                                    <i class="fas fa-download mr-1"></i> 카드뉴스 다운로드
+                            <!-- Controls under Preview -->
+                            <div class="w-full mt-3 flex items-center justify-between text-xs">
+                                <button id="btn-recapture" onclick="recaptureScreenshot()" class="text-indigo-600 hover:text-indigo-800 flex items-center font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-100 transition-all">
+                                    <i class="fas fa-sync-alt mr-1.5" id="icon-recapture"></i>
+                                    <span id="text-recapture">실화면 재캡처</span>
                                 </button>
+                                <div class="flex items-center space-x-2">
+                                    <button onclick="downloadCurrentCard()" class="text-gray-700 hover:text-indigo-600 flex items-center font-semibold px-2.5 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all">
+                                        <i class="fas fa-download mr-1"></i> 현재 슬라이드
+                                    </button>
+                                    <button onclick="downloadAllCards()" class="text-indigo-700 hover:text-indigo-900 flex items-center font-bold px-2.5 py-1.5 bg-indigo-50 rounded-lg hover:bg-indigo-100 border border-indigo-200 transition-all">
+                                        <i class="fas fa-images mr-1"></i> 전 슬라이드
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -346,6 +371,9 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
     </div>
     <script>
         let currentSvg = '';
+        let currentCardSet = [];
+        let currentSlideIndex = 0;
+        let currentScreenshotUri = '';
         let currentApp = null;
         let currentFilter = 'ALL';
 
@@ -407,7 +435,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
             btn.disabled = true;
             icon.className = 'fas fa-spinner fa-spin mr-2';
-            text.innerText = 'Gemini AI 생성 중...';
+            text.innerText = 'AI 카피 & 실화면 캡처 중...';
 
             try {
                 const res = await authFetch('/api/admin/marketing/generate', {
@@ -419,9 +447,12 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 if (result.success) {
                     const data = result.data;
                     currentApp = data.app;
-                    currentSvg = data.cardSvg;
+                    currentCardSet = data.cardSet || [data.cardSvg];
+                    currentScreenshotUri = data.screenshotUri || '';
+                    currentSvg = currentCardSet[0];
 
-                    document.getElementById('card-preview-container').innerHTML = data.cardSvg;
+                    switchSlide(0);
+
                     document.getElementById('edit-headline').value = data.content.headline;
                     document.getElementById('edit-threads-body').value = data.content.threadsBody;
                     document.getElementById('edit-threads-first-comment').value = data.content.threadsFirstComment;
@@ -442,13 +473,102 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             }
         }
 
-        function downloadCardSvg() {
+        function switchSlide(idx) {
+            currentSlideIndex = idx;
+            [0, 1, 2].forEach(i => {
+                const tab = document.getElementById('tab-slide-' + i);
+                if (!tab) return;
+                if (i === idx) {
+                    tab.className = 'px-2.5 py-1 text-[11px] font-bold rounded-md bg-indigo-600 text-white shadow-sm transition-all';
+                } else {
+                    tab.className = 'px-2.5 py-1 text-[11px] font-semibold rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700 transition-all';
+                }
+            });
+
+            if (currentCardSet && currentCardSet[idx]) {
+                currentSvg = currentCardSet[idx];
+                document.getElementById('card-preview-container').innerHTML = currentSvg;
+            }
+        }
+
+        async function recaptureScreenshot() {
+            if (!currentApp) {
+                alert('미니앱을 먼저 선택하고 생성해주세요.');
+                return;
+            }
+
+            const btn = document.getElementById('btn-recapture');
+            const icon = document.getElementById('icon-recapture');
+            const text = document.getElementById('text-recapture');
+
+            btn.disabled = true;
+            icon.className = 'fas fa-spinner fa-spin mr-1.5';
+            text.innerText = '캡처 중...';
+
+            try {
+                const res = await authFetch('/api/admin/marketing/screenshot/capture', {
+                    method: 'POST',
+                    body: JSON.stringify({ slug: currentApp.slug, force: true })
+                });
+                const data = await res.json();
+                if (data.success && data.screenshotUri) {
+                    currentScreenshotUri = data.screenshotUri;
+
+                    // 슬라이드 1, 2, 3 재합성 요청
+                    const headline = document.getElementById('edit-headline').value;
+                    const reqSlides = [1, 2, 3].map(slideIdx => 
+                        authFetch('/api/admin/marketing/card-preview', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                title: headline,
+                                subtitle: '로그인 없이 브라우저에서 즉시 실행',
+                                tag: currentApp.category || '무료 도구',
+                                slug: currentApp.slug,
+                                screenshotUri: currentScreenshotUri,
+                                slideIndex: slideIdx
+                            })
+                        }).then(r => r.json())
+                    );
+
+                    const results = await Promise.all(reqSlides);
+                    currentCardSet = results.map((r, i) => r.svg || currentCardSet[i]);
+                    switchSlide(currentSlideIndex);
+                    alert('실화면 재캡처 및 카드뉴스가 성공적으로 갱신되었습니다!');
+                } else {
+                    alert('재캡처 실패: ' + (data.message || '오류 발생'));
+                }
+            } catch (e) {
+                alert('재캡처 요청 중 오류가 발생했습니다.');
+            } finally {
+                btn.disabled = false;
+                icon.className = 'fas fa-sync-alt mr-1.5';
+                text.innerText = '실화면 재캡처';
+            }
+        }
+
+        function downloadCurrentCard() {
             if (!currentSvg) return;
-            const blob = new Blob([currentSvg], { type: 'image/svg+xml;charset=utf-8' });
+            downloadSvgFile(currentSvg, (currentApp ? currentApp.slug : 'card') + '_slide_' + (currentSlideIndex + 1) + '.svg');
+        }
+
+        function downloadAllCards() {
+            if (!currentCardSet || currentCardSet.length === 0) {
+                if (currentSvg) downloadCurrentCard();
+                return;
+            }
+            currentCardSet.forEach((svg, idx) => {
+                setTimeout(() => {
+                    downloadSvgFile(svg, (currentApp ? currentApp.slug : 'card') + '_slide_' + (idx + 1) + '.svg');
+                }, idx * 300);
+            });
+        }
+
+        function downloadSvgFile(svgContent, filename) {
+            const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = (currentApp ? currentApp.slug : 'card') + '_1080x1080.svg';
+            a.download = filename;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);

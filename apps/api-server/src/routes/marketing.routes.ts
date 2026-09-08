@@ -4,6 +4,7 @@ import { checkSession } from '../middleware/auth.js';
 import { generateMarketingContent } from '../services/marketing/marketingAi.service.js';
 import { generateCardSvg } from '../services/marketing/ogCardRenderer.service.js';
 import { publishToSocialMedia } from '../services/marketing/metaPublisher.service.js';
+import { getMiniAppScreenshot } from '../services/marketing/screenshot.service.js';
 
 export const marketingRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 
@@ -57,7 +58,7 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
     const DB = getDB(c);
     try {
         const body = await c.req.json();
-        const { serviceSlug } = body;
+        const { serviceSlug, forceScreenshot = false } = body;
 
         if (!serviceSlug) {
             return c.json({ success: false, message: '대상 서비스(serviceSlug)를 선택해주세요.' }, 400);
@@ -69,7 +70,20 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             return c.json({ success: false, message: '등록되지 않은 미니앱입니다.' }, 404);
         }
 
-        // Gemini AI 마케팅 카피 생성
+        // 1. 미니앱 실제 화면 스크린샷 캡처 (캐시 또는 신규 생성)
+        let screenshotUri = '';
+        try {
+            screenshotUri = await getMiniAppScreenshot({
+                slug: app.slug,
+                targetUrl: app.app_url,
+                name: app.name,
+                force: Boolean(forceScreenshot)
+            });
+        } catch (e: any) {
+            console.warn('[MarketingAPI] Screenshot capture error:', e.message);
+        }
+
+        // 2. Gemini AI 마케팅 카피 생성
         const aiResult = await generateMarketingContent({
             name: app.name,
             slug: app.slug,
@@ -78,12 +92,35 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
             category: app.category || '유틸리티'
         });
 
-        // 1080x1080 동적 카드뉴스 SVG 생성
+        // 3. 1080x1080 동적 카드뉴스 SVG 생성 (슬라이드 1, 2, 3 캐러셀 세트)
         const cardSvg = generateCardSvg({
             title: aiResult.headline,
             subtitle: aiResult.subtitle,
             tag: aiResult.tag,
-            domain: 'veranex.app'
+            domain: 'veranex.app',
+            slug: app.slug,
+            screenshotUri,
+            slideIndex: 1
+        });
+
+        const cardSvg2 = generateCardSvg({
+            title: aiResult.headline,
+            subtitle: aiResult.subtitle,
+            tag: aiResult.tag,
+            domain: 'veranex.app',
+            slug: app.slug,
+            screenshotUri,
+            slideIndex: 2
+        });
+
+        const cardSvg3 = generateCardSvg({
+            title: aiResult.headline,
+            subtitle: aiResult.subtitle,
+            tag: aiResult.tag,
+            domain: 'veranex.app',
+            slug: app.slug,
+            screenshotUri,
+            slideIndex: 3
         });
 
         return c.json({
@@ -96,12 +133,71 @@ marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
                     category: app.category
                 },
                 content: aiResult,
-                cardSvg
+                screenshotUri,
+                cardSvg,
+                cardSet: [cardSvg, cardSvg2, cardSvg3]
             }
         });
     } catch (err: any) {
         console.error('[MarketingAPI] generate error:', err);
         return c.json({ success: false, message: err.message || '카피 생성 중 오류가 발생했습니다.' }, 500);
+    }
+});
+
+// ==================== 1-1. 미니앱 실화면 캡처 수동 요청 ====================
+marketingRoutes.post('/api/admin/marketing/screenshot/capture', async (c) => {
+    const DB = getDB(c);
+    try {
+        const body = await c.req.json();
+        const { slug, force = true } = body;
+
+        if (!slug) {
+            return c.json({ success: false, message: '미니앱 slug가 필요합니다.' }, 400);
+        }
+
+        const app = await DB.prepare("SELECT * FROM mini_apps WHERE slug = ?").bind(slug).first();
+        if (!app) {
+            return c.json({ success: false, message: '미니앱을 찾을 수 없습니다.' }, 404);
+        }
+
+        const screenshotUri = await getMiniAppScreenshot({
+            slug: app.slug,
+            targetUrl: app.app_url,
+            name: app.name,
+            force: Boolean(force)
+        });
+
+        return c.json({
+            success: true,
+            screenshotUri
+        });
+    } catch (err: any) {
+        return c.json({ success: false, message: err.message }, 500);
+    }
+});
+
+// ==================== 1-2. 카드뉴스 실시간 미리보기 리렌더링 ====================
+marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
+    try {
+        const body = await c.req.json();
+        const { title, subtitle, tag, domain, slug, screenshotUri, slideIndex = 1 } = body;
+
+        const svg = generateCardSvg({
+            title: title || '스마트 웹 툴킷',
+            subtitle: subtitle || '브라우저에서 즉시 실행',
+            tag: tag || '무료 도구',
+            domain: domain || 'veranex.app',
+            slug: slug || 'app',
+            screenshotUri: screenshotUri || '',
+            slideIndex: Number(slideIndex)
+        });
+
+        return c.json({
+            success: true,
+            svg
+        });
+    } catch (err: any) {
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
