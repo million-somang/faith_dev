@@ -1,14 +1,59 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
-import { requireAdmin, logActivity } from './admin.routes.js';
+import { checkSession } from '../middleware/auth.js';
 import { generateMarketingContent } from '../services/marketing/marketingAi.service.js';
 import { generateCardSvg } from '../services/marketing/ogCardRenderer.service.js';
 import { publishToSocialMedia } from '../services/marketing/metaPublisher.service.js';
 
 export const marketingRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 
+// 관리자 권한 미들웨어 (브라우저 세션 쿠키 + Authorization 헤더 듀얼 지원)
+const requireMarketingAdmin = async (c: any, next: any) => {
+    // 1. 브라우저 세션 쿠키 우선 확인
+    try {
+        const sessionUser = await checkSession(c);
+        if (sessionUser && (sessionUser.role === 'admin' || sessionUser.level >= 6)) {
+            c.set('adminUserId', String(sessionUser.id));
+            return next();
+        }
+    } catch (e) {}
+
+    // 2. Authorization Bearer 헤더 확인 (REST 클라이언트 / 로컬스토리지 토큰 호환)
+    const authHeader = c.req.header('Authorization');
+    if (authHeader) {
+        try {
+            const token = authHeader.replace('Bearer ', '').trim();
+            if (token && token !== 'true') {
+                const decoded = Buffer.from(token, 'base64').toString();
+                const userId = decoded.split(':')[0];
+                if (userId) {
+                    const DB = getDB(c);
+                    const admin = await DB.prepare('SELECT id, level, status, role FROM users WHERE id = ?').bind(userId).first();
+                    if (admin && (admin.role === 'admin' || admin.level >= 6) && admin.status === 'active') {
+                        c.set('adminUserId', String(admin.id));
+                        return next();
+                    }
+                }
+            }
+        } catch (e) {}
+    }
+
+    return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 401);
+};
+
+// 헬퍼: 활동 로그 기록
+async function logActivity(db: any, userId: string | null, action: string, description: string) {
+    try {
+        await db.prepare('INSERT INTO activity_logs (user_id, action, description) VALUES (?, ?, ?)')
+            .bind(userId, action, description).run();
+    } catch (e) {}
+}
+
+marketingRoutes.use('/api/admin/marketing/*', requireMarketingAdmin);
+marketingRoutes.use('/api/admin/marketing', requireMarketingAdmin);
+
 // ==================== 1. AI 카피 및 카드뉴스 즉시 생성 ====================
-marketingRoutes.post('/api/admin/marketing/generate', requireAdmin, async (c) => {
+marketingRoutes.post('/api/admin/marketing/generate', async (c) => {
     const DB = getDB(c);
     try {
         const body = await c.req.json();
@@ -61,7 +106,7 @@ marketingRoutes.post('/api/admin/marketing/generate', requireAdmin, async (c) =>
 });
 
 // ==================== 2. 마케팅 포스트 목록 조회 ====================
-marketingRoutes.get('/api/admin/marketing/posts', requireAdmin, async (c) => {
+marketingRoutes.get('/api/admin/marketing/posts', async (c) => {
     const DB = getDB(c);
     try {
         const status = c.req.query('status'); // DRAFT, SCHEDULED, PUBLISHED, FAILED or empty for all
@@ -102,7 +147,7 @@ marketingRoutes.get('/api/admin/marketing/posts', requireAdmin, async (c) => {
 });
 
 // ==================== 3. 마케팅 포스트 신규 등록 (저장/예약/즉시) ====================
-marketingRoutes.post('/api/admin/marketing/posts', requireAdmin, async (c) => {
+marketingRoutes.post('/api/admin/marketing/posts', async (c) => {
     const DB = getDB(c);
     try {
         const body = await c.req.json();
@@ -189,7 +234,7 @@ marketingRoutes.post('/api/admin/marketing/posts', requireAdmin, async (c) => {
 });
 
 // ==================== 4. 마케팅 포스트 수정 ====================
-marketingRoutes.put('/api/admin/marketing/posts/:id', requireAdmin, async (c) => {
+marketingRoutes.put('/api/admin/marketing/posts/:id', async (c) => {
     const DB = getDB(c);
     try {
         const id = c.req.param('id');
@@ -215,7 +260,7 @@ marketingRoutes.put('/api/admin/marketing/posts/:id', requireAdmin, async (c) =>
 });
 
 // ==================== 5. 1-Click 즉시 발행 ====================
-marketingRoutes.post('/api/admin/marketing/posts/:id/publish-now', requireAdmin, async (c) => {
+marketingRoutes.post('/api/admin/marketing/posts/:id/publish-now', async (c) => {
     const DB = getDB(c);
     try {
         const id = c.req.param('id');
@@ -268,7 +313,7 @@ marketingRoutes.post('/api/admin/marketing/posts/:id/publish-now', requireAdmin,
 });
 
 // ==================== 6. 실패 포스트 재시도 ====================
-marketingRoutes.post('/api/admin/marketing/posts/:id/retry', requireAdmin, async (c) => {
+marketingRoutes.post('/api/admin/marketing/posts/:id/retry', async (c) => {
     const DB = getDB(c);
     try {
         const id = c.req.param('id');
@@ -316,7 +361,7 @@ marketingRoutes.post('/api/admin/marketing/posts/:id/retry', requireAdmin, async
 });
 
 // ==================== 7. 포스트 삭제 ====================
-marketingRoutes.delete('/api/admin/marketing/posts/:id', requireAdmin, async (c) => {
+marketingRoutes.delete('/api/admin/marketing/posts/:id', async (c) => {
     const DB = getDB(c);
     try {
         const id = c.req.param('id');
@@ -328,7 +373,7 @@ marketingRoutes.delete('/api/admin/marketing/posts/:id', requireAdmin, async (c)
 });
 
 // ==================== 8. 대시보드 통계 메트릭 ====================
-marketingRoutes.get('/api/admin/marketing/stats', requireAdmin, async (c) => {
+marketingRoutes.get('/api/admin/marketing/stats', async (c) => {
     const DB = getDB(c);
     try {
         const total = await DB.prepare("SELECT COUNT(*) as count FROM marketing_posts").first();
@@ -361,7 +406,7 @@ marketingRoutes.get('/api/admin/marketing/stats', requireAdmin, async (c) => {
 });
 
 // ==================== 9. 자동화 설정 조회 및 저장 ====================
-marketingRoutes.get('/api/admin/marketing/settings', requireAdmin, async (c) => {
+marketingRoutes.get('/api/admin/marketing/settings', async (c) => {
     const DB = getDB(c);
     try {
         const settings = await DB.prepare("SELECT * FROM marketing_settings").all();
@@ -375,7 +420,7 @@ marketingRoutes.get('/api/admin/marketing/settings', requireAdmin, async (c) => 
     }
 });
 
-marketingRoutes.put('/api/admin/marketing/settings', requireAdmin, async (c) => {
+marketingRoutes.put('/api/admin/marketing/settings', async (c) => {
     const DB = getDB(c);
     try {
         const body = await c.req.json();

@@ -349,6 +349,24 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         let currentApp = null;
         let currentFilter = 'ALL';
 
+        function getAuthHeaders() {
+            const token = localStorage.getItem('auth_token') || '';
+            const headers = { 'Content-Type': 'application/json' };
+            if (token && token !== 'true') {
+                headers['Authorization'] = 'Bearer ' + token;
+            }
+            return headers;
+        }
+
+        async function authFetch(url, options = {}) {
+            const headers = { ...getAuthHeaders(), ...(options.headers || {}) };
+            return fetch(url, {
+                credentials: 'same-origin',
+                ...options,
+                headers
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             loadStats();
             loadPosts();
@@ -360,7 +378,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
         async function loadStats() {
             try {
-                const res = await fetch('/api/admin/marketing/stats');
+                const res = await authFetch('/api/admin/marketing/stats');
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('stat-total').innerText = data.stats.total;
@@ -392,9 +410,8 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             text.innerText = 'Gemini AI 생성 중...';
 
             try {
-                const res = await fetch('/api/admin/marketing/generate', {
+                const res = await authFetch('/api/admin/marketing/generate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ serviceSlug: slug })
                 });
                 const result = await res.json();
@@ -480,7 +497,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             const firstComment = document.getElementById('edit-threads-first-comment').value;
 
             try {
-                const res = await fetch('/api/admin/marketing/posts', {
+                const res = await authFetch('/api/admin/marketing/posts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -527,7 +544,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             const tbody = document.getElementById('posts-table-body');
             try {
                 const url = '/api/admin/marketing/posts?status=' + currentFilter;
-                const res = await fetch(url);
+                const res = await authFetch(url);
                 const data = await res.json();
 
                 if (!data.success || !data.posts || data.posts.length === 0) {
@@ -586,7 +603,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         async function publishNowPost(id) {
             if (!confirm('이 포스트를 지금 즉시 발행하시겠습니까?')) return;
             try {
-                const res = await fetch('/api/admin/marketing/posts/' + id + '/publish-now', { method: 'POST' });
+                const res = await authFetch('/api/admin/marketing/posts/' + id + '/publish-now', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     alert('발행되었습니다! (' + (data.isMock ? 'Mock 시뮬레이션 모드' : 'Meta API 연동') + ')');
@@ -602,7 +619,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
         async function retryPost(id) {
             try {
-                const res = await fetch('/api/admin/marketing/posts/' + id + '/retry', { method: 'POST' });
+                const res = await authFetch('/api/admin/marketing/posts/' + id + '/retry', { method: 'POST' });
                 const data = await res.json();
                 if (data.success) {
                     alert('재발행되었습니다.');
@@ -619,7 +636,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         async function deletePost(id) {
             if (!confirm('정말 삭제하시겠습니까?')) return;
             try {
-                const res = await fetch('/api/admin/marketing/posts/' + id, { method: 'DELETE' });
+                const res = await authFetch('/api/admin/marketing/posts/' + id, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) {
                     loadStats();
@@ -634,7 +651,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
         function openAutoPilotModal() {
             document.getElementById('autopilot-modal').classList.remove('hidden');
-            fetch('/api/admin/marketing/settings')
+            authFetch('/api/admin/marketing/settings')
                 .then(r => r.json())
                 .then(d => {
                     if (d.success && d.settings) {
@@ -659,7 +676,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             const slotsArray = slotsInput.split(',').map(s => s.trim()).filter(Boolean);
 
             try {
-                const res = await fetch('/api/admin/marketing/settings', {
+                const res = await authFetch('/api/admin/marketing/settings', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
