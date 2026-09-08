@@ -102,26 +102,21 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             timeout: 20000
         });
 
-        // 🌟 [핵심 개선 1] 스켈레톤 로딩 화면 소멸 완벽 대기 (최대 6초)
-        console.log(`[ScreenshotService] 스켈레톤 로딩 소멸 대기 중...`);
-        await page.waitForFunction(() => {
-            const loadingScreen = document.querySelector('.loading-screen');
-            const loadingBody = document.querySelector('.loading-body');
-            return !loadingScreen && !loadingBody;
-        }, { timeout: 6000 }).catch(() => {
-            console.log('[ScreenshotService] 로딩 화면 타임아웃 통과');
-        });
+        // 🌟 [핵심 개선 1] 스켈레톤 로딩(3초 타이머) 소멸 완벽 대기
+        console.log(`[ScreenshotService] 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기 중...`);
+        await page.waitForFunction(() => (document.querySelector('#root, #app, main')?.children.length ?? 0) > 0, { timeout: 10000 }).catch(() => {});
+        await page.waitForFunction(() => !document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"]'), { timeout: 12000 }).catch(() => {});
+        await page.waitForFunction(() => document.querySelectorAll('button, input, select, textarea, [role="tab"]').length >= 2, { timeout: 8000 }).catch(() => {});
+        await new Promise((resolve) => setTimeout(resolve, 800));
 
-        // 화면 렌더링 안정화 추가 대기
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // 🌟 [핵심 개선 2] 미니앱별 특화 시나리오 캡처 실행
-        const buffers = await captureScenarioShots(page, slug);
+        // 🌟 [핵심 개선 2] 미니앱별 특화 시나리오 캡처 실행 (slug 정규화)
+        const cleanSlug = slug.replace(/^app-/, '');
+        const buffers = await captureScenarioShots(page, cleanSlug);
 
         await browser.close();
 
         // 중복 방지 검증: 버퍼 크기가 동일하거나 중복이면 폴백 화면으로 교체
-        const validBuffers = validateAndEnsureDistinct(buffers, name, slug);
+        const validBuffers = validateAndEnsureDistinct(buffers, name, cleanSlug);
 
         // 캐시 파일 저장
         fs.writeFileSync(filePaths[0], validBuffers[0]);
@@ -143,14 +138,14 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
 /**
  * 앱별 고유 3대 키 페이지 시나리오 실행 함수
  */
-async function captureScenarioShots(page: any, slug: string): Promise<Buffer[]> {
+async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffer[]> {
     const buffers: Buffer[] = [];
 
-    if (slug === 'app-pyeong-calc') {
+    if (cleanSlug === 'pyeong-calc') {
         // ==================== [평수 계산기 전용 3대 키 페이지] ====================
         // Key 1: 면적 변환 탭에서 '34평' 클릭하여 '34평 = 112.40m²' 대형 결과가 뜬 화면
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button'));
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn34 = buttons.find(b => b.textContent && b.textContent.includes('34'));
             if (btn34) {
                 btn34.click();
@@ -166,13 +161,17 @@ async function captureScenarioShots(page: any, slug: string): Promise<Buffer[]> 
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
         console.log(`[ScreenshotService] pyeong-calc Key 1 (34평 변환 결과) 캡처 완료`);
 
-        // Key 2: '평당가격' 탭 클릭 ➡️ 매매가 8.5억 입력 ➡️ '평당 2,500만' 산출 리포트 화면
+        // Key 2: '평당 가격' 탭 클릭 ➡️ 매매가 8.5억 / 34평 입력 ➡️ '평당 2,500만' 산출 리포트 화면
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button'));
-            const priceTab = buttons.find(b => b.textContent && b.textContent.includes('평당가격'));
-            if (priceTab) priceTab.click();
+            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"]')) as HTMLElement[];
+            if (tabs[1]) {
+                tabs[1].click();
+            } else {
+                const priceTab = tabs.find(b => b.textContent && b.textContent.includes('평당'));
+                if (priceTab) priceTab.click();
+            }
         });
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 700));
         await page.evaluate(() => {
             const inputs = document.querySelectorAll('input');
             if (inputs[0]) {
@@ -188,24 +187,28 @@ async function captureScenarioShots(page: any, slug: string): Promise<Buffer[]> 
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
         console.log(`[ScreenshotService] pyeong-calc Key 2 (평당가격 산출 뷰) 캡처 완료`);
 
-        // Key 3: '부동산 상식' 탭 클릭 ➡️ 아파트 평형별 규격 비교표 가이드 화면
+        // Key 3: '사용방법' 탭 클릭 ➡️ 아파트 평형별 규격 비교표 가이드 화면
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button'));
-            const howtoTab = buttons.find(b => b.textContent && (b.textContent.includes('상식') || b.textContent.includes('가이드') || b.textContent.includes('부동산')));
-            if (howtoTab) howtoTab.click();
+            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"]')) as HTMLElement[];
+            if (tabs[2]) {
+                tabs[2].click();
+            } else {
+                const howtoTab = tabs.find(b => b.textContent && (b.textContent.includes('상식') || b.textContent.includes('방법') || b.textContent.includes('가이드')));
+                if (howtoTab) howtoTab.click();
+            }
         });
-        await new Promise((r) => setTimeout(r, 800));
+        await new Promise((r) => setTimeout(r, 700));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-        console.log(`[ScreenshotService] pyeong-calc Key 3 (부동산 상식 가이드 뷰) 캡처 완료`);
+        console.log(`[ScreenshotService] pyeong-calc Key 3 (사용방법 가이드 뷰) 캡처 완료`);
 
         return buffers;
     }
 
-    if (slug === 'app-severance-calc') {
+    if (cleanSlug === 'severance-calc') {
         // ==================== [퇴직금 계산기 전용 3대 키 페이지] ====================
         // Key 1: 퇴직금 계산하기 클릭 ➡️ 예상 퇴직금 1,842만원 산출 화면
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button'));
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const calcBtn = buttons.find(b => b.textContent && b.textContent.includes('계산하기'));
             if (calcBtn) calcBtn.click();
         });
@@ -235,7 +238,7 @@ async function captureScenarioShots(page: any, slug: string): Promise<Buffer[]> 
         return buffers;
     }
 
-    if (slug === 'app-calculator') {
+    if (cleanSlug === 'calculator') {
         // ==================== [다기능 계산기 전용 3대 키 페이지] ====================
         // Key 1: 기본 계산기 (수식 입력 상태)
         await page.evaluate(() => {
@@ -324,12 +327,13 @@ function validateAndEnsureDistinct(buffers: Buffer[], name: string, slug: string
     const size2 = buffers[1].length;
     const size3 = buffers[2].length;
 
-    // 크기가 1% 이내로 동일하면 같은 화면으로 판정
+    // 크기가 1.5% 이내로 동일한 쌍이 하나라도 있으면 중복으로 판정
     const diff12 = Math.abs(size1 - size2) / Math.max(size1, 1);
     const diff23 = Math.abs(size2 - size3) / Math.max(size2, 1);
+    const diff13 = Math.abs(size1 - size3) / Math.max(size1, 1);
 
-    if (diff12 < 0.015 && diff23 < 0.015) {
-        console.warn(`[ScreenshotService] ${slug}: 3장의 캡처가 모두 동일한 화면으로 판정되어 차별화 목업 세트로 교체합니다.`);
+    if (diff12 < 0.015 || diff23 < 0.015 || diff13 < 0.015) {
+        console.warn(`[ScreenshotService] ${slug}: 중복 캡처 감지 (크기: ${size1}, ${size2}, ${size3}) -> 차별화 라이트 목업 세트로 교체합니다.`);
         return generateLightFallbackBufferSet(name, slug);
     }
 
@@ -338,7 +342,10 @@ function validateAndEnsureDistinct(buffers: Buffer[], name: string, slug: string
 
 function isImagesDuplicate(uris: string[]): boolean {
     if (uris.length < 3) return true;
-    return uris[0] === uris[1] && uris[1] === uris[2];
+    const s1 = uris[0];
+    const s2 = uris[1];
+    const s3 = uris[2];
+    return s1 === s2 || s2 === s3 || s1 === s3;
 }
 
 /**

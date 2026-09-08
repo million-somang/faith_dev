@@ -1,3 +1,5 @@
+import { generateLightFallbackSet } from './screenshot.service.js';
+
 export interface CardDesignOptions {
     title: string;
     subtitle: string;
@@ -26,9 +28,17 @@ export function generateCardSvg(options: CardDesignOptions): string {
 function resolveScreenshots(options: CardDesignOptions): [string, string, string] {
     const list = options.screenshots || [];
     const fallback = options.screenshotUri || '';
-    const img1 = list[0] || fallback;
-    const img2 = list[1] || list[0] || fallback;
-    const img3 = list[2] || list[1] || list[0] || fallback;
+    let img1 = list[0] || fallback;
+    let img2 = list[1] || '';
+    let img3 = list[2] || '';
+
+    // 만약 이미지가 누락되었거나 중복인 경우 완전히 차별화된 키 씬 목업으로 채움
+    const [mock1, mock2, mock3] = generateLightFallbackSet(options.title || '스마트 도구', options.slug || 'app');
+
+    if (!img1) img1 = mock1;
+    if (!img2 || img2 === img1) img2 = mock2;
+    if (!img3 || img3 === img1 || img3 === img2) img3 = mock3;
+
     return [img1, img2, img3];
 }
 
