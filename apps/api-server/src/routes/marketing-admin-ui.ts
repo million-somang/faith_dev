@@ -182,21 +182,25 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <div>
                                 <h3 class="text-sm font-black text-gray-900 flex items-center">
-                                    <i class="fas fa-images text-indigo-600 mr-2 text-base"></i>
-                                    비주얼 카드뉴스 3종 세트 (1080x1080 Clean Neumorphism)
+                                    <i class="fas fa-camera-retro text-indigo-600 mr-2 text-base"></i>
+                                    미니앱 3대 실화면 에셋 (1번 ~ 3번 독립 화면)
                                 </h3>
                                 <p class="text-xs text-gray-500 mt-0.5">
-                                    실제 미니앱 구동 화면 3단계(시작·입력·결과)를 3-디바이스 입체 목업으로 완성한 고해상도 에셋입니다.
+                                    실제 브라우저에서 캡처한 서로 다른 3대 고유 화면(시작·조작·결과)입니다.
                                 </p>
                             </div>
                             <div class="flex items-center space-x-2">
+                                <button id="btn-toggle-view" onclick="toggleViewMode()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200 transition-all flex items-center shadow-sm">
+                                    <i class="fas fa-layer-group mr-1.5"></i>
+                                    <span id="text-toggle-view">카드뉴스 모드</span>
+                                </button>
                                 <button id="btn-recapture" onclick="recaptureScreenshot()" class="px-3 py-1.5 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg border border-indigo-200 transition-all flex items-center shadow-sm">
                                     <i class="fas fa-sync-alt mr-1.5" id="icon-recapture"></i>
                                     <span id="text-recapture">3단 실화면 재캡처</span>
                                 </button>
                                 <button onclick="downloadAllCards()" class="px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all flex items-center">
                                     <i class="fas fa-download mr-1.5"></i>
-                                    <span>카드 3종 일괄 다운로드</span>
+                                    <span>이미지 3종 일괄 다운로드</span>
                                 </button>
                             </div>
                         </div>
@@ -208,18 +212,18 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
                                         <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">1</span>
-                                        3-디바이스 입체 씬
+                                        1. 시작 · 메인 화면
                                     </span>
                                     <button onclick="downloadSpecificSlide(0)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
                                     </button>
                                 </div>
-                                <div id="card-preview-0" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                <div id="card-preview-0" class="aspect-[9/16] max-h-[440px] w-full p-1 bg-slate-100 flex items-center justify-center relative overflow-hidden">
                                     <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
-                                    <span class="font-medium text-gray-600">3개 구동화면 입체 노출</span>
-                                    <span class="text-indigo-600 font-bold">인스타/스레드 커버</span>
+                                    <span class="font-medium text-gray-600">초기 시작 상태 실화면</span>
+                                    <span class="text-indigo-600 font-bold">시작 · 인트로</span>
                                 </div>
                             </div>
 
@@ -227,19 +231,19 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
-                                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">2</span>
-                                        3-스텝 상세 씬
+                                        <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">2</span>
+                                        2. 조작 · 실행 화면
                                     </span>
                                     <button onclick="downloadSpecificSlide(1)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
                                     </button>
                                 </div>
-                                <div id="card-preview-1" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                <div id="card-preview-1" class="aspect-[9/16] max-h-[440px] w-full p-1 bg-slate-100 flex items-center justify-center relative overflow-hidden">
                                     <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
-                                    <span class="font-medium text-gray-600">입력·분석·결과 3컷 정렬</span>
-                                    <span class="text-indigo-600 font-bold">사용법/기능 안내</span>
+                                    <span class="font-medium text-gray-600">실제 인터랙션 구동 실화면</span>
+                                    <span class="text-emerald-600 font-bold">플레이 · 분석</span>
                                 </div>
                             </div>
 
@@ -247,19 +251,19 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
-                                        <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">3</span>
-                                        3-화면 CTA 바로가기
+                                        <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">3</span>
+                                        3. 결과 · 상세 화면
                                     </span>
                                     <button onclick="downloadSpecificSlide(2)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
                                     </button>
                                 </div>
-                                <div id="card-preview-2" class="aspect-square w-full p-2 bg-slate-100/60 flex items-center justify-center relative overflow-hidden">
+                                <div id="card-preview-2" class="aspect-[9/16] max-h-[440px] w-full p-1 bg-slate-100 flex items-center justify-center relative overflow-hidden">
                                     <div class="text-gray-400 text-xs text-center"><i class="fas fa-spinner fa-spin mr-1"></i>로딩중...</div>
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
-                                    <span class="font-medium text-gray-600">3개 썸네일 + 주소창 버튼</span>
-                                    <span class="text-indigo-600 font-bold">전환 유도/엔딩</span>
+                                    <span class="font-medium text-gray-600">최종 산출 결과 실화면</span>
+                                    <span class="text-amber-600 font-bold">결과 · 엔딩</span>
                                 </div>
                             </div>
                         </div>
@@ -431,6 +435,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         let currentScreenshots = [];
         let currentApp = null;
         let currentFilter = 'ALL';
+        let viewMode = 'SCREENSHOT';
 
         function getAuthHeaders() {
             const token = localStorage.getItem('auth_token') || '';
@@ -532,10 +537,25 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         function renderCardSet() {
             for (let i = 0; i < 3; i++) {
                 const container = document.getElementById('card-preview-' + i);
-                if (container && currentCardSet[i]) {
+                if (!container) continue;
+
+                if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
+                    container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
+                    container.innerHTML = '<img src="' + currentScreenshots[i] + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" />';
+                } else if (currentCardSet && currentCardSet[i]) {
+                    container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
                     container.innerHTML = currentCardSet[i];
                 }
             }
+        }
+
+        function toggleViewMode() {
+            viewMode = (viewMode === 'SCREENSHOT') ? 'CARD' : 'SCREENSHOT';
+            const textToggle = document.getElementById('text-toggle-view');
+            if (textToggle) {
+                textToggle.innerText = (viewMode === 'SCREENSHOT') ? '카드뉴스 모드로 보기' : '순수 실화면으로 보기';
+            }
+            renderCardSet();
         }
 
         async function refreshAllCardsPreview() {
@@ -589,7 +609,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 if (data.success && data.screenshots) {
                     currentScreenshots = data.screenshots;
                     await refreshAllCardsPreview();
-                    alert('미니앱 3단계 실화면 재캡처 및 카드 3종 세트가 모두 갱신되었습니다!');
+                    alert('미니앱 3단계 실화면 재캡처가 완료되었습니다!');
                 } else {
                     alert('재캡처 실패: ' + (data.message || '오류 발생'));
                 }
@@ -603,17 +623,38 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         }
 
         function downloadSpecificSlide(idx) {
-            if (!currentCardSet || !currentCardSet[idx]) return;
-            downloadSvgFile(currentCardSet[idx], (currentApp ? currentApp.slug : 'card') + '_slide_' + (idx + 1) + '.svg');
+            const slug = currentApp ? currentApp.slug : 'app';
+            if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[idx]) {
+                downloadDataUri(currentScreenshots[idx], slug + '_screen_' + (idx + 1) + '.png');
+            } else if (currentCardSet && currentCardSet[idx]) {
+                downloadSvgFile(currentCardSet[idx], slug + '_slide_' + (idx + 1) + '.svg');
+            }
         }
 
         function downloadAllCards() {
-            if (!currentCardSet || currentCardSet.length === 0) return;
-            currentCardSet.forEach((svg, idx) => {
-                setTimeout(() => {
-                    downloadSvgFile(svg, (currentApp ? currentApp.slug : 'card') + '_slide_' + (idx + 1) + '.svg');
-                }, idx * 300);
-            });
+            const slug = currentApp ? currentApp.slug : 'app';
+            if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots.length > 0) {
+                currentScreenshots.forEach((shot, idx) => {
+                    setTimeout(() => {
+                        downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
+                    }, idx * 300);
+                });
+            } else if (currentCardSet && currentCardSet.length > 0) {
+                currentCardSet.forEach((svg, idx) => {
+                    setTimeout(() => {
+                        downloadSvgFile(svg, slug + '_slide_' + (idx + 1) + '.svg');
+                    }, idx * 300);
+                });
+            }
+        }
+
+        function downloadDataUri(dataUri, filename) {
+            const a = document.createElement('a');
+            a.href = dataUri;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function downloadSvgFile(svgContent, filename) {

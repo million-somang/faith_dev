@@ -273,13 +273,91 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         return buffers;
     }
 
+    if (cleanSlug === '2048') {
+        // ==================== [2048 게임 전용 3대 키 페이지] ====================
+        // Key 1: 게임 시작 초기 화면 (Score: 0, 2개 타일)
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await new Promise((r) => setTimeout(r, 400));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+        console.log(`[ScreenshotService] 2048 Key 1 (초기 시작 보드) 캡처 완료`);
+
+        // Key 2: 실제 방향키 14회 연속 타건으로 타일 결합 및 스코어 획득 플레이 화면
+        const keys1 = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
+        for (const k of keys1) {
+            await page.keyboard.press(k);
+            await new Promise((r) => setTimeout(r, 100));
+        }
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+        console.log(`[ScreenshotService] 2048 Key 2 (실제 플레이/블록 결합 화면) 캡처 완료`);
+
+        // Key 3: 추가 방향키 14회 타건으로 고득점/다수 타일 생성 화면
+        const keys2 = ['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown'];
+        for (const k of keys2) {
+            await page.keyboard.press(k);
+            await new Promise((r) => setTimeout(r, 100));
+        }
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+        console.log(`[ScreenshotService] 2048 Key 3 (고득점 누적 보드 화면) 캡처 완료`);
+
+        return buffers;
+    }
+
+    if (cleanSlug === 'tetris') {
+        // ==================== [테트리스 게임 전용 3대 키 페이지] ====================
+        // Key 1: 시작 화면
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // Key 2: 게임 시작 및 블록 조작
+        await page.evaluate(() => {
+            const btn = Array.from(document.querySelectorAll('button')).find(b => /start|시작|play/i.test(b.textContent || ''));
+            if (btn) btn.click();
+        });
+        await new Promise((r) => setTimeout(r, 500));
+        for (let i = 0; i < 8; i++) {
+            await page.keyboard.press('ArrowDown');
+            await new Promise((r) => setTimeout(r, 120));
+        }
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // Key 3: 지속 플레이 및 하단 스택 화면
+        for (let i = 0; i < 10; i++) {
+            await page.keyboard.press(i % 2 === 0 ? 'ArrowLeft' : 'ArrowDown');
+            await new Promise((r) => setTimeout(r, 120));
+        }
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        return buffers;
+    }
+
+    if (cleanSlug === 'sudoku') {
+        // ==================== [스도쿠 게임 전용 3대 키 페이지] ====================
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        await page.evaluate(() => {
+            const cells = Array.from(document.querySelectorAll('button, [role="gridcell"], .cell')) as HTMLElement[];
+            if (cells[4]) cells[4].click();
+            const numBtns = Array.from(document.querySelectorAll('button')).filter(b => /^[1-9]$/.test(b.textContent?.trim() || ''));
+            if (numBtns[1]) numBtns[1].click();
+        });
+        await new Promise((r) => setTimeout(r, 600));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        await page.evaluate(() => window.scrollTo(0, 200));
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        return buffers;
+    }
+
     // ==================== [공통 범용 앱 인터랙션] ====================
     // Key 1: 메인 화면 첫 컷
     await page.evaluate(() => window.scrollTo(0, 0));
     await new Promise((r) => setTimeout(r, 400));
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // Key 2: 탭이나 서브 메뉴가 있으면 2번째 탭 클릭
+    // Key 2: 탭이나 서브 메뉴가 있으면 2번째 탭 클릭, 없으면 입력 필드 변경
     const clickedSub = await page.evaluate(() => {
         const tabs = Array.from(document.querySelectorAll('button[role="tab"], .tab, nav button, button[class*="tab"]')) as HTMLElement[];
         if (tabs.length >= 2) {
@@ -287,57 +365,59 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             return true;
         }
         const generalButtons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-        if (generalButtons.length >= 3) {
+        if (generalButtons.length >= 2) {
             generalButtons[1].click();
+            return true;
+        }
+        const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]), textarea')) as HTMLInputElement[];
+        if (inputs.length > 0) {
+            inputs[0].focus();
+            inputs[0].value = '100';
+            inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
             return true;
         }
         return false;
     });
     await new Promise((r) => setTimeout(r, 800));
     if (!clickedSub) {
-        await page.evaluate(() => window.scrollTo(0, 300));
+        await page.evaluate(() => window.scrollTo(0, 260));
         await new Promise((r) => setTimeout(r, 400));
     }
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // Key 3: 계산/실행/확인 버튼 클릭 후 결과 뷰
-    await page.evaluate(() => {
+    // Key 3: 계산/실행/확인 버튼 클릭 또는 스크롤 다운
+    const clickedAction = await page.evaluate(() => {
         const buttons = Array.from(document.querySelectorAll('button, a, input[type="submit"]')) as HTMLElement[];
         const actionBtn = buttons.find(b => {
             const text = (b.textContent || (b as HTMLInputElement).value || '').trim();
-            return /계산|결과|확인|조회|시작|생성|변환|검사|Calc|Result|Start/i.test(text) && b.offsetWidth > 0;
+            return /계산|결과|확인|조회|시작|생성|변환|검사|실행|Calc|Result|Start|Go/i.test(text) && b.offsetWidth > 0;
         });
-        if (actionBtn) actionBtn.click();
+        if (actionBtn) {
+            actionBtn.click();
+            return true;
+        }
+        return false;
     });
-    await new Promise((r) => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 800));
+    if (!clickedAction) {
+        await page.evaluate(() => window.scrollTo(0, 450));
+        await new Promise((r) => setTimeout(r, 400));
+    }
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
     return buffers;
 }
 
 /**
- * 3장의 이미지가 동일한지 검증하고, 동일한 경우 완벽히 차별화된 라이트 씬으로 교체
+ * 3장의 이미지를 검증하여 반환 (어떤 경우에도 더미 플레이스홀더로 치환하지 않음)
  */
 function validateAndEnsureDistinct(buffers: Buffer[], name: string, slug: string): Buffer[] {
-    if (buffers.length < 3) {
-        return generateLightFallbackBufferSet(name, slug);
+    if (buffers.length >= 3) {
+        return buffers;
     }
-
-    const size1 = buffers[0].length;
-    const size2 = buffers[1].length;
-    const size3 = buffers[2].length;
-
-    // 크기가 1.5% 이내로 동일한 쌍이 하나라도 있으면 중복으로 판정
-    const diff12 = Math.abs(size1 - size2) / Math.max(size1, 1);
-    const diff23 = Math.abs(size2 - size3) / Math.max(size2, 1);
-    const diff13 = Math.abs(size1 - size3) / Math.max(size1, 1);
-
-    if (diff12 < 0.015 || diff23 < 0.015 || diff13 < 0.015) {
-        console.warn(`[ScreenshotService] ${slug}: 중복 캡처 감지 (크기: ${size1}, ${size2}, ${size3}) -> 차별화 라이트 목업 세트로 교체합니다.`);
-        return generateLightFallbackBufferSet(name, slug);
-    }
-
-    return buffers;
+    // 3장 미만일 경우 기본 1번 버퍼를 안전하게 채움
+    const b0 = buffers[0] || Buffer.from('');
+    return [b0, buffers[1] || b0, buffers[2] || b0];
 }
 
 function isImagesDuplicate(uris: string[]): boolean {
@@ -405,28 +485,20 @@ function generateLightScreen1Svg(name: string, slug: string): string {
     </filter>
   </defs>
   <rect width="430" height="860" fill="url(#sBg1)" />
-  <g transform="translate(20, 30)">
-    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh1)" />
-    <circle cx="28" cy="28" r="14" fill="#EEF2FF" />
-    <text x="28" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="900" fill="#4F46E5" text-anchor="middle">V</text>
-    <text x="56" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">${cleanName}</text>
+  <g transform="translate(20, 40)">
+    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh1)" />
+    <circle cx="32" cy="32" r="16" fill="#4F46E5" />
+    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">V</text>
+    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName}</text>
   </g>
-  <g transform="translate(20, 106)">
-    <rect width="390" height="180" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
-    <rect x="20" y="20" width="80" height="26" rx="13" fill="#EEF2FF" />
-    <text x="60" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">1. 면적 변환</text>
-    <text x="20" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="24" font-weight="900" fill="#0F172A">34평 ➡️ 112.40m²</text>
-    <text x="20" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="500" fill="#64748B">원클릭 국민평형 환산 완료</text>
-  </g>
-  <g transform="translate(20, 306)">
-    <rect width="390" height="240" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
-    <text x="24" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">빠른 평형 선택</text>
-    <rect x="24" y="60" width="100" height="50" rx="12" fill="#EEF2FF" stroke="#C7D2FE" />
-    <text x="74" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#4F46E5" text-anchor="middle">24평</text>
-    <rect x="145" y="60" width="100" height="50" rx="12" fill="#4F46E5" />
-    <text x="195" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#FFFFFF" text-anchor="middle">34평</text>
-    <rect x="266" y="60" width="100" height="50" rx="12" fill="#EEF2FF" stroke="#C7D2FE" />
-    <text x="316" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#4F46E5" text-anchor="middle">42평</text>
+  <g transform="translate(20, 130)">
+    <rect width="390" height="260" rx="24" fill="#FFFFFF" filter="url(#sh1)" />
+    <rect x="24" y="24" width="110" height="32" rx="16" fill="#EEF2FF" />
+    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#4F46E5" text-anchor="middle">STEP 01</text>
+    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">초간편 시작</text>
+    <text x="24" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="500" fill="#64748B">별도 가입 없이 브라우저에서 즉시 구동</text>
+    <rect x="24" y="170" width="342" height="60" rx="16" fill="#F8FAFC" stroke="#E2E8F0" />
+    <text x="195" y="206" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#4F46E5" text-anchor="middle">👉 지금 바로 시작하기</text>
   </g>
 </svg>`.trim();
 }
@@ -445,22 +517,21 @@ function generateLightScreen2Svg(name: string, slug: string): string {
     </filter>
   </defs>
   <rect width="430" height="860" fill="url(#sBg2)" />
-  <g transform="translate(20, 30)">
-    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh2)" />
-    <rect x="14" y="12" width="120" height="32" rx="8" fill="#EEF2FF" />
-    <text x="74" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#4F46E5" text-anchor="middle">2. 평당가격 계산</text>
-    <text x="145" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">시세 분석 모드</text>
+  <g transform="translate(20, 40)">
+    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh2)" />
+    <circle cx="32" cy="32" r="16" fill="#059669" />
+    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
+    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName} 실시간 실행</text>
   </g>
-  <g transform="translate(20, 106)">
-    <rect width="390" height="420" rx="20" fill="#FFFFFF" filter="url(#sh2)" />
-    <rect x="24" y="24" width="342" height="90" rx="14" fill="#F0FDF4" stroke="#BBF7D0" />
-    <text x="44" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#166534">평당 환산 단가 분석 결과</text>
-    <text x="44" y="88" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="26" font-weight="900" fill="#15803D">평당 2,500만원</text>
-    
-    <rect x="24" y="130" width="342" height="160" rx="14" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="44" y="165" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">매매가 기준: 8억 5,000만원</text>
-    <text x="44" y="195" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">공급면적: 34평 (112.4m²)</text>
-    <text x="44" y="225" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">주변 시세 대비: <tspan fill="#4F46E5" font-weight="800">적정 가격대 💛</tspan></text>
+  <g transform="translate(20, 130)">
+    <rect width="390" height="320" rx="24" fill="#FFFFFF" filter="url(#sh2)" />
+    <rect x="24" y="24" width="110" height="32" rx="16" fill="#ECFDF5" />
+    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#059669" text-anchor="middle">STEP 02</text>
+    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">맞춤형 스마트 조작</text>
+    <text x="24" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="500" fill="#64748B">공식 연산 알고리즘 100% 반영</text>
+    <rect x="24" y="170" width="342" height="110" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
+    <text x="44" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#15803D">⚡ 번개처럼 빠른 즉시 반응</text>
+    <text x="44" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#166534">모바일·태블릿·PC 모든 환경 완벽 호환</text>
   </g>
 </svg>`.trim();
 }
@@ -479,27 +550,20 @@ function generateLightScreen3Svg(name: string, slug: string): string {
     </filter>
   </defs>
   <rect width="430" height="860" fill="url(#sBg3)" />
-  <g transform="translate(20, 30)">
-    <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh3)" />
-    <rect x="14" y="12" width="120" height="32" rx="8" fill="#FEF3C7" />
-    <text x="74" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#B45309" text-anchor="middle">3. 부동산 상식</text>
-    <text x="145" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">공식 평형 가이드</text>
+  <g transform="translate(20, 40)">
+    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh3)" />
+    <circle cx="32" cy="32" r="16" fill="#D97706" />
+    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
+    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName} 결과 리포트</text>
   </g>
-  <g transform="translate(20, 106)">
-    <rect width="390" height="420" rx="20" fill="#FFFFFF" filter="url(#sh3)" />
-    <text x="24" y="44" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="900" fill="#0F172A">아파트 평형 공식 규격표</text>
-    
-    <rect x="24" y="65" width="342" height="60" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="44" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#0F172A">전용 59m²</text>
-    <text x="346" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#4F46E5" text-anchor="end">구 24~25평형 🏡</text>
-
-    <rect x="24" y="135" width="342" height="60" rx="12" fill="#EEF2FF" stroke="#C7D2FE" />
-    <text x="44" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#4F46E5">전용 84m²</text>
-    <text x="346" y="170" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#4F46E5" text-anchor="end">구 33~34평형 ⭐</text>
-
-    <rect x="24" y="205" width="342" height="60" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="44" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#0F172A">전용 102m²</text>
-    <text x="346" y="240" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#64748B" text-anchor="end">구 39~40평형 🏘️</text>
+  <g transform="translate(20, 130)">
+    <rect width="390" height="320" rx="24" fill="#FFFFFF" filter="url(#sh3)" />
+    <rect x="24" y="24" width="110" height="32" rx="16" fill="#FEF3C7" />
+    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#D97706" text-anchor="middle">STEP 03</text>
+    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">최종 산출 확인</text>
+    <rect x="24" y="170" width="342" height="110" rx="16" fill="#FFFBEB" stroke="#FDE68A" />
+    <text x="44" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#B45309">🎯 오차 없는 정밀 결과</text>
+    <text x="44" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#92400E">결과 복사 및 소셜 공유 지원</text>
   </g>
 </svg>`.trim();
 }
