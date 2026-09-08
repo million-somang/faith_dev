@@ -1,5 +1,3 @@
-import { generateLightFallbackSet } from './screenshot.service.js';
-
 export interface CardDesignOptions {
     title: string;
     subtitle: string;
@@ -8,12 +6,12 @@ export interface CardDesignOptions {
     slug?: string;
     screenshots?: string[]; // 최소 3개 이상의 실행 화면 이미지 배열
     screenshotUri?: string; // 단일 호환용
-    slideIndex?: number; // 1: 3-디바이스 입체 씬, 2: 3-스텝 상세 씬, 3: 3-그리드 CTA 씬
+    slideIndex?: number; // 1: 시작, 2: 조작, 3: 결과
 }
 
 /**
  * FaithPortal Clean Neumorphism 디자인 시스템 기반
- * 카드 1장당 실제 실행 화면 이미지가 최소 3개 이상 한눈에 들어오는 1080x1080 고해상도 SVG 렌더러
+ * 미니앱 실화면 1:1 고해상도 카드뉴스 렌더러
  */
 export function generateCardSvg(options: CardDesignOptions): string {
     const slide = options.slideIndex || 1;
@@ -28,17 +26,9 @@ export function generateCardSvg(options: CardDesignOptions): string {
 function resolveScreenshots(options: CardDesignOptions): [string, string, string] {
     const list = options.screenshots || [];
     const fallback = options.screenshotUri || '';
-    let img1 = list[0] || fallback;
-    let img2 = list[1] || '';
-    let img3 = list[2] || '';
-
-    // 만약 이미지가 누락되었거나 중복인 경우 완전히 차별화된 키 씬 목업으로 채움
-    const [mock1, mock2, mock3] = generateLightFallbackSet(options.title || '스마트 도구', options.slug || 'app');
-
-    if (!img1) img1 = mock1;
-    if (!img2 || img2 === img1) img2 = mock2;
-    if (!img3 || img3 === img1 || img3 === img2) img3 = mock3;
-
+    const img1 = list[0] || fallback;
+    const img2 = list[1] || img1;
+    const img3 = list[2] || img2;
     return [img1, img2, img3];
 }
 

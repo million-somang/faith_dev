@@ -40,7 +40,7 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
                     results.push(`data:image/png;base64,${buffer.toString('base64')}`);
                 }
             }
-            if (results.length === 3 && !isImagesDuplicate(results)) {
+            if (results.length === 3 && results[0] !== results[1] && results[1] !== results[2]) {
                 return results;
             }
         } catch (e) {
@@ -49,6 +49,7 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
     }
 
     // 2. Puppeteer 인터랙티브 키 페이지 캡처 시도
+    let browser: any = null;
     try {
         const puppeteerModule = await import('puppeteer');
         const puppeteer = puppeteerModule.default || puppeteerModule;
@@ -56,7 +57,7 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         // Chrome 실행 경로 자동 감지
         const candidatePaths = [
             process.env.PUPPETEER_EXECUTABLE_PATH,
-            '/root/.cache/puppeteer/chrome/linux-145.0.7632.77/chrome-linux64/chrome',
+            '/usr/bin/google-chrome-stable',
             '/usr/bin/google-chrome',
             '/usr/bin/chromium-browser',
             '/usr/bin/chromium'
@@ -70,7 +71,7 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             }
         }
 
-        const browser = await puppeteer.launch({
+        browser = await puppeteer.launch({
             headless: true,
             executablePath,
             args: [
@@ -99,14 +100,13 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         console.log(`[ScreenshotService] 미니앱 접속 시작: ${effectiveUrl}`);
         await page.goto(effectiveUrl, {
             waitUntil: ['domcontentloaded', 'networkidle2'],
-            timeout: 20000
+            timeout: 25000
         });
 
-        // 🌟 [핵심 개선 1] 스켈레톤 로딩(3초 타이머) 소멸 완벽 대기
+        // 🌟 [핵심 개선 1] 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기
         console.log(`[ScreenshotService] 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기 중...`);
         await page.waitForFunction(() => (document.querySelector('#root, #app, main')?.children.length ?? 0) > 0, { timeout: 10000 }).catch(() => {});
         await page.waitForFunction(() => !document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"]'), { timeout: 12000 }).catch(() => {});
-        await page.waitForFunction(() => document.querySelectorAll('button, input, select, textarea, [role="tab"]').length >= 2, { timeout: 8000 }).catch(() => {});
         await new Promise((resolve) => setTimeout(resolve, 800));
 
         // 🌟 [핵심 개선 2] 미니앱별 특화 시나리오 캡처 실행 (slug 정규화)
@@ -114,24 +114,36 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         const buffers = await captureScenarioShots(page, cleanSlug);
 
         await browser.close();
+        browser = null;
 
-        // 중복 방지 검증: 버퍼 크기가 동일하거나 중복이면 폴백 화면으로 교체
-        const validBuffers = validateAndEnsureDistinct(buffers, name, cleanSlug);
+        // 버퍼가 3장 미만일 경우 채움 (어떤 경우에도 가짜 SVG 미사용)
+        while (buffers.length < 3) {
+            buffers.push(buffers[buffers.length - 1] || Buffer.from(''));
+        }
 
         // 캐시 파일 저장
-        fs.writeFileSync(filePaths[0], validBuffers[0]);
-        fs.writeFileSync(filePaths[1], validBuffers[1]);
-        fs.writeFileSync(filePaths[2], validBuffers[2]);
-        fs.writeFileSync(path.join(UPLOAD_DIR, `${slug}.png`), validBuffers[0]);
+        fs.writeFileSync(filePaths[0], buffers[0]);
+        fs.writeFileSync(filePaths[1], buffers[1]);
+        fs.writeFileSync(filePaths[2], buffers[2]);
+        fs.writeFileSync(path.join(UPLOAD_DIR, `${slug}.png`), buffers[0]);
 
         return [
-            `data:image/png;base64,${validBuffers[0].toString('base64')}`,
-            `data:image/png;base64,${validBuffers[1].toString('base64')}`,
-            `data:image/png;base64,${validBuffers[2].toString('base64')}`
+            `data:image/png;base64,${buffers[0].toString('base64')}`,
+            `data:image/png;base64,${buffers[1].toString('base64')}`,
+            `data:image/png;base64,${buffers[2].toString('base64')}`
         ];
     } catch (err: any) {
-        console.warn(`[ScreenshotService] Puppeteer 캡처 실패 (${slug}):`, err.message);
-        return generateLightFallbackSet(name, slug);
+        console.warn(`[ScreenshotService] Puppeteer 캡처 예외 발생 (${slug}):`, err.message);
+        if (browser) {
+            try { await browser.close(); } catch (e) {}
+        }
+        // 디스크에 기존 유효한 PNG 캐시가 있다면 반환
+        if (filePaths.every(fp => fs.existsSync(fp))) {
+            try {
+                return filePaths.map(fp => `data:image/png;base64,${fs.readFileSync(fp).toString('base64')}`);
+            } catch (e) {}
+        }
+        throw new Error(`미니앱 실화면 캡처 실패: ${err.message}`);
     }
 }
 
@@ -351,56 +363,93 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         return buffers;
     }
 
+    if (cleanSlug === 'svg-converter') {
+        // ==================== [SVG 변환기 전용 3대 키 페이지] ====================
+        // Key 1: 메인 히어로 + 드롭존 상단 풀뷰
+        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
+        await new Promise((r) => setTimeout(r, 400));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // Key 2: 3대 변환 프리셋(흑백 로고, 일러스트, 고품질 상세) 영역
+        await page.evaluate(() => window.scrollTo({ top: 300, behavior: 'instant' })).catch(() => {});
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // Key 3: 하단 지원 포맷 및 상세 안내 영역
+        await page.evaluate(() => window.scrollTo({ top: 480, behavior: 'instant' })).catch(() => {});
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        return buffers;
+    }
+
     // ==================== [공통 범용 앱 인터랙션] ====================
     // Key 1: 메인 화면 첫 컷
-    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
     await new Promise((r) => setTimeout(r, 400));
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // Key 2: 탭이나 서브 메뉴가 있으면 2번째 탭 클릭, 없으면 입력 필드 변경
-    const clickedSub = await page.evaluate(() => {
-        const tabs = Array.from(document.querySelectorAll('button[role="tab"], .tab, nav button, button[class*="tab"]')) as HTMLElement[];
-        if (tabs.length >= 2) {
-            tabs[1].click();
-            return true;
-        }
-        const generalButtons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-        if (generalButtons.length >= 2) {
-            generalButtons[1].click();
-            return true;
-        }
-        const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]), textarea')) as HTMLInputElement[];
-        if (inputs.length > 0) {
-            inputs[0].focus();
-            inputs[0].value = '100';
-            inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-            return true;
-        }
-        return false;
-    });
-    await new Promise((r) => setTimeout(r, 800));
+    // Key 2: 탭이나 서브 메뉴가 있으면 2번째 탭 클릭, 없으면 안전한 입력 필드 변경
+    let clickedSub = false;
+    try {
+        clickedSub = await page.evaluate(() => {
+            try {
+                // 1. 탭 또는 네비게이션 버튼 (메인 영역 내부)
+                const tabs = Array.from(document.querySelectorAll('main button[role="tab"], main .tab, main nav button, [role="tablist"] button, .tab-group button')) as HTMLElement[];
+                if (tabs.length >= 2 && tabs[1].offsetWidth > 0) {
+                    tabs[1].click();
+                    return true;
+                }
+                // 2. 일반 옵션/인터랙션 버튼
+                const generalButtons = Array.from(document.querySelectorAll('main button, .content button, section button')) as HTMLElement[];
+                const clickable = generalButtons.filter(b => b.offsetWidth > 0 && !/로그인|회원가입|공유|설치|닫기/i.test(b.textContent || ''));
+                if (clickable.length >= 2) {
+                    clickable[1].click();
+                    return true;
+                }
+                // 3. 파일/히든/체크박스 제외한 안전한 텍스트/숫자 입력창
+                const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([readonly]):not([disabled]), textarea')) as HTMLInputElement[];
+                if (inputs.length > 0) {
+                    inputs[0].focus();
+                    inputs[0].value = inputs[0].type === 'number' ? '100' : '테스트';
+                    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+                    inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        });
+    } catch (e) {}
+
+    await new Promise((r) => setTimeout(r, 700));
     if (!clickedSub) {
-        await page.evaluate(() => window.scrollTo(0, 260));
+        await page.evaluate(() => window.scrollTo({ top: 320, behavior: 'instant' })).catch(() => {});
         await new Promise((r) => setTimeout(r, 400));
     }
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // Key 3: 계산/실행/확인 버튼 클릭 또는 스크롤 다운
-    const clickedAction = await page.evaluate(() => {
-        const buttons = Array.from(document.querySelectorAll('button, a, input[type="submit"]')) as HTMLElement[];
-        const actionBtn = buttons.find(b => {
-            const text = (b.textContent || (b as HTMLInputElement).value || '').trim();
-            return /계산|결과|확인|조회|시작|생성|변환|검사|실행|Calc|Result|Start|Go/i.test(text) && b.offsetWidth > 0;
+    // Key 3: 계산/실행/확인/변환 버튼 클릭 또는 하단 결과/가이드 영역
+    let clickedAction = false;
+    try {
+        clickedAction = await page.evaluate(() => {
+            try {
+                const buttons = Array.from(document.querySelectorAll('button, a.btn, input[type="submit"]')) as HTMLElement[];
+                const actionBtn = buttons.find(b => {
+                    const text = (b.textContent || (b as HTMLInputElement).value || '').trim();
+                    return /계산|결과|확인|조회|시작|생성|변환|검사|실행|Calc|Result|Start|Convert|Run/i.test(text) && b.offsetWidth > 0;
+                });
+                if (actionBtn) {
+                    actionBtn.click();
+                    return true;
+                }
+            } catch (e) {}
+            return false;
         });
-        if (actionBtn) {
-            actionBtn.click();
-            return true;
-        }
-        return false;
-    });
-    await new Promise((r) => setTimeout(r, 800));
+    } catch (e) {}
+
+    await new Promise((r) => setTimeout(r, 700));
     if (!clickedAction) {
-        await page.evaluate(() => window.scrollTo(0, 450));
+        await page.evaluate(() => window.scrollTo({ top: 620, behavior: 'instant' })).catch(() => {});
         await new Promise((r) => setTimeout(r, 400));
     }
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -409,163 +458,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
 }
 
 /**
- * 3장의 이미지를 검증하여 반환 (어떤 경우에도 더미 플레이스홀더로 치환하지 않음)
- */
-function validateAndEnsureDistinct(buffers: Buffer[], name: string, slug: string): Buffer[] {
-    if (buffers.length >= 3) {
-        return buffers;
-    }
-    // 3장 미만일 경우 기본 1번 버퍼를 안전하게 채움
-    const b0 = buffers[0] || Buffer.from('');
-    return [b0, buffers[1] || b0, buffers[2] || b0];
-}
-
-function isImagesDuplicate(uris: string[]): boolean {
-    if (uris.length < 3) return true;
-    const s1 = uris[0];
-    const s2 = uris[1];
-    const s3 = uris[2];
-    return s1 === s2 || s2 === s3 || s1 === s3;
-}
-
-/**
  * 단일 스크린샷 캡처 (기존 호환용)
  */
 export async function getMiniAppScreenshot(options: ScreenshotOptions): Promise<string> {
     const list = await getMiniAppScreenshots(options);
     return list[0] || '';
-}
-
-/**
- * 완벽히 서로 다른 3대 키 뷰 라이트 목업 세트
- */
-export function generateLightFallbackSet(name: string, slug: string): string[] {
-    return [
-        generateLightScreen1(name, slug),
-        generateLightScreen2(name, slug),
-        generateLightScreen3(name, slug)
-    ];
-}
-
-export function generateLightFallbackBufferSet(name: string, slug: string): Buffer[] {
-    // SVG를 Buffer로 감싸서 반환 (data URL 대신)
-    const s1 = Buffer.from(generateLightScreen1Svg(name, slug));
-    const s2 = Buffer.from(generateLightScreen2Svg(name, slug));
-    const s3 = Buffer.from(generateLightScreen3Svg(name, slug));
-    return [s1, s2, s3];
-}
-
-export function generateLightFallbackDataUri(name: string, slug: string): string {
-    return generateLightScreen1(name, slug);
-}
-
-function generateLightScreen1(name: string, slug: string): string {
-    return `data:image/svg+xml;utf8,${encodeURIComponent(generateLightScreen1Svg(name, slug))}`;
-}
-
-function generateLightScreen2(name: string, slug: string): string {
-    return `data:image/svg+xml;utf8,${encodeURIComponent(generateLightScreen2Svg(name, slug))}`;
-}
-
-function generateLightScreen3(name: string, slug: string): string {
-    return `data:image/svg+xml;utf8,${encodeURIComponent(generateLightScreen3Svg(name, slug))}`;
-}
-
-function generateLightScreen1Svg(name: string, slug: string): string {
-    const cleanName = escapeXml(name || slug);
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
-  <defs>
-    <linearGradient id="sBg1" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#F1F5F9" />
-    </linearGradient>
-    <filter id="sh1" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
-    </filter>
-  </defs>
-  <rect width="430" height="860" fill="url(#sBg1)" />
-  <g transform="translate(20, 40)">
-    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh1)" />
-    <circle cx="32" cy="32" r="16" fill="#4F46E5" />
-    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">V</text>
-    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName}</text>
-  </g>
-  <g transform="translate(20, 130)">
-    <rect width="390" height="260" rx="24" fill="#FFFFFF" filter="url(#sh1)" />
-    <rect x="24" y="24" width="110" height="32" rx="16" fill="#EEF2FF" />
-    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#4F46E5" text-anchor="middle">STEP 01</text>
-    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">초간편 시작</text>
-    <text x="24" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="500" fill="#64748B">별도 가입 없이 브라우저에서 즉시 구동</text>
-    <rect x="24" y="170" width="342" height="60" rx="16" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="195" y="206" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#4F46E5" text-anchor="middle">👉 지금 바로 시작하기</text>
-  </g>
-</svg>`.trim();
-}
-
-function generateLightScreen2Svg(name: string, slug: string): string {
-    const cleanName = escapeXml(name || slug);
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
-  <defs>
-    <linearGradient id="sBg2" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#EEF2F6" />
-    </linearGradient>
-    <filter id="sh2" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
-    </filter>
-  </defs>
-  <rect width="430" height="860" fill="url(#sBg2)" />
-  <g transform="translate(20, 40)">
-    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh2)" />
-    <circle cx="32" cy="32" r="16" fill="#059669" />
-    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">2</text>
-    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName} 실시간 실행</text>
-  </g>
-  <g transform="translate(20, 130)">
-    <rect width="390" height="320" rx="24" fill="#FFFFFF" filter="url(#sh2)" />
-    <rect x="24" y="24" width="110" height="32" rx="16" fill="#ECFDF5" />
-    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#059669" text-anchor="middle">STEP 02</text>
-    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">맞춤형 스마트 조작</text>
-    <text x="24" y="136" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="500" fill="#64748B">공식 연산 알고리즘 100% 반영</text>
-    <rect x="24" y="170" width="342" height="110" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
-    <text x="44" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#15803D">⚡ 번개처럼 빠른 즉시 반응</text>
-    <text x="44" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#166534">모바일·태블릿·PC 모든 환경 완벽 호환</text>
-  </g>
-</svg>`.trim();
-}
-
-function generateLightScreen3Svg(name: string, slug: string): string {
-    const cleanName = escapeXml(name || slug);
-    return `
-<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
-  <defs>
-    <linearGradient id="sBg3" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FFFFFF" />
-      <stop offset="100%" stop-color="#F1F5F9" />
-    </linearGradient>
-    <filter id="sh3" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#64748B" flood-opacity="0.12" />
-    </filter>
-  </defs>
-  <rect width="430" height="860" fill="url(#sBg3)" />
-  <g transform="translate(20, 40)">
-    <rect width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#sh3)" />
-    <circle cx="32" cy="32" r="16" fill="#D97706" />
-    <text x="32" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">3</text>
-    <text x="64" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="18" font-weight="800" fill="#0F172A">${cleanName} 결과 리포트</text>
-  </g>
-  <g transform="translate(20, 130)">
-    <rect width="390" height="320" rx="24" fill="#FFFFFF" filter="url(#sh3)" />
-    <rect x="24" y="24" width="110" height="32" rx="16" fill="#FEF3C7" />
-    <text x="79" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#D97706" text-anchor="middle">STEP 03</text>
-    <text x="24" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="28" font-weight="900" fill="#0F172A">최종 산출 확인</text>
-    <rect x="24" y="170" width="342" height="110" rx="16" fill="#FFFBEB" stroke="#FDE68A" />
-    <text x="44" y="210" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#B45309">🎯 오차 없는 정밀 결과</text>
-    <text x="44" y="244" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#92400E">결과 복사 및 소셜 공유 지원</text>
-  </g>
-</svg>`.trim();
 }
 
 function escapeXml(unsafe: string): string {
