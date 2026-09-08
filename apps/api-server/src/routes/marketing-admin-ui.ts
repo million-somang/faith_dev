@@ -212,7 +212,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
                                         <span class="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">1</span>
-                                        1. 시작 · 메인 화면
+                                        1. 진입 화면 (첫 접속 상태)
                                     </span>
                                     <button onclick="downloadSpecificSlide(0)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
@@ -223,7 +223,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
                                     <span class="font-medium text-gray-600">초기 시작 상태 실화면</span>
-                                    <span class="text-indigo-600 font-bold">시작 · 인트로</span>
+                                    <span class="text-indigo-600 font-bold">진입 · 인트로</span>
                                 </div>
                             </div>
 
@@ -232,7 +232,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
                                         <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">2</span>
-                                        2. 조작 · 실행 화면
+                                        2. 메인 컨텐츠 (조작·입력 화면)
                                     </span>
                                     <button onclick="downloadSpecificSlide(1)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
@@ -243,7 +243,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
                                     <span class="font-medium text-gray-600">실제 인터랙션 구동 실화면</span>
-                                    <span class="text-emerald-600 font-bold">플레이 · 분석</span>
+                                    <span class="text-emerald-600 font-bold">플레이 · 입력</span>
                                 </div>
                             </div>
 
@@ -252,7 +252,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 <div class="p-3 border-b border-gray-100 flex items-center justify-between bg-slate-50/50">
                                     <span class="text-xs font-black text-gray-800 flex items-center">
                                         <span class="w-5 h-5 rounded-full bg-amber-600 text-white text-[11px] font-bold flex items-center justify-center mr-1.5">3</span>
-                                        3. 결과 · 상세 화면
+                                        3. 결과 화면 (최종 산출 리포트)
                                     </span>
                                     <button onclick="downloadSpecificSlide(2)" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center">
                                         <i class="fas fa-download mr-1"></i>다운로드
@@ -263,7 +263,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                                 </div>
                                 <div class="p-2.5 bg-white text-[11px] text-gray-500 flex items-center justify-between border-t border-gray-50">
                                     <span class="font-medium text-gray-600">최종 산출 결과 실화면</span>
-                                    <span class="text-amber-600 font-bold">결과 · 엔딩</span>
+                                    <span class="text-amber-600 font-bold">결과 · 리포트</span>
                                 </div>
                             </div>
                         </div>
@@ -541,7 +541,9 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
                 if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
-                    container.innerHTML = '<img src="' + currentScreenshots[i] + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" />';
+                    const rawUrl = currentScreenshots[i];
+                    const shotUrl = rawUrl.includes('?t=') ? rawUrl : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now());
+                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" />';
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
                     container.innerHTML = currentCardSet[i];
@@ -607,8 +609,11 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 });
                 const data = await res.json();
                 if (data.success && data.screenshots) {
-                    currentScreenshots = data.screenshots;
+                    const ts = Date.now();
+                    currentScreenshots = data.screenshots.map(u => u + (u.includes('?') ? '&' : '?') + 't=' + ts);
+                    renderCardSet();
                     await refreshAllCardsPreview();
+                    renderCardSet();
                     alert('미니앱 3단계 실화면 재캡처가 완료되었습니다!');
                 } else {
                     alert('재캡처 실패: ' + (data.message || '오류 발생'));

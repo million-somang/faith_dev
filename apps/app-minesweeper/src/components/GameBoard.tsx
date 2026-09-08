@@ -75,16 +75,20 @@ export default function GameBoard({
         onContextMenu={e => e.preventDefault()}
       >
         {board.map((row, r) =>
-          row.map((cell, c) => (
-            <div
-              key={`${r}-${c}`}
-              className={getCellClass(cell, r, c)}
-              onClick={e => handleClick(e, r, c)}
-              onContextMenu={e => handleContextMenu(e, r, c)}
-            >
-              {getCellContent(cell)}
-            </div>
-          ))
+          row.map((cell, c) => {
+            const isCenter = r === Math.floor(board.length / 2) && c === Math.floor(cols / 2);
+            return (
+              <div
+                key={`${r}-${c}`}
+                className={getCellClass(cell, r, c)}
+                data-screenshot-click={isCenter ? 'action' : undefined}
+                onClick={e => handleClick(e, r, c)}
+                onContextMenu={e => handleContextMenu(e, r, c)}
+              >
+                {getCellContent(cell)}
+              </div>
+            );
+          })
         )}
       </div>
     </div>

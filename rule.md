@@ -13,6 +13,12 @@
    - (2) `vite.config.ts` 안의 `server` 객체에 `strictPort: true` 설정이 지켜지고 있는지 확인할 것. (포트가 밀리는 현상 방지)
    - (3) 기존에 5000번, 5001번, 4000번 등 백그라운드에서 돌아가고 있는 기존 node 프로세스가 없는지 반드시 확인(kill)하고 깨끗한 상태에서 서버를 시작할 것.
 
+### 6. 앞으로 모든 미니앱(Sub-App)을 제작하거나 수정할 때는 자동 마케팅 에셋 생성을 위해 **3단계 실화면 캡처 포인트(진입·조작·결과)**를 반드시 HTML/JSX 요소에 명시해줘:
+   - (1) **1단계 진입 포인트**: 접속 직후 보이는 기본 화면 (`window.scrollTo(0,0)` 기준)
+   - (2) **2단계 조작 포인트**: 메인 컨텐츠 입력 필드나 조작 버튼에 `data-screenshot-point="action"` 또는 `data-screenshot-click="action"` 지정 (입력 필드는 `data-screenshot-input="기본값"` 설정 가능)
+   - (3) **3단계 결과 포인트**: 결과 산출 버튼, 리포트 영역, 또는 모달 트리거에 `data-screenshot-point="result"` 또는 `data-screenshot-click="result"` 지정
+   - ※ 상세 작성법은 `MINI_APP_GUIDE.md`를 필독하여 준수할 것.
+
 
 
 # CRITICAL SAFETY RULES (최고 수준 안전/보안 규칙) 🚨

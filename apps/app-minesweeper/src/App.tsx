@@ -134,6 +134,7 @@ function App() {
             {/* 리더보드 버튼 */}
             <button
               onClick={() => setShowLeaderboard(true)}
+              data-screenshot-click="result"
               className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-xl font-bold text-base hover:from-amber-600 hover:to-orange-600 transition-all cursor-pointer shadow-md"
             >
               🏆 명예의 전당
