@@ -74,6 +74,7 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         browser = await puppeteer.launch({
             headless: true,
             executablePath,
+            protocolTimeout: 60000,
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -85,6 +86,27 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         });
 
         const page = await browser.newPage();
+        // 다이얼로그(alert/confirm)로 인한 브라우저 캡처 멈춤 원천 방지
+        page.on('dialog', async (dialog: any) => {
+            try { await dialog.dismiss(); } catch (e) {}
+        });
+        await page.evaluateOnNewDocument(() => {
+            window.alert = () => {};
+            window.confirm = () => true;
+            (window as any).setReactInputValue = (el: HTMLElement, val: string) => {
+                if (!el) return;
+                const proto = el.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+                const desc = Object.getOwnPropertyDescriptor(proto, 'value');
+                if (desc && desc.set) {
+                    desc.set.call(el, val);
+                } else {
+                    (el as HTMLInputElement).value = val;
+                }
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            };
+        }).catch(() => {});
+
         await page.setViewport({
             width: 430,
             height: 860,
@@ -336,15 +358,10 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
 
         // [2. 메인 컨텐츠 화면]: 제목과 날짜 입력 상태
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
-            if (inputs[0]) {
-                inputs[0].value = '2026 대학수학능력시험';
-                inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            if (inputs[1]) {
-                inputs[1].value = '2026-11-19';
-                inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (inputs[0] && setVal) setVal(inputs[0], '2026 대학수학능력시험');
+            if (inputs[1] && setVal) setVal(inputs[1], '2026-11-19');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
