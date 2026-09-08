@@ -310,6 +310,40 @@ html, body, #root {
   border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
+.nm-chip {
+  background: var(--nm-bg-light);
+  border-radius: 10px;
+  box-shadow: 2px 2px 5px var(--nm-shadow-dark), -2px -2px 5px var(--nm-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 5px 9px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.nm-chip:hover {
+  color: var(--accent);
+  box-shadow: 3px 3px 7px var(--nm-shadow-dark), -3px -3px 7px var(--nm-shadow-light);
+}
+
+.nm-chip:active, .nm-chip.active {
+  box-shadow: inset 2px 2px 4px var(--nm-shadow-inset-dark), inset -2px -2px 4px var(--nm-shadow-inset-light);
+  color: var(--accent-dark);
+  background: #e2e8f0;
+  font-weight: 800;
+}
+
+.banner-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 6px 6px 14px var(--nm-shadow-dark), -6px -6px 14px var(--nm-shadow-light);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+}
+
 /* ========================================
    Clean Neumorphism 4탭 내비게이션 바
    ======================================== */

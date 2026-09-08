@@ -4,7 +4,8 @@ import '@faithportal/mini-app-sdk/src/mini-app.css';
 import '@faithportal/mini-app-sdk/src/components/MiniAppCommunity.css';
 import { 
     Cake, CalendarDays, CheckCircle2, XCircle, Star, Bell, Gift, 
-    HelpCircle, MessageSquare, ArrowLeft, Copy, Check, Sparkles, RefreshCw
+    HelpCircle, MessageSquare, ArrowLeft, Copy, Check, Sparkles, RefreshCw,
+    ShieldCheck, Info, Clock, Award
 } from 'lucide-react';
 
 // 1. 물리 키보드 릴레이용 전역 타입 선언
@@ -426,126 +427,207 @@ function App() {
 
             {/* ── 메인 콘텐츠 컨테이너 ── */}
             <main className="flex-1 overflow-y-auto pb-8 hide-scrollbar">
-                <div className="max-w-md mx-auto px-4 py-5 w-full">
+                <div className="max-w-md mx-auto px-4 py-4 w-full">
 
                     {/* ========================================================
                         1. 나이 계산 탭: 입력란과 결과란 2단계 뷰 완벽 분리
                        ======================================================== */}
                     {activeTab === 'calculator' && (
-                        <div className="space-y-4">
-                            {/* ── [뷰 1단계: 입력 화면] ── */}
+                        <div>
+                            {/* ── [뷰 1단계: 입력 화면 (전체적 펼침 & 3D 비주얼)] ── */}
                             {viewMode === 'input' && (
-                                <div className="nm-card p-5 space-y-4 animate-[fadeIn_0.2s_ease-out]">
-                                    <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
-                                                <CalendarDays size={18} />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-base font-bold text-slate-800">생년월일 입력</h2>
-                                                <p className="text-[11px] text-slate-500">정확한 출생일자를 선택해 주세요</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
-                                            1단계 입력
-                                        </span>
-                                    </div>
-
-                                    {/* 년 / 월 / 일 3분할 인풋 */}
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-600 mb-1.5 block">
-                                            출생일자 (년 / 월 / 일)
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-2">
-                                            <div>
-                                                <span className="text-[10px] text-slate-400 mb-1 block">출생년도</span>
-                                                <input
-                                                    ref={yearInputRef}
-                                                    type="number"
-                                                    value={birthYear}
-                                                    onChange={e => setBirthYear(e.target.value)}
-                                                    placeholder="1995"
-                                                    min={1900}
-                                                    max={2026}
-                                                    className="nm-inset-white w-full px-2 py-3 text-lg font-black text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none stock-number"
-                                                />
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] text-slate-400 mb-1 block">월</span>
-                                                <select
-                                                    value={birthMonth}
-                                                    onChange={e => setBirthMonth(e.target.value)}
-                                                    className="nm-inset-white w-full px-2 py-3 text-base font-bold text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all appearance-none cursor-pointer"
-                                                >
-                                                    <option value="">선택</option>
-                                                    {Array.from({ length: 12 }, (_, i) => (
-                                                        <option key={i + 1} value={i + 1}>{i + 1}월</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <span className="text-[10px] text-slate-400 mb-1 block">일</span>
-                                                <select
-                                                    value={birthDay}
-                                                    onChange={e => setBirthDay(e.target.value)}
-                                                    className="nm-inset-white w-full px-2 py-3 text-base font-bold text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all appearance-none cursor-pointer"
-                                                >
-                                                    <option value="">선택</option>
-                                                    {Array.from({ length: 31 }, (_, i) => (
-                                                        <option key={i + 1} value={i + 1}>{i + 1}일</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 계산 기준일 */}
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-600 mb-1.5 block">
-                                            계산 기준일 <span className="text-[10px] font-normal text-slate-400">(기본값: 오늘)</span>
-                                        </label>
-                                        <div className="flex gap-2">
-                                            <input
-                                                type="date"
-                                                value={referenceDate}
-                                                onChange={e => setReferenceDate(e.target.value)}
-                                                className="nm-inset-white flex-1 px-3 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 stock-number"
+                                <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
+                                    {/* 1. 상단 3D 히어로 비주얼 배너 */}
+                                    <div className="banner-card bg-white/60">
+                                        <div className="relative w-full aspect-[16/9] overflow-hidden">
+                                            <img 
+                                                src={`${import.meta.env.BASE_URL}assets/age_hero_banner.jpg`} 
+                                                alt="한국 나이 계산기 3D 히어로 배너"
+                                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={setToday}
-                                                className="nm-btn px-3.5 py-2.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 shrink-0"
-                                            >
-                                                오늘
-                                            </button>
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/75 via-slate-900/20 to-transparent flex items-end p-4">
+                                                <div className="text-white w-full">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-[10px] font-bold bg-indigo-500/90 text-white px-2 py-0.5 rounded-md shadow-sm">
+                                                            대한민국 표준 법률 기준
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-200/90 font-medium">
+                                                            2026 개정판
+                                                        </span>
+                                                    </div>
+                                                    <h1 className="text-lg font-black tracking-tight drop-shadow-sm">
+                                                        한국 만 나이 · 연 나이 계산기
+                                                    </h1>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* ⚡ 나이 계산하기 대형 버튼 */}
-                                    <button
-                                        type="button"
-                                        onClick={handleCalculate}
-                                        disabled={!birthYear || !birthMonth || !birthDay}
-                                        className="nm-btn-accent w-full py-4 text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md mt-2"
-                                    >
-                                        <Cake size={18} />
-                                        <span>나이 계산하기</span>
-                                    </button>
+                                    {/* 2. 중앙 생년월일 입력 카드 */}
+                                    <div className="nm-card p-5 space-y-4">
+                                        <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-sm">
+                                                    <CalendarDays size={18} />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-base font-bold text-slate-800">생년월일 입력</h2>
+                                                    <p className="text-[11px] text-slate-500">출생일자를 입력하고 판정 결과를 확인하세요</p>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-bold px-2 py-1 bg-indigo-50 text-indigo-600 rounded-lg border border-indigo-100">
+                                                1단계
+                                            </span>
+                                        </div>
 
-                                    {/* 하단 힌트 배너 */}
-                                    <div className="p-3 rounded-xl bg-slate-100/70 border border-slate-200 text-[11px] text-slate-500 flex items-start gap-2">
-                                        <Sparkles size={14} className="text-indigo-500 shrink-0 mt-0.5" />
-                                        <span>
-                                            계산하기를 누르면 법적 <strong>만 나이</strong>와 <strong>연 나이</strong>, <strong>세는 나이</strong> 및 생활 권리 체크리스트가 상세히 분리되어 표시됩니다.
-                                        </span>
+                                        {/* 출생 연대 빠른 선택 퀵 칩 */}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="text-xs font-bold text-slate-700">
+                                                    출생일자 (년 / 월 / 일)
+                                                </label>
+                                                <span className="text-[10px] text-indigo-600 font-semibold">빠른 연대 선택</span>
+                                            </div>
+                                            <div className="flex gap-1.5 mb-2.5 overflow-x-auto pb-1 hide-scrollbar">
+                                                {[
+                                                    { label: '00년대', year: '2005' },
+                                                    { label: '90년대', year: '1995' },
+                                                    { label: '80년대', year: '1985' },
+                                                    { label: '70년대', year: '1975' },
+                                                    { label: '60년대', year: '1965' },
+                                                    { label: '50년대 이전', year: '1955' },
+                                                ].map(chip => (
+                                                    <button
+                                                        key={chip.label}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setBirthYear(chip.year);
+                                                            if (!birthMonth) setBirthMonth('1');
+                                                            if (!birthDay) setBirthDay('1');
+                                                        }}
+                                                        className={`nm-chip shrink-0 ${
+                                                            birthYear && Math.floor(parseInt(birthYear) / 10) * 10 === Math.floor(parseInt(chip.year) / 10) * 10
+                                                                ? 'active'
+                                                                : ''
+                                                        }`}
+                                                    >
+                                                        {chip.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* 3분할 인풋 필드 */}
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <div>
+                                                    <span className="text-[10px] text-slate-400 mb-1 block">출생년도</span>
+                                                    <input
+                                                        ref={yearInputRef}
+                                                        type="number"
+                                                        value={birthYear}
+                                                        onChange={e => setBirthYear(e.target.value)}
+                                                        placeholder="1995"
+                                                        min={1900}
+                                                        max={2026}
+                                                        className="nm-inset-white w-full px-2 py-3 text-lg font-black text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none stock-number"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-slate-400 mb-1 block">월</span>
+                                                    <select
+                                                        value={birthMonth}
+                                                        onChange={e => setBirthMonth(e.target.value)}
+                                                        className="nm-inset-white w-full px-2 py-3 text-base font-bold text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="">선택</option>
+                                                        {Array.from({ length: 12 }, (_, i) => (
+                                                            <option key={i + 1} value={i + 1}>{i + 1}월</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <span className="text-[10px] text-slate-400 mb-1 block">일</span>
+                                                    <select
+                                                        value={birthDay}
+                                                        onChange={e => setBirthDay(e.target.value)}
+                                                        className="nm-inset-white w-full px-2 py-3 text-base font-bold text-slate-800 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition-all appearance-none cursor-pointer"
+                                                    >
+                                                        <option value="">선택</option>
+                                                        {Array.from({ length: 31 }, (_, i) => (
+                                                            <option key={i + 1} value={i + 1}>{i + 1}일</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 계산 기준일 */}
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-700 mb-1.5 block">
+                                                계산 기준일 <span className="text-[10px] font-normal text-slate-400">(기본값: 오늘)</span>
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="date"
+                                                    value={referenceDate}
+                                                    onChange={e => setReferenceDate(e.target.value)}
+                                                    className="nm-inset-white flex-1 px-3 py-2.5 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 stock-number"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={setToday}
+                                                    className="nm-btn px-4 py-2.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 shrink-0 cursor-pointer"
+                                                >
+                                                    오늘
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* ⚡ 나이 계산하기 대형 액션 버튼 */}
+                                        <button
+                                            type="button"
+                                            onClick={handleCalculate}
+                                            disabled={!birthYear || !birthMonth || !birthDay}
+                                            className="nm-btn-accent w-full py-4 text-white font-black text-base flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-md mt-1"
+                                        >
+                                            <Cake size={18} />
+                                            <span>나이 계산하기</span>
+                                        </button>
+                                    </div>
+
+                                    {/* 3. 하단 알찬 지식 인포 카드 (공간 균형 및 신뢰도 완성) */}
+                                    <div className="nm-card p-4 space-y-3">
+                                        <div className="flex items-center gap-2 text-indigo-600">
+                                            <Info size={16} />
+                                            <h3 className="text-xs font-bold text-slate-800">만 나이 통일법 핵심 상식</h3>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2 text-[11px]">
+                                            <div className="p-2.5 rounded-xl bg-white/70 border border-slate-200/80">
+                                                <div className="font-bold text-indigo-700 mb-0.5 flex items-center gap-1">
+                                                    <ShieldCheck size={13} />
+                                                    <span>법적·행정 표준</span>
+                                                </div>
+                                                <p className="text-slate-500 leading-snug">
+                                                    모든 공문서, 계약, 의료 보험 및 법률 기준은 생일 기반 <strong>만 나이</strong>로 산정됩니다.
+                                                </p>
+                                            </div>
+                                            <div className="p-2.5 rounded-xl bg-white/70 border border-slate-200/80">
+                                                <div className="font-bold text-purple-700 mb-0.5 flex items-center gap-1">
+                                                    <Clock size={13} />
+                                                    <span>연 나이 예외</span>
+                                                </div>
+                                                <p className="text-slate-500 leading-snug">
+                                                    주류·담배 구매 및 병역 검사는 1월 1일 기준 <strong>연 나이</strong>가 적용됩니다.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
-                            {/* ── [뷰 2단계: 결과 영수증 대시보드 화면] ── */}
+                            {/* ── [뷰 2단계: 결과 영수증 대시보드 화면 (3D 축하 배너 & 전체 펼침)] ── */}
                             {viewMode === 'result' && ageResult && (
-                                <div className="space-y-4 animate-[fadeIn_0.2s_ease-out]">
-                                    {/* 상단 액션 바: 조건 다시 수정하기 & 요약 */}
+                                <div className="space-y-4 animate-[fadeIn_0.25s_ease-out]">
+                                    {/* 상단 액션 바: 뒤로가기 & 출생일 칩 */}
                                     <div className="flex items-center justify-between">
                                         <button
                                             type="button"
@@ -560,7 +642,38 @@ function App() {
                                         </span>
                                     </div>
 
-                                    {/* [HERO] 대표 만 나이 모니터 */}
+                                    {/* 1. 상단 3D 축하 및 마일스톤 비주얼 배너 */}
+                                    <div className="banner-card bg-white/60">
+                                        <div className="relative w-full aspect-[16/9] overflow-hidden">
+                                            <img 
+                                                src={`${import.meta.env.BASE_URL}assets/age_result_celebration.jpg`} 
+                                                alt="나이 계산 결과 축하 3D 배너"
+                                                className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/25 to-transparent flex items-end p-4">
+                                                <div className="text-white w-full flex items-center justify-between">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-md mb-1 inline-block shadow-sm">
+                                                            종합 분석 완료
+                                                        </span>
+                                                        <h2 className="text-lg font-black tracking-tight drop-shadow-sm">
+                                                            {birthYear}년생 나이 리포트
+                                                        </h2>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-xs text-amber-300 font-black block">
+                                                            {ageResult.isBirthdayToday ? '🎉 오늘 생일!' : `생일 D-${ageResult.daysUntilBirthday}`}
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-300 block stock-number">
+                                                            기준: {referenceDate}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 2. [HERO] 대표 만 나이 모니터 */}
                                     <div className="nm-card p-6 text-center relative overflow-hidden">
                                         <div className="text-xs font-bold text-indigo-600 mb-1 flex items-center justify-center gap-1">
                                             <Sparkles size={14} />
@@ -573,11 +686,11 @@ function App() {
                                             <span className="text-2xl font-bold text-slate-700 ml-1">세</span>
                                         </div>
                                         <p className="text-xs text-slate-500 mt-1">
-                                            2023년 6월 28일 시행된 <strong>만 나이 통일법</strong>에 따른 기준입니다.
+                                            대한민국 민법 및 행정기본법에 따른 공식 표준 나이입니다.
                                         </p>
                                     </div>
 
-                                    {/* 3대 나이 비교 카드 그리드 */}
+                                    {/* 3. 3대 나이 비교 카드 그리드 */}
                                     <div className="grid grid-cols-3 gap-2.5">
                                         <div className="nm-card-sm p-3.5 text-center border-t-2 border-t-indigo-500">
                                             <div className="text-[11px] font-bold text-indigo-600 mb-1">만 나이</div>
@@ -602,7 +715,7 @@ function App() {
                                         </div>
                                     </div>
 
-                                    {/* D-Day 생일 알림 카드 */}
+                                    {/* 4. D-Day 생일 알림 카드 */}
                                     <div className="nm-card-sm p-4 flex items-center gap-3.5">
                                         <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md shrink-0">
                                             <Gift size={22} />
@@ -612,12 +725,12 @@ function App() {
                                                 {ageResult.isBirthdayToday ? '🎉 오늘이 기쁜 생일입니다!' : `다음 생일까지 D-${ageResult.daysUntilBirthday}일`}
                                             </div>
                                             <div className="text-xs text-slate-500 mt-0.5 stock-number">
-                                                기준일 ({referenceDate}) 대비 카운트다운
+                                                매년 {birthMonth}월 {birthDay}일 생일 기준 카운트다운
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* 띠와 별자리 듀얼 카드 */}
+                                    {/* 5. 띠와 별자리 듀얼 카드 */}
                                     {(zodiac || starSign) && (
                                         <div className="grid grid-cols-2 gap-2.5">
                                             {zodiac && (
@@ -639,7 +752,7 @@ function App() {
                                         </div>
                                     )}
 
-                                    {/* 생애 권리 획득 체크리스트 */}
+                                    {/* 6. 생애 권리 획득 체크리스트 */}
                                     <div className="nm-card p-5 space-y-3">
                                         <div className="flex items-center gap-2">
                                             <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -675,7 +788,7 @@ function App() {
                                         </div>
                                     </div>
 
-                                    {/* 주요 생애 주기 알림 */}
+                                    {/* 7. 주요 생애 주기 알림 */}
                                     {lifecycleAlerts.length > 0 && (
                                         <div className="nm-card p-5 space-y-3 border-l-4 border-l-amber-500">
                                             <div className="flex items-center gap-2">
@@ -701,7 +814,7 @@ function App() {
                                         </div>
                                     )}
 
-                                    {/* 하단 듀얼 버튼: 다시 계산 / 결과 복사 */}
+                                    {/* 8. 하단 듀얼 버튼: 다시 계산 / 결과 복사 */}
                                     <div className="flex gap-2 pt-2">
                                         <button
                                             type="button"
