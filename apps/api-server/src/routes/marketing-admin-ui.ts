@@ -408,7 +408,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     document.getElementById('edit-headline').value = data.content.headline;
                     document.getElementById('edit-threads-body').value = data.content.threadsBody;
                     document.getElementById('edit-threads-first-comment').value = data.content.threadsFirstComment;
-                    document.getElementById('edit-ig-caption').value = data.content.instagramCaption + '\n\n' + data.content.instagramHashtags.join(' ');
+                    document.getElementById('edit-ig-caption').value = data.content.instagramCaption + '\\n\\n' + data.content.instagramHashtags.join(' ');
                     document.getElementById('threads-char-count').innerText = data.content.threadsBody.length + '자';
 
                     document.getElementById('workspace-panel').classList.remove('hidden');
@@ -546,36 +546,37 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     const platformIcon = p.platform === 'THREADS' ? 'fa-brands fa-threads text-black' : (p.platform === 'INSTAGRAM' ? 'fab fa-instagram text-pink-600' : 'fas fa-share-nodes text-blue-600');
                     const timeDisplay = p.published_at || p.scheduled_at || p.created_at;
 
-                    return '\n' +
-                        '<tr class="hover:bg-gray-50/50 transition-colors">\n' +
-                        '    <td class="px-4 py-3 whitespace-nowrap">\n' +
-                        '        <span class="inline-flex items-center text-xs font-bold">\n' +
-                        '            <i class="' + platformIcon + ' mr-1.5 text-sm"></i> ' + p.platform + '\n' +
-                        '        </span>\n' +
-                        '    </td>\n' +
-                        '    <td class="px-4 py-3 whitespace-nowrap">\n' +
-                        '        <div class="font-bold text-gray-900 text-xs">' + escapeHtml(p.target_service_name) + '</div>\n' +
-                        '        <div class="text-[11px] text-gray-400">' + escapeHtml(p.target_service_slug) + '</div>\n' +
-                        '    </td>\n' +
-                        '    <td class="px-4 py-3">\n' +
-                        '        <div class="font-bold text-gray-800 text-xs truncate max-w-xs sm:max-w-md">' + escapeHtml(p.headline || '제목 없음') + '</div>\n' +
-                        '        <div class="text-xs text-gray-500 truncate max-w-xs sm:max-w-md mt-0.5">' + escapeHtml(p.body_text) + '</div>\n' +
-                        (p.error_message ? '        <div class="text-[11px] text-red-600 mt-1"><i class="fas fa-exclamation-circle mr-1"></i>' + escapeHtml(p.error_message) + '</div>\n' : '') +
-                        '    </td>\n' +
-                        '    <td class="px-4 py-3 whitespace-nowrap">\n' +
-                        '        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ' + badgeClass + '">\n' +
-                        '            ' + statusText + '\n' +
-                        '        </span>\n' +
-                        '    </td>\n' +
-                        '    <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">\n' +
-                        '        ' + (timeDisplay ? new Date(timeDisplay).toLocaleString('ko-KR') : '-') + '\n' +
-                        '    </td>\n' +
-                        '    <td class="px-4 py-3 whitespace-nowrap text-right text-xs space-x-1">\n' +
-                        (p.status !== 'PUBLISHED' ? '        <button onclick="publishNowPost(\'' + p.id + '\')" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded font-semibold transition-colors" title="즉시 발행"><i class="fas fa-paper-plane mr-1"></i>즉시발행</button>\n' : '') +
-                        (p.status === 'FAILED' ? '        <button onclick="retryPost(\'' + p.id + '\')" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded font-semibold transition-colors" title="재시도"><i class="fas fa-rotate mr-1"></i>재시도</button>\n' : '') +
-                        '        <button onclick="deletePost(\'' + p.id + '\')" class="px-2 py-1 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded transition-colors" title="삭제"><i class="fas fa-trash-alt"></i></button>\n' +
-                        '    </td>\n' +
-                        '</tr>';
+                    return (
+                        '<tr class="hover:bg-gray-50/50 transition-colors">' +
+                            '<td class="px-4 py-3 whitespace-nowrap">' +
+                                '<span class="inline-flex items-center text-xs font-bold">' +
+                                    '<i class="' + platformIcon + ' mr-1.5 text-sm"></i> ' + p.platform +
+                                '</span>' +
+                            '</td>' +
+                            '<td class="px-4 py-3 whitespace-nowrap">' +
+                                '<div class="font-bold text-gray-900 text-xs">' + escapeHtml(p.target_service_name) + '</div>' +
+                                '<div class="text-[11px] text-gray-400">' + escapeHtml(p.target_service_slug) + '</div>' +
+                            '</td>' +
+                            '<td class="px-4 py-3">' +
+                                '<div class="font-bold text-gray-800 text-xs truncate max-w-xs sm:max-w-md">' + escapeHtml(p.headline || '제목 없음') + '</div>' +
+                                '<div class="text-xs text-gray-500 truncate max-w-xs sm:max-w-md mt-0.5">' + escapeHtml(p.body_text) + '</div>' +
+                                (p.error_message ? '<div class="text-[11px] text-red-600 mt-1"><i class="fas fa-exclamation-circle mr-1"></i>' + escapeHtml(p.error_message) + '</div>' : '') +
+                            '</td>' +
+                            '<td class="px-4 py-3 whitespace-nowrap">' +
+                                '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ' + badgeClass + '">' +
+                                    statusText +
+                                '</span>' +
+                            '</td>' +
+                            '<td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">' +
+                                (timeDisplay ? new Date(timeDisplay).toLocaleString('ko-KR') : '-') +
+                            '</td>' +
+                            '<td class="px-4 py-3 whitespace-nowrap text-right text-xs space-x-1">' +
+                                (p.status !== 'PUBLISHED' ? '<button data-id="' + p.id + '" onclick="publishNowPost(this.dataset.id)" class="px-2 py-1 bg-green-50 hover:bg-green-100 text-green-700 rounded font-semibold transition-colors" title="즉시 발행"><i class="fas fa-paper-plane mr-1"></i>즉시발행</button>' : '') +
+                                (p.status === 'FAILED' ? '<button data-id="' + p.id + '" onclick="retryPost(this.dataset.id)" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded font-semibold transition-colors" title="재시도"><i class="fas fa-rotate mr-1"></i>재시도</button>' : '') +
+                                '<button data-id="' + p.id + '" onclick="deletePost(this.dataset.id)" class="px-2 py-1 bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-600 rounded transition-colors" title="삭제"><i class="fas fa-trash-alt"></i></button>' +
+                            '</td>' +
+                        '</tr>'
+                    );
                 }).join('');
             } catch (e) {
                 tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-center text-red-500">목록 조회 오류</td></tr>';
