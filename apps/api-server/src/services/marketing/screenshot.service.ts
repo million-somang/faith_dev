@@ -17,16 +17,17 @@ function ensureUploadDir(): void {
 }
 
 /**
- * 미니앱의 3단계 멀티 컷(1: 메인 홈, 2: 입력/폼, 3: 결과/상세) 화면을 캡처하여 Base64 Data URI 배열로 반환합니다.
+ * 미니앱의 3대 핵심 키 페이지(1: 시작 화면, 2: 서브기능/탭 전환, 3: 최종 산출 결과)를
+ * 브라우저 인터랙션(탭 클릭, 계산 버튼 실행)을 통해 직접 시뮬레이션 캡처합니다.
  */
 export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise<string[]> {
     const { slug, targetUrl, force = false, name = slug } = options;
     ensureUploadDir();
 
     const filePaths = [
-        path.join(UPLOAD_DIR, `${slug}_1.png`),
-        path.join(UPLOAD_DIR, `${slug}_2.png`),
-        path.join(UPLOAD_DIR, `${slug}_3.png`)
+        path.join(UPLOAD_DIR, `${slug}_key1_start.png`),
+        path.join(UPLOAD_DIR, `${slug}_key2_feature.png`),
+        path.join(UPLOAD_DIR, `${slug}_key3_result.png`)
     ];
 
     // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 캐시 반환
@@ -47,10 +48,11 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         }
     }
 
-    // 2. Puppeteer 멀티 컷 캡처 시도
+    // 2. Puppeteer 인터랙티브 키 페이지 캡처 시도
     try {
         const puppeteerModule = await import('puppeteer');
         const puppeteer = puppeteerModule.default || puppeteerModule;
+
         // Chrome 실행 경로 자동 감지
         const candidatePaths = [
             process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -94,35 +96,119 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             ? targetUrl
             : `https://veranex.app${targetUrl.startsWith('/') ? '' : '/'}${targetUrl}`;
 
-        console.log(`[ScreenshotService] 미니앱 3컷 캡처 시작: ${effectiveUrl}`);
+        console.log(`[ScreenshotService] 미니앱 3대 키 페이지 캡처 시작: ${effectiveUrl}`);
         await page.goto(effectiveUrl, {
             waitUntil: ['domcontentloaded', 'networkidle2'],
             timeout: 15000
         });
 
+        // 폰트 및 초기 UI 로딩 대기
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        // Cut 1: 상단 메인 뷰
+        // ==================== [KEY PAGE 1: 시작 / 메인 홈 화면] ====================
         await page.evaluate(() => window.scrollTo(0, 0));
         await new Promise((resolve) => setTimeout(resolve, 300));
         const buf1 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
         fs.writeFileSync(filePaths[0], buf1);
+        console.log(`[ScreenshotService] Key 1 (시작 화면) 캡처 완료`);
 
-        // Cut 2: 중간 인터랙션 / 입력 영역 뷰
-        await page.evaluate(() => window.scrollTo(0, 200));
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // ==================== [KEY PAGE 2: 서브 기능 / 탭 전환 화면] ====================
+        // 페이지 내의 탭 버튼이나 서브 메뉴(2번째 탭)를 탐색하여 클릭
+        const clickedTab = await page.evaluate(() => {
+            // 탭 형태의 버튼 목록 수집
+            const tabSelectors = [
+                'button[role="tab"]',
+                '.tab',
+                'nav button',
+                'button[class*="tab"]',
+                'div[role="tablist"] button',
+                'div[class*="TabBar"] button'
+            ];
+            for (const sel of tabSelectors) {
+                const tabs = Array.from(document.querySelectorAll(sel)) as HTMLElement[];
+                if (tabs.length >= 2) {
+                    // 2번째 탭 클릭
+                    tabs[1].click();
+                    return true;
+                }
+            }
+            // 일반 버튼 중 카테고리나 옵션 버튼 탐색
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            if (buttons.length >= 2) {
+                const secondBtn = buttons.find((b, idx) => idx > 0 && b.offsetWidth > 0 && b.offsetHeight > 0);
+                if (secondBtn) {
+                    secondBtn.click();
+                    return true;
+                }
+            }
+            return false;
+        });
+
+        if (clickedTab) {
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        } else {
+            // 탭이 없으면 폼의 상세 옵션 영역으로 약간 스크롤
+            await page.evaluate(() => window.scrollTo(0, 260));
+            await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
         const buf2 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
         fs.writeFileSync(filePaths[1], buf2);
+        console.log(`[ScreenshotService] Key 2 (서브 기능/탭 화면) 캡처 완료 (탭클릭여부: ${clickedTab})`);
 
-        // Cut 3: 하단 산출 결과 / 디테일 뷰
-        await page.evaluate(() => window.scrollTo(0, 420));
-        await new Promise((resolve) => setTimeout(resolve, 300));
+        // ==================== [KEY PAGE 3: 최종 산출 / 결과 화면] ====================
+        // 다시 1번 탭으로 돌아오거나(필요 시), 계산/확인/시작 버튼을 찾아 클릭하여 실제 결과 화면 도출
+        const clickedAction = await page.evaluate(() => {
+            // 1) 탭이 있는 경우 메인 탭(1번째 탭)을 다시 눌러서 계산 준비
+            const firstTab = document.querySelector('button[role="tab"], .tab, nav button') as HTMLElement;
+            if (firstTab) firstTab.click();
+
+            // 2) 계산/결과/확인/조회/시작 주 버튼 탐색
+            const buttons = Array.from(document.querySelectorAll('button, a, input[type="submit"]')) as HTMLElement[];
+            const actionBtn = buttons.find(b => {
+                const text = (b.textContent || (b as HTMLInputElement).value || '').trim();
+                const isActionText = /계산|결과|확인|조회|시작|생성|변환|검사|Calculate|Result/i.test(text);
+                return isActionText && b.offsetWidth > 0 && b.offsetHeight > 0;
+            });
+
+            if (actionBtn) {
+                actionBtn.click();
+                return true;
+            }
+
+            // 가장 눈에 띄는 큰 버튼(Primary Button) 클릭 시도
+            const primaryBtn = buttons.find(b => {
+                const cls = b.className || '';
+                return /bg-indigo|bg-blue|btn-primary|submit|gradient/i.test(cls) && b.offsetWidth > 60;
+            });
+
+            if (primaryBtn) {
+                primaryBtn.click();
+                return true;
+            }
+
+            return false;
+        });
+
+        // 결과 산출 렌더링 및 모달 애니메이션 대기
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+
+        // 결과 영역이 화면 아래에 있는 경우 결과 엘리먼트로 스크롤 유도
+        await page.evaluate(() => {
+            const resultEl = document.querySelector('[class*="result"], [id*="result"], [class*="Result"]');
+            if (resultEl) {
+                resultEl.scrollIntoView({ behavior: 'auto', block: 'center' });
+            }
+        });
+        await new Promise((resolve) => setTimeout(resolve, 400));
+
         const buf3 = await page.screenshot({ type: 'png', fullPage: false }) as Buffer;
         fs.writeFileSync(filePaths[2], buf3);
+        console.log(`[ScreenshotService] Key 3 (최종 결과 화면) 캡처 완료 (계산클릭여부: ${clickedAction})`);
 
         await browser.close();
 
-        // 단일 호환용 메인 캐시도 저장
+        // 메인 단일 캐시도 1번 컷으로 저장
         fs.writeFileSync(path.join(UPLOAD_DIR, `${slug}.png`), buf1);
 
         return [
@@ -145,7 +231,7 @@ export async function getMiniAppScreenshot(options: ScreenshotOptions): Promise<
 }
 
 /**
- * 3개의 서로 다른 화면(1: 메인 화면, 2: 입력 화면, 3: 결과 화면) 라이트 목업 세트 생성
+ * 3개의 서로 다른 화면(1: 메인 시작 폼, 2: 서브기능/옵션, 3: 최종 산출 결과표) 라이트 목업 세트
  */
 export function generateLightFallbackSet(name: string, slug: string): string[] {
     return [
@@ -182,17 +268,17 @@ function generateLightScreen1(name: string, slug: string): string {
   <g transform="translate(20, 106)">
     <rect width="390" height="180" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
     <rect x="20" y="20" width="80" height="26" rx="13" fill="#EEF2FF" />
-    <text x="60" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">1초 실행</text>
+    <text x="60" y="37" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="11" font-weight="800" fill="#4F46E5" text-anchor="middle">1. 시작 화면</text>
     <text x="20" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="24" font-weight="900" fill="#0F172A">${cleanName}</text>
-    <text x="20" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="500" fill="#64748B">브라우저에서 로그인 없이 즉시 사용</text>
+    <text x="20" y="112" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="500" fill="#64748B">기본 파라미터 간편 입력 폼</text>
   </g>
   <g transform="translate(20, 306)">
     <rect width="390" height="240" rx="20" fill="#FFFFFF" filter="url(#sh1)" />
-    <text x="24" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">주요 옵션 선택</text>
+    <text x="24" y="40" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">주요 입력 필드</text>
     <rect x="24" y="60" width="342" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="40" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">기본 조건 설정</text>
+    <text x="40" y="91" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">기준 일자 / 금액 입력</text>
     <rect x="24" y="124" width="342" height="50" rx="12" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="40" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">상세 옵션 선택</text>
+    <text x="40" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#94A3B8">조건 및 옵션 설정</text>
   </g>
 </svg>`.trim();
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -218,23 +304,25 @@ function generateLightScreen2(name: string, slug: string): string {
   <rect width="430" height="860" fill="url(#sBg2)" />
   <g transform="translate(20, 30)">
     <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh2)" />
-    <text x="28" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#4F46E5">STEP 2</text>
-    <text x="90" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="700" fill="#0F172A">실시간 계산 &amp; 분석</text>
+    <!-- Active Sub-tab -->
+    <rect x="14" y="12" width="110" height="32" rx="8" fill="#EEF2FF" />
+    <text x="69" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#4F46E5" text-anchor="middle">2. 서브 기능 탭</text>
+    <text x="140" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">상세 분석 모드</text>
   </g>
   <g transform="translate(20, 106)">
     <rect width="390" height="420" rx="20" fill="#FFFFFF" filter="url(#sh2)" />
     <rect x="24" y="24" width="342" height="70" rx="14" fill="#EEF2FF" stroke="#C7D2FE" />
-    <text x="44" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#4F46E5">입력 데이터 분석 진행 중</text>
-    <text x="44" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">최신 공식을 적용합니다</text>
+    <text x="44" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#4F46E5">고급 맞춤형 세부 설정</text>
+    <text x="44" y="78" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#0F172A">정밀 계산 옵션 조정</text>
     <rect x="24" y="114" width="342" height="180" rx="14" fill="#F8FAFC" stroke="#E2E8F0" />
-    <text x="44" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">세부 산출 파라미터</text>
+    <text x="44" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">선택 파라미터 적용</text>
     <line x1="44" y1="168" x2="346" y2="168" stroke="#E2E8F0" stroke-width="1" />
-    <text x="44" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">기준 산정액</text>
-    <text x="346" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">자동 반영</text>
-    <text x="44" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">공제율 / 감면율</text>
-    <text x="346" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">최적 적용</text>
+    <text x="44" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">자동 공제 계산</text>
+    <text x="346" y="196" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">ON</text>
+    <text x="44" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" fill="#64748B">최적 세율 적용</text>
+    <text x="346" y="232" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="end">자동 반영</text>
     <rect x="24" y="324" width="342" height="60" rx="16" fill="url(#btnG2)" />
-    <text x="195" y="360" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" text-anchor="middle">결과 도출 완료 ⚡</text>
+    <text x="195" y="360" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" text-anchor="middle">결과 계산하기 ⚡</text>
   </g>
 </svg>`.trim();
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
@@ -256,19 +344,21 @@ function generateLightScreen3(name: string, slug: string): string {
   <rect width="430" height="860" fill="url(#sBg3)" />
   <g transform="translate(20, 30)">
     <rect width="390" height="56" rx="16" fill="#FFFFFF" filter="url(#sh3)" />
-    <text x="28" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="800" fill="#16A34A">STEP 3</text>
-    <text x="90" y="34" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="15" font-weight="700" fill="#0F172A">최종 결과 리포트</text>
+    <rect x="14" y="12" width="120" height="32" rx="8" fill="#DCFCE7" />
+    <text x="74" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#15803D" text-anchor="middle">3. 최종 결과 산출</text>
+    <text x="150" y="33" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="700" fill="#0F172A">분석 완료 리포트</text>
   </g>
   <g transform="translate(20, 106)">
-    <rect width="390" height="280" rx="20" fill="#FFFFFF" filter="url(#sh3)" />
-    <rect x="24" y="24" width="342" height="150" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
-    <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#166534">✨ 최종 산출 결과</text>
-    <text x="44" y="104" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="34" font-weight="900" fill="#15803D">정확도 100%</text>
-    <text x="44" y="138" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="600" fill="#166534">회원가입 없이 즉시 다운로드 가능</text>
-    <rect x="24" y="196" width="160" height="54" rx="14" fill="#F1F5F9" />
-    <text x="104" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="middle">결과 공유</text>
-    <rect x="196" y="196" width="170" height="54" rx="14" fill="#EEF2FF" />
-    <text x="281" y="228" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#4F46E5" text-anchor="middle">상세 저장</text>
+    <rect width="390" height="340" rx="20" fill="#FFFFFF" filter="url(#sh3)" />
+    <rect x="24" y="24" width="342" height="170" rx="16" fill="#F0FDF4" stroke="#BBF7D0" />
+    <text x="44" y="58" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="700" fill="#166534">✨ 최종 산출 결과표</text>
+    <text x="44" y="106" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="34" font-weight="900" fill="#15803D">18,420,000원</text>
+    <text x="44" y="142" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="600" fill="#166534">실수령액 및 세액 공제가 모두 계산되었습니다.</text>
+    
+    <rect x="24" y="214" width="160" height="54" rx="14" fill="#F1F5F9" />
+    <text x="104" y="246" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#0F172A" text-anchor="middle">상세 내역</text>
+    <rect x="196" y="214" width="170" height="54" rx="14" fill="#EEF2FF" />
+    <text x="281" y="246" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="13" font-weight="800" fill="#4F46E5" text-anchor="middle">결과 복사하기</text>
   </g>
 </svg>`.trim();
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;

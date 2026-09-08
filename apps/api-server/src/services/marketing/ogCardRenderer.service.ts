@@ -127,36 +127,36 @@ function generateSlide1(options: CardDesignOptions): string {
     <text x="75" y="41" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#FFFFFF" text-anchor="middle">1. 간편 입력</text>
   </g>
 
-  <!-- 2. RIGHT PHONE MOCKUP (Screen 3: 결과/산출 화면) -->
+  <!-- 2. RIGHT PHONE MOCKUP (Screen 2: 서브 기능/옵션 탭 화면) -->
   <g transform="translate(650, 320) rotate(7)" filter="url(#sidePhoneShadow)">
     <rect x="-10" y="-10" width="390" height="660" rx="38" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2" />
     <rect x="0" y="0" width="370" height="640" rx="30" fill="#F8FAFC" />
     <g clip-path="url(#clipSide)">
-      ${img3 ? `
-        <image href="${img3}" x="0" y="0" width="370" height="640" preserveAspectRatio="xMidYMin slice" />
+      ${img2 ? `
+        <image href="${img2}" x="0" y="0" width="370" height="640" preserveAspectRatio="xMidYMin slice" />
       ` : `
         <rect width="370" height="640" fill="#F1F5F9" />
-        <text x="185" y="320" font-family="sans-serif" font-size="16" fill="#94A3B8" text-anchor="middle">실행 화면 3</text>
+        <text x="185" y="320" font-family="sans-serif" font-size="16" fill="#94A3B8" text-anchor="middle">서브 기능 2</text>
       `}
     </g>
     <!-- Label Tag -->
-    <rect x="240" y="20" width="110" height="32" rx="16" fill="#16A34A" opacity="0.9" />
-    <text x="295" y="41" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#FFFFFF" text-anchor="middle">3. 산출 결과</text>
+    <rect x="220" y="20" width="130" height="32" rx="16" fill="#4F46E5" opacity="0.9" />
+    <text x="285" y="41" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="12" font-weight="800" fill="#FFFFFF" text-anchor="middle">2. 맞춤 기능 탭</text>
   </g>
 
-  <!-- 3. CENTER MAIN PHONE MOCKUP (Screen 2: 메인 중심 뷰 - Z-INDEX TOP) -->
+  <!-- 3. CENTER MAIN PHONE MOCKUP (Screen 3: 최종 산출 결과 화면 - Z-INDEX TOP) -->
   <g transform="translate(315, 270)" filter="url(#mainPhoneShadow)">
     <!-- Outer Bezel -->
     <rect x="-12" y="-12" width="474" height="764" rx="46" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2.5" />
     <rect x="0" y="0" width="450" height="740" rx="36" fill="#F8FAFC" />
     
-    <!-- Screen Image -->
+    <!-- Screen Image (실제 최종 결과 화면) -->
     <g clip-path="url(#clipCenter)">
-      ${img2 ? `
-        <image href="${img2}" x="0" y="0" width="450" height="740" preserveAspectRatio="xMidYMin slice" />
+      ${img3 ? `
+        <image href="${img3}" x="0" y="0" width="450" height="740" preserveAspectRatio="xMidYMin slice" />
       ` : `
         <rect width="450" height="740" fill="#F1F5F9" />
-        <text x="225" y="370" font-family="sans-serif" font-size="18" fill="#94A3B8" text-anchor="middle">메인 화면 2</text>
+        <text x="225" y="370" font-family="sans-serif" font-size="18" fill="#94A3B8" text-anchor="middle">최종 결과 3</text>
       `}
     </g>
 
@@ -165,8 +165,8 @@ function generateSlide1(options: CardDesignOptions): string {
     <circle cx="260" cy="27" r="5" fill="#1E293B" />
 
     <!-- Center Badge -->
-    <rect x="150" y="680" width="150" height="36" rx="18" fill="url(#accentGrad)" />
-    <text x="225" y="703" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#FFFFFF" text-anchor="middle">⚡ 실시간 동작 중</text>
+    <rect x="140" y="680" width="170" height="36" rx="18" fill="#16A34A" />
+    <text x="225" y="703" font-family="-apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif" font-size="14" font-weight="800" fill="#FFFFFF" text-anchor="middle">✨ 최종 산출 결과 확인</text>
   </g>
 
   <!-- Bottom Mini Slide Indicator -->
