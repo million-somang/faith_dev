@@ -46,7 +46,7 @@ function generateSlide1(options: CardDesignOptions): string {
     const titleTspans = titleLines.map((line, idx) => `<tspan x="0" dy="${idx === 0 ? 0 : 50}">${line}</tspan>`).join('');
 
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1080" viewBox="0 0 1080 1080">
   <defs>
     <linearGradient id="bgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#F8FAFC" />
@@ -95,7 +95,7 @@ function generateSlide1(options: CardDesignOptions): string {
     <rect x="0" y="0" width="460" height="740" rx="36" fill="#F8FAFC" />
     <g clip-path="url(#clipPhone1)">
       ${img1 ? `
-        <image href="${img1}" x="0" y="0" width="460" height="740" preserveAspectRatio="xMidYMin slice" />
+        <image href="${img1}" xlink:href="${img1}" x="0" y="0" width="460" height="740" preserveAspectRatio="xMidYMin slice" />
       ` : `
         <rect width="460" height="740" fill="#F1F5F9" />
         <text x="230" y="370" font-family="sans-serif" font-size="18" fill="#94A3B8" text-anchor="middle">시작 화면 1</text>
@@ -127,7 +127,7 @@ function generateSlide2(options: CardDesignOptions): string {
     const [, img2] = resolveScreenshots(options);
 
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1080" viewBox="0 0 1080 1080">
   <defs>
     <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#F8FAFC" />
@@ -171,7 +171,7 @@ function generateSlide2(options: CardDesignOptions): string {
     <rect x="0" y="0" width="460" height="740" rx="36" fill="#F8FAFC" />
     <g clip-path="url(#clipPhone2)">
       ${img2 ? `
-        <image href="${img2}" x="0" y="0" width="460" height="740" preserveAspectRatio="xMidYMin slice" />
+        <image href="${img2}" xlink:href="${img2}" x="0" y="0" width="460" height="740" preserveAspectRatio="xMidYMin slice" />
       ` : `
         <rect width="460" height="740" fill="#F1F5F9" />
         <text x="230" y="370" font-family="sans-serif" font-size="18" fill="#94A3B8" text-anchor="middle">실행 화면 2</text>
@@ -203,7 +203,7 @@ function generateSlide3(options: CardDesignOptions): string {
     const [, , img3] = resolveScreenshots(options);
 
     return `
-<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="1080" viewBox="0 0 1080 1080">
   <defs>
     <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#F8FAFC" />
@@ -247,7 +247,7 @@ function generateSlide3(options: CardDesignOptions): string {
     <rect x="0" y="0" width="460" height="680" rx="36" fill="#F8FAFC" />
     <g clip-path="url(#clipPhone3)">
       ${img3 ? `
-        <image href="${img3}" x="0" y="0" width="460" height="680" preserveAspectRatio="xMidYMin slice" />
+        <image href="${img3}" xlink:href="${img3}" x="0" y="0" width="460" height="680" preserveAspectRatio="xMidYMin slice" />
       ` : `
         <rect width="460" height="680" fill="#F1F5F9" />
         <text x="230" y="340" font-family="sans-serif" font-size="18" fill="#94A3B8" text-anchor="middle">결과 화면 3</text>

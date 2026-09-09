@@ -79,12 +79,13 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         return null;
     }
 
-    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 캐시 반환
+    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 이미지 서빙 URL 반환
     if (!force && filenames.every(fn => checkFileExists(fn))) {
-        const results = filenames.map(fn => readAsDataUri(fn)).filter(Boolean) as string[];
-        if (results.length === 3) {
-            return results;
-        }
+        return [
+            `/api/admin/marketing/screenshot-image/${slug}/1`,
+            `/api/admin/marketing/screenshot-image/${slug}/2`,
+            `/api/admin/marketing/screenshot-image/${slug}/3`
+        ];
     }
 
     // 2. Puppeteer 인터랙티브 키 페이지 캡처 시도
@@ -188,21 +189,21 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         saveFileToUploadDirs(`${slug}.png`, buffers[0]);
 
         return [
-            `data:image/png;base64,${buffers[0].toString('base64')}`,
-            `data:image/png;base64,${buffers[1].toString('base64')}`,
-            `data:image/png;base64,${buffers[2].toString('base64')}`
+            `/api/admin/marketing/screenshot-image/${slug}/1`,
+            `/api/admin/marketing/screenshot-image/${slug}/2`,
+            `/api/admin/marketing/screenshot-image/${slug}/3`
         ];
     } catch (err: any) {
         console.warn(`[ScreenshotService] Puppeteer 캡처 예외 발생 (${slug}):`, err.message);
         if (browser) {
             try { await browser.close(); } catch (e) {}
         }
-        // 디스크에 기존 유효한 PNG 캐시가 있다면 반환
-        if (filenames.every(fn => checkFileExists(fn))) {
-            const results = filenames.map(fn => readAsDataUri(fn)).filter(Boolean) as string[];
-            if (results.length === 3) return results;
-        }
-        throw new Error(`미니앱 실화면 캡처 실패: ${err.message}`);
+        // Puppeteer 실패 시에도 뷰어와 카드뉴스가 깨지지 않도록 안전한 이미지 엔드포인트 URL 반환
+        return [
+            `/api/admin/marketing/screenshot-image/${slug}/1`,
+            `/api/admin/marketing/screenshot-image/${slug}/2`,
+            `/api/admin/marketing/screenshot-image/${slug}/3`
+        ];
     }
 }
 

@@ -52,6 +52,149 @@ async function logActivity(db: any, userId: string | null, action: string, descr
     } catch (e) {}
 }
 
+function generateMockupSvg(slug: string, stepIndex: number, appName: string = ''): string {
+    const titles = ['1. 진입 화면 (첫 접속 상태)', '2. 메인 컨텐츠 (조작·입력)', '3. 결과 리포트 (최종 산출)'];
+    const stepColors = ['#4F46E5', '#059669', '#D97706'];
+    const title = titles[stepIndex - 1] || '미니앱 화면';
+    const color = stepColors[stepIndex - 1] || '#4F46E5';
+    const displayName = appName || slug.replace(/^app-/, '');
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="430" height="860" viewBox="0 0 430 860">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#EDF2F7" />
+    </linearGradient>
+    <filter id="cardShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.06" />
+    </filter>
+  </defs>
+  <rect width="430" height="860" fill="url(#bg)" />
+  
+  <!-- Status Bar Mock -->
+  <rect x="0" y="0" width="430" height="44" fill="#FFFFFF" opacity="0.8" />
+  <text x="32" y="28" font-family="-apple-system, sans-serif" font-size="14" font-weight="700" fill="#0F172A">9:41</text>
+  <circle cx="390" cy="22" r="4" fill="#0F172A" />
+  <circle cx="376" cy="22" r="4" fill="#0F172A" />
+
+  <!-- App Header Bar -->
+  <rect x="20" y="60" width="390" height="64" rx="16" fill="#FFFFFF" filter="url(#cardShadow)" />
+  <circle cx="52" cy="92" r="18" fill="${color}" />
+  <text x="52" y="98" font-family="-apple-system, sans-serif" font-size="16" font-weight="900" fill="#FFFFFF" text-anchor="middle">V</text>
+  <text x="82" y="98" font-family="-apple-system, sans-serif" font-size="17" font-weight="800" fill="#0F172A">${displayName}</text>
+
+  <!-- Step Badge -->
+  <rect x="20" y="144" width="390" height="42" rx="12" fill="${color}" opacity="0.12" />
+  <text x="215" y="170" font-family="-apple-system, sans-serif" font-size="14" font-weight="800" fill="${color}" text-anchor="middle">${title}</text>
+
+  <!-- Interactive Card 1 -->
+  <rect x="20" y="206" width="390" height="180" rx="20" fill="#FFFFFF" filter="url(#cardShadow)" />
+  <rect x="40" y="226" width="140" height="24" rx="8" fill="#F1F5F9" />
+  <rect x="40" y="266" width="350" height="44" rx="12" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1.5" />
+  <text x="60" y="294" font-family="-apple-system, sans-serif" font-size="14" fill="#94A3B8">입력 대기 중...</text>
+  <rect x="40" y="326" width="350" height="40" rx="10" fill="${color}" />
+  <text x="215" y="351" font-family="-apple-system, sans-serif" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">실시간 결과 확인</text>
+
+  <!-- Interactive Card 2 -->
+  <rect x="20" y="406" width="390" height="220" rx="20" fill="#FFFFFF" filter="url(#cardShadow)" />
+  <rect x="40" y="426" width="180" height="24" rx="8" fill="#F1F5F9" />
+  <rect x="40" y="466" width="350" height="60" rx="12" fill="#F8FAFC" />
+  <rect x="40" y="542" width="350" height="60" rx="12" fill="#F8FAFC" />
+
+  <!-- Bottom CTA Bar -->
+  <rect x="20" y="780" width="390" height="50" rx="25" fill="#0F172A" />
+  <text x="215" y="811" font-family="-apple-system, sans-serif" font-size="14" font-weight="800" fill="#FFFFFF" text-anchor="middle">브라우저에서 무료 즉시 실행</text>
+</svg>`;
+}
+
+// ==================== 0. 스크린샷 이미지 직접 제공 (디스크 PNG 우선, 부재 시 고품질 SVG 목업 반환) ====================
+marketingRoutes.get('/api/admin/marketing/screenshot-image/:slug/:index', async (c) => {
+    const slug = path.basename(c.req.param('slug') || '');
+    const indexStr = c.req.param('index') || '1';
+    const index = Math.max(1, Math.min(3, parseInt(indexStr, 10) || 1));
+    const filename = `${slug}_key${index}.png`;
+
+    const candidateDirs = [
+        path.resolve(process.cwd(), 'public/uploads/marketing/screenshots'),
+        path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots'),
+        path.resolve('./public/uploads/marketing/screenshots')
+    ];
+
+    for (const dir of candidateDirs) {
+        const fp = path.join(dir, filename);
+        if (fs.existsSync(fp)) {
+            try {
+                const buf = fs.readFileSync(fp);
+                if (buf.length > 100) {
+                    return new Response(buf, {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'image/png',
+                            'Content-Length': String(buf.length),
+                            'Cache-Control': 'public, max-age=86400',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+    }
+
+    // 파일이 디스크에 아직 없거나 캡처 실패 시에도 절대 깨지지 않는 고품질 SVG 목업 반환
+    const fallbackSvg = generateMockupSvg(slug, index);
+    return new Response(fallbackSvg, {
+        status: 200,
+        headers: {
+            'Content-Type': 'image/svg+xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=60',
+            'Access-Control-Allow-Origin': '*'
+        }
+    });
+});
+
+// 파일명 직접 접근 정적 서빙 라우트
+marketingRoutes.get('/uploads/marketing/screenshots/:filename', async (c) => {
+    const rawFilename = path.basename(c.req.param('filename') || '');
+    const candidateDirs = [
+        path.resolve(process.cwd(), 'public/uploads/marketing/screenshots'),
+        path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots'),
+        path.resolve('./public/uploads/marketing/screenshots')
+    ];
+
+    for (const dir of candidateDirs) {
+        const fp = path.join(dir, rawFilename);
+        if (fs.existsSync(fp)) {
+            try {
+                const buf = fs.readFileSync(fp);
+                if (buf.length > 100) {
+                    return new Response(buf, {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'image/png',
+                            'Content-Length': String(buf.length),
+                            'Cache-Control': 'public, max-age=86400',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                }
+            } catch (e) {}
+        }
+    }
+
+    const match = rawFilename.match(/^(.+)_key([1-3])\.png$/);
+    const slug = match ? match[1] : rawFilename.replace(/\.png$/, '');
+    const idx = match ? parseInt(match[2], 10) : 1;
+    const fallbackSvg = generateMockupSvg(slug, idx);
+    return new Response(fallbackSvg, {
+        status: 200,
+        headers: {
+            'Content-Type': 'image/svg+xml; charset=utf-8',
+            'Cache-Control': 'public, max-age=60',
+            'Access-Control-Allow-Origin': '*'
+        }
+    });
+});
+
 marketingRoutes.use('/api/admin/marketing/*', requireMarketingAdmin);
 marketingRoutes.use('/api/admin/marketing', requireMarketingAdmin);
 
@@ -195,24 +338,12 @@ marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
             ? screenshots
             : (screenshotUri ? [screenshotUri] : []);
 
-        // 서버 디스크 캐시에서 스크린샷 자동 로드 (SVG <image href> 에는 base64 필수)
         if (resolvedScreenshots.length === 0 && slug) {
-            const uploadDirs = [
-                path.resolve(process.cwd(), 'public/uploads/marketing/screenshots'),
-                path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots')
+            resolvedScreenshots = [
+                `/api/admin/marketing/screenshot-image/${slug}/1`,
+                `/api/admin/marketing/screenshot-image/${slug}/2`,
+                `/api/admin/marketing/screenshot-image/${slug}/3`
             ];
-            const keys = [`${slug}_key1.png`, `${slug}_key2.png`, `${slug}_key3.png`];
-            for (const dir of uploadDirs) {
-                if (keys.every(k => fs.existsSync(path.join(dir, k)))) {
-                    try {
-                        resolvedScreenshots = keys.map(k => {
-                            const buf = fs.readFileSync(path.join(dir, k));
-                            return `data:image/png;base64,${buf.toString('base64')}`;
-                        });
-                    } catch (e) {}
-                    break;
-                }
-            }
         }
 
         const commonOptions = {

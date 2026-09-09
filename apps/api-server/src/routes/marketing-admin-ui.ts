@@ -561,7 +561,13 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     const data = result.data;
                     currentApp = data.app;
                     currentCardSet = data.cardSet || [data.cardSvg];
-                    currentScreenshots = (data.screenshots || [data.screenshotUri]).map(toSafeImageUrl);
+                    currentScreenshots = (data.screenshots && data.screenshots.length > 0)
+                        ? data.screenshots
+                        : [
+                            '/api/admin/marketing/screenshot-image/' + data.app.slug + '/1',
+                            '/api/admin/marketing/screenshot-image/' + data.app.slug + '/2',
+                            '/api/admin/marketing/screenshot-image/' + data.app.slug + '/3'
+                        ];
                     currentSvg = currentCardSet[0];
 
                     // 3장의 카드뉴스 갤러리 동시 렌더링
@@ -588,31 +594,23 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         }
 
         function renderCardSet() {
+            const ts = Date.now();
             for (let i = 0; i < 3; i++) {
                 const container = document.getElementById('card-preview-' + i);
                 if (!container) continue;
 
-                if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
+                if (viewMode === 'SCREENSHOT') {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
-                    const shotUrl = currentScreenshots[i]; // already converted by toSafeImageUrl
-                    const img = document.createElement('img');
-                    img.alt = '실화면 ' + (i + 1);
-                    img.className = 'max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105';
-                    img.onerror = function() { this.onerror = null; this.alt = '실화면 로드 실패'; };
-                    img.src = shotUrl;
-                    container.innerHTML = '';
-                    container.appendChild(img);
+                    const rawUrl = (currentScreenshots && currentScreenshots[i])
+                        ? currentScreenshots[i]
+                        : ('/api/admin/marketing/screenshot-image/' + (currentApp ? currentApp.slug : 'app') + '/' + (i + 1));
+                    const shotUrl = (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:'))
+                        ? rawUrl
+                        : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + ts);
+                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.src=\'/api/admin/marketing/screenshot-image/' + (currentApp ? currentApp.slug : 'app') + '/' + (i + 1) + '\';" />';
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
                     container.innerHTML = currentCardSet[i];
-                    // SVG 내부의 <image> 태그들의 data URI를 Blob URL로 교체
-                    const svgImages = container.querySelectorAll('image[href]');
-                    svgImages.forEach(function(imgEl) {
-                        const href = imgEl.getAttribute('href') || '';
-                        if (href.startsWith('data:')) {
-                            imgEl.setAttribute('href', toSafeImageUrl(href));
-                        }
-                    });
                 }
             }
         }
@@ -676,12 +674,15 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     body: JSON.stringify({ slug: currentApp.slug, force: true })
                 });
                 const data = await res.json();
-                if (data.success && data.screenshots) {
-                    const ts = Date.now();
-                    currentScreenshots = data.screenshots.map(u => {
-                        const safe = toSafeImageUrl(u);
-                        return (safe.startsWith('data:') || safe.startsWith('blob:')) ? safe : (safe + (safe.includes('?') ? '&' : '?') + 't=' + ts);
-                    });
+                if (data.success) {
+                    const slug = currentApp.slug;
+                    currentScreenshots = (data.screenshots && data.screenshots.length > 0)
+                        ? data.screenshots
+                        : [
+                            '/api/admin/marketing/screenshot-image/' + slug + '/1',
+                            '/api/admin/marketing/screenshot-image/' + slug + '/2',
+                            '/api/admin/marketing/screenshot-image/' + slug + '/3'
+                        ];
                     renderCardSet();
                     await refreshAllCardsPreview();
                     renderCardSet();
