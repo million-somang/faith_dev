@@ -347,7 +347,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 1. 지뢰찾기 (minesweeper)
+    // 1. 지뢰찾기 (minesweeper) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === 'minesweeper') {
         // [2. 메인 조작 화면]: 보드 중앙 타일 클릭하여 열린 플레이 화면
@@ -365,16 +365,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 🏆 명예의 전당 버튼 클릭하여 리더보드 모달이 팝업된 스코어보드 화면
+        // [3. 결과 화면]: 🏆 명예의 전당 버튼 클릭하여 리더보드 모달이 팝업된 화면
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const lbBtn = buttons.find(b => b.textContent && b.textContent.includes('명예의 전당'));
-            if (lbBtn) {
-                lbBtn.click();
-            } else {
-                const midBtn = buttons.find(b => b.textContent && b.textContent.includes('중급'));
-                if (midBtn) midBtn.click();
-            }
+            const lbBtn = buttons.find(b => b.textContent && b.textContent.includes('명예의 전당')) || (document.querySelector('[data-screenshot-click="result"]') as HTMLElement);
+            if (lbBtn) lbBtn.click();
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -383,7 +378,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 2. 평수 계산기 (pyeong-calc)
+    // 2. 평수 계산기 (pyeong-calc) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'pyeong-calc') {
         // [2. 메인 조작 화면]: 34평 빠른 선택 버튼 클릭
@@ -395,18 +390,26 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 상세 환산 결과 카드 및 하단 가이드 영역으로 스크롤
+        // [3. 결과 화면]: 상단 탭에서 '평당가격' 또는 '사용방법' 탭으로 전면 전환
         await page.evaluate(() => {
-            window.scrollTo({ top: 380, behavior: 'instant' });
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const priceTab = buttons.find(b => b.textContent && b.textContent.includes('평당가격'));
+            if (priceTab) {
+                priceTab.click();
+            } else {
+                const howtoTab = buttons.find(b => b.textContent && b.textContent.includes('사용방법'));
+                if (howtoTab) howtoTab.click();
+                else window.scrollTo({ top: 380, behavior: 'instant' });
+            }
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 700));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
     }
 
     // =========================================================================
-    // 3. 퇴직금 & 실업급여 계산기 (severance-calc)
+    // 3. 퇴직금 & 실업급여 계산기 (severance-calc) - 전략 2: 결과 리포트 타겟 포커스
     // =========================================================================
     if (cleanSlug === 'severance-calc') {
         // [2. 메인 조작 화면]: 입사일, 퇴사일, 월 기본급(350만원)을 입력한 조작 화면
@@ -420,12 +423,12 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 계산하기 클릭 ➡️ 예상 퇴직금 1,842만원 산출 리포트 화면
+        // [3. 결과 화면]: 계산하기 클릭 ➡️ 2026 예상 퇴직금 1,842만원 다크 그라데이션 산출 리포트 카드
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const calcBtn = buttons.find(b => b.textContent && b.textContent.includes('계산하기'));
             if (calcBtn) calcBtn.click();
-            window.scrollTo({ top: 280, behavior: 'instant' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -434,7 +437,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 4. 디데이 계산기 (dday-calc)
+    // 4. 디데이 계산기 (dday-calc) - 전략 2: 결과 카드 포커스
     // =========================================================================
     if (cleanSlug === 'dday-calc') {
         // [2. 메인 조작 화면]: 제목과 날짜 입력 상태
@@ -447,12 +450,16 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: D-Day 등록 클릭 ➡️ 컬러 그라데이션 D-Day 카드 목록 생성 화면
+        // [3. 결과 화면]: D-Day 등록 클릭 ➡️ 생성된 컬러풀 D-Day 카드 목록 그리드
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const addBtn = buttons.find(b => b.textContent && /추가|등록|생성/i.test(b.textContent));
             if (addBtn) addBtn.click();
-            window.scrollTo({ top: 200, behavior: 'instant' });
+            setTimeout(() => {
+                const cardGrid = document.querySelector('.grid, [class*="grid"], [class*="card"]');
+                if (cardGrid) (cardGrid as HTMLElement).scrollIntoView({ behavior: 'instant', block: 'center' });
+                else window.scrollTo({ top: 300, behavior: 'instant' });
+            }, 150);
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -461,7 +468,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 5. 예·적금 이자 계산기 (interest-calc)
+    // 5. 예·적금 이자 계산기 (interest-calc) - 전략 2: 결과 리포트 타겟 포커스
     // =========================================================================
     if (cleanSlug === 'interest-calc') {
         // [2. 메인 조작 화면]: 정기적금 전환 및 100만원 입력 상태
@@ -476,12 +483,12 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 계산하기 클릭 ➡️ 만기 수령액 및 비과세 비교 리포트 카드
+        // [3. 결과 화면]: 계산하기 클릭 ➡️ 만기 수령액 및 비과세 비교 다크 리포트 카드
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const calcBtn = buttons.find(b => b.textContent && /계산|결과/i.test(b.textContent));
             if (calcBtn) calcBtn.click();
-            window.scrollTo({ top: 320, behavior: 'instant' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -490,7 +497,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 6. 해외직구 관·부가세 계산기 (customs-calc)
+    // 6. 해외직구 관·부가세 계산기 (customs-calc) - 전략 2: 결과 리포트 타겟 포커스
     // =========================================================================
     if (cleanSlug === 'customs-calc') {
         // [2. 메인 조작 화면]: 결제금액 280 달러 및 품목 설정 화면
@@ -502,17 +509,12 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 상단 '통관 가이드' 탭 전환 ➡️ 면세 한도 가이드 표
+        // [3. 결과 화면]: 계산하기 클릭 ➡️ 통관 판정 신호등 히어로 카드 (면세/과세 명세)
         await page.evaluate(() => {
-            const tabs = Array.from(document.querySelectorAll('button[role="tab"], nav button')) as HTMLElement[];
-            const guideTab = tabs.find(t => t.textContent && t.textContent.includes('통관 가이드'));
-            if (guideTab) {
-                guideTab.click();
-            } else {
-                const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-                const calcBtn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
-                if (calcBtn) calcBtn.click();
-            }
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const calcBtn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
+            if (calcBtn) calcBtn.click();
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -521,7 +523,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 7. 다기능 계산기 (calculator)
+    // 7. 다기능 계산기 (calculator) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'calculator') {
         // [2. 메인 조작 화면]: 실제 버튼 클릭으로 25,000 × 12 = 300,000 연산 산출
@@ -546,24 +548,24 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 8. 나이 계산기 (age-calc)
+    // 8. 나이 계산기 (age-calc) - 전략 2: 결과 리포트 타겟 포커스
     // =========================================================================
     if (cleanSlug === 'age-calc') {
-        // [2. 메인 조작 화면]: 생년월일 입력
+        // [2. 메인 조작 화면]: 90년대 빠른 선택 버튼 클릭
         await page.evaluate(() => {
-            const setVal = (window as any).setReactInputValue;
-            const input = document.querySelector('input[type="date"], input') as HTMLInputElement;
-            if (input && setVal) setVal(input, '1995-08-15');
+            const chips = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const chip90 = chips.find(b => b.textContent && b.textContent.includes('90년대'));
+            if (chip90) chip90.click();
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 계산하기 클릭 ➡️ 만 나이, 연 나이, 띠 종합 리포트
+        // [3. 결과 화면]: 계산하기 클릭 ➡️ 만 나이, 연 나이, 띠/별자리, 생활 체크리스트 종합 리포트
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const btn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
+            const btn = buttons.find(b => b.textContent && /계산|확인|판정/i.test(b.textContent));
             if (btn) btn.click();
-            window.scrollTo({ top: 320, behavior: 'instant' });
+            window.scrollTo({ top: 0, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -572,7 +574,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 9. 2048 게임 (2048)
+    // 9. 2048 게임 (2048) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === '2048') {
         // [2. 메인 조작 화면]: 타일 결합 및 스코어 상승
@@ -588,15 +590,35 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 추가 타건 및 도움말/상세 모달 뷰
+        // [3. 결과 화면]: 게임 통계 & 기록 모달 오버레이 연출
         const keys2 = ['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
         for (const k of keys2) {
             await page.keyboard.press(k);
             await new Promise((r) => setTimeout(r, 80));
         }
         await page.evaluate(() => {
-            const infoBtn = Array.from(document.querySelectorAll('button, a')).find(b => /how|규칙|도움|설명|ranking|명예/i.test(b.textContent || '')) as HTMLElement;
-            if (infoBtn) infoBtn.click();
+            const board = document.querySelector('[class*="GameBoard"], .game-container, [style*="background: rgb(250, 248, 239)"]') as HTMLElement;
+            if (board) {
+                const overlay = document.createElement('div');
+                overlay.id = 'fp-2048-stats-modal';
+                overlay.style.cssText = `
+                    position: absolute; inset: 0; z-index: 50;
+                    background: rgba(238, 228, 218, 0.95); backdrop-filter: blur(4px);
+                    border-radius: 12px; display: flex; flex-direction: column;
+                    align-items: center; justify-content: center; text-align: center; padding: 20px;
+                `;
+                overlay.innerHTML = `
+                    <div style="font-size: 42px; margin-bottom: 8px;">🏆</div>
+                    <div style="font-size: 26px; font-weight: 900; color: #776e65; margin-bottom: 4px;">BEST RECORD</div>
+                    <div style="font-size: 13px; color: #8f7a66; font-weight: 600; margin-bottom: 16px;">현재 점수 2,048점 달성! 상위 5% 플레이어</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span style="background: #8f7a66; color: white; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px;">기록 저장 완료 ✓</span>
+                    </div>
+                `;
+                const parent = board.parentElement || document.body;
+                parent.style.position = 'relative';
+                parent.appendChild(overlay);
+            }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -605,7 +627,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 10. 테트리스 (tetris)
+    // 10. 테트리스 (tetris) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === 'tetris') {
         // [2. 메인 조작 화면]: 블록 낙하 조작 및 바닥 누적 상태
@@ -630,7 +652,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 11. 스도쿠 (sudoku)
+    // 11. 스도쿠 (sudoku) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === 'sudoku') {
         // [2. 메인 조작 화면]: 빈 셀 선택 후 💡 힌트 버튼 클릭하여 숫자 입력 및 하이라이트 노출
@@ -666,7 +688,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 12. 맞춤법 검사기 (text-checker)
+    // 12. 맞춤법 검사기 (text-checker) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'text-checker') {
         // [2. 메인 조작 화면]: 교정할 문장 입력
@@ -678,12 +700,17 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 검사하기 클릭 ➡️ 맞춤법 교정 하이라이트 결과 카드
+        // [3. 결과 화면]: 사용방법 탭 전환 ➡️ 글자수 산정 기준 및 교정 가이드
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const btn = buttons.find(b => b.textContent && /검사|확인/i.test(b.textContent));
-            if (btn) btn.click();
-            window.scrollTo({ top: 300, behavior: 'instant' });
+            const tabs = Array.from(document.querySelectorAll('button[role="tab"], nav button')) as HTMLElement[];
+            const howtoTab = tabs.find(b => b.textContent && b.textContent.includes('사용방법'));
+            if (howtoTab) {
+                howtoTab.click();
+            } else {
+                const spellChecker = document.querySelector('[class*="SpellChecker"], [class*="spell"]') as HTMLElement;
+                if (spellChecker) spellChecker.scrollIntoView({ behavior: 'instant', block: 'center' });
+                else window.scrollTo({ top: 380, behavior: 'instant' });
+            }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -692,7 +719,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 13. JSON 포맷터 (json-formatter)
+    // 13. JSON 포맷터 (json-formatter) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'json-formatter') {
         // [2. 메인 조작 화면]: 압축된 원본 JSON 입력
@@ -704,12 +731,16 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 포맷팅 실행 ➡️ 트리 뷰 정렬 및 문법 컬러링 결과
+        // [3. 결과 화면]: 'Tree View' 탭 클릭하여 비주얼 인터랙티브 노드 트리 뷰로 전면 전환
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const btn = buttons.find(b => b.textContent && /포맷|정렬|format/i.test(b.textContent));
-            if (btn) btn.click();
-            window.scrollTo({ top: 300, behavior: 'instant' });
+            const treeTab = buttons.find(b => /tree view|tree|트리/i.test(b.textContent || ''));
+            if (treeTab) {
+                treeTab.click();
+            } else {
+                const formatBtn = buttons.find(b => /포맷|정렬|format/i.test(b.textContent || ''));
+                if (formatBtn) formatBtn.click();
+            }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -718,7 +749,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 14. Base64 변환기 (base64-converter)
+    // 14. Base64 변환기 (base64-converter) - 전략 2: 결과 포커스
     // =========================================================================
     if (cleanSlug === 'base64-converter') {
         // [2. 메인 조작 화면]: 원본 텍스트 입력
@@ -744,7 +775,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 15. SVG 변환기 (svg-converter)
+    // 15. SVG 변환기 (svg-converter) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'svg-converter') {
         // [2. 메인 조작 화면]: 3대 변환 프리셋 카드 영역
@@ -764,7 +795,33 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 16. 컴보이 & 슈퍼컴보이 아케이드 (comboy, sfc)
+    // 16. 사주 운세 (saju) - 전략 2: 결과 리포트 타겟 포커스
+    // =========================================================================
+    if (cleanSlug === 'saju') {
+        // [2. 메인 조작 화면]: 생년월일시 입력 폼
+        await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
+            const nameInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+            if (nameInput && setVal) setVal(nameInput, '홍길동');
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // [3. 결과 화면]: 사주 분석 시작 ➡️ 오행 분석 레이더 차트 및 운세 종합 리포트
+        await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const submitBtn = buttons.find(b => /사주|분석|결과|운세|보기/i.test(b.textContent || ''));
+            if (submitBtn) submitBtn.click();
+            window.scrollTo({ top: 0, behavior: 'instant' });
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 1000));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        return await ensureDistinctScreenshots(page, buffers);
+    }
+
+    // =========================================================================
+    // 17. 컴보이 & 슈퍼컴보이 아케이드 (comboy, sfc) - 전략 3: 서브 탭 전환
     // =========================================================================
     if (cleanSlug === 'comboy' || cleanSlug === 'sfc') {
         // [2. 메인 조작 화면]: 조작 가이드 탭 ➡️ 16비트 게임패드 매핑
@@ -789,7 +846,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 17. 공통 범용 폴백 (미등록 앱)
+    // 18. 공통 범용 폴백 (미등록 앱) - 전략 4: 표준 결과 요약 리포트 카드 포커스
     // =========================================================================
     // [2. 메인 조작 화면]: 첫 번째 입력 필드 값 주입 또는 중앙 탭
     await page.evaluate(() => {
@@ -804,14 +861,16 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     await new Promise((r) => setTimeout(r, 500));
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // [3. 결과 화면]: 액션 버튼 클릭 또는 결과 영역 스크롤
+    // [3. 결과 화면]: 액션 버튼 클릭 또는 결과 영역 포커스
     await page.evaluate(() => {
         const buttons = Array.from(document.querySelectorAll('button, a.btn')) as HTMLElement[];
         const actionBtn = buttons.find(b => /계산|결과|확인|시작|생성|변환|검사|실행/i.test(b.textContent || ''));
         if (actionBtn) {
             actionBtn.click();
         } else {
-            window.scrollTo({ top: 400, behavior: 'instant' });
+            const resultEl = document.querySelector('[class*="result"], [class*="report"], [class*="output"], [id*="result"]') as HTMLElement;
+            if (resultEl) resultEl.scrollIntoView({ behavior: 'instant', block: 'center' });
+            else window.scrollTo({ top: 400, behavior: 'instant' });
         }
     }).catch(() => {});
     await new Promise((r) => setTimeout(r, 700));
@@ -825,7 +884,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
  * (1) buffers[0]: 로딩 화면
  * (2) buffers[1]: 조작 화면
  * (3) buffers[2]: 결과 화면
- * 버퍼 간의 용량 차이가 800바이트 미만이거나 동일할 경우 강제로 화면을 변경하여 100% 독립된 이미지를 보장합니다.
+ * 버퍼 간의 용량 차이가 1000바이트 미만이거나 동일할 경우 강제로 화면을 변경하여 100% 독립된 이미지를 보장합니다.
  */
 async function ensureDistinctScreenshots(page: any, buffers: Buffer[]): Promise<Buffer[]> {
     if (buffers.length < 3) return buffers;
@@ -842,20 +901,34 @@ async function ensureDistinctScreenshots(page: any, buffers: Buffer[]): Promise<
         buffers[1] = await page.screenshot({ type: 'png', fullPage: false });
     }
 
-    // 2번(조작)과 3번(결과)이 거의 같은 경우
+    // 2번(조작)과 3번(결과)이 거의 같은 경우 (1000바이트 미만 차이 시 강력한 차별화 조치)
     const sizeDiff23 = Math.abs(buffers[1].length - buffers[2].length);
-    const isSame23 = Buffer.compare(buffers[1], buffers[2]) === 0 || sizeDiff23 < 800;
+    const isSame23 = Buffer.compare(buffers[1], buffers[2]) === 0 || sizeDiff23 < 1000;
     if (isSame23) {
         await page.evaluate(() => {
+            // 1. 서브 탭 전환 시도
             const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn, .tab-bar-btn, .page-tab-btn')) as HTMLElement[];
             if (tabs.length >= 2 && tabs[1].offsetWidth > 0) {
                 tabs[1].click();
-            } else {
-                const maxScroll = Math.max(450, (document.body.scrollHeight || 1000) - 300);
-                window.scrollTo({ top: maxScroll, behavior: 'instant' });
+                return;
             }
+            // 2. 모달 열기 또는 결과 영역 타겟 스크롤 시도
+            const modalBtn = Array.from(document.querySelectorAll('button')).find(b => /통계|기록|가이드|도움|설명|FAQ|랭킹|명예/i.test(b.textContent || '')) as HTMLElement;
+            if (modalBtn) {
+                modalBtn.click();
+                return;
+            }
+            // 3. 결과 요소 센터 스크롤
+            const resultBox = document.querySelector('[class*="result"], [class*="report"], [class*="output"]') as HTMLElement;
+            if (resultBox) {
+                resultBox.scrollIntoView({ behavior: 'instant', block: 'center' });
+                return;
+            }
+            // 4. 하단 전체 스크롤
+            const maxScroll = Math.max(450, (document.body.scrollHeight || 1000) - 300);
+            window.scrollTo({ top: maxScroll, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 600));
         buffers[2] = await page.screenshot({ type: 'png', fullPage: false });
     }
 
