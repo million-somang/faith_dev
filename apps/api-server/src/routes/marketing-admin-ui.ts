@@ -586,7 +586,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     document.getElementById('edit-headline').value = data.content.headline;
                     document.getElementById('edit-threads-body').value = data.content.threadsBody;
                     document.getElementById('edit-threads-first-comment').value = data.content.threadsFirstComment;
-                    document.getElementById('edit-ig-caption').value = data.content.instagramCaption + '\n\n' + data.content.instagramHashtags.join(' ');
+                    document.getElementById('edit-ig-caption').value = [data.content.instagramCaption, data.content.instagramHashtags.join(' ')].filter(Boolean).join(String.fromCharCode(10) + String.fromCharCode(10));
                     document.getElementById('threads-char-count').innerText = data.content.threadsBody.length + '자';
 
                     document.getElementById('workspace-panel').classList.remove('hidden');
