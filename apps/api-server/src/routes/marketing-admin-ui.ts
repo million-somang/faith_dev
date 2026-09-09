@@ -611,13 +611,23 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
                 if (viewMode === 'SCREENSHOT') {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
+                    container.innerHTML = '';
                     const rawUrl = (currentScreenshots && currentScreenshots[i])
                         ? currentScreenshots[i]
                         : ('/api/admin/marketing/screenshot-image/' + (currentApp ? currentApp.slug : 'app') + '/' + (i + 1));
                     const shotUrl = (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:'))
                         ? rawUrl
                         : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + ts);
-                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.src=\'/api/admin/marketing/screenshot-image/' + (currentApp ? currentApp.slug : 'app') + '/' + (i + 1) + '\';" />';
+                    
+                    const imgEl = document.createElement('img');
+                    imgEl.src = shotUrl;
+                    imgEl.alt = '실화면 ' + (i + 1);
+                    imgEl.className = 'max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105';
+                    imgEl.onerror = function() {
+                        this.onerror = null;
+                        this.src = '/api/admin/marketing/screenshot-image/' + (currentApp ? currentApp.slug : 'app') + '/' + (i + 1);
+                    };
+                    container.appendChild(imgEl);
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
                     container.innerHTML = currentCardSet[i];
