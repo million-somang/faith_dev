@@ -35,8 +35,10 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         (function() {
             const originalWarn = console.warn;
             console.warn = function(...args) {
-                if (args.some(a => typeof a === 'string' && 
-                    (a.includes('cdn.tailwindcss.com') || a.includes('Tailwind CSS') || a.includes('Tailwind CLI')))) {
+                if (args.some(a => {
+                    const s = String(a || '').toLowerCase();
+                    return s.includes('tailwindcss') || s.includes('tailwind cli') || s.includes('cdn.tailwindcss.com');
+                })) {
                     return;
                 }
                 originalWarn.apply(console, args);
@@ -44,15 +46,23 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
             const originalError = console.error;
             console.error = function(...args) {
-                if (args.some(a => typeof a === 'string' && a.includes('ERR_INVALID_URL'))) {
+                if (args.some(a => {
+                    const s = String(a || '');
+                    return s.includes('ERR_INVALID_URL') || s.includes('Failed to load resource');
+                })) {
                     return;
                 }
                 originalError.apply(console, args);
             };
 
             window.addEventListener('unhandledrejection', function(event) {
-                // 브라우저 확장 프로그램의 403 에러 전역 격리
-                if (event.reason && (event.reason.code === 403 || event.reason.httpError === false || event.reason.name === 'n')) {
+                // 브라우저 확장 프로그램(content.js)의 403 에러 전역 격리
+                if (event.reason && (
+                    event.reason.code === 403 || 
+                    event.reason.httpError === false || 
+                    event.reason.name === 'n' ||
+                    String(event.reason?.message || event.reason).includes('403')
+                )) {
                     event.preventDefault();
                 }
             });

@@ -63,22 +63,6 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         `${slug}_key3.png`
     ];
 
-    // Helper: read a file as base64 data URI from whichever upload dir has it
-    function readAsDataUri(filename: string): string | null {
-        for (const dir of [PRIMARY_UPLOAD_DIR, SECONDARY_UPLOAD_DIR]) {
-            const fp = path.join(dir, filename);
-            try {
-                if (fs.existsSync(fp)) {
-                    const buf = fs.readFileSync(fp);
-                    if (buf.length > 100) {
-                        return `data:image/png;base64,${buf.toString('base64')}`;
-                    }
-                }
-            } catch (e) {}
-        }
-        return null;
-    }
-
     // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 이미지 서빙 URL 반환
     if (!force && filenames.every(fn => checkFileExists(fn))) {
         return [
