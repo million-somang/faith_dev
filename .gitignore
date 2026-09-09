@@ -40,3 +40,6 @@ Thumbs.db
 
 # Skill symlinks (환경별로 npx skills install 로 재생성, 절대경로라 커밋 금지)
 .claude/skills/
+
+# Drive uploads
+.tmp.driveupload/

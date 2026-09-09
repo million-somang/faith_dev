@@ -30,6 +30,19 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SNS 마케팅 자동화 - Faith Portal</title>
+    <script>
+        // Tailwind CDN 경고 필터링 (개발 환경용)
+        (function() {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && typeof args[0] === 'string' && 
+                    args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                    return;
+                }
+                originalWarn.apply(console, args);
+            };
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
@@ -542,8 +555,10 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
                     const rawUrl = currentScreenshots[i];
-                    const shotUrl = rawUrl.includes('?t=') ? rawUrl : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now());
-                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" />';
+                    const shotUrl = rawUrl.startsWith('data:')
+                        ? rawUrl
+                        : (rawUrl.includes('?t=') ? rawUrl : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now()));
+                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.alt=\'실화면 로드 실패\';" />';
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
                     container.innerHTML = currentCardSet[i];
@@ -561,28 +576,30 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         }
 
         async function refreshAllCardsPreview() {
-            if (!currentApp || !currentScreenshots || currentScreenshots.length === 0) return;
-            const headline = document.getElementById('edit-headline').value;
+            if (!currentApp) return;
+            const headline = document.getElementById('edit-headline')?.value || '';
 
             try {
-                const reqs = [1, 2, 3].map(slideIdx => 
-                    authFetch('/api/admin/marketing/card-preview', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            title: headline,
-                            subtitle: '로그인 없이 브라우저에서 즉시 실행',
-                            tag: currentApp.category || '무료 도구',
-                            slug: currentApp.slug,
-                            screenshots: currentScreenshots,
-                            slideIndex: slideIdx
-                        })
-                    }).then(r => r.json())
-                );
-
-                const results = await Promise.all(reqs);
-                currentCardSet = results.map((r, i) => r.svg || currentCardSet[i]);
-                currentSvg = currentCardSet[0];
-                renderCardSet();
+                const res = await authFetch('/api/admin/marketing/card-preview', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title: headline,
+                        subtitle: '로그인 없이 브라우저에서 즉시 실행',
+                        tag: currentApp.category || '무료 도구',
+                        slug: currentApp.slug,
+                        slideIndex: 1
+                    })
+                });
+                if (!res.ok) {
+                    console.warn('카드 프리뷰 서버 응답 오류: HTTP ' + res.status);
+                    return;
+                }
+                const data = await res.json();
+                if (data.success && data.cardSet && data.cardSet.length >= 3) {
+                    currentCardSet = data.cardSet;
+                    currentSvg = currentCardSet[0];
+                    renderCardSet();
+                }
             } catch (e) {
                 console.warn('카드 프리뷰 갱신 실패:', e);
             }
@@ -610,7 +627,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 const data = await res.json();
                 if (data.success && data.screenshots) {
                     const ts = Date.now();
-                    currentScreenshots = data.screenshots.map(u => u + (u.includes('?') ? '&' : '?') + 't=' + ts);
+                    currentScreenshots = data.screenshots.map(u => u.startsWith('data:') ? u : (u + (u.includes('?') ? '&' : '?') + 't=' + ts));
                     renderCardSet();
                     await refreshAllCardsPreview();
                     renderCardSet();
@@ -630,7 +647,12 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         function downloadSpecificSlide(idx) {
             const slug = currentApp ? currentApp.slug : 'app';
             if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[idx]) {
-                downloadDataUri(currentScreenshots[idx], slug + '_screen_' + (idx + 1) + '.png');
+                const shot = currentScreenshots[idx];
+                if (shot.startsWith('data:')) {
+                    downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
+                } else {
+                    downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
+                }
             } else if (currentCardSet && currentCardSet[idx]) {
                 downloadSvgFile(currentCardSet[idx], slug + '_slide_' + (idx + 1) + '.svg');
             }
@@ -641,7 +663,11 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots.length > 0) {
                 currentScreenshots.forEach((shot, idx) => {
                     setTimeout(() => {
-                        downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
+                        if (shot.startsWith('data:')) {
+                            downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
+                        } else {
+                            downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
+                        }
                     }, idx * 300);
                 });
             } else if (currentCardSet && currentCardSet.length > 0) {
@@ -657,6 +683,16 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             const a = document.createElement('a');
             a.href = dataUri;
             a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function downloadFileUrl(url, filename) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.target = '_blank';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -882,6 +918,9 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                             } catch (e) {}
                         }
                     }
+                })
+                .catch(err => {
+                    console.warn('오토파일럿 설정 조회 실패:', err);
                 });
         }
 

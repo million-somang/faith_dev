@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
 import { checkSession } from '../middleware/auth.js';
@@ -189,11 +191,26 @@ marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
         const body = await c.req.json();
         const { title, subtitle, tag, domain, slug, screenshots, screenshotUri, slideIndex = 1 } = body;
 
-        const resolvedScreenshots = Array.isArray(screenshots) && screenshots.length > 0
+        let resolvedScreenshots = Array.isArray(screenshots) && screenshots.length > 0
             ? screenshots
             : (screenshotUri ? [screenshotUri] : []);
 
-        const svg = generateCardSvg({
+        // 서버 디스크 캐시에서 스크린샷 자동 로드 (클라이언트에서 대용량 base64 재전송 불필요)
+        if (resolvedScreenshots.length === 0 && slug) {
+            const uploadDir = path.resolve(process.cwd(), 'public/uploads/marketing/screenshots');
+            const filePaths = [
+                path.join(uploadDir, `${slug}_key1.png`),
+                path.join(uploadDir, `${slug}_key2.png`),
+                path.join(uploadDir, `${slug}_key3.png`)
+            ];
+            if (filePaths.every(fp => fs.existsSync(fp))) {
+                try {
+                    resolvedScreenshots = filePaths.map(fp => `data:image/png;base64,${fs.readFileSync(fp).toString('base64')}`);
+                } catch (e) {}
+            }
+        }
+
+        const commonOptions = {
             title: title || '스마트 웹 툴킷',
             subtitle: subtitle || '브라우저에서 즉시 실행',
             tag: tag || '무료 도구',
@@ -201,12 +218,21 @@ marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
             slug: slug || 'app',
             screenshots: resolvedScreenshots,
             screenshotUri: resolvedScreenshots[0] || '',
-            slideIndex: Number(slideIndex)
-        });
+        };
+
+        const cardSet = [
+            generateCardSvg({ ...commonOptions, slideIndex: 1 }),
+            generateCardSvg({ ...commonOptions, slideIndex: 2 }),
+            generateCardSvg({ ...commonOptions, slideIndex: 3 })
+        ];
+
+        const targetSlide = Number(slideIndex) || 1;
+        const svg = cardSet[targetSlide - 1] || cardSet[0];
 
         return c.json({
             success: true,
-            svg
+            svg,
+            cardSet
         });
     } catch (err: any) {
         return c.json({ success: false, message: err.message }, 500);
