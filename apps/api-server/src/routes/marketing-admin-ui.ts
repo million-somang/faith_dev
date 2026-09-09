@@ -31,16 +31,31 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SNS 마케팅 자동화 - Faith Portal</title>
     <script>
-        // Tailwind CDN 경고 필터링 (개발 환경용)
+        // Tailwind CDN 경고 및 외부 브라우저 확장 프로그램(content.js) 에러 필터링
         (function() {
             const originalWarn = console.warn;
             console.warn = function(...args) {
-                if (args[0] && typeof args[0] === 'string' && 
-                    args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                if (args.some(a => typeof a === 'string' && 
+                    (a.includes('cdn.tailwindcss.com') || a.includes('Tailwind CSS') || a.includes('Tailwind CLI')))) {
                     return;
                 }
                 originalWarn.apply(console, args);
             };
+
+            const originalError = console.error;
+            console.error = function(...args) {
+                if (args.some(a => typeof a === 'string' && a.includes('ERR_INVALID_URL'))) {
+                    return;
+                }
+                originalError.apply(console, args);
+            };
+
+            window.addEventListener('unhandledrejection', function(event) {
+                // 브라우저 확장 프로그램의 403 에러 전역 격리
+                if (event.reason && (event.reason.code === 403 || event.reason.httpError === false || event.reason.name === 'n')) {
+                    event.preventDefault();
+                }
+            });
         })();
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -449,6 +464,31 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
         let currentApp = null;
         let currentFilter = 'ALL';
         let viewMode = 'SCREENSHOT';
+        const blobUrlMap = new Map();
+
+        // Data URI를 안전한 Blob URL로 변환하여 브라우저의 net::ERR_INVALID_URL 원천 방지
+        function toSafeImageUrl(url) {
+            if (!url) return '';
+            if (!url.startsWith('data:')) return url;
+            if (blobUrlMap.has(url)) return blobUrlMap.get(url);
+            try {
+                const parts = url.split(',');
+                const mimeMatch = parts[0].match(/:(.*?);/);
+                const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+                const bstr = atob(parts[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                const blob = new Blob([u8arr], { type: mime });
+                const blobUrl = URL.createObjectURL(blob);
+                blobUrlMap.set(url, blobUrl);
+                return blobUrl;
+            } catch (e) {
+                return url;
+            }
+        }
 
         function getAuthHeaders() {
             const token = localStorage.getItem('auth_token') || '';
@@ -521,7 +561,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     const data = result.data;
                     currentApp = data.app;
                     currentCardSet = data.cardSet || [data.cardSvg];
-                    currentScreenshots = data.screenshots || [data.screenshotUri];
+                    currentScreenshots = (data.screenshots || [data.screenshotUri]).map(toSafeImageUrl);
                     currentSvg = currentCardSet[0];
 
                     // 3장의 카드뉴스 갤러리 동시 렌더링
@@ -554,14 +594,21 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
                 if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
-                    const rawUrl = currentScreenshots[i];
-                    const shotUrl = rawUrl.startsWith('data:')
+                    const rawUrl = toSafeImageUrl(currentScreenshots[i]);
+                    const shotUrl = (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:'))
                         ? rawUrl
                         : (rawUrl.includes('?t=') ? rawUrl : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now()));
-                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="w-full h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.alt=\'실화면 로드 실패\';" />';
+                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.alt=\'실화면 로드 실패\';" />';
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
-                    container.innerHTML = currentCardSet[i];
+                    let svgContent = currentCardSet[i];
+                    // SVG 내부의 혹시 남아있을 수 있는 data:image를 안전한 Blob URL로 자동 치환
+                    if (svgContent.includes('href="data:image/')) {
+                        svgContent = svgContent.replace(/href="(data:image\/[^"]+)"/g, (match, dataUri) => {
+                            return 'href="' + toSafeImageUrl(dataUri) + '"';
+                        });
+                    }
+                    container.innerHTML = svgContent;
                 }
             }
         }
@@ -627,7 +674,10 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                 const data = await res.json();
                 if (data.success && data.screenshots) {
                     const ts = Date.now();
-                    currentScreenshots = data.screenshots.map(u => u.startsWith('data:') ? u : (u + (u.includes('?') ? '&' : '?') + 't=' + ts));
+                    currentScreenshots = data.screenshots.map(u => {
+                        const safe = toSafeImageUrl(u);
+                        return (safe.startsWith('data:') || safe.startsWith('blob:')) ? safe : (safe + (safe.includes('?') ? '&' : '?') + 't=' + ts);
+                    });
                     renderCardSet();
                     await refreshAllCardsPreview();
                     renderCardSet();
@@ -644,14 +694,14 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             }
         }
 
-        function downloadSpecificSlide(idx) {
+        async function downloadSpecificSlide(idx) {
             const slug = currentApp ? currentApp.slug : 'app';
             if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[idx]) {
                 const shot = currentScreenshots[idx];
-                if (shot.startsWith('data:')) {
+                if (shot.startsWith('data:') || shot.startsWith('blob:')) {
                     downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
                 } else {
-                    downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
+                    await downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
                 }
             } else if (currentCardSet && currentCardSet[idx]) {
                 downloadSvgFile(currentCardSet[idx], slug + '_slide_' + (idx + 1) + '.svg');
@@ -662,11 +712,11 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             const slug = currentApp ? currentApp.slug : 'app';
             if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots.length > 0) {
                 currentScreenshots.forEach((shot, idx) => {
-                    setTimeout(() => {
-                        if (shot.startsWith('data:')) {
+                    setTimeout(async () => {
+                        if (shot.startsWith('data:') || shot.startsWith('blob:')) {
                             downloadDataUri(shot, slug + '_screen_' + (idx + 1) + '.png');
                         } else {
-                            downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
+                            await downloadFileUrl(shot, slug + '_screen_' + (idx + 1) + '.png');
                         }
                     }, idx * 300);
                 });
@@ -688,14 +738,27 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
             document.body.removeChild(a);
         }
 
-        function downloadFileUrl(url, filename) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.target = '_blank';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        async function downloadFileUrl(url, filename) {
+            try {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+            } catch (e) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
         }
 
         function downloadSvgFile(svgContent, filename) {

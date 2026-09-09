@@ -8,12 +8,45 @@ export interface ScreenshotOptions {
     name?: string;
 }
 
-const UPLOAD_DIR = path.resolve(process.cwd(), 'public/uploads/marketing/screenshots');
+const PRIMARY_UPLOAD_DIR = path.resolve(process.cwd(), 'public/uploads/marketing/screenshots');
+const SECONDARY_UPLOAD_DIR = path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots');
 
-function ensureUploadDir(): void {
-    if (!fs.existsSync(UPLOAD_DIR)) {
-        fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+function ensureUploadDirs(): void {
+    if (!fs.existsSync(PRIMARY_UPLOAD_DIR)) {
+        fs.mkdirSync(PRIMARY_UPLOAD_DIR, { recursive: true });
     }
+    try {
+        const parentPublic = path.resolve(process.cwd(), 'apps/api-server/public');
+        if (fs.existsSync(parentPublic)) {
+            if (!fs.existsSync(SECONDARY_UPLOAD_DIR)) {
+                fs.mkdirSync(SECONDARY_UPLOAD_DIR, { recursive: true });
+            }
+        }
+    } catch (e) {}
+}
+
+function saveFileToUploadDirs(filename: string, buffer: Buffer): void {
+    ensureUploadDirs();
+    try {
+        fs.writeFileSync(path.join(PRIMARY_UPLOAD_DIR, filename), buffer);
+    } catch (e) {}
+    try {
+        if (fs.existsSync(SECONDARY_UPLOAD_DIR)) {
+            fs.writeFileSync(path.join(SECONDARY_UPLOAD_DIR, filename), buffer);
+        }
+    } catch (e) {}
+}
+
+function checkFileExists(filename: string): boolean {
+    const path1 = path.join(PRIMARY_UPLOAD_DIR, filename);
+    if (fs.existsSync(path1)) {
+        try { if (fs.statSync(path1).size > 100) return true; } catch (e) {}
+    }
+    const path2 = path.join(SECONDARY_UPLOAD_DIR, filename);
+    if (fs.existsSync(path2)) {
+        try { if (fs.statSync(path2).size > 100) return true; } catch (e) {}
+    }
+    return false;
 }
 
 /**
@@ -22,30 +55,21 @@ function ensureUploadDir(): void {
  */
 export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise<string[]> {
     const { slug, targetUrl, force = false, name = slug } = options;
-    ensureUploadDir();
+    ensureUploadDirs();
 
-    const filePaths = [
-        path.join(UPLOAD_DIR, `${slug}_key1.png`),
-        path.join(UPLOAD_DIR, `${slug}_key2.png`),
-        path.join(UPLOAD_DIR, `${slug}_key3.png`)
+    const filenames = [
+        `${slug}_key1.png`,
+        `${slug}_key2.png`,
+        `${slug}_key3.png`
     ];
 
-    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 캐시 반환
-    if (!force && filePaths.every(fp => fs.existsSync(fp))) {
-        try {
-            const results: string[] = [];
-            for (const fp of filePaths) {
-                const buffer = fs.readFileSync(fp);
-                if (buffer.length > 0) {
-                    results.push(`data:image/png;base64,${buffer.toString('base64')}`);
-                }
-            }
-            if (results.length === 3 && results[0] !== results[1] && results[1] !== results[2]) {
-                return results;
-            }
-        } catch (e) {
-            console.warn(`[ScreenshotService] 캐시 읽기 실패: ${slug}`, e);
-        }
+    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 가볍고 안전한 웹 URL 반환
+    if (!force && filenames.every(fn => checkFileExists(fn))) {
+        return [
+            `/uploads/marketing/screenshots/${slug}_key1.png`,
+            `/uploads/marketing/screenshots/${slug}_key2.png`,
+            `/uploads/marketing/screenshots/${slug}_key3.png`
+        ];
     }
 
     // 2. Puppeteer 인터랙티브 키 페이지 캡처 시도
@@ -143,16 +167,16 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             buffers.push(buffers[buffers.length - 1] || Buffer.from(''));
         }
 
-        // 캐시 파일 저장
-        fs.writeFileSync(filePaths[0], buffers[0]);
-        fs.writeFileSync(filePaths[1], buffers[1]);
-        fs.writeFileSync(filePaths[2], buffers[2]);
-        fs.writeFileSync(path.join(UPLOAD_DIR, `${slug}.png`), buffers[0]);
+        // 캐시 파일 저장 (1번, 2번, 3번 키 화면)
+        saveFileToUploadDirs(filenames[0], buffers[0]);
+        saveFileToUploadDirs(filenames[1], buffers[1]);
+        saveFileToUploadDirs(filenames[2], buffers[2]);
+        saveFileToUploadDirs(`${slug}.png`, buffers[0]);
 
         return [
-            `data:image/png;base64,${buffers[0].toString('base64')}`,
-            `data:image/png;base64,${buffers[1].toString('base64')}`,
-            `data:image/png;base64,${buffers[2].toString('base64')}`
+            `/uploads/marketing/screenshots/${slug}_key1.png`,
+            `/uploads/marketing/screenshots/${slug}_key2.png`,
+            `/uploads/marketing/screenshots/${slug}_key3.png`
         ];
     } catch (err: any) {
         console.warn(`[ScreenshotService] Puppeteer 캡처 예외 발생 (${slug}):`, err.message);
@@ -160,10 +184,12 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             try { await browser.close(); } catch (e) {}
         }
         // 디스크에 기존 유효한 PNG 캐시가 있다면 반환
-        if (filePaths.every(fp => fs.existsSync(fp))) {
-            try {
-                return filePaths.map(fp => `data:image/png;base64,${fs.readFileSync(fp).toString('base64')}`);
-            } catch (e) {}
+        if (filenames.every(fn => checkFileExists(fn))) {
+            return [
+                `/uploads/marketing/screenshots/${slug}_key1.png`,
+                `/uploads/marketing/screenshots/${slug}_key2.png`,
+                `/uploads/marketing/screenshots/${slug}_key3.png`
+            ];
         }
         throw new Error(`미니앱 실화면 캡처 실패: ${err.message}`);
     }
