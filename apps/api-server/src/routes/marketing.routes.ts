@@ -52,33 +52,6 @@ async function logActivity(db: any, userId: string | null, action: string, descr
     } catch (e) {}
 }
 
-// ==================== 0. 스크린샷 이미지 정적 서빙 엔드포인트 ====================
-marketingRoutes.get('/uploads/marketing/screenshots/:filename', async (c) => {
-    const filename = path.basename(c.req.param('filename') || '');
-    if (!filename || !filename.endsWith('.png')) {
-        return c.text('Invalid file', 400);
-    }
-
-    const candidateDirs = [
-        path.resolve(process.cwd(), 'public/uploads/marketing/screenshots'),
-        path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots'),
-        path.resolve('./public/uploads/marketing/screenshots')
-    ];
-
-    for (const dir of candidateDirs) {
-        const fullPath = path.join(dir, filename);
-        if (fs.existsSync(fullPath)) {
-            const fileBuffer = fs.readFileSync(fullPath);
-            return c.body(fileBuffer, 200, {
-                'Content-Type': 'image/png',
-                'Cache-Control': 'public, max-age=86400, stale-while-revalidate=3600'
-            });
-        }
-    }
-
-    return c.text('Screenshot not found', 404);
-});
-
 marketingRoutes.use('/api/admin/marketing/*', requireMarketingAdmin);
 marketingRoutes.use('/api/admin/marketing', requireMarketingAdmin);
 
@@ -222,13 +195,24 @@ marketingRoutes.post('/api/admin/marketing/card-preview', async (c) => {
             ? screenshots
             : (screenshotUri ? [screenshotUri] : []);
 
-        // 서버 디스크 캐시에서 스크린샷 자동 로드 (클라이언트에서 대용량 base64 재전송 불필요)
+        // 서버 디스크 캐시에서 스크린샷 자동 로드 (SVG <image href> 에는 base64 필수)
         if (resolvedScreenshots.length === 0 && slug) {
-            resolvedScreenshots = [
-                `/uploads/marketing/screenshots/${slug}_key1.png`,
-                `/uploads/marketing/screenshots/${slug}_key2.png`,
-                `/uploads/marketing/screenshots/${slug}_key3.png`
+            const uploadDirs = [
+                path.resolve(process.cwd(), 'public/uploads/marketing/screenshots'),
+                path.resolve(process.cwd(), 'apps/api-server/public/uploads/marketing/screenshots')
             ];
+            const keys = [`${slug}_key1.png`, `${slug}_key2.png`, `${slug}_key3.png`];
+            for (const dir of uploadDirs) {
+                if (keys.every(k => fs.existsSync(path.join(dir, k)))) {
+                    try {
+                        resolvedScreenshots = keys.map(k => {
+                            const buf = fs.readFileSync(path.join(dir, k));
+                            return `data:image/png;base64,${buf.toString('base64')}`;
+                        });
+                    } catch (e) {}
+                    break;
+                }
+            }
         }
 
         const commonOptions = {

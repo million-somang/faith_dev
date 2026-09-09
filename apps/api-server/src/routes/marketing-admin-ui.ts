@@ -570,7 +570,7 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
                     document.getElementById('edit-headline').value = data.content.headline;
                     document.getElementById('edit-threads-body').value = data.content.threadsBody;
                     document.getElementById('edit-threads-first-comment').value = data.content.threadsFirstComment;
-                    document.getElementById('edit-ig-caption').value = data.content.instagramCaption + '\\n\\n' + data.content.instagramHashtags.join(' ');
+                    document.getElementById('edit-ig-caption').value = data.content.instagramCaption + '\n\n' + data.content.instagramHashtags.join(' ');
                     document.getElementById('threads-char-count').innerText = data.content.threadsBody.length + '자';
 
                     document.getElementById('workspace-panel').classList.remove('hidden');
@@ -594,21 +594,25 @@ marketingAdminUi.get('/admin/marketing', async (c) => {
 
                 if (viewMode === 'SCREENSHOT' && currentScreenshots && currentScreenshots[i]) {
                     container.className = 'aspect-[9/16] max-h-[440px] w-full p-2 bg-slate-50 flex items-center justify-center relative overflow-hidden rounded-lg';
-                    const rawUrl = toSafeImageUrl(currentScreenshots[i]);
-                    const shotUrl = (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:'))
-                        ? rawUrl
-                        : (rawUrl.includes('?t=') ? rawUrl : (rawUrl + (rawUrl.includes('?') ? '&' : '?') + 't=' + Date.now()));
-                    container.innerHTML = '<img src="' + shotUrl + '" alt="실화면 ' + (i + 1) + '" class="max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105" onerror="this.onerror=null; this.alt=\'실화면 로드 실패\';" />';
+                    const shotUrl = currentScreenshots[i]; // already converted by toSafeImageUrl
+                    const img = document.createElement('img');
+                    img.alt = '실화면 ' + (i + 1);
+                    img.className = 'max-w-full max-h-full object-contain rounded-md shadow-sm transition-transform hover:scale-105';
+                    img.onerror = function() { this.onerror = null; this.alt = '실화면 로드 실패'; };
+                    img.src = shotUrl;
+                    container.innerHTML = '';
+                    container.appendChild(img);
                 } else if (currentCardSet && currentCardSet[i]) {
                     container.className = 'aspect-square w-full p-2 bg-slate-900 flex items-center justify-center relative overflow-hidden';
-                    let svgContent = currentCardSet[i];
-                    // SVG 내부의 혹시 남아있을 수 있는 data:image를 안전한 Blob URL로 자동 치환
-                    if (svgContent.includes('href="data:image/')) {
-                        svgContent = svgContent.replace(/href="(data:image\/[^"]+)"/g, (match, dataUri) => {
-                            return 'href="' + toSafeImageUrl(dataUri) + '"';
-                        });
-                    }
-                    container.innerHTML = svgContent;
+                    container.innerHTML = currentCardSet[i];
+                    // SVG 내부의 <image> 태그들의 data URI를 Blob URL로 교체
+                    const svgImages = container.querySelectorAll('image[href]');
+                    svgImages.forEach(function(imgEl) {
+                        const href = imgEl.getAttribute('href') || '';
+                        if (href.startsWith('data:')) {
+                            imgEl.setAttribute('href', toSafeImageUrl(href));
+                        }
+                    });
                 }
             }
         }

@@ -63,13 +63,28 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         `${slug}_key3.png`
     ];
 
-    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 가볍고 안전한 웹 URL 반환
+    // Helper: read a file as base64 data URI from whichever upload dir has it
+    function readAsDataUri(filename: string): string | null {
+        for (const dir of [PRIMARY_UPLOAD_DIR, SECONDARY_UPLOAD_DIR]) {
+            const fp = path.join(dir, filename);
+            try {
+                if (fs.existsSync(fp)) {
+                    const buf = fs.readFileSync(fp);
+                    if (buf.length > 100) {
+                        return `data:image/png;base64,${buf.toString('base64')}`;
+                    }
+                }
+            } catch (e) {}
+        }
+        return null;
+    }
+
+    // 1. 캐시가 모두 존재하고 강제 갱신이 아니면 캐시 반환
     if (!force && filenames.every(fn => checkFileExists(fn))) {
-        return [
-            `/uploads/marketing/screenshots/${slug}_key1.png`,
-            `/uploads/marketing/screenshots/${slug}_key2.png`,
-            `/uploads/marketing/screenshots/${slug}_key3.png`
-        ];
+        const results = filenames.map(fn => readAsDataUri(fn)).filter(Boolean) as string[];
+        if (results.length === 3) {
+            return results;
+        }
     }
 
     // 2. Puppeteer 인터랙티브 키 페이지 캡처 시도
@@ -149,34 +164,33 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
             timeout: 25000
         });
 
-        // 🌟 [핵심 개선 1] 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기
-        console.log(`[ScreenshotService] 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기 중...`);
+        // 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기
         await page.waitForFunction(() => (document.querySelector('#root, #app, main')?.children.length ?? 0) > 0, { timeout: 10000 }).catch(() => {});
         await page.waitForFunction(() => !document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"]'), { timeout: 12000 }).catch(() => {});
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        // 🌟 [핵심 개선 2] 미니앱별 특화 시나리오 캡처 실행 (slug 정규화)
+        // 미니앱별 특화 시나리오 캡처 실행
         const cleanSlug = slug.replace(/^app-/, '');
         const buffers = await captureScenarioShots(page, cleanSlug);
 
         await browser.close();
         browser = null;
 
-        // 버퍼가 3장 미만일 경우 채움 (어떤 경우에도 가짜 SVG 미사용)
+        // 버퍼가 3장 미만일 경우 채움
         while (buffers.length < 3) {
             buffers.push(buffers[buffers.length - 1] || Buffer.from(''));
         }
 
-        // 캐시 파일 저장 (1번, 2번, 3번 키 화면)
+        // 캐시 파일 저장
         saveFileToUploadDirs(filenames[0], buffers[0]);
         saveFileToUploadDirs(filenames[1], buffers[1]);
         saveFileToUploadDirs(filenames[2], buffers[2]);
         saveFileToUploadDirs(`${slug}.png`, buffers[0]);
 
         return [
-            `/uploads/marketing/screenshots/${slug}_key1.png`,
-            `/uploads/marketing/screenshots/${slug}_key2.png`,
-            `/uploads/marketing/screenshots/${slug}_key3.png`
+            `data:image/png;base64,${buffers[0].toString('base64')}`,
+            `data:image/png;base64,${buffers[1].toString('base64')}`,
+            `data:image/png;base64,${buffers[2].toString('base64')}`
         ];
     } catch (err: any) {
         console.warn(`[ScreenshotService] Puppeteer 캡처 예외 발생 (${slug}):`, err.message);
@@ -185,11 +199,8 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
         }
         // 디스크에 기존 유효한 PNG 캐시가 있다면 반환
         if (filenames.every(fn => checkFileExists(fn))) {
-            return [
-                `/uploads/marketing/screenshots/${slug}_key1.png`,
-                `/uploads/marketing/screenshots/${slug}_key2.png`,
-                `/uploads/marketing/screenshots/${slug}_key3.png`
-            ];
+            const results = filenames.map(fn => readAsDataUri(fn)).filter(Boolean) as string[];
+            if (results.length === 3) return results;
         }
         throw new Error(`미니앱 실화면 캡처 실패: ${err.message}`);
     }
