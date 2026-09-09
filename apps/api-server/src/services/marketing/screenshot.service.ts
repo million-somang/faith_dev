@@ -145,16 +145,11 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
 
         console.log(`[ScreenshotService] 미니앱 접속 시작: ${effectiveUrl}`);
         await page.goto(effectiveUrl, {
-            waitUntil: ['domcontentloaded', 'networkidle2'],
+            waitUntil: 'domcontentloaded',
             timeout: 25000
         });
 
-        // 스켈레톤 로딩 소멸 및 실제 화면 안정화 대기
-        await page.waitForFunction(() => (document.querySelector('#root, #app, main')?.children.length ?? 0) > 0, { timeout: 10000 }).catch(() => {});
-        await page.waitForFunction(() => !document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"]'), { timeout: 12000 }).catch(() => {});
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        // 미니앱별 특화 시나리오 캡처 실행
+        // 미니앱별 특화 시나리오 캡처 실행 (1: 로딩화면 -> 2: 조작화면 -> 3: 결과화면)
         const cleanSlug = slug.replace(/^app-/, '');
         const buffers = await captureScenarioShots(page, cleanSlug);
 
@@ -192,13 +187,121 @@ export async function getMiniAppScreenshots(options: ScreenshotOptions): Promise
 }
 
 /**
+ * 1단계(Key 1): 로딩 & 인트로 화면 전용 캡처 함수
+ * (1) 미니앱 내 실제 .loading-screen, .loading-body 등이 존재하면 즉시 캡처
+ * (2) 아직 자체 로딩 화면이 없는 앱의 경우 표준 브랜드 스플래시 오버레이를 일시 생성하여 프리미엄 인트로 화면 캡처
+ */
+async function captureLoadingScreen(page: any, cleanSlug: string): Promise<Buffer> {
+    await new Promise((r) => setTimeout(r, 200));
+
+    // 미니앱 자체 로딩 화면 존재 여부 검사
+    const hasLoader = await page.evaluate(() => {
+        const loader = document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"], .loading-screen-dark, .loading-screen-light, .loading-container');
+        return Boolean(loader && (loader as HTMLElement).offsetWidth > 0);
+    }).catch(() => false);
+
+    if (hasLoader) {
+        return await page.screenshot({ type: 'png', fullPage: false });
+    }
+
+    // 자체 로딩화면이 없는 경우: 일관된 브랜드 스플래시 오버레이 임시 주입
+    await page.evaluate((slug: string) => {
+        const id = 'fp-brand-splash-overlay';
+        if (document.getElementById(id)) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = id;
+        overlay.style.cssText = `
+            position: fixed; inset: 0; z-index: 999999;
+            background: linear-gradient(135deg, #090d16 0%, #171c2f 50%, #090d16 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif;
+            color: #ffffff; padding: 24px; text-align: center;
+        `;
+
+        const iconBox = document.createElement('div');
+        iconBox.style.cssText = `
+            width: 84px; height: 84px; border-radius: 26px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 38px; box-shadow: 0 16px 36px -8px rgba(99, 102, 241, 0.5);
+            margin-bottom: 24px; border: 1.5px solid rgba(255, 255, 255, 0.2);
+        `;
+        iconBox.innerText = '⚡';
+
+        const title = document.createElement('h1');
+        title.style.cssText = `
+            font-size: 24px; font-weight: 900; margin: 0 0 6px 0;
+            background: linear-gradient(to right, #ffffff, #e0e7ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+        `;
+        title.innerText = (document.title || slug).split('-')[0].trim() || 'VERA 미니앱';
+
+        const subtitle = document.createElement('p');
+        subtitle.style.cssText = `
+            font-size: 13px; color: #94a3b8; margin: 0 0 28px 0; font-weight: 500;
+        `;
+        subtitle.innerText = '로그인 없이 브라우저에서 즉시 실행';
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.12);
+            border-top-color: #818cf8; border-radius: 50%;
+            animation: fp-spin 0.8s linear infinite; margin-bottom: 18px;
+        `;
+
+        const badge = document.createElement('div');
+        badge.style.cssText = `
+            font-size: 11px; font-weight: 800; color: #a5b4fc;
+            background: rgba(99, 102, 241, 0.18); padding: 5px 14px;
+            border-radius: 20px; border: 1px solid rgba(99, 102, 241, 0.35);
+            letter-spacing: 0.05em;
+        `;
+        badge.innerText = 'VERA MINI APPS';
+
+        const style = document.createElement('style');
+        style.innerText = '@keyframes fp-spin { to { transform: rotate(360deg); } }';
+        document.head.appendChild(style);
+
+        overlay.appendChild(iconBox);
+        overlay.appendChild(title);
+        overlay.appendChild(subtitle);
+        overlay.appendChild(spinner);
+        overlay.appendChild(badge);
+        document.body.appendChild(overlay);
+    }, cleanSlug).catch(() => {});
+
+    await new Promise((r) => setTimeout(r, 200));
+    const shot = await page.screenshot({ type: 'png', fullPage: false });
+
+    // 오버레이 제거하여 본문 인터랙션 복원
+    await page.evaluate(() => {
+        const overlay = document.getElementById('fp-brand-splash-overlay');
+        if (overlay) overlay.remove();
+    }).catch(() => {});
+
+    return shot;
+}
+
+/**
  * 앱별 고유 3대 키 페이지 시나리오 실행 함수
- * (1) data-screenshot-* 표준 데이터 속성 자동 감지 우선 지원
- * (2) 17개 미니앱 전용 인터랙션 시나리오
- * (3) 중복 이미지 원천 방지 안전 가드(Safety Guard) 탑재
+ * (1) 1단계: 로딩/인트로 화면 확보 (Key 1)
+ * (2) 2단계: 본문 로딩 완료 후 메인 조작/입력 화면 캡처 (Key 2)
+ * (3) 3단계: 최종 결과/서브탭/모달 화면 캡처 (Key 3)
  */
 async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffer[]> {
     const buffers: Buffer[] = [];
+
+    // =========================================================================
+    // [1단계] 스플래시 / 로딩 화면 전용 캡처 (Key 1)
+    // =========================================================================
+    const loadingShot = await captureLoadingScreen(page, cleanSlug);
+    buffers.push(loadingShot);
+
+    // 2단계 및 3단계 본문 상호작용을 위해 로딩 화면 소멸 대기
+    await page.waitForFunction(() => !document.querySelector('.loading-screen, .loading-body, [aria-label*="로딩"], .loading-screen-dark, .loading-screen-light'), { timeout: 10000 }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 600));
 
     // =========================================================================
     // [0] data-screenshot-* 표준 속성 자동 감지 (신규 미니앱 자동 대응)
@@ -210,19 +313,17 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }).catch(() => false);
 
     if (hasStandardPoints) {
-        // [1. 진입 화면]: 최상단 순수 첫 진입 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 조작 화면]: data-screenshot-input 타이핑 & click="action" 클릭
+        // [2. 메인 컨텐츠 조작 화면]
         await page.evaluate(() => {
             const inputEl = document.querySelector('[data-screenshot-input]') as HTMLInputElement | HTMLTextAreaElement;
+            const setVal = (window as any).setReactInputValue;
             if (inputEl) {
                 const val = inputEl.getAttribute('data-screenshot-input') || '100';
-                inputEl.value = val;
-                inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                if (setVal) setVal(inputEl, val);
+                else {
+                    inputEl.value = val;
+                    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                }
             }
             const clickEl = document.querySelector('[data-screenshot-click="action"]') as HTMLElement;
             if (clickEl) clickEl.click();
@@ -232,7 +333,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: click="result" 클릭 또는 point="result" 영역 스크롤
+        // [3. 결과 화면]
         await page.evaluate(() => {
             const clickResult = document.querySelector('[data-screenshot-click="result"]') as HTMLElement;
             if (clickResult) clickResult.click();
@@ -249,37 +350,19 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 1. 지뢰찾기 (minesweeper)
     // =========================================================================
     if (cleanSlug === 'minesweeper') {
-        // [1. 진입 화면]: 9x9 초급 미개봉 초기 보드 (010, 000)
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 보드 중앙(4행 4열 및 주변 타일) 클릭하여 여러 칸이 시원하게 열린 플레이 화면
+        // [2. 메인 조작 화면]: 보드 중앙 타일 클릭하여 열린 플레이 화면
         await page.evaluate(() => {
-            // 게임 보드의 타일 셀들 찾기
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            // 난이도/타이머/하단 버튼을 제외한 보드 타일 셀들 (정사각형 타일)
             const tileCells = buttons.filter(b => {
                 const txt = (b.textContent || '').trim();
-                const isUtil = /명예의 전당|초급|중급|고급|새 게임|다시|설정/i.test(txt);
-                return !isUtil && b.offsetWidth > 15 && b.offsetHeight > 15 && b.offsetWidth < 80;
+                return !/명예|초급|중급|고급|새 게임|다시|설정/i.test(txt) && b.offsetWidth > 15 && b.offsetHeight > 15 && b.offsetWidth < 80;
             });
             if (tileCells.length > 20) {
-                // 중앙 타일 2~3개 클릭
                 tileCells[Math.floor(tileCells.length / 2)]?.click();
-                setTimeout(() => {
-                    tileCells[Math.floor(tileCells.length / 2) + 2]?.click();
-                }, 100);
-            } else {
-                // 그리드 div 셀인 경우
-                const gridCells = Array.from(document.querySelectorAll('[class*="grid"] div, [class*="board"] div')) as HTMLElement[];
-                const clickable = gridCells.filter(c => c.offsetWidth > 20 && c.offsetWidth < 70);
-                if (clickable.length > 10) {
-                    clickable[Math.floor(clickable.length / 2)]?.click();
-                }
+                setTimeout(() => tileCells[Math.floor(tileCells.length / 2) + 2]?.click(), 100);
             }
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         // [3. 결과 화면]: 🏆 명예의 전당 버튼 클릭하여 리더보드 모달이 팝업된 스코어보드 화면
@@ -289,7 +372,6 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             if (lbBtn) {
                 lbBtn.click();
             } else {
-                // 난이도를 중급(16x16)으로 변경하여 거대한 그리드 노출
                 const midBtn = buttons.find(b => b.textContent && b.textContent.includes('중급'));
                 if (midBtn) midBtn.click();
             }
@@ -304,12 +386,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 2. 평수 계산기 (pyeong-calc)
     // =========================================================================
     if (cleanSlug === 'pyeong-calc') {
-        // [1. 진입 화면]: 접속 직후 순수 초기 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 34평 빠른 선택 및 면적 입력 조작 화면
+        // [2. 메인 조작 화면]: 34평 빠른 선택 버튼 클릭
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn34 = buttons.find(b => b.textContent && b.textContent.includes('34'));
@@ -318,21 +395,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 평당 가격 탭 ➡️ 8.5억 매매가 입력 ➡️ 상세 환산 리포트 화면
+        // [3. 결과 화면]: 상세 환산 결과 카드 및 하단 가이드 영역으로 스크롤
         await page.evaluate(() => {
-            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"]')) as HTMLElement[];
-            if (tabs[1]) tabs[1].click();
-            const inputs = document.querySelectorAll('input');
-            if (inputs[0]) {
-                inputs[0].value = '85000';
-                inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-            }
-            if (inputs[1]) {
-                inputs[1].value = '34';
-                inputs[1].dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            window.scrollTo({ top: 380, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -342,17 +409,13 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 3. 퇴직금 & 실업급여 계산기 (severance-calc)
     // =========================================================================
     if (cleanSlug === 'severance-calc') {
-        // [1. 진입 화면]: 접속 직후 기본 입력 안내 및 빈 폼 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 입사일, 퇴사일, 월 기본급(350만원)을 입력한 조작 화면
+        // [2. 메인 조작 화면]: 입사일, 퇴사일, 월 기본급(350만원)을 입력한 조작 화면
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
-            if (inputs[0]) { inputs[0].value = '2021-01-01'; inputs[0].dispatchEvent(new Event('input', { bubbles: true })); }
-            if (inputs[1]) { inputs[1].value = '2025-12-31'; inputs[1].dispatchEvent(new Event('input', { bubbles: true })); }
-            if (inputs[2]) { inputs[2].value = '3500000'; inputs[2].dispatchEvent(new Event('input', { bubbles: true })); }
+            if (inputs[0] && setVal) setVal(inputs[0], '2021-01-01');
+            if (inputs[1] && setVal) setVal(inputs[1], '2025-12-31');
+            if (inputs[2] && setVal) setVal(inputs[2], '3500000');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -362,6 +425,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const calcBtn = buttons.find(b => b.textContent && b.textContent.includes('계산하기'));
             if (calcBtn) calcBtn.click();
+            window.scrollTo({ top: 280, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -373,12 +437,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 4. 디데이 계산기 (dday-calc)
     // =========================================================================
     if (cleanSlug === 'dday-calc') {
-        // [1. 진입 화면]: 3초 로딩 통과 후 첫 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 600));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 제목과 날짜 입력 상태
+        // [2. 메인 조작 화면]: 제목과 날짜 입력 상태
         await page.evaluate(() => {
             const setVal = (window as any).setReactInputValue;
             const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
@@ -393,6 +452,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const addBtn = buttons.find(b => b.textContent && /추가|등록|생성/i.test(b.textContent));
             if (addBtn) addBtn.click();
+            window.scrollTo({ top: 200, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -404,30 +464,24 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 5. 예·적금 이자 계산기 (interest-calc)
     // =========================================================================
     if (cleanSlug === 'interest-calc') {
-        // [1. 진입 화면]: 정기예금 기본 폼
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 600));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 정기적금 전환 및 36개월, 우대금리 설정 상태
+        // [2. 메인 조작 화면]: 정기적금 전환 및 100만원 입력 상태
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const savingsBtn = buttons.find(b => b.textContent && b.textContent.includes('적금'));
             if (savingsBtn) savingsBtn.click();
             const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
-            if (inputs[0]) {
-                inputs[0].value = '1000000';
-                inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (inputs[0] && setVal) setVal(inputs[0], '1000000');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 계산하기 클릭 ➡️ 최종 만기 수령액 및 비과세 비교 리포트 카드
+        // [3. 결과 화면]: 계산하기 클릭 ➡️ 만기 수령액 및 비과세 비교 리포트 카드
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const calcBtn = buttons.find(b => b.textContent && /계산|결과/i.test(b.textContent));
             if (calcBtn) calcBtn.click();
+            window.scrollTo({ top: 320, behavior: 'instant' });
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -439,30 +493,25 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 6. 해외직구 관·부가세 계산기 (customs-calc)
     // =========================================================================
     if (cleanSlug === 'customs-calc') {
-        // [1. 진입 화면]: 기본 계산 폼
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 600));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 중간 영역으로 스크롤하여 결제금액 및 카테고리 설정 화면
+        // [2. 메인 조작 화면]: 결제금액 280 달러 및 품목 설정 화면
         await page.evaluate(() => {
-            window.scrollTo({ top: 380, behavior: 'instant' });
-            const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
             const setVal = (window as any).setReactInputValue;
+            const inputs = Array.from(document.querySelectorAll('input')) as HTMLInputElement[];
             if (inputs[0] && setVal) setVal(inputs[0], '280');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 상단 '통관 가이드' 탭 전환 화면 (확연히 다른 가이드 리포트 뷰)
+        // [3. 결과 화면]: 상단 '통관 가이드' 탭 전환 ➡️ 면세 한도 가이드 표
         await page.evaluate(() => {
-            window.scrollTo({ top: 0, behavior: 'instant' });
             const tabs = Array.from(document.querySelectorAll('button[role="tab"], nav button')) as HTMLElement[];
             const guideTab = tabs.find(t => t.textContent && t.textContent.includes('통관 가이드'));
             if (guideTab) {
                 guideTab.click();
             } else {
-                window.scrollTo({ top: 650, behavior: 'instant' });
+                const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+                const calcBtn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
+                if (calcBtn) calcBtn.click();
             }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 800));
@@ -475,28 +524,20 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 7. 다기능 계산기 (calculator)
     // =========================================================================
     if (cleanSlug === 'calculator') {
-        // [1. 진입 화면]: 기본 계산기 0 표시 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 키패드 수식 입력 중 (12500 * 12)
+        // [2. 메인 조작 화면]: 실제 버튼 클릭으로 25,000 × 12 = 300,000 연산 산출
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const keys = ['1', '2', '5', '0', '0', '*', '1', '2'];
-            keys.forEach(k => {
-                const btn = buttons.find(b => b.textContent && b.textContent.trim() === k);
-                if (btn) btn.click();
-            });
+            const clickKey = (txt: string) => buttons.find(b => (b.textContent || '').trim() === txt)?.click();
+            ['2', '5', '0', '0', '0', '×', '1', '2', '='].forEach(k => clickKey(k));
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: = 클릭 ➡️ 최종 계산 결과 산출 화면
+        // [3. 결과 화면]: 상단 탭바에서 '대출' 탭으로 전환하여 완전히 다른 금융 계산 폼 제공
         await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const eqBtn = buttons.find(b => b.textContent && b.textContent.trim() === '=');
-            if (eqBtn) eqBtn.click();
+            const tabs = Array.from(document.querySelectorAll('.tab-bar-btn, button[role="tab"], .tab-btn')) as HTMLElement[];
+            const loanTab = tabs.find(t => /대출|loan/i.test(t.textContent || '')) || tabs[1];
+            if (loanTab) loanTab.click();
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -508,15 +549,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 8. 나이 계산기 (age-calc)
     // =========================================================================
     if (cleanSlug === 'age-calc') {
-        // [1. 진입 화면]: 초기 빈 폼
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 생년월일 입력
+        // [2. 메인 조작 화면]: 생년월일 입력
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const input = document.querySelector('input[type="date"], input') as HTMLInputElement;
-            if (input) { input.value = '1995-08-15'; input.dispatchEvent(new Event('input', { bubbles: true })); }
+            if (input && setVal) setVal(input, '1995-08-15');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -526,8 +563,9 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn = buttons.find(b => b.textContent && /계산|확인/i.test(b.textContent));
             if (btn) btn.click();
+            window.scrollTo({ top: 320, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -537,27 +575,30 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 9. 2048 게임 (2048)
     // =========================================================================
     if (cleanSlug === '2048') {
-        // [1. 진입 화면]: 게임 시작 초기 보드 (Score: 0, 2개 타일)
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 방향키 14회 타건 ➡️ 타일 결합 및 스코어 상승
-        const keys1 = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowUp', 'ArrowRight'];
+        // [2. 메인 조작 화면]: 타일 결합 및 스코어 상승
+        await page.evaluate(() => {
+            const container = document.querySelector('.game-container, canvas, #root, #app') as HTMLElement;
+            if (container) container.click();
+        }).catch(() => {});
+        const keys1 = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown'];
         for (const k of keys1) {
             await page.keyboard.press(k);
-            await new Promise((r) => setTimeout(r, 90));
+            await new Promise((r) => setTimeout(r, 80));
         }
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 추가 20회 타건 ➡️ 고득점 누적 보드 화면 (32, 64 타일)
-        const keys2 = ['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowDown'];
+        // [3. 결과 화면]: 추가 타건 및 도움말/상세 모달 뷰
+        const keys2 = ['ArrowLeft', 'ArrowDown', 'ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'];
         for (const k of keys2) {
             await page.keyboard.press(k);
-            await new Promise((r) => setTimeout(r, 90));
+            await new Promise((r) => setTimeout(r, 80));
         }
-        await new Promise((r) => setTimeout(r, 500));
+        await page.evaluate(() => {
+            const infoBtn = Array.from(document.querySelectorAll('button, a')).find(b => /how|규칙|도움|설명|ranking|명예/i.test(b.textContent || '')) as HTMLElement;
+            if (infoBtn) infoBtn.click();
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -567,28 +608,22 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 10. 테트리스 (tetris)
     // =========================================================================
     if (cleanSlug === 'tetris') {
-        // [1. 진입 화면]: 초기 대기 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
+        // [2. 메인 조작 화면]: 블록 낙하 조작 및 바닥 누적 상태
+        for (let i = 0; i < 8; i++) {
+            await page.keyboard.press('ArrowDown');
+            await new Promise((r) => setTimeout(r, 100));
+        }
         await new Promise((r) => setTimeout(r, 400));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [2. 메인 컨텐츠 화면]: 게임 시작 및 블록 조작 중
+        // [3. 결과 화면]: 일시정지 키(P) 또는 버튼 클릭 ➡️ 대형 PAUSED 오버레이 노출
+        await page.keyboard.press('KeyP').catch(() => {});
         await page.evaluate(() => {
-            const btn = Array.from(document.querySelectorAll('button')).find(b => /start|시작|play/i.test(b.textContent || ''));
-            if (btn) btn.click();
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const pauseBtn = buttons.find(b => /pause|일시정지/i.test(b.textContent || ''));
+            if (pauseBtn) pauseBtn.click();
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
-        for (let i = 0; i < 8; i++) {
-            await page.keyboard.press('ArrowDown');
-            await new Promise((r) => setTimeout(r, 110));
-        }
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [3. 결과 화면]: 블록 누적 및 점수 획득 스코어보드
-        for (let i = 0; i < 14; i++) {
-            await page.keyboard.press(i % 2 === 0 ? 'ArrowLeft' : 'ArrowDown');
-            await new Promise((r) => setTimeout(r, 100));
-        }
+        await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -598,24 +633,33 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 11. 스도쿠 (sudoku)
     // =========================================================================
     if (cleanSlug === 'sudoku') {
-        // [1. 진입 화면]: 빈 보드
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 숫자 입력 플레이 진행
+        // [2. 메인 조작 화면]: 빈 셀 선택 후 💡 힌트 버튼 클릭하여 숫자 입력 및 하이라이트 노출
         await page.evaluate(() => {
-            const cells = Array.from(document.querySelectorAll('button, [role="gridcell"], .cell')) as HTMLElement[];
-            if (cells[4]) cells[4].click();
-            const numBtns = Array.from(document.querySelectorAll('button')).filter(b => /^[1-9]$/.test(b.textContent?.trim() || ''));
-            if (numBtns[1]) numBtns[1].click();
+            const cells = Array.from(document.querySelectorAll('.grid button, [role="gridcell"], button')) as HTMLElement[];
+            const emptyCell = cells.find(c => (c.textContent || '').trim() === '');
+            if (emptyCell) emptyCell.click();
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const hintBtn = buttons.find(b => b.textContent && b.textContent.includes('힌트'));
+            if (hintBtn) {
+                hintBtn.click();
+                setTimeout(() => hintBtn.click(), 150);
+            }
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 힌트 및 통계 뷰
-        await page.evaluate(() => window.scrollTo(0, 240)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
+        // [3. 결과 화면]: ⏸ 일시정지 버튼 클릭하여 글래스모피즘 PAUSED 오버레이 팝업 노출
+        await page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
+            const pauseBtn = buttons.find(b => b.textContent && /일시정지|계속|pause/i.test(b.textContent));
+            if (pauseBtn) {
+                pauseBtn.click();
+            } else {
+                const hardBtn = buttons.find(b => b.textContent && b.textContent.includes('고급'));
+                if (hardBtn) hardBtn.click();
+            }
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 700));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -625,29 +669,23 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 12. 맞춤법 검사기 (text-checker)
     // =========================================================================
     if (cleanSlug === 'text-checker') {
-        // [1. 진입 화면]: 빈 텍스트 입력창
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 검사할 문장 입력
+        // [2. 메인 조작 화면]: 교정할 문장 입력
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-            if (textarea) {
-                textarea.value = '안녕하새요. 오늘 날씨가 참 맑음니다. 빠른 시일내에 뵙겟습니다.';
-                textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (textarea && setVal) setVal(textarea, '안녕하새요. 오늘 날씨가 참 맑음니다. 빠른 시일내에 뵙겟습니다.');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 검사하기 클릭 ➡️ 맞춤법 교정 하이라이트 결과
+        // [3. 결과 화면]: 검사하기 클릭 ➡️ 맞춤법 교정 하이라이트 결과 카드
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn = buttons.find(b => b.textContent && /검사|확인/i.test(b.textContent));
             if (btn) btn.click();
+            window.scrollTo({ top: 300, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -657,18 +695,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 13. JSON 포맷터 (json-formatter)
     // =========================================================================
     if (cleanSlug === 'json-formatter') {
-        // [1. 진입 화면]: 빈 에디터 첫 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 압축된 원본 JSON 입력
+        // [2. 메인 조작 화면]: 압축된 원본 JSON 입력
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-            if (textarea) {
-                textarea.value = '{"service":"faithportal","features":["calc","game","converter"],"status":"active","stats":{"users":1250,"rating":4.9}}';
-                textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (textarea && setVal) setVal(textarea, '{"service":"faithportal","features":["calc","game","converter"],"status":"active","stats":{"users":1250,"rating":4.9}}');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -678,8 +709,9 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn = buttons.find(b => b.textContent && /포맷|정렬|format/i.test(b.textContent));
             if (btn) btn.click();
+            window.scrollTo({ top: 300, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -689,18 +721,11 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 14. Base64 변환기 (base64-converter)
     // =========================================================================
     if (cleanSlug === 'base64-converter') {
-        // [1. 진입 화면]: 초기 빈 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 텍스트 입력
+        // [2. 메인 조작 화면]: 원본 텍스트 입력
         await page.evaluate(() => {
+            const setVal = (window as any).setReactInputValue;
             const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-            if (textarea) {
-                textarea.value = 'Hello Veranex Mini Apps! 베라넥스 플랫폼 2026';
-                textarea.dispatchEvent(new Event('input', { bubbles: true }));
-            }
+            if (textarea && setVal) setVal(textarea, 'Hello Veranex Mini Apps! 베라넥스 플랫폼 2026');
         }).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -710,8 +735,9 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const btn = buttons.find(b => b.textContent && /인코딩|변환|encode/i.test(b.textContent));
             if (btn) btn.click();
+            window.scrollTo({ top: 300, behavior: 'instant' });
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 800));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
         return await ensureDistinctScreenshots(page, buffers);
@@ -721,12 +747,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 15. SVG 변환기 (svg-converter)
     // =========================================================================
     if (cleanSlug === 'svg-converter') {
-        // [1. 진입 화면]: 메인 히어로 + 드롭존 첫 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 3대 변환 프리셋 카드 및 옵션 뷰
+        // [2. 메인 조작 화면]: 3대 변환 프리셋 카드 영역
         await page.evaluate(() => {
             const presetCards = Array.from(document.querySelectorAll('div[class*="rounded"]')) as HTMLElement[];
             if (presetCards[1]) presetCards[1].scrollIntoView({ behavior: 'instant', block: 'center' });
@@ -734,7 +755,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: 하단 지원 포맷 & 세부 가이드 영역
+        // [3. 결과 화면]: 하단 지원 포맷 & 가이드 영역
         await page.evaluate(() => window.scrollTo({ top: 500, behavior: 'instant' })).catch(() => {});
         await new Promise((r) => setTimeout(r, 500));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
@@ -746,12 +767,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // 16. 컴보이 & 슈퍼컴보이 아케이드 (comboy, sfc)
     // =========================================================================
     if (cleanSlug === 'comboy' || cleanSlug === 'sfc') {
-        // [1. 진입 화면]: 콘솔 및 롬 로더 첫 화면
-        await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [2. 메인 컨텐츠 화면]: 조작 가이드 탭 클릭 ➡️ 레트로 게임패드 키 매핑 화면
+        // [2. 메인 조작 화면]: 조작 가이드 탭 ➡️ 16비트 게임패드 매핑
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const guideBtn = buttons.find(b => b.textContent && /가이드|조작|안내/i.test(b.textContent));
@@ -760,7 +776,7 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
         await new Promise((r) => setTimeout(r, 600));
         buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-        // [3. 결과 화면]: FAQ/기능안내 탭 클릭 ➡️ 클라우드 세이브 및 에뮬레이터 안내 화면
+        // [3. 결과 화면]: FAQ 탭 ➡️ 클라우드 세이브 및 에뮬레이터 안내
         await page.evaluate(() => {
             const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
             const faqBtn = buttons.find(b => b.textContent && /FAQ|질문|도움말/i.test(b.textContent));
@@ -775,65 +791,30 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     // =========================================================================
     // 17. 공통 범용 폴백 (미등록 앱)
     // =========================================================================
-    // [1. 진입 화면]: 상단 최상단 뷰 (순수 초기 상태)
-    await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {});
-    await new Promise((r) => setTimeout(r, 400));
+    // [2. 메인 조작 화면]: 첫 번째 입력 필드 값 주입 또는 중앙 탭
+    await page.evaluate(() => {
+        const setVal = (window as any).setReactInputValue;
+        const input = document.querySelector('input, textarea') as HTMLInputElement | HTMLTextAreaElement;
+        if (input && setVal) setVal(input, '100');
+        else if (input) {
+            input.value = '100';
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 500));
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
-    // [2. 메인 컨텐츠 화면]: 입력 필드 값 주입 또는 서브 탭 클릭
-    let clickedSub = false;
-    try {
-        clickedSub = await page.evaluate(() => {
-            try {
-                const inputs = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([readonly]):not([disabled]), textarea')) as HTMLInputElement[];
-                if (inputs.length > 0) {
-                    inputs[0].focus();
-                    inputs[0].value = inputs[0].type === 'number' ? '100' : '테스트';
-                    inputs[0].dispatchEvent(new Event('input', { bubbles: true }));
-                    inputs[0].dispatchEvent(new Event('change', { bubbles: true }));
-                    return true;
-                }
-                const tabs = Array.from(document.querySelectorAll('main button[role="tab"], main .tab, main nav button, [role="tablist"] button, .tab-group button')) as HTMLElement[];
-                if (tabs.length >= 2 && tabs[1].offsetWidth > 0) {
-                    tabs[1].click();
-                    return true;
-                }
-            } catch (e) {}
-            return false;
-        });
-    } catch (e) {}
-
-    await new Promise((r) => setTimeout(r, 600));
-    if (!clickedSub) {
-        await page.evaluate(() => window.scrollTo({ top: 260, behavior: 'instant' })).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-    }
-    buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-    // [3. 결과 화면]: 실행/계산/결과 버튼 클릭
-    let clickedAction = false;
-    try {
-        clickedAction = await page.evaluate(() => {
-            try {
-                const buttons = Array.from(document.querySelectorAll('button, a.btn, input[type="submit"]')) as HTMLElement[];
-                const actionBtn = buttons.find(b => {
-                    const text = (b.textContent || (b as HTMLInputElement).value || '').trim();
-                    return /계산|결과|확인|조회|시작|생성|변환|검사|실행|Calc|Result|Start|Convert|Run/i.test(text) && b.offsetWidth > 0;
-                });
-                if (actionBtn) {
-                    actionBtn.click();
-                    return true;
-                }
-            } catch (e) {}
-            return false;
-        });
-    } catch (e) {}
-
-    await new Promise((r) => setTimeout(r, 800));
-    if (!clickedAction) {
-        await page.evaluate(() => window.scrollTo({ top: 520, behavior: 'instant' })).catch(() => {});
-        await new Promise((r) => setTimeout(r, 400));
-    }
+    // [3. 결과 화면]: 액션 버튼 클릭 또는 결과 영역 스크롤
+    await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button, a.btn')) as HTMLElement[];
+        const actionBtn = buttons.find(b => /계산|결과|확인|시작|생성|변환|검사|실행/i.test(b.textContent || ''));
+        if (actionBtn) {
+            actionBtn.click();
+        } else {
+            window.scrollTo({ top: 400, behavior: 'instant' });
+        }
+    }).catch(() => {});
+    await new Promise((r) => setTimeout(r, 700));
     buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
 
     return await ensureDistinctScreenshots(page, buffers);
@@ -841,36 +822,36 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
 
 /**
  * 중복 이미지 원천 방지 안전 가드 (Safety Guard)
- * 3장의 스크린샷 중 동일한 버퍼가 존재할 경우, 화면을 강제로 변경하여 100% 독립된 이미지를 보장합니다.
+ * (1) buffers[0]: 로딩 화면
+ * (2) buffers[1]: 조작 화면
+ * (3) buffers[2]: 결과 화면
+ * 버퍼 간의 용량 차이가 800바이트 미만이거나 동일할 경우 강제로 화면을 변경하여 100% 독립된 이미지를 보장합니다.
  */
 async function ensureDistinctScreenshots(page: any, buffers: Buffer[]): Promise<Buffer[]> {
     if (buffers.length < 3) return buffers;
 
-    const isSame12 = Buffer.compare(buffers[0], buffers[1]) === 0;
-    if (isSame12) {
-        // 2번이 1번과 동일한 경우: 중앙 영역으로 확실히 스크롤하고 두 번째 탭이나 인터랙티브 요소 조작
+    // 1번(로딩)과 2번(조작)이 거의 같은 경우
+    const sizeDiff12 = Math.abs(buffers[0].length - buffers[1].length);
+    if (Buffer.compare(buffers[0], buffers[1]) === 0 || sizeDiff12 < 500) {
         await page.evaluate(() => {
-            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn')) as HTMLElement[];
-            if (tabs[1] && tabs[1].offsetWidth > 0) {
-                tabs[1].click();
-            } else {
-                window.scrollTo({ top: 380, behavior: 'instant' });
-            }
+            window.scrollTo({ top: 300, behavior: 'instant' });
+            const btn = document.querySelector('button, input, [role="button"]') as HTMLElement;
+            if (btn) btn.click();
         }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => setTimeout(r, 400));
         buffers[1] = await page.screenshot({ type: 'png', fullPage: false });
     }
 
-    const isSame23 = Buffer.compare(buffers[1], buffers[2]) === 0;
-    const isSame13 = Buffer.compare(buffers[0], buffers[2]) === 0;
-    if (isSame23 || isSame13) {
-        // 3번이 동일한 경우: 세 번째 탭을 누르거나 최하단 스크롤
+    // 2번(조작)과 3번(결과)이 거의 같은 경우
+    const sizeDiff23 = Math.abs(buffers[1].length - buffers[2].length);
+    const isSame23 = Buffer.compare(buffers[1], buffers[2]) === 0 || sizeDiff23 < 800;
+    if (isSame23) {
         await page.evaluate(() => {
-            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn')) as HTMLElement[];
-            if (tabs[2] && tabs[2].offsetWidth > 0) {
-                tabs[2].click();
+            const tabs = Array.from(document.querySelectorAll('nav button, button[role="tab"], .tab-btn, .tab-bar-btn, .page-tab-btn')) as HTMLElement[];
+            if (tabs.length >= 2 && tabs[1].offsetWidth > 0) {
+                tabs[1].click();
             } else {
-                const maxScroll = Math.max(500, (document.body.scrollHeight || 1000) - 350);
+                const maxScroll = Math.max(450, (document.body.scrollHeight || 1000) - 300);
                 window.scrollTo({ top: maxScroll, behavior: 'instant' });
             }
         }).catch(() => {});
