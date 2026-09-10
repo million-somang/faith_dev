@@ -628,6 +628,11 @@ export default function StocksPage() {
                                                                     {stock.market}: {stock.ticker}
                                                                 </span>
                                                             </div>
+                                                            {stock.marketCap && (
+                                                                <div className="md:hidden text-[10px] text-slate-400 font-mono mt-0.5 truncate max-w-[150px]">
+                                                                    {stock.marketCap}
+                                                                </div>
+                                                            )}
                                                         </Link>
                                                     </td>
 

@@ -5,7 +5,6 @@ import FinanceSubMenu from '../components/FinanceSubMenu';
 import ProfitCalculator from '../components/ProfitCalculator';
 import SparklineChart from '../components/SparklineChart';
 import BannerSlot from '../components/BannerSlot';
-import { MOCK_INDICES, MOCK_FINANCE_NEWS } from '../data/mockData';
 import type { MarketIndex } from '../data/mockData';
 import { useAuth } from '../hooks/useAuth';
 import { getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
@@ -79,7 +78,7 @@ export const MACRO_CATEGORY_TABS: { key: MacroCategory; label: string; icon: str
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
-    const [indices, setIndices] = useState<IndexData[]>(MOCK_INDICES);
+    const [indices, setIndices] = useState<IndexData[]>([]);
     const [selectedCountry, setSelectedCountry] = useState<CountryKey>('kr');
     const [selectedMacroCategory, setSelectedMacroCategory] = useState<MacroCategory>('agri');
     const [krStocks, setKrStocks] = useState<StockCard[]>([]);
@@ -262,7 +261,19 @@ export default function FinancePage() {
 
                     {/* 선택된 국가의 지수 카드 그리드 */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                        {filteredIndices.map(index => (
+                        {loading && filteredIndices.length === 0 ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="p-4 sm:p-5 border border-slate-200/90 bg-white rounded-2xl animate-pulse space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <div className="h-4 bg-slate-200 rounded w-24"></div>
+                                        <div className="h-4 bg-slate-100 rounded w-12"></div>
+                                    </div>
+                                    <div className="h-7 bg-slate-200 rounded w-32"></div>
+                                    <div className="h-3 bg-slate-100 rounded w-20"></div>
+                                </div>
+                            ))
+                        ) : (
+                            filteredIndices.map(index => (
                             <div 
                                 key={index.symbol || index.name} 
                                 className={`p-4 sm:p-5 hover:shadow-md transition-all duration-300 border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${loading ? 'animate-pulse' : ''}`}
@@ -305,7 +316,7 @@ export default function FinancePage() {
                                     )}
                                 </div>
                             </div>
-                        ))}
+                        )))}
                     </div>
                 </section>
 
@@ -598,17 +609,18 @@ export default function FinancePage() {
                                     </a>
                                 ))
                             ) : (
-                                MOCK_FINANCE_NEWS.map((news, idx) => (
-                                    <a 
-                                        key={idx} 
-                                        href={`${MAIN_PORTAL_URL}/news?category=stock`} 
-                                        style={{ animationDelay: `${idx * 80 + 350}ms` }}
-                                        className="animate-fade-in-up block p-4 rounded-lg hover:bg-gray-50 transition-all duration-300"
-                                    >
-                                        <div className="font-medium text-gray-900 mb-1 line-clamp-2">{news.title}</div>
-                                        <div className="text-sm text-gray-500">{news.time}</div>
-                                    </a>
-                                ))
+                                loading ? (
+                                    Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="p-4 animate-pulse space-y-2">
+                                            <div className="h-4 bg-slate-200 rounded w-4/5"></div>
+                                            <div className="h-3 bg-slate-100 rounded w-1/3"></div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-6 text-center text-slate-400 text-xs">
+                                        실시간 경제 뉴스를 불러오는 중입니다.
+                                    </div>
+                                )
                             )}
                         </div>
                     </Card>
