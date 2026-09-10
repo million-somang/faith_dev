@@ -368,8 +368,8 @@ function generatePortalSectionPages(template) {
     const sections = [
         {
             route: 'game',
-            title: '무료 두뇌 미니게임 센터 - 테트리스, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
-            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 고전 테트리스, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
+            title: '무료 두뇌 미니게임 센터 - 베라 팝, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
+            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 베라 팝, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
             heading: 'VERA 두뇌 미니게임 센터',
             content: `
                 <div class="space-y-6">
@@ -378,8 +378,8 @@ function generatePortalSectionPages(template) {
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="p-5 bg-purple-50 rounded-2xl border border-purple-200">
-                            <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 클래식 테트리스</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">블록 회전, 하드드롭, 라인 클리어 전략으로 최고 기록에 도전하세요.</p>
+                            <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 베라 팝 (Vera Pop)</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">스피드 매치-3 퍼즐과 하이퍼 피버 콤보로 최고 기록에 도전하세요.</p>
                         </div>
                         <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
                             <h3 class="font-bold text-amber-900 text-lg mb-1">🔢 2048 숫자 퍼즐</h3>

@@ -59,7 +59,7 @@ export default function GuidesHubPage() {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="관심 있는 키워드나 주제를 검색해 보세요 (예: 배당주, 만 나이, 테트리스, JSON)"
+                                placeholder="관심 있는 키워드나 주제를 검색해 보세요 (예: 배당주, 만 나이, 스도쿠, JSON)"
                                 className="w-full pl-11 pr-4 py-3 bg-white/10 backdrop-blur-md text-white placeholder-slate-400 rounded-2xl border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white/15 transition-all text-sm font-medium"
                             />
                             {searchQuery && (

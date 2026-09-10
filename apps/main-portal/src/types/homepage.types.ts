@@ -6,7 +6,7 @@ export type AgeGroup = 'young' | 'middle' | 'senior';
 export type ColorScheme = 'green' | 'blue' | 'purple' | 'orange' | 'dark';
 export type LayoutStyle = 'portal' | 'minimal' | 'card';
 export type NewsCategory = 'politics' | 'economy' | 'sports' | 'tech' | 'entertainment' | 'society';
-export type GameType = 'tetris' | 'sudoku' | '2048' | 'minesweeper' | 'freecell';
+export type GameType = 'sudoku' | '2048' | 'minesweeper' | 'freecell';
 
 export interface QuickMenuItem {
     id: string;
@@ -62,7 +62,7 @@ export const DEFAULT_HOMEPAGE_CONFIG: HomepageConfig = {
         showStockWidget: false,
         showWeatherWidget: false,
         showTrendWidget: true,
-        favoriteGames: ['tetris'],
+        favoriteGames: ['sudoku', '2048', 'minesweeper'],
         ageGroup: 'middle',
     },
     theme: {

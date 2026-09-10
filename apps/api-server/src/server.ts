@@ -76,8 +76,6 @@ app.use('/uploads/*', serveStatic({ root: './public' }));
 import { miniappRoutes } from './routes/miniapp.routes.js';
 app.route('/', miniappRoutes);
 
-import { tetrisRoutes } from './routes/tetris.routes.js';
-app.route('/', tetrisRoutes);
 
 import { comboyRoutes } from './routes/comboy.routes.js';
 app.route('/', comboyRoutes);
@@ -107,7 +105,7 @@ import { shoppingRoutes } from './routes/shopping.routes.js';
 app.route('/', shoppingRoutes);
 
 const miniApps = [
-    'calculator', 'text-checker', 'tetris', 'sudoku', 'pyeong-calc',
+    'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
     'base64-converter', 'svg-converter', 'webp-converter', 'news', 'comboy', 'sfc', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc'
 ];
@@ -221,7 +219,6 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/finance', priority: '0.8', changefreq: 'daily' },
         { loc: '/lounge', priority: '0.7', changefreq: 'daily' },
         { loc: '/entertainment', priority: '0.7', changefreq: 'weekly' },
-        { loc: '/game/tetris', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/sudoku', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
         { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
@@ -520,7 +517,6 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
 };
 
 const GAME_META: Record<string, { title: string; description: string }> = {
-    tetris: { title: '테트리스 무료 온라인 게임 - VERA', description: '브라우저에서 바로 즐기는 무료 테트리스. 설치·회원가입 없이 플레이하고 최고 점수 랭킹에 도전하세요.' },
     sudoku: { title: '스도쿠 무료 온라인 게임 - VERA', description: '난이도별 스도쿠를 무료로. 브라우저에서 바로 플레이하고 기록을 남겨보세요.' },
     '2048': { title: '2048 무료 온라인 게임 - VERA', description: '중독성 있는 숫자 퍼즐 2048을 무료로. 브라우저에서 바로 플레이하고 랭킹에 도전하세요.' },
     minesweeper: { title: '지뢰찾기 무료 온라인 게임 - VERA', description: '클래식 지뢰찾기를 무료로. 브라우저에서 바로 즐기고 기록에 도전하세요.' },

@@ -44,10 +44,6 @@ export default defineConfig({
                 target: 'http://localhost:5011',
                 changeOrigin: true
             },
-            '^/app/tetris.*': {
-                target: 'http://localhost:5012',
-                changeOrigin: true
-            },
             '^/app/sudoku.*': {
                 target: 'http://localhost:5013',
                 changeOrigin: true

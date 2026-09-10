@@ -53,7 +53,7 @@ export default function AboutUsPage() {
                             </div>
                             <h3 className="text-lg font-bold text-slate-900 mb-2">무설치 브라우저 미니게임</h3>
                             <p className="text-sm text-slate-600 leading-relaxed">
-                                테트리스, 스도쿠, 2048, 지뢰찾기 등 별도의 다운로드나 복잡한 설치 없이 브라우저에서 바로 즐길 수 있는 클래식 미니게임을 제공합니다.
+                                스도쿠, 2048, 지뢰찾기, 프리셀 등 별도의 다운로드나 복잡한 설치 없이 브라우저에서 바로 즐길 수 있는 클래식 미니게임을 제공합니다.
                             </p>
                         </div>
 

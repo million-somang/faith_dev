@@ -38,10 +38,10 @@ const NEWS_CATEGORIES: { id: NewsCategory; label: string; icon: string }[] = [
 ];
 
 const GAME_TYPES: { id: GameType; label: string; icon: string }[] = [
-    { id: 'tetris', label: '테트리스', icon: 'fa-th' },
     { id: 'sudoku', label: '스도쿠', icon: 'fa-table' },
     { id: '2048', label: '2048', icon: 'fa-th-large' },
     { id: 'minesweeper', label: '지뢰찾기', icon: 'fa-bomb' },
+    { id: 'freecell', label: '프리셀', icon: 'fa-spade' },
 ];
 
 const COLOR_SCHEMES: { id: ColorScheme; label: string; primary: string; bg: string }[] = [

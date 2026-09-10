@@ -32,8 +32,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     'cat.sports': '스포츠',
 
     // Games
-    'game.tetris': '테트리스',
-    'game.tetrisDesc': '클래식 블록 맞추기 게임',
+    'game.freecell': '프리셀',
+    'game.freecellDesc': '클래식 카드 솔리테어 게임',
     'game.sudoku': '스도쿠',
     'game.sudokuDesc': '두뇌 자극 숫자 논리 퍼즐',
     'game.2048': '2048',
@@ -109,8 +109,8 @@ export const TRANSLATIONS: Record<SupportedLanguage, Record<string, string>> = {
     'cat.sports': 'Sports',
 
     // Games
-    'game.tetris': 'Tetris',
-    'game.tetrisDesc': 'Classic block matching game',
+    'game.freecell': 'FreeCell',
+    'game.freecellDesc': 'Classic card solitaire game',
     'game.sudoku': 'Sudoku',
     'game.sudokuDesc': 'Brain-stimulating number logic puzzle',
     'game.2048': '2048',

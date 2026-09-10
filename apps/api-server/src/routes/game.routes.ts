@@ -46,16 +46,10 @@ gameRoutes.get('/api/games/leaderboard/all', async (c) => {
 
     try {
         const result = await DB.prepare(`
-            SELECT score, email, game_id, created_at FROM (
-                SELECT g.score, u.email, g.game_id, g.created_at
-                FROM game_scores g
-                JOIN users u ON g.user_id = u.id
-                UNION ALL
-                SELECT t.score, u.email, 'tetris' as game_id, t.created_at
-                FROM tetris_scores t
-                JOIN users u ON t.user_id = u.id
-            ) combined
-            ORDER BY score DESC
+            SELECT g.score, u.email, g.game_id, g.created_at
+            FROM game_scores g
+            JOIN users u ON g.user_id = u.id
+            ORDER BY g.score DESC
             LIMIT 10
         `).all();
 
@@ -75,32 +69,14 @@ gameRoutes.get('/api/games/:gameId/leaderboard', async (c) => {
     console.log(`[Game] Leaderboard request: gameId=${gameId}`);
 
     try {
-        let result;
-        if (gameId === 'tetris') {
-            result = await DB.prepare(`
-                SELECT score, email, created_at, metadata FROM (
-                    SELECT g.score, u.email, g.created_at, g.metadata
-                    FROM game_scores g
-                    JOIN users u ON g.user_id = u.id
-                    WHERE g.game_id = 'tetris'
-                    UNION ALL
-                    SELECT t.score, u.email, t.created_at, NULL as metadata
-                    FROM tetris_scores t
-                    JOIN users u ON t.user_id = u.id
-                ) combined
-                ORDER BY score DESC
-                LIMIT 10
-            `).all();
-        } else {
-            result = await DB.prepare(`
-                SELECT g.score, u.email, g.created_at, g.metadata
-                FROM game_scores g
-                JOIN users u ON g.user_id = u.id
-                WHERE g.game_id = ?
-                ORDER BY g.score DESC
-                LIMIT 10
-            `).bind(gameId).all();
-        }
+        const result = await DB.prepare(`
+            SELECT g.score, u.email, g.created_at, g.metadata
+            FROM game_scores g
+            JOIN users u ON g.user_id = u.id
+            WHERE g.game_id = ?
+            ORDER BY g.score DESC
+            LIMIT 10
+        `).bind(gameId).all();
 
         console.log(`[Game] Leaderboard ${gameId}: ${(result.results || []).length}건`);
         return c.json({ success: true, leaderboard: result.results || [] });

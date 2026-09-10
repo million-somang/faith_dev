@@ -1,5 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { getStoredBattleRecord, BattleRecord, openLoungeBattlePopup } from './LoungeBattleModal';
+
+export interface BattleRecord {
+    wins: number;
+    losses: number;
+    highScore: number;
+    lastScore: number;
+    lastPlayedAt: string;
+}
+
+export const getStoredBattleRecord = (): BattleRecord => {
+    try {
+        const saved = localStorage.getItem('vera_lounge_battle_record');
+        if (saved) return JSON.parse(saved);
+    } catch {
+        // ignore
+    }
+    return {
+        wins: 4,
+        losses: 2,
+        highScore: 24500,
+        lastScore: 20480,
+        lastPlayedAt: new Date().toISOString()
+    };
+};
+
+export const saveStoredBattleRecord = (record: BattleRecord) => {
+    localStorage.setItem('vera_lounge_battle_record', JSON.stringify(record));
+};
 
 interface LiveGameChallengeWidgetProps {
     gameTag: string;
@@ -17,29 +44,29 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
     const cleanTag = gameTag.replace('#', '').trim();
 
     // 게임 종류 판별
-    let gameTitle = '테트리스';
-    let icon = 'fas fa-cubes';
-    let gradient = 'from-violet-600 to-indigo-600';
-    let defaultTargetScore = 12400;
+    let gameTitle = '2048 퍼즐';
+    let icon = 'fas fa-border-all';
+    let gradient = 'from-amber-600 to-orange-600';
+    let defaultTargetScore = 20480;
 
     if (cleanTag.includes('스도쿠')) {
         gameTitle = '스도쿠';
         icon = 'fas fa-table-cells';
         gradient = 'from-emerald-600 to-teal-600';
         defaultTargetScore = 15000;
-    } else if (cleanTag.includes('2048')) {
-        gameTitle = '2048 퍼즐';
-        icon = 'fas fa-border-all';
-        gradient = 'from-amber-600 to-orange-600';
-        defaultTargetScore = 20480;
     } else if (cleanTag.includes('지뢰찾기')) {
         gameTitle = '지뢰찾기';
         icon = 'fas fa-bomb';
         gradient = 'from-rose-600 to-red-600';
         defaultTargetScore = 9900;
+    } else if (cleanTag.includes('프리셀')) {
+        gameTitle = '프리셀';
+        icon = 'fas fa-spade';
+        gradient = 'from-blue-600 to-indigo-600';
+        defaultTargetScore = 5000;
     }
 
-    // scoreText에서 숫자 추출 시도 (예: "12,400점" -> 12400)
+    // scoreText에서 숫자 추출 시도
     let parsedTargetScore = defaultTargetScore;
     if (scoreText) {
         const numOnly = parseInt(scoreText.replace(/[^0-9]/g, ''), 10);
@@ -71,7 +98,12 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
         if (onOpenBattle) {
             onOpenBattle(gameTag, parsedTargetScore, challengerName || '베라 랭커');
         } else {
-            openLoungeBattlePopup(gameTag, parsedTargetScore, challengerName || '베라 랭커');
+            const clean = gameTag.replace('#', '').trim();
+            let path = '/game/2048';
+            if (clean.includes('스도쿠')) path = '/game/sudoku';
+            else if (clean.includes('지뢰찾기')) path = '/game/minesweeper';
+            else if (clean.includes('프리셀')) path = '/game/freecell';
+            window.location.href = path;
         }
     };
 
@@ -109,7 +141,7 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
                     className="self-end sm:self-auto px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-xs font-extrabold rounded-xl shadow-xs flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95 cursor-pointer"
                 >
                     <i className="fas fa-gamepad text-xs"></i>
-                    <span>팝업으로 1:1 대결하기</span>
+                    <span>게임 챌린지 플레이</span>
                     <i className="fas fa-arrow-right text-[10px]"></i>
                 </button>
             </div>

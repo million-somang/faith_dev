@@ -6,7 +6,6 @@ import { PageSEO } from '../components/PageSEO';
 import { SmartTagParser } from '../components/lounge/SmartTagParser';
 import { CustomLadderBuilderModal, CustomLadderData } from '../components/lounge/CustomLadderBuilderModal';
 import { CustomLadderWidget } from '../components/lounge/CustomLadderWidget';
-import { openLoungeBattlePopup } from '../components/lounge/LoungeBattleModal';
 
 export interface Post {
     id: string;
@@ -36,7 +35,7 @@ export default function LoungePage() {
     // 2. 검색 쿼리 및 트렌드
     const [searchQuery, setSearchQuery] = useState('');
     const [trends] = useState([
-        { tag: '테트리스1위도전', count: '14.2K', type: 'game' },
+        { tag: '2048고득점도전', count: '14.2K', type: 'game' },
         { tag: '점심커피사다리', count: '11.8K', type: 'utility' },
         { tag: '오늘의사주대길', count: '9.4K', type: 'saju' },
         { tag: '엔비디아', count: '8.1K', type: 'stock' },
@@ -73,9 +72,13 @@ export default function LoungePage() {
     const [isLadderModalOpen, setIsLadderModalOpen] = useState(false);
     const [pendingLadderData, setPendingLadderData] = useState<CustomLadderData | null>(null);
 
-    // 실시간 독립 브라우저 팝업 창 배틀 실행 함수
-    const handleOpenBattle = (gameTag: string, targetScore: number, challengerName?: string) => {
-        openLoungeBattlePopup(gameTag, targetScore, challengerName || '베라 랭커');
+    // 실시간 게임 챌린지 바로가기
+    const handleOpenBattle = (gameTag: string) => {
+        const clean = gameTag.replace('#', '').trim();
+        if (clean.includes('스도쿠')) navigate('/game/sudoku');
+        else if (clean.includes('지뢰찾기')) navigate('/game/minesweeper');
+        else if (clean.includes('프리셀')) navigate('/game/freecell');
+        else navigate('/game/2048');
     };
 
     const handleShareBattleResult = (result: {
@@ -83,11 +86,11 @@ export default function LoungePage() {
         myScore: number;
         targetScore: number;
         isWin: boolean;
-        level: number;
-        lines: number;
+        level?: number;
+        lines?: number;
     }) => {
         const outcomeText = result.isWin ? '승리 달성! 🏆' : '아쉬운 패배 😢';
-        const content = `[${result.gameTag} 배틀 결과] ${result.myScore.toLocaleString()}P로 ${outcomeText} (레벨 ${result.level}, ${result.lines}줄 클리어) 나를 꺾을 랭커 도전해봐! 🎮`;
+        const content = `[${result.gameTag} 배틀 결과] ${result.myScore.toLocaleString()}P로 ${outcomeText} 나를 꺾을 랭커 도전해봐! 🎮`;
         
         const newPost: Post = {
             id: `post-${Date.now()}`,
@@ -428,7 +431,7 @@ export default function LoungePage() {
             const isFollowing = followingList.includes(post.author.handle);
             if (!isSelf && !isFollowing) return false;
         } else if (feedFilter === 'game') {
-            const hasGame = ['테트리스', '스도쿠', '2048', '지뢰찾기', '게임'].some(g => post.content.includes(g));
+            const hasGame = ['스도쿠', '2048', '지뢰찾기', '프리셀', '게임'].some(g => post.content.includes(g));
             if (!hasGame) return false;
         } else if (feedFilter === 'utility') {
             const hasUtil = ['사다리타기', '주사위', '동전', '계산기', '디데이'].some(u => post.content.includes(u));
@@ -496,15 +499,15 @@ export default function LoungePage() {
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <button
                                         onClick={() => {
-                                            handleOpenBattle('#테트리스', 12400, '테트리스 1위 랭커');
+                                            handleOpenBattle('#2048');
                                             setActiveTab('home');
                                         }}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
                                     >
-                                        <div className="text-emerald-300 text-xs font-black flex items-center gap-1 mb-0.5">
-                                            <i className="fas fa-cubes"></i> 게임 점수 챌린지
+                                        <div className="text-amber-300 text-xs font-black flex items-center gap-1 mb-0.5">
+                                            <i className="fas fa-border-all"></i> 게임 점수 챌린지
                                         </div>
-                                        <div className="text-[11px] text-slate-300 truncate">#테트리스 1:1 대결 🎮</div>
+                                        <div className="text-[11px] text-slate-300 truncate">#2048 1:1 대결 🎮</div>
                                     </button>
 
                                     <button
@@ -691,10 +694,10 @@ export default function LoungePage() {
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #테트리스` : '#테트리스 12,400점 달성! 1:1 대결 도전해봐 🎮')}
-                                                    className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #2048` : '#2048 20,480점 달성! 1:1 대결 도전해봐 🎮')}
+                                                    className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                                                 >
-                                                    <i className="fas fa-cubes text-[10px]"></i> 🎮 게임배틀
+                                                    <i className="fas fa-border-all text-[10px]"></i> 🎮 2048 배틀
                                                 </button>
                                                 <button
                                                     type="button"
@@ -1277,14 +1280,14 @@ export default function LoungePage() {
                             </h3>
                             <div className="space-y-2.5">
                                 <div 
-                                    onClick={() => handleOpenBattle('#테트리스', 12400, '테트리스 1위 랭커')}
-                                    className="p-2 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-100 transition-all cursor-pointer group"
+                                    onClick={() => handleOpenBattle('#2048')}
+                                    className="p-2 rounded-xl bg-slate-50 hover:bg-amber-50 border border-slate-100 transition-all cursor-pointer group"
                                 >
-                                    <div className="flex justify-between items-center text-xs font-black text-slate-800 group-hover:text-emerald-700">
-                                        <span>테트리스 1위 배틀</span>
-                                        <span className="text-[10px] text-amber-500 font-mono">12,400P</span>
+                                    <div className="flex justify-between items-center text-xs font-black text-slate-800 group-hover:text-amber-700">
+                                        <span>2048 1위 배틀</span>
+                                        <span className="text-[10px] text-amber-500 font-mono">20,480P</span>
                                     </div>
-                                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">#테트리스 태그로 도전장 접수중</p>
+                                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">#2048 태그로 도전장 접수중</p>
                                 </div>
 
                                 <div 

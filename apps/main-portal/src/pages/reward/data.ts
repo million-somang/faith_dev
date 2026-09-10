@@ -14,7 +14,7 @@ export const ATTENDANCE = [
 
 export const MISSIONS = [
     { icon: 'fa-newspaper', title: '오늘의 뉴스 3개 읽기', desc: '관심 카테고리 뉴스를 읽어보세요', point: 30, progress: 2, total: 3 },
-    { icon: 'fa-gamepad', title: '미니게임 1판 플레이', desc: '테트리스, 2048 등 아무거나', point: 20, progress: 0, total: 1 },
+    { icon: 'fa-gamepad', title: '미니게임 1판 플레이', desc: '스도쿠, 2048 등 아무거나', point: 20, progress: 0, total: 1 },
     { icon: 'fa-chart-line', title: '관심 종목 등록하기', desc: '마이페이지에서 종목을 추가하세요', point: 50, progress: 1, total: 1 },
 ];
 

@@ -11,7 +11,7 @@ const DEFAULT_CONFIG_JSON = JSON.stringify({
         showStockWidget: false,
         showWeatherWidget: false,
         showTrendWidget: true,
-        favoriteGames: ['tetris'],
+        favoriteGames: ['sudoku', '2048', 'minesweeper'],
         ageGroup: 'middle',
     },
     theme: {

@@ -26,7 +26,7 @@ export function SmartTagParser({ text, authorName, onOpenBattle }: SmartTagParse
                 words.forEach((word, wordIdx) => {
                     // 1. 주식 태그 감지 ($엔비디아, $삼성전자 등)
                     const stockMatch = word.match(/^\$([a-zA-Z가-힣]+)/);
-                    // 2. 해시태그 감지 (#테트리스, #사다리타기, #오늘의운세 등)
+                    // 2. 해시태그 감지 (#스도쿠, #2048, #사다리타기, #오늘의운세 등)
                     const hashMatch = word.match(/^#([a-zA-Z가-힣0-9]+)/);
                     // 3. 기사 링크 감지 (@http:// 또는 @https://)
                     const newsLinkMatch = word.match(/^@(https?:\/\/[^\s]+)/) || word.match(/^(https?:\/\/[^\s]+)/);
@@ -43,8 +43,8 @@ export function SmartTagParser({ text, authorName, onOpenBattle }: SmartTagParse
                         const tagName = hashMatch[1];
                         const fullTag = hashMatch[0];
 
-                        // A. 게임 태그 (#테트리스, #스도쿠, #2048, #지뢰찾기, #게임)
-                        if (['테트리스', '스도쿠', '2048', '지뢰찾기', '게임'].some(g => tagName.includes(g))) {
+                        // A. 게임 태그 (#스도쿠, #2048, #지뢰찾기, #프리셀, #게임)
+                        if (['스도쿠', '2048', '지뢰찾기', '프리셀', '게임'].some(g => tagName.includes(g))) {
                             lineContent.push(
                                 <span key={`text-${wordIdx}`} className="text-emerald-600 font-black mr-1">
                                     {fullTag}

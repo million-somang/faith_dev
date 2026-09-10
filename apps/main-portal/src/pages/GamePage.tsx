@@ -12,48 +12,6 @@ const GENRES = [
 
 const thumbClass = 'w-full h-28 block transition-transform duration-500 group-hover:scale-105';
 
-// 테트리스: 어두운 보드 위 컬러 테트로미노
-function TetrisThumb() {
-    return (
-        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
-            <defs>
-                <linearGradient id="tetBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#064e3b" />
-                    <stop offset="1" stopColor="#065f46" />
-                </linearGradient>
-            </defs>
-            <rect width="320" height="120" fill="url(#tetBg)" />
-            <g opacity="0.1" stroke="#ffffff" strokeWidth="1">
-                <path d="M0 30H320M0 60H320M0 90H320M40 0V120M80 0V120M120 0V120M160 0V120M200 0V120M240 0V120M280 0V120" />
-            </g>
-            {/* O */}
-            <rect x="34" y="20" width="22" height="22" rx="4" fill="#fbbf24" />
-            <rect x="56" y="20" width="22" height="22" rx="4" fill="#fbbf24" />
-            <rect x="34" y="42" width="22" height="22" rx="4" fill="#f59e0b" />
-            <rect x="56" y="42" width="22" height="22" rx="4" fill="#f59e0b" />
-            {/* T */}
-            <rect x="150" y="14" width="22" height="22" rx="4" fill="#a78bfa" />
-            <rect x="172" y="14" width="22" height="22" rx="4" fill="#a78bfa" />
-            <rect x="194" y="14" width="22" height="22" rx="4" fill="#a78bfa" />
-            <rect x="172" y="36" width="22" height="22" rx="4" fill="#8b5cf6" />
-            {/* L */}
-            <rect x="256" y="16" width="22" height="22" rx="4" fill="#fb923c" />
-            <rect x="256" y="38" width="22" height="22" rx="4" fill="#fb923c" />
-            <rect x="256" y="60" width="22" height="22" rx="4" fill="#f97316" />
-            <rect x="278" y="60" width="22" height="22" rx="4" fill="#f97316" />
-            {/* I */}
-            <rect x="150" y="74" width="22" height="22" rx="4" fill="#22d3ee" />
-            <rect x="172" y="74" width="22" height="22" rx="4" fill="#22d3ee" />
-            <rect x="194" y="74" width="22" height="22" rx="4" fill="#06b6d4" />
-            <rect x="216" y="74" width="22" height="22" rx="4" fill="#06b6d4" />
-            {/* S */}
-            <rect x="40" y="74" width="22" height="22" rx="4" fill="#34d399" />
-            <rect x="62" y="74" width="22" height="22" rx="4" fill="#34d399" />
-            <rect x="62" y="96" width="22" height="22" rx="4" fill="#10b981" />
-            <rect x="84" y="96" width="22" height="22" rx="4" fill="#10b981" />
-        </svg>
-    );
-}
 
 // 스도쿠: 흰 패널 위 격자와 숫자
 function SudokuThumb() {
@@ -320,8 +278,8 @@ export default function GamePage() {
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
             <PageSEO
-                title="미니게임 - 베라 팝, 프리셀, 테트리스, 스도쿠, 2048, 지뢰찾기"
-                description="베라 팝(Vera Pop), 클래식 프리셀(FreeCell), 테트리스, 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
+                title="미니게임 - 베라 팝, 프리셀, 스도쿠, 2048, 지뢰찾기"
+                description="베라 팝(Vera Pop), 클래식 프리셀(FreeCell), 스도쿠, 2048, 지뢰찾기 등 재미있는 브라우저 미니게임을 설치 없이 무료로 즐겨보세요."
                 path="/game"
             />
             <Header user={user} onLogout={logout} />
@@ -348,7 +306,7 @@ export default function GamePage() {
                                 ? t('베라 컴보이(NES) · 베라 슈퍼컴보이(SNES) — 소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행')
                                 : genre === 'classic'
                                 ? t('추억의 레트로 명작 아케이드와 보드 게임 라인업을 준비하고 있습니다')
-                                : t('베라 팝 · 클래식 프리셀 · 테트리스 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
+                                : t('베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
                 </section>
@@ -406,16 +364,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
-                            {/* 3. 클래식 테트리스 */}
-                            <button onClick={() => navigate('/game/tetris')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-emerald-300 hover:shadow-lg transition-all group">
-                                <div className="overflow-hidden bg-[#065f46]"><TetrisThumb /></div>
-                                <div className="p-5">
-                                    <h3 className="font-extrabold text-xl text-emerald-700 mb-1 group-hover:text-emerald-800 transition-colors">클래식 테트리스</h3>
-                                    <p className="text-slate-500 text-xs leading-relaxed">블록을 쌓아 줄을 제거하고 높은 점수를 달성하세요!</p>
-                                </div>
-                            </button>
-
-                            {/* 4. 스도쿠 */}
+                            {/* 3. 스도쿠 */}
                             <button onClick={() => navigate('/game/sudoku')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#ddd6fe]"><SudokuThumb /></div>
                                 <div className="p-5">
@@ -424,7 +373,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
-                            {/* 5. 2048 */}
+                            {/* 4. 2048 */}
                             <button onClick={() => navigate('/game/2048')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-cyan-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#f3ebd9]"><Game2048Thumb /></div>
                                 <div className="p-5">
@@ -433,7 +382,7 @@ export default function GamePage() {
                                 </div>
                             </button>
 
-                            {/* 6. 지뢰찾기 */}
+                            {/* 5. 지뢰찾기 */}
                             <button onClick={() => navigate('/game/minesweeper')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-red-300 hover:shadow-lg transition-all group">
                                 <div className="overflow-hidden bg-[#e2e8f0]"><MinesweeperThumb /></div>
                                 <div className="p-5">
@@ -467,7 +416,7 @@ export default function GamePage() {
                         <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
                             <i className="fas fa-screwdriver-wrench text-4xl mb-4 text-slate-300"></i>
                             <p className="font-semibold text-slate-600">고전게임 라인업 준비중입니다.</p>
-                            <p className="text-sm mt-1 text-slate-400">추억의 명작 고전 아케이드 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 클래식 테트리스와 프리셀을 먼저 즐겨보세요!</p>
+                            <p className="text-sm mt-1 text-slate-400">추억의 명작 고전 아케이드 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 클래식 프리셀을 먼저 즐겨보세요!</p>
                         </div>
                     )}
                 </div>
@@ -507,17 +456,7 @@ export default function GamePage() {
                                 </p>
                             </div>
 
-                            {/* 3. 테트리스 (Tetris) */}
-                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-emerald-300 transition-all">
-                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                                    <i className="fas fa-cubes text-emerald-600"></i> 테트리스 (Tetris) 게임 전략
-                                </h3>
-                                <p className="text-xs text-slate-600 leading-relaxed">
-                                    하늘에서 떨어지는 7가지 모양의 블록(테트로미노)을 수평으로 빈틈없이 채워 라인을 삭제하는 고전 명작 퍼즐 게임입니다. 방향키로 이동 및 회전이 가능하며, 4줄을 한 번에 없애는 '테트리스' 기술과 'T-스핀'을 활용해 최고 득점에 도전하세요.
-                                </p>
-                            </div>
-
-                            {/* 4. 스도쿠 (Sudoku) */}
+                            {/* 3. 스도쿠 (Sudoku) */}
                             <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2 hover:border-violet-300 transition-all">
                                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                                     <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 (Sudoku) 규칙 및 해법
@@ -652,7 +591,7 @@ export default function GamePage() {
                                 VERA 고전 명작 아케이드 센터 안내
                             </h2>
                             <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                                시대를 풍미한 레트로 아케이드 게임과 고전 보드 게임 컬렉션을 준비하고 있습니다. 현재 정통 클래식 게임인 <strong>테트리스</strong>와 <strong>프리셀 솔리테어</strong>는 [미니게임] 탭에서 바로 즐기실 수 있습니다.
+                                시대를 풍미한 레트로 아케이드 게임과 고전 보드 게임 컬렉션을 준비하고 있습니다. 현재 정통 클래식 게임인 <strong>프리셀 솔리테어</strong>는 [미니게임] 탭에서 바로 즐기실 수 있습니다.
                             </p>
                             <button
                                 onClick={() => setGenre('mini')}

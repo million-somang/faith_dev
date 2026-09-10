@@ -656,31 +656,6 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
-    // 10. 테트리스 (tetris) - 전략 1: 모달 오버레이
-    // =========================================================================
-    if (cleanSlug === 'tetris') {
-        // [2. 메인 조작 화면]: 블록 낙하 조작 및 바닥 누적 상태
-        for (let i = 0; i < 8; i++) {
-            await page.keyboard.press('ArrowDown');
-            await new Promise((r) => setTimeout(r, 100));
-        }
-        await new Promise((r) => setTimeout(r, 400));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        // [3. 결과 화면]: 일시정지 키(P) 또는 버튼 클릭 ➡️ 대형 PAUSED 오버레이 노출
-        await page.keyboard.press('KeyP').catch(() => {});
-        await page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('button')) as HTMLElement[];
-            const pauseBtn = buttons.find(b => /pause|일시정지/i.test(b.textContent || ''));
-            if (pauseBtn) pauseBtn.click();
-        }).catch(() => {});
-        await new Promise((r) => setTimeout(r, 600));
-        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
-
-        return await ensureDistinctScreenshots(page, buffers);
-    }
-
-    // =========================================================================
     // 11. 스도쿠 (sudoku) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === 'sudoku') {

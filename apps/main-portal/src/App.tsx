@@ -18,9 +18,7 @@ import RewardAttendance from './pages/reward/RewardAttendance';
 import RewardMissions from './pages/reward/RewardMissions';
 import RewardExchange from './pages/reward/RewardExchange';
 import GamePage from './pages/GamePage';
-import TetrisInfoPage from './pages/TetrisInfoPage';
 import GameInfoPage from './pages/GameInfoPage';
-import GamePlayPage from './pages/GamePlayPage';
 import MyPage from './pages/MyPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -35,7 +33,6 @@ import SajuInfoPage from './pages/SajuInfoPage';
 import NovelPage from './pages/NovelPage';
 import LoungePage from './pages/LoungePage';
 import LoungeTopicPage from './pages/LoungeTopicPage';
-import LoungeBattlePopupPage from './pages/LoungeBattlePopupPage';
 import B2BPage from './pages/B2BPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
@@ -104,7 +101,7 @@ function HomePage() {
         <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
             <PageSEO
                 title="VERA - 실시간 뉴스, 미니게임, 생활도구 포털"
-                description="VERA에서 최신 실시간 뉴스, 재미있는 미니게임(테트리스, 스도쿠, 2048), 유용한 생활 계산기를 한곳에서 이용하세요."
+                description="VERA에서 최신 실시간 뉴스, 재미있는 미니게임(스도쿠, 2048, 지뢰찾기, 프리셀), 유용한 생활 계산기를 한곳에서 이용하세요."
                 path="/"
             />
             <Header user={user} onLogout={logout} />
@@ -455,8 +452,6 @@ function App() {
                         <Route path="exchange" element={<RewardExchange />} />
                     </Route>
                     <Route path="/game" element={<GamePage />} />
-                    <Route path="/game/tetris" element={<TetrisInfoPage />} />
-                    <Route path="/game/play/tetris" element={<GamePlayPage />} />
                     <Route path="/game/:gameId" element={<GameInfoPage />} />
                     <Route path="/entertainment" element={<EntertainmentPage />} />
                     <Route path="/entertainment/saju" element={<SajuInfoPage />} />
@@ -477,7 +472,6 @@ function App() {
                     <Route path="/news/:id" element={<NewsDetailPage />} />
                     <Route path="/lounge" element={<LoungePage />} />
                     <Route path="/lounge/topic/:topicName" element={<LoungeTopicPage />} />
-                    <Route path="/lounge/battle-popup" element={<LoungeBattlePopupPage />} />
                     <Route path="/guides" element={<GuidesHubPage />} />
                     <Route path="/guides/:slug" element={<GuideDetailPage />} />
                     <Route path="/blog" element={<GuidesHubPage />} />

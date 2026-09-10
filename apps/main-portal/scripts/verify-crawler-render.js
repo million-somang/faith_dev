@@ -33,7 +33,6 @@ const testPaths = [
     'guides/korean-age-unification-act-guide-and-legal-effects/index.html',
     'guides/d-day-time-management-and-goal-setting-guide/index.html',
     'guides/loan-interest-calculation-and-repayment-methods/index.html',
-    'guides/tetris-master-guide-t-spin-and-line-clear-strategy/index.html',
     'guides/json-formatting-and-syntax-validation-guide/index.html'
 ];
 

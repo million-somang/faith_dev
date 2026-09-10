@@ -205,22 +205,22 @@ export function CoreServicesShowcase() {
                                 </span>
                             </a>
 
-                            {/* 3. 테트리스 마스터 */}
+                            {/* 3. 스도쿠 */}
                             <a
-                                href="/game/tetris"
+                                href="/game/sudoku"
                                 className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/80 border border-slate-100 hover:border-indigo-200 transition-all group/item"
                             >
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-xl bg-white text-indigo-600 flex items-center justify-center text-sm shadow-sm">
-                                        <i className="fas fa-cubes"></i>
+                                        <i className="fas fa-table-cells"></i>
                                     </div>
                                     <div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-bold text-slate-900 group-hover/item:text-indigo-900">
-                                                테트리스 마스터 (Tetris)
+                                                스도쿠 (Sudoku)
                                             </span>
                                         </div>
-                                        <div className="text-[10px] text-slate-400">정통 7-Bag 시스템 & 라인 클리어</div>
+                                        <div className="text-[10px] text-slate-400">9×9 숫자 논리 퍼즐</div>
                                     </div>
                                 </div>
                                 <span className="text-[11px] font-bold text-indigo-600 bg-indigo-100/70 px-2 py-0.5 rounded-lg group-hover/item:bg-indigo-600 group-hover/item:text-white transition-all">

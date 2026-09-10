@@ -1859,9 +1859,9 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     <Link to="/game" className="text-xs text-purple-600 font-bold hover:underline">전체 게임 →</Link>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                                    <Link to="/game/play/tetris" className="p-3 bg-white hover:bg-purple-50 rounded-xl border border-purple-100 flex items-center gap-2.5 transition-all group shadow-2xs">
-                                                        <span className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-cubes"></i></span>
-                                                        <span className="text-xs font-bold text-slate-700">테트리스</span>
+                                                    <Link to="/game/freecell" className="p-3 bg-white hover:bg-emerald-50 rounded-xl border border-emerald-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-spade"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">프리셀</span>
                                                     </Link>
                                                     <Link to="/game" className="p-3 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-100 flex items-center gap-2.5 transition-all group shadow-2xs">
                                                         <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-hashtag"></i></span>

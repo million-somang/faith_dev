@@ -21,7 +21,6 @@ interface GameConfig {
     leaderboardUrl: string;
 }
 
-// 테트리스는 별도 페이지(TetrisInfoPage)에서 처리. 여기서는 나머지 미니게임을 다룬다.
 const GAME_CONFIGS: Record<string, GameConfig> = {
     'vera-pop': {
         label: 'Vera Pop (베라 팝)',
@@ -148,7 +147,7 @@ const GAME_CONFIGS: Record<string, GameConfig> = {
 };
 
 /**
- * 미니게임 정보 + 점수 페이지 (테트리스 제외).
+ * 미니게임 정보 + 점수 페이지.
  * "게임 시작" 버튼은 기존 팝업 실행 방식(launchApp)을 그대로 사용한다.
  */
 export default function GameInfoPage() {

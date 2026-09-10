@@ -81,7 +81,6 @@ export function getGameMenu(currentPage: string): string {
 // ==================== 심플 게임 사이드바 ====================
 export function getSimpleGameSidebar(currentPage: string): string {
     const games = [
-        { path: '/game/simple/tetris', label: '테트리스', icon: 'fas fa-th' },
         { path: '/game/simple/sudoku', label: '스도쿠', icon: 'fas fa-table' },
         { path: '/game/simple/2048', label: '2048', icon: 'fas fa-th-large' },
         { path: '/game/simple/minesweeper', label: '지뢰찾기', icon: 'fas fa-bomb' },
