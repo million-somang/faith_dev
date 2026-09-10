@@ -482,6 +482,17 @@ export default function DdayCalc({ onShowToast }: DdayCalcProps) {
           </div>
         )}
       </div>
+
+      {/* ── 하단 공백 방지 및 유익한 팁 패널 ── */}
+      <div className="bg-gradient-to-br from-pink-50/60 to-purple-50/40 rounded-3xl p-4.5 border border-pink-100/90 shadow-2xs space-y-2">
+        <div className="flex items-center gap-2 text-pink-900 font-extrabold text-xs">
+          <i className="fas fa-lightbulb text-amber-500"></i>
+          <span>스마트 D-Day 목표 달성 꿀팁</span>
+        </div>
+        <p className="text-slate-600 text-[11px] leading-relaxed">
+          목표일까지 남은 날짜를 매일 확인하고, 주변 소중한 사람들과 <strong>[공유]</strong>하여 의지를 다져보세요. 시험이나 자격증 등 장기 목표는 30일/100일 단위의 중간 마일스톤을 함께 등록하면 달성률이 2배 이상 높아집니다.
+        </p>
+      </div>
     </div>
   );
 }
