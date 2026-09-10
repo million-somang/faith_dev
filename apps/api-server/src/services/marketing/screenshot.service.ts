@@ -347,6 +347,35 @@ async function captureScenarioShots(page: any, cleanSlug: string): Promise<Buffe
     }
 
     // =========================================================================
+    // 0. WebP 이미지 변환 & 무손실 압축기 (webp-converter) - 프리미엄 결과 리포트
+    // =========================================================================
+    if (cleanSlug === 'webp-converter') {
+        // [2. 메인 조작 화면]: 샘플 이미지 로드 버튼 클릭하여 파일 리스트 및 설정 패널 노출
+        await page.evaluate(() => {
+            const sampleBtn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('샘플 이미지로 테스트'));
+            if (sampleBtn) sampleBtn.click();
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 600));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        // [3. 결과 화면]: 변환 실행 후 프리미엄 다크 임팩트 리포트 카드 스크롤 포커스
+        await page.evaluate(() => {
+            const convertBtn = document.querySelector('[data-screenshot-click="result"]') as HTMLElement;
+            if (convertBtn) convertBtn.click();
+        }).catch(() => {});
+        // WebP 렌더링 완료 대기
+        await page.waitForSelector('[data-screenshot-point="result"]', { timeout: 4000 }).catch(() => {});
+        await page.evaluate(() => {
+            const resultCard = document.querySelector('[data-screenshot-point="result"]') as HTMLElement;
+            if (resultCard) resultCard.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }).catch(() => {});
+        await new Promise((r) => setTimeout(r, 500));
+        buffers.push(await page.screenshot({ type: 'png', fullPage: false }));
+
+        return await ensureDistinctScreenshots(page, buffers);
+    }
+
+    // =========================================================================
     // 1. 지뢰찾기 (minesweeper) - 전략 1: 모달 오버레이
     // =========================================================================
     if (cleanSlug === 'minesweeper') {
