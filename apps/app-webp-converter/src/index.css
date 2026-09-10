@@ -50,3 +50,9 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* MiniAppLayout 내부의 중복 흰색 헤더 영역을 숨김 (포털 모달/팝업 헤더 및 전용 헤더와의 중복 방지) */
+#root > div > header {
+    display: none !important;
+}
+
