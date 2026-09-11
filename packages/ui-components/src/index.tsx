@@ -625,7 +625,11 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                         <span>|</span>
                         <a href={`${baseUrl}/contact`} className="hover:underline">문의하기</a>
                     </div>
-                    <p className="text-xs text-gray-400">© 2026 VERA. All rights reserved.</p>
+                    <div className="text-left sm:text-right text-xs text-gray-400 space-y-0.5">
+                        <p>© 2026 VERA (베라). All rights reserved.</p>
+                        <p>운영: VERA Management Team · 문의: contact@veranex.app (sukman@naver.com)</p>
+                        <p>고객지원: 평일 09:00 ~ 18:00 · Google AdSense DART 쿠키 및 검색 필수사항(Search Essentials) 준수</p>
+                    </div>
                 </div>
             </div>
         </footer>

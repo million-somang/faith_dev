@@ -93,6 +93,235 @@ async function loadGuides() {
     return guides;
 }
 
+
+function generateHomePageHtml(template, guides) {
+    const title = 'VERA - 세상의 모든 정보와 일상의 편리함을 잇는 라이프 포털';
+    const description = '실시간 속보 뉴스부터 18편의 고품질 전문 지식 칼럼, 금융 이자·퇴직금 계산기, WebP 이미지 변환기, 두뇌 미니게임까지 한곳에서 편리하게 이용하는 VERA 라이프 포털입니다.';
+    const canonical = 'https://veranex.app/';
+
+    // 지식 칼럼 6선 추출
+    const topGuides = guides.slice(0, 6);
+    const guideCardsHtml = topGuides.map(g => `
+        <article class="p-5 bg-white rounded-2xl border border-gray-200/90 shadow-xs hover:border-teal-400 hover:shadow-md transition-all flex flex-col justify-between">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200">${g.categoryLabel}</span>
+                    <span class="text-xs text-gray-400 font-medium">${g.readTime}</span>
+                </div>
+                <h3 class="text-base font-bold text-gray-900 mb-2 leading-snug">
+                    <a href="/guides/${g.slug}" class="hover:text-teal-700">${g.title}</a>
+                </h3>
+                <p class="text-gray-600 text-xs leading-relaxed line-clamp-2 mb-3">${g.description}</p>
+            </div>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
+                <span>작성: ${g.author}</span>
+                <a href="/guides/${g.slug}" class="text-teal-700 font-bold hover:underline">상세보기 →</a>
+            </div>
+        </article>
+    `).join('\n');
+
+    const prerenderBody = `
+        <div class="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
+            {/* 1. 상단 공식 헤더 */}
+            <header class="bg-white border-b border-gray-200 py-3.5 px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+                <div class="max-w-6xl mx-auto flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <a href="/" class="flex items-center gap-2 text-2xl font-black text-gray-900">
+                            <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-white flex items-center justify-center text-sm font-black shadow-xs">V</span>
+                            <span>VERA</span>
+                        </a>
+                    </div>
+                    <nav class="hidden md:flex items-center gap-1 text-sm font-bold text-gray-600">
+                        <a href="/" class="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-900">홈</a>
+                        <a href="/guides" class="px-3 py-1.5 rounded-lg hover:bg-gray-100 text-teal-700 font-extrabold">지식 가이드</a>
+                        <a href="/news" class="px-3 py-1.5 rounded-lg hover:bg-gray-100">실시간 뉴스</a>
+                        <a href="/lifestyle" class="px-3 py-1.5 rounded-lg hover:bg-gray-100">생활도구</a>
+                        <a href="/finance" class="px-3 py-1.5 rounded-lg hover:bg-gray-100">금융</a>
+                        <a href="/game" class="px-3 py-1.5 rounded-lg hover:bg-gray-100">미니게임</a>
+                        <a href="/about" class="px-3 py-1.5 rounded-lg hover:bg-gray-100">서비스 소개</a>
+                    </nav>
+                    <div class="flex items-center gap-2">
+                        <a href="/login" class="text-xs font-bold text-gray-600 hover:text-indigo-600 px-2 py-1">로그인</a>
+                        <a href="/signup" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">회원가입</a>
+                    </div>
+                </div>
+            </header>
+
+            {/* 2. 메인 콘텐츠 */}
+            <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full space-y-10">
+                {/* 포털 공식 히어로 배너 */}
+                <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-10 shadow-lg text-center">
+                    <span class="inline-block px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold mb-3 border border-white/10">
+                        VERA All-in-One Life Portal
+                    </span>
+                    <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                        일상과 재미, 신뢰의 지식을 하나로 잇는 포털
+                    </h1>
+                    <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-6 leading-relaxed">
+                        실시간 주요 속보 뉴스부터 18편의 고품질 전문 지식 칼럼, 스마트 생활 금융 계산기, 설치 없는 클린 두뇌 미니게임까지 VERA에서 모두 무료로 이용하세요.
+                    </p>
+                    <div class="max-w-xl mx-auto bg-white rounded-2xl p-2 flex items-center shadow-md text-gray-700">
+                        <i class="fas fa-search text-gray-400 ml-3 mr-2"></i>
+                        <input type="text" placeholder="뉴스, 전문 칼럼, 생활도구, 미니게임 검색..." class="w-full bg-transparent outline-none text-sm px-2 text-gray-800" readonly />
+                        <span class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shrink-0">검색</span>
+                    </div>
+                </section>
+
+                {/* 지식 가이드 & 전문 칼럼 섹션 (AdSense 핵심 고가치 콘텐츠) */}
+                <section class="space-y-4">
+                    <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                        <div>
+                            <span class="text-xs font-extrabold text-teal-700 uppercase tracking-wider">ORIGINAL KNOWLEDGE & INSIGHTS</span>
+                            <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                                <i class="fas fa-book-open text-teal-600 text-xl"></i>
+                                <span>VERA 지식 가이드 & 전문 칼럼 (18편 전편 수록)</span>
+                            </h2>
+                        </div>
+                        <a href="/guides" class="text-sm font-bold text-teal-700 hover:text-teal-800 flex items-center gap-1">
+                            전체 칼럼 보기 <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        금융 세무 절세 전략, 부동산 청약 상식, 퇴직금 정산법, 동양 명리학 인문학, 현대 웹소설 작법 및 두뇌 게임 전략 등 VERA 전문 편집팀이 작성한 깊이 있는 아티클을 제공합니다.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${guideCardsHtml}
+                    </div>
+                </section>
+
+                {/* 스마트 생활도구 & 계산기 유틸리티 센터 */}
+                <section class="space-y-4 pt-4">
+                    <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                        <div>
+                            <span class="text-xs font-extrabold text-blue-700 uppercase tracking-wider">SMART LIFESTYLE UTILITIES</span>
+                            <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                                <i class="fas fa-calculator text-blue-600 text-xl"></i>
+                                <span>스마트 생활 계산기 & 이미지 변환 도구</span>
+                            </h2>
+                        </div>
+                        <a href="/lifestyle" class="text-sm font-bold text-blue-700 hover:text-blue-800 flex items-center gap-1">
+                            생활도구 전체보기 <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-3">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-sm mb-1">예·적금 이자 계산기</h3>
+                            <p class="text-xs text-gray-500 leading-relaxed">단리/복리 및 비과세·세금우대별 세후 만기 수령액 정밀 산정</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mb-3">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-sm mb-1">퇴직금 정산 계산기</h3>
+                            <p class="text-xs text-gray-500 leading-relaxed">근로기준법 3개월 평균임금 및 재직일수 기준 법정 퇴직금 산출</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg mb-3">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-sm mb-1">WebP 무손실 변환기</h3>
+                            <p class="text-xs text-gray-500 leading-relaxed">JPG, PNG 이미지를 차세대 WebP로 변환해 최대 80% 무손실 압축</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-xs">
+                            <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg mb-3">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 text-sm mb-1">감성 D-Day 계산기</h3>
+                            <p class="text-xs text-gray-500 leading-relaxed">시험·전역 목표일 카운트다운 및 커플 기념일 정밀 카운트업</p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* 클린 브라우저 미니게임 라인업 */}
+                <section class="space-y-4 pt-4">
+                    <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+                        <div>
+                            <span class="text-xs font-extrabold text-purple-700 uppercase tracking-wider">CLEAN BROWSER MINI GAMES</span>
+                            <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                                <i class="fas fa-gamepad text-purple-600 text-xl"></i>
+                                <span>설치 없는 클린 두뇌 미니게임 (5종 라인업)</span>
+                            </h2>
+                        </div>
+                        <a href="/game" class="text-sm font-bold text-purple-700 hover:text-purple-800 flex items-center gap-1">
+                            게임센터 바로가기 <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 text-center">
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                            <div class="text-2xl mb-1">💎</div>
+                            <div class="font-bold text-sm text-gray-800">베라 팝</div>
+                            <div class="text-[11px] text-gray-400">60초 매치-3</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                            <div class="text-2xl mb-1">🃏</div>
+                            <div class="font-bold text-sm text-gray-800">클래식 프리셀</div>
+                            <div class="text-[11px] text-gray-400">정통 솔리테어</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                            <div class="text-2xl mb-1">🧩</div>
+                            <div class="font-bold text-sm text-gray-800">일일 스도쿠</div>
+                            <div class="text-[11px] text-gray-400">9x9 숫자 퍼즐</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200">
+                            <div class="text-2xl mb-1">🔢</div>
+                            <div class="font-bold text-sm text-gray-800">2048 챌린지</div>
+                            <div class="text-[11px] text-gray-400">타일 합치기</div>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl border border-gray-200 col-span-2 sm:col-span-1">
+                            <div class="text-2xl mb-1">💣</div>
+                            <div class="font-bold text-sm text-gray-800">지뢰찾기</div>
+                            <div class="text-[11px] text-gray-400">스피드 패턴 분석</div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            {/* 3. E-E-A-T 준수 푸터 */}
+            <footer class="bg-white border-t border-gray-200 py-10 mt-12 text-gray-600">
+                <div class="max-w-6xl mx-auto px-4 space-y-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-6">
+                        <div>
+                            <span class="text-lg font-black text-gray-900 block mb-1">VERA (베라)</span>
+                            <p class="text-xs text-gray-500">세상의 모든 정보를 하나로 묶는 믿음의 통합 라이프 포털</p>
+                        </div>
+                        <div class="flex flex-wrap gap-4 text-xs font-bold text-gray-600">
+                            <a href="/about" class="hover:text-indigo-600">서비스 소개</a>
+                            <span>·</span>
+                            <a href="/privacy" class="hover:text-indigo-600 font-extrabold text-indigo-700">개인정보처리방침 (DART쿠키 안내)</a>
+                            <span>·</span>
+                            <a href="/terms" class="hover:text-indigo-600">이용약관</a>
+                            <span>·</span>
+                            <a href="/contact" class="hover:text-indigo-600">문의하기</a>
+                            <span>·</span>
+                            <a href="/guides" class="hover:text-indigo-600">지식 가이드</a>
+                        </div>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-between text-xs text-gray-400 gap-2">
+                        <div class="space-y-1">
+                            <p>운영 주체: VERA Management Team · 책임자: 관리팀 · 공식 문의: contact@veranex.app / sukman@naver.com</p>
+                            <p>고객지원: 평일 09:00 ~ 18:00 · 본 웹사이트는 Google AdSense 프로그램 정책 및 검색 필수사항(Search Essentials)을 엄격히 준수합니다.</p>
+                        </div>
+                        <div>
+                            <p>© 2026 VERA. All rights reserved.</p>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    `;
+
+    return replaceMetaTags(template, {
+        title,
+        description,
+        canonical,
+        ogType: 'website',
+        bodyHtml: prerenderBody
+    });
+}
+
 async function prerender() {
     console.log('🚀 Starting Enhanced Static HTML Prerendering (SEO & Indexing Optimizer)...');
 
@@ -100,6 +329,10 @@ async function prerender() {
     const guides = await loadGuides();
 
     console.log(`📚 Found ${guides.length} guides for static HTML generation.`);
+
+    // 0. Generate / (Home Page) static HTML with rich semantic structure & guides
+    const homePageHtml = generateHomePageHtml(templateHtml, guides);
+    writeHtmlFile(templateHtmlPath, homePageHtml);
 
     // 1. Generate /guides Hub static page
     const guidesHubHtml = generateGuidesHubHtml(templateHtml, guides);

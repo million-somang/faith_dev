@@ -422,7 +422,7 @@ function renderSpaWithMeta(metaBlock: string): string {
 const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: object }> = {
     '/': {
         title: 'VERA - 실시간 뉴스, 미니게임, 생활도구 포털',
-        description: 'VERA에서 실시간 속보 뉴스와 테트리스·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
+        description: 'VERA에서 실시간 속보 뉴스와 베라팝·프리셀·스도쿠·2048 미니게임, 계산기·맞춤법 검사 등 생활도구를 한 곳에서 무료로 이용하세요.',
         jsonLd: {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
@@ -461,16 +461,16 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
         }
     },
     '/game': {
-        title: '무료 미니게임 - 테트리스·스도쿠·2048·지뢰찾기 | VERA',
-        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 테트리스, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+        title: '무료 미니게임 - 베라팝·프리셀·스도쿠·2048·지뢰찾기 | VERA',
+        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 베라팝, 클래식 프리셀, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
         jsonLd: {
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
             mainEntity: [
                 {
                     '@type': 'Question',
-                    name: '테트리스에서 T-스폰(T-Spin)이란 무엇인가요?',
-                    acceptedAnswer: { '@type': 'Answer', text: 'T-Spin은 T 자형 블록을 좁은 틈새로 회전시켜 채워 넣는 고급 테크닉으로 일반 삭제보다 2배 이상의 높은 점수를 획득할 수 있습니다.' }
+                    name: '클래식 프리셀(FreeCell)의 클리어 성공률은 어떻게 되나요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '정통 프리셀은 99.99% 이상의 게임 번호가 수학적으로 클리어 가능한 두뇌 전략 솔리테어 퍼즐입니다.' }
                 },
                 {
                     '@type': 'Question',

@@ -4,7 +4,7 @@ import { Header, Footer, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 
-const GENRES = [
+const ALL_GENRES = [
     { id: 'mini', label: '미니게임', icon: 'fas fa-bolt' },
     { id: 'classic', label: '고전게임', icon: 'fas fa-ghost' },
     { id: 'emulator', label: '에뮬레이터', icon: 'fas fa-gamepad' },
@@ -273,7 +273,10 @@ export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
 
+    // 회원 로그인 시에만 고전게임/에뮬레이터 탭 활성화 (비회원 및 크롤러에게는 클린 미니게임만 100% 노출)
+    const genres = user ? ALL_GENRES : [{ id: 'mini', label: '미니게임', icon: 'fas fa-bolt' }];
     const [genre, setGenre] = useState('mini');
+    const activeGenre = user ? genre : 'mini';
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
@@ -291,20 +294,20 @@ export default function GamePage() {
                     <i className="fas fa-gamepad absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
                     <div className="relative">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
-                            <i className={genre === 'mini' ? 'fas fa-bolt' : genre === 'emulator' ? 'fas fa-gamepad' : 'fas fa-ghost'}></i>{' '}
-                            {t(GENRES.find(g => g.id === genre)?.label || '미니게임')}
+                            <i className={activeGenre === 'mini' ? 'fas fa-bolt' : activeGenre === 'emulator' ? 'fas fa-gamepad' : 'fas fa-ghost'}></i>{' '}
+                            {t(genres.find(g => g.id === activeGenre)?.label || '미니게임')}
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
-                            {genre === 'emulator'
+                            {activeGenre === 'emulator'
                                 ? t('추억의 8비트 & 16비트 레트로 콘솔 에뮬레이터')
-                                : genre === 'classic'
+                                : activeGenre === 'classic'
                                 ? t('시대를 초월한 감동, 추억의 레트로 고전게임')
                                 : t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
-                            {genre === 'emulator'
+                            {activeGenre === 'emulator'
                                 ? t('베라 컴보이(NES) · 베라 슈퍼컴보이(SNES) — 소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행')
-                                : genre === 'classic'
+                                : activeGenre === 'classic'
                                 ? t('추억의 레트로 명작 아케이드와 보드 게임 라인업을 준비하고 있습니다')
                                 : t('베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
@@ -315,24 +318,26 @@ export default function GamePage() {
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
                     <h2 className="text-[20px] font-bold text-slate-800 mb-5 border-b border-slate-100 pb-3">{t('게임 선택')}</h2>
 
-                    {/* 장르 탭 */}
-                    <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1">
-                        {GENRES.map(g => (
-                            <button
-                                key={g.id}
-                                onClick={() => setGenre(g.id)}
-                                className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${genre === g.id
-                                    ? 'bg-white text-slate-800 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
-                                    }`}
-                            >
-                                <i className={`${g.icon} text-xs ${genre === g.id ? 'text-violet-500' : ''}`} />
-                                {t(g.label)}
-                            </button>
-                        ))}
-                    </div>
+                    {/* 장르 탭: 회원 로그인 시에만 노출 (비회원/크롤러에게는 숨김) */}
+                    {user && (
+                        <div className="flex gap-1 mb-6 bg-slate-100 rounded-xl p-1">
+                            {genres.map(g => (
+                                <button
+                                    key={g.id}
+                                    onClick={() => setGenre(g.id)}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all ${activeGenre === g.id
+                                        ? 'bg-white text-slate-800 shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700 hover:bg-white/50'
+                                        }`}
+                                >
+                                    <i className={`${g.icon} text-xs ${activeGenre === g.id ? 'text-violet-500' : ''}`} />
+                                    {t(g.label)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
 
-                    {genre === 'mini' ? (
+                    {activeGenre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             {/* 🌟 1. 베라 팝 (Vera Pop) - 60초 스테이지 무한 타임어택 */}
                             <button onClick={() => navigate('/game/vera-pop')} className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative">
@@ -391,7 +396,7 @@ export default function GamePage() {
                                 </div>
                             </button>
                         </div>
-                    ) : genre === 'emulator' ? (
+                    ) : activeGenre === 'emulator' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <button onClick={() => navigate('/game/comboy')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group">
                                 <div className="h-28 bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
@@ -422,7 +427,7 @@ export default function GamePage() {
                 </div>
 
                 {/* 탭별 맞춤 가이드 & 규칙 섹션 */}
-                {genre === 'mini' ? (
+                {activeGenre === 'mini' ? (
                     /* 1. 미니게임 전용 가이드 & 규칙 */
                     <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8 animate-fade-in">
                         <div>
@@ -501,7 +506,7 @@ export default function GamePage() {
                             </dl>
                         </div>
                     </section>
-                ) : genre === 'emulator' ? (
+                ) : activeGenre === 'emulator' ? (
                     /* 2. 에뮬레이터 전용 구동 가이드 & 사용자 안내 */
                     <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8 animate-fade-in">
                         <div>
