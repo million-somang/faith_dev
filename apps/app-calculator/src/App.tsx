@@ -376,7 +376,7 @@ function App() {
         )}
 
         <footer className="calc-footer">
-          <p>© 2026 FaithLink · 스마트 다기능 계산기 · 무료 온라인 유틸리티</p>
+          <p>© 2026 VERA · 스마트 다기능 계산기 · 무료 온라인 유틸리티</p>
         </footer>
       </main>
     </MiniAppLayout>

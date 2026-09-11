@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>평수 계산기 - 평↔㎡ 면적 단위 변환 | FaithLink</title>
-    <meta name="description" content="아파트 공급면적 및 전용면적(㎡)을 평수로, 혹은 평수를 ㎡(제곱미터)와 ft²(제곱피트)로 즉시 교차 환산해주는 프리미엄 부동산 평수 계산기입니다." />
-    <link rel="canonical" href="https://veranex.app/app/pyeong-calc/" />
+    <title>평수 계산기 - 아파트 평↔㎡ 면적 정밀 단위 변환기 | VERA</title>
+    <meta name="description" content="계량에 관한 법률 기준 1평 = 3.305785㎡ 정밀 변환 공식 적용. 아파트 전용면적, 공급면적, 분양 평수의 차이를 명쾌하게 해설하는 무료 온라인 평수 계산기입니다." />
+    <link rel="canonical" href="https://veranex.app/app/pyeong-calc/" data-rh="true" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <!-- AEO AI Answer Engine Schema Injection -->
@@ -52,19 +52,19 @@
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="페이스링크" />
+  <meta name="apple-mobile-web-app-title" content="VERA" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
   <link rel="icon" type="image/png" href="/logo-192.png" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="FaithLink" />
-  <meta property="og:title" content="평수 계산기 - 평↔㎡ 면적 단위 변환 | FaithLink" />
+  <meta property="og:site_name" content="VERA" />
+  <meta property="og:title" content="평수 계산기 - 평↔㎡ 면적 단위 변환 | VERA" />
   <meta property="og:description" content="평과 제곱미터(㎡)를 간편하게 변환하는 무료 평수 계산기." />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:image" content="https://veranex.app/logo-512.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="평수 계산기 - 평↔㎡ 면적 단위 변환 | FaithLink" />
+  <meta name="twitter:title" content="평수 계산기 - 평↔㎡ 면적 단위 변환 | VERA" />
   <meta name="twitter:description" content="평과 제곱미터(㎡)를 간편하게 변환하는 무료 평수 계산기." />
   <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
 
@@ -91,7 +91,94 @@
 </head>
 
 <body>
-    <div id="root"></div>
+    <div id="root">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;">
+      <header style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: sticky; top: 0; z-index: 30;">
+        <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERA</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="/lifestyle" style="font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none;">VERA 스마트 생활도구</a>
+          </div>
+          <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
+            <a href="/" style="color: #475569; text-decoration: none;">홈</a>
+            <a href="/lifestyle" style="color: #475569; text-decoration: none;">생활도구</a>
+            <a href="/game" style="color: #475569; text-decoration: none;">게임</a>
+            <a href="/guides" style="color: #475569; text-decoration: none;">지식가이드</a>
+          </nav>
+        </div>
+      </header>
+
+      <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 11px; font-weight: 800; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
+            VERA Verified Utility
+          </span>
+          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 8px;">
+            부동산 평수 ↔ ㎡ 정밀 면적 변환 & 아파트 면적 해설
+          </h1>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+            계량에 관한 법률 기준 1평 = 3.305785㎡ 정밀 변환 공식 적용. 아파트 전용면적, 공급면적, 분양 평수의 차이를 명쾌하게 해설하는 무료 온라인 평수 계산기입니다.
+          </p>
+        </div>
+
+        <section style="margin-bottom: 28px;">
+          
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📐 법정 계량 단위 1평 = 3.305785㎡ 정밀 환산</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">2007년 정부의 법정 계량 단위 사용 의무화에 따라 부동산 거래 시 제곱미터(㎡) 표기가 의무화되었습니다. 1평은 정확히 3.305785㎡이며, 1㎡는 약 0.3025평입니다. VERA 평수 계산기는 반올림 오차를 최소화한 부동소수점 알고리즘으로 양방향 실시간 변환을 수행합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🏢 아파트 4대 면적(전용·공용·공급·계약) 비교</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">전용면적은 현관문 안쪽의 실제 독립 주거 공간(방, 거실, 주방, 화장실)입니다. 주거공용면적은 계단, 복도, 엘리베이터 등입니다. 분양 시 말하는 흔히 34평형은 전용면적에 주거공용면적을 더한 공급면적(분양면적)을 뜻합니다. 발코니는 서비스 면적으로 전용면적에 포함되지 않습니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📊 대표 아파트 평형별 실면적 가이드</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">전용 59㎡(약 17.8평)는 주거공용면적을 합산하면 보통 24~25평형이 됩니다. 전용 84㎡(약 25.4평)는 공급면적 기준 33~34평형이며, 국민주택규모의 기준선(전용 85㎡ 이하)에 해당하여 디딤돌 대출 등 다양한 정책 금융 혜택의 기준이 됩니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">💡 평당 분양가 및 취득세 계산 팁</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">분양 공고에 평당 가격이 나올 때는 공급면적 기준인지 계약면적 기준인지를 반드시 확인해야 합니다. 실질적인 주거 가성비를 판단하려면 총 분양가를 전용면적(실평수)으로 나눈 전용 평당가를 비교하는 것이 가장 현명한 분석법입니다.</p>
+      </article>
+    
+        </section>
+
+        <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
+          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+            💬 자주 묻는 질문 (FAQ)
+          </h2>
+          
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 제곱미터에서 평으로 빨리 암산하는 팁이 있나요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 끝자리를 떼고 3을 곱하면 대략적인 평수가 나옵니다. 예를 들어 84㎡는 끝자리 4를 떼고 8 * 3 = 24평 내외(실제 25.4평)로 쉽게 추정할 수 있습니다.</p>
+      </div>
+    
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 오피스텔 평수는 아파트 평수와 왜 다른가요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 오피스텔은 공급면적이 아닌 계약면적(지하주차장, 기계실 등 기타 공용면적 포함)을 기준으로 분양 평수를 표기하므로 전용률이 40~50% 수준으로 아파트(75~80%)보다 실평수가 작습니다.</p>
+      </div>
+    
+        </section>
+      </main>
+
+      <footer style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 24px 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+        <p style="margin-bottom: 8px;">© 2026 VERA (베라) - 세상의 모든 정보를 하나로 잇는 라이프 포털</p>
+        <p>
+          <a href="/about" style="color: #64748b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
+          <a href="/privacy" style="color: #64748b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
+          <a href="/terms" style="color: #64748b; margin: 0 8px; text-decoration: none;">이용약관</a> |
+          <a href="/contact" style="color: #64748b; margin: 0 8px; text-decoration: none;">문의하기</a>
+        </p>
+      </footer>
+    </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
 
   <script>

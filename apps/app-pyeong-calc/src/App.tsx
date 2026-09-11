@@ -234,7 +234,7 @@ function App() {
                         <aside className="loading-ad-banner" aria-label="광고 및 안내">
                             <div className="ad-placeholder">
                                 <span className="ad-badge">안내</span>
-                                <span className="ad-text">FaithLink와 함께하는 프리미엄 유틸리티</span>
+                                <span className="ad-text">VERA와 함께하는 프리미엄 유틸리티</span>
                             </div>
                         </aside>
 

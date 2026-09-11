@@ -4,26 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JSON 포맷터 - JSON 정렬·검증·뷰어 | FaithLink</title>
-    <meta name="description" content="개발자를 위한 전문 JSON 에디터. 실시간 검증, 포맷팅, 트리뷰, 변환 기능 제공." />
+    <title>JSON 포맷터 & 문법 검증기 - 예쁘게 정렬·뷰어 | VERA</title>
+    <meta name="description" content="들여쓰기가 깨진 JSON 텍스트를 2칸/4칸으로 자동 정렬하고 구문 에러(Syntax Error) 줄 번호를 실시간 감지하는 개발자 필수 온라인 JSON 포맷터입니다." />
   
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="페이스링크" />
+  <meta name="apple-mobile-web-app-title" content="VERA" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
   <link rel="icon" type="image/png" href="/logo-192.png" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="FaithLink" />
-  <meta property="og:title" content="JSON 포맷터 - JSON 정렬·검증·뷰어 | FaithLink" />
+  <meta property="og:site_name" content="VERA" />
+  <meta property="og:title" content="JSON 포맷터 - JSON 정렬·검증·뷰어 | VERA" />
   <meta property="og:description" content="JSON을 정렬하고 문법을 검증하며 트리로 보는 무료 온라인 JSON 포맷터." />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:image" content="https://veranex.app/logo-512.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="JSON 포맷터 - JSON 정렬·검증·뷰어 | FaithLink" />
+  <meta name="twitter:title" content="JSON 포맷터 - JSON 정렬·검증·뷰어 | VERA" />
   <meta name="twitter:description" content="JSON을 정렬하고 문법을 검증하며 트리로 보는 무료 온라인 JSON 포맷터." />
   <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
 
@@ -47,9 +47,97 @@
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
      crossorigin="anonymous"></script>
+  <link rel="canonical" href="https://veranex.app/app/json-formatter/" data-rh="true" />
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;">
+      <header style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: sticky; top: 0; z-index: 30;">
+        <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERA</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="/lifestyle" style="font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none;">VERA 스마트 생활도구</a>
+          </div>
+          <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
+            <a href="/" style="color: #475569; text-decoration: none;">홈</a>
+            <a href="/lifestyle" style="color: #475569; text-decoration: none;">생활도구</a>
+            <a href="/game" style="color: #475569; text-decoration: none;">게임</a>
+            <a href="/guides" style="color: #475569; text-decoration: none;">지식가이드</a>
+          </nav>
+        </div>
+      </header>
+
+      <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 11px; font-weight: 800; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
+            VERA Verified Utility
+          </span>
+          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 8px;">
+            JSON 데이터 정렬, 유효성 검증 & 트리 뷰어 센터
+          </h1>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+            들여쓰기가 깨진 JSON 텍스트를 2칸/4칸으로 자동 정렬하고 구문 에러(Syntax Error) 줄 번호를 실시간 감지하는 개발자 필수 온라인 JSON 포맷터입니다.
+          </p>
+        </div>
+
+        <section style="margin-bottom: 28px;">
+          
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">✨ 엉망인 JSON 코드를 1초 만에 깔끔하게 정렬</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">한 줄로 길게 늘어지거나 들여쓰기가 깨진 JSON(JavaScript Object Notation) 데이터를 2스페이스 또는 4스페이스 표준 인덴트로 즉각 정렬(Pretty Print)하여 가독성을 극대화합니다. 복잡한 중첩 객체와 배열도 트리 구조로 한눈에 파악할 수 있습니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🔍 실시간 문법 에러(Syntax Error) 추적기</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">따옴표 누락(Missing double quote), 마지막 쉼표 오류(Trailing comma), 괄호 불일치(Bracket mismatch) 등 JSON 표준 파싱 실패 시 정확한 오류 발생 위치와 라인 번호, 에러 원인을 친절하게 표시하여 디버깅 시간을 90% 단축합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📦 JSON 압축(Minify) & 용량 최소화</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">네트워크 트래픽을 절감하거나 데이터베이스 적재 용량을 줄이기 위해 불필요한 공백과 줄바꿈을 완벽히 제거하는 Minify 기능을 원클릭으로 지원합니다. API 페이로드 전송 최적화에 탁월합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🛡️ 로컬 처리 보장: API 키 및 민감 데이터 안전</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">기업용 백엔드 API 응답 데이터나 인증 토큰이 포함된 JSON 데이터를 외부 서버로 전송하지 않습니다. 순수 클라이언트 자바스크립트 엔진으로만 파싱되므로 사내 보안 규정을 엄격히 준수합니다.</p>
+      </article>
+    
+        </section>
+
+        <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
+          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+            💬 자주 묻는 질문 (FAQ)
+          </h2>
+          
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. JSON에서 작은따옴표('')를 사용할 수 없나요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. RFC 8259 표준에 따라 JSON 규격에서는 키와 문자열 값에 반드시 큰따옴표("")만을 사용해야 합니다. 작은따옴표를 사용하면 구문 오류가 발생합니다.</p>
+      </div>
+    
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 대용량 JSON 파일도 처리 가능한가요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 수 메가바이트(MB) 단위의 대용량 JSON 데이터도 브라우저 메모리가 허용하는 한 멈춤 현상 없이 고속 파싱 및 정렬을 수행합니다.</p>
+      </div>
+    
+        </section>
+      </main>
+
+      <footer style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 24px 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+        <p style="margin-bottom: 8px;">© 2026 VERA (베라) - 세상의 모든 정보를 하나로 잇는 라이프 포털</p>
+        <p>
+          <a href="/about" style="color: #64748b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
+          <a href="/privacy" style="color: #64748b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
+          <a href="/terms" style="color: #64748b; margin: 0 8px; text-decoration: none;">이용약관</a> |
+          <a href="/contact" style="color: #64748b; margin: 0 8px; text-decoration: none;">문의하기</a>
+        </p>
+      </footer>
+    </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   
   <script>

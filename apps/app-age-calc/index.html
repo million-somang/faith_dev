@@ -2,8 +2,8 @@
 <html lang="ko">
 
 <head>
-    <meta name="description" content="만 나이, 연 나이, 세는 나이(한국 나이)를 기입된 기준일이나 생일에 맞추어 단 한 번에 계산해주는 프리미엄 한국 나이 계산기 도구입니다. 띠, 별자리, 생활 속 가능한 법적 연령대별 체크리스트와 생애 주기 알림 정보도 완벽히 제공합니다." />
-    <link rel="canonical" href="https://veranex.app/app/age-calc/" />
+    <meta name="description" content="2023년 6월 28일 개정 만 나이 통일법 시행에 따른 만 나이, 청소년보호법 기준 연 나이, 전통 세는 나이를 한눈에 비교 계산하는 VERA 공식 나이 계산기입니다." />
+    <link rel="canonical" href="https://veranex.app/app/age-calc/" data-rh="true" />
     
     <!-- AEO 구조화 데이터 (JSON-LD) 주입 -->
     <script type="application/ld+json">
@@ -18,7 +18,7 @@
       "browserRequirements": "Requires HTML5, CSS3, JavaScript Support",
       "creator": {
         "@type": "Organization",
-        "name": "FaithLink Studio"
+        "name": "VERA Studio"
       }
     }
     </script>
@@ -48,26 +48,26 @@
       ]
     }
     </script>
-    <title>한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | FaithLink</title>
+    <title>한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | VERA</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="페이스링크" />
+  <meta name="apple-mobile-web-app-title" content="VERA" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
   <link rel="icon" type="image/png" href="/logo-192.png" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="FaithLink" />
-  <meta property="og:title" content="한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | FaithLink" />
+  <meta property="og:site_name" content="VERA" />
+  <meta property="og:title" content="한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | VERA" />
   <meta property="og:description" content="생년월일로 만 나이, 연 나이, 세는 나이를 원클릭으로 계산하는 무료 나이 계산기." />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:image" content="https://veranex.app/logo-512.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | FaithLink" />
+  <meta name="twitter:title" content="한국 나이 계산기 - 만 나이, 연 나이, 세는 나이 원클릭 판정 | VERA" />
   <meta name="twitter:description" content="생년월일로 만 나이, 연 나이, 세는 나이를 원클릭으로 계산하는 무료 나이 계산기." />
   <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
 
@@ -94,7 +94,94 @@
 </head>
 
 <body>
-    <div id="root"></div>
+    <div id="root">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;">
+      <header style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: sticky; top: 0; z-index: 30;">
+        <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERA</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="/lifestyle" style="font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none;">VERA 스마트 생활도구</a>
+          </div>
+          <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
+            <a href="/" style="color: #475569; text-decoration: none;">홈</a>
+            <a href="/lifestyle" style="color: #475569; text-decoration: none;">생활도구</a>
+            <a href="/game" style="color: #475569; text-decoration: none;">게임</a>
+            <a href="/guides" style="color: #475569; text-decoration: none;">지식가이드</a>
+          </nav>
+        </div>
+      </header>
+
+      <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 11px; font-weight: 800; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
+            VERA Verified Utility
+          </span>
+          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 8px;">
+            대한민국 나이 기준 & 만 나이 통일법 완벽 가이드
+          </h1>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+            2023년 6월 28일 개정 만 나이 통일법 시행에 따른 만 나이, 청소년보호법 기준 연 나이, 전통 세는 나이를 한눈에 비교 계산하는 VERA 공식 나이 계산기입니다.
+          </p>
+        </div>
+
+        <section style="margin-bottom: 28px;">
+          
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🎂 2023 만 나이 통일법(행정기본법)의 법적 효력</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">2023년 6월 28일부터 행정기본법 제7조의2 및 민법 제158조에 따라 행정 및 민사상 나이는 특별한 규정이 없는 한 출생일을 산입하여 만 나이로 계산하고 연수(年數)로 표시합니다. 출생 후 1년 미만인 때에는 월수(月數)로 표시합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">⚖️ 만 나이 vs 연 나이 vs 세는 나이 3대 비교</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">만 나이는 생일이 지났는지 여부에 따라 결정되며, 연 나이는 현재 연도에서 출생 연도를 뺀 값입니다. 세는 나이는 태어나자마자 1세가 되고 새해 첫날 1세를 더 먹는 방식입니다. 청소년보호법(주류/담배 구매)이나 병역법 등 일부 개별 법률률은 여전히 연 나이를 기준으로 적용됩니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📑 주요 제도별 적용 나이 기준 총정리</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">초등학교 입학 연령은 만 6세가 된 날이 속하는 해의 다음 해 3월 1일입니다. 주민등록증 발급은 만 17세, 운전면허 취득은 만 18세, 대통령/국회의원 선거권 행사는 선거일 기준 만 18세 이상부터 주어집니다. 국민연금 수령 연령은 출생연도에 따라 만 60세~65세로 단계적 상향 적용됩니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🌟 다음 생일까지 남은 디데이 자동 계산</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">올해 생일 도래 여부를 자동 분석하여 이번 해의 생일이 지났다면 다음 해 생일까지, 아직 지나지 않았다면 다가올 생일까지 남은 D-day 일수를 실시간 계산하여 축하 일정을 놓치지 않도록 안내합니다.</p>
+      </article>
+    
+        </section>
+
+        <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
+          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+            💬 자주 묻는 질문 (FAQ)
+          </h2>
+          
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 생일 당일에는 몇 살로 인정되나요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 생일 당일 0시부터 만 나이가 1세 증가합니다. 민법상 출생일을 초일로 산입하여 계산하므로 생일날부터 새 나이가 적용됩니다.</p>
+      </div>
+    
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 음력 생일도 계산할 수 있나요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 본 계산기는 양력 생일 기준 정밀 연산을 지원하며, 만 나이 법적 효력 역시 주민등록상 기재된 생년월일을 기준으로 판단합니다.</p>
+      </div>
+    
+        </section>
+      </main>
+
+      <footer style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 24px 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+        <p style="margin-bottom: 8px;">© 2026 VERA (베라) - 세상의 모든 정보를 하나로 잇는 라이프 포털</p>
+        <p>
+          <a href="/about" style="color: #64748b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
+          <a href="/privacy" style="color: #64748b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
+          <a href="/terms" style="color: #64748b; margin: 0 8px; text-decoration: none;">이용약관</a> |
+          <a href="/contact" style="color: #64748b; margin: 0 8px; text-decoration: none;">문의하기</a>
+        </p>
+      </footer>
+    </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
 
   <script>

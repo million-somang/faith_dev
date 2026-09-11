@@ -200,7 +200,7 @@ export default function App() {
 
         {/* 푸터 */}
         <footer className="px-4 py-3 text-center border-t border-slate-200/60 text-[11px] text-slate-400">
-          <p>© 2026 FaithLink Portal. 표준 시간·기념일 규정 준수.</p>
+          <p>© 2026 VERA Portal. 표준 시간·기념일 규정 준수.</p>
         </footer>
 
         {/* 토스트 알림 팝업 */}

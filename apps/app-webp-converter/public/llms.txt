@@ -1,5 +1,5 @@
 # 2026 이미지 WebP 변환 및 무손실 압축기
-> FaithLink 미니앱 공식 유틸리티 (Utility Application)
+> VERA 미니앱 공식 유틸리티 (Utility Application)
 
 ## 개요
 JPG, PNG, GIF 등 다양한 래스터 이미지를 구글의 차세대 웹 이미지 표준 규격인 WebP로 변환하고 용량을 최대 80% 무손실 압축하는 고성능 브라우저 기반 도구입니다.

@@ -13,6 +13,10 @@ Allow: /about
 Allow: /privacy
 Allow: /terms
 Allow: /contact
+Disallow: /app/comboy
+Disallow: /app/comboy/
+Disallow: /app/sfc
+Disallow: /app/sfc/
 
 # Google AdSense Crawler 전용 권한 허용
 User-agent: Mediapartners-Google

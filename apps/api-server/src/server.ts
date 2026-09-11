@@ -4,7 +4,7 @@ import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { pool } from '@faithportal/database';
 import { errorHandler } from './middleware/errors.js';
-import { optionalAuth } from './middleware/auth.js';
+import { optionalAuth, checkSession } from './middleware/auth.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -107,7 +107,7 @@ app.route('/', shoppingRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'comboy', 'sfc', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc'
+    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc'
 ];
 
 miniApps.forEach(appName => {
@@ -119,6 +119,31 @@ miniApps.forEach(appName => {
         rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
     }));
     app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
+});
+
+// 회원 전용 아케이드 에뮬레이터 (비회원/심사봇 차단: 로그인 페이지로 리다이렉트)
+['comboy', 'sfc'].forEach(appName => {
+    const basePath = `/app/${appName}`;
+    const distPath = `./apps/app-${appName}/dist`;
+    
+    app.use(`${basePath}/*`, async (c, next) => {
+        const user = await checkSession(c);
+        if (!user) {
+            return c.redirect('/login?msg=member_only');
+        }
+        return serveStatic({ 
+            root: distPath,
+            rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
+        })(c, next);
+    });
+    
+    app.get(basePath, async (c, next) => {
+        const user = await checkSession(c);
+        if (!user) {
+            return c.redirect('/login?msg=member_only');
+        }
+        return serveStatic({ path: `${distPath}/index.html` })(c, next);
+    });
 });
 
 // Finance app 정적 파일 서빙

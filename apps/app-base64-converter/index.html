@@ -4,26 +4,26 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Base64 변환기 - 인코딩·디코딩 | FaithLink</title>
-    <meta name="description" content="100% 클라이언트 처리 Base64 변환기. 한글 완벽 지원, JWT 자동 감지, 이미지 변환." />
+    <title>Base64 변환기 - 텍스트·이미지 인코딩·디코딩 | VERA</title>
+    <meta name="description" content="텍스트 및 이진 파일의 Base64 인코딩과 디코딩을 원클릭으로 처리하세요. UTF-8 한글 완벽 지원 및 Data URL 생성 가이드를 제공하는 VERA 유틸리티입니다." />
   
   <!-- PWA Manifest & App Icons -->
   <link rel="manifest" href="/manifest.json" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="페이스링크" />
+  <meta name="apple-mobile-web-app-title" content="VERA" />
   <link rel="apple-touch-icon" href="/logo-192.png" />
   <link rel="icon" type="image/png" href="/logo-192.png" />
 
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="FaithLink" />
-  <meta property="og:title" content="Base64 변환기 - 인코딩·디코딩 | FaithLink" />
+  <meta property="og:site_name" content="VERA" />
+  <meta property="og:title" content="Base64 변환기 - 인코딩·디코딩 | VERA" />
   <meta property="og:description" content="텍스트와 파일을 Base64로 인코딩·디코딩하는 무료 온라인 변환기." />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:image" content="https://veranex.app/logo-512.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Base64 변환기 - 인코딩·디코딩 | FaithLink" />
+  <meta name="twitter:title" content="Base64 변환기 - 인코딩·디코딩 | VERA" />
   <meta name="twitter:description" content="텍스트와 파일을 Base64로 인코딩·디코딩하는 무료 온라인 변환기." />
   <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
 
@@ -47,9 +47,97 @@
   <!-- Google AdSense -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
      crossorigin="anonymous"></script>
+  <link rel="canonical" href="https://veranex.app/app/base64-converter/" data-rh="true" />
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;">
+      <header style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: sticky; top: 0; z-index: 30;">
+        <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <a href="/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERA</a>
+            <span style="color: #cbd5e1;">|</span>
+            <a href="/lifestyle" style="font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none;">VERA 스마트 생활도구</a>
+          </div>
+          <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
+            <a href="/" style="color: #475569; text-decoration: none;">홈</a>
+            <a href="/lifestyle" style="color: #475569; text-decoration: none;">생활도구</a>
+            <a href="/game" style="color: #475569; text-decoration: none;">게임</a>
+            <a href="/guides" style="color: #475569; text-decoration: none;">지식가이드</a>
+          </nav>
+        </div>
+      </header>
+
+      <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
+        <div style="margin-bottom: 24px;">
+          <span style="font-size: 11px; font-weight: 800; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
+            VERA Verified Utility
+          </span>
+          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 8px;">
+            Base64 인코딩·디코딩 & 데이터 변환 센터
+          </h1>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+            텍스트 및 이진 파일의 Base64 인코딩과 디코딩을 원클릭으로 처리하세요. UTF-8 한글 완벽 지원 및 Data URL 생성 가이드를 제공하는 VERA 유틸리티입니다.
+          </p>
+        </div>
+
+        <section style="margin-bottom: 28px;">
+          
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🔤 6비트 아스키 변환 원리(RFC 4648 표준)</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">Base64는 8비트 2진 데이터를 64개의 출력 가능한 아스키(ASCII) 문자(A-Z, a-z, 0-9, +, /)로 변환하는 인코딩 방식입니다. 3바이트(24비트)의 데이터를 4개의 6비트 단위로 나누어 변환하며, 빈자리는 패딩 문자(=)로 채워 데이터의 무결성을 보장합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🇰🇷 UTF-8 한글 및 다국어 텍스트 완벽 인코딩</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">표준 자바스크립트의 btoa/atob 함수에서 발생하는 한글 인코딩 오류(Latin1 한계)를 자체 UTF-8 바이트 변환 알고리즘으로 해결하여 한글, 한자, 이모지 등 모든 다국어 텍스트를 깨짐 없이 깨끗하게 인코딩하고 복원합니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🖼️ Data URL 이미지 인라인 임베딩 활용</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">작은 아이콘이나 로고 이미지를 Base64 Data URL(`data:image/png;base64,...`)로 인코딩하여 HTML이나 CSS에 직접 삽입하면, 별도의 HTTP 요청 없이 즉시 이미지를 렌더링할 수 있어 초기 페이지 로딩 속도를 향상시킬 수 있습니다.</p>
+      </article>
+    
+
+      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
+        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🌐 웹 개발 및 네트워크 프로토콜 실무</h2>
+        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">이메일 전송(MIME 규격), 웹소켓 바이너리 데이터 전달, JWT(JSON Web Token) 페이로드 분석 등 다양한 웹 개발 실무 현장에서 즉시 활용할 수 있는 직관적인 듀얼 입력/출력 창을 제공합니다.</p>
+      </article>
+    
+        </section>
+
+        <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
+          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
+            💬 자주 묻는 질문 (FAQ)
+          </h2>
+          
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. Base64로 인코딩하면 왜 파일 용량이 늘어나나요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 3바이트의 이진 데이터를 4바이트의 아스키 문자로 변환하므로 약 33%의 용량 증가가 발생합니다. 이는 모든 시스템에서 데이터 손실 없이 안전하게 텍스트로 전달하기 위한 기술적 트레이드오프입니다.</p>
+      </div>
+    
+
+      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
+        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. Base64는 암호화 기술인가요?</h3>
+        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 아닙니다. Base64는 누구나 동일한 규칙으로 복원(디코딩)할 수 있는 인코딩 규약이며, 보안을 위한 기밀성을 제공하지 않으므로 민감한 비밀번호 등은 반드시 AES나 RSA 같은 전문 암호화 알고리즘을 사용해야 합니다.</p>
+      </div>
+    
+        </section>
+      </main>
+
+      <footer style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 24px 16px; text-align: center; font-size: 12px; color: #94a3b8;">
+        <p style="margin-bottom: 8px;">© 2026 VERA (베라) - 세상의 모든 정보를 하나로 잇는 라이프 포털</p>
+        <p>
+          <a href="/about" style="color: #64748b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
+          <a href="/privacy" style="color: #64748b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
+          <a href="/terms" style="color: #64748b; margin: 0 8px; text-decoration: none;">이용약관</a> |
+          <a href="/contact" style="color: #64748b; margin: 0 8px; text-decoration: none;">문의하기</a>
+        </p>
+      </footer>
+    </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   
   <script>

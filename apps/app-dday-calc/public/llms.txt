@@ -1,5 +1,5 @@
 # 2026 감성 D-Day 및 기념일 계산기
-> FaithLink 미니앱 공식 유틸리티 (Utility Application)
+> VERA 미니앱 공식 유틸리티 (Utility Application)
 
 ## 개요
 시험, 군대 전역, 여행 등 다가오는 목표일까지의 남은 날짜(Countdown)와 커플 사귄 날, 아기 생후 일수 등 지나간 기념일(Countup)을 실시간으로 정밀 계산하고 시각화하는 웹 기반 D-Day 관리 도구입니다.

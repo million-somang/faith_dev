@@ -80,7 +80,7 @@ function App() {
 
             <div className="loading-info-banner" aria-label="안내">
               <div className="info-placeholder">
-                <span className="info-badge">FAITHLINK</span>
+                <span className="info-badge">VERA</span>
                 <span className="info-text">입력한 텍스트는 브라우저 내부 메모리에만 안전 보장됩니다.</span>
               </div>
             </div>
