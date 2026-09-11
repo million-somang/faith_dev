@@ -612,23 +612,23 @@ function generatePortalSectionPages(template) {
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         <div class="p-5 bg-purple-50 rounded-2xl border border-purple-200">
                             <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 베라 팝 (Vera Pop)</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">스피드 매치-3 퍼즐과 하이퍼 피버 콤보로 최고 기록에 도전하세요.</p>
+                            <p class="text-xs text-gray-600 leading-relaxed">스피드 매치-3 퍼즐과 하이퍼 피버 콤보로 최고 기록에 도전하세요. 4매칭 관통 레이저와 5매칭 하이퍼 노바 폭탄으로 연쇄 폭발의 쾌감을 선사합니다.</p>
                         </div>
                         <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
                             <h3 class="font-bold text-amber-900 text-lg mb-1">🔢 2048 숫자 퍼즐</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">상하좌우 타일을 합쳐 2048 타일을 만드는 중독성 강한 두뇌 게임입니다.</p>
+                            <p class="text-xs text-gray-600 leading-relaxed">상하좌우 타일을 합쳐 2048 타일을 만드는 중독성 강한 두뇌 게임입니다. 가장 큰 숫자를 코너에 고정하고 순차적으로 체인을 엮는 전략이 핵심입니다.</p>
                         </div>
                         <div class="p-5 bg-blue-50 rounded-2xl border border-blue-200">
                             <h3 class="font-bold text-blue-900 text-lg mb-1">🧩 매일 새로운 스도쿠</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">초급부터 고급까지 논리적 추론으로 9x9 격자를 채워보세요.</p>
+                            <p class="text-xs text-gray-600 leading-relaxed">초급부터 고급까지 논리적 추론으로 9x9 격자를 채워보세요. 단일 후보수(Naked Single)와 블록 소거법을 활용해 뇌의 집중력을 훈련할 수 있습니다.</p>
                         </div>
                         <div class="p-5 bg-emerald-50 rounded-2xl border border-emerald-200">
                             <h3 class="font-bold text-emerald-900 text-lg mb-1">🃏 정통 프리셀 (FreeCell)</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">자유 이동 모드와 정통 룰을 지원하는 솔리테어 카드 전략 게임입니다.</p>
+                            <p class="text-xs text-gray-600 leading-relaxed">자유 이동 모드와 윈도우 정통 룰을 지원하는 솔리테어 카드 전략 게임입니다. 4개의 임시 보관소(FreeCell)를 전략적으로 비워두며 에이스부터 킹까지 수집하세요.</p>
                         </div>
                         <div class="p-5 bg-rose-50 rounded-2xl border border-rose-200">
                             <h3 class="font-bold text-rose-900 text-lg mb-1">💣 지뢰찾기 클래식</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">확률과 패턴 분석을 통해 안전한 칸을 찾아내는 명작 퍼즐입니다.</p>
+                            <p class="text-xs text-gray-600 leading-relaxed">확률과 패턴 분석을 통해 안전한 칸을 찾아내는 명작 퍼즐입니다. 1-2-1 대칭 패턴과 모서리 1 판별법을 활용해 최고 기록을 단축해 보세요.</p>
                         </div>
                     </div>
                 </div>
@@ -640,9 +640,49 @@ function generatePortalSectionPages(template) {
             description: '정치, 경제, 사회, IT/과학, 글로벌 주요 뉴스를 실시간으로 수집하고 핵심 3줄 요약과 이슈 키워드로 한눈에 확인하세요.',
             heading: '실시간 주요 뉴스 & 이슈 브리핑',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    VERA 뉴스는 신뢰할 수 있는 언론사들의 핵심 속보와 분야별 최신 트렌드를 인공지능 기반으로 큐레이션하여 제공합니다.
-                </p>
+                <div class="space-y-6 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 뉴스는 국내외 신뢰할 수 있는 언론사들의 핵심 속보와 분야별 최신 트렌드를 인공지능 기반으로 큐레이션하여 제공합니다. 바쁜 현대인들을 위해 기사의 핵심 요점 3줄 요약과 관련 테마 키워드를 실시간으로 분석합니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-900 text-base mb-2 flex items-center gap-2">
+                                <i class="fas fa-chart-line text-indigo-600"></i> 경제 & 증시 실시간 브리핑
+                            </h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                한국은행 및 미 연준의 금리 정책 결정, 원/달러 환율 변동 추이, 코스피·코스닥 대장주의 실적 발표 및 수급 동향을 집중 조명합니다.
+                            </p>
+                            <span class="text-[11px] font-bold text-indigo-600">#환율 #기준금리 #배당주 #반도체</span>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-blue-900 text-base mb-2 flex items-center gap-2">
+                                <i class="fas fa-microchip text-blue-600"></i> IT & 인공지능 테크 트렌드
+                            </h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                생성형 AI 모델 발전, 차세대 클라우드 인프라, 빅테크 기업들의 분기 기술 로드맵과 개발자 생산성 혁신 소식을 빠르게 전달합니다.
+                            </p>
+                            <span class="text-[11px] font-bold text-blue-600">#인공지능 #클라우드 #소프트웨어 #빅테크</span>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-emerald-900 text-base mb-2 flex items-center gap-2">
+                                <i class="fas fa-landmark text-emerald-600"></i> 사회 & 정책 제도 변화
+                            </h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                만 나이 통일법 정착, 부동산 청약 제도 개편, 연말정산 절세 혜택, 근로기준법 개정 등 실생활에 직결되는 제도 변화를 상세히 짚어드립니다.
+                            </p>
+                            <span class="text-[11px] font-bold text-emerald-600">#세제개편 #청약제도 #근로기준법 #복지혜택</span>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-purple-900 text-base mb-2 flex items-center gap-2">
+                                <i class="fas fa-globe text-purple-600"></i> 글로벌 지정학 & 매크로 시황
+                            </h3>
+                            <p class="text-xs text-gray-600 leading-relaxed mb-3">
+                                주요국 무역 협정, 글로벌 원자재 가격(국제유가, 금, 구리) 흐름, 해외 공급망 이슈가 국내 경제에 미치는 파급 효과를 분석합니다.
+                            </p>
+                            <span class="text-[11px] font-bold text-purple-600">#국제유가 #원자재 #공급망 #글로벌마켓</span>
+                        </div>
+                    </div>
+                </div>
             `
         },
         {
@@ -651,9 +691,43 @@ function generatePortalSectionPages(template) {
             description: '만 나이 계산기, 평수 ↔ ㎡ 면적 변환기, D-Day 기념일 계산기, 대출이자 계산기, JSON 포맷터 등 일상에 꼭 필요한 도구 모음입니다.',
             heading: '스마트 생활 유틸리티 센터',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    일상생활과 업무에서 자주 쓰이는 법정 만나이 계산, 부동산 평수 변환, 디데이 카운트다운을 무료로 제공합니다.
-                </p>
+                <div class="space-y-6 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 생활도구 센터는 일상생활과 직장 업무에서 매일 마주치는 계산과 변환 작업을 한곳에서 가장 빠르고 정확하게 처리할 수 있도록 돕는 실용 도구 모음입니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-indigo-900 text-base mb-2">1. 대한민국 만 나이 계산기</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                2023년 6월 28일부터 시행된 법제처 행정기본법 기준에 따라, 생일 도래 여부를 정밀 계산하여 법률·행정·금융 계약상 유효한 만 나이와 다음 생일까지 남은 일수를 제공합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-emerald-900 text-base mb-2">2. 부동산 평수 ↔ ㎡ 정밀 변환기</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                계량에 관한 법률상 법정단위인 1평 = 3.305785㎡ 정밀 환산 공식을 적용하며, 아파트 분양 시 혼동하기 쉬운 전용면적, 주거공용면적, 공급면적의 차이를 명쾌하게 해설합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-amber-900 text-base mb-2">3. D-Day 카운트다운 & 타임 매니지먼트</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                수능, 자격증 시험, 프로젝트 마감, 결혼기념일 등 소중한 목표일까지 남은 일수와 경과일수를 오차 없이 계산하여 체계적인 일정 관리와 동기 부여를 지원합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-blue-900 text-base mb-2">4. 개발자용 JSON 포맷터 & 문법 검증기</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                들여쓰기가 깨진 JSON 텍스트를 보기 좋게 정렬하고 구문 에러(Syntax Error) 줄 번호를 실시간 감지하여 웹 프론트엔드/백엔드 개발 실무 속도를 극대화합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2">
+                            <h3 class="font-bold text-purple-900 text-base mb-2">5. 퇴직금 & 연차수당 법정 계산 공식</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                근로기준법상 1년 이상 계속 근로한 근로자에게 지급되는 퇴직금을 퇴직 전 3개월간의 평균임금 및 1일 평균임금 기준으로 산정하는 원리와 세금 공제 기준을 안내합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             `
         },
         {
@@ -662,20 +736,97 @@ function generatePortalSectionPages(template) {
             description: '국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요.',
             heading: '글로벌 금융 시장 & 자산 관리',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    글로벌 거시경제 지표, 환율 시세, 미국 ETF 배당 전략 및 DSR 대출 한도 시뮬레이터를 제공합니다.
-                </p>
+                <div class="space-y-6 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 금융 센터는 국내외 주요 증시 지표와 실시간 환율, 그리고 복리 적금 및 대출이자 상환 플랜을 체계적으로 수립할 수 있는 종합 금융 인텔리전스 허브입니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 text-base mb-2">💵 글로벌 환율 및 통화 흐름</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                미국 달러(USD), 일본 엔(JPY), 유럽 유로(EUR), 중국 위안(CNY) 등 주요 기축통화의 매매기준율과 환전 수수료율(Spread)을 비교 분석하여 해외 결제 및 달러 자산 배분을 돕습니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 text-base mb-2">📉 대출 상환 방식 완벽 비교</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                원리금균등분할상환 vs 원금균등분할상환 vs 만기일시상환 방식에 따른 매월 상환 부담금과 대출 기간 전체의 총 이자 발생액을 시뮬레이션하여 최적의 금융 설계를 제안합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 text-base mb-2">📈 복리 효과 & 예적금 풍차돌리기</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                단리와 복리의 누적 수익 격차를 파악하고, 매월 1년 만기 적금을 새로 개설하여 유동성과 복리 이자 효과를 동시에 누리는 풍차돌리기 전략과 이자소득세(15.4%) 절세법을 소개합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 text-base mb-2">🏛️ 미국 배당주 & 지수 ETF 장기 투자</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                S&P 500 및 나스닥 100 지수를 추종하는 대표 패시브 ETF와 25년 이상 배당을 증액해 온 미국 배당 귀족주 포트폴리오를 통해 지속 가능한 은퇴 현금 파이프라인 구축을 안내합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        {
+            route: 'entertainment',
+            title: '재미 & 모던 명리 사주 & 웹소설 작법 | VERA 엔터테인먼트',
+            description: '정통 명리학 5대 오행 만세력과 궁합 분석, 대운 세운 해석, 그리고 웹소설 3막 구조 작법 칼럼까지 지적 호기심과 즐거움을 함께 채우는 엔터테인먼트 공간입니다.',
+            heading: 'VERA 엔터테인먼트 & 지식 문화',
+            content: `
+                <div class="space-y-6 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 엔터테인먼트는 고리타분한 미신 대신 현대 데이터 과학과 결합한 모던 명리 사주 분석과 창의적 스토리텔링 웹소설 작법을 제공하는 문화 콘텐츠 공간입니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-violet-900 text-base mb-2">☯️ 정통 만세력 & 5대 오행 밸런스</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                생년월일시 천간과 지지 8글자를 추출하여 목·화·토·금·수 오행의 상호작용과 부족한 기운을 보완하는 라이프스타일 밸런스 가이드를 제공합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-violet-900 text-base mb-2">💞 2인 정밀 궁합 & 신살 매력도</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                단순한 띠 궁합을 넘어 일간(日干)의 상합·상충 관계와 오행 보완도(%)를 연산하여 관계의 시너지와 소통 솔루션을 단계별 티어로 진단합니다.
+                            </p>
+                        </div>
+                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2">
+                            <h3 class="font-bold text-violet-900 text-base mb-2">📚 웹소설 작법: 회빙환 트렌드와 3막 구조</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                현대 웹소설 메가 트렌드인 회귀·빙의·환생의 클리셰 변주법과 독자의 몰입감을 극대화하는 발단-위기-절정 3막 구조 플롯 설계 원리를 심층 분석합니다.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             `
         },
         {
             route: 'lounge',
             title: '회원 라운지 & 커뮤니티 공간 | VERA',
-            description: '다양한 주제로 소통하고 유용한 정보를 나누는 VERA 커뮤니티 라운지입니다.',
+            description: '금융, IT, 일상생활 꿀팁을 나누고 다양한 주제로 소통하는 VERA 열린 커뮤니티 라운지입니다.',
             heading: 'VERA 라운지 & 커뮤니티',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    지식과 일상을 나누고, 유용한 팁을 공유하는 소통 공간입니다.
-                </p>
+                <div class="space-y-4 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        VERA 라운지는 지식과 일상을 나누고 건전한 토론 문화를 만들어가는 사용자 소통 공간입니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">💬 실시간 이슈 토론</h4>
+                            <p class="text-xs text-gray-600">경제 트렌드와 테크 소식에 대한 다양한 시각을 나누는 열린 토론의 장입니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">💡 생활 지혜 & 팁</h4>
+                            <p class="text-xs text-gray-600">절세 노하우, 업무 효율화 단축키, 일상 꿀팁을 회원들과 자유롭게 공유하세요.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">🤝 커뮤니티 에티켓</h4>
+                            <p class="text-xs text-gray-600">상호 존중과 신뢰를 바탕으로 비방 없는 클린 소통 문화를 함께 만듭니다.</p>
+                        </div>
+                    </div>
+                </div>
             `
         },
         {
@@ -684,9 +835,25 @@ function generatePortalSectionPages(template) {
             description: '기업 및 비즈니스 고객을 위한 AI 홈페이지 제작, 자동화 솔루션 및 맞춤형 디지털 전환 서비스를 제공합니다.',
             heading: 'VERA B2B 스마트 비즈니스 솔루션',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    기업 홈페이지 제작부터 AI 업무 자동화까지 원스톱 비즈니스 솔루션을 경험해 보세요.
-                </p>
+                <div class="space-y-4 text-gray-800">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        기업의 디지털 전환(DX)을 가속화하고 브랜드 신뢰도를 극대화하는 고성능 맞춤형 웹 빌더 및 비즈니스 자동화 솔루션을 제공합니다.
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">⚡ 반응형 웹 표준 구축</h4>
+                            <p class="text-xs text-gray-600">모바일, 태블릿, PC 모든 디바이스에서 최적의 사용성을 보장하는 모던 UI/UX를 설계합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">🔍 검색엔진 최적화 (SEO)</h4>
+                            <p class="text-xs text-gray-600">구글 및 네이버 검색 로봇 친화적인 시맨틱 마크업과 초고속 정적 사전 렌더링을 지원합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <h4 class="font-bold text-sm text-slate-900 mb-1">🤖 AI 업무 자동화 파이프라인</h4>
+                            <p class="text-xs text-gray-600">데이터 수집 및 고객 응대 워크플로우를 자동화하여 운영 비용을 혁신적으로 절감합니다.</p>
+                        </div>
+                    </div>
+                </div>
             `
         }
     ];
@@ -1059,7 +1226,7 @@ function replaceMetaTags(template, { title, description, canonical, ogType, json
     result = result.replace(/<meta name="description" content="[^"]*"/i, `<meta name="description" content="${description}"`);
 
     // Canonical Link
-    result = result.replace(/<link rel="canonical" href="[^"]*"/i, `<link rel="canonical" href="${canonical}"`);
+    result = result.replace(/<link rel="canonical" href="[^"]*"[^>]*>/i, `<link rel="canonical" href="${canonical}" data-rh="true" />`);
 
     // Open Graph
     result = result.replace(/<meta property="og:title" content="[^"]*"/i, `<meta property="og:title" content="${title}"`);

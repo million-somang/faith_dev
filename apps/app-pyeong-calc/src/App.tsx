@@ -32,7 +32,7 @@ function PageSEO({ title, description, path }: { title: string; description: str
             linkCanonical.setAttribute('rel', 'canonical');
             document.head.appendChild(linkCanonical);
         }
-        linkCanonical.setAttribute('href', `https://faithlink.site${path}`);
+        linkCanonical.setAttribute('href', `https://veranex.app${path}`);
     }, [title, description, path]);
 
     return null;

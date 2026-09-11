@@ -49,18 +49,13 @@ export function WeatherWidget() {
             try {
                 const wxUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,is_day&hourly=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2`;
                 const aqUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=pm10,pm2_5&timezone=auto`;
-                const geoUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=ko`;
-
-                const [wx, aq, geo] = await Promise.all([
+                const [wx, aq] = await Promise.all([
                     fetch(wxUrl).then(r => r.json()),
                     fetch(aqUrl).then(r => r.json()).catch(() => null),
-                    fetch(geoUrl).then(r => r.json()).catch(() => null),
                 ]);
                 if (!active) return;
 
-                const location = geo
-                    ? (geo.city || geo.locality || geo.principalSubdivision || fallbackName)
-                    : fallbackName;
+                const location = fallbackName;
 
                 // 현재 시각 이후로 2시간 간격 5칸
                 const times: string[] = wx.hourly?.time || [];

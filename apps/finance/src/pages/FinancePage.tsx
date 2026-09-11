@@ -638,11 +638,10 @@ export default function FinancePage() {
                             <i className="fas fa-calculator text-3xl text-green-600 mb-3"></i>
                             <div className="font-semibold text-gray-900">수익률 계산기</div>
                         </button>
-                        <div className="bg-white rounded-lg shadow-sm p-6 text-center opacity-50 cursor-not-allowed border border-gray-100">
-                            <i className="fas fa-robot text-3xl text-gray-400 mb-3"></i>
-                            <div className="font-semibold text-gray-500">AI 브리핑</div>
-                            <div className="text-xs text-gray-400 mt-1">준비중</div>
-                        </div>
+                        <a href="/guides" className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow text-center border border-gray-100 block">
+                            <i className="fas fa-book-open text-3xl text-purple-600 mb-3"></i>
+                            <div className="font-semibold text-gray-900">금융 가이드</div>
+                        </a>
                     </div>
                 </div>
             </main>
