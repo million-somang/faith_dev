@@ -867,7 +867,7 @@ function generatePortalSectionPages(template) {
                     <p class="text-gray-700 leading-relaxed text-base">
                         VERA B2B는 중견·중소기업 및 스타트업이 급변하는 디지털 시장에서 탁월한 경쟁력을 확보할 수 있도록 맞춤형 반응형 웹 플랫폼, 차세대 AI 자동화 파이프라인, 검색엔진 최적화(SEO) 아키텍처를 엔드투엔드로 제공하는 기업 전용 솔루션입니다.
                     </p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
                             <h4 class="font-bold text-base text-slate-900 mb-1">⚡ 차세대 웹 표준 & 성능 최적화</h4>
                             <p class="text-xs text-gray-600 leading-relaxed">
@@ -884,6 +884,24 @@ function generatePortalSectionPages(template) {
                             <h4 class="font-bold text-base text-slate-900 mb-1">🤖 엔터프라이즈 AI 자동화 워크플로우</h4>
                             <p class="text-xs text-gray-600 leading-relaxed">
                                 고객 문의 응대 챗봇, 일일 비즈니스 데이터 요약 리포트, 재고 관리 연동 등 반복적인 사내 업무를 대규모 언어 모델(LLM) 파이프라인으로 연결하여 업무 생산성을 비약적으로 향상시킵니다.
+                            </p>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">🔒 엔터프라이즈 보안 & 무중단 인프라</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                SSL/TLS 완벽 암호화, DDoS 방어망, 클라우드 로드밸런싱 및 실시간 분산 백업을 통해 99.9% 이상의 가동률(SLA)과 무결성 높은 비즈니스 연속성을 보장합니다.
+                            </p>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">🌐 글로벌 다국어 & 결제 게이트웨이</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                해외 시장 진출을 위한 다국어(영어, 일본어, 중국어) 로컬라이징 및 글로벌 결제 모듈(Stripe, PayPal, 이니시스)과의 매끄러운 연동 환경을 구축합니다.
+                            </p>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">📊 실시간 비즈니스 데이터 분석 대시보드</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                방문자 유입 경로, 페이지 체류 시간, 사용자 전환율(CVR) 지표를 직관적인 그래픽 차트로 시각화하여 경영진의 신속하고 정확한 데이터 기반 의사결정을 지원합니다.
                             </p>
                         </div>
                     </div>
