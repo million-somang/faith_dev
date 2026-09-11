@@ -93,8 +93,8 @@ export default function EntertainmentPage() {
     return (
         <div className="flex flex-col min-h-screen bg-slate-100 font-sans">
             <PageSEO
-                title="재미 및 운세 - FaithLink 엔터테인먼트"
-                description="사주 보기, 손금 분석, 영화 감상 등 일상에 소소한 즐거움을 더하는 재미 전용 포털입니다."
+                title="재미 및 사주 - VERA 엔터테인먼트"
+                description="정통 사주명리, 웹소설 작법 및 흥미진진한 지식 칼럼을 만나는 VERA 엔터테인먼트 공간입니다."
                 path="/entertainment"
             />
             <Header user={user} onLogout={logout} />

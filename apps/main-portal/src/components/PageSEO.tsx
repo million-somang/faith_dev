@@ -9,7 +9,7 @@ interface PageSEOProps {
     jsonLd?: Record<string, unknown>;
 }
 
-const SITE_URL = 'https://faithlink.my';
+const SITE_URL = 'https://veranex.app';
 const SITE_NAME = 'VERA';
 const DEFAULT_IMAGE = `${SITE_URL}/logo-512.png`;
 

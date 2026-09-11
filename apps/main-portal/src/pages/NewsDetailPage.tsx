@@ -163,12 +163,12 @@ export default function NewsDetailPage() {
                             name: 'VERA',
                             logo: {
                                 '@type': 'ImageObject',
-                                url: 'https://faithlink.site/logo.png'
+                                url: 'https://veranex.app/logo-512.png'
                             }
                         },
                         mainEntityOfPage: {
                             '@type': 'WebPage',
-                            '@id': `https://faithlink.site/news/${id}`
+                            '@id': `https://veranex.app/news/${id}`
                         }
                     }}
                 />

@@ -172,7 +172,7 @@ export default function GameInfoPage() {
         '@type': 'Game',
         name: config.label,
         description: config.description,
-        url: `https://faithlink.my/game/${gameId}`,
+        url: `https://veranex.app/game/${gameId}`,
         genre: 'Puzzle',
     };
 

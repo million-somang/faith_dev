@@ -228,25 +228,17 @@ ${itemsXml}
     return c.text(rssXml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
 });
 
-// sitemap.xml (동적 생성 — 뉴스 URL 포함)
+// sitemap.xml (17대 지식 칼럼 정적 사이트맵 + 최신 뉴스 실시간 동적 결합)
 app.get('/sitemap.xml', async (c) => {
-    const staticPages = [
-        { loc: '/', priority: '1.0', changefreq: 'daily' },
-        { loc: '/news', priority: '0.9', changefreq: 'hourly' },
-        { loc: '/game', priority: '0.8', changefreq: 'weekly' },
-        { loc: '/lifestyle', priority: '0.8', changefreq: 'weekly' },
-        { loc: '/finance', priority: '0.8', changefreq: 'daily' },
-        { loc: '/lounge', priority: '0.7', changefreq: 'daily' },
-        { loc: '/entertainment', priority: '0.7', changefreq: 'weekly' },
-        { loc: '/game/sudoku', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/game/2048', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/game/minesweeper', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/game/freecell', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/privacy', priority: '0.5', changefreq: 'monthly' },
-        { loc: '/terms', priority: '0.5', changefreq: 'monthly' },
-        { loc: '/about', priority: '0.5', changefreq: 'monthly' },
-        { loc: '/contact', priority: '0.5', changefreq: 'monthly' },
-    ];
+    let baseXml = '';
+    const distSitemapPath = path.resolve('./apps/main-portal/dist/sitemap.xml');
+    const publicSitemapPath = path.resolve('./apps/main-portal/public/sitemap.xml');
+
+    if (fs.existsSync(distSitemapPath)) {
+        baseXml = fs.readFileSync(distSitemapPath, 'utf-8');
+    } else if (fs.existsSync(publicSitemapPath)) {
+        baseXml = fs.readFileSync(publicSitemapPath, 'utf-8');
+    }
 
     // DB에서 최근 뉴스 150개 가져오기
     let newsUrls: { loc: string; lastmod: string }[] = [];
@@ -262,23 +254,41 @@ app.get('/sitemap.xml', async (c) => {
         console.warn('[SEO] News query for sitemap failed:', e);
     }
 
-    const urls = [
-        ...staticPages.map(p => `  <url>
-    <loc>${SITE_URL}${p.loc}</loc>
-    <changefreq>${p.changefreq}</changefreq>
-    <priority>${p.priority}</priority>
-  </url>`),
-        ...newsUrls.map(n => `  <url>
+    const newsXml = newsUrls.map(n => `  <url>
     <loc>${SITE_URL}${n.loc}</loc>
     <lastmod>${n.lastmod}</lastmod>
     <changefreq>never</changefreq>
     <priority>0.7</priority>
-  </url>`),
+  </url>`).join('\n');
+
+    if (baseXml && baseXml.includes('</urlset>')) {
+        const combined = baseXml.replace('</urlset>', `${newsXml}\n</urlset>`);
+        return c.text(combined, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    }
+
+    const staticPages = [
+        { loc: '/', priority: '1.0', changefreq: 'daily' },
+        { loc: '/guides', priority: '0.95', changefreq: 'daily' },
+        { loc: '/news', priority: '0.9', changefreq: 'hourly' },
+        { loc: '/finance', priority: '0.9', changefreq: 'daily' },
+        { loc: '/game', priority: '0.85', changefreq: 'weekly' },
+        { loc: '/lifestyle', priority: '0.85', changefreq: 'weekly' },
+        { loc: '/lounge', priority: '0.8', changefreq: 'daily' },
+        { loc: '/b2b', priority: '0.8', changefreq: 'weekly' },
+        { loc: '/about', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/privacy', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/terms', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/contact', priority: '0.6', changefreq: 'monthly' },
     ];
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls.join('\n')}
+${staticPages.map(p => `  <url>
+    <loc>${SITE_URL}${p.loc}</loc>
+    <changefreq>${p.changefreq}</changefreq>
+    <priority>${p.priority}</priority>
+  </url>`).join('\n')}
+${newsXml}
 </urlset>`;
 
     return c.text(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });

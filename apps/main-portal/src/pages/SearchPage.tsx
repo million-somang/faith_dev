@@ -87,7 +87,7 @@ export default function SearchPage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50">
-            <PageSEO title={q ? `'${q}' 검색 결과` : '통합 검색'} description="FaithLink 통합 검색 — 뉴스, 게임, 생활도구를 한 번에 검색하세요." path="/search" />
+            <PageSEO title={q ? `'${q}' 검색 결과` : '통합 검색'} description="VERA 통합 검색 — 뉴스, 가이드, 게임, 생활도구를 한 번에 검색하세요." path="/search" />
             <Helmet><meta name="robots" content="noindex,follow" /></Helmet>
             <Header user={user} onLogout={logout} />
 
