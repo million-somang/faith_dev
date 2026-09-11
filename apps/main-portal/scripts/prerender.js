@@ -775,28 +775,42 @@ function generatePortalSectionPages(template) {
             description: '정통 명리학 5대 오행 만세력과 궁합 분석, 대운 세운 해석, 그리고 웹소설 3막 구조 작법 칼럼까지 지적 호기심과 즐거움을 함께 채우는 엔터테인먼트 공간입니다.',
             heading: 'VERA 엔터테인먼트 & 지식 문화',
             content: `
-                <div class="space-y-6 text-gray-800">
+                <div class="space-y-8 text-gray-800">
                     <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 엔터테인먼트는 고리타분한 미신 대신 현대 데이터 과학과 결합한 모던 명리 사주 분석과 창의적 스토리텔링 웹소설 작법을 제공하는 문화 콘텐츠 공간입니다.
+                        VERA 엔터테인먼트는 단순한 운세를 넘어 고대 동양 철학의 데이터 체계인 명리학(命理學)과 현대 데이터 분석, 그리고 독자의 감정을 사로잡는 웹소설 스토리텔링 창작 기법을 깊이 있게 탐구하는 지적 유희 공간입니다.
                     </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-violet-900 text-base mb-2">☯️ 정통 만세력 & 5대 오행 밸런스</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                생년월일시 천간과 지지 8글자를 추출하여 목·화·토·금·수 오행의 상호작용과 부족한 기운을 보완하는 라이프스타일 밸런스 가이드를 제공합니다.
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-violet-900 text-lg">☯️ 정통 만세력 & 5대 오행 밸런스 분석</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                생년월일시에서 도출되는 사주팔자(四柱八字) 천간(天干)과 지지(地支) 8글자의 상호작용을 컴퓨터 알고리즘으로 정밀 변환합니다. 목(木)·화(火)·토(土)·금(金)·수(水) 오행의 분포 비율을 방사형 차트로 시각화하고, 지나치게 편중되거나 부족한 기운을 일상 인테리어, 컬러, 식습관, 직업 적성으로 보완하는 실천적 라이프 가이드를 제시합니다.
                             </p>
                         </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-violet-900 text-base mb-2">💞 2인 정밀 궁합 & 신살 매력도</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                단순한 띠 궁합을 넘어 일간(日干)의 상합·상충 관계와 오행 보완도(%)를 연산하여 관계의 시너지와 소통 솔루션을 단계별 티어로 진단합니다.
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-violet-900 text-lg">💞 2인 정밀 궁합 & 상생상극 알고리즘</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                고리타분한 띠 궁합의 한계를 탈피하여 두 사람의 일간(日干) 상합·상충 여부와 오행 상호 보완도(%)를 종합 산출합니다. 서로의 부족한 에너지를 채워주는 상생 관계인지, 충돌을 피하기 위한 소통 방식이 필요한 상극 관계인지를 S/A/B/C/D 5단계 티어표와 갈등 관리 솔루션으로 제공합니다.
                             </p>
                         </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2">
-                            <h3 class="font-bold text-violet-900 text-base mb-2">📚 웹소설 작법: 회빙환 트렌드와 3막 구조</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                현대 웹소설 메가 트렌드인 회귀·빙의·환생의 클리셰 변주법과 독자의 몰입감을 극대화하는 발단-위기-절정 3막 구조 플롯 설계 원리를 심층 분석합니다.
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-violet-900 text-lg">📚 웹소설 작법: 회빙환 트렌드와 3막 플롯</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                회귀(Regression), 빙의(Possession), 환생(Reincarnation)으로 대표되는 웹소설 3대 흥행 코드의 클리셰를 비틀고 신선함을 부여하는 기법을 소개합니다. 발단(기)에서 주인공의 결핍과 각성, 전개/위기(승·전)에서의 단계적 보상 루프와 고구마 없는 사이다 전개, 절정(결)에서의 카타르시스를 완성하는 3막 구조 작법 가이드를 제공합니다.
                             </p>
+                        </div>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <h3 class="font-bold text-violet-900 text-lg">✍️ 캐릭터 갈등 설계와 빌런 입체화</h3>
+                            <p class="text-sm text-gray-600 leading-relaxed">
+                                평면적인 악역에서 벗어나 독자가 몰입하고 분노하며 카타르시스를 극대화할 수 있는 다차원적 빌런 캐릭터 구축법을 다룹니다. 주인공과의 가치관 대립, 도덕적 딜레마, 숨겨진 트라우마 설계를 통해 작품의 서사적 긴장감을 끝까지 유지하는 전문 스토리텔링 공식을 전수합니다.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 space-y-2">
+                        <h4 class="font-bold text-indigo-950 text-base">📖 관련 엔터테인먼트 심층 칼럼 바로가기</h4>
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <a href="/guides/saju-manseryeok-principles-and-four-pillars" class="text-xs bg-white px-3 py-2 rounded-xl text-indigo-700 font-bold border border-indigo-200 hover:bg-indigo-600 hover:text-white transition-colors">사주 만세력 원리 칼럼 →</a>
+                            <a href="/guides/webnovel-trends-regression-possession-reincarnation" class="text-xs bg-white px-3 py-2 rounded-xl text-indigo-700 font-bold border border-indigo-200 hover:bg-indigo-600 hover:text-white transition-colors">웹소설 회빙환 작법 칼럼 →</a>
+                            <a href="/guides/five-elements-harmony-and-lifestyle-balance" class="text-xs bg-white px-3 py-2 rounded-xl text-indigo-700 font-bold border border-indigo-200 hover:bg-indigo-600 hover:text-white transition-colors">오행 밸런스 라이프 가이드 →</a>
                         </div>
                     </div>
                 </div>
@@ -808,23 +822,37 @@ function generatePortalSectionPages(template) {
             description: '금융, IT, 일상생활 꿀팁을 나누고 다양한 주제로 소통하는 VERA 열린 커뮤니티 라운지입니다.',
             heading: 'VERA 라운지 & 커뮤니티',
             content: `
-                <div class="space-y-4 text-gray-800">
+                <div class="space-y-8 text-gray-800">
                     <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 라운지는 지식과 일상을 나누고 건전한 토론 문화를 만들어가는 사용자 소통 공간입니다.
+                        VERA 라운지는 디지털 시대를 살아가는 현대인들이 금융 지식, 테크 동향, 업무 자동화 꿀팁, 일상생활의 소중한 경험을 나누는 지식 기반 소통 광장입니다. 광고성 스팸이나 근거 없는 소문 대신 상호 존중과 객관적 팩트에 기반한 토론 문화를 지향합니다.
                     </p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">💬 실시간 이슈 토론</h4>
-                            <p class="text-xs text-gray-600">경제 트렌드와 테크 소식에 대한 다양한 시각을 나누는 열린 토론의 장입니다.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">💬 경제 & 글로벌 테크 토론</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                미국 연준(Fed)의 금리 인하 사이클, 국내외 주식 시장 흐름, 생성형 AI 신기술 발표 등 매일 쏟아지는 글로벌 이슈에 대한 사용자들의 깊이 있는 분석과 다양한 시각을 실시간으로 공유합니다.
+                            </p>
                         </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">💡 생활 지혜 & 팁</h4>
-                            <p class="text-xs text-gray-600">절세 노하우, 업무 효율화 단축키, 일상 꿀팁을 회원들과 자유롭게 공유하세요.</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">💡 스마트 생활 지혜 & 절세 노하우</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                연말정산 공제 혜택 극대화, 청약 가점 계산 꿀팁, 환전 수수료 아끼는 법, 알뜰폰 요금제 비교 등 실생활에서 바로 돈이 되고 시간을 아껴주는 생생한 생활 팁을 나눕니다.
+                            </p>
                         </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">🤝 커뮤니티 에티켓</h4>
-                            <p class="text-xs text-gray-600">상호 존중과 신뢰를 바탕으로 비방 없는 클린 소통 문화를 함께 만듭니다.</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">🤝 클린 커뮤니티 운영 원칙</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                비방, 혐오 표현, 불법 광고 글은 AI 모니터링 필터를 통해 24시간 실시간 차단됩니다. 모든 회원이 안심하고 양질의 지식을 교류할 수 있는 안전하고 신뢰도 높은 커뮤니티 환경을 유지합니다.
+                            </p>
                         </div>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-xs text-gray-700 space-y-3">
+                        <h4 class="font-bold text-sm text-gray-900">🛡️ VERA 커뮤니티 3대 에티켓 수칙</h4>
+                        <ul class="list-disc pl-5 space-y-2 leading-relaxed">
+                            <li><strong>정확한 출처 명시:</strong> 통계 데이터나 법률/세무 정보 공유 시 신뢰할 수 있는 공식 기관의 출처를 함께 밝혀주세요.</li>
+                            <li><strong>상호 존중의 대화:</strong> 서로 다른 투자 관점이나 의견 차이를 인정하며, 건설적인 피드백과 열린 토론을 지향합니다.</li>
+                            <li><strong>개인정보 보호:</strong> 본인 및 타인의 주민등록번호, 계좌번호 등 민감한 개인 식별 정보는 절대 공유하지 않습니다.</li>
+                        </ul>
                     </div>
                 </div>
             `
@@ -835,23 +863,35 @@ function generatePortalSectionPages(template) {
             description: '기업 및 비즈니스 고객을 위한 AI 홈페이지 제작, 자동화 솔루션 및 맞춤형 디지털 전환 서비스를 제공합니다.',
             heading: 'VERA B2B 스마트 비즈니스 솔루션',
             content: `
-                <div class="space-y-4 text-gray-800">
+                <div class="space-y-8 text-gray-800">
                     <p class="text-gray-700 leading-relaxed text-base">
-                        기업의 디지털 전환(DX)을 가속화하고 브랜드 신뢰도를 극대화하는 고성능 맞춤형 웹 빌더 및 비즈니스 자동화 솔루션을 제공합니다.
+                        VERA B2B는 중견·중소기업 및 스타트업이 급변하는 디지털 시장에서 탁월한 경쟁력을 확보할 수 있도록 맞춤형 반응형 웹 플랫폼, 차세대 AI 자동화 파이프라인, 검색엔진 최적화(SEO) 아키텍처를 엔드투엔드로 제공하는 기업 전용 솔루션입니다.
                     </p>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">⚡ 반응형 웹 표준 구축</h4>
-                            <p class="text-xs text-gray-600">모바일, 태블릿, PC 모든 디바이스에서 최적의 사용성을 보장하는 모던 UI/UX를 설계합니다.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">⚡ 차세대 웹 표준 & 성능 최적화</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                최신 모던 웹 스택(Vite, React, TypeScript)과 정적 사전 렌더링(SSG) 기술을 결합하여 0.5초 이내의 초고속 페이지 로딩 속도와 100% 모바일 반응형 인터페이스를 구현합니다.
+                            </p>
                         </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">🔍 검색엔진 최적화 (SEO)</h4>
-                            <p class="text-xs text-gray-600">구글 및 네이버 검색 로봇 친화적인 시맨틱 마크업과 초고속 정적 사전 렌더링을 지원합니다.</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">🔍 검색엔진 최적화 (SEO) & 스키마</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                구글(Google)과 네이버(Naver)의 웹마스터 가이드라인에 완벽히 부합하는 시맨틱 HTML5 구조, JSON-LD 구조화 데이터, OpenGraph 태그 자동화를 통해 자연 검색 유입량을 극대화합니다.
+                            </p>
                         </div>
-                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h4 class="font-bold text-sm text-slate-900 mb-1">🤖 AI 업무 자동화 파이프라인</h4>
-                            <p class="text-xs text-gray-600">데이터 수집 및 고객 응대 워크플로우를 자동화하여 운영 비용을 혁신적으로 절감합니다.</p>
+                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <h4 class="font-bold text-base text-slate-900 mb-1">🤖 엔터프라이즈 AI 자동화 워크플로우</h4>
+                            <p class="text-xs text-gray-600 leading-relaxed">
+                                고객 문의 응대 챗봇, 일일 비즈니스 데이터 요약 리포트, 재고 관리 연동 등 반복적인 사내 업무를 대규모 언어 모델(LLM) 파이프라인으로 연결하여 업무 생산성을 비약적으로 향상시킵니다.
+                            </p>
                         </div>
+                    </div>
+                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-xs text-gray-700 space-y-3">
+                        <h4 class="font-bold text-sm text-blue-950">💼 기업 제휴 및 솔루션 도입 문의</h4>
+                        <p class="leading-relaxed text-blue-900">
+                            귀사의 비즈니스 모델에 최적화된 디지털 전환 컨설팅과 견적 상담을 무료로 지원해 드립니다. 맞춤형 솔루션 도입을 원하시면 공식 제휴 메일(<a href="mailto:business@veranex.app" class="font-bold underline text-blue-800">business@veranex.app</a>)로 문의 바랍니다.
+                        </p>
                     </div>
                 </div>
             `
