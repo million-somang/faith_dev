@@ -132,21 +132,40 @@ app.get('/finance', serveStatic({ path: './apps/finance/dist/index.html' }));
 
 const SITE_URL = process.env.SITE_URL || 'https://veranex.app';
 
-// robots.txt (네이버 Yeti 및 구글봇 검색 크롤링 지원)
+// robots.txt (네이버 Yeti 및 구글 애드센스 심사 봇 크롤링 지원)
 app.get('/robots.txt', (c) => {
-    const robotsTxt = `User-agent: *
+    try {
+        const publicRobots = path.resolve('./apps/main-portal/dist/robots.txt');
+        if (fs.existsSync(publicRobots)) {
+            return c.text(fs.readFileSync(publicRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        }
+    } catch (e) {
+        console.error('Error reading robots.txt:', e);
+    }
+    const robotsTxt = `User-agent: Mediapartners-Google
 Allow: /
-Disallow: /api/
-Disallow: /admin/
-Disallow: /app/
-Disallow: /mypage
-Disallow: /login
-Disallow: /signup
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+
+User-agent: Googlebot
+Allow: /
 
 User-agent: Yeti
 Allow: /
 Allow: /sitemap.xml
 Allow: /rss.xml
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /mypage
+Disallow: /login
+Disallow: /signup
 
 Sitemap: ${SITE_URL}/sitemap.xml
 Sitemap: ${SITE_URL}/rss.xml
