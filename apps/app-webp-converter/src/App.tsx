@@ -16,7 +16,7 @@ import FaqSection from './components/FaqSection';
 // ── SEO 메타데이터 동적 주입 ──
 function PageSEO() {
     useEffect(() => {
-        document.title = '이미지 WebP 변환 & 무손실 압축기 | FaithLink';
+        document.title = 'WebP 이미지 변환기 & 무손실 압축기 (2026 웹 표준) | FaithPortal';
         let metaDesc = document.querySelector('meta[name="description"]');
         if (!metaDesc) {
             metaDesc = document.createElement('meta');
@@ -95,9 +95,9 @@ export default function App() {
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 54px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('VERA High-Resolution Sample Image', 600, 380);
+        ctx.fillText('FaithPortal High-Resolution Sample', 600, 380);
         ctx.font = '32px sans-serif';
-        ctx.fillText('WebP Conversion & 80% Lossless Compression Test', 600, 450);
+        ctx.fillText('WebP Conversion & 80% Lossless Compression', 600, 450);
 
         canvas.toBlob((blob) => {
             if (!blob) return;
@@ -168,45 +168,76 @@ export default function App() {
     return (
         <MiniAppLayout title="">
             <PageSEO />
-            <div className="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-12 antialiased">
+            <div className="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-8 antialiased">
                 <Header activeTab={activeTab} setActiveTab={setActiveTab} />
 
-                <main className="p-3 sm:p-4 space-y-4 flex-1">
+                <main className="p-3 sm:p-4 flex-1">
                     {activeTab === 'converter' && (
                         <>
                             {viewMode === 'input' ? (
-                                <div className="space-y-4 animate-fade-in">
-                                    {/* 상단 안내 배너 */}
-                                    <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 border border-indigo-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
-                                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                                            <i className="fas fa-shield-alt text-xs"></i>
+                                <div className="min-h-[calc(850px-140px)] flex flex-col justify-between space-y-4 animate-fade-in">
+                                    <div className="space-y-4">
+                                        {/* 상단 안내 배너 */}
+                                        <div className="bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 border border-indigo-200/80 rounded-2xl p-4 flex items-start gap-3 shadow-xs">
+                                            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                                                <i className="fas fa-shield-alt text-xs"></i>
+                                            </div>
+                                            <div className="text-xs text-slate-700 leading-relaxed text-left">
+                                                <p className="font-extrabold text-indigo-950 mb-0.5">
+                                                    서버 전송 없는 100% 로컬 메모리 처리
+                                                </p>
+                                                <p className="text-slate-600 text-[11px]">
+                                                    JPG, PNG 이미지를 차세대 <strong>WebP</strong>로 변환하여 화질 저하 없이 <strong>용량을 최대 80% 절감</strong>합니다.
+                                                </p>
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-slate-700 leading-relaxed">
-                                            <p className="font-extrabold text-indigo-950 mb-0.5">
-                                                서버 전송 없는 100% 로컬 메모리 처리
-                                            </p>
-                                            <p className="text-slate-600 text-[11px]">
-                                                JPG, PNG 이미지를 차세대 <strong>WebP</strong>로 변환하여 품질 손실 없이 <strong>용량을 최대 80% 절감</strong>합니다.
-                                            </p>
+
+                                        {/* 파일 드롭존 */}
+                                        <DropZone
+                                            items={items}
+                                            onFilesSelected={handleFilesSelected}
+                                            onRemoveItem={handleRemoveItem}
+                                            onLoadSample={handleLoadSample}
+                                        />
+
+                                        {/* 압축 및 리사이즈 설정 패널 */}
+                                        <SettingsBar
+                                            settings={settings}
+                                            onChangeSettings={setSettings}
+                                            onConvert={handleConvert}
+                                            isConverting={isConverting}
+                                            disabled={items.length === 0}
+                                        />
+
+                                        {/* 850px 화면 가득 채우는 포맷 비교 & 장점 카드 (하단 빈칸 제로) */}
+                                        <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-2 text-left">
+                                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                                                <i className="fas fa-check-circle text-emerald-500"></i>
+                                                <span>WebP 포맷 비교 및 기대 효과</span>
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                                    <div className="text-[10px] font-bold text-slate-400">JPEG 대비</div>
+                                                    <div className="text-xs font-black text-indigo-600">35% 경량화</div>
+                                                </div>
+                                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                                    <div className="text-[10px] font-bold text-slate-400">PNG 대비</div>
+                                                    <div className="text-xs font-black text-emerald-600">80% 경량화</div>
+                                                </div>
+                                                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                                                    <div className="text-[10px] font-bold text-slate-400">알파 채널</div>
+                                                    <div className="text-xs font-black text-blue-600">투명도 완벽유지</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    {/* 파일 드롭존 */}
-                                    <DropZone
-                                        items={items}
-                                        onFilesSelected={handleFilesSelected}
-                                        onRemoveItem={handleRemoveItem}
-                                        onLoadSample={handleLoadSample}
-                                    />
-
-                                    {/* 압축 및 리사이즈 설정 패널 */}
-                                    <SettingsBar
-                                        settings={settings}
-                                        onChangeSettings={setSettings}
-                                        onConvert={handleConvert}
-                                        isConverting={isConverting}
-                                        disabled={items.length === 0}
-                                    />
+                                    {/* 하단 푸터 안내 */}
+                                    <div className="pt-2 text-center">
+                                        <p className="text-[11px] text-slate-400">
+                                            2026 W3C 웹 그래픽스 표준 권고안 준수 · HTML5 Canvas 2D
+                                        </p>
+                                    </div>
                                 </div>
                             ) : (
                                 <ResultReport

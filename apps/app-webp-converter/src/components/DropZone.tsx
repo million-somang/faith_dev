@@ -32,7 +32,7 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 hover:bg-indigo-50/70 rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center group"
+                className="border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-white hover:bg-indigo-50/30 rounded-3xl p-6 sm:p-7 text-center cursor-pointer transition-all duration-200 flex flex-col items-center justify-center group shadow-xs"
             >
                 <input
                     ref={fileInputRef}
@@ -40,6 +40,7 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                     multiple
                     accept="image/png, image/jpeg, image/webp, image/gif"
                     className="hidden"
+                    data-screenshot-input="sample_images"
                     onChange={(e) => {
                         if (e.target.files && e.target.files.length > 0) {
                             onFilesSelected(Array.from(e.target.files));
@@ -47,11 +48,11 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                     }}
                 />
 
-                <div className="w-14 h-14 rounded-2xl bg-white text-indigo-600 shadow-md flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 shadow-sm flex items-center justify-center text-2xl mb-3 group-hover:scale-105 transition-transform border border-indigo-100">
                     <i className="fas fa-cloud-upload-alt"></i>
                 </div>
 
-                <h3 className="text-sm font-black text-slate-800 mb-1">
+                <h3 className="text-sm font-black text-slate-900 mb-1">
                     이미지 파일을 드래그하거나 클릭하여 선택
                 </h3>
                 <p className="text-[11px] text-slate-500 mb-3">
@@ -59,7 +60,7 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-md bg-white border border-slate-200 text-slate-600 shadow-2xs">
+                    <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 shadow-2xs">
                         <i className="fas fa-lock text-emerald-500 mr-1"></i>서버 전송 $0 로컬 처리
                     </span>
                     <button
@@ -69,19 +70,23 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                             e.stopPropagation();
                             onLoadSample();
                         }}
-                        className="text-[10px] font-black px-2.5 py-1 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xs transition-colors cursor-pointer"
+                        className="text-[10px] font-black px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white shadow-2xs transition-all cursor-pointer flex items-center gap-1 active:scale-95"
                     >
-                        샘플 이미지로 테스트 ✨
+                        <span>샘플 이미지로 테스트</span>
+                        <span>✨</span>
                     </button>
                 </div>
             </div>
 
             {/* 선택된 파일 목록 칩 */}
             {items.length > 0 && (
-                <div className="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-xs space-y-2">
+                <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs space-y-2 animate-fade-in">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700 px-1">
-                        <span>선택된 파일 ({items.length}개)</span>
-                        <span className="text-[11px] text-indigo-600">
+                        <span className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                            <span>선택된 파일 ({items.length}개)</span>
+                        </span>
+                        <span className="text-[11px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
                             총 {formatBytes(items.reduce((acc, cur) => acc + cur.originalSize, 0))}
                         </span>
                     </div>
@@ -92,14 +97,14 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                                 key={item.id}
                                 className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
                             >
-                                <div className="flex items-center gap-2 truncate pr-2">
+                                <div className="flex items-center gap-2.5 truncate pr-2">
                                     <img
                                         src={item.previewUrl}
                                         alt={item.name}
-                                        className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200"
+                                        className="w-9 h-9 rounded-lg object-cover shrink-0 border border-slate-200 bg-white"
                                     />
                                     <div className="truncate text-left">
-                                        <div className="font-bold text-slate-800 truncate">{item.name}</div>
+                                        <div className="font-bold text-slate-800 truncate text-[11px]">{item.name}</div>
                                         <div className="text-[10px] text-slate-400">
                                             {formatBytes(item.originalSize)}
                                         </div>
@@ -109,7 +114,7 @@ export default function DropZone({ items, onFilesSelected, onRemoveItem, onLoadS
                                 <button
                                     type="button"
                                     onClick={() => onRemoveItem(item.id)}
-                                    className="w-6 h-6 rounded-lg bg-slate-200 hover:bg-rose-100 hover:text-rose-600 text-slate-500 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                                    className="w-6 h-6 rounded-lg bg-slate-200/80 hover:bg-rose-100 hover:text-rose-600 text-slate-500 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                                     title="삭제"
                                 >
                                     <i className="fas fa-times text-[10px]"></i>
