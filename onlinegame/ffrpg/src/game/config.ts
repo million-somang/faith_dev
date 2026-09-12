@@ -17,9 +17,10 @@ export const createGameConfig = (parentContainerId: string): Phaser.Types.Core.G
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   render: {
-    pixelArt: true,
-    antialias: false,
-    roundPixels: true,
+    pixelArt: false,
+    antialias: true,
+    antialiasGL: true,
+    roundPixels: false,
   },
   scene: [BootScene, BattleScene],
 });

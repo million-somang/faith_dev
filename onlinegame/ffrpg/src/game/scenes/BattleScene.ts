@@ -15,6 +15,7 @@ interface HeroSpriteNode {
   baseX: number;
   baseY: number;
   indicator: Phaser.GameObjects.Graphics;
+  shadow?: Phaser.GameObjects.Ellipse;
   idleTween?: Phaser.Tweens.Tween;
   data: HeroBattleUnit;
 }
@@ -23,6 +24,7 @@ interface EnemySpriteNode {
   sprite: Phaser.GameObjects.Sprite;
   baseX: number;
   baseY: number;
+  shadow?: Phaser.GameObjects.Ellipse;
   data: EnemyBattleUnit;
 }
 
@@ -92,15 +94,17 @@ export class BattleScene extends Phaser.Scene {
     this.activeHeroIndex = null;
     this.isPausedForInput = false;
 
-    // 기존 스프라이트 정리
+    // 기존 스프라이트 및 그림자 정리
     this.heroes.forEach(h => {
       if (h.idleTween) h.idleTween.stop();
       h.sprite.destroy();
       h.indicator.destroy();
+      if (h.shadow) h.shadow.destroy();
     });
     this.heroes = [];
     if (this.enemy) {
       this.enemy.sprite.destroy();
+      if (this.enemy.shadow) this.enemy.shadow.destroy();
       this.enemy = null;
     }
 
@@ -113,17 +117,26 @@ export class BattleScene extends Phaser.Scene {
       bgm.play('battle');
     }
 
-    // 좌측: 보스 유닛 생성 (X: 110, Y: 185)
+    // 좌측: 64비트 HD 보스 유닛 생성 (X: 115, Y: 180)
     const enemyData: EnemyBattleUnit = JSON.parse(JSON.stringify(actData.boss));
-    const enemySprite = this.add.sprite(110, 185, enemyData.textureKey).setScale(2.6);
+    const enemySprite = this.add.sprite(115, 180, enemyData.textureKey);
 
-    // 보스 숨쉬기 아이들 애니메이션
+    // 고해상도 HD 보스 비례 스케일링 (높이 165px 기준)
+    const bossTargetHeight = 165;
+    const bossAspect = enemySprite.width > 0 ? enemySprite.width / enemySprite.height : 1;
+    const bossTargetWidth = bossTargetHeight * bossAspect;
+    enemySprite.setDisplaySize(bossTargetWidth, bossTargetHeight);
+
+    // 보스 발밑 부드러운 타원 그림자
+    const bossShadow = this.add.ellipse(115, 180 + (bossTargetHeight / 2) - 4, bossTargetWidth * 0.7, 18, 0x000000, 0.38);
+
+    // 보스 호흡 애니메이션
     this.tweens.add({
       targets: enemySprite,
-      y: 180,
-      scaleX: 2.65,
-      scaleY: 2.55,
-      duration: 1200,
+      y: 177,
+      scaleX: enemySprite.scaleX * 1.02,
+      scaleY: enemySprite.scaleY * 0.98,
+      duration: 1300,
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut'
@@ -131,17 +144,18 @@ export class BattleScene extends Phaser.Scene {
 
     this.enemy = {
       sprite: enemySprite,
-      baseX: 110,
-      baseY: 185,
+      baseX: 115,
+      baseY: 180,
+      shadow: bossShadow,
       data: enemyData
     };
 
-    // 우측: 4인 조율자 파티 생성 (X: 350~375 세로 정렬)
+    // 우측: 4인 조율자 파티 배치 (X: 345~380 세로 지그재그 정렬)
     const partyPositions = [
-      { x: 350, y: 80 },  // 전사 (전열)
-      { x: 375, y: 150 }, // 백마도사 (후열)
-      { x: 375, y: 220 }, // 흑마도사 (후열)
-      { x: 350, y: 290 }, // 몽크 (전열)
+      { x: 345, y: 68 },  // 전사 (전열)
+      { x: 382, y: 142 }, // 백마도사 (후열)
+      { x: 382, y: 218 }, // 흑마도사 (후열)
+      { x: 345, y: 292 }, // 몽크 (전열)
     ];
 
     INITIAL_HEROES.forEach((proto, idx) => {
@@ -149,10 +163,17 @@ export class BattleScene extends Phaser.Scene {
       const heroData: HeroBattleUnit = JSON.parse(JSON.stringify(proto));
       heroData.atb = idx * 25; // 초기 ATB 분산
 
-      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처 (3.2배 스케일링)
-      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(3.2);
+      // 🌟 64비트 HD 일러스트레이션 스프라이트 (높이 76px 기준 비례 유지)
+      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`);
+      const heroTargetHeight = 76;
+      const heroAspect = sprite.width > 0 ? sprite.width / sprite.height : 0.8;
+      const heroTargetWidth = heroTargetHeight * heroAspect;
+      sprite.setDisplaySize(heroTargetWidth, heroTargetHeight);
 
-      // 영웅 숨쉬기 바운스 트윈 (상하 미세 호흡)
+      // 발밑 자연스러운 접지 타원 그림자
+      const shadow = this.add.ellipse(pos.x, pos.y + (heroTargetHeight / 2) - 3, heroTargetWidth * 0.7, 10, 0x000000, 0.35);
+
+      // 영웅 숨쉬기 바운스 트윈 (미세 호흡)
       const idleTween = this.tweens.add({
         targets: sprite,
         y: pos.y - 2,
@@ -165,13 +186,14 @@ export class BattleScene extends Phaser.Scene {
       // 발밑 턴 인디케이터 (황금 링)
       const indicator = this.add.graphics();
       indicator.lineStyle(2, 0xfacc15, 0.9);
-      indicator.strokeEllipse(pos.x, pos.y + 42, 26, 10);
+      indicator.strokeEllipse(pos.x, pos.y + (heroTargetHeight / 2) - 2, heroTargetWidth * 0.85, 12);
       indicator.setVisible(false);
 
       this.heroes.push({
         sprite,
         baseX: pos.x,
         baseY: pos.y,
+        shadow,
         indicator,
         idleTween,
         data: heroData,
@@ -227,9 +249,9 @@ export class BattleScene extends Phaser.Scene {
     hero.indicator.setVisible(true);
     sfx.playCursor();
 
-    // 전진 트윈 (X: 350 -> 320)
+    // 전진 트윈 (X: baseX -> baseX - 25)
     this.tweens.add({
-      targets: [hero.sprite, hero.indicator],
+      targets: [hero.sprite, hero.indicator, hero.shadow].filter(Boolean),
       x: hero.baseX - 25,
       duration: 180,
       ease: 'Power2'
@@ -256,7 +278,7 @@ export class BattleScene extends Phaser.Scene {
     this.updateHeroIdleTexture(hero);
 
     this.tweens.add({
-      targets: [hero.sprite, hero.indicator],
+      targets: [hero.sprite, hero.indicator, hero.shadow].filter(Boolean),
       x: hero.baseX,
       duration: 180,
       ease: 'Power2'
@@ -291,6 +313,7 @@ export class BattleScene extends Phaser.Scene {
     hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
 
     // 타겟 앞으로 고속 대시 (X: 180)
+    if (hero.shadow) hero.shadow.setVisible(false);
     this.tweens.add({
       targets: hero.sprite,
       x: 180,
@@ -306,6 +329,10 @@ export class BattleScene extends Phaser.Scene {
 
         target.data.hp = Math.max(0, target.data.hp - damage);
 
+        // 타겟 피격 붉은 섬광
+        target.sprite.setTint(0xff7777);
+        this.time.delayedCall(120, () => target.sprite.clearTint());
+
         EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
           text: `⚔️ ${hero.data.name}의 회심의 일격! ${target.data.name}에게 ${damage}의 피해!`,
           type: 'player_attack'
@@ -313,8 +340,8 @@ export class BattleScene extends Phaser.Scene {
 
         // 타겟 피격 넉백
         this.tweens.add({
-          targets: target.sprite,
-          x: target.baseX - 8,
+          targets: [target.sprite, target.shadow].filter(Boolean),
+          x: target.baseX - 10,
           duration: 70,
           yoyo: true
         });
@@ -327,6 +354,10 @@ export class BattleScene extends Phaser.Scene {
           duration: 240,
           ease: 'Power2',
           onComplete: () => {
+            if (hero.shadow) {
+              hero.shadow.setPosition(hero.baseX, hero.baseY + (hero.sprite.displayHeight / 2) - 3);
+              hero.shadow.setVisible(true);
+            }
             if (target.data.hp <= 0) {
               this.handleVictory();
             } else {
@@ -531,6 +562,7 @@ export class BattleScene extends Phaser.Scene {
     // 통상 공격 (단일 대상 전진 타격)
     const targetHero = aliveHeroes[Phaser.Math.Between(0, aliveHeroes.length - 1)];
 
+    if (enemy.shadow) enemy.shadow.setVisible(false);
     this.tweens.add({
       targets: enemy.sprite,
       x: targetHero.baseX - 50,
@@ -547,10 +579,16 @@ export class BattleScene extends Phaser.Scene {
         this.cameras.main.shake(140, 0.01);
         this.showDamagePopup(targetHero.baseX, targetHero.baseY - 20, finalDmg, false);
 
-        // 🌟 타겟 영웅 피격 포즈 전환!
+        // 🌟 타겟 영웅 피격 붉은 점멸 및 피격 상태 전환
         targetHero.sprite.setTexture(`${targetHero.data.textureKey}_hurt`);
+        targetHero.sprite.setTint(0xff6666);
         this.time.delayedCall(220, () => {
-          this.updateHeroIdleTexture(targetHero);
+          targetHero.sprite.clearTint();
+          if (targetHero.data.isDead) {
+            targetHero.sprite.setTint(0x555555);
+          } else {
+            this.updateHeroIdleTexture(targetHero);
+          }
         });
 
         EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
@@ -561,6 +599,7 @@ export class BattleScene extends Phaser.Scene {
         if (targetHero.data.hp <= 0) {
           targetHero.data.isDead = true;
           targetHero.sprite.setAlpha(0.35);
+          if (targetHero.shadow) targetHero.shadow.setAlpha(0.15);
         }
 
         // 보스 복귀 트윈
@@ -571,6 +610,9 @@ export class BattleScene extends Phaser.Scene {
           duration: 250,
           ease: 'Power2',
           onComplete: () => {
+            if (enemy.shadow) {
+              enemy.shadow.setVisible(true);
+            }
             this.isProcessingAction = false;
             if (this.heroes.every(h => h.data.isDead)) {
               this.handleDefeat();
