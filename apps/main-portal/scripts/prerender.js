@@ -601,15 +601,19 @@ function generatePortalSectionPages(template) {
     const sections = [
         {
             route: 'game',
-            title: '무료 두뇌 미니게임 센터 - 베라 팝, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
-            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 베라 팝, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
+            title: '무료 두뇌 미니게임 센터 - 베라오목, 베라 팝, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
+            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 15×15 정통 베라오목(AI 3단계 대전), 베라 팝, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
             heading: 'VERA 두뇌 미니게임 센터',
             content: `
                 <div class="space-y-6">
                     <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 게임 센터는 회원가입이나 복잡한 설치 없이 브라우저에서 즉시 즐길 수 있는 5대 고품질 두뇌 퍼즐 및 아케이드 게임을 제공합니다.
+                        VERA 게임 센터는 회원가입이나 복잡한 설치 없이 브라우저에서 즉시 즐길 수 있는 6대 고품질 두뇌 퍼즐 및 아케이드 게임을 제공합니다.
                     </p>
                     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
+                            <h3 class="font-bold text-amber-900 text-lg mb-1">⚪⚫ 베라오목 (Vera Omok)</h3>
+                            <p class="text-xs text-gray-600 leading-relaxed">15×15 정통 오목 격자에서 펼쳐지는 3단계 인공지능(초급/중급/고급) 대전입니다. 실시간 형세 분석과 3D 입체 바둑돌의 타격감, 열린 3목 및 양수겸장(포크) 필승 전략을 웹에서 무료로 즐겨보세요.</p>
+                        </div>
                         <div class="p-5 bg-purple-50 rounded-2xl border border-purple-200">
                             <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 베라 팝 (Vera Pop)</h3>
                             <p class="text-xs text-gray-600 leading-relaxed">스피드 매치-3 퍼즐과 하이퍼 피버 콤보로 최고 기록에 도전하세요. 4매칭 관통 레이저와 5매칭 하이퍼 노바 폭탄으로 연쇄 폭발의 쾌감을 선사합니다.</p>
@@ -629,6 +633,33 @@ function generatePortalSectionPages(template) {
                         <div class="p-5 bg-rose-50 rounded-2xl border border-rose-200">
                             <h3 class="font-bold text-rose-900 text-lg mb-1">💣 지뢰찾기 클래식</h3>
                             <p class="text-xs text-gray-600 leading-relaxed">확률과 패턴 분석을 통해 안전한 칸을 찾아내는 명작 퍼즐입니다. 1-2-1 대칭 패턴과 모서리 1 판별법을 활용해 최고 기록을 단축해 보세요.</p>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        {
+            route: 'game/omok',
+            title: '베라오목 - 15×15 브라우저 AI 5목 대전 | VERA 미니게임',
+            description: '설치 없이 브라우저에서 바로 즐기는 프리미엄 AI 오목 게임. 3단계 컴퓨터 난이도(초급/중급/고급), 3D 입체 바둑돌과 청명한 착수음, 실시간 형세 분석을 제공합니다.',
+            heading: '베라오목 (Vera Omok) - AI 5목 대전',
+            content: `
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        베라오목은 15×15 정통 격자 바둑판에서 흑돌과 백돌을 번갈아 놓으며 가로, 세로, 대각선 중 5개의 돌을 먼저 연결하면 승리하는 브레인 전략 보드게임입니다.
+                    </p>
+                    <div class="p-6 bg-amber-50/80 rounded-2xl border border-amber-200 space-y-3">
+                        <h3 class="font-bold text-amber-900 text-lg">🎮 게임 주요 특징</h3>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1.5 leading-relaxed">
+                            <li><strong>3단계 AI 난이도:</strong> 입문자를 위한 초급, 공수 균형 중급, Minimax 콤보 설계 고급(마스터).</li>
+                            <li><strong>3D 입체 그래픽 & 사운드:</strong> 단풍나무 온목재 텍스처, 3D 흑·백돌 착수 바운스 및 Web Audio API 기반의 청명한 바둑판 타격음.</li>
+                            <li><strong>실시간 형세 분석:</strong> 매 수마다 흑돌과 백돌의 유리도를 백분율(%)로 계산하는 어드밴티지 게이지 지원.</li>
+                            <li><strong>편의 기능:</strong> 흑돌 선공 / 백돌 후공 진영 선택, 한 수 무르기, 대국 타이머 및 전적 기록.</li>
+                        </ul>
+                        <div class="pt-4">
+                            <a href="/app/omok/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md transition-all">
+                                🚀 베라오목 게임 플레이 시작하기
+                            </a>
                         </div>
                     </div>
                 </div>
