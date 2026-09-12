@@ -91,9 +91,11 @@ export default function LoungeTopicPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    authorName: persona.name,
-                    authorHandle: persona.handle,
-                    authorAvatar: persona.avatar,
+                    author: {
+                        name: persona.name,
+                        handle: persona.handle,
+                        avatar: persona.avatar
+                    },
                     content: contentToSubmit
                 })
             });

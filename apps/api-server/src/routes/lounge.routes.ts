@@ -142,7 +142,14 @@ loungeRoutes.post('/api/lounge/posts', optionalAuth, async (c) => {
             return c.json({ success: false, message: '본문 내용을 입력해주세요.' }, 400);
         }
 
-        if (!author || !author.name || !author.handle) {
+        const authorObj = author || {
+            name: body.authorName,
+            handle: body.authorHandle,
+            avatar: body.authorAvatar,
+            badge: body.authorBadge
+        };
+
+        if (!authorObj || !authorObj.name || !authorObj.handle) {
             return c.json({ success: false, message: '작성자 정보가 올바르지 않습니다.' }, 400);
         }
 
@@ -158,10 +165,10 @@ loungeRoutes.post('/api/lounge/posts', optionalAuth, async (c) => {
         `).bind(
             postId,
             userId,
-            author.name,
-            author.handle,
-            author.avatar || '🦊',
-            author.badge || null,
+            authorObj.name,
+            authorObj.handle,
+            authorObj.avatar || '🦊',
+            authorObj.badge || null,
             content.trim(),
             image || null,
             ladderDataStr
@@ -170,10 +177,10 @@ loungeRoutes.post('/api/lounge/posts', optionalAuth, async (c) => {
         const createdPost = {
             id: postId,
             author: {
-                name: author.name,
-                handle: author.handle,
-                avatar: author.avatar || '🦊',
-                badge: author.badge || undefined
+                name: authorObj.name,
+                handle: authorObj.handle,
+                avatar: authorObj.avatar || '🦊',
+                badge: authorObj.badge || undefined
             },
             content: content.trim(),
             image: image || undefined,
