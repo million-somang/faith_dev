@@ -6,7 +6,6 @@ const menuItems = [
     { path: '/stocks', label: '종목', icon: 'fas fa-magnifying-glass-chart' },
     { path: '/exchange', label: '환율', icon: 'fas fa-exchange-alt' },
     { path: '/banking', label: '은행', icon: 'fas fa-university' },
-    { path: '/insurance', label: '보험', icon: 'fas fa-umbrella' },
     { path: '/util', label: '금융Util', icon: 'fas fa-chart-pie' },
 ];
 
