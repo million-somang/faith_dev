@@ -17,11 +17,21 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // 64비트 고해상도 HD 영웅 및 보스 스프라이트 프리로드
-    this.load.image('hero_warrior', warriorImg);
-    this.load.image('hero_white_mage', whiteMageImg);
-    this.load.image('hero_black_mage', blackMageImg);
-    this.load.image('hero_monk', monkImg);
+    // 64비트 고해상도 HD 영웅 모든 상태별 프리로드
+    const heroPairs = [
+      { key: 'hero_warrior', img: warriorImg },
+      { key: 'hero_white_mage', img: whiteMageImg },
+      { key: 'hero_black_mage', img: blackMageImg },
+      { key: 'hero_monk', img: monkImg },
+    ];
+
+    const states = ['', '_idle', '_attack', '_danger', '_victory', '_hurt'];
+
+    heroPairs.forEach(({ key, img }) => {
+      states.forEach((suffix) => {
+        this.load.image(`${key}${suffix}`, img);
+      });
+    });
 
     this.load.image('boss_golem', bossGolemImg);
     this.load.image('boss_kraken', bossKrakenImg);
@@ -33,29 +43,17 @@ export class BootScene extends Phaser.Scene {
     // 1. 마법 및 전투 VFX 텍스처 생성
     TextureGenerator.generateAll(this);
 
-    // 2. 64비트 HD 일러스트레이션 텍스처 안티앨리어싱 필터 적용
-    const heroKeys = ['hero_warrior', 'hero_white_mage', 'hero_black_mage', 'hero_monk'];
-    const bossKeys = ['boss_golem', 'boss_kraken', 'boss_bahamut', 'boss_ezekiel'];
-    const allKeys = [...heroKeys, ...bossKeys];
+    // 2. 64비트 HD 일러스트레이션 선형 안티앨리어싱 필터 적용
+    const allKeys: string[] = ['boss_golem', 'boss_kraken', 'boss_bahamut', 'boss_ezekiel'];
+    ['hero_warrior', 'hero_white_mage', 'hero_black_mage', 'hero_monk'].forEach((k) => {
+      ['', '_idle', '_attack', '_danger', '_victory', '_hurt'].forEach((s) => {
+        allKeys.push(`${k}${s}`);
+      });
+    });
 
     allKeys.forEach((key) => {
       if (this.textures.exists(key)) {
         this.textures.get(key).setFilter(Phaser.Textures.FilterMode.LINEAR);
-      }
-    });
-
-    // 영웅 액션 상태별(_idle, _attack, _danger, _victory) 텍스처 별칭 등록
-    heroKeys.forEach((key) => {
-      const baseTex = this.textures.get(key);
-      if (baseTex) {
-        const sourceImage = baseTex.getSourceImage();
-        ['idle', 'attack', 'danger', 'victory', 'hurt'].forEach((state) => {
-          const stateKey = `${key}_${state}`;
-          if (!this.textures.exists(stateKey)) {
-            this.textures.addImage(stateKey, sourceImage);
-            this.textures.get(stateKey).setFilter(Phaser.Textures.FilterMode.LINEAR);
-          }
-        });
       }
     });
 

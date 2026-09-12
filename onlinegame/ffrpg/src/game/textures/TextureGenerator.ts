@@ -4,41 +4,11 @@
 // ============================================================================
 
 import Phaser from 'phaser';
-import { PIXEL_SPRITES, PixelSpriteDef } from './PixelSpriteData';
 
 export class TextureGenerator {
   public static generateAll(scene: Phaser.Scene) {
-    // 1. 영웅 4종(전사, 백마도사, 흑마도사, 몽크) 및 보스 4종 도트 스프라이트 생성
-    for (const [key, def] of Object.entries(PIXEL_SPRITES)) {
-      this.drawPixelSprite(scene, key, def);
-    }
-
-    // 2. 마법 및 전투 VFX 텍스처 생성
+    // 마법 및 전투 VFX 텍스처 생성 (영웅/보스는 64비트 HD 일러스트 에셋 사용)
     this.createVfxTextures(scene);
-  }
-
-  // 1x1 도트 매트릭스 렌더링 (NEAREST 필터링 적용)
-  private static drawPixelSprite(scene: Phaser.Scene, key: string, def: PixelSpriteDef) {
-    if (scene.textures.exists(key)) return;
-    const canvas = scene.textures.createCanvas(key, def.width, def.height);
-    if (!canvas) return;
-    const ctx = canvas.context;
-
-    for (let y = 0; y < def.rows.length; y++) {
-      const row = def.rows[y];
-      for (let x = 0; x < row.length; x++) {
-        const char = row[x];
-        if (char === '.') continue;
-        const color = def.palette[char];
-        if (color && color !== 'none') {
-          ctx.fillStyle = color;
-          ctx.fillRect(x, y, 1, 1);
-        }
-      }
-    }
-
-    canvas.refresh();
-    canvas.setFilter(Phaser.Textures.FilterMode.NEAREST);
   }
 
   // ==========================================================================

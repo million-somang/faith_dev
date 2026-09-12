@@ -14,6 +14,8 @@ interface HeroSpriteNode {
   sprite: Phaser.GameObjects.Sprite;
   baseX: number;
   baseY: number;
+  targetWidth: number;
+  targetHeight: number;
   indicator: Phaser.GameObjects.Graphics;
   shadow?: Phaser.GameObjects.Ellipse;
   idleTween?: Phaser.Tweens.Tween;
@@ -163,11 +165,11 @@ export class BattleScene extends Phaser.Scene {
       const heroData: HeroBattleUnit = JSON.parse(JSON.stringify(proto));
       heroData.atb = idx * 25; // 초기 ATB 분산
 
-      // 🌟 64비트 HD 일러스트레이션 스프라이트 (높이 76px 기준 비례 유지)
+      // 🌟 64비트 HD 일러스트레이션 스프라이트 (높이 84px 기준 비례 유지)
       const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`);
-      const heroTargetHeight = 76;
+      const heroTargetHeight = 84;
       const heroAspect = sprite.width > 0 ? sprite.width / sprite.height : 0.8;
-      const heroTargetWidth = heroTargetHeight * heroAspect;
+      const heroTargetWidth = Math.round(heroTargetHeight * heroAspect);
       sprite.setDisplaySize(heroTargetWidth, heroTargetHeight);
 
       // 발밑 자연스러운 접지 타원 그림자
@@ -193,6 +195,8 @@ export class BattleScene extends Phaser.Scene {
         sprite,
         baseX: pos.x,
         baseY: pos.y,
+        targetWidth: heroTargetWidth,
+        targetHeight: heroTargetHeight,
         shadow,
         indicator,
         idleTween,
@@ -263,11 +267,17 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // 64비트 HD 스프라이트 상태 텍스처 변경 및 정밀 비율 유지 헬퍼
+  private setHeroTexture(hero: HeroSpriteNode, state: string) {
+    hero.sprite.setTexture(`${hero.data.textureKey}_${state}`);
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+  }
+
   // 영웅 대기/빈사 텍스처 업데이트
   private updateHeroIdleTexture(hero: HeroSpriteNode) {
     if (hero.data.isDead) return;
     const isDanger = hero.data.hp <= hero.data.maxHp * 0.25;
-    hero.sprite.setTexture(`${hero.data.textureKey}_${isDanger ? 'danger' : 'idle'}`);
+    this.setHeroTexture(hero, isDanger ? 'danger' : 'idle');
   }
 
   // 영웅 턴 종료 및 원위치 복귀
@@ -310,7 +320,7 @@ export class BattleScene extends Phaser.Scene {
     const damage = Math.max(8, hero.data.atk - Math.floor(target.data.def / 2) + Phaser.Math.Between(2, 8));
 
     // ⚔️ 공격 포즈 프레임으로 전환!
-    hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+    this.setHeroTexture(hero, 'attack');
 
     // 타겟 앞으로 고속 대시 (X: 180)
     if (hero.shadow) hero.shadow.setVisible(false);
@@ -375,7 +385,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 몽크 비기: 백열각 (4연속 권격 타격)
     if (skillId === 'flurry') {
-      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      this.setHeroTexture(hero, 'attack');
       hero.data.mp = Math.max(0, hero.data.mp - 16);
 
       VfxManager.playMonkFlurry(
@@ -408,7 +418,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 백마도사: 케알라 (성광 치유)
     if (skillId === 'cure') {
-      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      this.setHeroTexture(hero, 'attack');
       hero.data.mp = Math.max(0, hero.data.mp - 14);
 
       const wounded = this.heroes
@@ -435,7 +445,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 흑마도사: 파이라 (화염 대폭발)
     if (skillId === 'fire') {
-      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      this.setHeroTexture(hero, 'attack');
       hero.data.mp = Math.max(0, hero.data.mp - 15);
 
       const magicDamage = Math.floor(hero.data.matk * 1.9) + Phaser.Math.Between(8, 16);
@@ -460,7 +470,7 @@ export class BattleScene extends Phaser.Scene {
 
     // 흑마도사: 블리자가 (빙결 고드름 파쇄)
     if (skillId === 'blizzard') {
-      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      this.setHeroTexture(hero, 'attack');
       hero.data.mp = Math.max(0, hero.data.mp - 20);
 
       const magicDamage = Math.floor(hero.data.matk * 2.2) + Phaser.Math.Between(12, 22);
@@ -580,7 +590,7 @@ export class BattleScene extends Phaser.Scene {
         this.showDamagePopup(targetHero.baseX, targetHero.baseY - 20, finalDmg, false);
 
         // 🌟 타겟 영웅 피격 붉은 점멸 및 피격 상태 전환
-        targetHero.sprite.setTexture(`${targetHero.data.textureKey}_hurt`);
+        this.setHeroTexture(targetHero, 'hurt');
         targetHero.sprite.setTint(0xff6666);
         this.time.delayedCall(220, () => {
           targetHero.sprite.clearTint();
@@ -678,7 +688,7 @@ export class BattleScene extends Phaser.Scene {
     this.heroes.filter(h => !h.data.isDead).forEach((h, idx) => {
       // 대기 숨쉬기 트윈 정지 후 승리 텍스처 적용
       if (h.idleTween) h.idleTween.stop();
-      h.sprite.setTexture(`${h.data.textureKey}_victory`);
+      this.setHeroTexture(h, 'victory');
 
       // 양손을 치켜들고 연속으로 튀어오르는 만세 점프 애니메이션 (FF 클래식!)
       this.tweens.add({
