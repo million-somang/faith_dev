@@ -383,7 +383,10 @@ loungeRoutes.post('/api/lounge/sync-legacy', optionalAuth, async (c) => {
 // 시간 포맷팅 헬퍼
 function formatTimeAgo(dateStr: string): string {
     if (!dateStr) return '방금 전';
-    const date = new Date(dateStr);
+    const normalizedStr = dateStr.includes('T') || dateStr.includes('Z')
+        ? dateStr
+        : dateStr.replace(' ', 'T') + 'Z';
+    const date = new Date(normalizedStr);
     const now = new Date();
     const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000);
 
