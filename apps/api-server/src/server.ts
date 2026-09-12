@@ -515,12 +515,17 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
         }
     },
     '/game': {
-        title: '무료 미니게임 - 베라팝·프리셀·스도쿠·2048·지뢰찾기 | VERA',
-        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 베라팝, 클래식 프리셀, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+        title: '무료 미니게임 - 베라오목·베라팝·프리셀·스도쿠·2048·지뢰찾기 | VERA',
+        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 15×15 정통 베라오목(AI 3단계 대전), 베라팝, 클래식 프리셀, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
         jsonLd: {
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
             mainEntity: [
+                {
+                    '@type': 'Question',
+                    name: '베라오목(Vera Omok)의 승리 조건과 AI 난이도는 어떻게 되나요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '15×15 바둑판에서 5개의 돌을 먼저 일렬로 연속 배치하면 승리하며, 초급·중급·고급(마스터) 3단계 인공지능과 대결할 수 있습니다.' }
+                },
                 {
                     '@type': 'Question',
                     name: '클래식 프리셀(FreeCell)의 클리어 성공률은 어떻게 되나요?',
@@ -530,6 +535,26 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
                     '@type': 'Question',
                     name: '스도쿠 풀이 시 기본 규칙은 무엇인가요?',
                     acceptedAnswer: { '@type': 'Answer', text: '9x9 격자의 각 가로줄, 세로줄, 3x3 작은 박스 안에 1부터 9까지의 숫자가 중복 없이 한 번씩만 들어가야 합니다.' }
+                }
+            ]
+        }
+    },
+    '/game/omok': {
+        title: '베라오목 - 15×15 브라우저 AI 5목 대전 | VERA 미니게임',
+        description: '설치 없이 브라우저에서 바로 즐기는 프리미엄 AI 오목 게임. 3단계 난이도(초급/중급/고급), 3D 입체 바둑돌과 청명한 착수음, 실시간 형세 분석을 제공합니다.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+                {
+                    '@type': 'Question',
+                    name: '베라오목의 승리 조건은 무엇인가요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '15×15 정통 바둑판에서 가로, 세로, 대각선 중 5개의 돌을 먼저 일렬로 완성하면 승리합니다.' }
+                },
+                {
+                    '@type': 'Question',
+                    name: '컴퓨터 AI 난이도는 어떻게 구성되어 있나요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '입문자용 초급, 공수 균형 중급, Minimax 콤보 설계 고급(마스터) 3단계로 제공됩니다.' }
                 }
             ]
         }
