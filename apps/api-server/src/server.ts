@@ -70,6 +70,9 @@ app.route('/', marketingRoutes);
 import { marketingAdminUi } from './routes/marketing-admin-ui.js';
 app.route('/', marketingAdminUi);
 
+import { loungeRoutes } from './routes/lounge.routes.js';
+app.route('/', loungeRoutes);
+
 // 배너 업로드 이미지 정적 서빙
 app.use('/uploads/*', serveStatic({ root: './public' }));
 

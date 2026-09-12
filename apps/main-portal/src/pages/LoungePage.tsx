@@ -107,11 +107,18 @@ export default function LoungePage() {
             isMine: true
         };
 
-        setPosts(prev => {
-            const updated = [newPost, ...prev];
-            localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
-            return updated;
-        });
+        // 백엔드 DB 저장 시도
+        fetch('/api/lounge/posts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newPost)
+        }).then(res => res.json()).then(data => {
+            if (data.success && data.post) {
+                setPosts(prev => [data.post, ...prev.filter(p => p.id !== newPost.id)]);
+            }
+        }).catch(err => console.error('[Lounge] 배틀 공유 저장 오류:', err));
+
+        setPosts(prev => [newPost, ...prev]);
         setActiveTab('home');
     };
 
@@ -124,12 +131,8 @@ export default function LoungePage() {
         };
 
         const handleStorageSync = (e: StorageEvent) => {
-            if (e.key === 'vera_lounge_posts' && e.newValue) {
-                try {
-                    setPosts(JSON.parse(e.newValue));
-                } catch {
-                    // ignore
-                }
+            if (e.key === 'vera_lounge_posts') {
+                loadPostsFromDb();
             }
         };
 
@@ -207,52 +210,86 @@ export default function LoungePage() {
         setSelectedImage(null);
     };
 
-    // 5. 초기 피드 덤프 생성 및 로드
-    useEffect(() => {
-        const savedPosts = localStorage.getItem('vera_lounge_posts');
-        let currentPosts: Post[] = [];
-        if (savedPosts) {
-            try {
-                const parsed: Post[] = JSON.parse(savedPosts);
-                // 기존 브라우저 로컬 스토리지에 남아 있을 수 있는 목업 데이터를 확실히 걸러냅니다.
-                currentPosts = parsed.filter(post => !post.id.startsWith('default-'));
-                localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
-            } catch (err) {
-                currentPosts = [];
-                localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
+    // 5. DB 피드 로드 및 레거시 동기화
+    const loadPostsFromDb = async () => {
+        try {
+            const query = new URLSearchParams();
+            if (persona?.handle) query.set('myHandle', persona.handle);
+            if (searchQuery) query.set('q', searchQuery);
+
+            const res = await fetch(`/api/lounge/posts?${query.toString()}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && Array.isArray(data.posts)) {
+                    setPosts(data.posts);
+                    localStorage.setItem('vera_lounge_posts', JSON.stringify(data.posts));
+                    return;
+                }
             }
-        } else {
-            currentPosts = [];
-            localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
+        } catch (err) {
+            console.error('[Lounge] DB 피드 로드 실패, 로컬 캐시 사용:', err);
         }
 
-        // 지뢰찾기나 사주 등에서 넘어온 공유 데이터가 있는지 체크
-        const pendingShare = localStorage.getItem('vera_lounge_pending_share');
-        if (pendingShare) {
+        // 로컬스토리지 캐시 폴백
+        const savedPosts = localStorage.getItem('vera_lounge_posts');
+        if (savedPosts) {
             try {
-                const shareData = JSON.parse(pendingShare);
-                const newSharePost: Post = {
-                    id: `share-${Date.now()}`,
-                    author: {
-                        name: persona.name,
-                        handle: persona.handle,
-                        avatar: persona.avatar
-                    },
-                    content: shareData.text,
-                    createdAt: '방금 전',
-                    likes: 0,
-                    commentsCount: 0
-                };
-                
-                localStorage.removeItem('vera_lounge_pending_share');
-                currentPosts = [newSharePost, ...currentPosts];
-                localStorage.setItem('vera_lounge_posts', JSON.stringify(currentPosts));
-            } catch (e) {
-                console.error('Pending share parse error:', e);
-            }
+                setPosts(JSON.parse(savedPosts));
+            } catch {}
         }
-        setPosts(currentPosts);
-    }, [persona]);
+    };
+
+    useEffect(() => {
+        const initLounge = async () => {
+            // 1) 지뢰찾기나 사주 등에서 넘어온 공유 데이터가 있는지 체크 후 DB 저장
+            const pendingShare = localStorage.getItem('vera_lounge_pending_share');
+            if (pendingShare) {
+                try {
+                    const shareData = JSON.parse(pendingShare);
+                    localStorage.removeItem('vera_lounge_pending_share');
+                    const sharePayload = {
+                        id: `share-${Date.now()}`,
+                        author: {
+                            name: persona.name,
+                            handle: persona.handle,
+                            avatar: persona.avatar
+                        },
+                        content: shareData.text,
+                        likes: 0,
+                        commentsCount: 0
+                    };
+                    await fetch('/api/lounge/posts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(sharePayload)
+                    });
+                } catch (e) {
+                    console.error('Pending share save error:', e);
+                }
+            }
+
+            // 2) 브라우저에 남아있던 기존 로컬스토리지 글 1회성 DB 마이그레이션
+            const savedPosts = localStorage.getItem('vera_lounge_posts');
+            if (savedPosts) {
+                try {
+                    const parsed: Post[] = JSON.parse(savedPosts);
+                    const validPosts = parsed.filter(p => p && p.content && !p.id.startsWith('default-'));
+                    if (validPosts.length > 0) {
+                        await fetch('/api/lounge/sync-legacy', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ posts: validPosts })
+                        });
+                    }
+                } catch {}
+            }
+
+            // 3) DB에서 최신 피드 전체 로드
+            await loadPostsFromDb();
+        };
+
+        initLounge();
+    }, [persona.handle, searchQuery]);
 
     // 6. 프로필 세이브
     const handleSaveProfile = (e: React.FormEvent) => {
@@ -271,37 +308,54 @@ export default function LoungePage() {
     };
 
     // 7. 게시글 등록 핸들러
-    const handleCreatePost = (e?: React.FormEvent) => {
+    const handleCreatePost = async (e?: React.FormEvent) => {
         if (e) e.preventDefault();
         if (!newPostContent.trim()) {
             alert('피드 본문을 입력해 주세요.');
             return;
         }
 
-        const newPost: Post = {
-            id: `post-${Date.now()}`,
+        const newPostPayload = {
+            id: `post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             author: {
                 name: persona.name,
                 handle: persona.handle,
                 avatar: persona.avatar
             },
-            content: newPostContent,
+            content: newPostContent.trim(),
             image: selectedImage || undefined,
-            ladderData: pendingLadderData || undefined,
-            createdAt: '방금 전',
-            likes: 0,
-            commentsCount: 0,
-            isMine: true
+            ladderData: pendingLadderData || undefined
         };
 
-        const updated = [newPost, ...posts];
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        try {
+            const res = await fetch('/api/lounge/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newPostPayload)
+            });
+            const data = await res.json();
+            if (data.success && data.post) {
+                setPosts(prev => [data.post, ...prev]);
+            } else {
+                throw new Error(data.message || '게시글 저장 실패');
+            }
+        } catch (err) {
+            console.error('[Lounge] DB 게시글 등록 오류 (로컬 폴백):', err);
+            const fallback: Post = {
+                ...newPostPayload,
+                createdAt: '방금 전',
+                likes: 0,
+                commentsCount: 0,
+                isMine: true
+            };
+            setPosts(prev => [fallback, ...prev]);
+        }
+
         setNewPostContent('');
         setSelectedImage(null);
         setPendingLadderData(null);
         setActiveTab('home');
-        alert('새 피드 글이 등록되었습니다! 스마트 태그가 실시간 연동됩니다. 🚀');
+        alert('새 피드 글이 등록되었습니다! DB에 실시간 저장되어 모든 사용자에게 공유됩니다. 🚀');
 
         // [소셜 반응 시뮬레이션] 글 작성 시 이웃들의 실시간 반응
         const randomHandles = ['@stock_tsunami', '@ceo_kim', '@invest_queen', '@saju_master', '@toss_developer', '@mine_pro'];
@@ -330,29 +384,56 @@ export default function LoungePage() {
     };
 
     // 8. 좋아요 토글
-    const handleLikeToggle = (postId: string) => {
-        const updated = posts.map(post => {
+    const handleLikeToggle = async (postId: string) => {
+        // UI 즉각 반영 (Optimistic Update)
+        setPosts(prev => prev.map(post => {
             if (post.id === postId) {
                 const hasLiked = !post.hasLiked;
                 return {
                     ...post,
                     hasLiked,
-                    likes: hasLiked ? post.likes + 1 : post.likes - 1
+                    likes: hasLiked ? post.likes + 1 : Math.max(0, post.likes - 1)
                 };
             }
             return post;
-        });
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        }));
+
+        try {
+            const res = await fetch(`/api/lounge/posts/${postId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ handle: persona.handle })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p => p.id === postId ? { ...p, hasLiked: data.hasLiked, likes: data.likes } : p));
+            }
+        } catch (err) {
+            console.error('[Lounge] 좋아요 DB 반영 오류:', err);
+        }
     };
 
     // 9. 게시글 삭제 핸들러
-    const handleDeletePost = (postId: string) => {
+    const handleDeletePost = async (postId: string) => {
         if (!window.confirm('정말 이 피드를 삭제하시겠습니까?')) return;
-        const updated = posts.filter(post => post.id !== postId);
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
-        alert('피드가 성공적으로 삭제되었습니다.');
+
+        // UI 즉각 반영
+        setPosts(prev => prev.filter(post => post.id !== postId));
+
+        try {
+            const res = await fetch(`/api/lounge/posts/${postId}?handle=${encodeURIComponent(persona.handle)}`, {
+                method: 'DELETE'
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('피드가 성공적으로 삭제되었습니다.');
+            } else {
+                alert(data.message || '삭제에 실패했습니다.');
+                loadPostsFromDb();
+            }
+        } catch (err) {
+            console.error('[Lounge] 피드 삭제 DB 오류:', err);
+        }
     };
 
     // 10. 팔로우 토글 핸들러
@@ -397,25 +478,46 @@ export default function LoungePage() {
     };
 
     // 11. 게시글 수정 저장
-    const handleSaveEdit = (postId: string) => {
+    const handleSaveEdit = async (postId: string) => {
         if (!editingContent.trim()) {
             alert('피드 내용을 입력해 주세요.');
             return;
         }
-        const updated = posts.map(post => {
+
+        const trimmed = editingContent.trim();
+        // UI 즉각 반영 (Optimistic Update)
+        setPosts(prev => prev.map(post => {
             if (post.id === postId) {
                 return {
                     ...post,
-                    content: editingContent
+                    content: trimmed
                 };
             }
             return post;
-        });
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        }));
         setEditingPostId(null);
         setEditingContent('');
-        alert('피드가 성공적으로 수정되었습니다! 🚀');
+
+        try {
+            const res = await fetch(`/api/lounge/posts/${postId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: trimmed,
+                    handle: persona.handle
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('피드가 성공적으로 수정되었습니다! 🚀');
+            } else {
+                alert(data.message || '수정에 실패했습니다.');
+                loadPostsFromDb();
+            }
+        } catch (err) {
+            console.error('[Lounge] 피드 수정 DB 오류:', err);
+            loadPostsFromDb();
+        }
     };
 
     // 12. 게시글 수정 취소

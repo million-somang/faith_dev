@@ -27,6 +27,19 @@ export default function LoungeTopicPage() {
         };
     });
 
+    // DB 피드 로드
+    const loadPostsFromDb = async () => {
+        try {
+            const res = await fetch(`/api/lounge/posts?handle=${encodeURIComponent(persona.handle)}`);
+            const data = await res.json();
+            if (data.success && Array.isArray(data.posts)) {
+                setPosts(data.posts);
+            }
+        } catch (err) {
+            console.error('[LoungeTopic] 게시글 로드 오류:', err);
+        }
+    };
+
     // 1. 토픽 이름 분석 및 기본 프리필 콘텐츠 설정
     useEffect(() => {
         if (!topicName) return;
@@ -44,22 +57,20 @@ export default function LoungeTopicPage() {
         setNewPostContent(` ${prefix}${cleanName} `);
 
         // 피드 로드
-        const savedPosts = localStorage.getItem('vera_lounge_posts');
-        if (savedPosts) {
-            setPosts(JSON.parse(savedPosts));
-        }
-    }, [topicName]);
+        loadPostsFromDb();
+    }, [topicName, persona.handle]);
 
     // 2. 글 등록
-    const handleCreatePost = (e: React.FormEvent) => {
+    const handleCreatePost = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newPostContent.trim()) {
             alert('피드 본문을 입력해 주세요.');
             return;
         }
 
-        const newPost: Post = {
-            id: `post-${Date.now()}`,
+        const tempId = `temp-${Date.now()}`;
+        const tempPost: Post = {
+            id: tempId,
             author: {
                 name: persona.name,
                 handle: persona.handle,
@@ -71,31 +82,61 @@ export default function LoungeTopicPage() {
             commentsCount: 0
         };
 
-        const savedPosts = localStorage.getItem('vera_lounge_posts');
-        const currentPosts = savedPosts ? JSON.parse(savedPosts) : [];
-        const updated = [newPost, ...currentPosts];
-        
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
-        setPosts(updated);
+        setPosts(prev => [tempPost, ...prev]);
+        const contentToSubmit = newPostContent;
         setNewPostContent(` ${topicLabel} `);
-        alert(`토픽 룸에 피드가 성공적으로 공유되었습니다! 🚀`);
+
+        try {
+            const res = await fetch('/api/lounge/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    authorName: persona.name,
+                    authorHandle: persona.handle,
+                    authorAvatar: persona.avatar,
+                    content: contentToSubmit
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.post) {
+                setPosts(prev => prev.map(p => p.id === tempId ? data.post : p));
+                alert('토픽 룸에 피드가 성공적으로 공유되었습니다! 🚀');
+            } else {
+                loadPostsFromDb();
+            }
+        } catch (err) {
+            console.error('[LoungeTopic] 글 작성 DB 오류:', err);
+            loadPostsFromDb();
+        }
     };
 
     // 3. 좋아요
-    const handleLikeToggle = (postId: string) => {
-        const updated = posts.map(post => {
+    const handleLikeToggle = async (postId: string) => {
+        setPosts(prev => prev.map(post => {
             if (post.id === postId) {
                 const hasLiked = !post.hasLiked;
                 return {
                     ...post,
                     hasLiked,
-                    likes: hasLiked ? post.likes + 1 : post.likes - 1
+                    likes: hasLiked ? post.likes + 1 : Math.max(0, post.likes - 1)
                 };
             }
             return post;
-        });
-        setPosts(updated);
-        localStorage.setItem('vera_lounge_posts', JSON.stringify(updated));
+        }));
+
+        try {
+            const res = await fetch(`/api/lounge/posts/${postId}/like`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ handle: persona.handle })
+            });
+            const data = await res.json();
+            if (data.success) {
+                setPosts(prev => prev.map(p => p.id === postId ? { ...p, hasLiked: data.hasLiked, likes: data.likes } : p));
+            }
+        } catch (err) {
+            console.error('[LoungeTopic] 좋아요 DB 오류:', err);
+        }
     };
 
     // 4. 필터링된 포스트
