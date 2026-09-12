@@ -1,5 +1,5 @@
 // ============================================================================
-// Phaser 3 정통 파이널 판타지 사이드뷰 ATB 배틀 씬
+// Phaser 3 정통 파이널 판타지 사이드뷰 ATB 배틀 씬 (VFX & 모션 강화 버전)
 // ============================================================================
 
 import Phaser from 'phaser';
@@ -8,12 +8,14 @@ import { HeroBattleUnit, EnemyBattleUnit, BattleActionPayload } from '../../type
 import { INITIAL_HEROES, STORY_ACTS } from '../../data/storyData';
 import { sfx } from '../../audio/SfxSynthesizer';
 import { bgm } from '../../audio/BgmSynthesizer';
+import { VfxManager } from '../vfx/VfxManager';
 
 interface HeroSpriteNode {
   sprite: Phaser.GameObjects.Sprite;
   baseX: number;
   baseY: number;
   indicator: Phaser.GameObjects.Graphics;
+  idleTween?: Phaser.Tweens.Tween;
   data: HeroBattleUnit;
 }
 
@@ -27,7 +29,7 @@ interface EnemySpriteNode {
 export class BattleScene extends Phaser.Scene {
   private heroes: HeroSpriteNode[] = [];
   private enemy: EnemySpriteNode | null = null;
-  private currentActNumber: number = 1;
+  private currentActNumber: 1 | 2 | 3 | 4 = 1;
   private activeHeroIndex: number | null = null;
   private isProcessingAction: boolean = false;
   private isBattleFinished: boolean = false;
@@ -44,7 +46,7 @@ export class BattleScene extends Phaser.Scene {
     this.loadAct(1);
   }
 
-  // 1. 배틀필드 배경 및 레트로 격자 바닥 렌더링
+  // 1. 배틀필드 배경 렌더링
   private createBattleBackground() {
     const bg = this.add.graphics();
 
@@ -52,7 +54,7 @@ export class BattleScene extends Phaser.Scene {
     bg.fillGradientStyle(0x1e1b4b, 0x1e1b4b, 0x312e81, 0x312e81, 1);
     bg.fillRect(0, 0, 450, 240);
 
-    // 하단 배틀필드 대지
+    // 하단 대지 그라데이션
     bg.fillGradientStyle(0x334155, 0x334155, 0x1e293b, 0x1e293b, 1);
     bg.fillRect(0, 240, 450, 140);
 
@@ -66,13 +68,13 @@ export class BattleScene extends Phaser.Scene {
     }
 
     // 부유하는 크리스탈 먼지 파티클
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 24; i++) {
       const px = Phaser.Math.Between(10, 440);
       const py = Phaser.Math.Between(20, 230);
       const star = this.add.circle(px, py, Phaser.Math.Between(1, 2), 0x93c5fd, 0.6);
       this.tweens.add({
         targets: star,
-        y: py - 15,
+        y: py - 18,
         alpha: 0.1,
         duration: Phaser.Math.Between(2000, 4000),
         repeat: -1,
@@ -82,7 +84,7 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // 2. 4막 시나리오 보스 및 파티 배치 로드
+  // 2. 4막 시나리오 보스 및 4인 파티 배치
   public loadAct(actNum: 1 | 2 | 3 | 4) {
     this.currentActNumber = actNum;
     this.isBattleFinished = false;
@@ -90,8 +92,9 @@ export class BattleScene extends Phaser.Scene {
     this.activeHeroIndex = null;
     this.isPausedForInput = false;
 
-    // 기존 스프라이트 클리어
+    // 기존 스프라이트 정리
     this.heroes.forEach(h => {
+      if (h.idleTween) h.idleTween.stop();
       h.sprite.destroy();
       h.indicator.destroy();
     });
@@ -103,7 +106,7 @@ export class BattleScene extends Phaser.Scene {
 
     const actData = STORY_ACTS.find(a => a.actNumber === actNum) || STORY_ACTS[0];
 
-    // BGM 전환: 4막 에제키엘은 보스 전용 테마, 나머지는 일반 배틀 테마
+    // BGM 전환
     if (actNum === 4) {
       bgm.play('boss');
     } else {
@@ -113,7 +116,7 @@ export class BattleScene extends Phaser.Scene {
     // 좌측: 보스 유닛 생성 (X: 110, Y: 190)
     const enemyData: EnemyBattleUnit = JSON.parse(JSON.stringify(actData.boss));
     const enemySprite = this.add.sprite(110, 190, enemyData.textureKey).setScale(2.2);
-    
+
     // 보스 숨쉬기 아이들 애니메이션
     this.tweens.add({
       targets: enemySprite,
@@ -144,10 +147,21 @@ export class BattleScene extends Phaser.Scene {
     INITIAL_HEROES.forEach((proto, idx) => {
       const pos = partyPositions[idx];
       const heroData: HeroBattleUnit = JSON.parse(JSON.stringify(proto));
-      heroData.atb = idx * 20; // 초기 ATB 분산
+      heroData.atb = idx * 25; // 초기 ATB 분산
 
-      const sprite = this.add.sprite(pos.x, pos.y, heroData.textureKey).setScale(2.0);
-      
+      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처
+      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(2.2);
+
+      // 영웅 숨쉬기 바운스 트윈 (상하 미세 호흡)
+      const idleTween = this.tweens.add({
+        targets: sprite,
+        y: pos.y - 2,
+        duration: 900 + idx * 100,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+
       // 발밑 턴 인디케이터 (황금 링)
       const indicator = this.add.graphics();
       indicator.lineStyle(2, 0xfacc15, 0.9);
@@ -159,6 +173,7 @@ export class BattleScene extends Phaser.Scene {
         baseX: pos.x,
         baseY: pos.y,
         indicator,
+        idleTween,
         data: heroData,
       });
     });
@@ -191,8 +206,8 @@ export class BattleScene extends Phaser.Scene {
       }
     }
 
-    // 2) 적 ATB 누적 (영웅이 입력 대기 중이 아닐 때)
-    if (!turnReadyFound && this.enemy && !this.enemy.data.hp <= 0 && this.activeHeroIndex === null) {
+    // 2) 적 ATB 누적 (영웅이 커맨드 입력 중이 아닐 때)
+    if (!turnReadyFound && this.enemy && this.enemy.data.hp > 0 && this.activeHeroIndex === null) {
       if (this.enemy.data.atb < 100) {
         const enemyAtbGain = (this.enemy.data.agi * 1.4 + 18) * deltaSec;
         this.enemy.data.atb = Math.min(100, this.enemy.data.atb + enemyAtbGain);
@@ -226,11 +241,19 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // 영웅 대기/빈사 텍스처 업데이트
+  private updateHeroIdleTexture(hero: HeroSpriteNode) {
+    if (hero.data.isDead) return;
+    const isDanger = hero.data.hp <= hero.data.maxHp * 0.25;
+    hero.sprite.setTexture(`${hero.data.textureKey}_${isDanger ? 'danger' : 'idle'}`);
+  }
+
   // 영웅 턴 종료 및 원위치 복귀
   private resetHeroTurn(heroIndex: number) {
     const hero = this.heroes[heroIndex];
     hero.data.atb = 0;
     hero.indicator.setVisible(false);
+    this.updateHeroIdleTexture(hero);
 
     this.tweens.add({
       targets: [hero.sprite, hero.indicator],
@@ -259,32 +282,41 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  // [1] 물리 공격 (전진 대시 ➡️ 슬래시 ➡️ 타격 ➡️ 복귀)
+  // [1] 물리 공격 (공격 프레임 전환 ➡️ 전진 대시 ➡️ 슬래시 VFX ➡️ 복귀)
   private executeHeroPhysicalAttack(hero: HeroSpriteNode) {
     const target = this.enemy!;
-    const damage = Math.max(8, hero.data.atk - Math.floor(target.data.def / 2) + Phaser.Math.Between(1, 6));
+    const damage = Math.max(8, hero.data.atk - Math.floor(target.data.def / 2) + Phaser.Math.Between(2, 8));
 
-    // 고속 대시 (X: 180)
+    // ⚔️ 공격 포즈 프레임으로 전환!
+    hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+
+    // 타겟 앞으로 고속 대시 (X: 180)
     this.tweens.add({
       targets: hero.sprite,
       x: 180,
       y: target.baseY,
-      duration: 220,
+      duration: 200,
       ease: 'Power2',
       onComplete: () => {
-        // 슬래시 FX 및 사운드
         sfx.playSlash();
         this.spawnVfx('vfx_slash', target.baseX, target.baseY);
 
-        // 보스 피격 흔들림
-        this.cameras.main.shake(120, 0.008);
+        this.cameras.main.shake(120, 0.009);
         this.showDamagePopup(target.baseX, target.baseY - 20, damage, false);
 
         target.data.hp = Math.max(0, target.data.hp - damage);
 
         EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
-          text: `⚔️ ${hero.data.name}의 돌진 공격! ${target.data.name}에게 ${damage}의 물리 피해!`,
+          text: `⚔️ ${hero.data.name}의 회심의 일격! ${target.data.name}에게 ${damage}의 피해!`,
           type: 'player_attack'
+        });
+
+        // 타겟 피격 넉백
+        this.tweens.add({
+          targets: target.sprite,
+          x: target.baseX - 8,
+          duration: 70,
+          yoyo: true
         });
 
         // 원위치 귀환 트윈
@@ -292,7 +324,7 @@ export class BattleScene extends Phaser.Scene {
           targets: hero.sprite,
           x: hero.baseX,
           y: hero.baseY,
-          duration: 250,
+          duration: 240,
           ease: 'Power2',
           onComplete: () => {
             if (target.data.hp <= 0) {
@@ -306,142 +338,122 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // [2] 직업별 마법 및 고유 스킬 실행
+  // [2] 직업별 마법 및 고유 스킬 실행 (VfxManager 연동)
   private executeHeroSkill(hero: HeroSpriteNode, skillId: string) {
     const target = this.enemy!;
 
+    // 몽크 비기: 백열각 (4연속 권격 타격)
     if (skillId === 'flurry') {
-      // 몽크의 백열각 (4연타 펀치 대시)
-      this.executeMonkFlurry(hero, target);
-      return;
-    }
+      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      hero.data.mp = Math.max(0, hero.data.mp - 16);
 
-    if (skillId === 'cure') {
-      // 백마도사의 케알라 (HP 최저 아군 힐)
-      this.executeHealSpell(hero);
-      return;
-    }
+      VfxManager.playMonkFlurry(
+        this,
+        hero.sprite,
+        hero.baseX,
+        hero.baseY,
+        target.baseX,
+        target.baseY,
+        (hitIdx) => {
+          const hitDamage = Math.floor(hero.data.atk * 0.7) + Phaser.Math.Between(2, 6);
+          this.showDamagePopup(target.baseX, target.baseY - 10 - (hitIdx * 8), hitDamage, hitIdx === 4);
+          target.data.hp = Math.max(0, target.data.hp - hitDamage);
+        },
+        () => {
+          EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+            text: `🥋 ${hero.data.name}의 백열각 4연격 대폭발! 적을 맹렬히 압도했습니다!`,
+            type: 'player_attack'
+          });
 
-    // 마법 영창 (파이라 / 블리자가)
-    const isFire = skillId === 'fire';
-    hero.data.mp = Math.max(0, hero.data.mp - 15);
-    sfx.playFireMagic();
-
-    // 발밑 마법진 오라
-    const aura = this.add.circle(hero.baseX, hero.baseY + 15, 18, isFire ? 0xf97316 : 0x38bdf8, 0.5);
-    this.tweens.add({
-      targets: aura,
-      scale: 1.6,
-      alpha: 0,
-      duration: 450,
-      onComplete: () => aura.destroy()
-    });
-
-    const magicDamage = Math.floor(hero.data.matk * 1.8) + Phaser.Math.Between(5, 12);
-
-    // 타겟 지점에 파이어/마법 폭발
-    this.time.delayedCall(200, () => {
-      this.spawnVfx('vfx_fire', target.baseX, target.baseY);
-      this.cameras.main.shake(150, 0.012);
-      this.showDamagePopup(target.baseX, target.baseY - 20, magicDamage, true);
-      target.data.hp = Math.max(0, target.data.hp - magicDamage);
-
-      EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
-        text: `🔥 ${hero.data.name}의 대마법 시전! ${target.data.name}에게 ${magicDamage}의 막대한 속성 피해!`,
-        type: 'player_attack'
-      });
-
-      if (target.data.hp <= 0) {
-        this.handleVictory();
-      } else {
-        this.resetHeroTurn(this.activeHeroIndex!);
-      }
-    });
-  }
-
-  // 몽크 전용 4연타 [백열각] 트윈
-  private executeMonkFlurry(hero: HeroSpriteNode, target: EnemySpriteNode) {
-    hero.data.mp = Math.max(0, hero.data.mp - 16);
-
-    this.tweens.add({
-      targets: hero.sprite,
-      x: 170,
-      y: target.baseY,
-      duration: 180,
-      onComplete: () => {
-        let count = 0;
-        const totalHits = 4;
-
-        const punchTimer = this.time.addEvent({
-          delay: 90,
-          repeat: totalHits - 1,
-          callback: () => {
-            count++;
-            sfx.playPunch();
-            const singleDmg = Math.floor((hero.data.atk * 0.65) + Phaser.Math.Between(2, 6));
-            this.spawnVfx('vfx_punch', target.baseX + Phaser.Math.Between(-10, 10), target.baseY + Phaser.Math.Between(-10, 10));
-            this.showDamagePopup(target.baseX, target.baseY - 15 - (count * 6), singleDmg, count === 4);
-            target.data.hp = Math.max(0, target.data.hp - singleDmg);
-
-            if (count === totalHits) {
-              // 4연타 완료 후 넉백 및 복귀
-              this.tweens.add({
-                targets: target.sprite,
-                x: target.baseX - 15,
-                duration: 100,
-                yoyo: true
-              });
-
-              this.tweens.add({
-                targets: hero.sprite,
-                x: hero.baseX,
-                y: hero.baseY,
-                duration: 250,
-                ease: 'Power2',
-                onComplete: () => {
-                  EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
-                    text: `🥋 ${hero.data.name}의 백열각 4연격 폭발! 적을 맹렬히 압도했습니다!`,
-                    type: 'player_attack'
-                  });
-
-                  if (target.data.hp <= 0) {
-                    this.handleVictory();
-                  } else {
-                    this.resetHeroTurn(this.activeHeroIndex!);
-                  }
-                }
-              });
-            }
+          if (target.data.hp <= 0) {
+            this.handleVictory();
+          } else {
+            this.resetHeroTurn(this.activeHeroIndex!);
           }
+        }
+      );
+      return;
+    }
+
+    // 백마도사: 케알라 (성광 치유)
+    if (skillId === 'cure') {
+      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      hero.data.mp = Math.max(0, hero.data.mp - 14);
+
+      const wounded = this.heroes
+        .filter(h => !h.data.isDead)
+        .sort((a, b) => (a.data.hp / a.data.maxHp) - (b.data.hp / b.data.maxHp))[0] || hero;
+
+      const healAmount = 80;
+      wounded.data.hp = Math.min(wounded.data.maxHp, wounded.data.hp + healAmount);
+
+      VfxManager.playHealVfx(this, wounded.baseX, wounded.baseY, () => {
+        this.updateHeroIdleTexture(wounded);
+        this.showDamagePopup(wounded.baseX, wounded.baseY - 20, healAmount, false, true);
+        EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+          text: `✨ ${hero.data.name}의 케알라 시전! ${wounded.data.name}의 HP가 ${healAmount} 회복되었습니다.`,
+          type: 'heal'
         });
-      }
-    });
-  }
 
-  // 케알라 치유 마법
-  private executeHealSpell(hero: HeroSpriteNode) {
-    hero.data.mp = Math.max(0, hero.data.mp - 14);
-    sfx.playHealChime();
+        this.time.delayedCall(300, () => {
+          this.resetHeroTurn(this.activeHeroIndex!);
+        });
+      });
+      return;
+    }
 
-    // HP 비율이 가장 낮은 아군 타겟팅
-    const wounded = this.heroes
-      .filter(h => !h.data.isDead)
-      .sort((a, b) => (a.data.hp / a.data.maxHp) - (b.data.hp / b.data.maxHp))[0] || hero;
+    // 흑마도사: 파이라 (화염 대폭발)
+    if (skillId === 'fire') {
+      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      hero.data.mp = Math.max(0, hero.data.mp - 15);
 
-    const healAmount = 75;
-    wounded.data.hp = Math.min(wounded.data.maxHp, wounded.data.hp + healAmount);
+      const magicDamage = Math.floor(hero.data.matk * 1.9) + Phaser.Math.Between(8, 16);
 
-    this.spawnVfx('vfx_heal', wounded.baseX, wounded.baseY);
-    this.showDamagePopup(wounded.baseX, wounded.baseY - 20, healAmount, false, true);
+      VfxManager.playFireVfx(this, target.baseX, target.baseY, () => {
+        this.showDamagePopup(target.baseX, target.baseY - 20, magicDamage, true);
+        target.data.hp = Math.max(0, target.data.hp - magicDamage);
 
-    EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
-      text: `✨ ${hero.data.name}의 케알라 시전! ${wounded.data.name}의 HP가 ${healAmount} 회복되었습니다.`,
-      type: 'heal'
-    });
+        EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+          text: `🔥 ${hero.data.name}의 파이라 시전! ${target.data.name}에게 ${magicDamage}의 대화염 폭발 피해!`,
+          type: 'player_attack'
+        });
 
-    this.time.delayedCall(400, () => {
-      this.resetHeroTurn(this.activeHeroIndex!);
-    });
+        if (target.data.hp <= 0) {
+          this.handleVictory();
+        } else {
+          this.resetHeroTurn(this.activeHeroIndex!);
+        }
+      });
+      return;
+    }
+
+    // 흑마도사: 블리자가 (빙결 고드름 파쇄)
+    if (skillId === 'blizzard') {
+      hero.sprite.setTexture(`${hero.data.textureKey}_attack`);
+      hero.data.mp = Math.max(0, hero.data.mp - 20);
+
+      const magicDamage = Math.floor(hero.data.matk * 2.2) + Phaser.Math.Between(12, 22);
+
+      VfxManager.playIceVfx(this, target.baseX, target.baseY, () => {
+        this.showDamagePopup(target.baseX, target.baseY - 20, magicDamage, true);
+        target.data.hp = Math.max(0, target.data.hp - magicDamage);
+
+        EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+          text: `❄️ ${hero.data.name}의 블리자가 시전! ${target.data.name}에게 ${magicDamage}의 빙결 파쇄 피해!`,
+          type: 'player_attack'
+        });
+
+        if (target.data.hp <= 0) {
+          this.handleVictory();
+        } else {
+          this.resetHeroTurn(this.activeHeroIndex!);
+        }
+      });
+      return;
+    }
+
+    // 기타 기본 스킬
+    this.executeHeroPhysicalAttack(hero);
   }
 
   // [3] 방어 태세
@@ -449,11 +461,11 @@ export class BattleScene extends Phaser.Scene {
     hero.data.isDefending = true;
     sfx.playCursor();
 
-    const shieldRing = this.add.circle(hero.baseX, hero.baseY, 20, 0x38bdf8, 0.4);
+    const shieldRing = this.add.circle(hero.baseX, hero.baseY, 22, 0x38bdf8, 0.4);
     this.tweens.add({
       targets: shieldRing,
       alpha: 0,
-      scale: 1.4,
+      scale: 1.5,
       duration: 350,
       onComplete: () => shieldRing.destroy()
     });
@@ -473,29 +485,60 @@ export class BattleScene extends Phaser.Scene {
     const enemy = this.enemy;
     enemy.data.atb = 0;
 
-    // 살아있는 영웅 중 랜덤 타겟 선정 (전사가 어그로 우선)
     const aliveHeroes = this.heroes.filter(h => !h.data.isDead);
     if (aliveHeroes.length === 0) {
       this.handleDefeat();
       return;
     }
 
+    // 제4막 에제키엘 특수 궁극기: 25% 확률로 [천공의 심판] 광역 번개 발동!
+    if (this.currentActNumber === 4 && Phaser.Math.Between(1, 4) === 1) {
+      const heroPositions = aliveHeroes.map(h => ({ x: h.baseX, y: h.baseY }));
+
+      VfxManager.playEzekielJudgment(this, heroPositions, () => {
+        aliveHeroes.forEach(h => {
+          const rawDmg = Math.max(15, enemy.data.matk - Math.floor(h.data.def / 2) + Phaser.Math.Between(5, 12));
+          const finalDmg = h.data.isDefending ? Math.floor(rawDmg * 0.5) : rawDmg;
+          h.data.isDefending = false;
+          h.data.hp = Math.max(0, h.data.hp - finalDmg);
+
+          // 피격 포즈 전환
+          h.sprite.setTexture(`${h.data.textureKey}_hurt`);
+          this.time.delayedCall(220, () => {
+            this.updateHeroIdleTexture(h);
+          });
+
+          this.showDamagePopup(h.baseX, h.baseY - 20, finalDmg, true);
+          if (h.data.hp <= 0) {
+            h.data.isDead = true;
+            h.sprite.setAlpha(0.35);
+          }
+        });
+
+        EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+          text: `⚡ 에제키엘의 [천공의 심판] 발동! 파티 전원에게 파멸적인 성벌이 쏟아졌습니다!`,
+          type: 'monster_attack'
+        });
+
+        this.isProcessingAction = false;
+        if (this.heroes.every(h => h.data.isDead)) {
+          this.handleDefeat();
+        }
+      });
+      return;
+    }
+
+    // 통상 공격 (단일 대상 전진 타격)
     const targetHero = aliveHeroes[Phaser.Math.Between(0, aliveHeroes.length - 1)];
 
-    // 보스 전진 대시
     this.tweens.add({
       targets: enemy.sprite,
       x: targetHero.baseX - 50,
       y: targetHero.baseY,
-      duration: 250,
+      duration: 240,
       ease: 'Power2',
       onComplete: () => {
-        if (enemy.data.isBoss && Phaser.Math.Between(1, 3) === 1) {
-          sfx.playThunder();
-        } else {
-          sfx.playSlash();
-        }
-
+        sfx.playSlash();
         const rawDmg = Math.max(10, enemy.data.atk - Math.floor(targetHero.data.def / 2) + Phaser.Math.Between(2, 8));
         const finalDmg = targetHero.data.isDefending ? Math.floor(rawDmg * 0.5) : rawDmg;
         targetHero.data.isDefending = false;
@@ -504,9 +547,11 @@ export class BattleScene extends Phaser.Scene {
         this.cameras.main.shake(140, 0.01);
         this.showDamagePopup(targetHero.baseX, targetHero.baseY - 20, finalDmg, false);
 
-        // 피격 영웅 플래시 효과
-        targetHero.sprite.setTint(0xef4444);
-        this.time.delayedCall(150, () => targetHero.sprite.clearTint());
+        // 🌟 타겟 영웅 피격 포즈 전환!
+        targetHero.sprite.setTexture(`${targetHero.data.textureKey}_hurt`);
+        this.time.delayedCall(220, () => {
+          this.updateHeroIdleTexture(targetHero);
+        });
 
         EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
           text: `💀 ${enemy.data.name}의 강력한 일격! ${targetHero.data.name}에게 ${finalDmg} 피해!`,
@@ -539,7 +584,7 @@ export class BattleScene extends Phaser.Scene {
   // 데미지 플로팅 텍스트 연출
   private showDamagePopup(x: number, y: number, amount: number, isCrit: boolean, isHeal: boolean = false) {
     const textStr = isHeal ? `+${amount}` : `-${amount}`;
-    const color = isHeal ? '#10b981' : isCrit ? '#f59e0b' : '#ffffff';
+    const color = isHeal ? '#34d399' : isCrit ? '#f59e0b' : '#ffffff';
 
     const dmgText = this.add.text(x, y, textStr, {
       fontSize: isCrit ? '20px' : '15px',
@@ -552,9 +597,9 @@ export class BattleScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: dmgText,
-      y: y - 30,
+      y: y - 32,
       alpha: 0,
-      duration: 800,
+      duration: 850,
       ease: 'Cubic.easeOut',
       onComplete: () => dmgText.destroy()
     });
@@ -565,7 +610,7 @@ export class BattleScene extends Phaser.Scene {
     const vfx = this.add.sprite(x, y, textureKey).setScale(1.8).setAlpha(0.9);
     this.tweens.add({
       targets: vfx,
-      scale: 2.4,
+      scale: 2.5,
       alpha: 0,
       duration: 300,
       onComplete: () => vfx.destroy()
@@ -587,15 +632,21 @@ export class BattleScene extends Phaser.Scene {
       });
     }
 
-    // 살아남은 영웅들의 FF 승리 축하 점프 포즈
+    // 🌟 살아남은 모든 조율자: 첨부 이미지와 동일한 [양손 만세 점프 승리 포즈] 연출!
     this.heroes.filter(h => !h.data.isDead).forEach((h, idx) => {
+      // 대기 숨쉬기 트윈 정지 후 승리 텍스처 적용
+      if (h.idleTween) h.idleTween.stop();
+      h.sprite.setTexture(`${h.data.textureKey}_victory`);
+
+      // 양손을 치켜들고 연속으로 튀어오르는 만세 점프 애니메이션 (FF 클래식!)
       this.tweens.add({
         targets: h.sprite,
-        y: h.baseY - 18,
-        duration: 250,
+        y: h.baseY - 20,
+        duration: 240,
         yoyo: true,
-        repeat: 5,
-        delay: idx * 60
+        repeat: -1,
+        delay: idx * 80,
+        ease: 'Power2'
       });
     });
 
@@ -622,14 +673,12 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  // 이벤트 리스너 바인딩
   private setupEventListeners() {
     EventBus.on(GAME_EVENTS.COMMAND_EXECUTE, this.handleCommandExecute, this);
     EventBus.on(GAME_EVENTS.LOAD_ACT, (actNum: 1 | 2 | 3 | 4) => this.loadAct(actNum), this);
     EventBus.on(GAME_EVENTS.RESTART_BATTLE, () => this.loadAct(this.currentActNumber as any), this);
   }
 
-  // 언마운트 시 클린업
   shutdown() {
     EventBus.off(GAME_EVENTS.COMMAND_EXECUTE, this.handleCommandExecute, this);
     EventBus.off(GAME_EVENTS.LOAD_ACT);
