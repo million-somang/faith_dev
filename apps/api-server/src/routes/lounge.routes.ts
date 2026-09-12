@@ -14,18 +14,18 @@ loungeRoutes.get('/api/lounge/posts', optionalAuth, async (c) => {
 
     const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10)));
     const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10));
-    const handleFilter = url.searchParams.get('handle') || null;
+    const authorFilter = url.searchParams.get('author') || null;
     const tagFilter = url.searchParams.get('tag') || null;
     const queryFilter = url.searchParams.get('q') || null;
-    const currentHandle = url.searchParams.get('myHandle') || null;
+    const currentHandle = url.searchParams.get('myHandle') || url.searchParams.get('handle') || null;
 
     try {
         let whereClauses: string[] = [];
         let binds: any[] = [];
 
-        if (handleFilter) {
+        if (authorFilter) {
             whereClauses.push('author_handle = ?');
-            binds.push(handleFilter);
+            binds.push(authorFilter);
         }
 
         if (tagFilter) {
@@ -54,9 +54,9 @@ loungeRoutes.get('/api/lounge/posts', optionalAuth, async (c) => {
             ORDER BY is_pinned DESC, created_at DESC
             LIMIT ? OFFSET ?
         `;
-        binds.push(limit, offset);
+        const selectBinds = [...binds, limit, offset];
 
-        const { results } = await DB.prepare(selectSql).bind(...binds).all();
+        const { results } = await DB.prepare(selectSql).bind(...selectBinds).all();
         const postList = results || [];
 
         // 현재 사용자가 누른 좋아요 목록 조회
