@@ -23,7 +23,7 @@ const CATALOG: CatalogItem[] = [
     { label: '뉴스', desc: '실시간 속보·분야별 뉴스', href: '/news', icon: 'fa-newspaper', color: 'text-blue-600', bg: 'bg-blue-50', keywords: ['뉴스', 'news', '속보', '기사'] },
     { label: '금융', desc: '환율·증시·예적금 계산기', href: '/finance', icon: 'fa-won-sign', color: 'text-orange-600', bg: 'bg-orange-50', keywords: ['금융', '환율', '주가', '증시', '코스피', '대출', '예금', '적금', '이자'] },
     { label: '게임', desc: '무료 미니게임 모음', href: '/game', icon: 'fa-gamepad', color: 'text-purple-600', bg: 'bg-purple-50', keywords: ['게임', 'game', '미니게임'] },
-    { label: '생활도구', desc: '계산기·변환기·맞춤법', href: '/lifestyle', icon: 'fa-tools', color: 'text-green-600', bg: 'bg-green-50', keywords: ['생활도구', '유틸리티', '도구', 'tool'] },
+    { label: '베라오목', desc: '15×15 브라우저 AI 오목', href: '/game/omok', icon: 'fa-circle-dot', color: 'text-amber-600', bg: 'bg-amber-50', keywords: ['오목', '베라오목', 'omok', 'gomoku', '바둑', '5목'] },
     { label: '스도쿠', desc: '숫자 퍼즐 게임', href: '/game/sudoku', icon: 'fa-table-cells', color: 'text-violet-600', bg: 'bg-violet-50', keywords: ['스도쿠', 'sudoku', '숫자', '퍼즐'] },
     { label: '2048', desc: '숫자 합치기 퍼즐', href: '/game/2048', icon: 'fa-grip', color: 'text-cyan-600', bg: 'bg-cyan-50', keywords: ['2048', '숫자', '퍼즐'] },
     { label: '지뢰찾기', desc: '클래식 지뢰찾기', href: '/game/minesweeper', icon: 'fa-bomb', color: 'text-red-600', bg: 'bg-red-50', keywords: ['지뢰찾기', 'minesweeper', '지뢰'] },

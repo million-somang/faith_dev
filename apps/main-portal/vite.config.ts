@@ -28,6 +28,10 @@ export default defineConfig({
                 target: 'http://127.0.0.1:5026',
                 changeOrigin: true
             },
+            '^/app/omok.*': {
+                target: 'http://localhost:5030',
+                changeOrigin: true
+            },
             '^/app/severance-calc.*': {
                 target: 'http://localhost:5028',
                 changeOrigin: true

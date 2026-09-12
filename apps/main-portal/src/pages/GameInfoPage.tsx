@@ -22,6 +22,23 @@ interface GameConfig {
 }
 
 const GAME_CONFIGS: Record<string, GameConfig> = {
+    omok: {
+        label: '베라오목 (Vera Omok)',
+        icon: 'fas fa-circle-dot',
+        gradient: 'from-amber-600 via-amber-700 to-yellow-800',
+        buttonGradient: 'from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800',
+        tagline: '15×15 정통 바둑판에서 펼쳐지는 3단계 인공지능 오목 대전!',
+        description: '웹 브라우저에서 설치 없이 즉시 즐기는 프리미엄 AI 오목 게임입니다. 초급, 중급, 고급(마스터) 3단계 인공지능과 대결하며 실시간 형세 분석과 3D 입체 바둑돌의 손맛을 느껴보세요.',
+        controls: [
+            { keys: '마우스 클릭 / 터치', desc: '바둑판 교차점에 착수' },
+            { keys: '한 수 무르기', desc: '실수를 되돌리고 새로운 전략 구상' },
+            { keys: '선후공 선택', desc: '흑돌(선공) 또는 백돌(후공) 선택' },
+            { keys: '3단계 난이도', desc: '초급 / 중급 / 고급 AI 선택' },
+        ],
+        appUrl: '/app/omok/',
+        appName: 'app-omok',
+        leaderboardUrl: '/api/games/omok/leaderboard',
+    },
     'vera-pop': {
         label: 'Vera Pop (베라 팝)',
         icon: 'fas fa-gem',

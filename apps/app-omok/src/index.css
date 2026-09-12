@@ -1,0 +1,100 @@
+@import "tailwindcss";
+@import "@faithportal/mini-app-sdk/src/mini-app.css";
+
+/* ==========================================================================
+   베라오목 (Vera Omok) 전용 그래픽 & 애니메이션 스타일 시트
+   100% 라이트 뉴모피즘 + 천연 온목재 텍스처 + 3D 바둑돌 광택
+   ========================================================================== */
+
+/* 1. 바둑돌 착수 바운스 애니메이션 */
+@keyframes stoneDrop {
+  0% {
+    transform: scale(1.35) translateY(-8px);
+    opacity: 0.7;
+  }
+  60% {
+    transform: scale(0.92) translateY(1px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.0) translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-stone-drop {
+  animation: stoneDrop 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* 2. 마지막 착수 지점 펄스 링 */
+@keyframes lastMovePulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 0.35;
+  }
+}
+
+.animate-last-move {
+  animation: lastMovePulse 1.8s ease-in-out infinite;
+}
+
+/* 3. 승리 5목 골든 네온 레이저 */
+@keyframes goldenGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px #f59e0b, 0 0 20px #fbbf24;
+    border-color: #f59e0b;
+  }
+  50% {
+    box-shadow: 0 0 18px #f59e0b, 0 0 35px #fde68a;
+    border-color: #fef08a;
+  }
+}
+
+.animate-golden-win {
+  animation: goldenGlow 1.2s ease-in-out infinite;
+}
+
+/* 4. 온목재 바둑판 미세 결 무늬 */
+.wood-board-texture {
+  background-color: #dfb170;
+  background-image: 
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.08) 100%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(160, 106, 40, 0.05) 0px,
+      rgba(160, 106, 40, 0.05) 2px,
+      transparent 2px,
+      transparent 18px
+    );
+  box-shadow: 
+    inset 0 2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 -3px 6px rgba(115, 68, 14, 0.35),
+    0 10px 25px -5px rgba(180, 120, 50, 0.25);
+}
+
+/* 5. 3D 흑돌 광택 */
+.stone-black {
+  background: radial-gradient(circle at 35% 30%, #4b5563 0%, #1f2937 40%, #030712 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+/* 6. 3D 백돌 진주 광택 */
+.stone-white {
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f8fafc 50%, #cbd5e1 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22), inset 0 1px 2px rgba(255, 255, 255, 0.8), inset 0 -1px 2px rgba(148, 163, 184, 0.3);
+}
+
+/* 7. 고스트 스톤 (마우스 호버 가이드) */
+.ghost-stone-black {
+  background: radial-gradient(circle at 35% 30%, rgba(75, 85, 99, 0.4) 0%, rgba(17, 24, 39, 0.5) 100%);
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.ghost-stone-white {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7) 0%, rgba(203, 213, 225, 0.5) 100%);
+  border: 1px dashed rgba(100, 116, 139, 0.4);
+}

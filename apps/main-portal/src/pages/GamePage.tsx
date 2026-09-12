@@ -269,6 +269,64 @@ function VeraPopThumb() {
     );
 }
 
+// 베라오목: 천연 온목재 15x15 격자판 + 3D 흑돌/백돌 5목 연결
+function OmokThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="omokWood" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#e8c382" />
+                    <stop offset="50" stopColor="#dfb170" />
+                    <stop offset="100" stopColor="#c9934e" />
+                </linearGradient>
+                <radialGradient id="omokBlackStone" cx="35%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#4b5563" />
+                    <stop offset="40%" stopColor="#1f2937" />
+                    <stop offset="100%" stopColor="#030712" />
+                </radialGradient>
+                <radialGradient id="omokWhiteStone" cx="35%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="60%" stopColor="#f1f5f9" />
+                    <stop offset="100%" stopColor="#cbd5e1" />
+                </radialGradient>
+                <filter id="stoneShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="3" stdDeviation="2.5" floodColor="#000000" floodOpacity="0.4" />
+                </filter>
+            </defs>
+            {/* 온목재 배경 */}
+            <rect width="320" height="120" fill="url(#omokWood)" />
+            {/* 바둑판 격자선 */}
+            <g stroke="#784c1f" strokeWidth="1" opacity="0.4">
+                <path d="M0 20H320M0 40H320M0 60H320M0 80H320M0 100H320M40 0V120M80 0V120M120 0V120M160 0V120M200 0V120M240 0V120M280 0V120" />
+            </g>
+            {/* 화점 마커 */}
+            <circle cx="80" cy="40" r="3" fill="#5c3814" />
+            <circle cx="240" cy="40" r="3" fill="#5c3814" />
+            <circle cx="160" cy="60" r="4" fill="#5c3814" />
+            <circle cx="80" cy="80" r="3" fill="#5c3814" />
+            <circle cx="240" cy="80" r="3" fill="#5c3814" />
+
+            {/* 승리 5목 골든 레이저 선 */}
+            <line x1="60" y1="60" x2="260" y2="60" stroke="#f59e0b" strokeWidth="4" strokeLinecap="round" opacity="0.8" />
+
+            {/* 흑돌 5개 가로 5목 */}
+            <circle cx="60" cy="60" r="15" fill="url(#omokBlackStone)" filter="url(#stoneShadow)" />
+            <circle cx="110" cy="60" r="15" fill="url(#omokBlackStone)" filter="url(#stoneShadow)" />
+            <circle cx="160" cy="60" r="15" fill="url(#omokBlackStone)" filter="url(#stoneShadow)" />
+            <circle cx="210" cy="60" r="15" fill="url(#omokBlackStone)" filter="url(#stoneShadow)" />
+            <circle cx="260" cy="60" r="15" fill="url(#omokBlackStone)" filter="url(#stoneShadow)" />
+
+            {/* 백돌 수비 배치 */}
+            <circle cx="110" cy="30" r="14" fill="url(#omokWhiteStone)" filter="url(#stoneShadow)" />
+            <circle cx="160" cy="90" r="14" fill="url(#omokWhiteStone)" filter="url(#stoneShadow)" />
+            <circle cx="210" cy="30" r="14" fill="url(#omokWhiteStone)" filter="url(#stoneShadow)" />
+
+            {/* 승리 골든 링 (천원 중심) */}
+            <circle cx="160" cy="60" r="18" fill="none" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3,3" />
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -339,7 +397,22 @@ export default function GamePage() {
 
                     {activeGenre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {/* 🌟 1. 베라 팝 (Vera Pop) - 60초 스테이지 무한 타임어택 */}
+                            {/* 🌟 1. 베라오목 (Vera Omok) - 3단계 브레인 AI 5목 대전 */}
+                            <button onClick={() => navigate('/game/omok')} className="bg-white border-2 text-left border-amber-200 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    NEW AI
+                                </div>
+                                <div className="overflow-hidden bg-[#dfb170]"><OmokThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-amber-700 mb-1 group-hover:text-amber-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Omok (베라오목)</span>
+                                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">15×15 정통 5목</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">초급·중급·고급(마스터) 3단계 인공지능과 대결하며 실시간 형세 분석과 청명한 바둑돌 손맛을 느껴보세요.</p>
+                                </div>
+                            </button>
+
+                            {/* 🌟 2. 베라 팝 (Vera Pop) - 60초 스테이지 무한 타임어택 */}
                             <button onClick={() => navigate('/game/vera-pop')} className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative">
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-400 to-rose-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
                                     NEW 60s
@@ -441,7 +514,17 @@ export default function GamePage() {
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* 1. 베라 팝 (Vera Pop) */}
+                            {/* 1. 베라오목 (Vera Omok) */}
+                            <div className="bg-slate-50 p-5 rounded-2xl border border-amber-200/80 space-y-2 hover:border-amber-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-circle-dot text-amber-600"></i> 베라오목 (Vera Omok) 전략 & 룰
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    15×15 바둑판에서 흑돌과 백돌이 번갈아 착수하여 가로, 세로, 대각선 중 5개의 돌을 연속으로 먼저 놓으면 승리합니다. 3단계 AI를 상대로 양쪽이 트인 '열린 3목'을 형성하고 상대의 공격을 차단하는 양수겸장(포크) 전략을 펼쳐보세요.
+                                </p>
+                            </div>
+
+                            {/* 2. 베라 팝 (Vera Pop) */}
                             <div className="bg-slate-50 p-5 rounded-2xl border border-indigo-200/80 space-y-2 hover:border-indigo-400 transition-all">
                                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                                     <i className="fas fa-gem text-indigo-600"></i> 베라 팝 (Vera Pop) 공략법
