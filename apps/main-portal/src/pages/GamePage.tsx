@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header, Footer, t } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
+import { useAppLauncher } from '../hooks/useAppLauncher';
 import { PageSEO } from '../components/PageSEO';
 
 const ALL_GENRES = [
     { id: 'mini', label: '미니게임', icon: 'fas fa-bolt' },
-    { id: 'classic', label: '고전게임', icon: 'fas fa-ghost' },
+    { id: 'online', label: '온라인게임', icon: 'fas fa-globe' },
     { id: 'emulator', label: '에뮬레이터', icon: 'fas fa-gamepad' },
 ];
 
@@ -327,9 +328,59 @@ function OmokThumb() {
     );
 }
 
+// 베라오목 온라인: 사이버 블루 네트워크 + 1:1 실시간 대국
+function OnlineOmokThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="onlineBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#1e3a8a" />
+                    <stop offset="50%" stopColor="#2563eb" />
+                    <stop offset="100%" stopColor="#4f46e5" />
+                </linearGradient>
+                <radialGradient id="pvpBlack" cx="35%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#4b5563" />
+                    <stop offset="40%" stopColor="#1f2937" />
+                    <stop offset="100%" stopColor="#030712" />
+                </radialGradient>
+                <radialGradient id="pvpWhite" cx="35%" cy="30%" r="70%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="60%" stopColor="#f1f5f9" />
+                    <stop offset="100%" stopColor="#cbd5e1" />
+                </radialGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#onlineBg)" />
+            {/* 네트워크 펄스 라인 */}
+            <g stroke="#93c5fd" strokeWidth="1" opacity="0.25">
+                <circle cx="160" cy="60" r="40" fill="none" strokeDasharray="4,4" />
+                <circle cx="160" cy="60" r="75" fill="none" strokeDasharray="6,6" />
+                <path d="M0 60H320M160 0V120M40 20L280 100M40 100L280 20" />
+            </g>
+            {/* VS 매칭 엠블럼 */}
+            <g transform="translate(160, 60)">
+                <circle cx="0" cy="0" r="18" fill="#1e293b" opacity="0.8" />
+                <text x="0" y="5" fill="#facc15" fontSize="12" fontWeight="900" textAnchor="middle">VS</text>
+            </g>
+            {/* 흑돌 플레이어 */}
+            <g transform="translate(90, 60)">
+                <circle cx="0" cy="0" r="22" fill="url(#pvpBlack)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.5))" />
+                <circle cx="0" cy="0" r="25" fill="none" stroke="#60a5fa" strokeWidth="2" strokeDasharray="3,3" />
+                <text x="0" y="34" fill="#bfdbfe" fontSize="10" fontWeight="bold" textAnchor="middle">PLAYER 1</text>
+            </g>
+            {/* 백돌 플레이어 */}
+            <g transform="translate(230, 60)">
+                <circle cx="0" cy="0" r="22" fill="url(#pvpWhite)" filter="drop-shadow(0 4px 6px rgba(0,0,0,0.3))" />
+                <circle cx="0" cy="0" r="25" fill="none" stroke="#f472b6" strokeWidth="2" strokeDasharray="3,3" />
+                <text x="0" y="34" fill="#fed7aa" fontSize="10" fontWeight="bold" textAnchor="middle">PLAYER 2</text>
+            </g>
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { launchApp } = useAppLauncher();
 
     // 회원 로그인 시에만 고전게임/에뮬레이터 탭 활성화 (비회원 및 크롤러에게는 클린 미니게임만 100% 노출)
     const genres = user ? ALL_GENRES : [{ id: 'mini', label: '미니게임', icon: 'fas fa-bolt' }];
@@ -352,21 +403,21 @@ export default function GamePage() {
                     <i className="fas fa-gamepad absolute right-6 bottom-2 text-7xl sm:text-8xl text-white/15 pointer-events-none"></i>
                     <div className="relative">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3">
-                            <i className={activeGenre === 'mini' ? 'fas fa-bolt' : activeGenre === 'emulator' ? 'fas fa-gamepad' : 'fas fa-ghost'}></i>{' '}
+                            <i className={activeGenre === 'mini' ? 'fas fa-bolt' : activeGenre === 'emulator' ? 'fas fa-gamepad' : 'fas fa-globe'}></i>{' '}
                             {t(genres.find(g => g.id === activeGenre)?.label || '미니게임')}
                         </span>
                         <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-2">
                             {activeGenre === 'emulator'
                                 ? t('추억의 8비트 & 16비트 레트로 콘솔 에뮬레이터')
-                                : activeGenre === 'classic'
-                                ? t('시대를 초월한 감동, 추억의 레트로 고전게임')
+                                : activeGenre === 'online'
+                                ? t('실시간 1:1 대국, 플레이어와 함께하는 온라인 게임')
                                 : t('틈날 때 가볍게, 무료로 즐기는 미니게임')}
                         </h1>
                         <p className="text-indigo-50 text-sm font-medium">
                             {activeGenre === 'emulator'
                                 ? t('베라 컴보이(NES) · 베라 슈퍼컴보이(SNES) — 소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행')
-                                : activeGenre === 'classic'
-                                ? t('추억의 레트로 명작 아케이드와 보드 게임 라인업을 준비하고 있습니다')
+                                : activeGenre === 'online'
+                                ? t('베라오목 온라인 — 실시간 매칭과 대기실 기능으로 다른 플레이어와 1:1 두뇌 승부를 펼쳐보세요')
                                 : t('베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 설치 없이 브라우저에서 바로 플레이하세요')}
                         </p>
                     </div>
@@ -490,11 +541,31 @@ export default function GamePage() {
                                 </div>
                             </button>
                         </div>
+                    ) : activeGenre === 'online' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {/* 🌟 베라오목 온라인 (Vera Omok Online) */}
+                            <button
+                                onClick={() => launchApp('/onlinegame/omok-pvp/', 'omok-pvp')}
+                                className="bg-white border-2 text-left border-blue-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all group relative"
+                            >
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    LIVE 1:1
+                                </div>
+                                <div className="overflow-hidden bg-[#1e3a8a]"><OnlineOmokThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-blue-700 mb-1 group-hover:text-blue-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Omok Online (베라오목 온라인)</span>
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">1:1 실시간 대전</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">대기실에서 상대를 찾아 실시간 1:1 오목 대국을 즐기세요. 30초 턴 제한, 관전 및 실시간 이모지 채팅 지원!</p>
+                                </div>
+                            </button>
+                        </div>
                     ) : (
                         <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
                             <i className="fas fa-screwdriver-wrench text-4xl mb-4 text-slate-300"></i>
-                            <p className="font-semibold text-slate-600">고전게임 라인업 준비중입니다.</p>
-                            <p className="text-sm mt-1 text-slate-400">추억의 명작 고전 아케이드 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 클래식 프리셀을 먼저 즐겨보세요!</p>
+                            <p className="font-semibold text-slate-600">온라인게임 라인업 준비중입니다.</p>
+                            <p className="text-sm mt-1 text-slate-400">새로운 실시간 온라인 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 베라오목을 먼저 즐겨보세요!</p>
                         </div>
                     )}
                 </div>
@@ -668,18 +739,66 @@ export default function GamePage() {
                             </dl>
                         </div>
                     </section>
+                ) : activeGenre === 'online' ? (
+                    /* 3. 온라인게임 전용 가이드 & 규칙 */
+                    <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-8 animate-fade-in">
+                        <div>
+                            <h2 className="text-2xl font-black text-slate-900 mb-3 flex items-center gap-2">
+                                <i className="fas fa-globe text-blue-600"></i>
+                                VERA 온라인 대전 게임 가이드 & 매칭 안내
+                            </h2>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                VERA 온라인 게임은 회원 간 실시간 1:1 매칭 및 대기실 시스템을 통해 별도의 프로그램 설치 없이 웹 브라우저에서 즉시 상대를 찾아 플레이할 수 있는 대전 플랫폼입니다.
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* 1. 베라오목 온라인 매칭 방식 */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-blue-200/90 space-y-3 hover:border-blue-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-handshake text-blue-600"></i> 1:1 실시간 매칭 시스템
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    [매칭 시작] 버튼을 누르면 대기열에 있는 다른 플레이어와 즉시 연결됩니다. 대기 상대 탐색 및 가상 매칭 전환 시스템을 통해 대기 지연 없이 박진감 넘치는 두뇌 승부를 펼칠 수 있습니다.
+                                </p>
+                            </div>
+
+                            {/* 2. 턴 타임아웃 & 5목 규칙 */}
+                            <div className="bg-slate-50 p-6 rounded-2xl border border-indigo-200/90 space-y-3 hover:border-indigo-400 transition-all">
+                                <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                                    <i className="fas fa-stopwatch text-indigo-600"></i> 30초 턴 제한 & 공정한 승부
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    원활하고 빠른 대국 진행을 위해 착수당 30초의 제한 시간이 주어집니다. 흑돌과 백돌이 번갈아 착수하며 가로, 세로, 대각선으로 5목을 먼저 완성하는 플레이어가 최종 승리합니다.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-6">
+                            <h3 className="font-bold text-slate-900 text-lg mb-3">온라인 대전 FAQ</h3>
+                            <dl className="space-y-3 text-xs text-slate-600">
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. 온라인 대전 게임은 회원만 이용할 수 있나요?</dt>
+                                    <dd className="mt-1">A. 네, 실시간 대전 기록, 전적 관리 및 쾌적한 매칭 환경 유지를 위해 온라인 대전은 VERA 로그인 회원 전용으로 운영됩니다.</dd>
+                                </div>
+                                <div>
+                                    <dt className="font-bold text-slate-800">Q. 모바일 팝업 창에서도 동일하게 플레이되나요?</dt>
+                                    <dd className="mt-1">A. 네, 미니앱 표준 팝업 뷰포트(450×850)에 최적화되어 PC 창 모드는 물론 모바일 웹 브라우저에서도 최적의 터치 조작감으로 플레이하실 수 있습니다.</dd>
+                                </div>
+                            </dl>
+                        </div>
+                    </section>
                 ) : (
-                    /* 3. 고전게임 안내 섹션 */
                     <section className="mt-12 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-slate-700 space-y-6 animate-fade-in text-center">
                         <div className="max-w-xl mx-auto py-6">
-                            <div className="w-16 h-16 bg-violet-100 text-violet-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
-                                <i className="fas fa-ghost"></i>
+                            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+                                <i className="fas fa-globe"></i>
                             </div>
                             <h2 className="text-2xl font-black text-slate-900 mb-2">
-                                VERA 고전 명작 아케이드 센터 안내
+                                VERA 게임 센터 안내
                             </h2>
                             <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                                시대를 풍미한 레트로 아케이드 게임과 고전 보드 게임 컬렉션을 준비하고 있습니다. 현재 정통 클래식 게임인 <strong>프리셀 솔리테어</strong>는 [미니게임] 탭에서 바로 즐기실 수 있습니다.
+                                [미니게임]과 [온라인게임] 탭에서 다채로운 두뇌 퍼즐 및 대전 게임을 무료로 즐기실 수 있습니다.
                             </p>
                             <button
                                 onClick={() => setGenre('mini')}

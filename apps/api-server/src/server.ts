@@ -146,6 +146,33 @@ miniApps.forEach(appName => {
     });
 });
 
+// 회원 전용 실시간 온라인게임 (/onlinegame/:gameName)
+const onlineGames = ['omok-pvp'];
+
+onlineGames.forEach(gameName => {
+    const basePath = `/onlinegame/${gameName}`;
+    const distPath = `./onlinegame/${gameName}/dist`;
+    
+    app.use(`${basePath}/*`, async (c, next) => {
+        const user = await checkSession(c);
+        if (!user) {
+            return c.redirect('/login?msg=member_only');
+        }
+        return serveStatic({ 
+            root: distPath,
+            rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
+        })(c, next);
+    });
+    
+    app.get(basePath, async (c, next) => {
+        const user = await checkSession(c);
+        if (!user) {
+            return c.redirect('/login?msg=member_only');
+        }
+        return serveStatic({ path: `${distPath}/index.html` })(c, next);
+    });
+});
+
 // Finance app 정적 파일 서빙
 app.use('/finance/*', serveStatic({
     root: './apps/finance/dist',

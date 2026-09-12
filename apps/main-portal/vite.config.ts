@@ -32,6 +32,10 @@ export default defineConfig({
                 target: 'http://localhost:5030',
                 changeOrigin: true
             },
+            '^/onlinegame.*': {
+                target: 'http://localhost:4200',
+                changeOrigin: true
+            },
             '^/app/severance-calc.*': {
                 target: 'http://localhost:5028',
                 changeOrigin: true
