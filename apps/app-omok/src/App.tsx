@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { MiniAppLayout } from '@faithportal/mini-app-sdk';
+import React, { useState, useEffect, useRef } from 'react';
+import { MiniAppLayout, useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
+import axios from 'axios';
 import { useOmokGame } from './hooks/useOmokGame';
 import { SplashScreen } from './components/SplashScreen';
 import { GameHeader } from './components/GameHeader';
@@ -7,9 +8,18 @@ import { OmokBoard } from './components/OmokBoard';
 import { GameControls } from './components/GameControls';
 import { StatusInsightPanel } from './components/StatusInsightPanel';
 import { VictoryModal } from './components/VictoryModal';
+import { calculateOmokScore } from './utils/scoreCalculator';
+import { GameScoreDetails } from './types/omok';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const { user } = useAuth();
+  const { sendToPortal } = usePortalMessenger();
+
+  const [scoreDetails, setScoreDetails] = useState<GameScoreDetails | null>(null);
+  const [isSavingScore, setIsSavingScore] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const gameOverHandledRef = useRef(false);
 
   const {
     board,
@@ -32,6 +42,57 @@ export default function App() {
     setHumanPlayer,
     toggleMute,
   } = useOmokGame();
+
+  // 대국 종료 시 점수 계산 및 서버 DB / 리더보드 저장
+  useEffect(() => {
+    if (status !== 'PLAYING' && !gameOverHandledRef.current) {
+      gameOverHandledRef.current = true;
+      const details = calculateOmokScore(status, difficulty, moveHistory.length, timeElapsed, humanPlayer);
+      setScoreDetails(details);
+
+      // 포털 미션 클리어 연동
+      sendToPortal('MISSION_CLEAR');
+
+      // 부모 윈도우(포털 창)에 점수 업데이트 메시지 전송
+      const targetWindow = window.opener || (window.parent !== window ? window.parent : null);
+      if (targetWindow) {
+        targetWindow.postMessage(
+          { type: 'GAME_SCORE_UPDATED', gameId: 'omok', score: details.totalScore },
+          '*'
+        );
+      }
+
+      // 회원일 경우 서버 DB에 점수 저장 (게임 리더보드/명예의 전당 연동)
+      if (user) {
+        setIsSavingScore(true);
+        axios.post('/api/games/omok/score', {
+          score: details.totalScore,
+          metadata: {
+            difficulty,
+            timeElapsed,
+            moveCount: moveHistory.length,
+            humanPlayer,
+            status,
+            breakdown: details
+          }
+        }, { withCredentials: true })
+          .then(() => {
+            setSaveMessage('명예의 전당 랭킹에 등록되었습니다!');
+          })
+          .catch((err) => {
+            console.error('[Omok] 점수 저장 실패:', err);
+            setSaveMessage(null);
+          })
+          .finally(() => {
+            setIsSavingScore(false);
+          });
+      }
+    } else if (status === 'PLAYING') {
+      gameOverHandledRef.current = false;
+      setScoreDetails(null);
+      setSaveMessage(null);
+    }
+  }, [status, difficulty, moveHistory.length, timeElapsed, humanPlayer, user, sendToPortal]);
 
   return (
     <MiniAppLayout title="베라오목">
@@ -93,6 +154,11 @@ export default function App() {
           difficulty={difficulty}
           timeElapsed={timeElapsed}
           moveCount={moveHistory.length}
+          scoreDetails={scoreDetails}
+          isSavingScore={isSavingScore}
+          saveMessage={saveMessage}
+          isLoggedIn={!!user}
+          humanPlayer={humanPlayer}
           onRestart={() => resetGame()}
         />
       </main>

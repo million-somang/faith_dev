@@ -34,3 +34,12 @@ export interface AdvantageScore {
   whiteRatio: number; // 0 to 100
   description: string;
 }
+
+export interface GameScoreDetails {
+  totalScore: number;
+  baseScore: number;
+  moveBonus: number;
+  timeBonus: number;
+  handicapBonus: number;
+}
+

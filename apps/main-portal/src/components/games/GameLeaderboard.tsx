@@ -36,7 +36,18 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl }) => {
             }
         };
         fetchLeaderboard();
-        return () => { cancelled = true; };
+
+        const handleScoreUpdate = (e: MessageEvent) => {
+            if (e.data?.type === 'GAME_SCORE_UPDATED') {
+                fetchLeaderboard();
+            }
+        };
+        window.addEventListener('message', handleScoreUpdate);
+
+        return () => {
+            cancelled = true;
+            window.removeEventListener('message', handleScoreUpdate);
+        };
     }, [apiUrl]);
 
     return (
