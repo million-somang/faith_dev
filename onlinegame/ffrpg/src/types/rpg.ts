@@ -1,9 +1,15 @@
-export type CharacterClass = 'warrior' | 'black_mage' | 'white_mage' | 'thief';
+// ============================================================================
+// 성좌의 잔향: 부서진 하늘의 조율자들 - 핵심 데이터 모델 및 타입
+// ============================================================================
 
-export interface CharacterStats {
+export type CharacterClass = 'warrior' | 'white_mage' | 'black_mage' | 'monk';
+
+export interface HeroBattleUnit {
+  id: string;
+  name: string;
+  job: CharacterClass;
+  title: string;
   level: number;
-  exp: number;
-  maxExp: number;
   hp: number;
   maxHp: number;
   mp: number;
@@ -11,17 +17,14 @@ export interface CharacterStats {
   atk: number;
   def: number;
   matk: number;
-  gold: number;
+  agi: number; // ATB 속도 결정
+  atb: number; // 0 ~ 100
+  isDefending: boolean;
+  isDead: boolean;
+  textureKey: string;
 }
 
-export interface PlayerCharacter {
-  id: string;
-  name: string;
-  job: CharacterClass;
-  stats: CharacterStats;
-}
-
-export interface Monster {
+export interface EnemyBattleUnit {
   id: string;
   name: string;
   title: string;
@@ -30,46 +33,47 @@ export interface Monster {
   maxHp: number;
   atk: number;
   def: number;
+  matk: number;
+  agi: number;
+  atb: number;
   expReward: number;
   goldReward: number;
-  icon: string;
-  color: string;
+  textureKey: string;
+  isBoss?: boolean;
 }
 
-export interface DungeonArea {
+export interface SkillDefinition {
   id: string;
   name: string;
-  difficulty: '초급' | '중급' | '상급' | '레이드';
-  recommendedLevel: number;
+  mpCost: number;
+  targetType: 'single_enemy' | 'all_enemies' | 'single_ally' | 'all_allies';
   description: string;
-  monsters: Monster[];
-  bossName: string;
+  jobRequired: CharacterClass;
 }
 
-export interface PartyMember {
-  id: string;
-  name: string;
-  job: CharacterClass;
-  level: number;
-  isLeader: boolean;
-  ready: boolean;
-}
-
-export interface PartyRoom {
-  id: string;
+export interface StoryAct {
+  actNumber: 1 | 2 | 3 | 4;
   title: string;
-  dungeonId: string;
-  dungeonName: string;
-  leaderName: string;
-  maxMembers: number;
-  members: PartyMember[];
-  status: 'waiting' | 'in_dungeon' | 'finished';
+  subTitle: string;
+  locationName: string;
+  altitudeMeters: number; // 에테리아 고도 (8400m -> 5000m -> 2500m -> 0m)
+  boss: EnemyBattleUnit;
+  introDialog: {
+    speaker: string;
+    avatar: string;
+    text: string;
+  }[];
+  outroDialog: {
+    speaker: string;
+    avatar: string;
+    text: string;
+  }[];
 }
 
-export type BattleActionType = 'attack' | 'skill' | 'heal' | 'run';
-
-export interface BattleLogEntry {
-  id: string;
-  text: string;
-  type: 'player_attack' | 'monster_attack' | 'heal' | 'system' | 'victory';
+export interface BattleActionPayload {
+  actorType: 'hero' | 'enemy';
+  actorIndex: number;
+  actionType: 'attack' | 'skill' | 'defend';
+  skillId?: string;
+  targetIndex: number;
 }
