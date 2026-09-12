@@ -147,7 +147,7 @@ miniApps.forEach(appName => {
 });
 
 // 회원 전용 실시간 온라인게임 (/onlinegame/:gameName)
-const onlineGames = ['omok-pvp'];
+const onlineGames = ['omok-pvp', 'ffrpg'];
 
 onlineGames.forEach(gameName => {
     const basePath = `/onlinegame/${gameName}`;

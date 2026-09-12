@@ -377,6 +377,59 @@ function OnlineOmokThumb() {
     );
 }
 
+// 베라 판타지 RPG: 크리스탈 & 레트로 턴제 배틀 테마
+function FfRpgThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="ffBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#312e81" />
+                    <stop offset="50%" stopColor="#4338ca" />
+                    <stop offset="100%" stopColor="#1e1b4b" />
+                </linearGradient>
+                <linearGradient id="crystalGlow" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#a5f3fc" />
+                    <stop offset="50%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#0284c7" />
+                </linearGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#ffBg)" />
+            {/* 고대 마법진 원형 패턴 */}
+            <g stroke="#818cf8" strokeWidth="1" opacity="0.3" fill="none">
+                <circle cx="160" cy="60" r="48" strokeDasharray="3,3" />
+                <circle cx="160" cy="60" r="32" />
+                <polygon points="160,20 195,80 125,80" />
+                <polygon points="160,100 125,40 195,40" />
+            </g>
+            {/* 빛의 크리스탈 엠블럼 */}
+            <g transform="translate(160, 60)">
+                <polygon points="0,-32 18,0 0,32 -18,0" fill="url(#crystalGlow)" filter="drop-shadow(0 0 10px #38bdf8)" />
+                <polygon points="0,-28 14,0 0,28" fill="#ffffff" opacity="0.4" />
+            </g>
+            {/* 전사 실루엣 (좌측) */}
+            <g transform="translate(60, 65)">
+                <circle cx="0" cy="-18" r="10" fill="#f8fafc" />
+                <path d="M-12,-6 Q0,-14 12,-6 L10,22 L-10,22 Z" fill="#94a3b8" />
+                {/* 검 */}
+                <line x1="12" y1="-8" x2="28" y2="-24" stroke="#e2e8f0" strokeWidth="3" strokeLinecap="round" />
+                <line x1="8" y1="-4" x2="16" y2="-12" stroke="#f59e0b" strokeWidth="2" />
+                <text x="0" y="32" fill="#cbd5e1" fontSize="9" fontWeight="bold" textAnchor="middle">HERO</text>
+            </g>
+            {/* 몬스터 드래곤/보스 실루엣 (우측) */}
+            <g transform="translate(260, 65)">
+                <circle cx="0" cy="-18" r="12" fill="#f43f5e" />
+                <path d="M-15,-4 Q0,-12 15,-4 L18,22 L-18,22 Z" fill="#be123c" />
+                {/* 붉은 뿔 & 안광 */}
+                <polygon points="-8,-28 -4,-18 -12,-18" fill="#fda4af" />
+                <polygon points="8,-28 4,-18 12,-18" fill="#fda4af" />
+                <circle cx="-4" cy="-16" r="2" fill="#fef08a" />
+                <circle cx="4" cy="-16" r="2" fill="#fef08a" />
+                <text x="0" y="32" fill="#fda4af" fontSize="9" fontWeight="bold" textAnchor="middle">BOSS</text>
+            </g>
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -543,7 +596,25 @@ export default function GamePage() {
                         </div>
                     ) : activeGenre === 'online' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {/* 🌟 베라오목 온라인 (Vera Omok Online) */}
+                            {/* 🌟 1. 베라 판타지 RPG (Vera Fantasy Online RPG) */}
+                            <button
+                                onClick={() => launchApp('/onlinegame/ffrpg/', 'ffrpg')}
+                                className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative"
+                            >
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    ONLINE RPG
+                                </div>
+                                <div className="overflow-hidden bg-[#312e81]"><FfRpgThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-indigo-700 mb-1 group-hover:text-indigo-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Fantasy RPG (베라 판타지)</span>
+                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">실시간 턴제 RPG</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">전사·마법사·도적 등 직업을 육성하고 온라인 파티를 결성해 고대 던전과 보스를 공략하는 정통 레트로 턴제 RPG!</p>
+                                </div>
+                            </button>
+
+                            {/* 🌟 2. 베라오목 온라인 (Vera Omok Online) */}
                             <button
                                 onClick={() => launchApp('/onlinegame/omok-pvp/', 'omok-pvp')}
                                 className="bg-white border-2 text-left border-blue-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all group relative"
