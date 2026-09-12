@@ -149,8 +149,8 @@ export class BattleScene extends Phaser.Scene {
       const heroData: HeroBattleUnit = JSON.parse(JSON.stringify(proto));
       heroData.atb = idx * 25; // 초기 ATB 분산
 
-      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처 (3.0배 정수 픽셀 스케일링)
-      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(3.0);
+      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처 (3.2배 스케일링)
+      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(3.2);
 
       // 영웅 숨쉬기 바운스 트윈 (상하 미세 호흡)
       const idleTween = this.tweens.add({
@@ -165,7 +165,7 @@ export class BattleScene extends Phaser.Scene {
       // 발밑 턴 인디케이터 (황금 링)
       const indicator = this.add.graphics();
       indicator.lineStyle(2, 0xfacc15, 0.9);
-      indicator.strokeEllipse(pos.x, pos.y + 36, 26, 10);
+      indicator.strokeEllipse(pos.x, pos.y + 42, 26, 10);
       indicator.setVisible(false);
 
       this.heroes.push({
