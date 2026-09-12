@@ -113,16 +113,16 @@ export class BattleScene extends Phaser.Scene {
       bgm.play('battle');
     }
 
-    // 좌측: 보스 유닛 생성 (X: 110, Y: 190)
+    // 좌측: 보스 유닛 생성 (X: 110, Y: 185)
     const enemyData: EnemyBattleUnit = JSON.parse(JSON.stringify(actData.boss));
-    const enemySprite = this.add.sprite(110, 190, enemyData.textureKey).setScale(2.2);
+    const enemySprite = this.add.sprite(110, 185, enemyData.textureKey).setScale(2.6);
 
     // 보스 숨쉬기 아이들 애니메이션
     this.tweens.add({
       targets: enemySprite,
-      y: 186,
-      scaleX: 2.25,
-      scaleY: 2.15,
+      y: 180,
+      scaleX: 2.65,
+      scaleY: 2.55,
       duration: 1200,
       yoyo: true,
       repeat: -1,
@@ -132,16 +132,16 @@ export class BattleScene extends Phaser.Scene {
     this.enemy = {
       sprite: enemySprite,
       baseX: 110,
-      baseY: 190,
+      baseY: 185,
       data: enemyData
     };
 
-    // 우측: 4인 조율자 파티 생성 (X: 350~370 세로 정렬)
+    // 우측: 4인 조율자 파티 생성 (X: 350~375 세로 정렬)
     const partyPositions = [
-      { x: 350, y: 85 },  // 전사 (전열)
-      { x: 375, y: 155 }, // 백마도사 (후열)
-      { x: 375, y: 225 }, // 흑마도사 (후열)
-      { x: 350, y: 295 }, // 몽크 (전열)
+      { x: 350, y: 80 },  // 전사 (전열)
+      { x: 375, y: 150 }, // 백마도사 (후열)
+      { x: 375, y: 220 }, // 흑마도사 (후열)
+      { x: 350, y: 290 }, // 몽크 (전열)
     ];
 
     INITIAL_HEROES.forEach((proto, idx) => {
@@ -149,8 +149,8 @@ export class BattleScene extends Phaser.Scene {
       const heroData: HeroBattleUnit = JSON.parse(JSON.stringify(proto));
       heroData.atb = idx * 25; // 초기 ATB 분산
 
-      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처
-      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(2.2);
+      // 🌟 픽셀 리마스터급 2D 스프라이트 대기 텍스처 (3.0배 정수 픽셀 스케일링)
+      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`).setScale(3.0);
 
       // 영웅 숨쉬기 바운스 트윈 (상하 미세 호흡)
       const idleTween = this.tweens.add({
@@ -165,7 +165,7 @@ export class BattleScene extends Phaser.Scene {
       // 발밑 턴 인디케이터 (황금 링)
       const indicator = this.add.graphics();
       indicator.lineStyle(2, 0xfacc15, 0.9);
-      indicator.strokeEllipse(pos.x, pos.y + 26, 24, 10);
+      indicator.strokeEllipse(pos.x, pos.y + 36, 26, 10);
       indicator.setVisible(false);
 
       this.heroes.push({
