@@ -13,8 +13,8 @@ import { useAuth } from '../hooks/useAuth';
 const MAIN_PORTAL_URL = import.meta.env.DEV ? 'http://localhost:5000' : '';
 const API_BASE = import.meta.env.DEV ? 'http://localhost:4200' : '';
 
-// 🏆 리더보드 랭킹 타입
-type LeaderType = 'market_cap' | 'gainers' | 'volume' | 'dividend';
+// 🏆 실시간 랭킹 타입 (거래대금 상위, 인기 종목, 상승, 하락, 시가총액, 거래량 상위, 고배당)
+type LeaderType = 'price_top' | 'popular' | 'gainers' | 'losers' | 'market_cap' | 'volume' | 'dividend';
 
 interface LeaderStock {
     rank: number;
@@ -64,10 +64,62 @@ interface SearchStockItem {
 }
 
 const LEADER_TABS: { key: LeaderType; label: string; shortLabel: string; icon: string; highlight: string; insight: string }[] = [
-    { key: 'market_cap', label: '국내 시가총액 TOP 10', shortLabel: '국내 시총', icon: '👑', highlight: '국내 대표 대장주', insight: '대한민국 KOSPI·KOSDAQ 증시를 이끄는 실제 시가총액 기준 상위 10대 대표 우량주입니다.' },
-    { key: 'gainers', label: '실시간 급등 TOP 10', shortLabel: '실시간 급등', icon: '🚀', highlight: '당일 최고 상승률', insight: '강력한 매수세와 호재로 당일 가장 높은 상승률을 기록 중인 실시간 급등 종목입니다.' },
-    { key: 'volume', label: '거래대금 TOP 10', shortLabel: '거래대금', icon: '💰', highlight: '자금 집중주', insight: '기관과 외국인, 개인 투자자의 자금이 가장 활발하게 거래되는 시장 핫플레이스입니다.' },
-    { key: 'dividend', label: '고배당 TOP 10', shortLabel: '고배당주', icon: '💵', highlight: '주주환원 배당주', insight: '연 4~8%대의 안정적인 배당수익률과 자사주 소각 등 주주환원율이 높은 종목입니다.' },
+    { 
+        key: 'price_top', 
+        label: '거래대금 상위 TOP 10', 
+        shortLabel: '거래대금 상위', 
+        icon: '💰', 
+        highlight: '자금 집중 1위', 
+        insight: '당일 시장에서 거래 대금이 가장 많이 몰린 실시간 코스피 상위 종목입니다.' 
+    },
+    { 
+        key: 'popular', 
+        label: '실시간 인기 종목 TOP 10', 
+        shortLabel: '인기 종목', 
+        icon: '🔥', 
+        highlight: '실시간 검색 1위', 
+        insight: '현재 투자자들의 관심과 검색량이 가장 집중되고 있는 실시간 핫 종목입니다.' 
+    },
+    { 
+        key: 'gainers', 
+        label: '실시간 상승 TOP 10', 
+        shortLabel: '상승', 
+        icon: '🚀', 
+        highlight: '당일 최고 상승률', 
+        insight: '강력한 매수세와 호재로 당일 가장 높은 상승률을 기록 중인 실시간 급등 종목입니다.' 
+    },
+    { 
+        key: 'losers', 
+        label: '실시간 하락 TOP 10', 
+        shortLabel: '하락', 
+        icon: '📉', 
+        highlight: '당일 낙폭 과대', 
+        insight: '차익 실현 매물 또는 악재로 당일 낙폭이 가장 큰 하락률 상위 종목입니다.' 
+    },
+    { 
+        key: 'market_cap', 
+        label: '시가총액 TOP 10', 
+        shortLabel: '시가총액', 
+        icon: '👑', 
+        highlight: '국내 대표 대장주', 
+        insight: '대한민국 KOSPI 증시를 이끄는 실제 시가총액 기준 상위 대표 우량주입니다.' 
+    },
+    { 
+        key: 'volume', 
+        label: '거래량 상위 TOP 10', 
+        shortLabel: '거래량 상위', 
+        icon: '📊', 
+        highlight: '유동성 최다 거래', 
+        insight: '당일 주식 체결 및 거래량 회전이 가장 활발한 실시간 상위 종목입니다.' 
+    },
+    { 
+        key: 'dividend', 
+        label: '고배당 TOP 10', 
+        shortLabel: '고배당', 
+        icon: '💵', 
+        highlight: '주주환원 배당주', 
+        insight: '연 4~8%대의 안정적인 배당수익률과 자사주 소각 등 주주환원율이 높은 종목입니다.' 
+    },
 ];
 
 
@@ -133,7 +185,7 @@ export default function StocksPage() {
     // 상태 관리
     const [favoriteCards, setFavoriteCards] = useState<StockCard[]>([]);
     const [loadingFav, setLoadingFav] = useState(false);
-    const [activeLeaderTab, setActiveLeaderTab] = useState<LeaderType>('market_cap');
+    const [activeLeaderTab, setActiveLeaderTab] = useState<LeaderType>('price_top');
     const [leaders, setLeaders] = useState<LeaderStock[]>([]);
     const [loadingLeaders, setLoadingLeaders] = useState(true);
 
@@ -526,21 +578,26 @@ export default function StocksPage() {
                     )}
                 </section>
 
-                {/* 🏆 2. 실시간 시장 리더보드 (4대 랭킹 탭) */}
+                {/* 🏆 2. 실시간 랭킹 리더보드 (첨부 이미지 카테고리 탭) */}
                 <section className="mb-10 sm:mb-12">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5">
                         <div>
-                            <h2 className="text-lg sm:text-2xl font-black text-gray-900 flex items-center gap-2">
-                                <span className="text-xl sm:text-2xl">🏆</span>
-                                <span>실시간 시장 리더보드 TOP 10</span>
+                            <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-1.5">
+                                <span>실시간 랭킹</span>
+                                <span 
+                                    className="inline-flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 rounded-full text-slate-400 hover:text-slate-600 cursor-pointer text-[11px] font-bold border border-slate-300"
+                                    title="네이버 증권 공식 실시간 랭킹 (코스피 기준 거래대금, 인기 검색, 상승/하락률, 시총, 거래량)"
+                                >
+                                    i
+                                </span>
                             </h2>
                             <p className="text-xs text-gray-500 mt-1">
-                                시가총액, 당일 급등주, 거래대금 및 고배당 기준 실시간 시장 순위
+                                거래대금, 실시간 인기 종목, 당일 등락률, 시가총액 및 거래량 기준 시장 순위
                             </p>
                         </div>
 
-                        {/* 4대 랭킹 선택 탭 바 */}
-                        <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-2xl overflow-x-auto self-start sm:self-auto max-w-full">
+                        {/* 실시간 랭킹 탭 바 (첨부 이미지 스타일: 다크 솔리드 액티브 + 아웃라인 인액티브) */}
+                        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto self-start sm:self-auto max-w-full pb-1 sm:pb-0 scrollbar-none">
                             {LEADER_TABS.map((tab) => {
                                 const isActive = activeLeaderTab === tab.key;
                                 return (
@@ -548,13 +605,12 @@ export default function StocksPage() {
                                         key={tab.key}
                                         type="button"
                                         onClick={() => setActiveLeaderTab(tab.key)}
-                                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                        className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm transition-all cursor-pointer whitespace-nowrap ${
                                             isActive
-                                                ? 'bg-white text-slate-900 shadow-md font-black scale-[1.02]'
-                                                : 'text-slate-600 hover:text-slate-900'
+                                                ? 'bg-stone-800 text-white shadow-sm border border-stone-800 font-bold'
+                                                : 'bg-white text-stone-700 border border-stone-300/90 hover:border-stone-400 hover:bg-stone-50 font-medium'
                                         }`}
                                     >
-                                        <span>{tab.icon}</span>
                                         <span>{tab.shortLabel}</span>
                                     </button>
                                 );
@@ -563,10 +619,10 @@ export default function StocksPage() {
                     </div>
 
                     {/* 선택된 리더보드 안내 배너 */}
-                    <div className="mb-4 p-3 sm:p-3.5 bg-gradient-to-r from-blue-50/70 via-indigo-50/50 to-white rounded-2xl border border-blue-100 flex items-center gap-2.5 sm:gap-3 text-xs text-slate-700">
+                    <div className="mb-4 p-3 sm:p-3.5 bg-gradient-to-r from-stone-50 via-slate-50 to-white rounded-2xl border border-stone-200 flex items-center gap-2.5 sm:gap-3 text-xs text-slate-700">
                         <span className="text-base sm:text-lg shrink-0">{currentLeaderTab.icon}</span>
                         <div className="leading-relaxed">
-                            <span className="font-extrabold text-blue-900 mr-1.5">[{currentLeaderTab.label}]</span>
+                            <span className="font-extrabold text-stone-900 mr-1.5">[{currentLeaderTab.label}]</span>
                             <span className="text-slate-600">{currentLeaderTab.insight}</span>
                         </div>
                     </div>

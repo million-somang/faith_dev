@@ -1003,34 +1003,17 @@ async function fetchNaverStockDetail(ticker: string): Promise<any> {
     }
 }
 
-// 👑 네이버 증권 KOSPI 시가총액 실시간 랭킹 (TOP 10)
-async function fetchNaverMarketCapRanking(pageSize = 10): Promise<any[]> {
+// 👑 네이버 증권 실시간 공식 랭킹 API 연동
+// category: 'priceTop' (거래대금), 'searchTop' (인기종목), 'up' (상승), 'down' (하락), 'marketValue' (시가총액), 'quantTop' (거래량)
+async function fetchNaverRanking(category: string, pageSize = 10): Promise<any[]> {
     try {
-        const url = `https://m.stock.naver.com/api/stocks/marketValue/KOSPI?page=1&pageSize=${pageSize}`;
+        const url = `https://m.stock.naver.com/api/stocks/${category}/KOSPI?page=1&pageSize=${pageSize}`;
         const res = await fetch(url, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
         });
         if (!res.ok) return [];
         const data = await res.json();
         const stocks = data?.stocks || [];
-
-        const detailMap: Record<string, string> = {
-            '005930': '글로벌 메모리 반도체 & 파운드리 1위',
-            '000660': 'HBM3E 고대역폭 메모리 글로벌 독점',
-            '005935': '삼성전자 우선주 (고배당)',
-            '402340': 'SK그룹 ICT & 반도체 전문 투자 지주사',
-            '009150': 'MLCC 및 차세대 고부가 반도체 패키지 기판',
-            '373220': '글로벌 전기차 배터리 선도 셀 메이커',
-            '005380': '완성차 수익성 극대화 & 글로벌 톱티어 모빌리티',
-            '207940': '바이오의약품 글로벌 CDMO 생산능력 1위',
-            '032830': '국내 1위 생명보험 & 삼성그룹 지분가치',
-            '028260': '삼성그룹 실질 지주회사 (건설/바이오/상사)',
-            '068270': '짐펜트라 미국 신약 직판 & 바이오시밀러',
-            '000270': '고수익 레저용 RV 차량 & 고배당 주주환원',
-            '105560': '국내 1등 금융그룹 & 밸류업 선도주',
-            '035420': '대한민국 1위 포털 검색 & AI 클라우드',
-            '055550': '대표 리딩금융 & 분기배당 주주환원',
-        };
 
         return stocks.map((s: any, idx: number) => {
             const price = Number(String(s.closePriceRaw || s.closePrice || '0').replace(/,/g, ''));
@@ -1040,6 +1023,30 @@ async function fetchNaverMarketCapRanking(pageSize = 10): Promise<any[]> {
             const marketCapStr = s.marketValueHangeul 
                 ? (s.marketValueHangeul.includes('원') ? s.marketValueHangeul : `${s.marketValueHangeul}원`)
                 : `${Number(s.marketValue || 0).toLocaleString('ko-KR')}억원`;
+            const tradeValStr = s.accumulatedTradingValueKrwHangeul 
+                ? (s.accumulatedTradingValueKrwHangeul.includes('원') ? s.accumulatedTradingValueKrwHangeul : `${s.accumulatedTradingValueKrwHangeul}원`)
+                : '';
+            const volumeStr = s.accumulatedTradingVolume 
+                ? `${Number(s.accumulatedTradingVolume).toLocaleString('ko-KR')}주` 
+                : '';
+
+            // 카테고리별 특화 안내 텍스트
+            let detail = '';
+            if (category === 'priceTop') {
+                detail = tradeValStr ? `당일 거래대금 ${tradeValStr}` : `코스피 거래대금 상위`;
+            } else if (category === 'searchTop') {
+                detail = tradeValStr ? `인기 검색 순위 (거래대금 ${tradeValStr})` : `실시간 인기 검색 상위`;
+            } else if (category === 'up') {
+                detail = `당일 최고 상승률 +${rate}% ${tradeValStr ? `(${tradeValStr})` : ''}`.trim();
+            } else if (category === 'down') {
+                detail = `당일 하락률 ${rate}% ${tradeValStr ? `(${tradeValStr})` : ''}`.trim();
+            } else if (category === 'quantTop') {
+                detail = volumeStr ? `당일 거래량 ${volumeStr}` : `실시간 거래량 상위`;
+            } else {
+                detail = `코스피 시가총액 ${marketCapStr}`;
+            }
+
+            const status = (change > 0 ? 'up' : change < 0 ? 'down' : 'up') as 'up' | 'down';
 
             return {
                 rank: idx + 1,
@@ -1051,12 +1058,12 @@ async function fetchNaverMarketCapRanking(pageSize = 10): Promise<any[]> {
                 price,
                 change,
                 rate: Math.round(rate * 100) / 100,
-                status: change >= 0 ? 'up' : 'down',
+                status,
                 marketCap: marketCapStr,
-                detail: detailMap[s.itemCode] || `${s.stockName} 코스피 시총 ${idx + 1}위 우량주`,
+                detail,
                 sparkline: [
-                    Math.round(prev * 0.99),
-                    Math.round(prev * 0.995),
+                    Math.round(prev * (category === 'down' ? 1.01 : 0.99)),
+                    Math.round(prev * (category === 'down' ? 1.005 : 0.995)),
                     Math.round(prev),
                     Math.round(prev + (change * 0.5)),
                     price
@@ -1064,63 +1071,13 @@ async function fetchNaverMarketCapRanking(pageSize = 10): Promise<any[]> {
             };
         });
     } catch (e) {
-        console.error('fetchNaverMarketCapRanking failed:', e);
-        return [];
-    }
-}
-
-// 🚀 네이버 증권 KOSPI 실시간 급등주 (상승률 TOP 10)
-async function fetchNaverGainersRanking(pageSize = 10): Promise<any[]> {
-    try {
-        const url = `https://m.stock.naver.com/api/stocks/up/KOSPI?page=1&pageSize=${pageSize}`;
-        const res = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-        });
-        if (!res.ok) return [];
-        const data = await res.json();
-        const stocks = data?.stocks || [];
-
-        return stocks.map((s: any, idx: number) => {
-            const price = Number(String(s.closePriceRaw || s.closePrice || '0').replace(/,/g, ''));
-            const change = Number(String(s.compareToPreviousClosePriceRaw || s.compareToPreviousClosePrice || '0').replace(/,/g, ''));
-            const rate = parseFloat(s.fluctuationsRatio || '0');
-            const prev = price - change;
-            const marketCapStr = s.marketValueHangeul 
-                ? (s.marketValueHangeul.includes('원') ? s.marketValueHangeul : `${s.marketValueHangeul}원`)
-                : `${Number(s.marketValue || 0).toLocaleString('ko-KR')}억원`;
-            const tradeVal = s.accumulatedTradingValueKrwHangeul ? `거래대금 ${s.accumulatedTradingValueKrwHangeul}` : '';
-            const signText = s.compareToPreviousPrice?.text ? `[${s.compareToPreviousPrice.text}] ` : '';
-
-            return {
-                rank: idx + 1,
-                ticker: s.itemCode,
-                symbol: `${s.itemCode}.KS`,
-                name: s.stockName,
-                market: 'KRX' as const,
-                currency: '₩',
-                price,
-                change,
-                rate: Math.round(rate * 100) / 100,
-                status: 'up' as const,
-                marketCap: marketCapStr,
-                detail: `${signText}${tradeVal || '실시간 급등 거래 집중'}`,
-                sparkline: [
-                    Math.round(prev * 0.98),
-                    Math.round(prev * 0.99),
-                    Math.round(prev),
-                    Math.round(prev + (change * 0.6)),
-                    price
-                ],
-            };
-        });
-    } catch (e) {
-        console.error('fetchNaverGainersRanking failed:', e);
+        console.error(`fetchNaverRanking failed for ${category}:`, e);
         return [];
     }
 }
 
 // =========================================================================
-// 🏆 시장 리더보드 (거래대금 & 고배당 관심군 설정)
+// 🏆 시장 리더보드 (고배당 등 관심군 설정)
 // =========================================================================
 interface LeaderConfigItem {
     ticker: string;
@@ -1132,18 +1089,6 @@ interface LeaderConfigItem {
 }
 
 const MARKET_LEADERS_CONFIG: Record<string, LeaderConfigItem[]> = {
-    volume: [
-        { ticker: '005930', symbol: '005930.KS', name: '삼성전자', market: 'KRX', currency: '₩', detail: '대한민국 거래대금 최상위 대장주' },
-        { ticker: 'NVDA', symbol: 'NVDA', name: '엔비디아', market: 'NASDAQ', currency: '$', detail: '글로벌 AI 반도체 최대 거래대금' },
-        { ticker: 'TSLA', symbol: 'TSLA', name: '테슬라', market: 'NASDAQ', currency: '$', detail: '서학개미 1위 거래대금 & 변동성' },
-        { ticker: '000660', symbol: '000660.KS', name: 'SK하이닉스', market: 'KRX', currency: '₩', detail: '반도체 수급 집중 및 기관/외인 거래' },
-        { ticker: 'AAPL', symbol: 'AAPL', name: '애플', market: 'NASDAQ', currency: '$', detail: '글로벌 패시브 자금 집중' },
-        { ticker: '005380', symbol: '005380.KS', name: '현대차', market: 'KRX', currency: '₩', detail: '완성차 수출 및 밸류업 수급 집중' },
-        { ticker: 'AMD', symbol: 'AMD', name: 'AMD', market: 'NASDAQ', currency: '$', detail: 'AI 가속기 및 반도체 거래대금' },
-        { ticker: '086520', symbol: '086520.KQ', name: '에코프로', market: 'KRX', currency: '₩', detail: '2차전지 코스닥 대표 거래' },
-        { ticker: 'AMZN', symbol: 'AMZN', name: '아마존', market: 'NASDAQ', currency: '$', detail: '빅테크 전자상거래 & 클라우드 수급' },
-        { ticker: '035420', symbol: '035420.KS', name: 'NAVER', market: 'KRX', currency: '₩', detail: '포털 AI 검색 및 플랫폼 수급' },
-    ],
     dividend: [
         { ticker: 'SCHD', symbol: 'SCHD', name: '슈왑 미국 배당주 ETF', market: 'NYSE', currency: '$', detail: '배당수익률 연 3%대 / 10년 연속 배당성장' },
         { ticker: 'JEPI', symbol: 'JEPI', name: 'JP모건 프리미엄 월배당 ETF', market: 'NYSE', currency: '$', detail: '월지급식 고배당 커버드콜' },
@@ -1161,95 +1106,106 @@ const MARKET_LEADERS_CONFIG: Record<string, LeaderConfigItem[]> = {
 let leadersCache: { [key: string]: { data: any; timestamp: number } } = {};
 
 financeRoutes.get('/api/finance/market-leaders', async (c) => {
-    const type = (c.req.query('type') || 'market_cap') as string;
+    const rawType = (c.req.query('type') || 'price_top') as string;
     const now = Date.now();
 
-    if (leadersCache[type] && (now - leadersCache[type].timestamp) < CACHE_TTL) {
-        return c.json(leadersCache[type].data);
+    if (leadersCache[rawType] && (now - leadersCache[rawType].timestamp) < CACHE_TTL) {
+        return c.json(leadersCache[rawType].data);
     }
 
     let leaders: any[] = [];
 
-    // 1. 국내 시가총액 TOP 10: 네이버 증권 KOSPI 공식 실시간 랭킹 연동
-    if (type === 'market_cap') {
-        leaders = await fetchNaverMarketCapRanking(10);
-    } 
-    // 2. 실시간 급등 TOP 10: 네이버 증권 KOSPI 실시간 급등 순위 연동
-    else if (type === 'gainers') {
-        leaders = await fetchNaverGainersRanking(10);
+    // 네이버 공식 실시간 랭킹 API 카테고리 매핑
+    const naverCategoryMap: Record<string, string> = {
+        'price_top': 'priceTop',     // 거래대금 상위
+        'trade_value': 'priceTop',
+        'popular': 'searchTop',      // 인기 종목
+        'search_top': 'searchTop',
+        'gainers': 'up',             // 상승
+        'up': 'up',
+        'losers': 'down',            // 하락
+        'down': 'down',
+        'market_cap': 'marketValue', // 시가총액
+        'market_value': 'marketValue',
+        'volume': 'quantTop',        // 거래량 상위
+        'quant_top': 'quantTop',
+    };
+
+    const naverCat = naverCategoryMap[rawType];
+    if (naverCat) {
+        leaders = await fetchNaverRanking(naverCat, 10);
     }
 
-    // 3. 거래대금 & 고배당 탭 (또는 랭킹 API 일시적 오류 시 보충)
+    // fallback 또는 고배당(dividend) 탭
     if (leaders.length === 0) {
-        const configList = MARKET_LEADERS_CONFIG[type] || MARKET_LEADERS_CONFIG.volume;
-        const promises = configList.map(async (cfg, idx) => {
-            // A. 네이버 실시간 상세 데이터 우선 조회 (실제 시총, 실시간 현재가, 등락률)
-            const naver = await fetchNaverStockDetail(cfg.ticker);
-            if (naver && naver.price) {
-                const prev = naver.previousClose || (naver.price - naver.change);
-                const change = naver.change ?? (naver.price - prev);
-                const rate = naver.rate ?? (prev ? (change / prev) * 100 : 0);
-                const status = (change >= 0 ? 'up' : 'down') as 'up' | 'down';
-                const marketCapStr = naver.marketCap || `${Math.round(naver.price * 100).toLocaleString('ko-KR')}억원`;
+        const configList = MARKET_LEADERS_CONFIG[rawType] || MARKET_LEADERS_CONFIG.dividend;
+        if (configList) {
+            const promises = configList.map(async (cfg, idx) => {
+                const naver = await fetchNaverStockDetail(cfg.ticker);
+                if (naver && naver.price) {
+                    const prev = naver.previousClose || (naver.price - naver.change);
+                    const change = naver.change ?? (naver.price - prev);
+                    const rate = naver.rate ?? (prev ? (change / prev) * 100 : 0);
+                    const status = (change >= 0 ? 'up' : 'down') as 'up' | 'down';
+                    const marketCapStr = naver.marketCap || `${Math.round(naver.price * 100).toLocaleString('ko-KR')}억원`;
 
-                return {
-                    rank: idx + 1,
-                    ticker: cfg.ticker,
-                    symbol: cfg.symbol,
-                    name: naver.name || cfg.name,
-                    market: cfg.market,
-                    currency: cfg.currency,
-                    price: Math.round(naver.price * 100) / 100,
-                    change: Math.round(change * 100) / 100,
-                    rate: Math.round(rate * 100) / 100,
-                    status,
-                    marketCap: marketCapStr,
-                    detail: cfg.detail,
-                    sparkline: [
-                        Math.round(prev * 0.99),
-                        Math.round(prev * 0.995),
-                        Math.round(prev),
-                        Math.round(prev + (change * 0.5)),
-                        naver.price
-                    ]
-                };
+                    return {
+                        rank: idx + 1,
+                        ticker: cfg.ticker,
+                        symbol: cfg.symbol,
+                        name: naver.name || cfg.name,
+                        market: cfg.market,
+                        currency: cfg.currency,
+                        price: Math.round(naver.price * 100) / 100,
+                        change: Math.round(change * 100) / 100,
+                        rate: Math.round(rate * 100) / 100,
+                        status,
+                        marketCap: marketCapStr,
+                        detail: cfg.detail,
+                        sparkline: [
+                            Math.round(prev * 0.99),
+                            Math.round(prev * 0.995),
+                            Math.round(prev),
+                            Math.round(prev + (change * 0.5)),
+                            naver.price
+                        ]
+                    };
+                }
+
+                const quotes = await fetchYahooQuotes([cfg.symbol]);
+                const q = quotes.length > 0 ? quotes[0] : null;
+                if (q && q.price) {
+                    const prev = q.previousClose || q.price;
+                    const change = q.price - prev;
+                    const rate = prev ? (change / prev) * 100 : 0;
+                    return {
+                        rank: idx + 1,
+                        ticker: cfg.ticker,
+                        symbol: cfg.symbol,
+                        name: cfg.name,
+                        market: cfg.market,
+                        currency: cfg.currency,
+                        price: Math.round(q.price * 100) / 100,
+                        change: Math.round(change * 100) / 100,
+                        rate: Math.round(rate * 100) / 100,
+                        status: (change >= 0 ? 'up' : 'down') as 'up' | 'down',
+                        marketCap: cfg.currency === '$' ? `${Math.round(q.price * 25).toLocaleString()}억$` : `${Math.round(q.price * 12).toLocaleString()}억원`,
+                        detail: cfg.detail,
+                        sparkline: [prev * 0.99, prev, q.price]
+                    };
+                }
+                return null;
+            });
+
+            const resolved = (await Promise.all(promises)).filter(Boolean);
+            if (resolved.length > 0) {
+                leaders = resolved.map((item, idx) => ({ ...item, rank: idx + 1 }));
             }
-
-            // B. 보조 fallback: Yahoo Finance 시세 조회
-            const quotes = await fetchYahooQuotes([cfg.symbol]);
-            const q = quotes.length > 0 ? quotes[0] : null;
-            if (q && q.price) {
-                const prev = q.previousClose || q.price;
-                const change = q.price - prev;
-                const rate = prev ? (change / prev) * 100 : 0;
-                return {
-                    rank: idx + 1,
-                    ticker: cfg.ticker,
-                    symbol: cfg.symbol,
-                    name: cfg.name,
-                    market: cfg.market,
-                    currency: cfg.currency,
-                    price: Math.round(q.price * 100) / 100,
-                    change: Math.round(change * 100) / 100,
-                    rate: Math.round(rate * 100) / 100,
-                    status: (change >= 0 ? 'up' : 'down') as 'up' | 'down',
-                    marketCap: cfg.currency === '$' ? `${Math.round(q.price * 25).toLocaleString()}억$` : `${Math.round(q.price * 12).toLocaleString()}억원`,
-                    detail: cfg.detail,
-                    sparkline: [prev * 0.99, prev, q.price]
-                };
-            }
-
-            return null;
-        });
-
-        const resolved = (await Promise.all(promises)).filter(Boolean);
-        if (resolved.length > 0) {
-            leaders = resolved.map((item, idx) => ({ ...item, rank: idx + 1 }));
         }
     }
 
     if (leaders.length > 0) {
-        leadersCache[type] = { data: leaders, timestamp: now };
+        leadersCache[rawType] = { data: leaders, timestamp: now };
     }
 
     return c.json(leaders);
