@@ -1026,8 +1026,9 @@ async function fetchNaverRanking(category: string, pageSize = 10): Promise<any[]
             const tradeValStr = s.accumulatedTradingValueKrwHangeul 
                 ? (s.accumulatedTradingValueKrwHangeul.includes('원') ? s.accumulatedTradingValueKrwHangeul : `${s.accumulatedTradingValueKrwHangeul}원`)
                 : '';
-            const volumeStr = s.accumulatedTradingVolume 
-                ? `${Number(s.accumulatedTradingVolume).toLocaleString('ko-KR')}주` 
+            const rawVolNum = Number(String(s.accumulatedTradingVolume || '0').replace(/,/g, ''));
+            const volumeStr = rawVolNum > 0 
+                ? (s.accumulatedTradingVolumeHangeul || `${rawVolNum.toLocaleString('ko-KR')}주`) 
                 : '';
 
             // 카테고리별 특화 안내 텍스트
