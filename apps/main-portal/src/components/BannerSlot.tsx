@@ -116,7 +116,7 @@ export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs 
         <img
             src={banner.image_url}
             alt={banner.title}
-            className="max-w-full hover:opacity-90 transition-opacity"
+            className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
         />
     );
 
@@ -127,6 +127,8 @@ export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs 
                     href={banner.link_url}
                     target={banner.open_new_tab ? '_blank' : undefined}
                     rel="noopener noreferrer"
+                    referrerPolicy="unsafe-url"
+                    className="block hover:shadow-md transition-shadow rounded-xl overflow-hidden"
                 >
                     {img}
                 </a>
