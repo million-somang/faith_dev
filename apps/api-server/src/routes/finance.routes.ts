@@ -661,6 +661,59 @@ financeRoutes.get('/api/finance/exchange', async (c) => {
 });
 
 
+// =========================================================================
+// 🔍 종목 통합 검색 및 식별 데이터 (국내 50대 / 미국 30대 핵심 종목 사전 매칭)
+// =========================================================================
+const ALL_SEARCHABLE_STOCKS = [
+    { ticker: '005930', name: '삼성전자', englishName: 'Samsung Electronics', market: 'KRX', sector: '반도체' },
+    { ticker: '000660', name: 'SK하이닉스', englishName: 'SK Hynix', market: 'KRX', sector: '반도체' },
+    { ticker: '373220', name: 'LG에너지솔루션', englishName: 'LG Energy Solution', market: 'KRX', sector: '2차전지' },
+    { ticker: '005380', name: '현대차', englishName: 'Hyundai Motor', market: 'KRX', sector: '자동차' },
+    { ticker: '000270', name: '기아', englishName: 'Kia', market: 'KRX', sector: '자동차' },
+    { ticker: '005490', name: 'POSCO홀딩스', englishName: 'POSCO Holdings', market: 'KRX', sector: '철강/소재' },
+    { ticker: '035420', name: 'NAVER', englishName: 'Naver', market: 'KRX', sector: '인터넷/AI' },
+    { ticker: '035720', name: '카카오', englishName: 'Kakao', market: 'KRX', sector: '인터넷/플랫폼' },
+    { ticker: '207940', name: '삼성바이오로직스', englishName: 'Samsung Biologics', market: 'KRX', sector: '바이오' },
+    { ticker: '068270', name: '셀트리온', englishName: 'Celltrion', market: 'KRX', sector: '바이오' },
+    { ticker: '000100', name: '유한양행', englishName: 'Yuhan', market: 'KRX', sector: '제약/바이오' },
+    { ticker: '105560', name: 'KB금융', englishName: 'KB Financial', market: 'KRX', sector: '금융/은행' },
+    { ticker: '055550', name: '신한지주', englishName: 'Shinhan Financial', market: 'KRX', sector: '금융/은행' },
+    { ticker: '086790', name: '하나금융지주', englishName: 'Hana Financial', market: 'KRX', sector: '금융/은행' },
+    { ticker: '138040', name: '메리츠금융지주', englishName: 'Meritz Financial', market: 'KRX', sector: '금융/지주' },
+    { ticker: '042700', name: '한미반도체', englishName: 'Hanmi Semiconductor', market: 'KRX', sector: '반도체장비' },
+    { ticker: '086520', name: '에코프로', englishName: 'Ecopro', market: 'KRX', sector: '2차전지' },
+    { ticker: '247540', name: '에코프로비엠', englishName: 'Ecopro BM', market: 'KRX', sector: '2차전지소재' },
+    { ticker: '003670', name: '포스코퓨처엠', englishName: 'POSCO Future M', market: 'KRX', sector: '2차전지소재' },
+    { ticker: '352820', name: '하이브', englishName: 'HYBE', market: 'KRX', sector: '엔터/음악' },
+    { ticker: '259960', name: '크래프톤', englishName: 'Krafton', market: 'KRX', sector: '게임' },
+    { ticker: 'NVDA', name: '엔비디아', englishName: 'NVIDIA', market: 'NASDAQ', sector: 'AI반도체' },
+    { ticker: 'AAPL', name: '애플', englishName: 'Apple', market: 'NASDAQ', sector: '빅테크' },
+    { ticker: 'MSFT', name: '마이크로소프트', englishName: 'Microsoft', market: 'NASDAQ', sector: '클라우드/AI' },
+    { ticker: 'GOOGL', name: '알파벳 (구글)', englishName: 'Alphabet Google', market: 'NASDAQ', sector: '인터넷/AI' },
+    { ticker: 'AMZN', name: '아마존', englishName: 'Amazon', market: 'NASDAQ', sector: '이커머스/클라우드' },
+    { ticker: 'META', name: '메타 (페이스북)', englishName: 'Meta Platforms', market: 'NASDAQ', sector: '소셜/AI' },
+    { ticker: 'TSLA', name: '테슬라', englishName: 'Tesla', market: 'NASDAQ', sector: '전기차/자율주행' },
+    { ticker: 'AVGO', name: '브로드컴', englishName: 'Broadcom', market: 'NASDAQ', sector: '통신/AI반도체' },
+    { ticker: 'TSM', name: 'TSMC', englishName: 'TSMC', market: 'NYSE', sector: '파운드리' },
+    { ticker: 'ASML', name: 'ASML', englishName: 'ASML', market: 'NASDAQ', sector: '반도체노광장비' },
+    { ticker: 'AMD', name: 'AMD', englishName: 'Advanced Micro Devices', market: 'NASDAQ', sector: 'CPU/GPU' },
+    { ticker: 'PLTR', name: '팔란티어', englishName: 'Palantir', market: 'NYSE', sector: '엔터프라이즈AI' },
+    { ticker: 'LLY', name: '일라이릴리', englishName: 'Eli Lilly', market: 'NYSE', sector: '비만치료제/신약' },
+    { ticker: 'NVO', name: '노보노디스크', englishName: 'Novo Nordisk', market: 'NYSE', sector: '비만치료제/당뇨' },
+    { ticker: 'SCHD', name: '슈왑 미국배당주 ETF', englishName: 'Schwab US Dividend Equity ETF', market: 'NYSE', sector: '배당성장ETF' },
+    { ticker: 'JEPI', name: 'JP모건 프리미엄소득 ETF', englishName: 'JPMorgan Equity Premium Income ETF', market: 'NYSE', sector: '월배당커버드콜' },
+    { ticker: 'QQQ', name: '인베스코 나스닥 100 ETF', englishName: 'Invesco QQQ Trust', market: 'NASDAQ', sector: '나스닥100' },
+    { ticker: 'SPY', name: 'SPDR S&P 500 ETF', englishName: 'SPDR S&P 500 ETF Trust', market: 'NYSE', sector: 'S&P500' },
+    { ticker: 'O', name: '리얼티인컴', englishName: 'Realty Income', market: 'NYSE', sector: '월배당리츠' },
+];
+
+function resolveStockKoreanName(symbolOrTicker: string): string | null {
+    const clean = symbolOrTicker.trim().toUpperCase().replace(/\.(KS|KQ)$/i, '');
+    const found = ALL_SEARCHABLE_STOCKS.find(s => s.ticker.toUpperCase() === clean);
+    if (found) return found.name;
+    return null;
+}
+
 // Yahoo 통화 코드 → 표시용 기호
 function currencyFromCode(code?: string): string {
     switch (code) {
@@ -706,9 +759,12 @@ async function fetchStockCards(symbols: string[], nameMap: Record<string, string
                 return closes[idx] ? Math.round(closes[idx] * 100) / 100 : null;
             }).filter((v: any) => v !== null);
             
+            const cleanTicker = (tickerMap[symbol] || symbol).replace(/\.(KS|KQ)$/i, '');
+            const resolvedName = nameMap[symbol] || nameMap[cleanTicker] || resolveStockKoreanName(cleanTicker) || meta.shortName || cleanTicker;
+            
             results.push({
-                ticker: tickerMap[symbol] || symbol,
-                name: nameMap[symbol] || meta.shortName || symbol,
+                ticker: tickerMap[symbol] || cleanTicker,
+                name: resolvedName,
                 price: Math.round(price * 100) / 100,
                 change: Math.round(change * 100) / 100,
                 rate: Math.round(rate * 100) / 100,
@@ -771,15 +827,71 @@ financeRoutes.get('/api/finance/us-stocks', async (c) => {
 // 임의 다종목 카드 일괄 조회 (관심종목 등) — symbols=AAPL,005930,TSLA
 financeRoutes.get('/api/finance/stocks', async (c) => {
     const raw = c.req.query('symbols') || '';
-    const tickers = raw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 30);
+    const tickers = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 30);
     if (tickers.length === 0) return c.json([]);
 
-    // 숫자 코드는 한국 종목으로 보고 .KS 접미사 부여
-    const symbols = tickers.map(t => /^\d+$/.test(t) ? `${t}.KS` : t.toUpperCase());
+    const nameMap: Record<string, string> = {};
     const tickerMap: Record<string, string> = {};
-    // currency 미지정 → 종목별 자동 판별, 이름은 Yahoo shortName 사용
-    const stocks = await fetchStockCards(symbols, {}, tickerMap);
-    return c.json(stocks);
+    const symbols: string[] = [];
+
+    for (const rawTicker of tickers) {
+        const cleanTicker = rawTicker.replace(/\.(KS|KQ)$/i, '');
+        const isKorean = /^\d+$/.test(cleanTicker);
+        const sym = isKorean ? `${cleanTicker}.KS` : cleanTicker;
+        symbols.push(sym);
+        tickerMap[sym] = cleanTicker;
+        tickerMap[rawTicker] = cleanTicker;
+
+        const kname = resolveStockKoreanName(cleanTicker);
+        if (kname) {
+            nameMap[sym] = kname;
+            nameMap[cleanTicker] = kname;
+        }
+    }
+
+    // 1. Yahoo Finance 기반 미니차트 포함 시세 카드 조회
+    let stocks = await fetchStockCards(symbols, nameMap, tickerMap);
+
+    // 2. 조회에 실패했거나 누락된 종목 (특히 한국 종목) 네이버 증권 API 실시간 보강
+    const fetchedCleanTickers = new Set(stocks.map(s => s.ticker.toUpperCase().replace(/\.(KS|KQ)$/i, '')));
+    for (const rawTicker of tickers) {
+        const cleanTicker = rawTicker.replace(/\.(KS|KQ)$/i, '');
+        if (!fetchedCleanTickers.has(cleanTicker)) {
+            try {
+                const naver = await fetchNaverStockDetail(cleanTicker);
+                const isKorean = /^\d+$/.test(cleanTicker);
+                const resolvedName = nameMap[cleanTicker] || naver?.name || resolveStockKoreanName(cleanTicker) || cleanTicker;
+                const price = naver?.price || 0;
+                const change = naver?.change !== undefined ? naver.change : 0;
+                const rate = naver?.rate !== undefined ? naver.rate : 0;
+                stocks.push({
+                    ticker: cleanTicker,
+                    name: resolvedName,
+                    price: Math.round(price * 100) / 100,
+                    change: Math.round(change * 100) / 100,
+                    rate: Math.round(rate * 100) / 100,
+                    status: change >= 0 ? 'up' : 'down',
+                    currency: isKorean ? '₩' : '$',
+                    sparkline: naver?.previousClose ? [naver.previousClose, price] : [price],
+                });
+            } catch (err) {
+                console.warn(`Fallback fetch failed for ${cleanTicker}:`, err);
+            }
+        }
+    }
+
+    // 3. 최종 정규화: ticker는 항상 cleanTicker, name은 한국어 최우선 보장
+    const normalized = stocks.map(st => {
+        const clean = st.ticker.toUpperCase().replace(/\.(KS|KQ)$/i, '');
+        const finalName = nameMap[clean] || resolveStockKoreanName(clean) || st.name;
+        return {
+            ...st,
+            ticker: clean,
+            name: finalName,
+        };
+    });
+
+    return c.json(normalized);
 });
 
 // =========================================================================
@@ -1304,51 +1416,6 @@ financeRoutes.get('/api/finance/themes', async (c) => {
 });
 
 // =========================================================================
-// 🔍 종목 통합 검색 API (국내 50대 / 미국 30대 핵심 종목 사전 매칭)
-// =========================================================================
-const ALL_SEARCHABLE_STOCKS = [
-    { ticker: '005930', name: '삼성전자', englishName: 'Samsung Electronics', market: 'KRX', sector: '반도체' },
-    { ticker: '000660', name: 'SK하이닉스', englishName: 'SK Hynix', market: 'KRX', sector: '반도체' },
-    { ticker: '373220', name: 'LG에너지솔루션', englishName: 'LG Energy Solution', market: 'KRX', sector: '2차전지' },
-    { ticker: '005380', name: '현대차', englishName: 'Hyundai Motor', market: 'KRX', sector: '자동차' },
-    { ticker: '000270', name: '기아', englishName: 'Kia', market: 'KRX', sector: '자동차' },
-    { ticker: '005490', name: 'POSCO홀딩스', englishName: 'POSCO Holdings', market: 'KRX', sector: '철강/소재' },
-    { ticker: '035420', name: 'NAVER', englishName: 'Naver', market: 'KRX', sector: '인터넷/AI' },
-    { ticker: '035720', name: '카카오', englishName: 'Kakao', market: 'KRX', sector: '인터넷/플랫폼' },
-    { ticker: '207940', name: '삼성바이오로직스', englishName: 'Samsung Biologics', market: 'KRX', sector: '바이오' },
-    { ticker: '068270', name: '셀트리온', englishName: 'Celltrion', market: 'KRX', sector: '바이오' },
-    { ticker: '000100', name: '유한양행', englishName: 'Yuhan', market: 'KRX', sector: '제약/바이오' },
-    { ticker: '105560', name: 'KB금융', englishName: 'KB Financial', market: 'KRX', sector: '금융/은행' },
-    { ticker: '055550', name: '신한지주', englishName: 'Shinhan Financial', market: 'KRX', sector: '금융/은행' },
-    { ticker: '086790', name: '하나금융지주', englishName: 'Hana Financial', market: 'KRX', sector: '금융/은행' },
-    { ticker: '138040', name: '메리츠금융지주', englishName: 'Meritz Financial', market: 'KRX', sector: '금융/지주' },
-    { ticker: '042700', name: '한미반도체', englishName: 'Hanmi Semiconductor', market: 'KRX', sector: '반도체장비' },
-    { ticker: '086520', name: '에코프로', englishName: 'Ecopro', market: 'KRX', sector: '2차전지' },
-    { ticker: '247540', name: '에코프로비엠', englishName: 'Ecopro BM', market: 'KRX', sector: '2차전지소재' },
-    { ticker: '003670', name: '포스코퓨처엠', englishName: 'POSCO Future M', market: 'KRX', sector: '2차전지소재' },
-    { ticker: '352820', name: '하이브', englishName: 'HYBE', market: 'KRX', sector: '엔터/음악' },
-    { ticker: '259960', name: '크래프톤', englishName: 'Krafton', market: 'KRX', sector: '게임' },
-    { ticker: 'NVDA', name: '엔비디아', englishName: 'NVIDIA', market: 'NASDAQ', sector: 'AI반도체' },
-    { ticker: 'AAPL', name: '애플', englishName: 'Apple', market: 'NASDAQ', sector: '빅테크' },
-    { ticker: 'MSFT', name: '마이크로소프트', englishName: 'Microsoft', market: 'NASDAQ', sector: '클라우드/AI' },
-    { ticker: 'GOOGL', name: '알파벳 (구글)', englishName: 'Alphabet Google', market: 'NASDAQ', sector: '인터넷/AI' },
-    { ticker: 'AMZN', name: '아마존', englishName: 'Amazon', market: 'NASDAQ', sector: '이커머스/클라우드' },
-    { ticker: 'META', name: '메타 (페이스북)', englishName: 'Meta Platforms', market: 'NASDAQ', sector: '소셜/AI' },
-    { ticker: 'TSLA', name: '테슬라', englishName: 'Tesla', market: 'NASDAQ', sector: '전기차/자율주행' },
-    { ticker: 'AVGO', name: '브로드컴', englishName: 'Broadcom', market: 'NASDAQ', sector: '통신/AI반도체' },
-    { ticker: 'TSM', name: 'TSMC', englishName: 'TSMC', market: 'NYSE', sector: '파운드리' },
-    { ticker: 'ASML', name: 'ASML', englishName: 'ASML', market: 'NASDAQ', sector: '반도체노광장비' },
-    { ticker: 'AMD', name: 'AMD', englishName: 'Advanced Micro Devices', market: 'NASDAQ', sector: 'CPU/GPU' },
-    { ticker: 'PLTR', name: '팔란티어', englishName: 'Palantir', market: 'NYSE', sector: '엔터프라이즈AI' },
-    { ticker: 'LLY', name: '일라이릴리', englishName: 'Eli Lilly', market: 'NYSE', sector: '비만치료제/신약' },
-    { ticker: 'NVO', name: '노보노디스크', englishName: 'Novo Nordisk', market: 'NYSE', sector: '비만치료제/당뇨' },
-    { ticker: 'SCHD', name: '슈왑 미국배당주 ETF', englishName: 'Schwab US Dividend Equity ETF', market: 'NYSE', sector: '배당성장ETF' },
-    { ticker: 'JEPI', name: 'JP모건 프리미엄소득 ETF', englishName: 'JPMorgan Equity Premium Income ETF', market: 'NYSE', sector: '월배당커버드콜' },
-    { ticker: 'QQQ', name: '인베스코 나스닥 100 ETF', englishName: 'Invesco QQQ Trust', market: 'NASDAQ', sector: '나스닥100' },
-    { ticker: 'SPY', name: 'SPDR S&P 500 ETF', englishName: 'SPDR S&P 500 ETF Trust', market: 'NYSE', sector: 'S&P500' },
-    { ticker: 'O', name: '리얼티인컴', englishName: 'Realty Income', market: 'NYSE', sector: '월배당리츠' },
-];
-
 financeRoutes.get('/api/finance/search-stocks', (c) => {
     const q = (c.req.query('q') || '').trim().toLowerCase();
     if (!q) {

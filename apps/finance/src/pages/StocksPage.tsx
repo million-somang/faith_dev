@@ -82,6 +82,49 @@ const POPULAR_TAGS = [
     { label: '#SCHD배당', ticker: 'SCHD' },
 ];
 
+const KNOWN_STOCK_NAMES: Record<string, string> = {
+    '005930': '삼성전자',
+    '000660': 'SK하이닉스',
+    '373220': 'LG에너지솔루션',
+    '005380': '현대차',
+    '000270': '기아',
+    '005490': 'POSCO홀딩스',
+    '035420': 'NAVER',
+    '035720': '카카오',
+    '207940': '삼성바이오로직스',
+    '068270': '셀트리온',
+    '000100': '유한양행',
+    '105560': 'KB금융',
+    '055550': '신한지주',
+    '086790': '하나금융지주',
+    '138040': '메리츠금융지주',
+    '042700': '한미반도체',
+    '086520': '에코프로',
+    '247540': '에코프로비엠',
+    '003670': '포스코퓨처엠',
+    '352820': '하이브',
+    '259960': '크래프톤',
+    'NVDA': '엔비디아',
+    'AAPL': '애플',
+    'MSFT': '마이크로소프트',
+    'GOOGL': '알파벳 (구글)',
+    'AMZN': '아마존',
+    'META': '메타',
+    'TSLA': '테슬라',
+    'AVGO': '브로드컴',
+    'TSM': 'TSMC',
+    'ASML': 'ASML',
+    'AMD': 'AMD',
+    'PLTR': '팔란티어',
+    'LLY': '일라이릴리',
+    'NVO': '노보노디스크',
+    'SCHD': '슈왑 배당 ETF',
+    'JEPI': 'JP모건 커버드콜',
+    'QQQ': '나스닥 100 ETF',
+    'SPY': 'S&P 500 ETF',
+    'O': '리얼티인컴',
+};
+
 export default function StocksPage() {
     const { favorites, isFavorite, add, remove, toggle } = useFavorites();
     const { user, logout } = useAuth();
@@ -403,12 +446,20 @@ export default function StocksPage() {
                     ) : (
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {favorites.map((ticker, idx) => {
-                                const card = favoriteCards.find((c) => c.ticker.toUpperCase() === ticker.toUpperCase());
+                                const cleanT = (t: string) => t.trim().toUpperCase().replace(/\.(KS|KQ)$/, '');
+                                const clean = cleanT(ticker);
+                                const card = favoriteCards.find((c) => cleanT(c.ticker) === clean);
+                                const displayName = KNOWN_STOCK_NAMES[clean] || clean;
+
                                 if (card) {
                                     return (
                                         <StockListCard
                                             key={ticker}
-                                            stock={card}
+                                            stock={{
+                                                ...card,
+                                                ticker: clean,
+                                                name: card.name && card.name !== card.ticker ? card.name : displayName,
+                                            }}
                                             isFavorite
                                             onToggleFavorite={toggle}
                                             index={idx}
@@ -416,11 +467,41 @@ export default function StocksPage() {
                                         />
                                     );
                                 }
+
+                                if (loadingFav) {
+                                    return (
+                                        <div 
+                                            key={ticker} 
+                                            style={{ animationDelay: `${idx * 50}ms` }}
+                                            className="animate-pulse relative bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[120px] sm:min-h-[140px] hover:shadow-md transition-all"
+                                        >
+                                            <div className="flex justify-between items-start">
+                                                <div className="pr-6">
+                                                    <div className="font-extrabold text-slate-900 text-sm sm:text-base truncate">{displayName}</div>
+                                                    <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded mt-0.5 inline-block">{clean}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => remove(ticker)}
+                                                    aria-label="관심종목 해제"
+                                                    className="w-7 h-7 flex items-center justify-center rounded-full text-yellow-400 bg-yellow-50/80 cursor-pointer"
+                                                >
+                                                    <i className="fas fa-star text-xs"></i>
+                                                </button>
+                                            </div>
+                                            <div className="mt-3 space-y-1.5">
+                                                <div className="h-5 w-24 bg-slate-200/80 rounded animate-pulse"></div>
+                                                <div className="h-3 w-16 bg-slate-100 rounded animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <div 
                                         key={ticker} 
                                         style={{ animationDelay: `${idx * 50}ms` }}
-                                        className="animate-fade-in relative bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[120px] sm:min-h-[140px] hover:shadow-md transition-all"
+                                        className="animate-fade-in relative bg-white border border-slate-200 rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between min-h-[120px] sm:min-h-[140px] hover:shadow-md transition-all group"
                                     >
                                         <button
                                             type="button"
@@ -430,10 +511,12 @@ export default function StocksPage() {
                                         >
                                             <i className="fas fa-star text-xs"></i>
                                         </button>
-                                        <Link to={`/stock/${ticker}`} className="block pr-7">
-                                            <div className="font-black text-gray-900 text-sm sm:text-base font-mono truncate">{ticker}</div>
-                                            <div className="text-[11px] text-gray-400 mt-1">
-                                                {loadingFav ? '시세 로딩…' : '시세 정보 로딩'}
+                                        <Link to={`/stock/${clean}`} className="block pr-7">
+                                            <div className="font-extrabold text-gray-900 text-sm sm:text-base group-hover:text-blue-600 transition-colors truncate">{displayName}</div>
+                                            <div className="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded mt-0.5 inline-block">{clean}</div>
+                                            <div className="text-xs text-blue-600 font-semibold mt-3 flex items-center gap-1">
+                                                <span>상세 시세 보기</span>
+                                                <i className="fas fa-chevron-right text-[10px]"></i>
                                             </div>
                                         </Link>
                                     </div>
