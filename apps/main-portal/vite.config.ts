@@ -32,6 +32,10 @@ export default defineConfig({
                 target: 'http://localhost:5030',
                 changeOrigin: true
             },
+            '^/app/janggi.*': {
+                target: 'http://localhost:5037',
+                changeOrigin: true
+            },
             '^/onlinegame/ffrpg.*': {
                 target: 'http://localhost:5041',
                 changeOrigin: true

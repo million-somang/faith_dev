@@ -270,6 +270,78 @@ function VeraPopThumb() {
     );
 }
 
+// 베라장기: 네온 사이버 오리엔탈 9x10 격자판 + 초(청) vs 한(홍) 기물 대치
+function JanggiThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="janggiBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#0f172a" />
+                    <stop offset="50" stopColor="#1e293b" />
+                    <stop offset="100" stopColor="#090d16" />
+                </linearGradient>
+                <radialGradient id="choPieceGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#06b6d4" />
+                    <stop offset="80%" stopColor="#0891b2" />
+                    <stop offset="100%" stopColor="#0e7490" />
+                </radialGradient>
+                <radialGradient id="hanPieceGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#f43f5e" />
+                    <stop offset="80%" stopColor="#e11d48" />
+                    <stop offset="100%" stopColor="#be123c" />
+                </radialGradient>
+                <filter id="pieceGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.6" />
+                </filter>
+            </defs>
+            {/* 흑청색 보드 배경 */}
+            <rect width="320" height="120" fill="url(#janggiBg)" />
+            {/* 장기판 격자선 */}
+            <g stroke="#334155" strokeWidth="1.2" opacity="0.6">
+                <path d="M20 20H300M20 50H300M20 70H300M20 100H300" />
+                <path d="M40 10V110M90 10V110M140 10V110M180 10V110M230 10V110M280 10V110" />
+                {/* 초 궁성 X 대각선 */}
+                <path d="M40 20L140 100M140 20L40 100" stroke="#06b6d4" strokeWidth="1" opacity="0.4" />
+                {/* 한 궁성 X 대각선 */}
+                <path d="M180 20L280 100M280 20L180 100" stroke="#f43f5e" strokeWidth="1" opacity="0.4" />
+            </g>
+
+            {/* 초(楚) 기물들 */}
+            <g filter="url(#pieceGlow)">
+                {/* 초 궁 */}
+                <circle cx="90" cy="60" r="18" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
+                <text x="90" y="66" fill="#ecfeff" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">楚</text>
+
+                {/* 초 차 */}
+                <circle cx="40" cy="20" r="14" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
+                <text x="40" y="25" fill="#ecfeff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
+
+                {/* 초 포 */}
+                <circle cx="140" cy="50" r="14" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
+                <text x="140" y="55" fill="#ecfeff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">包</text>
+            </g>
+
+            {/* 대치 레이저 이펙트 */}
+            <line x1="154" y1="50" x2="166" y2="70" stroke="#fbbf24" strokeWidth="2" strokeDasharray="2,2" opacity="0.8" />
+
+            {/* 한(漢) 기물들 */}
+            <g filter="url(#pieceGlow)">
+                {/* 한 궁 */}
+                <circle cx="230" cy="60" r="18" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
+                <text x="230" y="66" fill="#fff1f2" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">漢</text>
+
+                {/* 한 마 */}
+                <circle cx="180" cy="70" r="14" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
+                <text x="180" y="75" fill="#fff1f2" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">馬</text>
+
+                {/* 한 차 */}
+                <circle cx="280" cy="100" r="14" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
+                <text x="280" y="105" fill="#fff1f2" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
+            </g>
+        </svg>
+    );
+}
+
 // 베라오목: 천연 온목재 15x15 격자판 + 3D 흑돌/백돌 5목 연결
 function OmokThumb() {
     return (
@@ -501,7 +573,22 @@ export default function GamePage() {
 
                     {activeGenre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            {/* 🌟 1. 베라오목 (Vera Omok) - 3단계 브레인 AI 5목 대전 */}
+                            {/* 🌟 1. 베라장기 (Vera Janggi) - 9×10 정통 한국 장기 & 1일 1외통수 */}
+                            <button onClick={() => navigate('/game/janggi')} className="bg-white border-2 text-left border-cyan-200 rounded-2xl overflow-hidden hover:border-cyan-400 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    HOT NEW
+                                </div>
+                                <div className="overflow-hidden bg-[#0f172a]"><JanggiThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-cyan-800 mb-1 group-hover:text-cyan-900 transition-colors flex items-center gap-2">
+                                        <span>Vera Janggi (베라장기)</span>
+                                        <span className="text-xs bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-md font-bold">정통 9×10 & 묘수풀이</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">4대 상차림(마상상마/원앙마 등), 공식 73.5점 덤 규정, 1일 1외통수 매일 묘수풀이 및 특수 스킬 배틀을 즐겨보세요.</p>
+                                </div>
+                            </button>
+
+                            {/* 🌟 2. 베라오목 (Vera Omok) - 3단계 브레인 AI 5목 대전 */}
                             <button onClick={() => navigate('/game/omok')} className="bg-white border-2 text-left border-amber-200 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all group relative">
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
                                     NEW AI

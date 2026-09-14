@@ -22,6 +22,24 @@ interface GameConfig {
 }
 
 const GAME_CONFIGS: Record<string, GameConfig> = {
+    janggi: {
+        label: '베라장기 (Vera Janggi)',
+        icon: 'fas fa-chess-knight',
+        gradient: 'from-cyan-900 via-slate-900 to-rose-950',
+        buttonGradient: 'from-cyan-600 via-blue-600 to-rose-600 hover:from-cyan-500 hover:to-rose-500',
+        tagline: '9×10 정통 한국 장기 & 1일 1외통수 데일리 묘수풀이!',
+        description: '설치 없이 웹 브라우저에서 바로 즐기는 프리미엄 한국 장기. 마상상마·상마상마·원앙마·양귀마 4대 정통 상차림, 한국 공식 73.5점 점수제 덤 규정, 3단계 인공지능(AI), 1일 1외통수 묘수풀이, 3분 7×7 미니장기, 특수 스킬 배틀 장기를 제공합니다.',
+        controls: [
+            { keys: '마우스 클릭 / 터치', desc: '장기알 선택 후 초록색 표시점으로 착수' },
+            { keys: '4대 상차림 선택', desc: '마상상마, 상마상마, 원앙마, 양귀마 자유 전환' },
+            { keys: '1일 1외통수', desc: '매일 자정 갱신되는 3~5수 승부 묘수풀이 퍼즐' },
+            { keys: '특수 스킬 배틀', desc: '기력 게이지 100% 충전 시 차 부스터 / 포 포격 발동' },
+            { keys: '무르기 & 힌트', desc: '최대 3회 무르기 및 인공지능 추천수 힌트' },
+        ],
+        appUrl: '/app/janggi/',
+        appName: 'app-janggi',
+        leaderboardUrl: '/api/games/janggi/leaderboard',
+    },
     omok: {
         label: '베라오목 (Vera Omok)',
         icon: 'fas fa-circle-dot',

@@ -110,7 +110,7 @@ app.route('/', shoppingRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr'
+    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr', 'janggi'
 ];
 
 miniApps.forEach(appName => {
@@ -585,6 +585,26 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
                     '@type': 'Question',
                     name: '컴퓨터 AI 난이도는 어떻게 구성되어 있나요?',
                     acceptedAnswer: { '@type': 'Answer', text: '입문자용 초급, 공수 균형 중급, Minimax 콤보 설계 고급(마스터) 3단계로 제공됩니다.' }
+                }
+            ]
+        }
+    },
+    '/game/janggi': {
+        title: '베라장기 - 정통 9×10 한국 장기 & 1일1외통수 묘수풀이 | VERA 미니게임',
+        description: '설치 없이 브라우저에서 즐기는 고품격 한국 장기. 4대 정통 상차림(마상상마, 상마상마, 원앙마, 양귀마), 공식 73.5점 덤 규정, 1일 1외통수 데일리 묘수풀이, 3분 7×7 미니장기, 특수 스킬 배틀 장기를 제공합니다.',
+        jsonLd: {
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+                {
+                    '@type': 'Question',
+                    name: '베라장기의 공식 점수 및 덤 규칙은 어떻게 되나요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '사단법인 한국장기협회 공식 규정을 준수하여 기물 총합 72점 및 후공인 한(漢)나라에 덤 +1.5점을 부여하여 총 73.5점 기준으로 승패를 판정합니다.' }
+                },
+                {
+                    '@type': 'Question',
+                    name: '베라장기의 상차림(포진) 종류는 무엇이 있나요?',
+                    acceptedAnswer: { '@type': 'Answer', text: '마상상마(왼마), 상마상마(귀마), 원앙마, 양귀마 등 한국 정통 4대 상차림을 자유롭게 선택할 수 있습니다.' }
                 }
             ]
         }

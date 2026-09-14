@@ -639,6 +639,34 @@ function generatePortalSectionPages(template) {
             `
         },
         {
+            route: 'game/janggi',
+            title: '베라장기 - 정통 9×10 한국 장기 & 1일1외통수 묘수풀이 | VERA 미니게임',
+            description: '설치 없이 브라우저에서 즐기는 고품격 한국 장기. 4대 정통 상차림(마상상마, 상마상마, 원앙마, 양귀마), 공식 73.5점 덤 규정, 1일 1외통수 데일리 묘수풀이, 3분 7×7 미니장기, 특수 스킬 배틀 장기를 제공합니다.',
+            heading: '베라장기 (Vera Janggi) - 정통 9×10 한국 장기',
+            content: `
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed text-base">
+                        베라장기는 9×10 정통 장기판에서 초(楚)와 한(漢)의 군사를 지휘하여 적의 궁(왕)을 외통수에 빠뜨리는 대한민국의 대표 민속 두뇌 보드게임입니다.
+                    </p>
+                    <div class="p-6 bg-cyan-50/80 rounded-2xl border border-cyan-200 space-y-3">
+                        <h3 class="font-bold text-cyan-950 text-lg">⚔️ 베라장기 5대 핵심 모드</h3>
+                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1.5 leading-relaxed">
+                            <li><strong>정통 9×10 장기:</strong> 마상상마, 상마상마, 원앙마, 양귀마 4대 상차림 및 공식 73.5점(덤 1.5점) 점수제 규칙 100% 준수.</li>
+                            <li><strong>1일 1외통수 (오늘의 묘수풀이):</strong> 매일 자정에 갱신되는 3~5수 승부 묘수풀이로 스트릭을 쌓고 두뇌를 단련.</li>
+                            <li><strong>3분 7×7 미니 장기:</strong> 15초 초읽기와 함께 펼쳐지는 초스피드 박진감 장기.</li>
+                            <li><strong>특수 스킬 배틀 장기:</strong> 차 부스터, 포 포격, 궁-사 위치 교환 등 도파민 넘치는 전략 스킬 대국.</li>
+                            <li><strong>사주 오행 결합 장기:</strong> 오늘의 만세력 오행(목·화·토·금·수)에 따라 특정 기물에 특별 버프 부여.</li>
+                        </ul>
+                        <div class="pt-4">
+                            <a href="/app/janggi/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm shadow-md transition-all">
+                                🚀 베라장기 게임 플레이 시작하기
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        {
             route: 'game/omok',
             title: '베라오목 - 15×15 브라우저 AI 5목 대전 | VERA 미니게임',
             description: '설치 없이 브라우저에서 바로 즐기는 프리미엄 AI 오목 게임. 3단계 컴퓨터 난이도(초급/중급/고급), 3D 입체 바둑돌과 청명한 착수음, 실시간 형세 분석을 제공합니다.',
