@@ -45,8 +45,10 @@ const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color:
 };
 
 export function App() {
-  // 1. 초기 3초 스플래시 상태 (miniapp.md 필수 규격)
+  // 1. 초기 3초 스플래시 및 대국 시작 상태 (miniapp.md 필수 규격)
   const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [isGameStarted, setIsGameStarted] = useState<boolean>(false);
+  const [isStartModalMode, setIsStartModalMode] = useState<boolean>(true);
 
   // 2. 대국 모드 및 설정 상태
   const [gameMode, setGameMode] = useState<GameMode>('classic');
@@ -135,16 +137,34 @@ export function App() {
     }
   }, [gameMode, choSetup, hanSetup]);
 
-  // 모드 변경 처리
+  // 모드 변경 처리: AI 대전 모드인 경우 난이도/설정 모달을 띄워 대국을 준비
   const handleSelectMode = (newMode: GameMode) => {
     soundEffects.playSnap();
     setGameMode(newMode);
-    initGame(newMode, choSetup, hanSetup);
+    if (newMode === 'puzzle') {
+      initGame(newMode, choSetup, hanSetup);
+      setIsGameStarted(true);
+    } else {
+      initGame(newMode, choSetup, hanSetup);
+      setIsStartModalMode(true);
+      setIsSetupOpen(true);
+    }
   };
+
+  // 3초 스플래시 종료 처리: 퍼즐 모드가 아니면 대국 시작 전 난이도/진영 선택 모달 자동 표시
+  const handleFinishSplash = useCallback(() => {
+    setShowSplash(false);
+    if (gameMode !== 'puzzle') {
+      setIsStartModalMode(true);
+      setIsSetupOpen(true);
+    } else {
+      setIsGameStarted(true);
+    }
+  }, [gameMode]);
 
   // 타이머 틱 처리
   useEffect(() => {
-    if (showSplash || winner || isAiThinking) return;
+    if (showSplash || !isGameStarted || isSetupOpen || winner || isAiThinking) return;
 
     const timer = setInterval(() => {
       setTimeRemaining((prev) => {
@@ -167,7 +187,7 @@ export function App() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [showSplash, winner, isAiThinking, currentTurn, gameMode]);
+  }, [showSplash, isGameStarted, isSetupOpen, winner, isAiThinking, currentTurn, gameMode]);
 
   // AI 및 최신 보드 참조용 Refs (React 리렌더링 클린업에 의한 타이머 취소 방지)
   const boardRef = useRef(board);
@@ -178,7 +198,7 @@ export function App() {
 
   // AI 자동 착수 루프
   useEffect(() => {
-    if (showSplash || winner) return;
+    if (showSplash || !isGameStarted || isSetupOpen || winner) return;
 
     const isAiTurn = currentTurn !== playerSide && gameMode !== 'puzzle';
     if (!isAiTurn) {
@@ -337,7 +357,7 @@ export function App() {
 
   // 플레이어 기물 선택
   const handleSelectPiece = (pos: Position) => {
-    if (winner || isAiThinking) return;
+    if (!isGameStarted || isSetupOpen || winner || isAiThinking) return;
     const piece = board[pos.y][pos.x];
 
     // 현재 턴의 아군 기물 선택
@@ -360,13 +380,13 @@ export function App() {
 
   // 플레이어 착수 실행 (보드에서 직접 호출)
   const handleMakeMove = (to: Position) => {
-    if (!selectedPos || winner || isAiThinking) return;
+    if (!isGameStarted || isSetupOpen || !selectedPos || winner || isAiThinking) return;
     executeMove(selectedPos, to, false);
   };
 
   // 한수 쉼 (Pass)
   const handlePass = () => {
-    if (winner || isAiThinking) return;
+    if (!isGameStarted || isSetupOpen || winner || isAiThinking) return;
     soundEffects.playSnap();
     const nextTurn: Side = currentTurn === 'cho' ? 'han' : 'cho';
     setCurrentTurn(nextTurn);
@@ -377,7 +397,7 @@ export function App() {
 
   // 무르기 (Undo) - 최대 3회
   const handleUndo = () => {
-    if (undoHistory.length === 0 || undoCount >= 3 || isAiThinking) return;
+    if (!isGameStarted || isSetupOpen || undoHistory.length === 0 || undoCount >= 3 || isAiThinking) return;
     soundEffects.playSnap();
 
     // AI 대국일 경우 내 수와 AI 수 2수를 되돌림
@@ -450,20 +470,24 @@ export function App() {
     setIsMuted(nextMute);
   };
 
-  // 1클릭 AI 난이도 순환 토글 (메인 화면 퀵 셀렉터)
-  const handleCycleDifficulty = () => {
+  // 새 대국 시작 모달 열기 (난이도 및 진영/상차림 선택)
+  const handleOpenNewGame = () => {
     soundEffects.playSnap();
-    setAiDifficulty((prev) => {
-      const idx = DIFFICULTY_SEQUENCE.indexOf(prev);
-      const next = DIFFICULTY_SEQUENCE[(idx + 1) % DIFFICULTY_SEQUENCE.length];
-      return next;
-    });
+    setIsStartModalMode(true);
+    setIsSetupOpen(true);
+  };
+
+  // 상차림/설정 모달 열기
+  const handleOpenSetup = () => {
+    soundEffects.playSnap();
+    setIsStartModalMode(false);
+    setIsSetupOpen(true);
   };
 
   return (
     <div className="w-full min-h-screen bg-slate-100 flex flex-col items-center justify-start py-1 px-1 sm:py-3 sm:px-4">
       {/* 3초 필수 스플래시 인트로 (miniapp.md 규격 준수) */}
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onFinish={handleFinishSplash} />}
 
       {/* 메인 미니앱 컨테이너 (450px × 850px 완전 채움 레이아웃, zero dead space) */}
       <main
@@ -484,10 +508,12 @@ export function App() {
           onSelectMode={handleSelectMode}
         />
 
-        {/* 상시 고정 대국 상태 브리핑 바 & AI 퀵 난이도 체인저 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
+        {/* 상시 고정 대국 상태 브리핑 바 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
         <div
           className={`w-full h-10 min-h-[40px] max-h-[40px] px-3 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
-            isCheckState
+            !isGameStarted
+              ? 'bg-amber-50/90 border-amber-300 text-amber-950'
+              : isCheckState
               ? 'bg-rose-50/95 border-rose-300 text-rose-900'
               : isAiThinking
               ? 'bg-indigo-50/95 border-indigo-300 text-indigo-900'
@@ -498,7 +524,14 @@ export function App() {
         >
           {/* 좌측: 실시간 국면 및 AI 수읽기 브리핑 */}
           <div className="flex items-center gap-2 overflow-hidden text-xs font-black truncate flex-1 mr-2">
-            {isCheckState ? (
+            {!isGameStarted ? (
+              <>
+                <i className="fas fa-chess-knight text-amber-600 animate-pulse"></i>
+                <span className="truncate">
+                  대국 준비 중 — 상차림 및 난이도를 선택해 주세요
+                </span>
+              </>
+            ) : isCheckState ? (
               <>
                 <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce"></i>
                 <span className="truncate">
@@ -531,18 +564,15 @@ export function App() {
             )}
           </div>
 
-          {/* 우측: 1클릭 AI 퀵 난이도 체인저 버튼 */}
-          <button
-            type="button"
-            onClick={handleCycleDifficulty}
-            title="클릭하여 AI 난이도를 변경합니다"
-            className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border transition-all cursor-pointer shrink-0 shadow-xs hover:scale-103 active:scale-97 ${
+          {/* 우측: 현재 AI 대국 난이도 고정 뱃지 (대국 중 실시간 변경 방지) */}
+          <div
+            title={`현재 AI 난이도: ${DIFFICULTY_INFO[aiDifficulty]?.label} (새 대국 시작 시 변경 가능)`}
+            className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border select-none shrink-0 shadow-xs ${
               DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
             }`}
           >
             <span>{DIFFICULTY_INFO[aiDifficulty]?.badge}</span>
-            <i className="fas fa-chevron-down text-[9px] opacity-70"></i>
-          </button>
+          </div>
         </div>
 
         {/* 메인 장기판 (9x10 또는 7x7 보드) */}
@@ -596,8 +626,8 @@ export function App() {
             onUndo={handleUndo}
             onPass={handlePass}
             onHint={handleHint}
-            onOpenSetup={() => setIsSetupOpen(true)}
-            onNewGame={() => initGame()}
+            onOpenSetup={handleOpenSetup}
+            onNewGame={handleOpenNewGame}
             onUseSkill={handleUseSkill}
           />
         </div>
@@ -611,23 +641,30 @@ export function App() {
         hanScore={score.hanPoints}
         gameMode={gameMode}
         puzzleStreak={puzzleStreak}
-        onRestart={() => initGame()}
-        onNewGame={() => initGame()}
+        onRestart={handleOpenNewGame}
+        onNewGame={handleOpenNewGame}
       />
 
       {/* 대국 상차림 & AI 난이도 설정 모달 */}
       <SetupModal
         isOpen={isSetupOpen}
+        isStartMode={isStartModalMode}
         choSetup={choSetup}
         hanSetup={hanSetup}
         aiDifficulty={aiDifficulty}
         playerSide={playerSide}
-        onClose={() => setIsSetupOpen(false)}
+        onClose={() => {
+          setIsSetupOpen(false);
+          if (!isGameStarted) {
+            setIsGameStarted(true);
+          }
+        }}
         onSave={(opts) => {
           setChoSetup(opts.choSetup);
           setHanSetup(opts.hanSetup);
           setAiDifficulty(opts.aiDifficulty);
           setPlayerSide(opts.playerSide);
+          setIsGameStarted(true);
           initGame(gameMode, opts.choSetup, opts.hanSetup);
         }}
       />

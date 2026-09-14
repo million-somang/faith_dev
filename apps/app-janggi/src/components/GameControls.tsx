@@ -162,6 +162,7 @@ export function GameControls({
         <button
           type="button"
           onClick={onNewGame}
+          title="새 대국 시작 (AI 난이도 및 상차림 선택)"
           className="py-2 px-1.5 rounded-xl text-xs font-bold bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer shadow-xs"
         >
           <i className="fas fa-power-off text-xs text-rose-600"></i>
