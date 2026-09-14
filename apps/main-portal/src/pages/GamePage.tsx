@@ -270,73 +270,69 @@ function VeraPopThumb() {
     );
 }
 
-// 베라장기: 네온 사이버 오리엔탈 9x10 격자판 + 초(청) vs 한(홍) 기물 대치
+// 베라장기: 최고급 천연 비자목 9x10 격자판 + 3D 8각 장기알 대치
 function JanggiThumb() {
     return (
         <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
             <defs>
-                <linearGradient id="janggiBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#0f172a" />
-                    <stop offset="50" stopColor="#1e293b" />
-                    <stop offset="100" stopColor="#090d16" />
+                <linearGradient id="janggiWoodBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#faeedb" />
+                    <stop offset="50%" stopColor="#f3e2c6" />
+                    <stop offset="100%" stopColor="#ebd4b3" />
                 </linearGradient>
-                <radialGradient id="choPieceGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#06b6d4" />
-                    <stop offset="80%" stopColor="#0891b2" />
-                    <stop offset="100%" stopColor="#0e7490" />
-                </radialGradient>
-                <radialGradient id="hanPieceGlow" cx="50%" cy="50%" r="50%">
-                    <stop offset="0%" stopColor="#f43f5e" />
-                    <stop offset="80%" stopColor="#e11d48" />
-                    <stop offset="100%" stopColor="#be123c" />
-                </radialGradient>
-                <filter id="pieceGlow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.6" />
+                <linearGradient id="thumbPieceWood" x1="0" y1="0" x2="0.3" y2="1">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="40%" stopColor="#fbf7ee" />
+                    <stop offset="100%" stopColor="#e8dcbf" />
+                </linearGradient>
+                <filter id="thumbPieceShadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="1" dy="2.5" stdDeviation="2" floodColor="#5c3c1f" floodOpacity="0.3" />
                 </filter>
             </defs>
-            {/* 흑청색 보드 배경 */}
-            <rect width="320" height="120" fill="url(#janggiBg)" />
-            {/* 장기판 격자선 */}
-            <g stroke="#334155" strokeWidth="1.2" opacity="0.6">
-                <path d="M20 20H300M20 50H300M20 70H300M20 100H300" />
+            {/* 황금빛 비자목 보드 배경 */}
+            <rect width="320" height="120" fill="url(#janggiWoodBg)" />
+            {/* 선명한 흑갈색 먹물선 */}
+            <g stroke="#3e2415" strokeWidth="1.6" strokeLinecap="round" opacity="0.9">
+                <path d="M10 20H310M10 50H310M10 70H310M10 100H310" />
                 <path d="M40 10V110M90 10V110M140 10V110M180 10V110M230 10V110M280 10V110" />
                 {/* 초 궁성 X 대각선 */}
-                <path d="M40 20L140 100M140 20L40 100" stroke="#06b6d4" strokeWidth="1" opacity="0.4" />
+                <path d="M40 20L140 100M140 20L40 100" strokeWidth="1.6" />
                 {/* 한 궁성 X 대각선 */}
-                <path d="M180 20L280 100M280 20L180 100" stroke="#f43f5e" strokeWidth="1" opacity="0.4" />
+                <path d="M180 20L280 100M280 20L180 100" strokeWidth="1.6" />
             </g>
 
-            {/* 초(楚) 기물들 */}
-            <g filter="url(#pieceGlow)">
+            {/* 화점 마커 */}
+            <circle cx="140" cy="50" r="3" fill="#422513" />
+            <circle cx="180" cy="70" r="3" fill="#422513" />
+
+            {/* 초(楚) 3D 8각 장기알들 */}
+            <g filter="url(#thumbPieceShadow)">
                 {/* 초 궁 */}
-                <circle cx="90" cy="60" r="18" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
-                <text x="90" y="66" fill="#ecfeff" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">楚</text>
+                <polygon points="76,43 104,43 111,50 111,70 104,77 76,77 69,70 69,50" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="90" y="66" fill="#065f46" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">楚</text>
 
                 {/* 초 차 */}
-                <circle cx="40" cy="20" r="14" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
-                <text x="40" y="25" fill="#ecfeff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
+                <polygon points="29,8 51,8 57,14 57,26 51,32 29,32 23,26 23,14" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="40" y="25" fill="#065f46" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
 
                 {/* 초 포 */}
-                <circle cx="140" cy="50" r="14" fill="url(#choPieceGlow)" stroke="#67e8f9" strokeWidth="1.5" />
-                <text x="140" y="55" fill="#ecfeff" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">包</text>
+                <polygon points="129,38 151,38 157,44 157,56 151,62 129,62 123,56 123,44" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="140" y="55" fill="#065f46" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">包</text>
             </g>
 
-            {/* 대치 레이저 이펙트 */}
-            <line x1="154" y1="50" x2="166" y2="70" stroke="#fbbf24" strokeWidth="2" strokeDasharray="2,2" opacity="0.8" />
-
-            {/* 한(漢) 기물들 */}
-            <g filter="url(#pieceGlow)">
+            {/* 한(漢) 3D 8각 장기알들 */}
+            <g filter="url(#thumbPieceShadow)">
                 {/* 한 궁 */}
-                <circle cx="230" cy="60" r="18" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
-                <text x="230" y="66" fill="#fff1f2" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">漢</text>
+                <polygon points="216,43 244,43 251,50 251,70 244,77 216,77 209,70 209,50" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="230" y="66" fill="#991b1b" fontSize="16" fontWeight="900" textAnchor="middle" fontFamily="serif">漢</text>
 
                 {/* 한 마 */}
-                <circle cx="180" cy="70" r="14" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
-                <text x="180" y="75" fill="#fff1f2" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">馬</text>
+                <polygon points="169,58 191,58 197,64 197,76 191,82 169,82 163,76 163,64" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="180" y="75" fill="#991b1b" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">馬</text>
 
                 {/* 한 차 */}
-                <circle cx="280" cy="100" r="14" fill="url(#hanPieceGlow)" stroke="#fda4af" strokeWidth="1.5" />
-                <text x="280" y="105" fill="#fff1f2" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
+                <polygon points="269,88 291,88 297,94 297,106 291,112 269,112 263,106 263,94" fill="url(#thumbPieceWood)" stroke="#8f6f46" strokeWidth="1" />
+                <text x="280" y="105" fill="#991b1b" fontSize="13" fontWeight="900" textAnchor="middle" fontFamily="serif">車</text>
             </g>
         </svg>
     );
@@ -578,7 +574,7 @@ export default function GamePage() {
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
                                     HOT NEW
                                 </div>
-                                <div className="overflow-hidden bg-[#0f172a]"><JanggiThumb /></div>
+                                <div className="overflow-hidden bg-[#f4e4cb]"><JanggiThumb /></div>
                                 <div className="p-5">
                                     <h3 className="font-black text-xl text-cyan-800 mb-1 group-hover:text-cyan-900 transition-colors flex items-center gap-2">
                                         <span>Vera Janggi (베라장기)</span>

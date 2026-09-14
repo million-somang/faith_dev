@@ -1,6 +1,6 @@
 import React from 'react';
 import { Piece, Position, Side } from '../types/janggi';
-import { isPalace, isPalaceCenter } from '../logic/janggiRules';
+import { isPalace } from '../logic/janggiRules';
 
 interface JanggiBoardProps {
   board: (Piece | null)[][];
@@ -15,7 +15,7 @@ interface JanggiBoardProps {
   onMakeMove: (to: Position) => void;
 }
 
-// 기물 한자 표기 매핑
+// 기물 한자 표기 매핑 (정통 한국 장기 서체)
 const PIECE_SYMBOLS: Record<string, { cho: string; han: string; label: string }> = {
   king: { cho: '楚', han: '漢', label: '궁' },
   chariot: { cho: '車', han: '車', label: '차' },
@@ -25,6 +25,20 @@ const PIECE_SYMBOLS: Record<string, { cho: string; han: string; label: string }>
   guard: { cho: '士', han: '士', label: '사' },
   soldier: { cho: '卒', han: '兵', label: '졸' },
 };
+
+// 8각형 정점 좌표 계산 (한국 전통 장기알의 깎인 모서리)
+function getOctagonPoints(cx: number, cy: number, r: number): string {
+  const cut = r * 0.38; // 모서리 깎임 비율
+  const p1 = `${cx - r + cut},${cy - r}`;
+  const p2 = `${cx + r - cut},${cy - r}`;
+  const p3 = `${cx + r},${cy - r + cut}`;
+  const p4 = `${cx + r},${cy + r - cut}`;
+  const p5 = `${cx + r - cut},${cy + r}`;
+  const p6 = `${cx - r + cut},${cy + r}`;
+  const p7 = `${cx - r},${cy + r - cut}`;
+  const p8 = `${cx - r},${cy - r + cut}`;
+  return `${p1} ${p2} ${p3} ${p4} ${p5} ${p6} ${p7} ${p8}`;
+}
 
 export function JanggiBoard({
   board,
@@ -51,326 +65,445 @@ export function JanggiBoard({
     cy: paddingY + y * stepY,
   });
 
+  // 화점(Star points) 좌표 정의 (한국 정통 장기 규격: 졸/병 5개 위치 및 포 2개 위치)
+  const starPoints =
+    cols === 9
+      ? [
+          // 초나라 진영 (상단)
+          { x: 1, y: 2 }, // 좌 포
+          { x: 7, y: 2 }, // 우 포
+          { x: 0, y: 3 }, // 졸 1
+          { x: 2, y: 3 }, // 졸 2
+          { x: 4, y: 3 }, // 졸 3 (중앙)
+          { x: 6, y: 3 }, // 졸 4
+          { x: 8, y: 3 }, // 졸 5
+          // 한나라 진영 (하단)
+          { x: 1, y: 7 }, // 좌 포
+          { x: 7, y: 7 }, // 우 포
+          { x: 0, y: 6 }, // 병 1
+          { x: 2, y: 6 }, // 병 2
+          { x: 4, y: 6 }, // 병 3 (중앙)
+          { x: 6, y: 6 }, // 병 4
+          { x: 8, y: 6 }, // 병 5
+        ]
+      : [
+          { x: 1, y: 1 },
+          { x: 5, y: 1 },
+          { x: 1, y: 5 },
+          { x: 5, y: 5 },
+        ];
+
   return (
     <div className="w-full max-w-[420px] mx-auto flex flex-col items-center select-none">
-      {/* 🌟 네온 사이버 오리엔탈 장기판 컨테이너 */}
-      <div className="relative p-2.5 rounded-3xl bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 shadow-2xl border-2 border-slate-700/80">
+      {/* 🪵 최고급 천연 비자목(원목) 장기판 컨테이너 (밝은 뉴모피즘 + 우드 몰딩) */}
+      <div className="relative p-2 sm:p-2.5 rounded-3xl bg-gradient-to-br from-[#dfb984] via-[#cb9d66] to-[#b38249] shadow-xl border-4 border-[#e9cfab]">
         
-        {/* 장기판 보드 SVG (격자선 + 궁성 X선) */}
-        <svg
-          width={boardWidth}
-          height={boardHeight}
-          className="overflow-visible block"
-          style={{ touchAction: 'none' }}
-        >
-          <defs>
-            {/* 그리드 은은한 네온 그라데이션 */}
-            <linearGradient id="gridGlow" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
-              <stop offset="50%" stopColor="#94a3b8" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.4" />
-            </linearGradient>
+        {/* 장기판 원목 내부 음영 및 실선 보드 */}
+        <div className="rounded-2xl overflow-hidden shadow-inner bg-[#f6ebda]">
+          <svg
+            width={boardWidth}
+            height={boardHeight}
+            className="overflow-visible block"
+            style={{ touchAction: 'none' }}
+          >
+            <defs>
+              {/* 천연 비자목 황금빛 나뭇결 그라데이션 */}
+              <linearGradient id="boardWoodGrain" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#faeedb" />
+                <stop offset="40%" stopColor="#f4e4cb" />
+                <stop offset="75%" stopColor="#ebd6b8" />
+                <stop offset="100%" stopColor="#f3e2c6" />
+              </linearGradient>
 
-            {/* 마지막 착수 하이라이트 펄스 */}
-            <radialGradient id="moveHighlight" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-            </radialGradient>
-          </defs>
+              {/* 보드 테두리 베벨 그림자 */}
+              <linearGradient id="boardBorderShade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8d6032" stopOpacity="0.4" />
+                <stop offset="5%" stopColor="#8d6032" stopOpacity="0.05" />
+                <stop offset="95%" stopColor="#8d6032" stopOpacity="0.05" />
+                <stop offset="100%" stopColor="#8d6032" stopOpacity="0.4" />
+              </linearGradient>
 
-          {/* 보드 바탕 */}
-          <rect
-            x={4}
-            y={4}
-            width={boardWidth - 8}
-            height={boardHeight - 8}
-            rx={16}
-            fill="#0b1120"
-            stroke="#1e293b"
-            strokeWidth={2}
-          />
+              {/* 장기알 공통 우드 질감 (밝은 회백색 천연 원목) */}
+              <linearGradient id="pieceWoodTop" x1="0" y1="0" x2="0.3" y2="1">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="35%" stopColor="#fcf8f0" />
+                <stop offset="80%" stopColor="#f3ebd9" />
+                <stop offset="100%" stopColor="#e7dcbe" />
+              </linearGradient>
 
-          {/* 가로선 (Ranks) */}
-          {Array.from({ length: rows }).map((_, r) => {
-            const y = paddingY + r * stepY;
-            return (
-              <line
-                key={`h_${r}`}
-                x1={paddingX}
-                y1={y}
-                x2={paddingX + (cols - 1) * stepX}
-                y2={y}
-                stroke="url(#gridGlow)"
-                strokeWidth={1.2}
-              />
-            );
-          })}
+              {/* 장기알 외곽 베벨 테두리 */}
+              <linearGradient id="pieceRimBevel" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#d9c39f" />
+                <stop offset="50%" stopColor="#ba9d73" />
+                <stop offset="100%" stopColor="#8f734b" />
+              </linearGradient>
 
-          {/* 세로선 (Files) */}
-          {Array.from({ length: cols }).map((_, c) => {
-            const x = paddingX + c * stepX;
-            return (
-              <line
-                key={`v_${c}`}
-                x1={x}
-                y1={paddingY}
-                x2={x}
-                y2={paddingY + (rows - 1) * stepY}
-                stroke="url(#gridGlow)"
-                strokeWidth={1.2}
-              />
-            );
-          })}
+              {/* 기물 바닥 투하 그림자 필터 */}
+              <filter id="pieceDropShadow" x="-30%" y="-30%" width="160%" height="170%">
+                <feDropShadow dx="1" dy="3.5" stdDeviation="2.5" floodColor="#5c3c1f" floodOpacity="0.35" />
+              </filter>
 
-          {/* 초나라 궁성(X선) 대각선 */}
-          {cols === 9 ? (
-            <g stroke="#38bdf8" strokeWidth={1.5} opacity={0.6}>
-              {/* 초(위) (3,0)-(5,2) and (5,0)-(3,2) */}
-              <line
-                x1={getCoord(3, 0).cx}
-                y1={getCoord(3, 0).cy}
-                x2={getCoord(5, 2).cx}
-                y2={getCoord(5, 2).cy}
-              />
-              <line
-                x1={getCoord(5, 0).cx}
-                y1={getCoord(5, 0).cy}
-                x2={getCoord(3, 2).cx}
-                y2={getCoord(3, 2).cy}
-              />
-              {/* 한(아래) (3,7)-(5,9) and (5,7)-(3,9) */}
-              <line
-                x1={getCoord(3, 7).cx}
-                y1={getCoord(3, 7).cy}
-                x2={getCoord(5, 9).cx}
-                y2={getCoord(5, 9).cy}
-              />
-              <line
-                x1={getCoord(5, 7).cx}
-                y1={getCoord(5, 7).cy}
-                x2={getCoord(3, 9).cx}
-                y2={getCoord(3, 9).cy}
-              />
-            </g>
-          ) : (
-            <g stroke="#38bdf8" strokeWidth={1.5} opacity={0.6}>
-              {/* 7×7 미니 궁성 대각선 */}
-              <line
-                x1={getCoord(2, 0).cx}
-                y1={getCoord(2, 0).cy}
-                x2={getCoord(4, 2).cx}
-                y2={getCoord(4, 2).cy}
-              />
-              <line
-                x1={getCoord(4, 0).cx}
-                y1={getCoord(4, 0).cy}
-                x2={getCoord(2, 2).cx}
-                y2={getCoord(2, 2).cy}
-              />
-              <line
-                x1={getCoord(2, 4).cx}
-                y1={getCoord(2, 4).cy}
-                x2={getCoord(4, 6).cx}
-                y2={getCoord(4, 6).cy}
-              />
-              <line
-                x1={getCoord(4, 4).cx}
-                y1={getCoord(4, 4).cy}
-                x2={getCoord(2, 6).cx}
-                y2={getCoord(2, 6).cy}
-              />
-            </g>
-          )}
+              {/* 마지막 착수 하이라이트 펄스 */}
+              <radialGradient id="lastMoveGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+              </radialGradient>
+            </defs>
 
-          {/* 마지막 수 착수 궤적 하이라이트 */}
-          {lastMove && (
-            <g>
-              <circle
-                cx={getCoord(lastMove.from.x, lastMove.from.y).cx}
-                cy={getCoord(lastMove.from.x, lastMove.from.y).cy}
-                r={stepX * 0.45}
-                fill="none"
-                stroke="#38bdf8"
-                strokeWidth={1.5}
-                strokeDasharray="4 3"
-                opacity={0.7}
-              />
-              <circle
-                cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
-                cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
-                r={stepX * 0.48}
-                fill="url(#moveHighlight)"
-                stroke="#38bdf8"
-                strokeWidth={2}
-              />
-            </g>
-          )}
+            {/* 1. 보드 바탕 목판 */}
+            <rect
+              x={0}
+              y={0}
+              width={boardWidth}
+              height={boardHeight}
+              fill="url(#boardWoodGrain)"
+            />
+            {/* 보드 가장자리 안쪽 음영 */}
+            <rect
+              x={0}
+              y={0}
+              width={boardWidth}
+              height={boardHeight}
+              fill="url(#boardBorderShade)"
+            />
 
-          {/* 유효 착수 가능 위치 원형 인디케이터 (Valid Moves) */}
-          {validMoves.map((m, idx) => {
-            const { cx, cy } = getCoord(m.x, m.y);
-            const isCapture = !!board[m.y][m.x];
-            return (
-              <g
-                key={`valid_${idx}`}
-                className="cursor-pointer"
-                onClick={() => onMakeMove(m)}
-              >
-                {/* 투명 클릭 확장 영역 */}
-                <circle cx={cx} cy={cy} r={stepX * 0.48} fill="transparent" />
-                
-                {isCapture ? (
-                  // 적 기물 포획 위치: 붉은색 링 펄스
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={stepX * 0.44}
-                    fill="none"
-                    stroke="#f43f5e"
-                    strokeWidth={2.5}
-                    className="animate-pulse"
-                  />
-                ) : (
-                  // 빈칸 이동: 빛나는 시안 도트
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={stepX * 0.16}
-                    fill="#38bdf8"
-                    filter="drop-shadow(0 0 6px rgba(56, 189, 248, 0.8))"
-                  />
-                )}
+            {/* 2. 외곽 테두리 굵은 먹선 (외곽선 2.4px) */}
+            <rect
+              x={paddingX}
+              y={paddingY}
+              width={(cols - 1) * stepX}
+              height={(rows - 1) * stepY}
+              fill="none"
+              stroke="#2c170d"
+              strokeWidth={2.4}
+              strokeLinecap="square"
+            />
+
+            {/* 3. 가로선 (Ranks) - 선명한 흑갈색 먹물선 1.8px */}
+            {Array.from({ length: rows }).map((_, r) => {
+              const y = paddingY + r * stepY;
+              return (
+                <line
+                  key={`h_${r}`}
+                  x1={paddingX}
+                  y1={y}
+                  x2={paddingX + (cols - 1) * stepX}
+                  y2={y}
+                  stroke="#2c170d"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+
+            {/* 4. 세로선 (Files) - 선명한 흑갈색 먹물선 1.8px */}
+            {Array.from({ length: cols }).map((_, c) => {
+              const x = paddingX + c * stepX;
+              return (
+                <line
+                  key={`v_${c}`}
+                  x1={x}
+                  y1={paddingY}
+                  x2={x}
+                  y2={paddingY + (rows - 1) * stepY}
+                  stroke="#2c170d"
+                  strokeWidth={1.8}
+                  strokeLinecap="round"
+                />
+              );
+            })}
+
+            {/* 5. 궁성(X선) 대각선 - 선명한 흑갈색 먹물선 1.8px */}
+            {cols === 9 ? (
+              <g stroke="#2c170d" strokeWidth={1.8} strokeLinecap="round">
+                {/* 초나라 궁성 (위) (3,0)-(5,2) and (5,0)-(3,2) */}
+                <line
+                  x1={getCoord(3, 0).cx}
+                  y1={getCoord(3, 0).cy}
+                  x2={getCoord(5, 2).cx}
+                  y2={getCoord(5, 2).cy}
+                />
+                <line
+                  x1={getCoord(5, 0).cx}
+                  y1={getCoord(5, 0).cy}
+                  x2={getCoord(3, 2).cx}
+                  y2={getCoord(3, 2).cy}
+                />
+                {/* 한나라 궁성 (아래) (3,7)-(5,9) and (5,7)-(3,9) */}
+                <line
+                  x1={getCoord(3, 7).cx}
+                  y1={getCoord(3, 7).cy}
+                  x2={getCoord(5, 9).cx}
+                  y2={getCoord(5, 9).cy}
+                />
+                <line
+                  x1={getCoord(5, 7).cx}
+                  y1={getCoord(5, 7).cy}
+                  x2={getCoord(3, 9).cx}
+                  y2={getCoord(3, 9).cy}
+                />
               </g>
-            );
-          })}
+            ) : (
+              // 7×7 미니 장기 궁성
+              <g stroke="#2c170d" strokeWidth={1.8} strokeLinecap="round">
+                <line
+                  x1={getCoord(2, 0).cx}
+                  y1={getCoord(2, 0).cy}
+                  x2={getCoord(4, 2).cx}
+                  y2={getCoord(4, 2).cy}
+                />
+                <line
+                  x1={getCoord(4, 0).cx}
+                  y1={getCoord(4, 0).cy}
+                  x2={getCoord(2, 2).cx}
+                  y2={getCoord(2, 2).cy}
+                />
+                <line
+                  x1={getCoord(2, 4).cx}
+                  y1={getCoord(2, 4).cy}
+                  x2={getCoord(4, 6).cx}
+                  y2={getCoord(4, 6).cy}
+                />
+                <line
+                  x1={getCoord(4, 4).cx}
+                  y1={getCoord(4, 4).cy}
+                  x2={getCoord(2, 6).cx}
+                  y2={getCoord(2, 6).cy}
+                />
+              </g>
+            )}
 
-          {/* 기물 렌더링 (인터랙티브 토큰) */}
-          {board.map((row, r) =>
-            row.map((piece, c) => {
-              if (!piece) return null;
-              const { cx, cy } = getCoord(c, r);
-              const isSelected = selectedPos?.x === c && selectedPos?.y === r;
-              const isCho = piece.side === 'cho';
-              const isKingInCheck =
-                piece.type === 'king' && isCheckSide === piece.side;
+            {/* 6. 화점(花點, Star points) 마커 (한국 정통 장기판 표시점) */}
+            {starPoints.map((pt, idx) => {
+              const { cx, cy } = getCoord(pt.x, pt.y);
+              return (
+                <circle
+                  key={`star_${idx}`}
+                  cx={cx}
+                  cy={cy}
+                  r={3.2}
+                  fill="#422513"
+                  stroke="#faeedb"
+                  strokeWidth={0.8}
+                />
+              );
+            })}
 
-              const symbolInfo = PIECE_SYMBOLS[piece.type] || {
-                cho: '卒',
-                han: '兵',
-                label: '졸',
-              };
-              const textSymbol = isCho ? symbolInfo.cho : symbolInfo.han;
+            {/* 7. 마지막 수 착수 궤적 하이라이트 */}
+            {lastMove && (
+              <g>
+                <circle
+                  cx={getCoord(lastMove.from.x, lastMove.from.y).cx}
+                  cy={getCoord(lastMove.from.x, lastMove.from.y).cy}
+                  r={stepX * 0.44}
+                  fill="none"
+                  stroke="#d97706"
+                  strokeWidth={2}
+                  strokeDasharray="4 3"
+                  opacity={0.8}
+                />
+                <line
+                  x1={getCoord(lastMove.from.x, lastMove.from.y).cx}
+                  y1={getCoord(lastMove.from.x, lastMove.from.y).cy}
+                  x2={getCoord(lastMove.to.x, lastMove.to.y).cx}
+                  y2={getCoord(lastMove.to.x, lastMove.to.y).cy}
+                  stroke="#d97706"
+                  strokeWidth={2}
+                  strokeDasharray="3 3"
+                  opacity={0.6}
+                />
+                <circle
+                  cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
+                  cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
+                  r={stepX * 0.48}
+                  fill="url(#lastMoveGlow)"
+                  stroke="#f59e0b"
+                  strokeWidth={2.2}
+                />
+              </g>
+            )}
 
-              // 기물 크기 (궁/차는 조금 더 큼)
-              const radius =
-                piece.type === 'king'
-                  ? stepX * 0.46
-                  : piece.type === 'chariot' || piece.type === 'cannon'
-                  ? stepX * 0.43
-                  : stepX * 0.41;
-
+            {/* 8. 유효 착수 가능 위치 원형 인디케이터 (Valid Moves) */}
+            {validMoves.map((m, idx) => {
+              const { cx, cy } = getCoord(m.x, m.y);
+              const isCapture = !!board[m.y][m.x];
               return (
                 <g
-                  key={piece.id}
-                  className="cursor-pointer transition-transform duration-150"
-                  onClick={() => {
-                    // 유효한 이동 위치라면 착수
-                    const isTargetMove = validMoves.some(
-                      vm => vm.x === c && vm.y === r
-                    );
-                    if (isTargetMove) {
-                      onMakeMove({ x: c, y: r });
-                    } else if (piece.side === currentTurn) {
-                      // 아군 기물 선택
-                      onSelectPiece({ x: c, y: r });
-                    }
-                  }}
+                  key={`valid_${idx}`}
+                  className="cursor-pointer"
+                  onClick={() => onMakeMove(m)}
                 >
-                  {/* 기물 그림자 */}
-                  <circle
-                    cx={cx}
-                    cy={cy + 3}
-                    r={radius}
-                    fill="#030712"
-                    opacity={0.6}
-                  />
-
-                  {/* 장군 상태 경고 펄스 링 */}
-                  {isKingInCheck && (
+                  {/* 투명 클릭 확장 영역 */}
+                  <circle cx={cx} cy={cy} r={stepX * 0.48} fill="transparent" />
+                  
+                  {isCapture ? (
+                    // 적 기물 포획 위치: 강렬한 루비 레드 링 펄스
                     <circle
                       cx={cx}
                       cy={cy}
-                      r={radius + 4}
+                      r={stepX * 0.46}
                       fill="none"
-                      stroke="#f43f5e"
+                      stroke="#dc2626"
                       strokeWidth={3}
-                      className="animate-ping opacity-75"
-                    />
-                  )}
-
-                  {/* 선택된 기물 하이라이트 링 */}
-                  {isSelected && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={radius + 3}
-                      fill="none"
-                      stroke={isCho ? '#06b6d4' : '#f43f5e'}
-                      strokeWidth={2.5}
                       className="animate-pulse"
                     />
+                  ) : (
+                    // 빈칸 이동: 부드러운 에메랄드/그린 도트
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={stepX * 0.18}
+                      fill="#059669"
+                      stroke="#ffffff"
+                      strokeWidth={1.5}
+                    />
                   )}
-
-                  {/* 기물 본체 베이스 (오리엔탈 사이버 원판) */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={radius}
-                    fill={isCho ? '#0c2233' : '#2b1118'}
-                    stroke={isCho ? '#06b6d4' : '#f43f5e'}
-                    strokeWidth={isSelected ? 2.5 : 1.8}
-                    className={isCho ? 'piece-cho' : 'piece-han'}
-                  />
-
-                  {/* 기물 안쪽 림 (Double Rim) */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={radius - 3}
-                    fill="none"
-                    stroke={isCho ? '#0891b2' : '#e11d48'}
-                    strokeWidth={0.8}
-                    opacity={0.6}
-                  />
-
-                  {/* 기물 한자 레이블 */}
-                  <text
-                    x={cx}
-                    y={cy + (radius * 0.35)}
-                    textAnchor="middle"
-                    fill={isCho ? '#67e8f9' : '#fda4af'}
-                    fontSize={radius * 1.05}
-                    fontWeight="900"
-                    fontFamily="'Pretendard', sans-serif"
-                    style={{
-                      textShadow: isCho
-                        ? '0 0 10px rgba(6, 182, 212, 0.7)'
-                        : '0 0 10px rgba(244, 63, 94, 0.7)',
-                    }}
-                  >
-                    {textSymbol}
-                  </text>
                 </g>
               );
-            })
-          )}
-        </svg>
+            })}
 
-        {/* 보드 하단 모드 뱃지 */}
-        <div className="flex items-center justify-between w-full px-2 pt-2 text-[10px] font-mono text-slate-400">
-          <span className="text-cyan-400 font-bold">● 楚 (선공)</span>
-          <span>{cols === 9 ? '정규 9×10 한국 장기' : '미니 7×7 장기'}</span>
-          <span className="text-rose-400 font-bold">● 漢 (후공+1.5덤)</span>
+            {/* 9. 정통 3D 8각 장기알 렌더링 (전통 한국 목기물) */}
+            {board.map((row, r) =>
+              row.map((piece, c) => {
+                if (!piece) return null;
+                const { cx, cy } = getCoord(c, r);
+                const isSelected = selectedPos?.x === c && selectedPos?.y === r;
+                const isCho = piece.side === 'cho';
+                const isKingInCheck = piece.type === 'king' && isCheckSide === piece.side;
+
+                const symbolInfo = PIECE_SYMBOLS[piece.type] || {
+                  cho: '卒',
+                  han: '兵',
+                  label: '졸',
+                };
+                const textSymbol = isCho ? symbolInfo.cho : symbolInfo.han;
+
+                // 기물 크기 위계 (궁 > 차/포 > 마/상 > 사/졸/병)
+                const radius =
+                  piece.type === 'king'
+                    ? stepX * 0.47 // 궁: 가장 큰 대형 알
+                    : piece.type === 'chariot' || piece.type === 'cannon'
+                    ? stepX * 0.43 // 차/포: 중대형
+                    : piece.type === 'horse' || piece.type === 'elephant'
+                    ? stepX * 0.41 // 마/상: 중형
+                    : stepX * 0.38; // 사/졸/병: 소형
+
+                // 8각형 외형 정점 문자열
+                const octagonPoints = getOctagonPoints(cx, cy, radius);
+                const innerOctagonPoints = getOctagonPoints(cx, cy, radius - 2.5);
+
+                return (
+                  <g
+                    key={piece.id}
+                    className="cursor-pointer transition-transform duration-150"
+                    onClick={() => {
+                      const isTargetMove = validMoves.some(
+                        vm => vm.x === c && vm.y === r
+                      );
+                      if (isTargetMove) {
+                        onMakeMove({ x: c, y: r });
+                      } else if (piece.side === currentTurn) {
+                        onSelectPiece({ x: c, y: r });
+                      }
+                    }}
+                  >
+                    {/* A. 장군(Check) 상태 위험 펄스 링 */}
+                    {isKingInCheck && (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={radius + 5}
+                        fill="none"
+                        stroke="#dc2626"
+                        strokeWidth={3.5}
+                        className="animate-ping opacity-75"
+                      />
+                    )}
+
+                    {/* B. 선택된 기물 골든 엠보스 링 */}
+                    {isSelected && (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r={radius + 4}
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth={3}
+                        className="animate-pulse"
+                      />
+                    )}
+
+                    {/* C. 3D 8각 장기알 본체 (지면 그림자 포함) */}
+                    <g filter="url(#pieceDropShadow)">
+                      {/* 외곽 8각 베벨 림 (원목 깎임 측면) */}
+                      <polygon
+                        points={octagonPoints}
+                        fill="url(#pieceRimBevel)"
+                        stroke="#8c683b"
+                        strokeWidth={1}
+                        strokeLinejoin="round"
+                      />
+
+                      {/* 상단 8각 원목 표면 (밝은 아이보리 원목) */}
+                      <polygon
+                        points={innerOctagonPoints}
+                        fill="url(#pieceWoodTop)"
+                        stroke="#dfcdb0"
+                        strokeWidth={0.8}
+                        strokeLinejoin="round"
+                      />
+                    </g>
+
+                    {/* D. 안쪽 얇은 원목 각인 테두리선 */}
+                    <polygon
+                      points={getOctagonPoints(cx, cy, radius - 4.5)}
+                      fill="none"
+                      stroke={isCho ? '#0d7a5b' : '#c2410c'}
+                      strokeWidth={0.8}
+                      opacity={0.35}
+                    />
+
+                    {/* E. 정통 붓글씨 서예 옻칠 각인 한자 (초: 짙은 청록 비취색, 한: 짙은 주사 진홍색) */}
+                    <text
+                      x={cx}
+                      y={cy + radius * 0.36}
+                      textAnchor="middle"
+                      fill={isCho ? '#065f46' : '#991b1b'}
+                      fontSize={radius * 1.06}
+                      fontWeight="900"
+                      fontFamily="'Pretendard Variable', 'Batang', 'Song Myung', serif"
+                      style={{
+                        letterSpacing: '-0.02em',
+                        paintOrder: 'stroke fill',
+                        stroke: isCho ? '#044432' : '#7f1d1d',
+                        strokeWidth: 0.3,
+                        filter: isCho
+                          ? 'drop-shadow(0 1px 0.5px rgba(255,255,255,0.7))'
+                          : 'drop-shadow(0 1px 0.5px rgba(255,255,255,0.7))',
+                      }}
+                    >
+                      {textSymbol}
+                    </text>
+                  </g>
+                );
+              })
+            )}
+          </svg>
+        </div>
+
+        {/* 하단 진영 안내 바 (밝은 우드톤) */}
+        <div className="flex items-center justify-between pt-2 px-1 text-[11px] font-bold text-[#5c3c1f]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#059669] shadow-xs" />
+            <span className="text-[#065f46] font-black">楚 초나라 (선공)</span>
+          </div>
+          <div className="text-[10px] text-[#785331] font-mono tracking-tight">
+            {cols === 9 ? '정규 9×10 한국 장기' : '7×7 미니 장기'}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#991b1b] font-black">漢 한나라 (후공 +1.5점)</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#dc2626] shadow-xs" />
+          </div>
         </div>
       </div>
     </div>
