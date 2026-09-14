@@ -166,9 +166,11 @@ export class BattleScene extends Phaser.Scene {
       heroData.atb = idx * 25; // 초기 ATB 분산
 
       // 🌟 64비트 HD 일러스트레이션 스프라이트 (높이 84px 기준 비례 유지)
-      const sprite = this.add.sprite(pos.x, pos.y, `${heroData.textureKey}_idle`);
+      const isLeon = heroData.job === 'warrior' || heroData.textureKey === 'hero_leon' || heroData.id === 'hero-1';
+      const initialTexture = isLeon ? 'leon_idle' : `${heroData.textureKey}_idle`;
+      const sprite = this.add.sprite(pos.x, pos.y, initialTexture);
       const heroTargetHeight = 84;
-      const heroAspect = sprite.width > 0 ? sprite.width / sprite.height : 0.8;
+      const heroAspect = isLeon ? (320 / 520) : (sprite.width > 0 ? sprite.width / sprite.height : 0.8);
       const heroTargetWidth = Math.round(heroTargetHeight * heroAspect);
       sprite.setDisplaySize(heroTargetWidth, heroTargetHeight);
 

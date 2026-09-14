@@ -23,9 +23,8 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // 64비트 고해상도 HD 영웅 모든 상태별 프리로드
+    // 64비트 고해상도 HD 영웅 모든 상태별 프리로드 (백마도사, 흑마도사, 몽크)
     const heroPairs = [
-      { key: 'hero_warrior', img: warriorImg },
       { key: 'hero_white_mage', img: whiteMageImg },
       { key: 'hero_black_mage', img: blackMageImg },
       { key: 'hero_monk', img: monkImg },
@@ -39,15 +38,20 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
-    // 🌟 레온 전용 애니메이션 스프라이트 시트 (프레임 크기: 320 x 520)
+    // 🌟 제 1주인공 레온(Leon) 전용 애니메이션 스프라이트 시트 (프레임 크기: 320 x 520)
     this.load.spritesheet('leon_attack_sheet', leonAttackStrip, { frameWidth: 320, frameHeight: 520 });
     this.load.spritesheet('leon_skill_sheet', leonSkillStrip, { frameWidth: 320, frameHeight: 520 });
     this.load.spritesheet('leon_hurt_sheet', leonHurtStrip, { frameWidth: 320, frameHeight: 520 });
 
-    // 레온 기본 스탠딩 텍스처
-    this.load.image('leon_idle', leonIdleImg);
-    this.load.image('hero_warrior_idle', leonIdleImg);
-    this.load.image('hero_warrior', leonIdleImg);
+    // 레온 기본 스탠딩 및 호환 텍스처 전면 등록 (hero_leon 및 hero_warrior의 모든 상태)
+    const leonKeys = [
+      'leon_idle',
+      'hero_leon', 'hero_leon_idle', 'hero_leon_attack', 'hero_leon_danger', 'hero_leon_victory', 'hero_leon_hurt',
+      'hero_warrior', 'hero_warrior_idle', 'hero_warrior_attack', 'hero_warrior_danger', 'hero_warrior_victory', 'hero_warrior_hurt'
+    ];
+    leonKeys.forEach(k => {
+      this.load.image(k, leonIdleImg);
+    });
 
     this.load.image('boss_golem', bossGolemImg);
     this.load.image('boss_kraken', bossKrakenImg);

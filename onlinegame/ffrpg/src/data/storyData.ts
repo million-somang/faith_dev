@@ -19,7 +19,7 @@ export const INITIAL_HEROES: HeroBattleUnit[] = [
     atb: 20,
     isDefending: false,
     isDead: false,
-    textureKey: 'hero_warrior',
+    textureKey: 'hero_leon',
   },
   {
     id: 'hero-2',
