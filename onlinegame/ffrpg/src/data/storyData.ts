@@ -4,9 +4,9 @@ import { StoryAct, SkillDefinition, HeroBattleUnit } from '../types/rpg';
 export const INITIAL_HEROES: HeroBattleUnit[] = [
   {
     id: 'hero-1',
-    name: '아르반',
+    name: '레온',
     job: 'warrior',
-    title: '강철의 수호자',
+    title: '빛의 성검사',
     level: 3,
     hp: 240,
     maxHp: 240,
@@ -82,7 +82,8 @@ export const INITIAL_HEROES: HeroBattleUnit[] = [
 
 // 직업별 고유 스킬 리스트
 export const SKILLS: SkillDefinition[] = [
-  // 전사 스킬
+  // 전사 (레온) 스킬
+  { id: 'holy_drop', name: '성검 낙하', mpCost: 16, targetType: 'single_enemy', description: '황금 뇌광을 두르고 공중 도약 후 급강하 지면 강타! 막대한 물리 폭발 피해를 입힙니다.', jobRequired: 'warrior' },
   { id: 'shield_bash', name: '실드 배시', mpCost: 8, targetType: 'single_enemy', description: '방패로 강하게 내리쳐 물리 피해를 입히고 기절시킵니다.', jobRequired: 'warrior' },
   { id: 'iron_will', name: '강철의 결의', mpCost: 12, targetType: 'single_ally', description: '자신의 방어력을 대폭 끌어올리고 어그로를 획득합니다.', jobRequired: 'warrior' },
 
@@ -126,7 +127,7 @@ export const STORY_ACTS: StoryAct[] = [
     },
     introDialog: [
       { speaker: '장로 올리버', avatar: '👴', text: '조율자들이여, 바람의 결정이 깨어져 대륙 에테리아가 서서히 하계로 추락하고 있네.' },
-      { speaker: '아르반 (전사)', avatar: '🛡️', text: '구름 장벽 밑으로 내려가려면 고대 비공정의 동력 코어가 필요합니다!' },
+      { speaker: '레온 (성검사)', avatar: '⚔️', text: '구름 장벽 밑으로 내려가려면 고대 비공정의 동력 코어가 필요합니다!' },
       { speaker: '수호 골렘', avatar: '🗿', text: '침입자 확인... 고대 비공정 코어를 인가되지 않은 자에게 양도할 수 없다!' }
     ],
     outroDialog: [
@@ -163,7 +164,7 @@ export const STORY_ACTS: StoryAct[] = [
       { speaker: '네더 크라켄', avatar: '🐙', text: '하늘의 도망자들아... 수천 년의 어둠과 원망을 온몸으로 받아내라!' }
     ],
     outroDialog: [
-      { speaker: '아르반 (전사)', avatar: '🛡️', text: '하계에 남겨졌던 자들의 슬픔이 마물들을 왜곡시켰던 것이었어...' },
+      { speaker: '레온 (성검사)', avatar: '⚔️', text: '하계에 남겨졌던 자들의 슬픔이 마물들을 왜곡시켰던 것이었어...' },
       { speaker: '세레나 (백마도사)', avatar: '✨', text: '우리가 이 오랜 상처를 치유하고 결정을 되돌려 놓아야만 해요.' }
     ]
   },
@@ -197,7 +198,7 @@ export const STORY_ACTS: StoryAct[] = [
     ],
     outroDialog: [
       { speaker: '발렌 (흑마도사)', avatar: '🔮', text: '수호수가 정화되었다... 에제키엘은 마지막 의식을 치르기 위해 종언의 첨탑으로 향했다!' },
-      { speaker: '아르반 (전사)', avatar: '🛡️', text: '전 대륙의 비공정 편대와 함께 첨탑으로 총진격한다! 하늘의 추락을 반드시 막아야 한다!' }
+      { speaker: '레온 (성검사)', avatar: '⚔️', text: '전 대륙의 비공정 편대와 함께 첨탑으로 총진격한다! 하늘의 추락을 반드시 막아야 한다!' }
     ]
   },
   {
@@ -225,7 +226,7 @@ export const STORY_ACTS: StoryAct[] = [
     },
     introDialog: [
       { speaker: '에제키엘', avatar: '👑', text: '때가 되었다! 하늘이 무너지고 땅이 쪼개지며 완전한 무(無)의 조화가 도래하리라!' },
-      { speaker: '아르반 (전사)', avatar: '🛡️', text: '거짓된 신이여, 빛과 어둠, 하늘과 땅은 어느 하나의 파멸로 이루어지는 것이 아니다!' },
+      { speaker: '레온 (성검사)', avatar: '⚔️', text: '거짓된 신이여, 빛과 어둠, 하늘과 땅은 어느 하나의 파멸로 이루어지는 것이 아니다!' },
       { speaker: '세레나 & 렌', avatar: '✨', text: '우리 네 조율자의 영혼과 네 개의 시원 결정이 당신의 광기를 끝낼 것입니다!' }
     ],
     outroDialog: [

@@ -269,7 +269,21 @@ export class BattleScene extends Phaser.Scene {
 
   // 64비트 HD 스프라이트 상태 텍스처 변경 및 정밀 비율 유지 헬퍼
   private setHeroTexture(hero: HeroSpriteNode, state: string) {
-    hero.sprite.setTexture(`${hero.data.textureKey}_${state}`);
+    if (hero.data.job === 'warrior') {
+      if (state === 'idle' || state === '') {
+        hero.sprite.setTexture('leon_idle');
+      } else if (state === 'attack') {
+        hero.sprite.setTexture('leon_attack_sheet', 2);
+      } else if (state === 'hurt') {
+        hero.sprite.setTexture('leon_hurt_sheet', 0);
+      } else if (state === 'danger') {
+        hero.sprite.setTexture('leon_hurt_sheet', 2);
+      } else {
+        hero.sprite.setTexture('leon_idle');
+      }
+    } else {
+      hero.sprite.setTexture(`${hero.data.textureKey}_${state}`);
+    }
     hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
   }
 
@@ -314,12 +328,89 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  // 🌟 레온 전용 4프레임 공격 애니메이션 시퀀스 (준비 ➡️ 검 올리기 ➡️ 푸른 검기 참격 ➡️ 수습 및 복귀)
+  private executeLeonPhysicalAttack(hero: HeroSpriteNode, target: EnemyBattleUnitNode, damage: number) {
+    if (hero.shadow) hero.shadow.setVisible(false);
+
+    // 1. 공격 애니메이션 시작
+    hero.sprite.play('leon_anim_attack');
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+    // 2. 적 앞으로 쾌속 대시
+    this.tweens.add({
+      targets: hero.sprite,
+      x: 180,
+      y: target.baseY,
+      duration: 220,
+      ease: 'Power2',
+      onComplete: () => {
+        // Frame 2 (푸른 검기 베기) 시점 타격 효과
+        sfx.playSlash();
+        this.spawnVfx('vfx_slash', target.baseX, target.baseY);
+
+        this.cameras.main.shake(140, 0.012);
+        this.showDamagePopup(target.baseX, target.baseY - 20, damage, false);
+
+        target.data.hp = Math.max(0, target.data.hp - damage);
+
+        target.sprite.setTint(0xff7777);
+        this.time.delayedCall(120, () => target.sprite.clearTint());
+
+        EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+          text: `⚔️ 레온의 쾌검 일격! ${target.data.name}에게 ${damage}의 참격 피해!`,
+          type: 'player_attack'
+        });
+
+        // 타겟 피격 넉백
+        this.tweens.add({
+          targets: [target.sprite, target.shadow].filter(Boolean),
+          x: target.baseX - 12,
+          duration: 70,
+          yoyo: true
+        });
+
+        // Frame 3 완료 대기 후 원위치 귀환
+        this.time.delayedCall(180, () => {
+          this.tweens.add({
+            targets: hero.sprite,
+            x: hero.baseX,
+            y: hero.baseY,
+            duration: 220,
+            ease: 'Power2',
+            onComplete: () => {
+              hero.sprite.stop();
+              hero.sprite.setTexture('leon_idle');
+              hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+              if (hero.shadow) {
+                hero.shadow.setPosition(hero.baseX, hero.baseY + (hero.sprite.displayHeight / 2) - 3);
+                hero.shadow.setVisible(true);
+              }
+
+              if (target.data.hp <= 0) {
+                this.handleVictory();
+              } else {
+                this.resetHeroTurn(this.activeHeroIndex!);
+              }
+            }
+          });
+        });
+      }
+    });
+  }
+
   // [1] 물리 공격 (공격 프레임 전환 ➡️ 전진 대시 ➡️ 슬래시 VFX ➡️ 복귀)
   private executeHeroPhysicalAttack(hero: HeroSpriteNode) {
     const target = this.enemy!;
     const damage = Math.max(8, hero.data.atk - Math.floor(target.data.def / 2) + Phaser.Math.Between(2, 8));
 
-    // ⚔️ 공격 포즈 프레임으로 전환!
+    // 레온인 경우 전용 4프레임 참격 애니메이션 실행
+    if (hero.data.job === 'warrior') {
+      this.executeLeonPhysicalAttack(hero, target, damage);
+      return;
+    }
+
+    // ⚔️ 기타 영웅 공격 포즈 프레임으로 전환!
     this.setHeroTexture(hero, 'attack');
 
     // 타겟 앞으로 고속 대시 (X: 180)
@@ -379,9 +470,174 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // 🌟 레온 전용 4프레임 특수 공격 시퀀스 (황금 뇌광 오라 충전 ➡️ 공중 도약 ➡️ 급강하 지면 강타 ➡️ 착지 수습)
+  private executeLeonSkillAnimation(hero: HeroSpriteNode, target: EnemyBattleUnitNode, isHolyDrop: boolean) {
+    if (hero.shadow) hero.shadow.setVisible(false);
+
+    // 1단계: 황금 뇌광 기 모으기 (Frame 0)
+    hero.sprite.stop();
+    hero.sprite.setTexture('leon_skill_sheet', 0);
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+    // 황금 충전 오라 VFX
+    const aura = this.add.circle(hero.baseX, hero.baseY, 26, 0xfacc15, 0.6);
+    this.tweens.add({
+      targets: aura,
+      scale: 1.8,
+      alpha: 0,
+      duration: 320,
+      onComplete: () => aura.destroy()
+    });
+
+    sfx.playCursor();
+
+    EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+      text: `✨ 레온이 성검에 맹렬한 황금 뇌광을 충전합니다!`,
+      type: 'player_attack'
+    });
+
+    // 2단계: 공중 도약 (Frame 1)
+    this.time.delayedCall(260, () => {
+      hero.sprite.setTexture('leon_skill_sheet', 1);
+      hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+      // 적 머리 위 공중으로 솟구치기
+      this.tweens.add({
+        targets: hero.sprite,
+        x: target.baseX + 40,
+        y: target.baseY - 100,
+        duration: 320,
+        ease: 'Quad.easeOut',
+        onComplete: () => {
+          // 3단계: 급강하 지면 성검 강타 (Frame 2)
+          hero.sprite.setTexture('leon_skill_sheet', 2);
+          hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+          this.tweens.add({
+            targets: hero.sprite,
+            y: target.baseY,
+            duration: 120,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+              // 폭발 충격파 및 슬래시 VFX
+              sfx.playSlash();
+              this.cameras.main.shake(260, 0.018);
+
+              // 황금 팽창 충격파 링
+              const shockwave = this.add.circle(target.baseX, target.baseY, 20, 0xfde047, 0.85);
+              this.tweens.add({
+                targets: shockwave,
+                scale: 3.6,
+                alpha: 0,
+                duration: 360,
+                onComplete: () => shockwave.destroy()
+              });
+
+              this.spawnVfx('vfx_slash', target.baseX, target.baseY);
+
+              const damage = isHolyDrop
+                ? Math.floor(hero.data.atk * 2.5) + Phaser.Math.Between(18, 35)
+                : Math.floor(hero.data.atk * 1.5) + Phaser.Math.Between(8, 16);
+
+              this.showDamagePopup(target.baseX, target.baseY - 25, damage, true);
+              target.data.hp = Math.max(0, target.data.hp - damage);
+
+              target.sprite.setTint(0xff5555);
+              this.time.delayedCall(160, () => target.sprite.clearTint());
+
+              // 타겟 강한 넉백
+              this.tweens.add({
+                targets: [target.sprite, target.shadow].filter(Boolean),
+                x: target.baseX - 18,
+                duration: 90,
+                yoyo: true
+              });
+
+              EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+                text: `⚡ 레온의 [성검 낙하] 대폭발! 지면을 뒤흔들며 ${target.data.name}에게 ${damage}의 맹렬한 피해!`,
+                type: 'player_attack'
+              });
+
+              // 4단계: 착지 및 균열 수습 (Frame 3)
+              this.time.delayedCall(180, () => {
+                hero.sprite.setTexture('leon_skill_sheet', 3);
+                hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+                // 5단계: 원위치 복귀
+                this.time.delayedCall(260, () => {
+                  this.tweens.add({
+                    targets: hero.sprite,
+                    x: hero.baseX,
+                    y: hero.baseY,
+                    duration: 250,
+                    ease: 'Power2',
+                    onComplete: () => {
+                      hero.sprite.setTexture('leon_idle');
+                      hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+                      if (hero.shadow) {
+                        hero.shadow.setPosition(hero.baseX, hero.baseY + (hero.sprite.displayHeight / 2) - 3);
+                        hero.shadow.setVisible(true);
+                      }
+
+                      if (target.data.hp <= 0) {
+                        this.handleVictory();
+                      } else {
+                        this.resetHeroTurn(this.activeHeroIndex!);
+                      }
+                    }
+                  });
+                });
+              });
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // 🌟 레온 전용 피격 4프레임 애니메이션 (피격 섬광 ➡️ 넉백 ➡️ 지면 무릎 꿇기 ➡️ 대검 짚고 기립)
+  private playLeonHurtAnimation(hero: HeroSpriteNode, onComplete?: () => void) {
+    hero.sprite.stop();
+    hero.sprite.play('leon_anim_hurt');
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+    // 넉백 바운스
+    this.tweens.add({
+      targets: hero.sprite,
+      x: hero.baseX + 14,
+      duration: 110,
+      yoyo: true
+    });
+
+    hero.sprite.setTint(0xff7777);
+    this.time.delayedCall(150, () => hero.sprite.clearTint());
+
+    hero.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+      if (hero.data.hp <= 0 || hero.data.isDead) {
+        hero.sprite.setTexture('leon_hurt_sheet', 2);
+        hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+        hero.sprite.setTint(0x555555);
+        hero.sprite.setAlpha(0.35);
+      } else {
+        this.updateHeroIdleTexture(hero);
+      }
+      if (onComplete) onComplete();
+    });
+  }
+
   // [2] 직업별 마법 및 고유 스킬 실행 (VfxManager 연동)
   private executeHeroSkill(hero: HeroSpriteNode, skillId: string) {
     const target = this.enemy!;
+
+    // 🌟 레온 전용 비기: 성검 낙하 (Holy Drop) / 실드 배시
+    if (hero.data.job === 'warrior' && (skillId === 'holy_drop' || skillId === 'shield_bash')) {
+      const isHolyDrop = skillId === 'holy_drop';
+      hero.data.mp = Math.max(0, hero.data.mp - (isHolyDrop ? 16 : 8));
+      this.executeLeonSkillAnimation(hero, target, isHolyDrop);
+      return;
+    }
 
     // 몽크 비기: 백열각 (4연속 권격 타격)
     if (skillId === 'flurry') {
@@ -544,10 +800,14 @@ export class BattleScene extends Phaser.Scene {
           h.data.hp = Math.max(0, h.data.hp - finalDmg);
 
           // 피격 포즈 전환
-          h.sprite.setTexture(`${h.data.textureKey}_hurt`);
-          this.time.delayedCall(220, () => {
-            this.updateHeroIdleTexture(h);
-          });
+          if (h.data.job === 'warrior') {
+            this.playLeonHurtAnimation(h);
+          } else {
+            h.sprite.setTexture(`${h.data.textureKey}_hurt`);
+            this.time.delayedCall(220, () => {
+              this.updateHeroIdleTexture(h);
+            });
+          }
 
           this.showDamagePopup(h.baseX, h.baseY - 20, finalDmg, true);
           if (h.data.hp <= 0) {
@@ -590,16 +850,20 @@ export class BattleScene extends Phaser.Scene {
         this.showDamagePopup(targetHero.baseX, targetHero.baseY - 20, finalDmg, false);
 
         // 🌟 타겟 영웅 피격 붉은 점멸 및 피격 상태 전환
-        this.setHeroTexture(targetHero, 'hurt');
-        targetHero.sprite.setTint(0xff6666);
-        this.time.delayedCall(220, () => {
-          targetHero.sprite.clearTint();
-          if (targetHero.data.isDead) {
-            targetHero.sprite.setTint(0x555555);
-          } else {
-            this.updateHeroIdleTexture(targetHero);
-          }
-        });
+        if (targetHero.data.job === 'warrior') {
+          this.playLeonHurtAnimation(targetHero);
+        } else {
+          this.setHeroTexture(targetHero, 'hurt');
+          targetHero.sprite.setTint(0xff6666);
+          this.time.delayedCall(220, () => {
+            targetHero.sprite.clearTint();
+            if (targetHero.data.isDead) {
+              targetHero.sprite.setTint(0x555555);
+            } else {
+              this.updateHeroIdleTexture(targetHero);
+            }
+          });
+        }
 
         EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
           text: `💀 ${enemy.data.name}의 강력한 일격! ${targetHero.data.name}에게 ${finalDmg} 피해!`,

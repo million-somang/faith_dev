@@ -11,6 +11,12 @@ import bossKrakenImg from '../../assets/sprites/boss_kraken.png';
 import bossBahamutImg from '../../assets/sprites/boss_bahamut.png';
 import bossEzekielImg from '../../assets/sprites/boss_ezekiel.png';
 
+// 🌟 제 1주인공 레온(Leon) 전용 스프라이트 및 애니메이션 시트
+import leonIdleImg from '../../assets/sprites/leon/leon_idle.png';
+import leonAttackStrip from '../../assets/sprites/leon/leon_attack_strip4.png';
+import leonSkillStrip from '../../assets/sprites/leon/leon_skill_strip4.png';
+import leonHurtStrip from '../../assets/sprites/leon/leon_hurt_strip4.png';
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
@@ -33,6 +39,16 @@ export class BootScene extends Phaser.Scene {
       });
     });
 
+    // 🌟 레온 전용 애니메이션 스프라이트 시트 (프레임 크기: 320 x 520)
+    this.load.spritesheet('leon_attack_sheet', leonAttackStrip, { frameWidth: 320, frameHeight: 520 });
+    this.load.spritesheet('leon_skill_sheet', leonSkillStrip, { frameWidth: 320, frameHeight: 520 });
+    this.load.spritesheet('leon_hurt_sheet', leonHurtStrip, { frameWidth: 320, frameHeight: 520 });
+
+    // 레온 기본 스탠딩 텍스처
+    this.load.image('leon_idle', leonIdleImg);
+    this.load.image('hero_warrior_idle', leonIdleImg);
+    this.load.image('hero_warrior', leonIdleImg);
+
     this.load.image('boss_golem', bossGolemImg);
     this.load.image('boss_kraken', bossKrakenImg);
     this.load.image('boss_bahamut', bossBahamutImg);
@@ -43,8 +59,39 @@ export class BootScene extends Phaser.Scene {
     // 1. 마법 및 전투 VFX 텍스처 생성
     TextureGenerator.generateAll(this);
 
-    // 2. 64비트 HD 일러스트레이션 선형 안티앨리어싱 필터 적용
-    const allKeys: string[] = ['boss_golem', 'boss_kraken', 'boss_bahamut', 'boss_ezekiel'];
+    // 2. 🌟 레온 전투 애니메이션 등록 (Phaser Animation System)
+    if (!this.anims.exists('leon_anim_attack')) {
+      this.anims.create({
+        key: 'leon_anim_attack',
+        frames: this.anims.generateFrameNumbers('leon_attack_sheet', { start: 0, end: 3 }),
+        frameRate: 9,
+        repeat: 0,
+      });
+    }
+
+    if (!this.anims.exists('leon_anim_skill')) {
+      this.anims.create({
+        key: 'leon_anim_skill',
+        frames: this.anims.generateFrameNumbers('leon_skill_sheet', { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: 0,
+      });
+    }
+
+    if (!this.anims.exists('leon_anim_hurt')) {
+      this.anims.create({
+        key: 'leon_anim_hurt',
+        frames: this.anims.generateFrameNumbers('leon_hurt_sheet', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: 0,
+      });
+    }
+
+    // 3. 64비트 HD 일러스트레이션 선형 안티앨리어싱 필터 적용
+    const allKeys: string[] = [
+      'boss_golem', 'boss_kraken', 'boss_bahamut', 'boss_ezekiel',
+      'leon_idle', 'leon_attack_sheet', 'leon_skill_sheet', 'leon_hurt_sheet'
+    ];
     ['hero_warrior', 'hero_white_mage', 'hero_black_mage', 'hero_monk'].forEach((k) => {
       ['', '_idle', '_attack', '_danger', '_victory', '_hurt'].forEach((s) => {
         allKeys.push(`${k}${s}`);
@@ -57,10 +104,10 @@ export class BootScene extends Phaser.Scene {
       }
     });
 
-    // 3. React UI에 부트 완료 알림
+    // 4. React UI에 부트 완료 알림
     EventBus.emit(GAME_EVENTS.BOOT_COMPLETE);
 
-    // 4. BattleScene 기동
+    // 5. BattleScene 기동
     this.scene.start('BattleScene');
   }
 }
