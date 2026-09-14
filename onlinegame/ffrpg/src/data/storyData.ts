@@ -23,7 +23,7 @@ export const INITIAL_HEROES: HeroBattleUnit[] = [
   },
   {
     id: 'hero-2',
-    name: '세레나',
+    name: '세리아',
     job: 'white_mage',
     title: '자애의 백마도사',
     level: 3,
@@ -38,7 +38,7 @@ export const INITIAL_HEROES: HeroBattleUnit[] = [
     atb: 40,
     isDefending: false,
     isDead: false,
-    textureKey: 'hero_white_mage',
+    textureKey: 'hero_seria',
   },
   {
     id: 'hero-3',
@@ -132,7 +132,7 @@ export const STORY_ACTS: StoryAct[] = [
     ],
     outroDialog: [
       { speaker: '렌 (몽크)', avatar: '🥋', text: '골렘을 쓰러뜨렸다! 비공정 동력 코어가 다시 푸른빛으로 공명하기 시작했어!' },
-      { speaker: '세레나 (백마도사)', avatar: '✨', text: '비공정의 시동이 걸렸습니다. 이제 찢겨진 구름 장벽을 뚫고 잊힌 하계로 강하할 때입니다.' }
+      { speaker: '세리아 (백마도사)', avatar: '✨', text: '비공정의 시동이 걸렸습니다. 이제 찢겨진 구름 장벽을 뚫고 잊힌 하계로 강하할 때입니다.' }
     ]
   },
   {
@@ -165,7 +165,7 @@ export const STORY_ACTS: StoryAct[] = [
     ],
     outroDialog: [
       { speaker: '레온 (성검사)', avatar: '⚔️', text: '하계에 남겨졌던 자들의 슬픔이 마물들을 왜곡시켰던 것이었어...' },
-      { speaker: '세레나 (백마도사)', avatar: '✨', text: '우리가 이 오랜 상처를 치유하고 결정을 되돌려 놓아야만 해요.' }
+      { speaker: '세리아 (백마도사)', avatar: '✨', text: '우리가 이 오랜 상처를 치유하고 결정을 되돌려 놓아야만 해요.' }
     ]
   },
   {
@@ -227,7 +227,7 @@ export const STORY_ACTS: StoryAct[] = [
     introDialog: [
       { speaker: '에제키엘', avatar: '👑', text: '때가 되었다! 하늘이 무너지고 땅이 쪼개지며 완전한 무(無)의 조화가 도래하리라!' },
       { speaker: '레온 (성검사)', avatar: '⚔️', text: '거짓된 신이여, 빛과 어둠, 하늘과 땅은 어느 하나의 파멸로 이루어지는 것이 아니다!' },
-      { speaker: '세레나 & 렌', avatar: '✨', text: '우리 네 조율자의 영혼과 네 개의 시원 결정이 당신의 광기를 끝낼 것입니다!' }
+      { speaker: '세리아 & 렌', avatar: '✨', text: '우리 네 조율자의 영혼과 네 개의 시원 결정이 당신의 광기를 끝낼 것입니다!' }
     ],
     outroDialog: [
       { speaker: '시스템 알림', avatar: '🎉', text: '대사제 에제키엘을 저지했습니다! 조율자들이 네 개의 결정을 하나로 융합합니다.' },

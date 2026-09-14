@@ -17,15 +17,20 @@ import leonAttackStrip from '../../assets/sprites/leon/leon_attack_strip4.png';
 import leonSkillStrip from '../../assets/sprites/leon/leon_skill_strip4.png';
 import leonHurtStrip from '../../assets/sprites/leon/leon_hurt_strip4.png';
 
+// 🌟 제 2주인공 세리아(Seria) 전용 스프라이트 및 애니메이션 시트
+import seriaIdleImg from '../../assets/sprites/seria/seria_idle.png';
+import seriaAttackStrip from '../../assets/sprites/seria/seria_attack_strip4.png';
+import seriaSkillStrip from '../../assets/sprites/seria/seria_skill_strip4.png';
+import seriaHurtStrip from '../../assets/sprites/seria/seria_hurt_strip4.png';
+
 export class BootScene extends Phaser.Scene {
   constructor() {
     super({ key: 'BootScene' });
   }
 
   preload() {
-    // 64비트 고해상도 HD 영웅 모든 상태별 프리로드 (백마도사, 흑마도사, 몽크)
+    // 64비트 고해상도 HD 영웅 모든 상태별 프리로드 (흑마도사, 몽크)
     const heroPairs = [
-      { key: 'hero_white_mage', img: whiteMageImg },
       { key: 'hero_black_mage', img: blackMageImg },
       { key: 'hero_monk', img: monkImg },
     ];
@@ -51,6 +56,21 @@ export class BootScene extends Phaser.Scene {
     ];
     leonKeys.forEach(k => {
       this.load.image(k, leonIdleImg);
+    });
+
+    // 🌟 제 2주인공 세리아(Seria) 전용 애니메이션 스프라이트 시트 (프레임 크기: 320 x 520)
+    this.load.spritesheet('seria_attack_sheet', seriaAttackStrip, { frameWidth: 320, frameHeight: 520 });
+    this.load.spritesheet('seria_skill_sheet', seriaSkillStrip, { frameWidth: 320, frameHeight: 520 });
+    this.load.spritesheet('seria_hurt_sheet', seriaHurtStrip, { frameWidth: 320, frameHeight: 520 });
+
+    // 세리아 기본 스탠딩 및 호환 텍스처 전면 등록 (hero_seria 및 hero_white_mage의 모든 상태)
+    const seriaKeys = [
+      'seria_idle',
+      'hero_seria', 'hero_seria_idle', 'hero_seria_attack', 'hero_seria_danger', 'hero_seria_victory', 'hero_seria_hurt',
+      'hero_white_mage', 'hero_white_mage_idle', 'hero_white_mage_attack', 'hero_white_mage_danger', 'hero_white_mage_victory', 'hero_white_mage_hurt'
+    ];
+    seriaKeys.forEach(k => {
+      this.load.image(k, seriaIdleImg);
     });
 
     this.load.image('boss_golem', bossGolemImg);
@@ -91,10 +111,39 @@ export class BootScene extends Phaser.Scene {
       });
     }
 
+    // 🌟 세리아 전투 애니메이션 등록 (Phaser Animation System)
+    if (!this.anims.exists('seria_anim_attack')) {
+      this.anims.create({
+        key: 'seria_anim_attack',
+        frames: this.anims.generateFrameNumbers('seria_attack_sheet', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: 0,
+      });
+    }
+
+    if (!this.anims.exists('seria_anim_skill')) {
+      this.anims.create({
+        key: 'seria_anim_skill',
+        frames: this.anims.generateFrameNumbers('seria_skill_sheet', { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: 0,
+      });
+    }
+
+    if (!this.anims.exists('seria_anim_hurt')) {
+      this.anims.create({
+        key: 'seria_anim_hurt',
+        frames: this.anims.generateFrameNumbers('seria_hurt_sheet', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: 0,
+      });
+    }
+
     // 3. 64비트 HD 일러스트레이션 선형 안티앨리어싱 필터 적용
     const allKeys: string[] = [
       'boss_golem', 'boss_kraken', 'boss_bahamut', 'boss_ezekiel',
-      'leon_idle', 'leon_attack_sheet', 'leon_skill_sheet', 'leon_hurt_sheet'
+      'leon_idle', 'leon_attack_sheet', 'leon_skill_sheet', 'leon_hurt_sheet',
+      'seria_idle', 'seria_attack_sheet', 'seria_skill_sheet', 'seria_hurt_sheet'
     ];
     ['hero_warrior', 'hero_white_mage', 'hero_black_mage', 'hero_monk'].forEach((k) => {
       ['', '_idle', '_attack', '_danger', '_victory', '_hurt'].forEach((s) => {

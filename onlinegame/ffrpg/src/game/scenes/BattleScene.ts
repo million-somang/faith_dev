@@ -167,10 +167,11 @@ export class BattleScene extends Phaser.Scene {
 
       // 🌟 64비트 HD 일러스트레이션 스프라이트 (높이 84px 기준 비례 유지)
       const isLeon = heroData.job === 'warrior' || heroData.textureKey === 'hero_leon' || heroData.id === 'hero-1';
-      const initialTexture = isLeon ? 'leon_idle' : `${heroData.textureKey}_idle`;
+      const isSeria = heroData.job === 'white_mage' || heroData.textureKey === 'hero_seria' || heroData.id === 'hero-2';
+      const initialTexture = isLeon ? 'leon_idle' : (isSeria ? 'seria_idle' : `${heroData.textureKey}_idle`);
       const sprite = this.add.sprite(pos.x, pos.y, initialTexture);
       const heroTargetHeight = 84;
-      const heroAspect = isLeon ? (320 / 520) : (sprite.width > 0 ? sprite.width / sprite.height : 0.8);
+      const heroAspect = (isLeon || isSeria) ? (320 / 520) : (sprite.width > 0 ? sprite.width / sprite.height : 0.8);
       const heroTargetWidth = Math.round(heroTargetHeight * heroAspect);
       sprite.setDisplaySize(heroTargetWidth, heroTargetHeight);
 
@@ -282,6 +283,18 @@ export class BattleScene extends Phaser.Scene {
         hero.sprite.setTexture('leon_hurt_sheet', 2);
       } else {
         hero.sprite.setTexture('leon_idle');
+      }
+    } else if (hero.data.job === 'white_mage') {
+      if (state === 'idle' || state === '') {
+        hero.sprite.setTexture('seria_idle');
+      } else if (state === 'attack') {
+        hero.sprite.setTexture('seria_attack_sheet', 2);
+      } else if (state === 'hurt') {
+        hero.sprite.setTexture('seria_hurt_sheet', 0);
+      } else if (state === 'danger') {
+        hero.sprite.setTexture('seria_hurt_sheet', 2);
+      } else {
+        hero.sprite.setTexture('seria_idle');
       }
     } else {
       hero.sprite.setTexture(`${hero.data.textureKey}_${state}`);
@@ -401,6 +414,98 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // 🌟 세리아 전용 4프레임 마법 공격 시퀀스 (준비 ➡️ 지팡이 영창 ➡️ 마법탄 발사 ➡️ 착지 수습)
+  private executeSeriaAttack(hero: HeroSpriteNode, target: EnemyBattleUnitNode, damage: number) {
+    // 1. 앞으로 반 걸음 전진
+    this.tweens.add({
+      targets: [hero.sprite, hero.indicator, hero.shadow].filter(Boolean),
+      x: hero.baseX - 25,
+      duration: 150,
+      ease: 'Power2',
+      onComplete: () => {
+        // 2. 공격 애니메이션 재생 시작 (Frame 0: 준비 -> Frame 1: 지팡이 치켜들기)
+        hero.sprite.play('seria_anim_attack');
+        hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+        sfx.playCursor();
+
+        // 3. Frame 2 시점 (240ms 후): 지팡이에서 마법 구체 투척!
+        this.time.delayedCall(240, () => {
+          // 비행 마법탄 생성 (cyan/yellow 빛나는 구체)
+          const orb = this.add.circle(hero.sprite.x - 25, hero.sprite.y - 12, 7, 0x38bdf8, 0.9);
+          const orbGlow = this.add.circle(hero.sprite.x - 25, hero.sprite.y - 12, 13, 0xfde047, 0.5);
+
+          // 마법탄 고속 비행 트윈
+          this.tweens.add({
+            targets: [orb, orbGlow],
+            x: target.baseX + 15,
+            y: target.baseY,
+            duration: 180,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+              orb.destroy();
+              orbGlow.destroy();
+
+              // 타겟 타격 폭발
+              sfx.playSlash();
+              this.spawnVfx('vfx_slash', target.baseX, target.baseY);
+
+              // 섬광 링 파티클
+              const burstRing = this.add.circle(target.baseX, target.baseY, 15, 0x38bdf8, 0.8);
+              this.tweens.add({
+                targets: burstRing,
+                scale: 2.5,
+                alpha: 0,
+                duration: 250,
+                onComplete: () => burstRing.destroy()
+              });
+
+              this.cameras.main.shake(120, 0.009);
+              this.showDamagePopup(target.baseX, target.baseY - 20, damage, false);
+              target.data.hp = Math.max(0, target.data.hp - damage);
+
+              target.sprite.setTint(0xff7777);
+              this.time.delayedCall(120, () => target.sprite.clearTint());
+
+              EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+                text: `✨ 세리아의 신성 마법탄 명중! ${target.data.name}에게 ${damage}의 마법 피해!`,
+                type: 'player_attack'
+              });
+
+              // 타겟 피격 넉백
+              this.tweens.add({
+                targets: [target.sprite, target.shadow].filter(Boolean),
+                x: target.baseX - 10,
+                duration: 70,
+                yoyo: true
+              });
+
+              // 4. 애니메이션 완료 후 원위치 귀환
+              this.time.delayedCall(200, () => {
+                this.tweens.add({
+                  targets: [hero.sprite, hero.indicator, hero.shadow].filter(Boolean),
+                  x: hero.baseX,
+                  duration: 200,
+                  ease: 'Power2',
+                  onComplete: () => {
+                    hero.sprite.stop();
+                    hero.sprite.setTexture('seria_idle');
+                    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+                    if (target.data.hp <= 0) {
+                      this.handleVictory();
+                    } else {
+                      this.resetHeroTurn(this.activeHeroIndex!);
+                    }
+                  }
+                });
+              });
+            }
+          });
+        });
+      }
+    });
+  }
+
   // [1] 물리 공격 (공격 프레임 전환 ➡️ 전진 대시 ➡️ 슬래시 VFX ➡️ 복귀)
   private executeHeroPhysicalAttack(hero: HeroSpriteNode) {
     const target = this.enemy!;
@@ -409,6 +514,12 @@ export class BattleScene extends Phaser.Scene {
     // 레온인 경우 전용 4프레임 참격 애니메이션 실행
     if (hero.data.job === 'warrior') {
       this.executeLeonPhysicalAttack(hero, target, damage);
+      return;
+    }
+
+    // 세리아(백마도사)인 경우 전용 4프레임 마법탄 발사 애니메이션 실행
+    if (hero.data.job === 'white_mage') {
+      this.executeSeriaAttack(hero, target, damage);
       return;
     }
 
@@ -629,6 +740,106 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
+  // 🌟 세리아 전용 4프레임 신성 치유/스킬 시퀀스 (기도 ➡️ 오라 상승 ➡️ 지팡이 성광 대폭발 ➡️ 자애로운 회복)
+  private executeSeriaSkillAnimation(hero: HeroSpriteNode, _skillId: string) {
+    hero.data.mp = Math.max(0, hero.data.mp - 14);
+
+    const wounded = this.heroes
+      .filter(h => !h.data.isDead)
+      .sort((a, b) => (a.data.hp / a.data.maxHp) - (b.data.hp / b.data.maxHp))[0] || hero;
+
+    const healAmount = 85 + Phaser.Math.Between(5, 15);
+
+    // 1단계: 기도 자세 (Frame 0)
+    hero.sprite.stop();
+    hero.sprite.setTexture('seria_skill_sheet', 0);
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+    sfx.playCursor();
+
+    EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+      text: `🕊️ 세리아가 두 손을 모아 빛의 기도를 올립니다...`,
+      type: 'heal'
+    });
+
+    // 2단계: 신성 오라 융기 (Frame 1: 260ms 후)
+    this.time.delayedCall(260, () => {
+      hero.sprite.setTexture('seria_skill_sheet', 1);
+      hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+      // 발밑 에메랄드/골든 오라 기둥
+      const auraRing = this.add.ellipse(hero.baseX, hero.baseY + 25, 36, 12, 0x4ade80, 0.6);
+      this.tweens.add({
+        targets: auraRing,
+        scaleX: 1.8,
+        scaleY: 1.8,
+        alpha: 0,
+        duration: 350,
+        onComplete: () => auraRing.destroy()
+      });
+
+      // 3단계: 지팡이 성광 및 생명의 축복 대폭발 (Frame 2: 300ms 후)
+      this.time.delayedCall(300, () => {
+        hero.sprite.setTexture('seria_skill_sheet', 2);
+        hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+        // 대상 영웅 위치에 신성 힐 VFX 발동!
+        VfxManager.playHealVfx(this, wounded.baseX, wounded.baseY, () => {
+          wounded.data.hp = Math.min(wounded.data.maxHp, wounded.data.hp + healAmount);
+          this.updateHeroIdleTexture(wounded);
+          this.showDamagePopup(wounded.baseX, wounded.baseY - 20, healAmount, false, true);
+
+          EventBus.emit(GAME_EVENTS.LOG_MESSAGE, {
+            text: `✨ 세리아의 [케알라] 영창! 성광의 은총으로 ${wounded.data.name}의 HP가 ${healAmount} 회복되었습니다.`,
+            type: 'heal'
+          });
+
+          // 4단계: 자애로운 미소 및 수습 (Frame 3: 200ms 후)
+          this.time.delayedCall(200, () => {
+            hero.sprite.setTexture('seria_skill_sheet', 3);
+            hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+            this.time.delayedCall(350, () => {
+              hero.sprite.setTexture('seria_idle');
+              hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+              this.resetHeroTurn(this.activeHeroIndex!);
+            });
+          });
+        });
+      });
+    });
+  }
+
+  // 🌟 세리아 전용 피격 4프레임 애니메이션 (피격 섬광 ➡️ 공중 넉백 ➡️ 무릎 꿇기 ➡️ 당당한 기립)
+  private playSeriaHurtAnimation(hero: HeroSpriteNode, onComplete?: () => void) {
+    hero.sprite.stop();
+    hero.sprite.play('seria_anim_hurt');
+    hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+
+    // 넉백 바운스
+    this.tweens.add({
+      targets: hero.sprite,
+      x: hero.baseX + 12,
+      duration: 100,
+      yoyo: true
+    });
+
+    hero.sprite.setTint(0xff7777);
+    this.time.delayedCall(140, () => hero.sprite.clearTint());
+
+    hero.sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+      if (hero.data.hp <= 0 || hero.data.isDead) {
+        hero.sprite.setTexture('seria_hurt_sheet', 2);
+        hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+        hero.sprite.setTint(0x555555);
+        hero.sprite.setAlpha(0.35);
+      } else {
+        this.updateHeroIdleTexture(hero);
+      }
+      if (onComplete) onComplete();
+    });
+  }
+
   // [2] 직업별 마법 및 고유 스킬 실행 (VfxManager 연동)
   private executeHeroSkill(hero: HeroSpriteNode, skillId: string) {
     const target = this.enemy!;
@@ -638,6 +849,12 @@ export class BattleScene extends Phaser.Scene {
       const isHolyDrop = skillId === 'holy_drop';
       hero.data.mp = Math.max(0, hero.data.mp - (isHolyDrop ? 16 : 8));
       this.executeLeonSkillAnimation(hero, target, isHolyDrop);
+      return;
+    }
+
+    // 🌟 세리아(백마도사): 케알라 (성광 치유) / 프로테스
+    if (hero.data.job === 'white_mage' && (skillId === 'cure' || skillId === 'protect')) {
+      this.executeSeriaSkillAnimation(hero, skillId);
       return;
     }
 
@@ -804,6 +1021,8 @@ export class BattleScene extends Phaser.Scene {
           // 피격 포즈 전환
           if (h.data.job === 'warrior') {
             this.playLeonHurtAnimation(h);
+          } else if (h.data.job === 'white_mage') {
+            this.playSeriaHurtAnimation(h);
           } else {
             h.sprite.setTexture(`${h.data.textureKey}_hurt`);
             this.time.delayedCall(220, () => {
@@ -854,6 +1073,8 @@ export class BattleScene extends Phaser.Scene {
         // 🌟 타겟 영웅 피격 붉은 점멸 및 피격 상태 전환
         if (targetHero.data.job === 'warrior') {
           this.playLeonHurtAnimation(targetHero);
+        } else if (targetHero.data.job === 'white_mage') {
+          this.playSeriaHurtAnimation(targetHero);
         } else {
           this.setHeroTexture(targetHero, 'hurt');
           targetHero.sprite.setTint(0xff6666);
