@@ -171,7 +171,7 @@ export class BattleScene extends Phaser.Scene {
       const initialTexture = isLeon ? 'leon_idle' : (isSeria ? 'seria_idle' : `${heroData.textureKey}_idle`);
       const sprite = this.add.sprite(pos.x, pos.y, initialTexture);
       const heroTargetHeight = 84;
-      const heroAspect = (isLeon || isSeria) ? (320 / 520) : (sprite.width > 0 ? sprite.width / sprite.height : 0.8);
+      const heroAspect = isLeon ? (320 / 520) : (isSeria ? (340 / 540) : (sprite.width > 0 ? sprite.width / sprite.height : 0.8));
       const heroTargetWidth = Math.round(heroTargetHeight * heroAspect);
       sprite.setDisplaySize(heroTargetWidth, heroTargetHeight);
 
@@ -416,6 +416,7 @@ export class BattleScene extends Phaser.Scene {
 
   // 🌟 세리아 전용 4프레임 마법 공격 시퀀스 (준비 ➡️ 지팡이 영창 ➡️ 마법탄 발사 ➡️ 착지 수습)
   private executeSeriaAttack(hero: HeroSpriteNode, target: EnemyBattleUnitNode, damage: number) {
+    if (hero.idleTween) hero.idleTween.pause();
     // 1. 앞으로 반 걸음 전진
     this.tweens.add({
       targets: [hero.sprite, hero.indicator, hero.shadow].filter(Boolean),
@@ -490,6 +491,7 @@ export class BattleScene extends Phaser.Scene {
                     hero.sprite.stop();
                     hero.sprite.setTexture('seria_idle');
                     hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+                    if (hero.idleTween) hero.idleTween.resume();
 
                     if (target.data.hp <= 0) {
                       this.handleVictory();
@@ -742,6 +744,7 @@ export class BattleScene extends Phaser.Scene {
 
   // 🌟 세리아 전용 4프레임 신성 치유/스킬 시퀀스 (기도 ➡️ 오라 상승 ➡️ 지팡이 성광 대폭발 ➡️ 자애로운 회복)
   private executeSeriaSkillAnimation(hero: HeroSpriteNode, _skillId: string) {
+    if (hero.idleTween) hero.idleTween.pause();
     hero.data.mp = Math.max(0, hero.data.mp - 14);
 
     const wounded = this.heroes
@@ -801,6 +804,7 @@ export class BattleScene extends Phaser.Scene {
             this.time.delayedCall(350, () => {
               hero.sprite.setTexture('seria_idle');
               hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
+              if (hero.idleTween) hero.idleTween.resume();
               this.resetHeroTurn(this.activeHeroIndex!);
             });
           });
@@ -811,6 +815,7 @@ export class BattleScene extends Phaser.Scene {
 
   // 🌟 세리아 전용 피격 4프레임 애니메이션 (피격 섬광 ➡️ 공중 넉백 ➡️ 무릎 꿇기 ➡️ 당당한 기립)
   private playSeriaHurtAnimation(hero: HeroSpriteNode, onComplete?: () => void) {
+    if (hero.idleTween) hero.idleTween.pause();
     hero.sprite.stop();
     hero.sprite.play('seria_anim_hurt');
     hero.sprite.setDisplaySize(hero.targetWidth, hero.targetHeight);
@@ -836,6 +841,7 @@ export class BattleScene extends Phaser.Scene {
       } else {
         this.updateHeroIdleTexture(hero);
       }
+      if (hero.idleTween) hero.idleTween.resume();
       if (onComplete) onComplete();
     });
   }

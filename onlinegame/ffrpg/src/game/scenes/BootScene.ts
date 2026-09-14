@@ -58,10 +58,10 @@ export class BootScene extends Phaser.Scene {
       this.load.image(k, leonIdleImg);
     });
 
-    // 🌟 제 2주인공 세리아(Seria) 전용 애니메이션 스프라이트 시트 (프레임 크기: 320 x 520)
-    this.load.spritesheet('seria_attack_sheet', seriaAttackStrip, { frameWidth: 320, frameHeight: 520 });
-    this.load.spritesheet('seria_skill_sheet', seriaSkillStrip, { frameWidth: 320, frameHeight: 520 });
-    this.load.spritesheet('seria_hurt_sheet', seriaHurtStrip, { frameWidth: 320, frameHeight: 520 });
+    // 🌟 제 2주인공 세리아(Seria) 전용 애니메이션 스프라이트 시트 (프레임 크기: 340 x 540)
+    this.load.spritesheet('seria_attack_sheet', seriaAttackStrip, { frameWidth: 340, frameHeight: 540 });
+    this.load.spritesheet('seria_skill_sheet', seriaSkillStrip, { frameWidth: 340, frameHeight: 540 });
+    this.load.spritesheet('seria_hurt_sheet', seriaHurtStrip, { frameWidth: 340, frameHeight: 540 });
 
     // 세리아 기본 스탠딩 및 호환 텍스처 전면 등록 (hero_seria 및 hero_white_mage의 모든 상태)
     const seriaKeys = [
