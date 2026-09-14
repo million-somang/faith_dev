@@ -155,38 +155,57 @@ export function App() {
     return () => clearInterval(timer);
   }, [showSplash, winner, isAiThinking, currentTurn, gameMode]);
 
+  // AI 및 최신 보드 참조용 Refs (React 리렌더링 클린업에 의한 타이머 취소 방지)
+  const boardRef = useRef(board);
+  boardRef.current = board;
+  const currentTurnRef = useRef(currentTurn);
+  currentTurnRef.current = currentTurn;
+  const aiRunningRef = useRef(false);
+
   // AI 자동 착수 루프
   useEffect(() => {
-    if (showSplash || winner || isAiThinking) return;
+    if (showSplash || winner) return;
 
-    // 1인용 AI 대국 모드: 상대방 턴일 때 AI 작동
     const isAiTurn = currentTurn !== playerSide && gameMode !== 'puzzle';
-
-    if (isAiTurn) {
-      setIsAiThinking(true);
-      const thinkDuration = aiDifficulty === 'hard' ? 700 : aiDifficulty === 'normal' ? 500 : 350;
-
-      const timer = setTimeout(() => {
-        const bestMove = findBestMove(board, currentTurn, aiDifficulty, cols, rows);
-
-        if (!bestMove) {
-          // AI가 둘 수 있는 수가 없음 -> 외통수 패배
-          const winSide: Side = currentTurn === 'cho' ? 'han' : 'cho';
-          setWinner(winSide);
-          setWinReason(`외통수 (장군을 피할 수 없음)`);
-          soundEffects.playVictory();
-          setIsAiThinking(false);
-          return;
-        }
-
-        // AI 착수 실행
-        executeMove(bestMove.from, bestMove.to, true);
-        setIsAiThinking(false);
-      }, thinkDuration);
-
-      return () => clearTimeout(timer);
+    if (!isAiTurn) {
+      aiRunningRef.current = false;
+      setIsAiThinking(false);
+      return;
     }
-  }, [board, currentTurn, playerSide, winner, showSplash, isAiThinking, aiDifficulty, gameMode, cols, rows]);
+
+    if (aiRunningRef.current) return;
+    aiRunningRef.current = true;
+    setIsAiThinking(true);
+
+    const thinkDuration = aiDifficulty === 'hard' ? 650 : aiDifficulty === 'normal' ? 450 : 300;
+
+    const timer = setTimeout(() => {
+      const activeBoard = boardRef.current;
+      const activeTurn = currentTurnRef.current;
+
+      const bestMove = findBestMove(activeBoard, activeTurn, aiDifficulty, cols, rows);
+
+      if (!bestMove) {
+        // AI가 둘 수 있는 수가 없음 -> 외통수 패배
+        const winSide: Side = activeTurn === 'cho' ? 'han' : 'cho';
+        setWinner(winSide);
+        setWinReason('외통수 (장군을 피할 수 없음)');
+        soundEffects.playVictory();
+        aiRunningRef.current = false;
+        setIsAiThinking(false);
+        return;
+      }
+
+      // AI 착수 실행
+      executeMove(bestMove.from, bestMove.to, true);
+      aiRunningRef.current = false;
+      setIsAiThinking(false);
+    }, thinkDuration);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [currentTurn, playerSide, winner, showSplash, gameMode, cols, rows, aiDifficulty]);
 
   // 실제 기물 이동 실행
   const executeMove = (from: Position, to: Position, isAi = false) => {

@@ -24,8 +24,8 @@ export function evaluateBoard(board: (Piece | null)[][], cols = 9, rows = 10): n
 
         // 위치 가산점 (중앙 지배 및 졸/병 전진 가산점)
         if (p.type === 'soldier') {
-          // 전진할수록 가치 상승
-          const advance = p.side === 'cho' ? r : (rows - 1 - r);
+          // 전진할수록 가치 상승 (초는 위로, 한은 아래로 전진)
+          const advance = p.side === 'cho' ? (rows - 1 - r) : r;
           pieceVal += advance * 3;
         } else if (p.type === 'horse' || p.type === 'elephant') {
           // 중앙에 가까울수록 활발한 활동력

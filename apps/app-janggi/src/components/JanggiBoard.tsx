@@ -495,13 +495,13 @@ export function JanggiBoard({
         <div className="flex items-center justify-between pt-2 px-1 text-[11px] font-bold text-[#5c3c1f]">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-[#059669] shadow-xs" />
-            <span className="text-[#065f46] font-black">楚 초나라 (선공)</span>
+            <span className="text-[#065f46] font-black">내 진영: 楚 (하단 선공)</span>
           </div>
           <div className="text-[10px] text-[#785331] font-mono tracking-tight">
             {cols === 9 ? '정규 9×10 한국 장기' : '7×7 미니 장기'}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[#991b1b] font-black">漢 한나라 (후공 +1.5점)</span>
+            <span className="text-[#991b1b] font-black">컴퓨터: 漢 (상단 후공 +1.5점)</span>
             <span className="w-2.5 h-2.5 rounded-full bg-[#dc2626] shadow-xs" />
           </div>
         </div>

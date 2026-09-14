@@ -14,17 +14,17 @@ export const PIECE_VALUES = {
 // 정규 9×10 궁성 좌표 판별
 export function isPalace(x: number, y: number, cols = 9): boolean {
   if (cols === 9) {
-    // 9×10 정규 보드
+    // 9×10 정규 보드: 한나라(위 y: 0~2), 초나라(아래 y: 7~9)
     const inX = x >= 3 && x <= 5;
-    const inChoY = y >= 0 && y <= 2; // 초나라 궁성
-    const inHanY = y >= 7 && y <= 9; // 한나라 궁성
-    return inX && (inChoY || inHanY);
+    const inHanY = y >= 0 && y <= 2; // 한나라 궁성 (상단)
+    const inChoY = y >= 7 && y <= 9; // 초나라 궁성 (하단)
+    return inX && (inHanY || inChoY);
   } else {
-    // 7×7 미니 보드
+    // 7×7 미니 보드: 한나라(위 y: 0~2), 초나라(아래 y: 4~6)
     const inX = x >= 2 && x <= 4;
-    const inChoY = y >= 0 && y <= 2;
-    const inHanY = y >= 4 && y <= 6;
-    return inX && (inChoY || inHanY);
+    const inHanY = y >= 0 && y <= 2;
+    const inChoY = y >= 4 && y <= 6;
+    return inX && (inHanY || inChoY);
   }
 }
 
@@ -53,6 +53,7 @@ export function isPalaceCorner(x: number, y: number, cols = 9): boolean {
 }
 
 // 초기 보드 생성 (정규 9×10)
+// 한국 정통 장기 표준: 한(漢, 컴퓨터/후공) 상단 y=0~3, 초(楚, 플레이어/선공) 하단 y=6~9
 export function createClassicBoard(choSetup: SetupType = 'masangsangma', hanSetup: SetupType = 'masangsangma'): (Piece | null)[][] {
   const board: (Piece | null)[][] = Array.from({ length: 10 }, () => Array(9).fill(null));
 
@@ -74,84 +75,84 @@ export function createClassicBoard(choSetup: SetupType = 'masangsangma', hanSetu
     }));
   };
 
-  // 초(楚) 기물 배치 (y=0~3)
-  const choBottom = getRowArrangement(choSetup, 'cho');
-  board[0][0] = { id: 'cho_chariot_1', type: 'chariot', side: 'cho' };
-  board[0][1] = choBottom[0];
-  board[0][2] = choBottom[1];
-  board[0][3] = { id: 'cho_guard_1', type: 'guard', side: 'cho' };
-  board[0][5] = { id: 'cho_guard_2', type: 'guard', side: 'cho' };
-  board[0][6] = choBottom[2];
-  board[0][7] = choBottom[3];
-  board[0][8] = { id: 'cho_chariot_2', type: 'chariot', side: 'cho' };
+  // 1. 한(漢) 기물 배치 (상단 y=0~3)
+  const hanArr = getRowArrangement(hanSetup, 'han');
+  board[0][0] = { id: 'han_chariot_1', type: 'chariot', side: 'han' };
+  board[0][1] = hanArr[0];
+  board[0][2] = hanArr[1];
+  board[0][3] = { id: 'han_guard_1', type: 'guard', side: 'han' };
+  board[0][5] = { id: 'han_guard_2', type: 'guard', side: 'han' };
+  board[0][6] = hanArr[2];
+  board[0][7] = hanArr[3];
+  board[0][8] = { id: 'han_chariot_2', type: 'chariot', side: 'han' };
 
-  board[1][4] = { id: 'cho_king', type: 'king', side: 'cho' };
+  board[1][4] = { id: 'han_king', type: 'king', side: 'han' };
 
-  board[2][1] = { id: 'cho_cannon_1', type: 'cannon', side: 'cho' };
-  board[2][7] = { id: 'cho_cannon_2', type: 'cannon', side: 'cho' };
+  board[2][1] = { id: 'han_cannon_1', type: 'cannon', side: 'han' };
+  board[2][7] = { id: 'han_cannon_2', type: 'cannon', side: 'han' };
 
   [0, 2, 4, 6, 8].forEach((x, i) => {
-    board[3][x] = { id: `cho_soldier_${i}`, type: 'soldier', side: 'cho' };
+    board[3][x] = { id: `han_soldier_${i}`, type: 'soldier', side: 'han' };
   });
 
-  // 한(漢) 기물 배치 (y=6~9)
+  // 2. 초(楚) 기물 배치 (하단 y=6~9)
   [0, 2, 4, 6, 8].forEach((x, i) => {
-    board[6][x] = { id: `han_soldier_${i}`, type: 'soldier', side: 'han' };
+    board[6][x] = { id: `cho_soldier_${i}`, type: 'soldier', side: 'cho' };
   });
 
-  board[7][1] = { id: 'han_cannon_1', type: 'cannon', side: 'han' };
-  board[7][7] = { id: 'han_cannon_2', type: 'cannon', side: 'han' };
+  board[7][1] = { id: 'cho_cannon_1', type: 'cannon', side: 'cho' };
+  board[7][7] = { id: 'cho_cannon_2', type: 'cannon', side: 'cho' };
 
-  board[8][4] = { id: 'han_king', type: 'king', side: 'han' };
+  board[8][4] = { id: 'cho_king', type: 'king', side: 'cho' };
 
-  const hanBottom = getRowArrangement(hanSetup, 'han');
-  board[9][0] = { id: 'han_chariot_1', type: 'chariot', side: 'han' };
-  board[9][1] = hanBottom[0];
-  board[9][2] = hanBottom[1];
-  board[9][3] = { id: 'han_guard_1', type: 'guard', side: 'han' };
-  board[9][5] = { id: 'han_guard_2', type: 'guard', side: 'han' };
-  board[9][6] = hanBottom[2];
-  board[9][7] = hanBottom[3];
-  board[9][8] = { id: 'han_chariot_2', type: 'chariot', side: 'han' };
+  const choArr = getRowArrangement(choSetup, 'cho');
+  board[9][0] = { id: 'cho_chariot_1', type: 'chariot', side: 'cho' };
+  board[9][1] = choArr[0];
+  board[9][2] = choArr[1];
+  board[9][3] = { id: 'cho_guard_1', type: 'guard', side: 'cho' };
+  board[9][5] = { id: 'cho_guard_2', type: 'guard', side: 'cho' };
+  board[9][6] = choArr[2];
+  board[9][7] = choArr[3];
+  board[9][8] = { id: 'cho_chariot_2', type: 'chariot', side: 'cho' };
 
   return board;
 }
 
-// 7×7 미니 보드 생성
+// 7×7 미니 보드 생성 (한나라 상단, 초나라 하단)
 export function createMiniBoard(): (Piece | null)[][] {
   const board: (Piece | null)[][] = Array.from({ length: 7 }, () => Array(7).fill(null));
 
-  // 초(楚) - y: 0~2
-  board[0][0] = { id: 'cho_chariot_1', type: 'chariot', side: 'cho' };
-  board[0][1] = { id: 'cho_horse_1', type: 'horse', side: 'cho' };
-  board[0][2] = { id: 'cho_guard_1', type: 'guard', side: 'cho' };
-  board[0][3] = { id: 'cho_king', type: 'king', side: 'cho' };
-  board[0][4] = { id: 'cho_guard_2', type: 'guard', side: 'cho' };
-  board[0][5] = { id: 'cho_elephant_1', type: 'elephant', side: 'cho' };
-  board[0][6] = { id: 'cho_chariot_2', type: 'chariot', side: 'cho' };
+  // 한(漢) - 상단 y: 0~2
+  board[0][0] = { id: 'han_chariot_1', type: 'chariot', side: 'han' };
+  board[0][1] = { id: 'han_horse_1', type: 'horse', side: 'han' };
+  board[0][2] = { id: 'han_guard_1', type: 'guard', side: 'han' };
+  board[0][3] = { id: 'han_king', type: 'king', side: 'han' };
+  board[0][4] = { id: 'han_guard_2', type: 'guard', side: 'han' };
+  board[0][5] = { id: 'han_elephant_1', type: 'elephant', side: 'han' };
+  board[0][6] = { id: 'han_chariot_2', type: 'chariot', side: 'han' };
 
-  board[1][2] = { id: 'cho_cannon_1', type: 'cannon', side: 'cho' };
-  board[1][4] = { id: 'cho_cannon_2', type: 'cannon', side: 'cho' };
+  board[1][2] = { id: 'han_cannon_1', type: 'cannon', side: 'han' };
+  board[1][4] = { id: 'han_cannon_2', type: 'cannon', side: 'han' };
 
-  board[2][1] = { id: 'cho_soldier_1', type: 'soldier', side: 'cho' };
-  board[2][3] = { id: 'cho_soldier_2', type: 'soldier', side: 'cho' };
-  board[2][5] = { id: 'cho_soldier_3', type: 'soldier', side: 'cho' };
+  board[2][1] = { id: 'han_soldier_1', type: 'soldier', side: 'han' };
+  board[2][3] = { id: 'han_soldier_2', type: 'soldier', side: 'han' };
+  board[2][5] = { id: 'han_soldier_3', type: 'soldier', side: 'han' };
 
-  // 한(漢) - y: 4~6
-  board[4][1] = { id: 'han_soldier_1', type: 'soldier', side: 'han' };
-  board[4][3] = { id: 'han_soldier_2', type: 'soldier', side: 'han' };
-  board[4][5] = { id: 'han_soldier_3', type: 'soldier', side: 'han' };
+  // 초(楚) - 하단 y: 4~6
+  board[4][1] = { id: 'cho_soldier_1', type: 'soldier', side: 'cho' };
+  board[4][3] = { id: 'cho_soldier_2', type: 'soldier', side: 'cho' };
+  board[4][5] = { id: 'cho_soldier_3', type: 'soldier', side: 'cho' };
 
-  board[5][2] = { id: 'han_cannon_1', type: 'cannon', side: 'han' };
-  board[5][4] = { id: 'han_cannon_2', type: 'cannon', side: 'han' };
+  board[5][2] = { id: 'cho_cannon_1', type: 'cannon', side: 'cho' };
+  board[5][4] = { id: 'cho_cannon_2', type: 'cannon', side: 'cho' };
 
-  board[6][0] = { id: 'han_chariot_1', type: 'chariot', side: 'han' };
-  board[6][1] = { id: 'han_horse_1', type: 'horse', side: 'han' };
-  board[6][2] = { id: 'han_guard_1', type: 'guard', side: 'han' };
-  board[6][3] = { id: 'han_king', type: 'king', side: 'han' };
-  board[6][4] = { id: 'han_guard_2', type: 'guard', side: 'han' };
-  board[6][5] = { id: 'han_elephant_1', type: 'elephant', side: 'han' };
-  board[6][6] = { id: 'han_chariot_2', type: 'chariot', side: 'han' };
+  board[6][0] = { id: 'cho_chariot_1', type: 'chariot', side: 'cho' };
+  board[6][1] = { id: 'cho_horse_1', type: 'horse', side: 'cho' };
+  board[6][2] = { id: 'cho_guard_1', type: 'guard', side: 'cho' };
+  board[6][3] = { id: 'cho_king', type: 'king', side: 'cho' };
+  board[6][4] = { id: 'cho_guard_2', type: 'guard', side: 'cho' };
+  board[6][5] = { id: 'cho_elephant_1', type: 'elephant', side: 'cho' };
+  board[6][6] = { id: 'cho_chariot_2', type: 'chariot', side: 'cho' };
 
   return board;
 }
@@ -174,9 +175,9 @@ export function getRawMoves(
   const inBounds = (nx: number, ny: number) => nx >= 0 && nx < cols && ny >= 0 && ny < rows;
 
   switch (piece.type) {
-    // 1. 졸/병 (Soldier): 전진 및 좌우 1칸 (후진 불가). 적 궁성 진입 시 대각선 전진 가능!
+    // 1. 졸/병 (Soldier): 초(하단)는 위로(y - 1), 한(상단)은 아래로(y + 1) 전진 및 좌우 1칸. 적 궁성 진입 시 대각선 전진 가능!
     case 'soldier': {
-      const forwardY = isCho ? y + 1 : y - 1;
+      const forwardY = isCho ? y - 1 : y + 1;
       const dirs = [
         { x: x, y: forwardY },     // 전진
         { x: x - 1, y: y },        // 좌
@@ -190,8 +191,10 @@ export function getRawMoves(
           dirs.push({ x: x - 1, y: forwardY }, { x: x + 1, y: forwardY });
         } else if (isPalaceCorner(x, y, cols)) {
           // 적 궁성 모서리에서 중심 방향 대각선 전진
-          const centerPos = cols === 9 ? (isCho ? { x: 4, y: 8 } : { x: 4, y: 1 }) : (isCho ? { x: 3, y: 5 } : { x: 3, y: 1 });
-          if ((isCho && y < centerPos.y) || (!isCho && y > centerPos.y)) {
+          const centerPos = cols === 9 ? (isCho ? { x: 4, y: 1 } : { x: 4, y: 8 }) : (isCho ? { x: 3, y: 1 } : { x: 3, y: 5 });
+          // 초나라(아래)는 적 궁성 모서리(y=2)에서 중심(y=1)으로 전진: y > centerPos.y
+          // 한나라(위)는 적 궁성 모서리(y=7)에서 중심(y=8)으로 전진: y < centerPos.y
+          if ((isCho && y > centerPos.y) || (!isCho && y < centerPos.y)) {
             dirs.push(centerPos);
           }
         }
