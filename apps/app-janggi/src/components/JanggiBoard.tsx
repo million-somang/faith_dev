@@ -437,10 +437,21 @@ export function JanggiBoard({
 
                 const isJustDropped = lastMove?.to.x === c && lastMove?.to.y === r;
                 let pieceGroupClass = 'cursor-pointer select-none';
-                if (isJustDropped) {
-                  pieceGroupClass += ' animate-piece-drop';
-                }
-                if (isSelected) {
+                let pieceInlineStyle: React.CSSProperties = {
+                  transformOrigin: `${cx}px ${cy}px`,
+                };
+
+                if (isJustDropped && lastMove) {
+                  const fromCoord = getCoord(lastMove.from.x, lastMove.from.y);
+                  const deltaX = fromCoord.cx - cx;
+                  const deltaY = fromCoord.cy - cy;
+                  pieceGroupClass += ' animate-piece-glide-drop';
+                  pieceInlineStyle = {
+                    ...pieceInlineStyle,
+                    ['--from-dx' as string]: `${deltaX}px`,
+                    ['--from-dy' as string]: `${deltaY}px`,
+                  };
+                } else if (isSelected) {
                   pieceGroupClass += ' piece-lifted';
                 }
 
@@ -448,9 +459,7 @@ export function JanggiBoard({
                   <g
                     key={piece.id}
                     className={pieceGroupClass}
-                    style={{
-                      transformOrigin: `${cx}px ${cy}px`,
-                    }}
+                    style={pieceInlineStyle}
                     onClick={() => {
                       const isTargetMove = validMoves.some(
                         vm => vm.x === c && vm.y === r

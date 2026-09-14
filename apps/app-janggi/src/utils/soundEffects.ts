@@ -24,50 +24,87 @@ class SoundManager {
     return this.isMuted;
   }
 
-  // 1. 묵직하고 경쾌한 장기알 착수음 (딱!)
+  // 1. 실제 전통 원목 장기알 착수음 (딱-! 리얼 우드 클래크)
   public playSnap() {
     if (this.isMuted) return;
     this.initCtx();
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    
-    // 어택 노이즈 (장기알이 판에 부딪히는 순간의 딱딱한 마찰)
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(480, now);
-    osc.frequency.exponentialRampToValueAtTime(70, now + 0.08);
+    // A. 초기 파열음 (단단한 회양목/박달나무 모서리가 판에 닿는 순간의 고주파 마찰 "딱!")
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.035); // 35ms 노이즈 버퍼
+      const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.25));
+      }
 
-    gain.gain.setValueAtTime(0.7, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      const noiseSource = this.ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+      const noiseFilter = this.ctx.createBiquadFilter();
+      noiseFilter.type = 'bandpass';
+      noiseFilter.frequency.setValueAtTime(2600, now);
+      noiseFilter.Q.setValueAtTime(2.2, now);
 
-    osc.start(now);
-    osc.stop(now + 0.09);
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.85, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
 
-    // 공명음 (판의 울림)
-    const subOsc = this.ctx.createOscillator();
-    const subGain = this.ctx.createGain();
+      noiseSource.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
 
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(140, now);
-    subOsc.frequency.exponentialRampToValueAtTime(50, now + 0.12);
+      noiseSource.start(now);
+      noiseSource.stop(now + 0.035);
+    } catch {
+      // AudioBuffer 미지원 브라우저 폴백
+    }
 
-    subGain.gain.setValueAtTime(0.4, now);
-    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    // B. 단단한 원목 타격 클릭 (Wood Clack Core)
+    const clickOsc = this.ctx.createOscillator();
+    const clickFilter = this.ctx.createBiquadFilter();
+    const clickGain = this.ctx.createGain();
 
-    subOsc.connect(subGain);
-    subGain.connect(this.ctx.destination);
+    clickOsc.type = 'triangle';
+    clickOsc.frequency.setValueAtTime(1400, now);
+    clickOsc.frequency.exponentialRampToValueAtTime(240, now + 0.022);
 
-    subOsc.start(now);
-    subOsc.stop(now + 0.12);
+    clickFilter.type = 'bandpass';
+    clickFilter.frequency.setValueAtTime(1050, now);
+    clickFilter.Q.setValueAtTime(3.5, now);
+
+    clickGain.gain.setValueAtTime(0.9, now);
+    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+    clickOsc.connect(clickFilter);
+    clickFilter.connect(clickGain);
+    clickGain.connect(this.ctx.destination);
+
+    clickOsc.start(now);
+    clickOsc.stop(now + 0.045);
+
+    // C. 두꺼운 비자목 장기판 바디 공명 (Board Body Thud)
+    const bodyOsc = this.ctx.createOscillator();
+    const bodyGain = this.ctx.createGain();
+
+    bodyOsc.type = 'sine';
+    bodyOsc.frequency.setValueAtTime(145, now);
+    bodyOsc.frequency.exponentialRampToValueAtTime(65, now + 0.08);
+
+    bodyGain.gain.setValueAtTime(0.55, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+    bodyOsc.connect(bodyGain);
+    bodyGain.connect(this.ctx.destination);
+
+    bodyOsc.start(now);
+    bodyOsc.stop(now + 0.08);
   }
 
-  // 2. 기물 포획 사운드 (강한 임팩트와 격파감)
+  // 2. 기물 포획 사운드 (장기알 2개가 부딪히며 튕겨나가는 중후한 충돌음)
   public playCapture() {
     if (this.isMuted) return;
     this.initCtx();
@@ -75,21 +112,32 @@ class SoundManager {
 
     const now = this.ctx.currentTime;
 
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    // 기본 착수음 1차 타격
+    this.playSnap();
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(320, now);
-    osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+    // 2차 잔여 기물 튕김 타격음 (35ms 뒤 장기알 튕겨나감)
+    const osc2 = this.ctx.createOscillator();
+    const filter2 = this.ctx.createBiquadFilter();
+    const gain2 = this.ctx.createGain();
 
-    gain.gain.setValueAtTime(0.6, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(780, now + 0.032);
+    osc2.frequency.exponentialRampToValueAtTime(160, now + 0.095);
 
-    osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    filter2.type = 'bandpass';
+    filter2.frequency.setValueAtTime(900, now + 0.032);
+    filter2.Q.setValueAtTime(2.8, now + 0.032);
 
-    osc.start(now);
-    osc.stop(now + 0.16);
+    gain2.gain.setValueAtTime(0.0, now);
+    gain2.gain.setValueAtTime(0.75, now + 0.032);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+    osc2.connect(filter2);
+    filter2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+
+    osc2.start(now + 0.032);
+    osc2.stop(now + 0.12);
   }
 
   // 3. 장군(Check) 경고 알림음 (긴장감 넘치는 2중 톤)

@@ -435,8 +435,8 @@ export function getRawMoves(
         {
           b1: { dx: 1, dy: 0 },
           destinations: [
-            { b2: { dx: 2, dy: -1 }, target: { dx: 2, dy: -2 } },
-            { b2: { dx: 2, dy: 1 },  target: { dx: 2, dy: 2 } },
+            { b2: { dx: 2, dy: -1 }, target: { dx: 3, dy: -2 } },
+            { b2: { dx: 2, dy: 1 },  target: { dx: 3, dy: 2 } },
           ]
         }
       ];
