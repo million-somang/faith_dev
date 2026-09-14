@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>브라우저 OCR (이미지 글자 추출기) - 사진 텍스트 변환 및 텍스트 파일 다운로드 | VeraNex</title>
+    <meta name="description" content="캡처 이미지나 사진을 드래그하면 서버 전송 없이 브라우저에서 100% 안전하게 한글·영문 텍스트를 즉시 추출합니다. 클립보드 복사 및 TXT 텍스트 파일 다운로드 제공." />
+    <meta name="keywords" content="OCR, 이미지 글자 추출, 사진 텍스트 변환, 이미지 텍스트 인식, 영수증 텍스트 추출, 이미지 문자 인식, 브라우저 OCR, VeraNex, 베라넥스" />
+    <meta name="author" content="VeraNex" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://veranex.app/app/ocr/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://veranex.app/app/ocr/" />
+    <meta property="og:title" content="브라우저 OCR (이미지 글자 추출기) | VeraNex" />
+    <meta property="og:description" content="서버 전송 없는 안전한 100% 브라우저 로컬 OCR! 사진과 캡처 이미지 속 글자를 즉시 텍스트로 추출하고 다운로드하세요." />
+    <meta property="og:image" content="https://veranex.app/og-image.png" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="브라우저 OCR (이미지 글자 추출기) | VeraNex" />
+    <meta name="twitter:description" content="캡처 이미지·사진 속 텍스트를 브라우저에서 서버 통신 없이 즉시 추출 및 TXT 파일 저장." />
+    <meta name="twitter:image" content="https://veranex.app/og-image.png" />
+
+    <!-- Pretendard & FontAwesome -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Schema.org JSON-LD -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "브라우저 OCR (이미지 글자 추출기)",
+          "url": "https://veranex.app/app/ocr/",
+          "applicationCategory": "UtilitiesApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires JavaScript. Requires HTML5.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
+          },
+          "description": "클라이언트 사이드 Tesseract.js WebAssembly 기술을 활용하여 서버 통신 없이 100% 브라우저 로컬에서 사진과 캡처 이미지 내 텍스트를 실시간 인식·추출하는 무료 유틸리티."
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "업로드한 이미지가 외부 서버에 저장되거나 전송되나요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "아닙니다. VeraNex 브라우저 OCR은 Tesseract.js WebAssembly 기술을 통해 사용자의 브라우저 메모리 안에서만 100% 로컬로 동작합니다. 개인 문서, 신분증, 영수증 등의 이미지가 서버로 단 1바이트도 전송되지 않아 보안상 완벽하게 안전합니다."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "지원하는 이미지 파일 포맷과 인식 언어는 무엇인가요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "PNG, JPG, JPEG, WEBP, BMP, GIF 등 모든 주요 웹 이미지 포맷을 지원하며, 한글(Korean)과 영어(English) 동시 인식을 기본 탑재하고 일본어 및 중국어 인식 옵션을 제공합니다."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

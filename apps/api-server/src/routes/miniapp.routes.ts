@@ -36,6 +36,30 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
+        // 브라우저 OCR(ocr)이 DB에 없으면 자동 시딩
+        const hasOcr = apps.results.some((a: any) => a.slug === 'ocr');
+        if (!hasOcr) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    '브라우저 OCR (이미지 글자 추출기)',
+                    'ocr',
+                    'fas fa-file-alt',
+                    '캡처 이미지나 사진을 드래그하면 서버 전송 없이 브라우저에서 한글·영문 텍스트를 즉시 추출 및 다운로드',
+                    '/app/ocr/',
+                    0,
+                    4,
+                    'text',
+                    'active'
+                ).run();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+            } catch (seedErr) {
+                console.error('Failed to auto-seed ocr:', seedErr);
+            }
+        }
+
         return c.json({ success: true, apps: apps.results });
     } catch (error) {
         console.error('MiniApp API Error:', error);

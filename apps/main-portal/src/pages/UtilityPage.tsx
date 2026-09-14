@@ -91,6 +91,7 @@ export default function UtilityPage() {
             else if (app.app_url.includes('severance-calc')) baseUrl = 'http://localhost:5028/app/severance-calc/';
             else if (app.app_url.includes('interest-calc')) baseUrl = 'http://localhost:5029/app/interest-calc/';
             else if (app.app_url.includes('customs-calc')) baseUrl = 'http://localhost:5035/app/customs-calc/';
+            else if (app.app_url.includes('ocr')) baseUrl = 'http://localhost:5036/app/ocr/';
         }
         const separator = baseUrl.includes('?') ? '&' : '?';
         return baseUrl.includes('lang=') ? baseUrl : `${baseUrl}${separator}lang=${lang}`;
@@ -157,6 +158,13 @@ export default function UtilityPage() {
             iconColor: 'text-blue-500',
             title: '글자수 세기 & 자소서 검사 팁',
             desc: '자기소개서 및 공문서 작성 시 공백 포함 글자수와 공백 제외 글자수, 바이트(Byte) 수가 다르게 정해집니다. 한글은 1자당 2~3Byte, 영문·숫자·공백은 1자당 1Byte로 처리되므로 자소서 제출 전 VERA 글자수 검사기로 한도를 확인하세요.'
+        },
+        {
+            category: 'text',
+            icon: 'fas fa-file-alt',
+            iconColor: 'text-indigo-600',
+            title: '브라우저 OCR 이미지 글자 추출기 활용법',
+            desc: 'Tesseract.js WebAssembly를 통해 서버 전송 없이 100% 브라우저 로컬에서 사진·캡처 이미지 속 한글과 영어를 즉시 인식하여 텍스트 복사 및 .txt 다운로드를 지원합니다. 캡처 즉시 Ctrl+V로 붙여넣어 신속하게 변환하세요.'
         },
         {
             category: 'dev',

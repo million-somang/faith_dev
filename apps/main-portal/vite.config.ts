@@ -105,6 +105,10 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: (path) => path.replace(/^\/app\/news/, ''),
             },
+            '^/app/ocr.*': {
+                target: 'http://localhost:5036',
+                changeOrigin: true,
+            },
         },
     },
 });
