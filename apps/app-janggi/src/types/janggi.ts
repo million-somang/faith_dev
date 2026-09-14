@@ -46,7 +46,7 @@ export type GameMode =
 
 export type MatchType = 'vs_ai' | 'pass_and_play';
 
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'beginner' | 'easy' | 'normal' | 'hard' | 'master';
 
 export type GameStatus = 
   | 'READY' 

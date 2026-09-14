@@ -35,6 +35,15 @@ import { SetupModal } from './components/SetupModal';
 import { RuleGuideModal } from './components/RuleGuideModal';
 import { JanggunBanner } from './components/JanggunBanner';
 
+const DIFFICULTY_SEQUENCE: Difficulty[] = ['beginner', 'easy', 'normal', 'hard', 'master'];
+const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color: string }> = {
+  beginner: { label: '입문 (18급)', badge: '🌱 입문', color: 'text-emerald-800 bg-emerald-100/90 border-emerald-300' },
+  easy: { label: '초급 (10급)', badge: '⭐ 초급', color: 'text-sky-800 bg-sky-100/90 border-sky-300' },
+  normal: { label: '중급 (3급)', badge: '⭐⭐ 중급', color: 'text-amber-800 bg-amber-100/90 border-amber-300' },
+  hard: { label: '고급 (1단)', badge: '⭐⭐⭐ 고급', color: 'text-indigo-800 bg-indigo-100/90 border-indigo-300' },
+  master: { label: '달인 (9단)', badge: '👑 프로', color: 'text-rose-800 bg-rose-100/90 border-rose-300' },
+};
+
 export function App() {
   // 1. 초기 3초 스플래시 상태 (miniapp.md 필수 규격)
   const [showSplash, setShowSplash] = useState<boolean>(true);
@@ -182,7 +191,16 @@ export function App() {
     aiRunningRef.current = true;
     setIsAiThinking(true);
 
-    const thinkDuration = aiDifficulty === 'hard' ? 650 : aiDifficulty === 'normal' ? 450 : 300;
+    const thinkDuration =
+      aiDifficulty === 'master'
+        ? 800
+        : aiDifficulty === 'hard'
+        ? 650
+        : aiDifficulty === 'normal'
+        ? 450
+        : aiDifficulty === 'easy'
+        ? 320
+        : 220;
 
     const timer = setTimeout(() => {
       const activeBoard = boardRef.current;
@@ -432,6 +450,16 @@ export function App() {
     setIsMuted(nextMute);
   };
 
+  // 1클릭 AI 난이도 순환 토글 (메인 화면 퀵 셀렉터)
+  const handleCycleDifficulty = () => {
+    soundEffects.playSnap();
+    setAiDifficulty((prev) => {
+      const idx = DIFFICULTY_SEQUENCE.indexOf(prev);
+      const next = DIFFICULTY_SEQUENCE[(idx + 1) % DIFFICULTY_SEQUENCE.length];
+      return next;
+    });
+  };
+
   return (
     <div className="w-full min-h-screen bg-slate-100 flex flex-col items-center justify-start py-1 px-1 sm:py-3 sm:px-4">
       {/* 3초 필수 스플래시 인트로 (miniapp.md 규격 준수) */}
@@ -456,25 +484,66 @@ export function App() {
           onSelectMode={handleSelectMode}
         />
 
-        {/* 실시간 장군(Check) 위기/공세 안내 바 */}
-        {isCheckState && (
-          <div className="w-full py-1.5 px-3 bg-rose-50 border border-rose-300 rounded-xl flex items-center justify-center gap-2 text-rose-700 text-xs font-black animate-pulse shadow-xs">
-            <i className="fas fa-exclamation-circle text-rose-600"></i>
-            <span>
-              {currentTurn === playerSide
-                ? '⚠️ [장군 위기!] 내 왕(楚)이 공격받고 있습니다! 대피하거나 막으세요!'
-                : '⚔️ [장군 공세!] 컴퓨터의 왕(漢)을 위협 중입니다!'}
-            </span>
+        {/* 상시 고정 대국 상태 브리핑 바 & AI 퀵 난이도 체인저 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
+        <div
+          className={`w-full h-10 min-h-[40px] max-h-[40px] px-3 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
+            isCheckState
+              ? 'bg-rose-50/95 border-rose-300 text-rose-900'
+              : isAiThinking
+              ? 'bg-indigo-50/95 border-indigo-300 text-indigo-900'
+              : currentTurn === playerSide
+              ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+              : 'bg-slate-100/90 border-slate-200 text-slate-700'
+          }`}
+        >
+          {/* 좌측: 실시간 국면 및 AI 수읽기 브리핑 */}
+          <div className="flex items-center gap-2 overflow-hidden text-xs font-black truncate flex-1 mr-2">
+            {isCheckState ? (
+              <>
+                <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce"></i>
+                <span className="truncate">
+                  {currentTurn === playerSide
+                    ? '⚠️ [장군 위기!] 내 왕(楚)이 위험합니다! 피하거나 막으세요!'
+                    : '⚔️ [장군 공세!] 컴퓨터의 왕(漢)을 위협 중입니다!'}
+                </span>
+              </>
+            ) : isAiThinking ? (
+              <>
+                <i className="fas fa-microchip text-indigo-600 animate-spin text-xs"></i>
+                <span className="truncate animate-pulse">
+                  AI 수읽기 연산 중... ({DIFFICULTY_INFO[aiDifficulty]?.badge})
+                </span>
+              </>
+            ) : currentTurn === playerSide ? (
+              <>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs animate-pulse"></span>
+                <span className="truncate">
+                  내 차례 (초 楚) — 둘 기물을 선택하세요
+                </span>
+              </>
+            ) : (
+              <>
+                <i className="fas fa-hourglass-half text-slate-500"></i>
+                <span className="truncate text-slate-600">
+                  상대 AI(한 漢) 차례를 준비 중입니다...
+                </span>
+              </>
+            )}
           </div>
-        )}
 
-        {/* AI 생각 중 안내 뱃지 */}
-        {isAiThinking && (
-          <div className="w-full py-1 px-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-2 text-indigo-700 text-xs font-black animate-pulse">
-            <i className="fas fa-microchip text-indigo-500"></i>
-            <span>베라 AI 인공지능이 최적의 묘수를 연산 중입니다...</span>
-          </div>
-        )}
+          {/* 우측: 1클릭 AI 퀵 난이도 체인저 버튼 */}
+          <button
+            type="button"
+            onClick={handleCycleDifficulty}
+            title="클릭하여 AI 난이도를 변경합니다"
+            className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border transition-all cursor-pointer shrink-0 shadow-xs hover:scale-103 active:scale-97 ${
+              DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
+            }`}
+          >
+            <span>{DIFFICULTY_INFO[aiDifficulty]?.badge}</span>
+            <i className="fas fa-chevron-down text-[9px] opacity-70"></i>
+          </button>
+        </div>
 
         {/* 메인 장기판 (9x10 또는 7x7 보드) */}
         <div data-screenshot-target="janggi-board" className="flex items-center justify-center w-full relative">

@@ -24,10 +24,12 @@ const SETUPS: { id: SetupType; name: string; desc: string; layout: string }[] = 
   { id: 'yanggwima', name: '양귀마', desc: '외곽에 마를 배치하여 광활한 중앙 침투', layout: '상 - 마 - 마 - 상' },
 ];
 
-const DIFFICULTIES: { id: Difficulty; name: string; tag: string; desc: string }[] = [
-  { id: 'easy', name: '초급 (입문)', tag: '★☆☆', desc: '장기 규칙을 배우기 좋은 가벼운 AI' },
-  { id: 'normal', name: '중급 (단·급수)', tag: '★★☆', desc: '2수 앞을 내다보는 균형잡힌 인공지능' },
-  { id: 'hard', name: '고급 (프로급)', tag: '★★★', desc: '알파-베타 가지치기로 기물을 맹공' },
+const DIFFICULTIES: { id: Difficulty; name: string; tag: string; desc: string; badge: string }[] = [
+  { id: 'beginner', name: '입문 (18급)', tag: '🌱 입문', desc: '장기 행마를 배우기 좋은 가벼운 AI, 가끔 실수를 합니다.', badge: '18급' },
+  { id: 'easy', name: '초급 (10급)', tag: '⭐ 초급', desc: '1~2수 앞을 보며 기물 포획 위주로 기본에 충실합니다.', badge: '10급' },
+  { id: 'normal', name: '중급 (3급)', tag: '⭐⭐ 중급', desc: '2수 앞을 내다보고 중앙과 기물 전진을 조화롭게 운영합니다.', badge: '3급' },
+  { id: 'hard', name: '고급 (1단)', tag: '⭐⭐⭐ 고급', desc: '3수 수읽기와 알파베타 가지치기로 빈틈을 날카롭게 찌릅니다.', badge: '1단' },
+  { id: 'master', name: '달인 (프로 9단)', tag: '👑 프로', desc: '외통수 집중 수순과 철벽 방어를 구사하는 최정상급 AI', badge: '9단' },
 ];
 
 export const SetupModal: React.FC<SetupModalProps> = ({
@@ -126,10 +128,15 @@ export const SetupModal: React.FC<SetupModalProps> = ({
 
           {/* AI Difficulty */}
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-              인공지능(AI) 난이도
-            </label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                인공지능(AI) 난이도 설정
+              </label>
+              <span className="text-[11px] font-extrabold text-amber-700">
+                {DIFFICULTIES.find(d => d.id === selectedDiff)?.name}
+              </span>
+            </div>
+            <div className="grid grid-cols-5 gap-1">
               {DIFFICULTIES.map((d) => (
                 <button
                   key={d.id}
@@ -138,17 +145,20 @@ export const SetupModal: React.FC<SetupModalProps> = ({
                     soundEffects.playSnap();
                     setSelectedDiff(d.id);
                   }}
-                  className={`py-2 px-2 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
+                  className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
                     selectedDiff === d.id
-                      ? 'border-amber-500 bg-amber-50 text-amber-900 font-black shadow-sm'
+                      ? 'border-amber-500 bg-amber-50 text-amber-900 font-black shadow-sm scale-102'
                       : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                   }`}
                 >
-                  <span className="text-[10px] text-amber-500 font-bold">{d.tag}</span>
-                  <span className="text-xs font-bold mt-0.5">{d.name.split(' ')[0]}</span>
+                  <span className="text-[9px] font-extrabold">{d.tag.split(' ')[0]}</span>
+                  <span className="text-[11px] font-black mt-0.5">{d.badge}</span>
                 </button>
               ))}
             </div>
+            <p className="text-[10px] text-slate-500 mt-1.5 px-1 font-medium">
+              💡 {DIFFICULTIES.find(d => d.id === selectedDiff)?.desc}
+            </p>
           </div>
 
           {/* Cho Setup (마/상 차림) */}

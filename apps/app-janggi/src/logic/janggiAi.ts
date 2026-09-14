@@ -1,4 +1,4 @@
-import { Piece, Side, Move } from '../types/janggi';
+import { Piece, Side, Move, Difficulty } from '../types/janggi';
 import { getAllLegalMoves, PIECE_VALUES, isCheck } from './janggiRules';
 
 // 기물별 기본 가치
@@ -24,13 +24,15 @@ export function evaluateBoard(board: (Piece | null)[][], cols = 9, rows = 10): n
 
         // 위치 가산점 (중앙 지배 및 졸/병 전진 가산점)
         if (p.type === 'soldier') {
-          // 전진할수록 가치 상승 (초는 위로, 한은 아래로 전진)
-          const advance = p.side === 'cho' ? (rows - 1 - r) : r;
-          pieceVal += advance * 3;
-        } else if (p.type === 'horse' || p.type === 'elephant') {
-          // 중앙에 가까울수록 활발한 활동력
-          const distFromCenter = Math.abs(c - (cols / 2 - 0.5));
-          pieceVal += (3 - distFromCenter) * 2;
+          // 초(하단)는 위쪽(r=0 방향)으로 갈수록 전진 가산점
+          // 한(상단)은 아래쪽(r=rows-1 방향)으로 갈수록 전진 가산점
+          const advancement = p.side === 'cho' ? rows - 1 - r : r;
+          pieceVal += advancement * 3;
+        }
+
+        // 중앙 지배 가산점 (마, 상, 포, 차)
+        if (c >= 2 && c <= 6 && r >= 3 && r <= 6) {
+          pieceVal += 5;
         }
 
         if (p.side === 'cho') {
@@ -42,49 +44,66 @@ export function evaluateBoard(board: (Piece | null)[][], cols = 9, rows = 10): n
     }
   }
 
-  // 덤 1.5점 반영 (15)
-  score -= 15;
-
   return score;
 }
 
-// 미니맥스 + 알파베타 프루닝 알고리즘
+// 미니맥스 + 알파베타 프루닝 알고리즘 (5단계 난이도 완비)
 export function findBestMove(
   board: (Piece | null)[][],
   currentTurn: Side,
-  difficulty: 'easy' | 'normal' | 'hard' = 'normal',
+  difficulty: Difficulty = 'normal',
   cols = 9,
   rows = 10
 ): Move | null {
   const legalMoves = getAllLegalMoves(board, currentTurn, cols, rows);
   if (legalMoves.length === 0) return null;
 
-  // 초급: 즉시 포획 우선 + 약간의 랜덤성
-  if (difficulty === 'easy') {
-    const captureMoves = legalMoves.filter(m => m.captured && m.captured.type !== 'soldier');
-    if (captureMoves.length > 0 && Math.random() < 0.7) {
+  // 1. 입문 (Beginner / 18급): 35% 확률로 아무 수나 둠 (블런더 발생), 포획 수 단순 선호
+  if (difficulty === 'beginner') {
+    if (Math.random() < 0.35) {
+      return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+    }
+    const captureMoves = legalMoves.filter(m => !!m.captured);
+    if (captureMoves.length > 0) {
       return captureMoves[Math.floor(Math.random() * captureMoves.length)];
     }
     return legalMoves[Math.floor(Math.random() * legalMoves.length)];
   }
 
-  // 탐색 깊이 설정 (Normal: 2, Hard: 3)
-  const maxDepth = difficulty === 'hard' ? 3 : 2;
+  // 2. 초급 (Novice / 10급): 1수 깊이 즉시 포획 우선 + 15% 가벼운 실수 허용
+  if (difficulty === 'easy') {
+    if (Math.random() < 0.15) {
+      return legalMoves[Math.floor(Math.random() * legalMoves.length)];
+    }
+    const highValueCaptures = legalMoves.filter(
+      m => m.captured && (m.captured.type === 'chariot' || m.captured.type === 'cannon' || m.captured.type === 'horse')
+    );
+    if (highValueCaptures.length > 0 && Math.random() < 0.8) {
+      return highValueCaptures[Math.floor(Math.random() * highValueCaptures.length)];
+    }
+  }
+
+  // 탐색 깊이 설정 (easy: 1, normal: 2, hard: 3, master: 3+정밀 수순)
+  const maxDepth = difficulty === 'easy' ? 1 : difficulty === 'normal' ? 2 : 3;
   const isMaximizing = currentTurn === 'cho';
 
   let bestMove: Move | null = null;
   let bestScore = isMaximizing ? -Infinity : Infinity;
 
-  // 착수 후보 셔플 (동점일 때 매 판 다른 수 착수)
-  const shuffled = [...legalMoves].sort(() => Math.random() - 0.5);
+  // Move Ordering: 포획 가치가 높은 수 및 체크를 우선 탐색하여 알파-베타 가지치기 극대화
+  const sortedMoves = [...legalMoves].sort((a, b) => {
+    const valA = a.captured ? PIECE_VALUES[a.captured.type] : 0;
+    const valB = b.captured ? PIECE_VALUES[b.captured.type] : 0;
+    return valB - valA + (Math.random() - 0.5);
+  });
 
-  for (const move of shuffled) {
-    // 1수 시뮬레이션
+  for (const move of sortedMoves) {
+    // 1수 가상 시뮬레이션
     const targetPiece = board[move.to.y][move.to.x];
     board[move.to.y][move.to.x] = move.piece;
     board[move.from.y][move.from.x] = null;
 
-    const score = minimax(
+    let score = minimax(
       board,
       maxDepth - 1,
       -Infinity,
@@ -93,6 +112,14 @@ export function findBestMove(
       cols,
       rows
     );
+
+    // 마스터(프로 9단) 난이도: 상대 왕을 노리는 장군 공격 수에 강력한 보너스 부여
+    if (difficulty === 'master') {
+      const opponentSide: Side = currentTurn === 'cho' ? 'han' : 'cho';
+      if (isCheck(board, opponentSide, cols, rows)) {
+        score += isMaximizing ? 450 : -450;
+      }
+    }
 
     // 복원
     board[move.from.y][move.from.x] = move.piece;
