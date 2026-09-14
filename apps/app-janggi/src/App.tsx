@@ -33,6 +33,7 @@ import { StatusInsightPanel } from './components/StatusInsightPanel';
 import { VictoryModal } from './components/VictoryModal';
 import { SetupModal } from './components/SetupModal';
 import { RuleGuideModal } from './components/RuleGuideModal';
+import { JanggunBanner } from './components/JanggunBanner';
 
 export function App() {
   // 1. 초기 3초 스플래시 상태 (miniapp.md 필수 규격)
@@ -53,6 +54,8 @@ export function App() {
   const [selectedPos, setSelectedPos] = useState<Position | null>(null);
   const [validMoves, setValidMoves] = useState<Position[]>([]);
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
+  const [lastMoveIsCapture, setLastMoveIsCapture] = useState<boolean>(false);
+  const [janggunAttacker, setJanggunAttacker] = useState<Side | null>(null);
 
   // 4. 승패 및 상태
   const [isCheckState, setIsCheckState] = useState<boolean>(false);
@@ -94,6 +97,8 @@ export function App() {
     setSelectedPos(null);
     setValidMoves([]);
     setLastMove(null);
+    setLastMoveIsCapture(false);
+    setJanggunAttacker(null);
     setIsCheckState(false);
     setWinner(null);
     setWinReason('');
@@ -230,6 +235,9 @@ export function App() {
     newBoard[from.y][from.x] = null;
 
     // 기물 포획 사운드 및 목록 업데이트
+    const hasCaptured = !!targetPiece;
+    setLastMoveIsCapture(hasCaptured);
+
     if (targetPiece) {
       soundEffects.playCapture();
       if (currentTurn === 'cho') {
@@ -288,6 +296,7 @@ export function App() {
 
     if (checkOnOpponent) {
       soundEffects.playCheck();
+      setJanggunAttacker(currentTurn);
       // 외통수(Checkmate) 체크: 다음 턴 상대가 둘 수 있는 합법 수가 전혀 없는가?
       const opponentMoves = getAllLegalMoves(newBoard, nextTurn, cols, rows);
       if (opponentMoves.length === 0) {
@@ -296,6 +305,8 @@ export function App() {
         setWinReason(`외통수! ${currentTurn === 'cho' ? '초(楚)' : '한(漢)'} 완승`);
         return;
       }
+    } else {
+      setJanggunAttacker(null);
     }
 
     // 빅장(대치) 체크
@@ -366,11 +377,13 @@ export function App() {
       setBoard(lastState.board);
       setCurrentTurn(lastState.turn);
       setLastMove(lastState.lastMove);
+      setLastMoveIsCapture(false);
+      setJanggunAttacker(null);
       setUndoHistory(newHistory);
       setUndoCount((prev) => prev + 1);
       setSelectedPos(null);
       setValidMoves([]);
-      setIsCheckState(false);
+      setIsCheckState(isCheck(lastState.board, lastState.turn, cols, rows));
       setWinner(null);
     }
   };
@@ -443,6 +456,18 @@ export function App() {
           onSelectMode={handleSelectMode}
         />
 
+        {/* 실시간 장군(Check) 위기/공세 안내 바 */}
+        {isCheckState && (
+          <div className="w-full py-1.5 px-3 bg-rose-50 border border-rose-300 rounded-xl flex items-center justify-center gap-2 text-rose-700 text-xs font-black animate-pulse shadow-xs">
+            <i className="fas fa-exclamation-circle text-rose-600"></i>
+            <span>
+              {currentTurn === playerSide
+                ? '⚠️ [장군 위기!] 내 왕(楚)이 공격받고 있습니다! 대피하거나 막으세요!'
+                : '⚔️ [장군 공세!] 컴퓨터의 왕(漢)을 위협 중입니다!'}
+            </span>
+          </div>
+        )}
+
         {/* AI 생각 중 안내 뱃지 */}
         {isAiThinking && (
           <div className="w-full py-1 px-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-2 text-indigo-700 text-xs font-black animate-pulse">
@@ -452,7 +477,7 @@ export function App() {
         )}
 
         {/* 메인 장기판 (9x10 또는 7x7 보드) */}
-        <div data-screenshot-target="janggi-board" className="flex items-center justify-center w-full">
+        <div data-screenshot-target="janggi-board" className="flex items-center justify-center w-full relative">
           <JanggiBoard
             board={board}
             cols={cols}
@@ -460,11 +485,20 @@ export function App() {
             selectedPos={selectedPos}
             validMoves={validMoves}
             lastMove={lastMove}
+            lastMoveIsCapture={lastMoveIsCapture}
             isCheckSide={isCheckState ? currentTurn : null}
             currentTurn={currentTurn}
             onSelectPiece={handleSelectPiece}
             onMakeMove={handleMakeMove}
           />
+
+          {/* 중앙 시네마틱 '장군(將軍)!' 팝업 배너 */}
+          {janggunAttacker && (
+            <JanggunBanner
+              attacker={janggunAttacker}
+              onClose={() => setJanggunAttacker(null)}
+            />
+          )}
         </div>
 
         {/* 점수 & 국면 현황 & 포획 기물 트레이 */}

@@ -9,6 +9,7 @@ interface JanggiBoardProps {
   selectedPos: Position | null;
   validMoves: Position[];
   lastMove: { from: Position; to: Position } | null;
+  lastMoveIsCapture?: boolean;
   isCheckSide: Side | null;
   currentTurn: Side;
   onSelectPiece: (pos: Position) => void;
@@ -47,6 +48,7 @@ export function JanggiBoard({
   selectedPos,
   validMoves,
   lastMove,
+  lastMoveIsCapture = false,
   isCheckSide,
   currentTurn,
   onSelectPiece,
@@ -289,35 +291,76 @@ export function JanggiBoard({
               );
             })}
 
-            {/* 7. 마지막 수 착수 궤적 하이라이트 */}
+            {/* 7. 마지막 수 착수 궤적 & 쇼크웨이브 & 포획 애니메이션 */}
             {lastMove && (
-              <g>
+              <g key={`move_${lastMove.from.x}_${lastMove.from.y}_${lastMove.to.x}_${lastMove.to.y}`}>
+                {/* 출발지 잔상 원 */}
                 <circle
                   cx={getCoord(lastMove.from.x, lastMove.from.y).cx}
                   cy={getCoord(lastMove.from.x, lastMove.from.y).cy}
-                  r={stepX * 0.44}
+                  r={stepX * 0.42}
                   fill="none"
                   stroke="#d97706"
-                  strokeWidth={2}
+                  strokeWidth={1.8}
                   strokeDasharray="4 3"
-                  opacity={0.8}
+                  opacity={0.7}
                 />
+
+                {/* 이동 궤적 애니메이션 흐름 점선 */}
                 <line
                   x1={getCoord(lastMove.from.x, lastMove.from.y).cx}
                   y1={getCoord(lastMove.from.x, lastMove.from.y).cy}
                   x2={getCoord(lastMove.to.x, lastMove.to.y).cx}
                   y2={getCoord(lastMove.to.x, lastMove.to.y).cy}
                   stroke="#d97706"
-                  strokeWidth={2}
-                  strokeDasharray="3 3"
-                  opacity={0.6}
+                  strokeWidth={2.4}
+                  strokeDasharray="6 4"
+                  className="animate-trail-flow"
+                  opacity={0.8}
                 />
+
+                {/* 착수점 황금빛 충격파 리플 */}
+                <circle
+                  cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
+                  cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
+                  className="animate-shockwave pointer-events-none"
+                  fill="none"
+                  stroke={lastMoveIsCapture ? '#dc2626' : '#f59e0b'}
+                />
+
+                {/* 적 기물 포획 시 격파 버스트 이펙트 */}
+                {lastMoveIsCapture && (
+                  <g className="animate-capture-burst pointer-events-none">
+                    <circle
+                      cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
+                      cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
+                      r={stepX * 0.58}
+                      fill="none"
+                      stroke="#ef4444"
+                      strokeWidth={2.5}
+                      strokeDasharray="5 3"
+                    />
+                    <polygon
+                      points={getOctagonPoints(
+                        getCoord(lastMove.to.x, lastMove.to.y).cx,
+                        getCoord(lastMove.to.x, lastMove.to.y).cy,
+                        stepX * 0.42
+                      )}
+                      fill="none"
+                      stroke="#f59e0b"
+                      strokeWidth={1.8}
+                      opacity={0.85}
+                    />
+                  </g>
+                )}
+
+                {/* 도착점 하이라이트 글로우 링 */}
                 <circle
                   cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
                   cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
                   r={stepX * 0.48}
                   fill="url(#lastMoveGlow)"
-                  stroke="#f59e0b"
+                  stroke={lastMoveIsCapture ? '#dc2626' : '#f59e0b'}
                   strokeWidth={2.2}
                 />
               </g>
@@ -392,10 +435,22 @@ export function JanggiBoard({
                 const octagonPoints = getOctagonPoints(cx, cy, radius);
                 const innerOctagonPoints = getOctagonPoints(cx, cy, radius - 2.5);
 
+                const isJustDropped = lastMove?.to.x === c && lastMove?.to.y === r;
+                let pieceGroupClass = 'cursor-pointer select-none';
+                if (isJustDropped) {
+                  pieceGroupClass += ' animate-piece-drop';
+                }
+                if (isSelected) {
+                  pieceGroupClass += ' piece-lifted';
+                }
+
                 return (
                   <g
                     key={piece.id}
-                    className="cursor-pointer transition-transform duration-150"
+                    className={pieceGroupClass}
+                    style={{
+                      transformOrigin: `${cx}px ${cy}px`,
+                    }}
                     onClick={() => {
                       const isTargetMove = validMoves.some(
                         vm => vm.x === c && vm.y === r
@@ -407,17 +462,55 @@ export function JanggiBoard({
                       }
                     }}
                   >
-                    {/* A. 장군(Check) 상태 위험 펄스 링 */}
+                    {/* A. 장군(Check) 상태 위험 소나 비콘 및 뱃지 */}
                     {isKingInCheck && (
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={radius + 5}
-                        fill="none"
-                        stroke="#dc2626"
-                        strokeWidth={3.5}
-                        className="animate-ping opacity-75"
-                      />
+                      <g className="pointer-events-none">
+                        {/* 외부 확장 소나 비콘 */}
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={radius * 1.38}
+                          fill="none"
+                          stroke="#dc2626"
+                          strokeWidth={3}
+                          className="animate-beacon-sonar"
+                        />
+                        {/* 내부 적색 펄스 링 */}
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={radius + 4}
+                          fill="rgba(220, 38, 38, 0.25)"
+                          stroke="#b91c1c"
+                          strokeWidth={2.5}
+                          className="animate-ping"
+                        />
+                        {/* 왕 머리 위 경고 뱃지 */}
+                        <g transform={`translate(${cx}, ${cy - radius - 14})`}>
+                          <rect
+                            x={-20}
+                            y={-9}
+                            width={40}
+                            height={18}
+                            rx={9}
+                            fill="#dc2626"
+                            stroke="#ffffff"
+                            strokeWidth={1.2}
+                            filter="drop-shadow(0 2px 4px rgba(0,0,0,0.35))"
+                          />
+                          <text
+                            x={0}
+                            y={4}
+                            textAnchor="middle"
+                            fill="#ffffff"
+                            fontSize={10}
+                            fontWeight="900"
+                            fontFamily="sans-serif"
+                          >
+                            장군!
+                          </text>
+                        </g>
+                      </g>
                     )}
 
                     {/* B. 선택된 기물 골든 엠보스 링 */}
