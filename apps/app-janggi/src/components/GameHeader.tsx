@@ -37,62 +37,67 @@ export function GameHeader({
 
   return (
     <header className="w-full space-y-2.5">
-      {/* 1. 최상단 모드 탭 바 (Clean Neumorphism 알약 트랙) */}
-      <nav className="flex w-full p-1 bg-slate-200/80 rounded-2xl gap-1 overflow-x-auto shadow-inner" role="tablist">
+      {/* 1. 최상단 모드 탭 바 (Clean Neumorphism 알약 트랙 - 100% 1줄 고정) */}
+      <nav className="flex w-full p-1 bg-slate-200/80 rounded-2xl gap-1 overflow-x-auto no-scrollbar shadow-inner" role="tablist">
         <button
           type="button"
           onClick={() => onSelectMode('classic')}
-          className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+          className={`flex-1 min-w-0 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap shrink-0 ${
             currentMode === 'classic'
               ? 'bg-white text-blue-700 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>🏆 정통 장기</span>
+          <span>🏆</span>
+          <span className="whitespace-nowrap">정통</span>
         </button>
         <button
           type="button"
           onClick={() => onSelectMode('puzzle')}
-          className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+          className={`flex-1 min-w-0 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap shrink-0 ${
             currentMode === 'puzzle'
               ? 'bg-white text-blue-700 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>🧩 묘수풀이</span>
+          <span>🧩</span>
+          <span className="whitespace-nowrap">묘수</span>
         </button>
         <button
           type="button"
           onClick={() => onSelectMode('mini')}
-          className={`flex-1 min-w-[65px] py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+          className={`flex-1 min-w-0 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap shrink-0 ${
             currentMode === 'mini'
               ? 'bg-white text-blue-700 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>⚡ 미니 7×7</span>
+          <span>⚡</span>
+          <span className="whitespace-nowrap">미니</span>
         </button>
         <button
           type="button"
           onClick={() => onSelectMode('battle')}
-          className={`flex-1 min-w-[65px] py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+          className={`flex-1 min-w-0 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap shrink-0 ${
             currentMode === 'battle'
               ? 'bg-white text-blue-700 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>💥 배틀 장기</span>
+          <span>💥</span>
+          <span className="whitespace-nowrap">배틀</span>
         </button>
         <button
           type="button"
           onClick={() => onSelectMode('saju')}
-          className={`flex-1 min-w-[65px] py-1.5 px-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1 ${
+          className={`flex-1 min-w-0 py-1.5 px-1 sm:px-2 rounded-xl text-[11px] sm:text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-0.5 sm:gap-1 whitespace-nowrap shrink-0 ${
             currentMode === 'saju'
               ? 'bg-white text-blue-700 shadow-sm'
               : 'text-slate-600 hover:text-slate-900'
           }`}
         >
-          <span>☯️ 오행 장기</span>
+          <span>☯️</span>
+          <span className="whitespace-nowrap">오행</span>
         </button>
       </nav>
 
