@@ -12,6 +12,7 @@ interface JanggiBoardProps {
   lastMoveIsCapture?: boolean;
   isCheckSide: Side | null;
   currentTurn: Side;
+  playerSide?: Side;
   onSelectPiece: (pos: Position) => void;
   onMakeMove: (to: Position) => void;
 }
@@ -51,9 +52,13 @@ export function JanggiBoard({
   lastMoveIsCapture = false,
   isCheckSide,
   currentTurn,
+  playerSide = 'cho',
   onSelectPiece,
   onMakeMove,
 }: JanggiBoardProps) {
+  // 플레이어 진영 시점(Perspective Flip): 한(漢)을 선택한 경우 내 진영(한)이 항상 하단에 위치하도록 보드 좌표 자동 반전
+  const isFlipped = playerSide === 'han';
+
   // SVG 보드 좌표 계산
   const paddingX = 24;
   const paddingY = 24;
@@ -62,10 +67,14 @@ export function JanggiBoard({
   const stepY = stepX; // 정방형 격자
   const boardHeight = paddingY * 2 + stepY * (rows - 1);
 
-  const getCoord = (x: number, y: number) => ({
-    cx: paddingX + x * stepX,
-    cy: paddingY + y * stepY,
-  });
+  const getCoord = (x: number, y: number) => {
+    const rx = isFlipped ? cols - 1 - x : x;
+    const ry = isFlipped ? rows - 1 - y : y;
+    return {
+      cx: paddingX + rx * stepX,
+      cy: paddingY + ry * stepY,
+    };
+  };
 
   // 화점(Star points) 좌표 정의 (한국 정통 장기 규격: 졸/병 5개 위치 및 포 2개 위치)
   const starPoints =
@@ -291,80 +300,125 @@ export function JanggiBoard({
               );
             })}
 
-            {/* 7. 마지막 수 착수 궤적 & 쇼크웨이브 & 포획 애니메이션 */}
-            {lastMove && (
-              <g key={`move_${lastMove.from.x}_${lastMove.from.y}_${lastMove.to.x}_${lastMove.to.y}`}>
-                {/* 출발지 잔상 원 */}
-                <circle
-                  cx={getCoord(lastMove.from.x, lastMove.from.y).cx}
-                  cy={getCoord(lastMove.from.x, lastMove.from.y).cy}
-                  r={stepX * 0.42}
-                  fill="none"
-                  stroke="#d97706"
-                  strokeWidth={1.8}
-                  strokeDasharray="4 3"
-                  opacity={0.7}
-                />
+            {/* 7. 마지막 수 착수 궤적 & 쇼크웨이브 & 포격 아크 & 포획 애니메이션 */}
+            {lastMove && (() => {
+              const movedPiece = board[lastMove.to.y][lastMove.to.x];
+              const p1 = getCoord(lastMove.from.x, lastMove.from.y);
+              const p2 = getCoord(lastMove.to.x, lastMove.to.y);
+              const isCannon = movedPiece?.type === 'cannon';
+              const isChariot = movedPiece?.type === 'chariot';
+              const midX = (p1.cx + p2.cx) / 2;
+              const midY = (p1.cy + p2.cy) / 2 - 28;
 
-                {/* 이동 궤적 애니메이션 흐름 점선 */}
-                <line
-                  x1={getCoord(lastMove.from.x, lastMove.from.y).cx}
-                  y1={getCoord(lastMove.from.x, lastMove.from.y).cy}
-                  x2={getCoord(lastMove.to.x, lastMove.to.y).cx}
-                  y2={getCoord(lastMove.to.x, lastMove.to.y).cy}
-                  stroke="#d97706"
-                  strokeWidth={2.4}
-                  strokeDasharray="6 4"
-                  className="animate-trail-flow"
-                  opacity={0.8}
-                />
+              return (
+                <g key={`move_${lastMove.from.x}_${lastMove.from.y}_${lastMove.to.x}_${lastMove.to.y}`}>
+                  {/* 출발지 잔상 원 */}
+                  <circle
+                    cx={p1.cx}
+                    cy={p1.cy}
+                    r={stepX * 0.42}
+                    fill="none"
+                    stroke={isCannon ? '#e11d48' : '#d97706'}
+                    strokeWidth={1.8}
+                    strokeDasharray="4 3"
+                    opacity={0.7}
+                  />
 
-                {/* 착수점 황금빛 충격파 리플 */}
-                <circle
-                  cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
-                  cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
-                  className="animate-shockwave pointer-events-none"
-                  fill="none"
-                  stroke={lastMoveIsCapture ? '#dc2626' : '#f59e0b'}
-                />
-
-                {/* 적 기물 포획 시 격파 버스트 이펙트 */}
-                {lastMoveIsCapture && (
-                  <g className="animate-capture-burst pointer-events-none">
-                    <circle
-                      cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
-                      cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
-                      r={stepX * 0.58}
+                  {/* 포(包)인 경우: 다리를 뛰어넘는 웅장한 포물선 탄도 아크 */}
+                  {isCannon ? (
+                    <path
+                      d={`M ${p1.cx} ${p1.cy} Q ${midX} ${midY} ${p2.cx} ${p2.cy}`}
                       fill="none"
-                      stroke="#ef4444"
-                      strokeWidth={2.5}
-                      strokeDasharray="5 3"
+                      stroke="#e11d48"
+                      strokeWidth={3}
+                      strokeDasharray="6 3"
+                      className="animate-trail-flow"
+                      opacity={0.9}
                     />
-                    <polygon
-                      points={getOctagonPoints(
-                        getCoord(lastMove.to.x, lastMove.to.y).cx,
-                        getCoord(lastMove.to.x, lastMove.to.y).cy,
-                        stepX * 0.42
-                      )}
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth={1.8}
-                      opacity={0.85}
+                  ) : isChariot ? (
+                    /* 차(車)인 경우: 광속 돌진 레이저 빔 */
+                    <g>
+                      <line
+                        x1={p1.cx}
+                        y1={p1.cy}
+                        x2={p2.cx}
+                        y2={p2.cy}
+                        stroke="#f59e0b"
+                        strokeWidth={4.5}
+                        strokeLinecap="round"
+                        opacity={0.35}
+                      />
+                      <line
+                        x1={p1.cx}
+                        y1={p1.cy}
+                        x2={p2.cx}
+                        y2={p2.cy}
+                        stroke="#fbbf24"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeDasharray="8 4"
+                        className="animate-trail-flow"
+                        opacity={0.9}
+                      />
+                    </g>
+                  ) : (
+                    /* 일반 기물 이동 궤적 애니메이션 흐름 점선 */
+                    <line
+                      x1={p1.cx}
+                      y1={p1.cy}
+                      x2={p2.cx}
+                      y2={p2.cy}
+                      stroke="#d97706"
+                      strokeWidth={2.4}
+                      strokeDasharray="6 4"
+                      className="animate-trail-flow"
+                      opacity={0.8}
                     />
-                  </g>
-                )}
+                  )}
 
-                {/* 도착점 하이라이트 글로우 링 */}
-                <circle
-                  cx={getCoord(lastMove.to.x, lastMove.to.y).cx}
-                  cy={getCoord(lastMove.to.x, lastMove.to.y).cy}
-                  r={stepX * 0.48}
-                  fill="url(#lastMoveGlow)"
-                  stroke={lastMoveIsCapture ? '#dc2626' : '#f59e0b'}
-                  strokeWidth={2.2}
-                />
-              </g>
-            )}
+                  {/* 착수점 황금빛 충격파 리플 */}
+                  <circle
+                    cx={p2.cx}
+                    cy={p2.cy}
+                    className="animate-shockwave pointer-events-none"
+                    fill="none"
+                    stroke={lastMoveIsCapture ? '#dc2626' : isCannon ? '#e11d48' : '#f59e0b'}
+                  />
+
+                  {/* 적 기물 포획 시 격파 버스트 이펙트 */}
+                  {lastMoveIsCapture && (
+                    <g className="animate-capture-burst pointer-events-none">
+                      <circle
+                        cx={p2.cx}
+                        cy={p2.cy}
+                        r={stepX * 0.58}
+                        fill="none"
+                        stroke="#ef4444"
+                        strokeWidth={2.5}
+                        strokeDasharray="5 3"
+                      />
+                      <polygon
+                        points={getOctagonPoints(p2.cx, p2.cy, stepX * 0.42)}
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth={1.8}
+                        opacity={0.85}
+                      />
+                    </g>
+                  )}
+
+                  {/* 도착점 하이라이트 글로우 링 */}
+                  <circle
+                    cx={p2.cx}
+                    cy={p2.cy}
+                    r={stepX * 0.48}
+                    fill="url(#lastMoveGlow)"
+                    stroke={lastMoveIsCapture ? '#dc2626' : isCannon ? '#e11d48' : '#f59e0b'}
+                    strokeWidth={2.2}
+                  />
+                </g>
+              );
+            })()}
 
             {/* 8. 유효 착수 가능 위치 원형 인디케이터 (Valid Moves) */}
             {validMoves.map((m, idx) => {
@@ -593,18 +647,38 @@ export function JanggiBoard({
           </svg>
         </div>
 
-        {/* 하단 진영 안내 바 (밝은 우드톤) */}
+        {/* 하단 진영 안내 바 (밝은 우드톤 - 플레이어 진영에 동적 적응) */}
         <div className="flex items-center justify-between pt-2 px-1 text-[11px] font-bold text-[#5c3c1f]">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#059669] shadow-xs" />
-            <span className="text-[#065f46] font-black">내 진영: 楚 (하단 선공)</span>
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                playerSide === 'cho' ? 'bg-[#059669]' : 'bg-[#dc2626]'
+              } shadow-xs`}
+            />
+            <span
+              className={`${
+                playerSide === 'cho' ? 'text-[#065f46]' : 'text-[#991b1b]'
+              } font-black`}
+            >
+              내 진영: {playerSide === 'cho' ? '楚 (하단 선공)' : '漢 (하단 후공 +1.5점)'}
+            </span>
           </div>
           <div className="text-[10px] text-[#785331] font-mono tracking-tight">
             {cols === 9 ? '정규 9×10 한국 장기' : '7×7 미니 장기'}
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="text-[#991b1b] font-black">컴퓨터: 漢 (상단 후공 +1.5점)</span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#dc2626] shadow-xs" />
+            <span
+              className={`${
+                playerSide === 'cho' ? 'text-[#991b1b]' : 'text-[#065f46]'
+              } font-black`}
+            >
+              컴퓨터: {playerSide === 'cho' ? '漢 (상단 후공 +1.5점)' : '楚 (상단 선공)'}
+            </span>
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                playerSide === 'cho' ? 'bg-[#dc2626]' : 'bg-[#059669]'
+              } shadow-xs`}
+            />
           </div>
         </div>
       </div>

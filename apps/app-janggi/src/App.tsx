@@ -18,11 +18,14 @@ import {
   isBigjang,
   calculateJanggiScore,
   getAllLegalMoves,
+  getBoardHash,
+  hasInsufficientMaterial,
 } from './logic/janggiRules';
 import { findBestMove } from './logic/janggiAi';
 import { getDailyPuzzle, JanggiPuzzle } from './data/dailyPuzzles';
 import { getTodaySajuBuff } from './utils/sajuCalculator';
 import { soundEffects } from './utils/soundEffects';
+import { AI_PERSONAS, getRandomLine } from './data/aiPersonas';
 
 // Components
 import { SplashScreen } from './components/SplashScreen';
@@ -34,6 +37,8 @@ import { VictoryModal } from './components/VictoryModal';
 import { SetupModal } from './components/SetupModal';
 import { RuleGuideModal } from './components/RuleGuideModal';
 import { JanggunBanner } from './components/JanggunBanner';
+import { CheckmateBanner } from './components/CheckmateBanner';
+import { BigjangModal } from './components/BigjangModal';
 
 const DIFFICULTY_SEQUENCE: Difficulty[] = ['beginner', 'easy', 'normal', 'hard', 'master'];
 const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color: string }> = {
@@ -56,6 +61,7 @@ export function App() {
   const [hanSetup, setHanSetup] = useState<SetupType>('masangsangma');
   const [aiDifficulty, setAiDifficulty] = useState<Difficulty>('normal');
   const [playerSide, setPlayerSide] = useState<Side>('cho'); // 유저 진영 (기본 초 선공)
+  const [aiDialogue, setAiDialogue] = useState<string>(() => AI_PERSONAS['normal'].greeting);
 
   // 3. 보드 및 턴 상태
   const cols = gameMode === 'mini' ? 7 : 9;
@@ -67,6 +73,9 @@ export function App() {
   const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
   const [lastMoveIsCapture, setLastMoveIsCapture] = useState<boolean>(false);
   const [janggunAttacker, setJanggunAttacker] = useState<Side | null>(null);
+  const [checkmateWinner, setCheckmateWinner] = useState<Side | null>(null);
+  const [isBigjangModalOpen, setIsBigjangModalOpen] = useState<boolean>(false);
+  const [boardHashes, setBoardHashes] = useState<string[]>([]);
 
   // 4. 승패 및 상태
   const [isCheckState, setIsCheckState] = useState<boolean>(false);
@@ -104,12 +113,15 @@ export function App() {
   const score: ScoreBreakdown = calculateJanggiScore(board, cols, rows);
 
   // 대국판 초기화 함수
-  const initGame = useCallback((mode = gameMode, cSetup = choSetup, hSetup = hanSetup) => {
+  const initGame = useCallback((mode = gameMode, cSetup = choSetup, hSetup = hanSetup, diff = aiDifficulty) => {
     setSelectedPos(null);
     setValidMoves([]);
     setLastMove(null);
     setLastMoveIsCapture(false);
     setJanggunAttacker(null);
+    setCheckmateWinner(null);
+    setIsBigjangModalOpen(false);
+    setBoardHashes([]);
     setIsCheckState(false);
     setWinner(null);
     setWinReason('');
@@ -121,6 +133,7 @@ export function App() {
     setActiveSkill(null);
     setIsAiThinking(false);
     setTimeRemaining(mode === 'mini' ? 15 : 30);
+    setAiDialogue(AI_PERSONAS[diff]?.greeting || '');
 
     if (mode === 'mini') {
       setBoard(createMiniBoard());
@@ -210,6 +223,7 @@ export function App() {
     if (aiRunningRef.current) return;
     aiRunningRef.current = true;
     setIsAiThinking(true);
+    setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onThinking));
 
     const thinkDuration =
       aiDifficulty === 'master'
@@ -233,7 +247,9 @@ export function App() {
         const winSide: Side = activeTurn === 'cho' ? 'han' : 'cho';
         setWinner(winSide);
         setWinReason('외통수 (장군을 피할 수 없음)');
-        soundEffects.playVictory();
+        setCheckmateWinner(winSide);
+        soundEffects.playCheckmate();
+        setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onDefeat));
         aiRunningRef.current = false;
         setIsAiThinking(false);
         return;
@@ -276,6 +292,10 @@ export function App() {
     const hasCaptured = !!targetPiece;
     setLastMoveIsCapture(hasCaptured);
 
+    if (movingPiece.type === 'cannon') {
+      soundEffects.playCannonShot();
+    }
+
     if (targetPiece) {
       soundEffects.playCapture();
       if (currentTurn === 'cho') {
@@ -293,7 +313,8 @@ export function App() {
     setLastMove({ from, to });
     setSelectedPos(null);
     setValidMoves([]);
-    setMoveCount((prev) => prev + 1);
+    const nextMoveCount = moveCount + 1;
+    setMoveCount(nextMoveCount);
     setTimeRemaining(gameMode === 'mini' ? 15 : 30);
 
     const nextTurn: Side = currentTurn === 'cho' ? 'han' : 'cho';
@@ -328,28 +349,80 @@ export function App() {
       }
     }
 
-    // 장군(Check) 판별
+    // 1. 150수 제한 도달 시 한국장기협회 공식 점수제 판정
+    if (nextMoveCount >= 150) {
+      soundEffects.playVictory();
+      const finalScore = calculateJanggiScore(newBoard, cols, rows);
+      setWinner(finalScore.leader);
+      setWinReason('150수 제한 도달 — 한국장기협회 공식 점수제 판정');
+      return;
+    }
+
+    // 2. 양측 핵심 공격 기물(차, 포, 마, 상) 전멸 시 외통 불능 점수제 판정
+    if (hasInsufficientMaterial(newBoard)) {
+      soundEffects.playVictory();
+      const finalScore = calculateJanggiScore(newBoard, cols, rows);
+      setWinner(finalScore.leader);
+      setWinReason('양측 공격 기물 소진 (외통 불능) — 공식 점수제 판정');
+      return;
+    }
+
+    // 3. 동일 국면 3회 반복(삼복수) 감지
+    const currentHash = getBoardHash(newBoard, nextTurn);
+    const hashOccurrences = boardHashes.filter((h) => h === currentHash).length;
+    if (hashOccurrences >= 2) {
+      soundEffects.playVictory();
+      setWinner('draw');
+      setWinReason('동일 국면 3회 반복 (한국장기협회 공식 삼복수 무승부)');
+      return;
+    }
+    setBoardHashes((prev) => [...prev, currentHash]);
+
+    // 4. 장군(Check) 판별
     const checkOnOpponent = isCheck(newBoard, nextTurn, cols, rows);
     setIsCheckState(checkOnOpponent);
 
     if (checkOnOpponent) {
       soundEffects.playCheck();
       setJanggunAttacker(currentTurn);
+
       // 외통수(Checkmate) 체크: 다음 턴 상대가 둘 수 있는 합법 수가 전혀 없는가?
       const opponentMoves = getAllLegalMoves(newBoard, nextTurn, cols, rows);
       if (opponentMoves.length === 0) {
-        soundEffects.playVictory();
+        soundEffects.playCheckmate();
+        setCheckmateWinner(currentTurn);
         setWinner(currentTurn);
-        setWinReason(`외통수! ${currentTurn === 'cho' ? '초(楚)' : '한(漢)'} 완승`);
+        setWinReason(`외통수(外痛手)! ${currentTurn === 'cho' ? '초(楚)' : '한(漢)'} 완승`);
+
+        if (currentTurn === playerSide) {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onDefeat));
+        } else {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onVictory));
+        }
         return;
+      } else {
+        // 장군 시 AI 대사
+        if (currentTurn !== playerSide) {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onCheck));
+        } else {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onInCheck));
+        }
       }
     } else {
       setJanggunAttacker(null);
+      if (targetPiece) {
+        if (currentTurn !== playerSide) {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onCapture));
+        } else {
+          setAiDialogue(getRandomLine(AI_PERSONAS[aiDifficulty].onInCheck));
+        }
+      }
     }
 
-    // 빅장(대치) 체크
+    // 5. 빅장(Face-to-Face King) 체크: 두 궁이 마주보면 무승부 제안 모달 트리거
     if (isBigjang(newBoard, cols, rows)) {
-      // 빅장 상태 알림
+      soundEffects.playCheck();
+      setIsBigjangModalOpen(true);
     }
 
     setCurrentTurn(nextTurn);
@@ -510,7 +583,7 @@ export function App() {
 
         {/* 상시 고정 대국 상태 브리핑 바 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
         <div
-          className={`w-full h-10 min-h-[40px] max-h-[40px] px-3 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
+          className={`w-full h-10 min-h-[40px] max-h-[40px] px-2.5 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
             !isGameStarted
               ? 'bg-amber-50/90 border-amber-300 text-amber-950'
               : isCheckState
@@ -522,51 +595,39 @@ export function App() {
               : 'bg-slate-100/90 border-slate-200 text-slate-700'
           }`}
         >
-          {/* 좌측: 실시간 국면 및 AI 수읽기 브리핑 */}
-          <div className="flex items-center gap-2 overflow-hidden text-xs font-black truncate flex-1 mr-2">
+          {/* 좌측: 실시간 국면 및 AI 수읽기 / 리액션 말풍선 브리핑 */}
+          <div className="flex items-center gap-1.5 overflow-hidden text-xs font-black truncate flex-1 mr-2">
+            <span className="text-sm shrink-0" title={`${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title})`}>
+              {AI_PERSONAS[aiDifficulty]?.avatar}
+            </span>
             {!isGameStarted ? (
-              <>
-                <i className="fas fa-chess-knight text-amber-600 animate-pulse"></i>
-                <span className="truncate">
-                  대국 준비 중 — 상차림 및 난이도를 선택해 주세요
-                </span>
-              </>
+              <span className="truncate text-amber-900">
+                {AI_PERSONAS[aiDifficulty]?.name}: "{AI_PERSONAS[aiDifficulty]?.greeting}"
+              </span>
             ) : isCheckState ? (
               <>
-                <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce"></i>
+                <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce text-xs shrink-0"></i>
                 <span className="truncate">
-                  {currentTurn === playerSide
-                    ? '⚠️ [장군 위기!] 내 왕(楚)이 위험합니다! 피하거나 막으세요!'
-                    : '⚔️ [장군 공세!] 컴퓨터의 왕(漢)을 위협 중입니다!'}
+                  {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '장군 위기! 왕을 피하세요!' : '외통의 길목이오, 장군!')}"
                 </span>
               </>
             ) : isAiThinking ? (
               <>
-                <i className="fas fa-microchip text-indigo-600 animate-spin text-xs"></i>
-                <span className="truncate animate-pulse">
-                  AI 수읽기 연산 중... ({DIFFICULTY_INFO[aiDifficulty]?.badge})
-                </span>
-              </>
-            ) : currentTurn === playerSide ? (
-              <>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs animate-pulse"></span>
-                <span className="truncate">
-                  내 차례 (초 楚) — 둘 기물을 선택하세요
+                <i className="fas fa-microchip text-indigo-600 animate-spin text-xs shrink-0"></i>
+                <span className="truncate animate-pulse text-indigo-950">
+                  {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || '수읽기 연산 중...'}"
                 </span>
               </>
             ) : (
-              <>
-                <i className="fas fa-hourglass-half text-slate-500"></i>
-                <span className="truncate text-slate-600">
-                  상대 AI(한 漢) 차례를 준비 중입니다...
-                </span>
-              </>
+              <span className="truncate">
+                {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '당신의 차례입니다. 신중히 두세요.' : '수를 준비 중입니다.')}"
+              </span>
             )}
           </div>
 
           {/* 우측: 현재 AI 대국 난이도 고정 뱃지 (대국 중 실시간 변경 방지) */}
           <div
-            title={`현재 AI 난이도: ${DIFFICULTY_INFO[aiDifficulty]?.label} (새 대국 시작 시 변경 가능)`}
+            title={`상대: ${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title}) - ${DIFFICULTY_INFO[aiDifficulty]?.label}`}
             className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border select-none shrink-0 shadow-xs ${
               DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
             }`}
@@ -587,15 +648,25 @@ export function App() {
             lastMoveIsCapture={lastMoveIsCapture}
             isCheckSide={isCheckState ? currentTurn : null}
             currentTurn={currentTurn}
+            playerSide={playerSide}
             onSelectPiece={handleSelectPiece}
             onMakeMove={handleMakeMove}
           />
 
           {/* 중앙 시네마틱 '장군(將軍)!' 팝업 배너 */}
-          {janggunAttacker && (
+          {janggunAttacker && !checkmateWinner && (
             <JanggunBanner
               attacker={janggunAttacker}
               onClose={() => setJanggunAttacker(null)}
+            />
+          )}
+
+          {/* 피날레 '외통수(外痛手)!' 시네마틱 배너 */}
+          {checkmateWinner && (
+            <CheckmateBanner
+              winner={checkmateWinner}
+              playerSide={playerSide}
+              onClose={() => setCheckmateWinner(null)}
             />
           )}
         </div>
@@ -645,6 +716,17 @@ export function App() {
         onNewGame={handleOpenNewGame}
       />
 
+      {/* 빅장 (Face-to-Face King) 무승부 제안 모달 */}
+      <BigjangModal
+        isOpen={isBigjangModalOpen}
+        onAcceptDraw={() => {
+          setWinner('draw');
+          setWinReason('빅장(Face-to-Face King) 무승부 합의');
+          setIsBigjangModalOpen(false);
+        }}
+        onContinue={() => setIsBigjangModalOpen(false)}
+      />
+
       {/* 대국 상차림 & AI 난이도 설정 모달 */}
       <SetupModal
         isOpen={isSetupOpen}
@@ -665,7 +747,7 @@ export function App() {
           setAiDifficulty(opts.aiDifficulty);
           setPlayerSide(opts.playerSide);
           setIsGameStarted(true);
-          initGame(gameMode, opts.choSetup, opts.hanSetup);
+          initGame(gameMode, opts.choSetup, opts.hanSetup, opts.aiDifficulty);
         }}
       />
 

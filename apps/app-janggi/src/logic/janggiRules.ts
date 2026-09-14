@@ -625,3 +625,39 @@ export function calculateJanggiScore(board: (Piece | null)[][], cols = 9, rows =
     leader,
   };
 }
+
+// 동일 국면 3회 반복(반복수) 감지용 보드 해시 생성
+export function getBoardHash(board: (Piece | null)[][], turn: Side): string {
+  const parts: string[] = [turn];
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      const p = board[r][c];
+      if (p) {
+        parts.push(`${r},${c}:${p.side[0]}${p.type[0]}`);
+      }
+    }
+  }
+  return parts.join('|');
+}
+
+// 양측 외통 불능(공격 기물 고착) 여부 판정
+// 차, 포, 마, 상 등 핵심 공격 기물이 모두 소진되어 외통수가 물리적으로 불가능한 국면
+export function hasInsufficientMaterial(board: (Piece | null)[][]): boolean {
+  let hasChoAttacker = false;
+  let hasHanAttacker = false;
+
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      const p = board[r][c];
+      if (p && (p.type === 'chariot' || p.type === 'cannon' || p.type === 'horse' || p.type === 'elephant')) {
+        if (p.side === 'cho') hasChoAttacker = true;
+        else hasHanAttacker = true;
+      }
+      if (hasChoAttacker && hasHanAttacker) return false;
+    }
+  }
+
+  // 양측 모두 공격 기물이 없으면 판정승으로 유도
+  return !hasChoAttacker && !hasHanAttacker;
+}
+
