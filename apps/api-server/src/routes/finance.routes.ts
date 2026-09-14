@@ -114,6 +114,21 @@ let indicesCache: { data: any; timestamp: number } | null = null;
 let stocksCache: { data: any; timestamp: number } | null = null;
 const CACHE_TTL = 5 * 60 * 1000; // 5분
 
+// 한국 증시 실시간 지수 전용 캐시 (개장 중 8초, 마감 후 10분)
+let krIndicesCache: { data: any[]; timestamp: number } | null = null;
+
+// 대한민국 정규 증권 시장 개장 여부 확인 (월~금 09:00 ~ 15:30 KST)
+function isKoreanMarketOpen(): boolean {
+    const now = new Date();
+    const kstOffset = 9 * 60; // UTC+9 분
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const kst = new Date(utcTime + (kstOffset * 60000));
+    const day = kst.getDay(); // 0: 일, 6: 토
+    if (day === 0 || day === 6) return false;
+    const minutes = kst.getHours() * 60 + kst.getMinutes();
+    return minutes >= 540 && minutes <= 930; // 09:00 (540분) ~ 15:30 (930분)
+}
+
 // 시간 포맷 유틸
 function formatMarketTime(epochSec?: number, tz?: string): string {
     if (!epochSec) return '';
@@ -125,6 +140,141 @@ function formatMarketTime(epochSec?: number, tz?: string): string {
     const hh = String(kst.getUTCHours()).padStart(2, '0');
     const mi = String(kst.getUTCMinutes()).padStart(2, '0');
     return `${mm}.${dd} ${hh}:${mi}`;
+}
+
+function formatLocalTradedAt(isoString?: string): string {
+    if (!isoString) return '';
+    try {
+        const d = new Date(isoString);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        return `${mm}.${dd} ${hh}:${mi}`;
+    } catch {
+        return '';
+    }
+}
+
+// 네이버 증권 실시간 공식 지수 API 연동 (KOSPI, KOSDAQ, KPI200, USD/KRW)
+async function fetchNaverIndices(): Promise<any[]> {
+    try {
+        const [kospiRes, kosdaqRes, kpi200Res, usdkrwRes] = await Promise.allSettled([
+            fetch('https://m.stock.naver.com/api/index/KOSPI/basic', { 
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
+            }),
+            fetch('https://m.stock.naver.com/api/index/KOSDAQ/basic', { 
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
+            }),
+            fetch('https://m.stock.naver.com/api/index/KPI200/basic', { 
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
+            }),
+            fetch('https://api.stock.naver.com/marketindex/exchange/FX_USDKRW', { 
+                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
+            }),
+        ]);
+
+        const results: any[] = [];
+        const isMarketOpen = isKoreanMarketOpen();
+
+        if (kospiRes.status === 'fulfilled' && kospiRes.value.ok) {
+            const data = await kospiRes.value.json();
+            const val = parseFloat(String(data.closePrice).replace(/,/g, '')) || 0;
+            const chg = parseFloat(String(data.compareToPreviousClosePrice).replace(/,/g, '')) || 0;
+            const rate = parseFloat(String(data.fluctuationsRatio).replace(/,/g, '')) || 0;
+            results.push({
+                symbol: '^KS11',
+                name: 'KOSPI',
+                country: 'kr',
+                currency: '₩',
+                flag: '🇰🇷',
+                description: '한국 유가증권시장 종합',
+                value: val,
+                change: chg,
+                rate: rate,
+                status: chg >= 0 ? 'up' : 'down',
+                marketStatus: data.marketStatus || (isMarketOpen ? 'OPEN' : 'CLOSED'),
+                isMarketOpen,
+                updatedAt: formatLocalTradedAt(data.localTradedAt),
+            });
+        }
+
+        if (kosdaqRes.status === 'fulfilled' && kosdaqRes.value.ok) {
+            const data = await kosdaqRes.value.json();
+            const val = parseFloat(String(data.closePrice).replace(/,/g, '')) || 0;
+            const chg = parseFloat(String(data.compareToPreviousClosePrice).replace(/,/g, '')) || 0;
+            const rate = parseFloat(String(data.fluctuationsRatio).replace(/,/g, '')) || 0;
+            results.push({
+                symbol: '^KQ11',
+                name: 'KOSDAQ',
+                country: 'kr',
+                currency: '₩',
+                flag: '🇰🇷',
+                description: '한국 코스닥 시장',
+                value: val,
+                change: chg,
+                rate: rate,
+                status: chg >= 0 ? 'up' : 'down',
+                marketStatus: data.marketStatus || (isMarketOpen ? 'OPEN' : 'CLOSED'),
+                isMarketOpen,
+                updatedAt: formatLocalTradedAt(data.localTradedAt),
+            });
+        }
+
+        if (kpi200Res.status === 'fulfilled' && kpi200Res.value.ok) {
+            const data = await kpi200Res.value.json();
+            const val = parseFloat(String(data.closePrice).replace(/,/g, '')) || 0;
+            const chg = parseFloat(String(data.compareToPreviousClosePrice).replace(/,/g, '')) || 0;
+            const rate = parseFloat(String(data.fluctuationsRatio).replace(/,/g, '')) || 0;
+            results.push({
+                symbol: '^KS200',
+                name: 'KOSPI 200',
+                country: 'kr',
+                currency: '₩',
+                flag: '🇰🇷',
+                description: '한국 대표 우량 200개 종목',
+                value: val,
+                change: chg,
+                rate: rate,
+                status: chg >= 0 ? 'up' : 'down',
+                marketStatus: data.marketStatus || (isMarketOpen ? 'OPEN' : 'CLOSED'),
+                isMarketOpen,
+                updatedAt: formatLocalTradedAt(data.localTradedAt),
+            });
+        }
+
+        if (usdkrwRes.status === 'fulfilled' && usdkrwRes.value.ok) {
+            const data = await usdkrwRes.value.json();
+            const info = data.exchangeInfo || {};
+            const val = parseFloat(String(info.closePrice).replace(/,/g, '')) || 0;
+            const rawChg = parseFloat(String(info.fluctuations).replace(/,/g, '')) || 0;
+            const rawRate = parseFloat(String(info.fluctuationsRatio).replace(/,/g, '')) || 0;
+            const isFalling = info.fluctuationsType?.name === 'FALLING' || info.fluctuationsType?.code === '5';
+            const chg = isFalling ? -Math.abs(rawChg) : Math.abs(rawChg);
+            const rate = isFalling ? -Math.abs(rawRate) : Math.abs(rawRate);
+
+            results.push({
+                symbol: 'KRW=X',
+                name: 'USD/KRW',
+                country: 'kr',
+                currency: '₩',
+                flag: '🇰🇷',
+                description: '원/달러 실시간 환율',
+                value: val,
+                change: chg,
+                rate: rate,
+                status: chg >= 0 ? 'up' : 'down',
+                marketStatus: info.marketStatus || (isMarketOpen ? 'OPEN' : 'CLOSED'),
+                isMarketOpen,
+                updatedAt: formatLocalTradedAt(info.localTradedAt),
+            });
+        }
+
+        return results;
+    } catch (e) {
+        console.error('Failed to fetch Naver indices:', e);
+        return [];
+    }
 }
 
 // 국가별 주식 지수 설정
@@ -168,14 +318,47 @@ financeRoutes.get('/api/finance/indices', async (c) => {
     const now = Date.now();
     const countryParam = c.req.query('country')?.toLowerCase();
 
+    // 1. 한국 지수 요청 시: 네이버 증권 실시간 API + 8초 스마트 캐시 적용
+    if (countryParam === 'kr') {
+        const isMarketOpen = isKoreanMarketOpen();
+        const krCacheTtl = isMarketOpen ? 8 * 1000 : 10 * 60 * 1000; // 개장 중 8초, 마감 후 10분
+
+        if (krIndicesCache && (now - krIndicesCache.timestamp) < krCacheTtl) {
+            return c.json(krIndicesCache.data);
+        }
+
+        const freshKr = await fetchNaverIndices();
+        if (freshKr.length > 0) {
+            krIndicesCache = { data: freshKr, timestamp: now };
+            return c.json(freshKr);
+        }
+
+        // 실패 시 이전 캐시 반환
+        if (krIndicesCache) {
+            return c.json(krIndicesCache.data);
+        }
+    }
+
+    // 2. 전체 또는 타 국가 지수 요청 시
     let allIndices = indicesCache ? indicesCache.data : null;
 
     if (!allIndices || (now - (indicesCache?.timestamp || 0)) >= CACHE_TTL) {
-        const symbols = COUNTRY_INDICES.map(i => i.symbol);
-        const quotes = await fetchYahooQuotes(symbols);
+        // 해외 지수 심볼만 Yahoo에서 가져오기
+        const overseasSymbols = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(i => i.symbol);
+        
+        // KR 지수와 해외 지수를 병렬로 획득
+        const [freshKr, quotes] = await Promise.all([
+            fetchNaverIndices(),
+            fetchYahooQuotes(overseasSymbols)
+        ]);
+
+        if (freshKr.length > 0) {
+            krIndicesCache = { data: freshKr, timestamp: now };
+        }
+
         const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
 
-        allIndices = COUNTRY_INDICES.map(cfg => {
+        const overseasIndices = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(cfg => {
             const q = quoteMap.get(cfg.symbol);
             if (q && q.price) {
                 const change = q.price - q.previousClose;
@@ -194,7 +377,6 @@ financeRoutes.get('/api/finance/indices', async (c) => {
                     updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
                 };
             }
-            // fallback if not fetched
             return {
                 symbol: cfg.symbol,
                 name: cfg.name,
@@ -209,6 +391,10 @@ financeRoutes.get('/api/finance/indices', async (c) => {
                 updatedAt: '',
             };
         }).filter(item => item.value > 0);
+
+        // KR 지수(네이버 실시간) + 해외 지수(Yahoo) 통합
+        const finalKr = (freshKr.length > 0) ? freshKr : (krIndicesCache?.data || []);
+        allIndices = [...finalKr, ...overseasIndices];
 
         if (allIndices.length > 0) {
             indicesCache = { data: allIndices, timestamp: now };

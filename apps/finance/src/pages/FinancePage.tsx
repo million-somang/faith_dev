@@ -75,6 +75,17 @@ export const MACRO_CATEGORY_TABS: { key: MacroCategory; label: string; icon: str
     { key: 'all', label: '전체 지표', icon: '🌐', highlight: '종합 보기', insight: '글로벌 원자재, 에너지, 금속, 환율 및 가상자산 등 24종 핵심 지표를 종합 조망합니다.' },
 ];
 
+// 대한민국 정규 증권 시장 개장 여부 확인 (월~금 09:00 ~ 15:30 KST)
+function isKoreanMarketOpen(): boolean {
+    const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const kst = new Date(utc + (9 * 60 * 60000));
+    const day = kst.getDay(); // 0: 일, 6: 토
+    if (day === 0 || day === 6) return false;
+    const totalMinutes = kst.getHours() * 60 + kst.getMinutes();
+    return totalMinutes >= 540 && totalMinutes <= 930; // 09:00 (540분) ~ 15:30 (930분)
+}
+
 export default function FinancePage() {
     const { user, logout } = useAuth();
     const [showCalculator, setShowCalculator] = useState(false);
@@ -86,6 +97,65 @@ export default function FinancePage() {
     const [macro, setMacro] = useState<MacroIndicator[]>([]);
     const [stockNews, setStockNews] = useState<NewsItem[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // 10초 실시간 갱신 상태 관리
+    const [isMarketOpen, setIsMarketOpen] = useState(isKoreanMarketOpen());
+    const [lastUpdatedTime, setLastUpdatedTime] = useState<string>('');
+    const [flashHighlight, setFlashHighlight] = useState(false);
+
+    // 30초마다 개장 여부 체크하여 상태 동기화
+    useEffect(() => {
+        const checkOpen = () => setIsMarketOpen(isKoreanMarketOpen());
+        const id = setInterval(checkOpen, 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    // 🌟 지수 전용 10초 실시간 자동 갱신 (한국 개장 시간 중에만 10초 타이머 작동)
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout | null = null;
+
+        const updateIndices = async () => {
+            const openNow = isKoreanMarketOpen();
+            setIsMarketOpen(openNow);
+
+            // 한국 탭이면서 장마감(09:00 전, 15:30 후, 주말)인 경우 10초 폴링 미실시
+            if (selectedCountry === 'kr' && !openNow) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/api/finance/indices?country=${selectedCountry}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        setIndices(prev => {
+                            const others = prev.filter(i => i.country !== selectedCountry);
+                            return [...others, ...data];
+                        });
+                        const now = new Date();
+                        setLastUpdatedTime(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+                        setFlashHighlight(true);
+                        setTimeout(() => setFlashHighlight(false), 900);
+                    }
+                }
+            } catch (e) {
+                console.warn('지수 실시간 갱신 실패:', e);
+            }
+        };
+
+        // 탭 전환 시 즉시 1회 최신 데이터 요청
+        updateIndices();
+
+        // 한국 탭이고 개장 시간일 때만 10초 주기 타이머 실행
+        const openNow = isKoreanMarketOpen();
+        if (selectedCountry === 'kr' && openNow) {
+            intervalId = setInterval(updateIndices, 10000);
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [selectedCountry, isMarketOpen]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -225,14 +295,40 @@ export default function FinancePage() {
                 <section className="mb-8 sm:mb-10 bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-100">
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5 flex-wrap">
                                 <span className="text-xl">{currentTabInfo.flag}</span>
                                 <h2 className="text-lg sm:text-xl font-black text-gray-900">
                                     {currentTabInfo.title}
                                 </h2>
+                                {selectedCountry === 'kr' && (
+                                    isMarketOpen ? (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                            </span>
+                                            실시간 (10초 갱신)
+                                            {lastUpdatedTime && (
+                                                <span className="text-[10px] text-emerald-600/80 font-mono ml-0.5">
+                                                    {lastUpdatedTime}
+                                                </span>
+                                            )}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            장마감 (15:30 확정 종가)
+                                        </span>
+                                    )
+                                )}
                             </div>
                             <p className="text-xs text-gray-500 mt-1">
                                 {currentTabInfo.desc}
+                                {selectedCountry === 'kr' && (
+                                    <span className="text-[11px] text-slate-400 ml-1.5 hidden sm:inline">
+                                        • 정규장 거래시간: 평일 09:00 ~ 15:30
+                                    </span>
+                                )}
                             </p>
                         </div>
 
@@ -276,7 +372,11 @@ export default function FinancePage() {
                             filteredIndices.map(index => (
                             <div 
                                 key={index.symbol || index.name} 
-                                className={`p-4 sm:p-5 hover:shadow-md transition-all duration-300 border border-slate-200/90 bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${loading ? 'animate-pulse' : ''}`}
+                                className={`p-4 sm:p-5 hover:shadow-md transition-all duration-300 border bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${
+                                    flashHighlight 
+                                        ? 'border-emerald-400/90 shadow-sm ring-2 ring-emerald-300/40' 
+                                        : 'border-slate-200/90'
+                                } ${loading ? 'animate-pulse' : ''}`}
                             >
                                 <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="min-w-0 flex-1">
