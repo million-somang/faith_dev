@@ -25,6 +25,46 @@ function generateUUID(): string {
     });
 }
 
+// 세션 최초 유입 경로 및 UTM 파라미터 관리
+function getInitialReferrer(): string {
+    if (typeof window === 'undefined') return '';
+    let ref = sessionStorage.getItem('fl_initial_referrer');
+    if (ref === null) {
+        ref = document.referrer || '';
+        sessionStorage.setItem('fl_initial_referrer', ref);
+    }
+    return ref;
+}
+
+function getUtmParams(): { utmSource?: string; utmMedium?: string; utmCampaign?: string } {
+    if (typeof window === 'undefined') return {};
+    try {
+        const search = window.location.search;
+        if (!search) {
+            const savedSource = sessionStorage.getItem('fl_utm_source');
+            const savedMedium = sessionStorage.getItem('fl_utm_medium');
+            const savedCampaign = sessionStorage.getItem('fl_utm_campaign');
+            return {
+                utmSource: savedSource || undefined,
+                utmMedium: savedMedium || undefined,
+                utmCampaign: savedCampaign || undefined
+            };
+        }
+        const params = new URLSearchParams(search);
+        const utmSource = params.get('utm_source') || params.get('ref') || undefined;
+        const utmMedium = params.get('utm_medium') || undefined;
+        const utmCampaign = params.get('utm_campaign') || undefined;
+
+        if (utmSource) sessionStorage.setItem('fl_utm_source', utmSource);
+        if (utmMedium) sessionStorage.setItem('fl_utm_medium', utmMedium);
+        if (utmCampaign) sessionStorage.setItem('fl_utm_campaign', utmCampaign);
+
+        return { utmSource, utmMedium, utmCampaign };
+    } catch {
+        return {};
+    }
+}
+
 // 현재 페이지 진입 시간
 let pageEnteredAt: number = Date.now();
 let currentPath: string = '';
@@ -48,11 +88,26 @@ export function trackPageView(path: string): void {
 
     const sessionId = getSessionId();
     const userId = localStorage.getItem('user_id') || undefined;
+    const initialReferrer = getInitialReferrer();
+    const { utmSource, utmMedium, utmCampaign } = getUtmParams();
+
+    // 현재 referrer가 없거나 내부 이동인 경우 초기 외부 유입 또는 UTM 정보 활용
+    let effectiveReferrer = document.referrer || '';
+    if (!effectiveReferrer && initialReferrer) {
+        effectiveReferrer = initialReferrer;
+    }
+    if (utmSource && (!effectiveReferrer || effectiveReferrer.includes(window.location.hostname))) {
+        effectiveReferrer = `utm://${utmSource}${utmMedium ? '/' + utmMedium : ''}${utmCampaign ? '?c=' + utmCampaign : ''}`;
+    }
 
     const data: Record<string, string | number | undefined> = {
         sessionId,
         path,
-        referrer: document.referrer || '',
+        referrer: effectiveReferrer,
+        initialReferrer,
+        utmSource,
+        utmMedium,
+        utmCampaign,
         screenWidth: window.innerWidth,
         userId
     };
