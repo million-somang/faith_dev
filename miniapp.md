@@ -14,7 +14,7 @@
 1. **팝업 고정 규격 (450px × 850px)**: 모든 미니앱은 가로 **450px**, 세로 **850px** 크기의 독립된 팝업 뷰포트에 최적화되어 렌더링됩니다.
 2. **화면 전체 넓게 쓰기 (하단 빈칸 방지 필수 의무)**: 컨텐츠 양이 적다고 화면 위쪽에 옹기종기 반만 채우고 **아래쪽 절반을 텅 빈 공백(Dead Space)으로 방치하는 것을 엄격히 금지**합니다. 450px × 850px 전체 높이를 시원하고 품격 있게 꽉 채우는 **풀 하이트(Full-Height) 레이아웃**(`min-h-full`, `flex-1 flex flex-col justify-between`)과 풍성한 서브 인포/분석 인사이트 패널을 반드시 구성합니다.
 3. **다크 디자인 무조건 배제 (100% 밝고 화사한 라이트 디자인)**: **다크 모드, 어두운 배경, 딥 네이비/블랙 계열은 어떠한 경우에도 절대 사용하지 않습니다.** 전 화면을 **순백색 카드(`bg-white`)**, **소프트 슬레이트 라이트 배경(`bg-slate-50`)**, 은은한 파스텔 악센트, **선명한 고대비 텍스트(`text-slate-900`)**로 구성하여 눈이 편안하고 신뢰감 넘치는 최고급 금융/유틸리티 비주얼을 제공합니다.
-4. **3초 스플래시 & 로딩 화면**: 앱 진입 시 약 3초간 공식 로딩 인트로(기준 뱃지, 3D 플로팅 아이콘, 프로그레스 바, 하단 광고/스폰서 영역)를 의무 노출합니다.
+4. **4초 스플래시 & 1~100% 실시간 프로그레스 로딩 화면**: 앱 진입 시 **4초(4,000ms) 동안** 공식 인트로를 의무 노출합니다. 이때 프로그레스 바는 **1%에서 100%까지 매끄럽게 차오르는 실시간 숫자 카운트 및 게이지 애니메이션**을 구동하며, **화면 하단에는 전용 광고/스폰서 배너 슬롯**을 필수로 배치합니다.
 5. **마케팅 자동화 3단계 캡처 선언**: 관리자 및 SNS 카드뉴스 생성을 위해 `data-screenshot-*` 속성을 3단계(진입 ➡️ 조작 ➡️ 결과)로 컴포넌트에 반드시 표기합니다.
 6. **검색엔진(SEO) 및 인공지능(GEO/AIO) 동시 최적화**: 구글·네이버 검색봇뿐만 아니라 **ChatGPT Search, Perplexity, Gemini, Claude 등 최신 AI 검색 에이전트**가 내용을 정확히 읽고 답변에 인용할 수 있도록 시맨틱 HTML5, `llms.txt` 규격, How-to & FAQ 탭 분리, Schema.org JSON-LD(`WebApplication`, `FAQPage`), Open Graph 메타 태그를 완비합니다.
 7. **'FaithLink' 명칭 전면 배제 (100% VeraNex 브랜드 통일 원칙)**: **앞으로 생성하거나 수정하는 모든 미니앱의 화면(UI), 타이틀, 헤더, 푸터, 스플래시 화면, 메타데이터(SEO/OG), 안내 문구, 도움말 및 저작권 표기 등 어디에도 'FaithLink' 또는 'faithlink'라는 단어를 일절 노출하거나 사용하지 않습니다.** 모든 대외 브랜드명과 저작권 표기는 **'VeraNex' (또는 베라넥스)** 및 서비스별 고유 명칭(예: 베라오목, 베라 팝 등)으로 100% 통일합니다. (예: `© 2026 VeraNex. All rights reserved.`)
@@ -289,11 +289,12 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
 > 3) **시원한 터치 여백**: 모바일에서 누르기 편하도록 카드 패딩(`p-5`), 버튼 높이(`py-3.5`), 칩 여백을 넉넉하게 주어 화면이 좁아 보이지 않고 시원시원하게 느껴지도록 설계합니다.
 
 ```
-[1단계: 인트로/스플래시]  ➔  [2단계: 입력 화면 (Input)]  ➔  [3단계: 결과 리포트 (Result)]
+[1단계: 4초 스플래시]    ➔  [2단계: 입력 화면 (Input)]  ➔  [3단계: 결과 리포트 (Result)]
 - 밝은 화이트/슬레이트 배경   - 소프트 화이트 뉴모피즘        - 850px 꽉 채우는 풍성한 리포트
 - 공인 기준 뱃지             - 파스텔 블루 안내 배너        - 블루/인디고 거대 히어로 메트릭
 - 3D 플로팅 아이콘           - 빠른 퀵 칩 + 세그먼트 토글   - 3단 비교 카드 + 세부 분석 패널
-- 프로그레스 바 + 스폰서/광고  - 고대비 그라데이션 CTA       - 하단 밀착형 공유 & 재계산 독
+- 1~100% 프로그레스 바       - 고대비 그라데이션 CTA       - 하단 밀착형 공유 & 재계산 독
+- 하단 필수 광고 배너
 ```
 
 ---
@@ -324,10 +325,41 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
 
 ### 4.3 화면별 표준 UI 규격 및 코드 템플릿
 
-#### [화면 1] 3초 프리미엄 스플래시 & 로딩 화면 (Splash Screen)
+#### [화면 1] 4초 프리미엄 스플래시 & 1~100% 프로그레스 로딩 화면 (하단 광고 배너 필수)
 
-화면 전체(100vh / 850px)를 위아래 꽉 채우는 공식 인트로 화면입니다.
+화면 전체(100vh / 850px)를 위아래 꽉 채우는 공식 인트로 화면입니다.  
+앱 진입 시 **4초(4,000ms) 동안 `1%`에서 `100%`까지 부드럽게 증가하는 게이지 바와 실시간 퍼센트 카운트 애니메이션**이 구동되며, **화면 최하단에는 공식 제휴 광고(SPONSORED AD) 배너 슬롯**이 필수로 노출됩니다.
 
+##### 1) 4초 1~100% 실시간 프로그레스 카운터 훅 구현 (`React`)
+```tsx
+import { useState, useEffect } from 'react';
+
+// 4초(4000ms) 동안 1%에서 100%까지 채워지는 실시간 로딩 훅 예시
+const [loadingProgress, setLoadingProgress] = useState(1);
+const [isLoading, setIsLoading] = useState(true);
+
+useEffect(() => {
+  const duration = 4000; // 총 4초 로딩
+  const intervalTime = 40; // 40ms마다 갱신 (총 100단계)
+  const step = 100 / (duration / intervalTime);
+
+  const timer = setInterval(() => {
+    setLoadingProgress((prev) => {
+      const next = prev + step;
+      if (next >= 100) {
+        clearInterval(timer);
+        setTimeout(() => setIsLoading(false), 250); // 100% 달성 직후 자연스러운 페이드아웃 전환
+        return 100;
+      }
+      return Math.floor(next);
+    });
+  }, intervalTime);
+
+  return () => clearInterval(timer);
+}, []);
+```
+
+##### 2) 4초 스플래시 & 하단 광고 슬롯 UI 템플릿
 ```tsx
 <div className="min-h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-8 select-none animate-fade-in">
   {/* 1. 상단 브랜딩 & 기준 배지 */}
@@ -341,7 +373,7 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
     </span>
   </div>
 
-  {/* 2. 중앙 메인 비주얼 & 타이틀 */}
+  {/* 2. 중앙 메인 비주얼 & 1~100% 실시간 프로그레스 */}
   <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-6 text-center">
     <div className="relative mb-6">
       <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-blue-500/20 animate-float border-2 border-white">
@@ -358,32 +390,53 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
     <p className="text-sm font-bold text-slate-700 mb-1">
       단리·복리 및 과세유형별 절세 혜택 정밀 산정
     </p>
-    <p className="text-xs text-slate-400 mb-8 max-w-xs leading-relaxed">
+    <p className="text-xs text-slate-400 mb-6 max-w-xs leading-relaxed">
       2026년 최신 개정 규정과 공인 금융 산식 데이터를 실시간 동기화하고 있습니다
     </p>
 
-    {/* 프로그레스 바 */}
-    <div className="w-full max-w-xs bg-slate-100 border border-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner mb-3">
-      <div className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-full animate-pulse-glow" style={{ width: '100%' }}></div>
+    {/* 1~100% 실시간 프로그레스 바 & 숫자 퍼센트 게이지 */}
+    <div className="w-full max-w-xs space-y-1.5 mb-3">
+      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 px-1">
+        <span>시스템 초기화 및 공인 데이터 연동</span>
+        <span className="font-black text-blue-600 text-xs tabular-nums">{loadingProgress}%</span>
+      </div>
+      <div className="w-full bg-slate-100 border border-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
+        <div
+          className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-full transition-all duration-75 ease-out shadow-xs"
+          style={{ width: `${loadingProgress}%` }}
+        ></div>
+      </div>
     </div>
     <div className="flex items-center justify-center gap-2 text-xs font-black text-blue-600">
       <i className="fas fa-spinner fa-spin text-blue-500 text-xs"></i>
-      <span>시스템 초기화 및 데이터 연동 중...</span>
+      <span>보안 채널 연결 및 모듈 로딩 중... ({loadingProgress}%)</span>
     </div>
   </div>
 
-  {/* 3. 하단 스폰서 / 제휴 광고 영역 & 안내 푸터 */}
-  <div className="w-full max-w-sm flex flex-col items-center gap-3 pb-2">
-    <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-      <div className="text-left">
-        <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-wider block mb-0.5">SPONSORED</span>
-        <span className="text-xs font-bold text-slate-800">최신 고금리 특판 상품 및 비과세 ISA 비교 분석</span>
+  {/* 3. 하단 필수 광고 / 스폰서 배너 영역 (4초 로딩 중 의무 노출) */}
+  <div className="w-full max-w-sm flex flex-col items-center gap-2.5 pb-2">
+    {/* 광고 컨테이너 슬롯 (320x50 ~ 300x100 반응형 광고 배너) */}
+    <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
+      <div className="flex items-center gap-3 overflow-hidden">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+          <i className="fas fa-bullhorn text-sm"></i>
+        </div>
+        <div className="text-left min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-black text-blue-600 uppercase tracking-wider bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">AD</span>
+            <span className="text-xs font-bold text-slate-800 truncate">2026 비과세 절세 특판 ISA</span>
+          </div>
+          <span className="text-[10px] text-slate-500 truncate block mt-0.5">포털 제휴 공식 프로모션 바로가기</span>
+        </div>
       </div>
-      <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
-        <i className="fas fa-chart-line text-xs"></i>
-      </div>
+      <button
+        type="button"
+        className="shrink-0 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-black rounded-lg border border-blue-200 transition-all cursor-pointer"
+      >
+        확인
+      </button>
     </div>
-    <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+    <p className="text-[10px] text-slate-400 text-center leading-relaxed">
       본 유틸리티는 2026년 공인 표준 규정 및 소득세법을 준수합니다.
     </p>
   </div>
@@ -808,7 +861,7 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
 | [ ] | **450px × 850px 팝업 규격** | 독립된 팝업 내부에서 스크롤 튕김 없이 완벽하게 작동하는지 검증 |
 | [ ] | **화면 전체 100% 활용 (빈칸 제로)** | 컨텐츠가 위쪽에만 반만 남지 않고, 850px 높이 전체를 꽉 채우는 풀 하이트 레이아웃 구성 |
 | [ ] | **다크 디자인 무조건 배제** | 다크 모드/어두운 배경 완전 제거, 화이트/파스텔 라이트 톤과 고대비 텍스트 적용 |
-| [ ] | **3초 로딩 인트로** | `isLoading` 상태일 때 공식 인트로 스플래시 화면 렌더링 (기준 배지 + 3D 아이콘 + 프로그레스 바 + 하단 광고/스폰서) |
+| [ ] | **4초 로딩 인트로 & 1~100% 프로그레스** | 앱 진입 시 4초간 1%에서 100%까지 채워지는 실시간 프로그레스 바 애니메이션 구동 및 하단 필수 광고 배너 노출 |
 | [ ] | **스티키 헤더 & 알약 탭** | `[메인 기능, 사용방법, FAQ]` 3단 탭 구성 및 `FREE` 배지 + 공유 버튼 부착 |
 | [ ] | **2단계 뷰 모드 분리** | `viewMode: 'input' | 'result'` 상태를 도입하여 입력 단계와 결과 단계를 완벽히 분리 |
 | [ ] | **입력 퀵 칩(Quick Chips)** | 주요 프리셋 값을 원클릭으로 주입할 수 있는 가로 스크롤 칩 바 제공 |
@@ -841,7 +894,7 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
 # Role
 Next.js/Vite, React, Tailwind CSS 및 모바일 유틸리티 웹 전문 시니어 프론트엔드 엔지니어입니다.
 
-# Global Requirements (FaithLink Mini-App Standard)
+# Global Requirements (VeraNex Mini-App Standard)
 1. 팝업 규격: 450px × 850px 독립 팝업 내부에서 동작합니다.
 2. 화면 전체 100% 활용 의무 (하단 빈 공간 절대 금지):
    - 컨텐츠 양이 적다고 화면 상단에 반만 배치하고 아래를 휑한 공백(Dead Space)으로 두지 마세요.
@@ -852,7 +905,9 @@ Next.js/Vite, React, Tailwind CSS 및 모바일 유틸리티 웹 전문 시니�
    - 입력 단계: 소프트 화이트 뉴모피즘(bg-slate-50, border-slate-200, 퀵 칩, 세그먼트 토글, 고대비 그라데이션 CTA 버튼).
    - 결과 단계: 프리미엄 클린 라이트 리포트(bg-white, border-slate-200, bg-gradient-to-br from-blue-50/80 to-white 히어로 카드, text-blue-900 거대 볼드 수치, 파스텔 3단 비교 카드, 분석 팁 패널, 결과 복사 및 공유 버튼).
 4. 레이아웃 래퍼: 이미 루트에 제공되는 <MiniAppLayout title="Title"> 내부에 들어갈 컴포넌트만 작성합니다. 최상위 width, height, overflow 래퍼를 씌우지 마세요.
-5. 3초 스플래시: 진입 시 3초간 공식 인트로 화면(기준 배지, 3D 플로팅 아이콘, 프로그레스 바, 하단 광고/스폰서 배너)을 표시합니다.
+5. 4초 스플래시 & 1~100% 프로그레스 바 & 하단 광고 배너:
+   - 진입 시 4초(4,000ms) 동안 1%에서 100%까지 매끄럽게 채워지는 프로그레스 바 및 실시간 숫자 카운트 인트로 화면을 표시합니다.
+   - 화면 하단에는 필수 제휴 광고 배너(SPONSORED AD, 320x50 ~ 300x100 규격) 영역을 반드시 배치합니다.
 6. 상단 스티키 헤더 & 알약 탭:
    - [메인 기능, 사용방법(How-to), FAQ] 3단 탭 및 우측 공유 버튼 구성.
 7. 검색엔진 및 AI 최적화 (SEO & GEO):

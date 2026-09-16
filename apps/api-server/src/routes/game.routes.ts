@@ -29,8 +29,25 @@ gameRoutes.post('/api/games/:gameId/score', requireAuth, async (c) => {
             .bind(gameId, user.id, score, metadataJson)
             .run();
 
+        const earnedPoints = metadata?.earnedPoints || 0;
+        if (earnedPoints > 0) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO user_points (user_id, points, activity_points)
+                    VALUES (?, ?, ?)
+                    ON CONFLICT(user_id) DO UPDATE SET
+                        points = user_points.points + excluded.points,
+                        activity_points = user_points.activity_points + excluded.activity_points,
+                        updated_at = CURRENT_TIMESTAMP
+                `).bind(user.id, earnedPoints, earnedPoints).run();
+                console.log(`[Game] ✅ Awarded ${earnedPoints} Vera points to user ${user.id}`);
+            } catch (pErr) {
+                console.warn(`[Game] Point award warning:`, pErr);
+            }
+        }
+
         console.log(`[Game] ✅ Score saved successfully: ${gameId} / ${user.email} / ${score}점`);
-        return c.json({ success: true });
+        return c.json({ success: true, earnedPoints });
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         console.error(`[Game] ❌ Score save error (${gameId}):`, message);

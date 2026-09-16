@@ -14,6 +14,17 @@ export default defineConfig({
     port: 5037,
     strictPort: true,
     cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:4200',
+        changeOrigin: true,
+        cookieDomainRewrite: 'localhost',
+        cookiePathRewrite: '/',
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['lucide-react', '@faithportal/mini-app-sdk', 'canvas-confetti'],
   },
   base: '/app/janggi/',
   build: {

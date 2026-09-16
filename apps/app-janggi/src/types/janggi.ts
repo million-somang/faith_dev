@@ -79,3 +79,15 @@ export interface ScoreBreakdown {
   difference: number; // cho - han
   leader: Side | 'draw';
 }
+
+export interface JanggiGameScoreDetails {
+  totalScore: number;
+  baseScore: number;
+  winBonus: number;
+  materialBonus: number;
+  moveBonus: number;
+  handicapBonus: number;
+  earnedPoints: number;
+  isWin: boolean;
+  isDraw: boolean;
+}

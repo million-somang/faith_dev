@@ -9,7 +9,11 @@ import {
   SpecialSkill,
   ScoreBreakdown,
   SajuElementBuff,
+  JanggiGameScoreDetails,
 } from './types/janggi';
+import { useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
+import axios from 'axios';
+import { calculateJanggiGameScore } from './utils/janggiScoreCalculator';
 import {
   createClassicBoard,
   createMiniBoard,
@@ -50,6 +54,16 @@ const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color:
 };
 
 export function App() {
+  // 인증 및 포털 메신저 훅
+  const { user } = useAuth();
+  const { sendToPortal } = usePortalMessenger();
+
+  // 대국 종료 점수 저장 상태
+  const gameOverHandledRef = useRef<boolean>(false);
+  const [gameScoreDetails, setGameScoreDetails] = useState<JanggiGameScoreDetails | null>(null);
+  const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
   // 1. 초기 3초 스플래시 및 대국 시작 상태 (miniapp.md 필수 규격)
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [isGameStarted, setIsGameStarted] = useState<boolean>(false);
@@ -134,6 +148,10 @@ export function App() {
     setIsAiThinking(false);
     setTimeRemaining(mode === 'mini' ? 15 : 30);
     setAiDialogue(AI_PERSONAS[diff]?.greeting || '');
+    gameOverHandledRef.current = false;
+    setGameScoreDetails(null);
+    setSaveMessage(null);
+    setIsSavingScore(false);
 
     if (mode === 'mini') {
       setBoard(createMiniBoard());
@@ -149,6 +167,104 @@ export function App() {
       setCurrentTurn('cho');
     }
   }, [gameMode, choSetup, hanSetup]);
+
+  // 대국 종료 시 종합 점수 산출 및 서버 DB/포털 리더보드 연동
+  useEffect(() => {
+    if (winner && !gameOverHandledRef.current) {
+      gameOverHandledRef.current = true;
+      const details = calculateJanggiGameScore({
+        winner,
+        playerSide,
+        gameMode,
+        aiDifficulty,
+        moveCount,
+        choScore: score.choPoints,
+        hanScore: score.hanPoints,
+        winReason,
+        puzzleStreak,
+      });
+      setGameScoreDetails(details);
+
+      // 1. 최고 점수 로컬스토리지 저장 (비회원/오프라인 지원)
+      try {
+        const prevHigh = parseInt(localStorage.getItem('vera_janggi_high_score') || '0', 10);
+        if (details.totalScore > prevHigh) {
+          localStorage.setItem('vera_janggi_high_score', details.totalScore.toString());
+        }
+      } catch (e) {
+        console.warn('[Janggi] LocalStorage error:', e);
+      }
+
+      // 2. 포털 부모 창(GameLeaderboard)에 점수 업데이트 메시지 전송
+      const targetWindow = window.opener || (window.parent !== window ? window.parent : null);
+      if (targetWindow) {
+        targetWindow.postMessage(
+          {
+            type: 'GAME_SCORE_UPDATED',
+            gameId: 'janggi',
+            score: details.totalScore,
+          },
+          '*'
+        );
+      }
+
+      // 3. 포털 미션 및 포인트 갱신 연동
+      sendToPortal('MISSION_CLEAR');
+      sendToPortal('POINTS_UPDATED', { points: details.earnedPoints });
+
+      // 4. 로그인 회원일 경우 백엔드 API 서버에 점수 및 베라 포인트 영구 저장
+      if (user) {
+        setIsSavingScore(true);
+        axios
+          .post(
+            '/api/games/janggi/score',
+            {
+              score: details.totalScore,
+              metadata: {
+                gameMode,
+                aiDifficulty,
+                playerSide,
+                winner,
+                winReason,
+                moveCount,
+                choScore: score.choPoints,
+                hanScore: score.hanPoints,
+                earnedPoints: details.earnedPoints,
+                breakdown: details,
+              },
+            },
+            { withCredentials: true }
+          )
+          .then(() => {
+            setSaveMessage('명예의 전당 랭킹에 등록되었습니다!');
+          })
+          .catch((err) => {
+            console.error('[Janggi] 점수 저장 실패:', err);
+            setSaveMessage(null);
+          })
+          .finally(() => {
+            setIsSavingScore(false);
+          });
+      }
+    } else if (!winner) {
+      gameOverHandledRef.current = false;
+      setGameScoreDetails(null);
+      setSaveMessage(null);
+      setIsSavingScore(false);
+    }
+  }, [
+    winner,
+    playerSide,
+    gameMode,
+    aiDifficulty,
+    moveCount,
+    score.choPoints,
+    score.hanPoints,
+    winReason,
+    puzzleStreak,
+    user,
+    sendToPortal,
+  ]);
 
   // 모드 변경 처리: AI 대전 모드인 경우 난이도/설정 모달을 띄워 대국을 준비
   const handleSelectMode = (newMode: GameMode) => {
@@ -712,6 +828,11 @@ export function App() {
         hanScore={score.hanPoints}
         gameMode={gameMode}
         puzzleStreak={puzzleStreak}
+        gameScore={gameScoreDetails?.totalScore || 0}
+        earnedPoints={gameScoreDetails?.earnedPoints || 35}
+        isSavingScore={isSavingScore}
+        saveMessage={saveMessage}
+        isLoggedIn={!!user}
         onRestart={handleOpenNewGame}
         onNewGame={handleOpenNewGame}
       />
