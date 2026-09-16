@@ -196,11 +196,10 @@ export const LanguageSwitcher = () => {
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
     const currentLang = getLang();
     const [menuOpen, setMenuOpen] = React.useState(false);
-    const [activeMode, setActiveMode] = React.useState<'general' | 'business' | 'lounge'>(() => {
+    const [activeMode, setActiveMode] = React.useState<'general' | 'lounge'>(() => {
         if (typeof window !== 'undefined') {
             const path = window.location.pathname;
             if (path.startsWith('/lounge')) return 'lounge';
-            if (path.startsWith('/b2b')) return 'business';
         }
         return 'general';
     });
@@ -208,22 +207,19 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
             const path = window.location.pathname;
-            let mode: 'general' | 'business' | 'lounge' = 'general';
+            let mode: 'general' | 'lounge' = 'general';
             if (path.startsWith('/lounge')) mode = 'lounge';
-            else if (path.startsWith('/b2b')) mode = 'business';
             setActiveMode(mode);
             localStorage.setItem('vera_portal_mode', mode);
         }
     }, []);
 
-    const handleModeSwitch = (mode: 'general' | 'business' | 'lounge') => {
+    const handleModeSwitch = (mode: 'general' | 'lounge') => {
         setActiveMode(mode);
         localStorage.setItem('vera_portal_mode', mode);
         if (typeof window !== 'undefined') {
             if (mode === 'lounge') {
                 window.location.href = `${baseUrl}/lounge`;
-            } else if (mode === 'business') {
-                window.location.href = `${baseUrl}/b2b`;
             } else {
                 window.location.href = `${baseUrl}/`;
             }
@@ -233,10 +229,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
     let modeColor = 'text-violet-600';
     let modeBg = 'hover:bg-violet-50 hover:text-violet-600';
 
-    if (activeMode === 'business') {
-        modeColor = 'text-emerald-600';
-        modeBg = 'hover:bg-emerald-50 hover:text-emerald-600';
-    } else if (activeMode === 'lounge') {
+    if (activeMode === 'lounge') {
         modeColor = 'text-fuchsia-600';
         modeBg = 'hover:bg-fuchsia-50 hover:text-fuchsia-600';
     }
@@ -265,14 +258,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 {tr('일반 포털', currentLang)}
                             </button>
                         )}
-                        {activeMode !== 'business' && (
-                            <button 
-                                onClick={() => handleModeSwitch('business')} 
-                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
-                            >
-                                {tr('비즈니스', currentLang)}
-                            </button>
-                        )}
                         {activeMode !== 'lounge' && (
                             <button 
                                 onClick={() => handleModeSwitch('lounge')} 
@@ -291,14 +276,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 className="px-2 py-0.5 rounded-full transition-all"
                             >
                                 {tr('포털', currentLang)}
-                            </button>
-                        )}
-                        {activeMode !== 'business' && (
-                            <button 
-                                onClick={() => handleModeSwitch('business')} 
-                                className="px-2 py-0.5 rounded-full transition-all"
-                            >
-                                {tr('비즈', currentLang)}
                             </button>
                         )}
                         {activeMode !== 'lounge' && (
@@ -323,12 +300,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                                 <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}
                             <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
-                        </nav>
-                    )}
-
-                    {activeMode === 'business' && (
-                        <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
-                            <a href={`${baseUrl}/b2b`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('홈페이지 제작', currentLang)}</a>
                         </nav>
                     )}
 
@@ -370,9 +341,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                         {FULL_MENU_ITEMS.filter((m) => {
                             if (m.path === '/reward' && user?.email !== 'sukman@naver.com') {
                                 return false;
-                            }
-                            if (activeMode === 'business') {
-                                return m.path === '/b2b' || m.path === '/mypage';
                             }
                             if (activeMode === 'lounge') {
                                 return false;
