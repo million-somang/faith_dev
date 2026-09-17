@@ -65,6 +65,15 @@ analyticsRoutes.post('/api/analytics/duration', async (c) => {
     }
 })
 
+// KST (한국 표준시, UTC+9) 기준 날짜 조건 헬퍼
+export function getKstDateCondition(days: number, column = 'created_at'): string {
+    if (days === 1) {
+        return `DATE(${column}, '+9 hours') = DATE('now', '+9 hours')`;
+    }
+    const offsetDays = days - 1;
+    return `DATE(${column}, '+9 hours') >= DATE('now', '+9 hours', '-${offsetDays} days')`;
+}
+
 // ==================== 관리자: 전체 개요 ====================
 analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => {
     const DB = getDB(c)
@@ -72,18 +81,25 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
     const days = parseInt(period)
 
     try {
-        // 오늘 기준 집계 (원본 page_views)
+        // 오늘 기준 집계 (한국 날짜 KST 자정 기준)
         const todayViews = await DB.prepare(
-            "SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors FROM page_views WHERE DATE(created_at) = DATE('now')"
+            `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
+             FROM page_views 
+             WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')`
         ).first() as Record<string, number> | null
 
-        // 기간 기준 집계 (원본 + 집계 테이블 합산)
+        // 기간 기준 집계 (한국 날짜 KST 기준 원본 + 일별 집계 합산)
         const periodRaw = await DB.prepare(
-            `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors FROM page_views WHERE created_at >= DATE('now', '-${days} days')`
+            `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
+             FROM page_views 
+             WHERE ${getKstDateCondition(days)}`
         ).first() as Record<string, number> | null
 
         const periodDaily = await DB.prepare(
-            `SELECT COALESCE(SUM(total_views), 0) as total, COALESCE(SUM(unique_sessions), 0) as unique_visitors FROM page_views_daily WHERE date >= DATE('now', '-${days} days') AND date < (SELECT COALESCE(MIN(DATE(created_at)), DATE('now')) FROM page_views)`
+            `SELECT COALESCE(SUM(total_views), 0) as total, COALESCE(SUM(unique_sessions), 0) as unique_visitors 
+             FROM page_views_daily 
+             WHERE date >= DATE('now', '+9 hours', '-${days - 1} days') 
+               AND date < (SELECT COALESCE(MIN(DATE(created_at, '+9 hours')), DATE('now', '+9 hours')) FROM page_views)`
         ).first() as Record<string, number> | null
 
         const totalViews = (periodRaw?.total || 0) + (periodDaily?.total || 0)
@@ -91,32 +107,45 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
 
         // 이전 동기간 비교
         const prevRaw = await DB.prepare(
-            `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors FROM page_views WHERE created_at >= DATE('now', '-${days * 2} days') AND created_at < DATE('now', '-${days} days')`
+            `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
+             FROM page_views 
+             WHERE DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
+               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')`
         ).first() as Record<string, number> | null
 
         const prevDaily = await DB.prepare(
-            `SELECT COALESCE(SUM(total_views), 0) as total, COALESCE(SUM(unique_sessions), 0) as unique_visitors FROM page_views_daily WHERE date >= DATE('now', '-${days * 2} days') AND date < DATE('now', '-${days} days')`
+            `SELECT COALESCE(SUM(total_views), 0) as total, COALESCE(SUM(unique_sessions), 0) as unique_visitors 
+             FROM page_views_daily 
+             WHERE date >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
+               AND date < DATE('now', '+9 hours', '-${days - 1} days')`
         ).first() as Record<string, number> | null
 
         const prevViews = (prevRaw?.total || 0) + (prevDaily?.total || 0)
         const prevVisitors = (prevRaw?.unique_visitors || 0) + (prevDaily?.unique_visitors || 0)
 
-        // 신규 가입
+        // 신규 가입 (KST 기준)
         const newSignups = await DB.prepare(
-            `SELECT COUNT(*) as count FROM users WHERE created_at >= DATE('now', '-${days} days') AND status != 'deleted'`
+            `SELECT COUNT(*) as count FROM users 
+             WHERE ${getKstDateCondition(days, 'created_at')} AND status != 'deleted'`
         ).first() as Record<string, number> | null
 
         const prevSignups = await DB.prepare(
-            `SELECT COUNT(*) as count FROM users WHERE created_at >= DATE('now', '-${days * 2} days') AND created_at < DATE('now', '-${days} days') AND status != 'deleted'`
+            `SELECT COUNT(*) as count FROM users 
+             WHERE DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
+               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days') AND status != 'deleted'`
         ).first() as Record<string, number> | null
 
-        // 평균 체류 시간
+        // 평균 체류 시간 (KST 기준)
         const avgDuration = await DB.prepare(
-            `SELECT AVG(duration_ms) as avg_ms FROM page_views WHERE duration_ms > 0 AND created_at >= DATE('now', '-${days} days')`
+            `SELECT AVG(duration_ms) as avg_ms FROM page_views 
+             WHERE duration_ms > 0 AND ${getKstDateCondition(days)}`
         ).first() as Record<string, number> | null
 
         const prevAvgDuration = await DB.prepare(
-            `SELECT AVG(duration_ms) as avg_ms FROM page_views WHERE duration_ms > 0 AND created_at >= DATE('now', '-${days * 2} days') AND created_at < DATE('now', '-${days} days')`
+            `SELECT AVG(duration_ms) as avg_ms FROM page_views 
+             WHERE duration_ms > 0 
+               AND DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
+               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')`
         ).first() as Record<string, number> | null
 
         return c.json({
@@ -148,24 +177,27 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
     }
 })
 
-// ==================== 관리자: 방문자 추세 ====================
+// ==================== 관리자: 방문자 추세 (KST 일별 기준) ====================
 analyticsRoutes.get('/api/admin/analytics/visitors', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
 
     try {
-        // 원본 데이터에서 일별 집계
+        // 원본 데이터에서 한국 날짜 KST 일별 집계
         const rawTrend = await DB.prepare(
-            `SELECT DATE(created_at) as date, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors 
-             FROM page_views WHERE created_at >= DATE('now', '-${days} days') 
-             GROUP BY DATE(created_at) ORDER BY date`
+            `SELECT DATE(created_at, '+9 hours') as date, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors 
+             FROM page_views 
+             WHERE ${getKstDateCondition(days)} 
+             GROUP BY DATE(created_at, '+9 hours') 
+             ORDER BY date`
         ).all()
 
         // 집계 테이블에서 보충
         const dailyTrend = await DB.prepare(
             `SELECT date, total_views as views, unique_sessions as visitors 
-             FROM page_views_daily WHERE date >= DATE('now', '-${days} days') 
-             AND date < (SELECT COALESCE(MIN(DATE(created_at)), DATE('now')) FROM page_views)
+             FROM page_views_daily 
+             WHERE date >= DATE('now', '+9 hours', '-${days - 1} days') 
+               AND date < (SELECT COALESCE(MIN(DATE(created_at, '+9 hours')), DATE('now', '+9 hours')) FROM page_views)
              ORDER BY date`
         ).all()
 
@@ -194,7 +226,7 @@ analyticsRoutes.get('/api/admin/analytics/visitors', requireAdmin, async (c) => 
     }
 })
 
-// ==================== 관리자: 인기 페이지 ====================
+// ==================== 관리자: 인기 페이지 (KST 기준) ====================
 analyticsRoutes.get('/api/admin/analytics/pages', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
@@ -202,9 +234,12 @@ analyticsRoutes.get('/api/admin/analytics/pages', requireAdmin, async (c) => {
     try {
         const pages = await DB.prepare(
             `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, 
-             ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END)) as avg_duration
-             FROM page_views WHERE created_at >= DATE('now', '-${days} days')
-             GROUP BY path ORDER BY views DESC LIMIT 20`
+                    ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_duration
+             FROM page_views 
+             WHERE ${getKstDateCondition(days)}
+             GROUP BY path 
+             ORDER BY views DESC 
+             LIMIT 20`
         ).all()
 
         return c.json({ success: true, pages: pages.results })
@@ -321,16 +356,23 @@ const GAME_NAMES: Record<string, string> = {
 };
 
 // ==================== 관리자: 유입 경로 고도화 ====================
+// ==================== 관리자: 유입 경로 고도화 (KST 및 세션 최초 랜딩 기준) ====================
 analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
 
     try {
-        // 원본 page_views에서 유입 경로 및 랜딩 페이지 집계
+        // 세션별 최초 진입 페이지 및 유입 경로 (Window Function을 통해 내부 페이지 이동 중복 제거)
         const rowsResult = await DB.prepare(
-            `SELECT referrer, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
-             FROM page_views 
-             WHERE created_at >= DATE('now', '-${days} days')
+            `WITH first_pv AS (
+                SELECT session_id, referrer, path, created_at,
+                       ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at ASC) as rn
+                FROM page_views
+                WHERE ${getKstDateCondition(days)}
+             )
+             SELECT referrer, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
+             FROM first_pv 
+             WHERE rn = 1
              GROUP BY referrer, path 
              ORDER BY views DESC`
         ).all()
@@ -476,7 +518,7 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
     }
 })
 
-// ==================== 관리자: 기기 분석 ====================
+// ==================== 관리자: 기기 분석 (KST 기준) ====================
 analyticsRoutes.get('/api/admin/analytics/devices', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
@@ -492,7 +534,8 @@ analyticsRoutes.get('/api/admin/analytics/devices', requireAdmin, async (c) => {
                 END as device,
                 COUNT(*) as views,
                 COUNT(DISTINCT session_id) as visitors
-             FROM page_views WHERE created_at >= DATE('now', '-${days} days')
+             FROM page_views 
+             WHERE ${getKstDateCondition(days)}
              GROUP BY device ORDER BY views DESC`
         ).all()
 
@@ -503,7 +546,7 @@ analyticsRoutes.get('/api/admin/analytics/devices', requireAdmin, async (c) => {
     }
 })
 
-// ==================== 관리자: 콘텐츠 통합 통계 (개요) ====================
+// ==================== 관리자: 콘텐츠 통합 통계 (개요 - KST 기준) ====================
 analyticsRoutes.get('/api/admin/analytics/content', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
@@ -513,22 +556,22 @@ analyticsRoutes.get('/api/admin/analytics/content', requireAdmin, async (c) => {
         let newsVotes = { count: 0 } as Record<string, number>
         let newsBookmarks = { count: 0 } as Record<string, number>
         try {
-            newsReads = await DB.prepare(`SELECT COUNT(*) as count FROM user_news_read WHERE created_at >= DATE('now', '-${days} days')`).first() as Record<string, number> || { count: 0 }
+            newsReads = await DB.prepare(`SELECT COUNT(*) as count FROM user_news_read WHERE ${getKstDateCondition(days)}`).first() as Record<string, number> || { count: 0 }
         } catch (_e: unknown) {}
         try {
-            newsVotes = await DB.prepare(`SELECT COUNT(*) as count FROM news_votes WHERE created_at >= DATE('now', '-${days} days')`).first() as Record<string, number> || { count: 0 }
+            newsVotes = await DB.prepare(`SELECT COUNT(*) as count FROM news_votes WHERE ${getKstDateCondition(days)}`).first() as Record<string, number> || { count: 0 }
         } catch (_e: unknown) {}
         try {
-            newsBookmarks = await DB.prepare(`SELECT COUNT(*) as count FROM user_news_bookmarks WHERE created_at >= DATE('now', '-${days} days')`).first() as Record<string, number> || { count: 0 }
+            newsBookmarks = await DB.prepare(`SELECT COUNT(*) as count FROM user_news_bookmarks WHERE ${getKstDateCondition(days)}`).first() as Record<string, number> || { count: 0 }
         } catch (_e: unknown) {}
 
         let gamePlays = { count: 0 } as Record<string, number>
         let topGames: Array<{ game_type: string; plays: number; avg_score: number }> = []
         try {
-            gamePlays = await DB.prepare(`SELECT COUNT(*) as count FROM game_scores WHERE created_at >= DATE('now', '-${days} days')`).first() as Record<string, number> || { count: 0 }
+            gamePlays = await DB.prepare(`SELECT COUNT(*) as count FROM game_scores WHERE ${getKstDateCondition(days)}`).first() as Record<string, number> || { count: 0 }
             const topGamesResult = await DB.prepare(
                 `SELECT game_id as game_type, COUNT(*) as plays, ROUND(AVG(score)) as avg_score 
-                 FROM game_scores WHERE created_at >= DATE('now', '-${days} days')
+                 FROM game_scores WHERE ${getKstDateCondition(days)}
                  GROUP BY game_id ORDER BY plays DESC LIMIT 5`
             ).all()
             topGames = (topGamesResult.results || []).map((g: any) => ({
@@ -541,11 +584,11 @@ analyticsRoutes.get('/api/admin/analytics/content', requireAdmin, async (c) => {
         let miniappLaunches = { count: 0 } as Record<string, number>
         let topMiniapps: Array<{ name: string; launches: number }> = []
         try {
-            miniappLaunches = await DB.prepare(`SELECT COUNT(*) as count FROM mini_app_logs WHERE created_at >= DATE('now', '-${days} days')`).first() as Record<string, number> || { count: 0 }
+            miniappLaunches = await DB.prepare(`SELECT COUNT(*) as count FROM mini_app_logs WHERE ${getKstDateCondition(days)}`).first() as Record<string, number> || { count: 0 }
             const topMiniappsResult = await DB.prepare(
                 `SELECT ma.name, COUNT(mal.id) as launches
                  FROM mini_app_logs mal JOIN mini_apps ma ON mal.mini_app_id = ma.id
-                 WHERE mal.created_at >= DATE('now', '-${days} days')
+                 WHERE ${getKstDateCondition(days, 'mal.created_at')}
                  GROUP BY mal.mini_app_id ORDER BY launches DESC LIMIT 5`
             ).all()
             topMiniapps = topMiniappsResult.results as Array<{ name: string; launches: number }>
@@ -563,7 +606,7 @@ analyticsRoutes.get('/api/admin/analytics/content', requireAdmin, async (c) => {
     }
 })
 
-// ==================== 관리자: 콘텐츠 상세 소비 분석 (신설) ====================
+// ==================== 관리자: 콘텐츠 상세 소비 분석 (실시간 기간 데이터 순수 집계) ====================
 analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (c) => {
     const DB = getDB(c)
     const type = c.req.query('type') || 'all' // all | news | miniapps | games | guides
@@ -585,83 +628,129 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
             extra?: string;
         }> = [];
 
-        // 1. 뉴스 데이터 수집
+        // 1. 뉴스 데이터 수집 (해당 기간 동안 실제 읽힌 뉴스 집계)
         let newsItems: typeof items = [];
         if (type === 'all' || type === 'news') {
             try {
-                // 뉴스 테이블 조회 (조회수 높은 순)
-                const newsRows = await DB.prepare(
-                    `SELECT id, title, publisher, category, view_count, vote_up, published_at 
-                     FROM news 
-                     WHERE view_count > 0 
-                     ORDER BY view_count DESC 
-                     LIMIT 30`
-                ).all()
-
-                // 기간 내 page_views와 매칭하여 실시간 기간 조회수 보정
+                // 기간 내 page_views에서 /news/:id 조회수 집계
                 const pvNews = await DB.prepare(
                     `SELECT path, COUNT(*) as pv_views, COUNT(DISTINCT session_id) as pv_visitors, 
-                            ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec
+                            ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec,
+                            MAX(created_at) as last_seen
                      FROM page_views 
-                     WHERE path LIKE '/news/%' AND created_at >= DATE('now', '-${days} days')
-                     GROUP BY path`
+                     WHERE path LIKE '/news/%' AND path != '/news' AND ${getKstDateCondition(days)}
+                     GROUP BY path
+                     ORDER BY pv_views DESC
+                     LIMIT 50`
                 ).all()
 
-                const pvMap = new Map<string, { views: number; visitors: number; avgSec: number }>();
-                for (const row of (pvNews.results || []) as any[]) {
-                    pvMap.set(row.path, { views: row.pv_views, visitors: row.pv_visitors, avgSec: row.avg_sec });
+                const pvRows = (pvNews.results || []) as Array<{
+                    path: string;
+                    pv_views: number;
+                    pv_visitors: number;
+                    avg_sec: number;
+                    last_seen: string;
+                }>;
+
+                const newsIdMap = new Map<number, typeof pvRows[0]>();
+                for (const row of pvRows) {
+                    const idStr = row.path.replace('/news/', '').split('?')[0].split('/')[0];
+                    const numId = parseInt(idStr);
+                    if (!isNaN(numId)) {
+                        newsIdMap.set(numId, row);
+                    }
                 }
 
-                newsItems = ((newsRows.results || []) as any[]).map(n => {
-                    const pv = pvMap.get(`/news/${n.id}`);
-                    const views = pv?.views || n.view_count || 0;
+                const newsDetailsMap = new Map<number, any>();
+                if (newsIdMap.size > 0) {
+                    const idList = Array.from(newsIdMap.keys()).join(',');
+                    const newsRows = await DB.prepare(
+                        `SELECT id, title, publisher, category, vote_up, published_at 
+                         FROM news 
+                         WHERE id IN (${idList})`
+                    ).all()
+                    for (const n of (newsRows.results || []) as any[]) {
+                        newsDetailsMap.set(n.id, n);
+                    }
+                }
+
+                newsItems = Array.from(newsIdMap.entries()).map(([id, pv]) => {
+                    const meta = newsDetailsMap.get(id) || {};
                     return {
+                        id,
+                        title: meta.title || `뉴스 기사 #${id}`,
+                        category: meta.category === 'general' ? '일반 종합' : (meta.category || '뉴스'),
+                        type: 'news' as const,
+                        typeLabel: '뉴스 기사',
+                        url: `/news/${id}`,
+                        views: pv.pv_views,
+                        visitors: pv.pv_visitors,
+                        share: 0,
+                        metricName: '조회',
+                        avgDurationSec: pv.avg_sec || 0,
+                        extra: `${meta.publisher || '언론사'} · 추천 ${meta.vote_up || 0}`
+                    };
+                }).sort((a, b) => b.views - a.views);
+
+                // 해당 기간 조회가 없으면 최신 등록 뉴스 안내용으로 제공
+                if (newsItems.length === 0) {
+                    const recentNews = await DB.prepare(
+                        `SELECT id, title, publisher, category, vote_up FROM news ORDER BY id DESC LIMIT 5`
+                    ).all();
+                    newsItems = ((recentNews.results || []) as any[]).map(n => ({
                         id: n.id,
                         title: n.title,
                         category: n.category === 'general' ? '일반 종합' : (n.category || '뉴스'),
                         type: 'news' as const,
                         typeLabel: '뉴스 기사',
                         url: `/news/${n.id}`,
-                        views,
-                        visitors: pv?.visitors || Math.max(1, Math.round(views * 0.8)),
+                        views: 0,
+                        visitors: 0,
                         share: 0,
                         metricName: '조회',
-                        avgDurationSec: pv?.avgSec || 0,
-                        extra: `${n.publisher || '언론사 미상'} · 추천 ${n.vote_up || 0}`
-                    };
-                }).sort((a, b) => b.views - a.views);
+                        avgDurationSec: 0,
+                        extra: `${n.publisher || '언론사'} (기간 내 조회 없음)`
+                    }));
+                }
             } catch (e) {
                 console.error('Content detail news error:', e);
             }
         }
 
-        // 2. 미니앱 / 계산기 / 도구 데이터 수집
+        // 2. 미니앱 / 계산기 / 도구 데이터 수집 (기간 내 실행 + 조회 기준)
         let miniappItems: typeof items = [];
         if (type === 'all' || type === 'miniapps') {
             try {
+                // 기간 내 실행 로그
                 const appRows = await DB.prepare(
                     `SELECT ma.id, ma.name, ma.slug, ma.category, ma.app_url,
                             COUNT(mal.id) as period_launches,
                             COUNT(DISTINCT mal.user_id) as unique_users,
                             MAX(mal.created_at) as last_used
                      FROM mini_apps ma
-                     LEFT JOIN mini_app_logs mal ON ma.id = mal.mini_app_id AND mal.created_at >= DATE('now', '-${days} days')
+                     LEFT JOIN mini_app_logs mal ON ma.id = mal.mini_app_id AND ${getKstDateCondition(days, 'mal.created_at')}
                      GROUP BY ma.id
                      ORDER BY period_launches DESC, ma.sort_order ASC`
                 ).all()
 
-                // 전체 누적 실행 수 백업
-                const allAppLogs = await DB.prepare(
-                    `SELECT mini_app_id, COUNT(*) as total_launches FROM mini_app_logs GROUP BY mini_app_id`
+                // 기간 내 페이지 뷰
+                const appPvRows = await DB.prepare(
+                    `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors
+                     FROM page_views
+                     WHERE (path LIKE '/app/%' OR path LIKE '/tools/%' OR path LIKE '/calc/%') AND ${getKstDateCondition(days)}
+                     GROUP BY path`
                 ).all()
-                const totalMap = new Map<number, number>();
-                for (const r of (allAppLogs.results || []) as any[]) {
-                    totalMap.set(r.mini_app_id, r.total_launches);
+                const pvAppMap = new Map<string, { views: number; visitors: number }>();
+                for (const r of (appPvRows.results || []) as any[]) {
+                    pvAppMap.set(r.path, { views: r.views, visitors: r.visitors });
                 }
 
                 miniappItems = ((appRows.results || []) as any[]).map(a => {
                     const periodLaunches = Number(a.period_launches) || 0;
-                    const launches = periodLaunches > 0 ? periodLaunches : (totalMap.get(a.id) || 0);
+                    const pv = pvAppMap.get(`/app/${a.slug}`) || pvAppMap.get(a.app_url || '') || { views: 0, visitors: 0 };
+                    const views = Math.max(periodLaunches, pv.views);
+                    const visitors = Math.max(a.unique_users || 0, pv.visitors);
+
                     return {
                         id: a.id,
                         title: a.name,
@@ -669,57 +758,73 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                         type: 'miniapp' as const,
                         typeLabel: '스마트 도구',
                         url: a.app_url || `/app/${a.slug}`,
-                        views: launches,
-                        visitors: a.unique_users || Math.max(1, Math.round(launches * 0.7)),
+                        views,
+                        visitors: visitors || (views > 0 ? 1 : 0),
                         share: 0,
                         metricName: '실행',
-                        extra: a.last_used ? `최근 사용: ${a.last_used.split('T')[0] || a.last_used}` : '정상 가동 중'
+                        extra: a.last_used ? `최근 사용: ${a.last_used.split('T')[0] || a.last_used}` : (views > 0 ? '이용 중' : '기간 내 미실행')
                     };
-                }).filter(a => a.views > 0).sort((a, b) => b.views - a.views);
+                }).filter(a => type === 'miniapps' || a.views > 0).sort((a, b) => b.views - a.views);
             } catch (e) {
                 console.error('Content detail miniapps error:', e);
             }
         }
 
-        // 3. 웹게임 데이터 수집
+        // 3. 웹게임 데이터 수집 (점수 기록 및 페이지 뷰 합산)
         let gameItems: typeof items = [];
         if (type === 'all' || type === 'games') {
             try {
-                const gameRows = await DB.prepare(
+                // 게임 페이지 뷰 (실제 게임 접속)
+                const gamePvRows = await DB.prepare(
+                    `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors,
+                            ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec
+                     FROM page_views
+                     WHERE path LIKE '/game/%' AND path != '/game' AND ${getKstDateCondition(days)}
+                     GROUP BY path`
+                ).all()
+                const pvGameMap = new Map<string, { views: number; visitors: number; avgSec: number }>();
+                for (const r of (gamePvRows.results || []) as any[]) {
+                    const gid = r.path.replace('/game/', '').split('/')[0].split('?')[0];
+                    pvGameMap.set(gid, { views: r.views, visitors: r.visitors, avgSec: r.avg_sec });
+                }
+
+                // 게임 점수 기록 (게임 완료 판수)
+                const gameScoreRows = await DB.prepare(
                     `SELECT game_id, COUNT(*) as plays, COUNT(DISTINCT user_id) as players, 
                             ROUND(AVG(score)) as avg_score, MAX(score) as max_score, MAX(created_at) as last_played
                      FROM game_scores
-                     WHERE created_at >= DATE('now', '-${days} days')
+                     WHERE ${getKstDateCondition(days)}
                      GROUP BY game_id
                      ORDER BY plays DESC`
                 ).all()
-
-                // 기간 데이터가 적은 경우 전체 누적 데이터 보완
-                const allGameScores = await DB.prepare(
-                    `SELECT game_id, COUNT(*) as total_plays, ROUND(AVG(score)) as avg_score, MAX(score) as max_score
-                     FROM game_scores
-                     GROUP BY game_id`
-                ).all()
-                const allGameMap = new Map<string, any>();
-                for (const g of (allGameScores.results || []) as any[]) {
-                    allGameMap.set(g.game_id, g);
+                const scoreMap = new Map<string, any>();
+                for (const g of (gameScoreRows.results || []) as any[]) {
+                    scoreMap.set(g.game_id, g);
                 }
 
                 // 알려진 게임 키셋
                 const gameKeys = Array.from(new Set([
-                    ...((gameRows.results || []) as any[]).map(g => g.game_id),
-                    ...Array.from(allGameMap.keys()),
-                    'janggi', 'omok', 'freecell', 'vera-pop', 'minesweeper', '2048', 'sudoku'
+                    'janggi', 'omok', 'vera-pop', 'freecell', 'minesweeper', '2048', 'sudoku', 'sfc', 'comboy',
+                    ...Array.from(pvGameMap.keys()),
+                    ...Array.from(scoreMap.keys())
                 ]));
 
                 gameItems = gameKeys.map(gid => {
-                    const periodData = ((gameRows.results || []) as any[]).find(g => g.game_id === gid);
-                    const totalData = allGameMap.get(gid) || {};
-                    const plays = periodData?.plays || totalData.total_plays || 0;
-                    const avgScore = periodData?.avg_score || totalData.avg_score || 0;
-                    const maxScore = periodData?.max_score || totalData.max_score || 0;
+                    const pv = pvGameMap.get(gid) || { views: 0, visitors: 0, avgSec: 0 };
+                    const sc = scoreMap.get(gid) || { plays: 0, players: 0, avg_score: 0, max_score: 0 };
+                    const views = Math.max(pv.views, sc.plays);
+                    const visitors = Math.max(pv.visitors, sc.players);
                     const gameTitle = GAME_NAMES[gid] || gid;
                     const gameUrl = gid === 'sfc' ? '/game/sfc' : (gid === 'comboy' ? '/game/comboy' : `/game/${gid}`);
+
+                    let extra = '플레이 가능';
+                    if (sc.plays > 0) {
+                        extra = `완료 ${sc.plays}판 · 최고 ${Number(sc.max_score || 0).toLocaleString()}점`;
+                    } else if (pv.avgSec > 0) {
+                        extra = `평균 플레이 ${Math.round(pv.avgSec)}초`;
+                    } else if (views > 0) {
+                        extra = '최근 플레이됨';
+                    }
 
                     return {
                         id: gid,
@@ -728,13 +833,14 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                         type: 'game' as const,
                         typeLabel: '웹게임',
                         url: gameUrl,
-                        views: plays,
-                        visitors: periodData?.players || Math.max(1, Math.round(plays * 0.8)),
+                        views,
+                        visitors: visitors || (views > 0 ? 1 : 0),
                         share: 0,
                         metricName: '플레이',
-                        extra: maxScore > 0 ? `최고 점수: ${maxScore.toLocaleString()}점 (평균 ${avgScore.toLocaleString()}점)` : '플레이 가능'
+                        avgDurationSec: pv.avgSec || 0,
+                        extra
                     };
-                }).filter(g => g.views > 0).sort((a, b) => b.views - a.views);
+                }).filter(g => type === 'games' || g.views > 0).sort((a, b) => b.views - a.views);
             } catch (e) {
                 console.error('Content detail games error:', e);
             }
@@ -749,9 +855,9 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                             ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec,
                             MAX(created_at) as last_viewed
                      FROM page_views
-                     WHERE (path LIKE '/guides/%' OR path LIKE '/blog/%' OR path LIKE '/entertainment/novel%' OR path LIKE '/entertainment/saju%' OR path LIKE '/finance%' OR path LIKE '/lifestyle%')
+                     WHERE (path LIKE '/guides/%' OR path LIKE '/blog/%' OR path LIKE '/entertainment/novel%' OR path LIKE '/entertainment/saju%' OR path LIKE '/finance/%' OR path LIKE '/lifestyle/%')
                        AND path NOT IN ('/finance', '/lifestyle', '/news', '/game', '/about', '/contact', '/privacy', '/terms')
-                       AND created_at >= DATE('now', '-${days} days')
+                       AND ${getKstDateCondition(days)}
                      GROUP BY path
                      ORDER BY views DESC
                      LIMIT 30`
@@ -804,7 +910,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
         else if (type === 'guides') items = guideItems;
         else {
             // 종합 (All) : 각 카테고리별 상위권 추출 후 통합
-            items = [...newsItems.slice(0, 10), ...miniappItems.slice(0, 8), ...gameItems.slice(0, 8), ...guideItems.slice(0, 8)]
+            items = [...newsItems.slice(0, 10), ...gameItems.slice(0, 8), ...guideItems.slice(0, 8), ...miniappItems.slice(0, 8)]
                 .sort((a, b) => b.views - a.views);
         }
 

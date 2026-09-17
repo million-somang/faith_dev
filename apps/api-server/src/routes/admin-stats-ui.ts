@@ -208,12 +208,12 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                         <div class="flex flex-wrap items-center gap-1.5">
                             <span class="text-xs font-bold text-gray-600 mr-1">필터:</span>
-                            <button onclick="filterReferrers('external')" id="ref-filter-external" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-600 text-white transition shadow-sm">외부 유입만 (추천)</button>
+                            <button onclick="filterReferrers('all')" id="ref-filter-all" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-600 text-white transition shadow-sm">전체 유입 (추천)</button>
+                            <button onclick="filterReferrers('external')" id="ref-filter-external" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">외부 유입만</button>
                             <button onclick="filterReferrers('search')" id="ref-filter-search" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">검색엔진</button>
                             <button onclick="filterReferrers('social')" id="ref-filter-social" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">소셜 SNS</button>
                             <button onclick="filterReferrers('community')" id="ref-filter-community" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">커뮤니티/블로그</button>
                             <button onclick="filterReferrers('direct')" id="ref-filter-direct" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">직접 접속</button>
-                            <button onclick="filterReferrers('all')" id="ref-filter-all" class="ref-filter-btn px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition">전체 (내부 포함)</button>
                         </div>
                         <span id="ref-filter-count" class="text-xs text-gray-500"></span>
                     </div>
@@ -337,7 +337,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
         <script>
             let currentPeriod = 7;
             let currentContentTab = 'all';
-            let currentReferrerFilter = 'external'; // 기본값: 외부 유입만
+            let currentReferrerFilter = 'all'; // 기본값: 전체 유입 (직접 접속 + 외부 검색/SNS)
             let cachedReferrersData = null;
 
             let visitorsChartInstance = null;
