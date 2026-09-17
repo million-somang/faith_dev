@@ -66,8 +66,9 @@ export const pool = {
             .replace(/NOW\(\)/gi, 'CURRENT_TIMESTAMP');
 
         try {
-            const isSelect = sqliteText.trim().toUpperCase().startsWith('SELECT');
-            const isPragma = sqliteText.trim().toUpperCase().startsWith('PRAGMA');
+            const trimmedUpper = sqliteText.trim().toUpperCase();
+            const isSelect = trimmedUpper.startsWith('SELECT') || trimmedUpper.startsWith('WITH');
+            const isPragma = trimmedUpper.startsWith('PRAGMA');
 
             const stmt = db.prepare(sqliteText);
 
