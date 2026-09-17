@@ -67,11 +67,17 @@ adminStatsUi.get('/admin/stats', async (c) => {
         ${getBreadcrumb([{ label: '홈', href: '/' }, { label: '관리자', href: '/admin' }, { label: '통계 대시보드' }])}
 
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-6">
-            <!-- 기간 필터 -->
+            <!-- 기간 필터 및 기준 시간 안내 배지 -->
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h2 class="text-2xl font-bold text-gray-800">
-                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>통계 대시보드
-                </h2>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-blue-600"></i>통계 대시보드
+                        <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                            <i class="fas fa-clock text-blue-500"></i> KST 00:00~24:00 (순수 방문자)
+                        </span>
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-1">한국 표준시(KST) 자정 기준 순수 사용자(Human) 통계이며, 검색엔진 로봇/무단 크롤러 및 사이트 내부 이동은 완전 제외됩니다.</p>
+                </div>
                 <div class="flex items-center gap-2 bg-white rounded-lg shadow px-2 py-1">
                     <button onclick="changePeriod(1)" class="period-btn px-3 py-1.5 rounded text-sm font-medium" data-period="1">오늘</button>
                     <button onclick="changePeriod(7)" class="period-btn px-3 py-1.5 rounded text-sm font-medium active" data-period="7">7일</button>
@@ -143,15 +149,15 @@ adminStatsUi.get('/admin/stats', async (c) => {
                             </span>
                             사이트 유입 경로 분석 (Inflow Source)
                         </h3>
-                        <p class="text-xs text-gray-500 mt-1">방문자가 어디서 사이트로 유입되었는지 검색엔진, SNS, 외부 링크 및 첫 진입 페이지를 정밀 분석합니다.</p>
+                        <p class="text-xs text-gray-500 mt-1">방문자가 어디서 사이트로 유입되었는지 검색엔진, SNS, 외부 링크 및 첫 진입 페이지를 정밀 분석합니다. (사이트 내 이동 제외)</p>
                     </div>
                     <button onclick="exportCSV('referrers_detail')" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-200 transition font-medium flex items-center gap-1.5">
                         <i class="fas fa-download"></i> 유입 데이터 CSV
                     </button>
                 </div>
 
-                <!-- 채널별 요약 칩 -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                <!-- 채널별 요약 칩 (5대 순수 유입 채널) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
                     <div class="bg-emerald-50/70 border border-emerald-100 rounded-lg p-3">
                         <div class="text-xs text-emerald-700 font-medium">외부 유입 총합</div>
                         <div id="inflow-external-views" class="text-lg font-bold text-emerald-900 mt-0.5">-</div>
@@ -176,11 +182,6 @@ adminStatsUi.get('/admin/stats', async (c) => {
                         <div class="text-xs text-slate-700 font-medium">🚪 직접 접속</div>
                         <div id="inflow-direct-views" class="text-lg font-bold text-slate-900 mt-0.5">-</div>
                         <div class="text-xs text-slate-500">URL입력·북마크</div>
-                    </div>
-                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <div class="text-xs text-gray-600 font-medium">🔄 사이트 내부 이동</div>
-                        <div id="inflow-internal-views" class="text-lg font-bold text-gray-800 mt-0.5">-</div>
-                        <div class="text-xs text-gray-400">포털 내 페이지 이동</div>
                     </div>
                 </div>
 
@@ -473,7 +474,6 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     document.getElementById('inflow-social-views').textContent = (summary.socialViews || 0).toLocaleString() + '회';
                     document.getElementById('inflow-community-views').textContent = ((summary.communityViews || 0) + (summary.campaignViews || 0)).toLocaleString() + '회';
                     document.getElementById('inflow-direct-views').textContent = (summary.directViews || 0).toLocaleString() + '회';
-                    document.getElementById('inflow-internal-views').textContent = (summary.internalViews || 0).toLocaleString() + '회';
 
                     // 도넛 차트 (채널 비중)
                     if (referrersChartInstance) referrersChartInstance.destroy();

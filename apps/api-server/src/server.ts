@@ -23,6 +23,39 @@ app.use('*', cors({
 
 app.use('*', errorHandler);
 
+// ==================== 공인 검색엔진 외 무단 크롤러 및 스크래퍼 차단 미들웨어 ====================
+const ALLOWED_BOT_PATTERNS = [
+    'googlebot', 'adsbot-google', 'mediapartners-google', 'google-inspectiontool', 'feedfetcher-google',
+    'yeti', 'naverbot',
+    'daumoa', 'kakaotalk-scrap', 'kakaostory-og-reader',
+    'bingbot', 'msnbot',
+    'facebookexternalhit', 'facebot', 'twitterbot', 'applebot', 'slackbot', 'linkedinbot'
+];
+
+const BLOCKED_BOT_PATTERNS = [
+    'ahrefs', 'semrush', 'bytespider', 'dotbot', 'mj12bot', 'petalbot',
+    'dataprovider', 'redscanner', 'zoominfo', 'blexbot', 'megaindex',
+    'scrapy', 'python-requests', 'go-http-client', 'wget'
+];
+
+app.use('*', async (c, next) => {
+    const path = c.req.path;
+    if (path === '/health' || path === '/api/health') return next();
+
+    const ua = (c.req.header('User-Agent') || '').toLowerCase();
+    if (ua) {
+        const isBlocked = BLOCKED_BOT_PATTERNS.some(bot => ua.includes(bot));
+        if (isBlocked) {
+            const isAllowed = ALLOWED_BOT_PATTERNS.some(allowed => ua.includes(allowed));
+            if (!isAllowed) {
+                return c.text('Access Denied: Automated bot scraping is prohibited.', 403);
+            }
+        }
+    }
+
+    await next();
+});
+
 // Base route skipped in favor of static SPA
 
 // Consistent health check

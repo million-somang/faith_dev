@@ -1,6 +1,37 @@
 # robots.txt for VERA (https://veranex.app)
 # 구글 검색엔진 및 애드센스 심사 봇 크롤링 전체 허용
 
+# 악성 및 무단 마케팅/스크래핑 봇 차단
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: PetalBot
+Disallow: /
+
+User-agent: Dataprovider
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: MegaIndex
+Disallow: /
+
+User-agent: ZoominfoBot
+Disallow: /
+
 User-agent: *
 Allow: /
 Allow: /guides/
@@ -17,6 +48,9 @@ Disallow: /app/comboy
 Disallow: /app/comboy/
 Disallow: /app/sfc
 Disallow: /app/sfc/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
 
 # Google AdSense Crawler 전용 권한 허용
 User-agent: Mediapartners-Google

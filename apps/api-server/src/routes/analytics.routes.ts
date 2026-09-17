@@ -25,6 +25,18 @@ analyticsRoutes.post('/api/analytics/pageview', async (c) => {
         }
 
         const userAgent = c.req.header('User-Agent') || ''
+        const uaLower = userAgent.toLowerCase();
+        // 무단 크롤러/스크래퍼 봇 트래킹 배제 (DB 오염 방지)
+        if (
+            uaLower.includes('bot') || uaLower.includes('crawl') || uaLower.includes('spider') ||
+            uaLower.includes('ahrefs') || uaLower.includes('semrush') || uaLower.includes('bytespider') ||
+            uaLower.includes('dataprovider') || uaLower.includes('scanner') || uaLower.includes('python') ||
+            uaLower.includes('curl') || uaLower.includes('headless') || uaLower.includes('slurp') ||
+            uaLower.includes('yandex') || uaLower.includes('wget')
+        ) {
+            return c.json({ success: true, filtered: 'bot' })
+        }
+
         const forwarded = c.req.header('X-Forwarded-For')
         const ip = forwarded ? forwarded.split(',')[0].trim() : (c.req.header('X-Real-IP') || '0.0.0.0')
 
@@ -74,6 +86,17 @@ export function getKstDateCondition(days: number, column = 'created_at'): string
     return `DATE(${column}, '+9 hours') >= DATE('now', '+9 hours', '-${offsetDays} days')`;
 }
 
+// 비인간(크롤러, 스크래퍼, 봇) 트래픽 완전 배제 SQL 조건문
+export const BOT_SQL_FILTER = `
+    AND NOT (
+        user_agent LIKE '%bot%' OR user_agent LIKE '%crawl%' OR user_agent LIKE '%spider%' 
+        OR user_agent LIKE '%slurp%' OR user_agent LIKE '%Ahrefs%' OR user_agent LIKE '%Yandex%'
+        OR user_agent LIKE '%Scanner%' OR user_agent LIKE '%Dataprovider%' OR user_agent LIKE '%python%'
+        OR user_agent LIKE '%curl%' OR user_agent LIKE '%headless%' OR user_agent LIKE '%Semrush%'
+        OR user_agent LIKE '%Bytespider%' OR user_agent LIKE '%wget%'
+    )
+`;
+
 // ==================== 관리자: 전체 개요 ====================
 analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => {
     const DB = getDB(c)
@@ -81,18 +104,20 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
     const days = parseInt(period)
 
     try {
-        // 오늘 기준 집계 (한국 날짜 KST 자정 기준)
+        // 오늘 기준 집계 (한국 날짜 KST 자정 기준, 봇 제외)
         const todayViews = await DB.prepare(
             `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
              FROM page_views 
-             WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')`
+             WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')
+             ${BOT_SQL_FILTER}`
         ).first() as Record<string, number> | null
 
-        // 기간 기준 집계 (한국 날짜 KST 기준 원본 + 일별 집계 합산)
+        // 기간 기준 집계 (한국 날짜 KST 기준 원본 + 일별 집계 합산, 봇 제외)
         const periodRaw = await DB.prepare(
             `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
              FROM page_views 
-             WHERE ${getKstDateCondition(days)}`
+             WHERE ${getKstDateCondition(days)}
+             ${BOT_SQL_FILTER}`
         ).first() as Record<string, number> | null
 
         const periodDaily = await DB.prepare(
@@ -105,12 +130,13 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
         const totalViews = (periodRaw?.total || 0) + (periodDaily?.total || 0)
         const uniqueVisitors = (periodRaw?.unique_visitors || 0) + (periodDaily?.unique_visitors || 0)
 
-        // 이전 동기간 비교
+        // 이전 동기간 비교 (봇 제외)
         const prevRaw = await DB.prepare(
             `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as unique_visitors 
              FROM page_views 
              WHERE DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
-               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')`
+               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')
+               ${BOT_SQL_FILTER}`
         ).first() as Record<string, number> | null
 
         const prevDaily = await DB.prepare(
@@ -135,17 +161,19 @@ analyticsRoutes.get('/api/admin/analytics/overview', requireAdmin, async (c) => 
                AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days') AND status != 'deleted'`
         ).first() as Record<string, number> | null
 
-        // 평균 체류 시간 (KST 기준)
+        // 평균 체류 시간 (KST 기준, 봇 제외)
         const avgDuration = await DB.prepare(
             `SELECT AVG(duration_ms) as avg_ms FROM page_views 
-             WHERE duration_ms > 0 AND ${getKstDateCondition(days)}`
+             WHERE duration_ms > 0 AND ${getKstDateCondition(days)}
+             ${BOT_SQL_FILTER}`
         ).first() as Record<string, number> | null
 
         const prevAvgDuration = await DB.prepare(
             `SELECT AVG(duration_ms) as avg_ms FROM page_views 
              WHERE duration_ms > 0 
                AND DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-${days * 2 - 1} days') 
-               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')`
+               AND DATE(created_at, '+9 hours') < DATE('now', '+9 hours', '-${days - 1} days')
+               ${BOT_SQL_FILTER}`
         ).first() as Record<string, number> | null
 
         return c.json({
@@ -183,11 +211,12 @@ analyticsRoutes.get('/api/admin/analytics/visitors', requireAdmin, async (c) => 
     const days = parseInt(c.req.query('days') || '30')
 
     try {
-        // 원본 데이터에서 한국 날짜 KST 일별 집계
+        // 원본 데이터에서 한국 날짜 KST 일별 집계 (봇 제외)
         const rawTrend = await DB.prepare(
             `SELECT DATE(created_at, '+9 hours') as date, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors 
              FROM page_views 
              WHERE ${getKstDateCondition(days)} 
+             ${BOT_SQL_FILTER}
              GROUP BY DATE(created_at, '+9 hours') 
              ORDER BY date`
         ).all()
@@ -226,7 +255,7 @@ analyticsRoutes.get('/api/admin/analytics/visitors', requireAdmin, async (c) => 
     }
 })
 
-// ==================== 관리자: 인기 페이지 (KST 기준) ====================
+// ==================== 관리자: 인기 페이지 (KST 기준, 봇 제외) ====================
 analyticsRoutes.get('/api/admin/analytics/pages', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
@@ -237,6 +266,7 @@ analyticsRoutes.get('/api/admin/analytics/pages', requireAdmin, async (c) => {
                     ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_duration
              FROM page_views 
              WHERE ${getKstDateCondition(days)}
+             ${BOT_SQL_FILTER}
              GROUP BY path 
              ORDER BY views DESC 
              LIMIT 20`
@@ -355,20 +385,20 @@ const GAME_NAMES: Record<string, string> = {
     'tetris': '테트리스 아케이드'
 };
 
-// ==================== 관리자: 유입 경로 고도화 ====================
-// ==================== 관리자: 유입 경로 고도화 (KST 및 세션 최초 랜딩 기준) ====================
+// ==================== 관리자: 유입 경로 고도화 (KST, 세션 최초 랜딩, 봇 및 내부이동 완전 배제) ====================
 analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
 
     try {
-        // 세션별 최초 진입 페이지 및 유입 경로 (Window Function을 통해 내부 페이지 이동 중복 제거)
+        // 세션별 최초 진입 페이지 및 유입 경로 (봇 제외, Window Function을 통해 내부 페이지 이동 중복 제거)
         const rowsResult = await DB.prepare(
             `WITH first_pv AS (
                 SELECT session_id, referrer, path, created_at,
                        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at ASC) as rn
                 FROM page_views
                 WHERE ${getKstDateCondition(days)}
+                ${BOT_SQL_FILTER}
              )
              SELECT referrer, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
              FROM first_pv 
@@ -385,15 +415,14 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
             last_seen: string;
         }>
 
-        // 채널별 합계 및 출처별 합계 계산
+        // 채널별 합계 및 출처별 합계 계산 (내부 이동 제외)
         const channelTotals: Record<string, { name: string; views: number; visitors: number }> = {
             search: { name: '검색엔진', views: 0, visitors: 0 },
             social: { name: '소셜 미디어 (SNS)', views: 0, visitors: 0 },
             community: { name: '커뮤니티/블로그', views: 0, visitors: 0 },
             campaign: { name: '마케팅 캠페인', views: 0, visitors: 0 },
             external: { name: '기타 외부 웹사이트', views: 0, visitors: 0 },
-            direct: { name: '직접 접속', views: 0, visitors: 0 },
-            internal: { name: '사이트 내부 이동', views: 0, visitors: 0 }
+            direct: { name: '직접 접속', views: 0, visitors: 0 }
         };
 
         const sourceMap = new Map<string, {
@@ -425,6 +454,12 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
 
         for (const row of rawRows) {
             const classified = classifyReferrer(row.referrer);
+            
+            // 사이트 내부 이동(veranex.app 등)은 유입 통계에서 100% 완전 제외
+            if (classified.channel === 'internal') {
+                continue;
+            }
+
             const views = Number(row.views) || 0;
             const visitors = Number(row.visitors) || 0;
 
@@ -502,8 +537,7 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
                 socialViews: channelTotals.social.views,
                 communityViews: channelTotals.community.views,
                 campaignViews: channelTotals.campaign.views,
-                directViews: channelTotals.direct.views,
-                internalViews: channelTotals.internal.views
+                directViews: channelTotals.direct.views
             },
             channels,
             topSources,
@@ -518,7 +552,7 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
     }
 })
 
-// ==================== 관리자: 기기 분석 (KST 기준) ====================
+// ==================== 관리자: 기기 분석 (KST 기준, 봇 제외) ====================
 analyticsRoutes.get('/api/admin/analytics/devices', requireAdmin, async (c) => {
     const DB = getDB(c)
     const days = parseInt(c.req.query('days') || '30')
@@ -536,6 +570,7 @@ analyticsRoutes.get('/api/admin/analytics/devices', requireAdmin, async (c) => {
                 COUNT(DISTINCT session_id) as visitors
              FROM page_views 
              WHERE ${getKstDateCondition(days)}
+             ${BOT_SQL_FILTER}
              GROUP BY device ORDER BY views DESC`
         ).all()
 
@@ -628,17 +663,18 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
             extra?: string;
         }> = [];
 
-        // 1. 뉴스 데이터 수집 (해당 기간 동안 실제 읽힌 뉴스 집계)
+        // 1. 뉴스 데이터 수집 (해당 기간 동안 실제 읽힌 뉴스 집계, 봇 제외)
         let newsItems: typeof items = [];
         if (type === 'all' || type === 'news') {
             try {
-                // 기간 내 page_views에서 /news/:id 조회수 집계
+                // 기간 내 page_views에서 /news/:id 조회수 집계 (봇 제외)
                 const pvNews = await DB.prepare(
                     `SELECT path, COUNT(*) as pv_views, COUNT(DISTINCT session_id) as pv_visitors, 
                             ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec,
                             MAX(created_at) as last_seen
                      FROM page_views 
                      WHERE path LIKE '/news/%' AND path != '/news' AND ${getKstDateCondition(days)}
+                     ${BOT_SQL_FILTER}
                      GROUP BY path
                      ORDER BY pv_views DESC
                      LIMIT 50`
@@ -717,7 +753,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
             }
         }
 
-        // 2. 미니앱 / 계산기 / 도구 데이터 수집 (기간 내 실행 + 조회 기준)
+        // 2. 미니앱 / 계산기 / 도구 데이터 수집 (기간 내 실행 + 조회 기준, 봇 제외)
         let miniappItems: typeof items = [];
         if (type === 'all' || type === 'miniapps') {
             try {
@@ -733,11 +769,12 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                      ORDER BY period_launches DESC, ma.sort_order ASC`
                 ).all()
 
-                // 기간 내 페이지 뷰
+                // 기간 내 페이지 뷰 (봇 제외)
                 const appPvRows = await DB.prepare(
                     `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors
                      FROM page_views
                      WHERE (path LIKE '/app/%' OR path LIKE '/tools/%' OR path LIKE '/calc/%') AND ${getKstDateCondition(days)}
+                     ${BOT_SQL_FILTER}
                      GROUP BY path`
                 ).all()
                 const pvAppMap = new Map<string, { views: number; visitors: number }>();
@@ -770,16 +807,17 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
             }
         }
 
-        // 3. 웹게임 데이터 수집 (점수 기록 및 페이지 뷰 합산)
+        // 3. 웹게임 데이터 수집 (점수 기록 및 페이지 뷰 합산, 봇 제외)
         let gameItems: typeof items = [];
         if (type === 'all' || type === 'games') {
             try {
-                // 게임 페이지 뷰 (실제 게임 접속)
+                // 게임 페이지 뷰 (실제 게임 접속, 봇 제외)
                 const gamePvRows = await DB.prepare(
                     `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors,
                             ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec
                      FROM page_views
                      WHERE path LIKE '/game/%' AND path != '/game' AND ${getKstDateCondition(days)}
+                     ${BOT_SQL_FILTER}
                      GROUP BY path`
                 ).all()
                 const pvGameMap = new Map<string, { views: number; visitors: number; avgSec: number }>();
@@ -846,7 +884,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
             }
         }
 
-        // 4. 가이드 & 전문 칼럼 / 특화 콘텐츠 수집
+        // 4. 가이드 & 전문 칼럼 / 특화 콘텐츠 수집 (봇 제외)
         let guideItems: typeof items = [];
         if (type === 'all' || type === 'guides') {
             try {
@@ -858,6 +896,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                      WHERE (path LIKE '/guides/%' OR path LIKE '/blog/%' OR path LIKE '/entertainment/novel%' OR path LIKE '/entertainment/saju%' OR path LIKE '/finance/%' OR path LIKE '/lifestyle/%')
                        AND path NOT IN ('/finance', '/lifestyle', '/news', '/game', '/about', '/contact', '/privacy', '/terms')
                        AND ${getKstDateCondition(days)}
+                       ${BOT_SQL_FILTER}
                      GROUP BY path
                      ORDER BY views DESC
                      LIMIT 30`
