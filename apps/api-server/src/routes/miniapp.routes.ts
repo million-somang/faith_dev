@@ -44,7 +44,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 `).bind(
-                    '브라우저 OCR (이미지 글자 추출기)',
+                    '이미지 글자 추출기',
                     'ocr',
                     'fas fa-file-alt',
                     '캡처 이미지나 사진을 드래그하면 서버 전송 없이 브라우저에서 한글·영문 텍스트를 즉시 추출 및 다운로드',
@@ -57,6 +57,17 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                 apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed ocr:', seedErr);
+            }
+        }
+
+        // ocr 이름이 긴 경우('브라우저 OCR (이미지 글자 추출기)') 간결화('이미지 글자 추출기') 자동 마이그레이션
+        const ocrApp = apps.results.find((a: any) => a.slug === 'ocr' && a.name !== '이미지 글자 추출기');
+        if (ocrApp) {
+            try {
+                await DB.prepare("UPDATE mini_apps SET name = '이미지 글자 추출기' WHERE slug = 'ocr'").run();
+                ocrApp.name = '이미지 글자 추출기';
+            } catch (nameErr) {
+                console.error('Failed to update ocr name:', nameErr);
             }
         }
 

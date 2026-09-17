@@ -37,7 +37,7 @@ const CATALOG: CatalogItem[] = [
     { label: 'JSON 포맷터', desc: 'JSON 정렬·검증', href: '/app/json-formatter/', icon: 'fa-code', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['json', '포맷터', 'formatter'] },
     { label: 'Base64 변환기', desc: '인코딩·디코딩', href: '/app/base64-converter/', icon: 'fa-right-left', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['base64', '인코딩', '디코딩', '변환'] },
     { label: 'SVG 변환기', desc: 'SVG 편집·변환', href: '/app/svg-converter/', icon: 'fa-bezier-curve', color: 'text-slate-600', bg: 'bg-slate-100', keywords: ['svg', '변환', 'vector'] },
-    { label: '브라우저 OCR', desc: '이미지 글자 추출·TXT 다운로드', href: '/app/ocr/', icon: 'fa-file-alt', color: 'text-blue-600', bg: 'bg-blue-50', keywords: ['ocr', '이미지글자추출', '사진글자', '텍스트추출', '문자인식', '글자추출', 'tesseract'] },
+    { label: '이미지 글자 추출기', desc: '이미지 글자 추출·TXT 다운로드', href: '/app/ocr/', icon: 'fa-file-alt', color: 'text-blue-600', bg: 'bg-blue-50', keywords: ['ocr', '이미지글자추출', '사진글자', '텍스트추출', '문자인식', '글자추출', 'tesseract'] },
 ];
 
 function matchCatalog(q: string): CatalogItem[] {

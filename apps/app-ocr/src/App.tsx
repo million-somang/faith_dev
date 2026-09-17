@@ -30,7 +30,7 @@ export default function App() {
           <div className="loading-header">
             <div className="loading-header-title">
               <i className="fas fa-file-lines"></i>
-              <span>브라우저 OCR (이미지 글자 추출기)</span>
+              <span>이미지 글자 추출기</span>
             </div>
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center text-white text-xs">
               <i className="fas fa-eye"></i>
@@ -47,7 +47,7 @@ export default function App() {
             </div>
 
             {/* 타이틀 및 서브타이틀 */}
-            <h1 className="loading-title">브라우저 OCR 글자 추출기</h1>
+            <h1 className="loading-title">이미지 글자 추출기</h1>
             <p className="loading-subtitle">
               서버 전송 없는 100% 브라우저 로컬 구동 • 사진 및 캡처 텍스트 변환
             </p>
