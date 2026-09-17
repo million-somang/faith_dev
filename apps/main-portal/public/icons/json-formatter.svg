@@ -1,0 +1,17 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <linearGradient id="jsonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <!-- Background soft rounded rect -->
+  <rect x="2" y="2" width="44" height="44" rx="12" fill="#eff6ff" stroke="#dbeafe" stroke-width="2" />
+  <!-- Left Bracket { -->
+  <path d="M16 12 C13 12 12 14 12 17 L12 21 C12 23 10 24 8 24 C10 24 12 25 12 27 L12 31 C12 34 13 36 16 36" fill="none" stroke="url(#jsonGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Right Bracket } -->
+  <path d="M32 12 C35 12 36 14 36 17 L36 21 C36 23 38 24 40 24 C38 24 36 25 36 27 L36 31 C36 34 35 36 32 36" fill="none" stroke="url(#jsonGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Central code lines / JSON badge -->
+  <rect x="18" y="19" width="12" height="3" rx="1.5" fill="#3b82f6" opacity="0.9" />
+  <rect x="18" y="26" width="8" height="3" rx="1.5" fill="#60a5fa" opacity="0.8" />
+</svg>

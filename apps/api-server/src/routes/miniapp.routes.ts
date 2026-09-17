@@ -60,6 +60,17 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
+        // json-formatter 아이콘이 유료 Pro 전용(fa-brackets-curly)인 경우 무료 fa-code로 자동 치유(Self-healing)
+        const brokenJsonApp = apps.results.find((a: any) => a.slug === 'json-formatter' && (a.icon_url?.includes('fa-brackets-curly') || !a.icon_url));
+        if (brokenJsonApp) {
+            try {
+                await DB.prepare("UPDATE mini_apps SET icon_url = 'fas fa-code' WHERE slug = 'json-formatter'").run();
+                brokenJsonApp.icon_url = 'fas fa-code';
+            } catch (healErr) {
+                console.error('Failed to auto-heal json-formatter icon:', healErr);
+            }
+        }
+
         return c.json({ success: true, apps: apps.results });
     } catch (error) {
         console.error('MiniApp API Error:', error);

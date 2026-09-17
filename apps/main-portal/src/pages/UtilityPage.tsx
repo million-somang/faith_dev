@@ -193,13 +193,31 @@ export default function UtilityPage() {
         ? GUIDE_CARDS
         : GUIDE_CARDS.filter(g => g.category === selectedGuideCategory);
 
+    /** 미니앱 아이콘 렌더러 (이미지/SVG 경로 지원 및 FontAwesome Free 미지원 아이콘 자동 폴백) */
+    const renderAppIcon = (app: MiniApp, keyPrefix = '') => {
+        const rawIcon = app.icon_url || '';
+
+        // 1. 이미지 또는 SVG 파일 경로 지원
+        if (rawIcon.startsWith('/') || rawIcon.startsWith('http') || rawIcon.endsWith('.svg') || rawIcon.endsWith('.png') || rawIcon.endsWith('.webp')) {
+            return <img src={rawIcon} alt={app.name} className="w-8 h-8 object-contain" />;
+        }
+
+        // 2. FontAwesome Pro 전용 아이콘이나 깨진 아이콘 감지 시 안전하게 폴백
+        let iconClass = rawIcon || 'fas fa-cube';
+        if (iconClass.includes('fa-brackets-curly') || (app.slug === 'json-formatter' && !rawIcon)) {
+            iconClass = 'fas fa-code';
+        }
+
+        return <i className={`${iconClass} text-3xl ${keyPrefix ? 'text-indigo-500' : 'text-blue-500'}`}></i>;
+    };
+
     /** 앱별 MiniAppButton을 렌더링 (모든 미니앱은 일반 팝업으로 실행) */
     const renderAppButton = (app: MiniApp, keyPrefix = '') => (
         <MiniAppButton
             key={`${keyPrefix}${app.id}`}
             appId={String(app.id)}
             title={t(app.name)}
-            icon={<i className={`${app.icon_url || 'fas fa-cube'} text-3xl ${keyPrefix ? 'text-indigo-500' : 'text-blue-500'}`}></i>}
+            icon={renderAppIcon(app, keyPrefix)}
             url={getDevUrl(app)}
             requireAuth={app.require_auth === 1}
             isLoggedIn={!!user}

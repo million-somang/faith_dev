@@ -11,8 +11,8 @@ const appsToSeed = [
     { name: '디데이 계산기', slug: 'dday-calc', icon_url: 'fas fa-calendar-alt', description: '기념일 디데이 계산', app_url: '/app/dday-calc/', category: 'calc', sort_order: 21 },
     { name: '평수 계산기', slug: 'pyeong-calc', icon_url: 'fas fa-ruler-combined', description: '평수 ↔ 제곱미터 변환', app_url: '/app/pyeong-calc/', category: 'calc', sort_order: 22 },
     { name: '맞춤법 검사기', slug: 'text-checker', icon_url: 'fas fa-spell-check', description: '맞춤법 검사 및 글자수 세기', app_url: '/app/text-checker/', category: 'text', sort_order: 30 },
-    { name: 'Base64 변환기', slug: 'base64-converter', icon_url: 'fas fa-code', description: 'Base64 인코딩/디코딩', app_url: '/app/base64-converter/', category: 'dev', sort_order: 40 },
-    { name: 'JSON 포맷터', slug: 'json-formatter', icon_url: 'fas fa-brackets-curly', description: 'JSON 코드 정렬 및 검증', app_url: '/app/json-formatter/', category: 'dev', sort_order: 41 },
+    { name: 'Base64 변환기', slug: 'base64-converter', icon_url: 'fas fa-exchange-alt', description: 'Base64 인코딩/디코딩', app_url: '/app/base64-converter/', category: 'dev', sort_order: 40 },
+    { name: 'JSON 포맷터', slug: 'json-formatter', icon_url: 'fas fa-code', description: 'JSON 코드 정렬 및 검증', app_url: '/app/json-formatter/', category: 'dev', sort_order: 41 },
     { name: 'SVG 변환기', slug: 'svg-converter', icon_url: 'fas fa-image', description: 'SVG 최적화 및 변환', app_url: '/app/svg-converter/', category: 'dev', sort_order: 42 }
 ];
 
