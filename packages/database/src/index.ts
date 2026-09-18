@@ -17,7 +17,17 @@ while (!fs.existsSync(path.join(rootDir, 'faith-portal.db')) && rootDir !== path
 
 const dbPath = process.env.DATABASE_PATH || path.join(rootDir, 'faith-portal.db');
 const db = new Database(dbPath);
-console.log(`[Database] Connected to SQLite: ${dbPath}`);
+
+// 동시성 락(database is locked) 방지 및 읽기/쓰기 성능 최적화
+try {
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
+    db.pragma('busy_timeout = 5000');
+} catch (pragmaErr) {
+    console.warn('[Database] Failed to set SQLite PRAGMA:', pragmaErr);
+}
+
+console.log(`[Database] Connected to SQLite (WAL mode): ${dbPath}`);
 
 // Run migrations
 try {

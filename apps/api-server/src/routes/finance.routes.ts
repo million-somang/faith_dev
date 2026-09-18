@@ -2,9 +2,31 @@ import { Hono } from 'hono';
 
 const financeRoutes = new Hono();
 
-// Yahoo Finance 비공식 API로 시세 데이터 병렬 가져오기
+// 종목별 및 차트별 인메모리 캐시 (60초 TTL) - Yahoo 차단 방지 및 고속 응답
+const quotesCache = new Map<string, { data: any; expiresAt: number }>();
+const chartCache = new Map<string, { data: any; expiresAt: number }>();
+const QUOTE_CACHE_TTL = 60 * 1000;
+
+// Yahoo Finance 비공식 API로 시세 데이터 병렬 가져오기 (인메모리 캐시 적용)
 async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
-    const promises = symbols.map(async (symbol) => {
+    const now = Date.now();
+    const results: any[] = [];
+    const missingSymbols: string[] = [];
+
+    for (const sym of symbols) {
+        const cached = quotesCache.get(sym);
+        if (cached && cached.expiresAt > now) {
+            results.push(cached.data);
+        } else {
+            missingSymbols.push(sym);
+        }
+    }
+
+    if (missingSymbols.length === 0) {
+        return results;
+    }
+
+    const promises = missingSymbols.map(async (symbol) => {
         try {
             const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1y`;
             const res = await fetch(url, {
@@ -18,7 +40,7 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
             const data = await res.json();
             const meta = data?.chart?.result?.[0]?.meta;
             if (meta && meta.regularMarketPrice !== undefined && meta.regularMarketPrice !== null) {
-                return {
+                const quote = {
                     symbol: symbol,
                     name: meta.shortName || meta.symbol,
                     price: meta.regularMarketPrice,
@@ -33,6 +55,8 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
                     dayLow: meta.regularMarketDayLow || null,
                     volume: meta.regularMarketVolume || null,
                 };
+                quotesCache.set(symbol, { data: quote, expiresAt: now + QUOTE_CACHE_TTL });
+                return quote;
             }
             return null;
 
@@ -43,13 +67,22 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
     });
 
     const settled = await Promise.allSettled(promises);
-    return settled
+    const fetched = settled
         .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value !== null)
         .map(r => r.value);
+
+    return [...results, ...fetched];
 }
 
-// 차트 데이터 가져오기 (기간별 다중 타임프레임 지원)
+// 차트 데이터 가져오기 (기간별 다중 타임프레임 지원, 인메모리 캐시 적용)
 async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
+    const cacheKey = `${symbol}_${range}`;
+    const now = Date.now();
+    const cached = chartCache.get(cacheKey);
+    if (cached && cached.expiresAt > now) {
+        return cached.data;
+    }
+
     try {
         let interval = '1d';
         let yahooRange = range;
@@ -89,7 +122,7 @@ async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
         const timestamps = result.timestamp || [];
         const closes = result.indicators?.quote?.[0]?.close || [];
         
-        return {
+        const chartData = {
             symbol,
             range,
             data: timestamps.map((ts: number, i: number) => {
@@ -103,6 +136,9 @@ async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
                 };
             }).filter((d: any) => d.price !== null),
         };
+
+        chartCache.set(cacheKey, { data: chartData, expiresAt: now + QUOTE_CACHE_TTL });
+        return chartData;
     } catch (e) {
         console.error(`Failed to fetch chart for ${symbol}:`, e);
         return null;

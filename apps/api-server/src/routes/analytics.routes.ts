@@ -77,12 +77,13 @@ analyticsRoutes.post('/api/analytics/duration', async (c) => {
     }
 })
 
-// KST (한국 표준시, UTC+9) 기준 날짜 조건 헬퍼
+// KST (한국 표준시, UTC+9) 기준 날짜 조건 헬퍼 (NaN 방어)
 export function getKstDateCondition(days: number, column = 'created_at'): string {
-    if (days === 1) {
+    const validDays = Number.isFinite(days) && days > 0 ? Math.floor(days) : 7;
+    if (validDays === 1) {
         return `DATE(${column}, '+9 hours') = DATE('now', '+9 hours')`;
     }
-    const offsetDays = days - 1;
+    const offsetDays = validDays - 1;
     return `DATE(${column}, '+9 hours') >= DATE('now', '+9 hours', '-${offsetDays} days')`;
 }
 

@@ -45,19 +45,33 @@ news.get('/api/news', async (c) => {
         const newsItems = result.rows;
 
         if (includeStocks) {
-            const newsWithStocks = await Promise.all(
-                newsItems.map(async (n: any) => {
-                    const searchText = `${n.title || ''} ${n.description || n.summary || ''} ${n.tags || ''}`;
-                    const relatedTickers = findRelatedStocks(searchText, '', '', 3);
+            // N+1 문제 해결: 전체 뉴스의 고유 티커를 취합하여 1회 일괄(Batch) 조회
+            const newsTickerMap = new Map<number, string[]>();
+            const allTickersSet = new Set<string>();
 
-                    if (relatedTickers.length === 0) {
-                        return { ...n, relatedStocks: [] };
-                    }
+            for (const n of newsItems) {
+                const searchText = `${n.title || ''} ${n.description || n.summary || ''} ${n.tags || ''}`;
+                const relatedTickers = findRelatedStocks(searchText, '', '', 3);
+                newsTickerMap.set(n.id, relatedTickers);
+                for (const t of relatedTickers) {
+                    allTickersSet.add(t);
+                }
+            }
 
-                    const stockData = await fetchBatchStockData(relatedTickers);
-                    return { ...n, relatedStocks: stockData };
-                })
-            );
+            const allStockList = allTickersSet.size > 0 
+                ? await fetchBatchStockData(Array.from(allTickersSet))
+                : [];
+
+            const stockMap = new Map<string, any>();
+            for (const s of allStockList) {
+                if (s && s.ticker) stockMap.set(s.ticker, s);
+            }
+
+            const newsWithStocks = newsItems.map((n: any) => {
+                const tickers = newsTickerMap.get(n.id) || [];
+                const relatedStocks = tickers.map(t => stockMap.get(t)).filter(Boolean);
+                return { ...n, relatedStocks };
+            });
 
             return c.json({
                 success: true,

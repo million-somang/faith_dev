@@ -1,51 +1,55 @@
 import { Hono } from 'hono'
 import { getDB } from '../db/adapter.js'
-import * as fs from 'fs'
+import { checkSession } from '../middleware/auth.js'
 import * as path from 'path'
 
 const adminRoutes = new Hono<{ Variables: { adminUserId: string } }>()
 
-// 관리자 권한 미들웨어 (간이)
+// 관리자 권한 미들웨어 (세션 우선 검증 및 안전한 폴백)
 const requireAdmin = async (c: any, next: any) => {
     const DB = getDB(c)
+
+    // 1. 서버 세션 쿠키 우선 검증
+    try {
+        const sessionUser = await checkSession(c)
+        if (sessionUser && (sessionUser.role === 'admin' || sessionUser.level >= 6) && sessionUser.status === 'active') {
+            c.set('adminUserId', String(sessionUser.id))
+            return await next()
+        }
+    } catch (_sessionErr) {
+        // 토큰 폴백으로 진행
+    }
+
+    // 2. Authorization 헤더 검증
     const authHeader = c.req.header('Authorization')
     if (!authHeader) return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
 
     try {
         const token = authHeader.replace('Bearer ', '')
 
-        // Resilience: 'true' 혹은 빈 값인 경우 미인증 처리
         if (token === 'true' || !token) {
-            fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Rejected legacy 'true' or empty token\n---\n`);
             return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
         }
 
         const decoded = Buffer.from(token, 'base64').toString()
-        const userId = decoded.split(':')[0]
+        const parts = decoded.split(':')
+        const userId = parts[0]
+        const secret = parts[1]
 
-        if (!userId) {
-            fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Rejected invalid decoded userId\n---\n`);
+        // 올바른 형식인지 검증
+        if (!userId || isNaN(Number(userId)) || !secret) {
             return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
         }
 
-        const logMsg = `[${new Date().toISOString()}] Admin Auth Debug\n` +
-            `Header: ${authHeader}\n` +
-            `Decoded: ${decoded}, UserId: ${userId}\n`;
-        fs.appendFileSync('admin_auth_debug.log', logMsg);
-
-        const admin = await DB.prepare('SELECT level, status FROM users WHERE id = ?').bind(userId).first()
-        fs.appendFileSync('admin_auth_debug.log', `DB Result: ${JSON.stringify(admin)}\n`);
+        const admin = await DB.prepare('SELECT id, level, status, role FROM users WHERE id = ?').bind(userId).first()
 
         if (!admin || admin.level < 6 || admin.status !== 'active') {
-            const deniedMsg = `Access Denied: !admin=${!admin}, level=${admin?.level}, status=${admin?.status}\n---\n`;
-            fs.appendFileSync('admin_auth_debug.log', deniedMsg);
             return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
         }
-        fs.appendFileSync('admin_auth_debug.log', `Access Granted\n---\n`);
-        c.set('adminUserId', userId)
+
+        c.set('adminUserId', String(userId))
         await next()
     } catch (e: any) {
-        fs.appendFileSync('admin_auth_debug.log', `Error: ${e.message}\n---\n`);
         return c.json({ success: false, message: '인증 오류' }, 401)
     }
 }
@@ -116,7 +120,6 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
         })
     } catch (error: any) {
         console.error('Admin Stats Error:', error);
-        fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Stats API Error: ${error.message}\nStack: ${error.stack}\n---\n`);
         return c.json({ success: false, message: '서버 오류: ' + error.message }, 500)
     }
 })
@@ -133,14 +136,10 @@ adminRoutes.get('/api/admin/users', requireAdmin, async (c) => {
         if (status) { query += ' AND status = ?'; bindings.push(status) } else { query += " AND status != 'deleted'" }
         query += ' ORDER BY created_at DESC LIMIT 100'
 
-        fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Users API Query: ${query}\nBindings: ${JSON.stringify(bindings)}\n`);
-
         const users = await DB.prepare(query).bind(...bindings).all()
-        fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Users API Success: ${users.results?.length || 0} rows found\n`);
-
         return c.json({ success: true, users: users.results })
     } catch (error: any) {
-        fs.appendFileSync('admin_auth_debug.log', `[${new Date().toISOString()}] Users API Error: ${error.message}\nStack: ${error.stack}\n---\n`);
+        console.error('Admin Users API Error:', error);
         return c.json({ success: false, message: '서버 오류' }, 500)
     }
 })
