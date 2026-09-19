@@ -22,7 +22,7 @@ export default function CompareView({
       data-screenshot-point="result"
       className="bg-white rounded-3xl p-4 border border-slate-200/90 shadow-xs space-y-3"
     >
-      {/* 뷰 선택 탭 바 */}
+      {/* 상단 뷰 선택 탭 바 */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
@@ -36,7 +36,7 @@ export default function CompareView({
               viewTab === 'split' ? 'bg-white text-indigo-700 shadow-2xs font-extrabold' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            대조(2분할)
+            대조(상하)
           </button>
           <button
             type="button"
@@ -84,33 +84,51 @@ export default function CompareView({
         </div>
       ) : (
         /* 변환 완료 미리보기 화면 */
-        <div className="min-h-[220px] max-h-[260px] flex items-center justify-center bg-slate-50/70 rounded-2xl border border-slate-200/80 p-3 overflow-hidden">
+        <div className="bg-slate-50/70 rounded-2xl border border-slate-200/80 p-3 overflow-hidden">
           {viewTab === 'split' ? (
-            <div className="grid grid-cols-2 gap-3 w-full h-full items-center">
-              {/* 원본 */}
-              <div className="flex flex-col items-center justify-center h-full border-r border-slate-200/80 pr-2">
-                <span className="text-[10px] font-bold text-slate-400 mb-1.5 flex items-center gap-1">
-                  <i className="fas fa-image text-slate-400"></i> 원본 래스터
-                </span>
-                <div className="flex-1 w-full flex items-center justify-center max-h-[190px]">
+            /* 🚀 상하(위아래) 2분할 풀-와이드 대조 뷰 */
+            <div className="flex flex-col gap-3 w-full">
+              {/* 위: 원본 래스터 이미지 */}
+              <div className="flex flex-col items-center justify-center w-full">
+                <div className="w-full flex items-center justify-between mb-1 text-[10px] font-bold text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-image text-slate-400"></i> 원본 래스터
+                  </span>
+                  <span className="text-[9px] text-slate-400">비트맵 (확대 시 픽셀 깨짐)</span>
+                </div>
+                <div className="w-full flex items-center justify-center min-h-[90px] max-h-[125px] overflow-hidden bg-white/70 rounded-xl p-1.5 border border-slate-200/60">
                   {originalUrl && (
                     <img
                       src={originalUrl}
                       alt="Original"
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xs"
+                      className="max-w-full max-h-[115px] object-contain rounded"
                     />
                   )}
                 </div>
               </div>
-              {/* SVG 결과 */}
-              <div className="flex flex-col items-center justify-center h-full pl-2">
-                <span className="text-[10px] font-bold text-indigo-600 mb-1.5 flex items-center gap-1">
-                  <i className="fas fa-vector-square text-indigo-600"></i> 변환 SVG 벡터 ✨
+
+              {/* 중앙 대조 구분선 */}
+              <div className="relative flex items-center justify-center my-0.5">
+                <div className="w-full border-t border-slate-200/80"></div>
+                <span className="absolute bg-indigo-50 border border-indigo-200 text-indigo-700 text-[9px] font-black px-2 py-0.5 rounded-full shadow-2xs">
+                  VS
                 </span>
-                <div className="flex-1 w-full flex items-center justify-center max-h-[190px]">
+              </div>
+
+              {/* 아래: 변환 SVG 벡터 */}
+              <div className="flex flex-col items-center justify-center w-full">
+                <div className="w-full flex items-center justify-between mb-1 text-[10px] font-bold text-indigo-600">
+                  <span className="flex items-center gap-1">
+                    <i className="fas fa-vector-square text-indigo-600"></i> 변환 SVG 벡터
+                  </span>
+                  <span className="text-[9px] text-indigo-500 font-extrabold bg-indigo-50 px-1.5 py-0.5 rounded">
+                    무한 해상도 ✨
+                  </span>
+                </div>
+                <div className="w-full flex items-center justify-center min-h-[90px] max-h-[125px] overflow-hidden bg-white/70 rounded-xl p-1.5 border border-indigo-200/60">
                   {svgResult ? (
                     <div
-                      className="svg-render-container w-full h-full"
+                      className="svg-render-container w-full h-[115px] flex items-center justify-center"
                       dangerouslySetInnerHTML={{ __html: svgResult }}
                     />
                   ) : (
@@ -120,12 +138,16 @@ export default function CompareView({
               </div>
             </div>
           ) : viewTab === 'svg' ? (
-            <div className="w-full h-full flex flex-col items-center justify-center">
-              <span className="text-[10px] font-bold text-indigo-600 mb-1">SVG 벡터 100% 확대 뷰</span>
-              <div className="flex-1 w-full flex items-center justify-center max-h-[210px]">
+            /* SVG 전용 단독 대형 뷰 */
+            <div className="w-full flex flex-col items-center justify-center min-h-[220px]">
+              <div className="w-full flex items-center justify-between mb-1.5 text-[10px] font-bold text-indigo-600">
+                <span>SVG 벡터 전용 뷰 (무한 확대 가능)</span>
+                <span className="text-[9px] bg-indigo-50 px-1.5 py-0.5 rounded text-indigo-700 font-black">100% 벡터</span>
+              </div>
+              <div className="w-full flex items-center justify-center max-h-[250px] min-h-[200px] bg-white rounded-xl p-2 border border-slate-200/80">
                 {svgResult ? (
                   <div
-                    className="svg-render-container w-full h-full"
+                    className="svg-render-container w-full h-[230px]"
                     dangerouslySetInnerHTML={{ __html: svgResult }}
                   />
                 ) : (
@@ -134,14 +156,18 @@ export default function CompareView({
               </div>
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center">
-              <span className="text-[10px] font-bold text-slate-400 mb-1">원본 래스터 뷰</span>
-              <div className="flex-1 w-full flex items-center justify-center max-h-[210px]">
+            /* 원본 전용 단독 뷰 */
+            <div className="w-full flex flex-col items-center justify-center min-h-[220px]">
+              <div className="w-full flex items-center justify-between mb-1.5 text-[10px] font-bold text-slate-400">
+                <span>원본 비트맵 이미지</span>
+                <span className="text-[9px] text-slate-400">래스터</span>
+              </div>
+              <div className="w-full flex items-center justify-center max-h-[250px] min-h-[200px] bg-white rounded-xl p-2 border border-slate-200/80">
                 {originalUrl && (
                   <img
                     src={originalUrl}
                     alt="Original"
-                    className="max-w-full max-h-full object-contain rounded-lg"
+                    className="max-w-full max-h-[230px] object-contain rounded-lg"
                   />
                 )}
               </div>
