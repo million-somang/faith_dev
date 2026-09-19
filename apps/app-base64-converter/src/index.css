@@ -1,97 +1,112 @@
 @import "tailwindcss";
+@source "../../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../../packages/mini-app-sdk/src/**/*.ts";
 
-:root {
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #252525;
-  --bg-tertiary: #2d2d2d;
-  --border-color: #404040;
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --error-red: #ef4444;
-  --success-green: #22c55e;
+/* MiniAppLayout 내부의 중복 헤더 영역을 숨김 (자체 스티키 헤더 사용) */
+#root > div > header {
+  display: none !important;
 }
 
-* {
+/* ========================================
+   VeraNex Design System — Light Neumorphism
+   ======================================== */
+:root {
+  --font-main: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+html, body, #root {
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  font-family: var(--font-main);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* ========================================
+   애니메이션 키프레임
+   ======================================== */
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
-/* 텍스트에어리어 */
-textarea {
-  width: 100%;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
+@keyframes fadeInAnim {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-float {
+  animation: floatAnim 3.2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeInAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ========================================
+   뉴모피즘 유틸리티 클래스
+   ======================================== */
+.nm-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(148, 163, 184, 0.15), 0 2px 6px -1px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.nm-inset {
+  background: #f8fafc;
+  border-radius: 0.875rem;
+  box-shadow: inset 1px 1px 3px rgba(148, 163, 184, 0.15), inset -1px -1px 3px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.nm-btn {
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.12), 0 1px 2px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.15s ease-out;
+}
+
+.nm-btn:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.nm-btn:active {
+  transform: scale(0.98);
+  box-shadow: inset 0 2px 4px rgba(148, 163, 184, 0.15);
+}
+
+/* 커스텀 텍스트에어리어 스타일 */
+textarea.base64-textarea {
+  font-family: var(--font-mono);
+  font-size: 12px;
   line-height: 1.6;
-  resize: none;
+  background-color: #f8fafc;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.875rem;
+  padding: 12px;
   outline: none;
+  transition: all 0.15s ease-out;
+  resize: none;
 }
 
-textarea:focus {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+textarea.base64-textarea:focus {
+  background-color: #ffffff;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
 }
 
-textarea::placeholder {
-  color: var(--text-secondary);
+/* 스크롤바 숨김 */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-/* 드롭존 */
-.drop-zone {
-  border: 2px dashed var(--border-color);
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: var(--bg-secondary);
-}
-
-.drop-zone:hover,
-.drop-zone.drag-over {
-  border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.05);
-}
-
-/* 이미지 미리보기 */
-.image-preview {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* JWT 칩 */
-.jwt-chip {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: var(--accent-blue);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.jwt-chip:hover {
-  background: rgba(59, 130, 246, 0.2);
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

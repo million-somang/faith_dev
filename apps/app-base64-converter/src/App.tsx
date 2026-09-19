@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MiniAppLayout } from '@faithportal/mini-app-sdk';
 import '@faithportal/mini-app-sdk/src/mini-app.css';
 import '@fortawesome/fontawesome-free/css/all.css';
@@ -6,94 +6,339 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import { useBase64 } from './hooks/useBase64';
 import TextMode from './components/TextMode';
 import ImageMode from './components/ImageMode';
+import Base64Guide from './components/Base64Guide';
+import { sound } from './utils/sound';
 
-type ModeName = 'text' | 'image';
+type ActiveTab = 'text' | 'image' | 'guide';
 
-function App() {
-  const [mode, setMode] = useState<ModeName>('text');
+export default function App() {
+  const [activeTab, setActiveTab] = useState<ActiveTab>('text');
+  const [loadingProgress, setLoadingProgress] = useState<number>(1);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [toastMessage, setToastMessage] = useState<string>('');
+
   const {
-    input, setInput, output,
-    realtimeEnabled, setRealtimeEnabled,
-    urlSafe, setUrlSafe,
-    jwtInfo, encode, decode, showJwtPayload, copyOutput,
-    imageData, handleImageFile, getImageCopyText,
+    input,
+    setInput,
+    output,
+    realtimeEnabled,
+    setRealtimeEnabled,
+    urlSafe,
+    setUrlSafe,
+    jwtInfo,
+    encode,
+    decode,
+    showJwtPayload,
+    copyOutput,
+    clearAll,
+    loadSampleText,
+    imageData,
+    imageFileName,
+    handleImageFile,
+    getImageCopyText,
+    loadSampleImage,
+    clearImage,
   } = useBase64();
 
-  const tabs: { key: ModeName; icon: string; label: string }[] = [
-    { key: 'text', icon: 'fas fa-font', label: '텍스트 변환' },
-    { key: 'image', icon: 'fas fa-image', label: '이미지 변환' },
-  ];
+  // ⏳ miniapp.md 규격: 4초(4,000ms) 동안 1%에서 100%까지 채워지는 실시간 프로그레스
+  useEffect(() => {
+    const duration = 4000;
+    const intervalTime = 40;
+    const step = 100 / (duration / intervalTime);
 
-  return (
-    <MiniAppLayout title="Base64 변환기">
-      <div className="flex flex-col" style={{ height: 'calc(100vh - 56px)', background: 'var(--bg-primary)' }}>
+    const timer = setInterval(() => {
+      setLoadingProgress((prev) => {
+        const next = prev + step;
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => setIsLoading(false), 200);
+          return 100;
+        }
+        return Math.floor(next);
+      });
+    }, intervalTime);
 
-        {/* Mode Tabs */}
-        <div className="flex px-5" style={{ background: 'var(--bg-secondary)', borderBottom: '2px solid var(--border-color)' }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setMode(tab.key)}
-              className="flex items-center gap-2 px-6 py-4 text-[15px] font-medium transition-all"
-              style={{
-                borderBottom: mode === tab.key ? '3px solid var(--accent-blue)' : '3px solid transparent',
-                color: mode === tab.key ? 'var(--accent-blue)' : 'var(--text-primary)',
-                background: 'transparent',
-              }}
-            >
-              <i className={tab.icon} />{tab.label}
-            </button>
-          ))}
-        </div>
+    return () => clearInterval(timer);
+  }, []);
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto">
-          {mode === 'text' && (
-            <TextMode
-              input={input}
-              onInputChange={setInput}
-              output={output}
-              realtimeEnabled={realtimeEnabled}
-              onRealtimeChange={setRealtimeEnabled}
-              urlSafe={urlSafe}
-              onUrlSafeChange={setUrlSafe}
-              onEncode={() => encode()}
-              onDecode={decode}
-              onCopy={copyOutput}
-              jwtChip={
-                jwtInfo ? (
-                  <div className="jwt-chip" onClick={showJwtPayload}>
-                    <i className="fas fa-key" />
-                    <span className="hidden sm:inline">JWT 토큰 감지 - 클릭하여 Payload 보기</span>
-                    <span className="sm:hidden">JWT</span>
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 2500);
+  };
+
+  const handleTabChange = (tab: ActiveTab) => {
+    sound.playClick();
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const toggleSound = () => {
+    const next = sound.toggle();
+    setSoundEnabled(next);
+    showToast(next ? '🔊 효과음이 켜졌습니다.' : '🔇 효과음이 꺼졌습니다.');
+  };
+
+  const handleShare = () => {
+    sound.playClick();
+    if (navigator.share) {
+      navigator
+        .share({
+          title: 'Base64 Studio - 텍스트 & 이미지 Base64 변환기 | VeraNex',
+          text: '한글 UTF-8 완벽 지원, URL-Safe 및 이미지 Data URI 원클릭 변환기',
+          url: window.location.href,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        showToast('🔗 변환기 주소가 복사되었습니다.');
+      });
+    }
+  };
+
+  // [화면 1] 4초 실시간 1~100% 스플래시 프로그레스 화면
+  if (isLoading) {
+    return (
+      <MiniAppLayout title="">
+        <div
+          className="min-h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-8 select-none animate-fadeIn"
+          data-screenshot-target="splash"
+        >
+          {/* 1. 상단 브랜딩 & 엔진 배지 */}
+          <div className="w-full max-w-sm flex items-center justify-between pt-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-ping"></span>
+              <span className="text-xs font-extrabold text-slate-700 tracking-wider uppercase">VERANEX</span>
+            </div>
+            <span className="text-[11px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-3 py-1 rounded-full shadow-2xs">
+              RFC 4648 표준 인코딩 엔진
+            </span>
+          </div>
+
+          {/* 2. 중앙 메인 비주얼 & 1~100% 실시간 프로그레스 */}
+          <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-6 text-center">
+            <div className="relative mb-6">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-indigo-600 via-blue-600 to-cyan-500 text-white flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-indigo-500/20 border-2 border-white animate-pulse">
+                <i className="fas fa-arrow-right-arrow-left"></i>
+              </div>
+              <div className="absolute -bottom-1.5 -right-1.5 bg-white text-indigo-600 rounded-full p-1.5 shadow-md border border-slate-100 text-xs">
+                <i className="fas fa-shield-halved text-indigo-600"></i>
+              </div>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
+              Base64 Studio
+            </h1>
+            <p className="text-sm font-bold text-slate-700 mb-1">
+              텍스트 · 이미지 · 바이너리 실시간 양방향 변환
+            </p>
+            <p className="text-xs text-slate-500 mb-6 max-w-xs leading-relaxed">
+              UTF-8 한글 완전 보존 · URL-Safe 지원 · 100% 클라이언트 로컬 보안
+            </p>
+
+            {/* 1~100% 실시간 프로그레스 바 & 숫자 퍼센트 게이지 */}
+            <div className="w-full max-w-xs space-y-1.5 mb-3">
+              <div className="flex justify-between items-center text-[11px] font-bold text-slate-600 px-1">
+                <span>바이트 스트림 인코더 & Web Audio 준비</span>
+                <span className="font-black text-indigo-600 text-xs tabular-nums">{loadingProgress}%</span>
+              </div>
+              <div className="w-full bg-slate-200/80 border border-slate-300/80 h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 rounded-full transition-all duration-75 ease-out shadow-xs"
+                  style={{ width: `${loadingProgress}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs font-black text-indigo-600">
+              <i className="fas fa-spinner fa-spin text-indigo-500 text-xs"></i>
+              <span>코덱 메모리 할당 중... ({loadingProgress}%)</span>
+            </div>
+          </div>
+
+          {/* 3. 하단 필수 광고 / 스폰서 배너 영역 (4초 로딩 중 의무 노출) */}
+          <div className="w-full max-w-sm flex flex-col items-center gap-2.5 pb-2">
+            <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex items-center justify-between hover:border-indigo-300 transition-colors">
+              <div className="flex items-center gap-3 overflow-hidden">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <i className="fas fa-cloud-bolt text-sm"></i>
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-black text-indigo-600 uppercase tracking-wider bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100">
+                      SPONSORED
+                    </span>
+                    <span className="text-xs font-bold text-slate-800 truncate">VeraNex Cloud API & SDK</span>
                   </div>
-                ) : null
-              }
-            />
-          )}
-          {mode === 'image' && (
-            <ImageMode
-              imageData={imageData}
-              onImageFile={handleImageFile}
-              getImageCopyText={getImageCopyText}
-            />
-          )}
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">웹앱 및 미니앱 고성능 백엔드 통합 솔루션</p>
+                </div>
+              </div>
+              <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 shrink-0">
+                알아보기
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px] text-slate-400 font-medium">
+              <span>개인정보 저장 제로</span>
+              <span>•</span>
+              <span>RFC 4648 표준 준수</span>
+              <span>•</span>
+              <span>VeraNex Studio</span>
+            </div>
+          </div>
+        </div>
+      </MiniAppLayout>
+    );
+  }
+
+  // [화면 2] 메인 대시보드 화면
+  return (
+    <MiniAppLayout title="Base64 Studio">
+      <div
+        className="min-h-screen bg-slate-50 text-slate-800 flex flex-col items-center select-none"
+        data-screenshot-target="main-dashboard"
+      >
+        <div className="w-full max-w-[480px] min-h-screen bg-slate-50 flex flex-col border-x border-slate-200/70 shadow-xl">
+          {/* 1. 스티키 헤더 */}
+          <header className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center text-sm shadow-sm font-bold">
+                <i className="fas fa-cube"></i>
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h1 className="text-sm font-extrabold text-slate-900 tracking-tight">Base64 Studio</h1>
+                  <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/70 px-1.5 py-0.2 rounded">
+                    v2.4
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5">VeraNex Tool Suite</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={toggleSound}
+                className="w-8 h-8 rounded-xl neu-flat hover:neu-pressed flex items-center justify-center text-slate-600 text-xs transition-all"
+                title="효과음 설정"
+              >
+                <i className={soundEnabled ? 'fas fa-volume-high text-indigo-600' : 'fas fa-volume-xmark text-slate-400'}></i>
+              </button>
+              <button
+                type="button"
+                onClick={handleShare}
+                className="w-8 h-8 rounded-xl neu-flat hover:neu-pressed flex items-center justify-center text-slate-600 text-xs transition-all"
+                title="공유하기"
+              >
+                <i className="fas fa-share-nodes"></i>
+              </button>
+            </div>
+          </header>
+
+          {/* 2. 3단 알약형 탭 메뉴 */}
+          <div className="px-4 pt-3 pb-1">
+            <div className="neu-inset p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60 bg-slate-100/80">
+              <button
+                type="button"
+                onClick={() => handleTabChange('text')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === 'text'
+                    ? 'neu-flat bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <i className="fas fa-font text-[11px]"></i>
+                <span>텍스트 변환</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('image')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === 'image'
+                    ? 'neu-flat bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <i className="fas fa-image text-[11px]"></i>
+                <span>이미지 변환</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTabChange('guide')}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                  activeTab === 'guide'
+                    ? 'neu-flat bg-white text-indigo-600 shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <i className="fas fa-circle-question text-[11px]"></i>
+                <span>가이드 & FAQ</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 3. 모드별 컨텐츠 */}
+          <main className="flex-1 px-4 py-3 overflow-y-auto">
+            {activeTab === 'text' && (
+              <TextMode
+                input={input}
+                onInputChange={setInput}
+                output={output}
+                realtimeEnabled={realtimeEnabled}
+                onRealtimeChange={setRealtimeEnabled}
+                urlSafe={urlSafe}
+                onUrlSafeChange={setUrlSafe}
+                onEncode={() => encode()}
+                onDecode={decode}
+                onCopy={copyOutput}
+                onClear={clearAll}
+                onLoadSample={loadSampleText}
+                showToast={showToast}
+                jwtChip={
+                  jwtInfo ? (
+                    <div
+                      onClick={showJwtPayload}
+                      className="cursor-pointer px-3 py-1.5 rounded-xl bg-violet-50 hover:bg-violet-100 border border-violet-200 flex items-center gap-2 text-violet-700 text-xs font-semibold shadow-2xs transition-all active:scale-98"
+                    >
+                      <i className="fas fa-key text-violet-600 text-xs"></i>
+                      <span>JWT 토큰 감지! 페이로드 보기</span>
+                    </div>
+                  ) : null
+                }
+              />
+            )}
+
+            {activeTab === 'image' && (
+              <ImageMode
+                imageData={imageData}
+                imageFileName={imageFileName}
+                onImageFile={handleImageFile}
+                getImageCopyText={getImageCopyText}
+                onLoadSample={loadSampleImage}
+                onClear={clearImage}
+              />
+            )}
+
+            {activeTab === 'guide' && <Base64Guide />}
+          </main>
+
+          {/* 4. 하단 보안 배지 & 푸터 */}
+          <footer className="mt-auto px-4 py-2.5 border-t border-slate-200/70 bg-white/60 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="flex items-center gap-1.5 font-semibold text-emerald-600">
+              <i className="fas fa-shield-check text-xs"></i>
+              <span>100% 클라이언트 로컬 변환 (서버 전송 없음)</span>
+            </div>
+            <span className="text-[10px] text-slate-400">VeraNex Platform</span>
+          </footer>
         </div>
 
-        {/* Privacy Badge */}
-        <div className="fixed bottom-5 right-5 flex items-center gap-2 px-5 py-3 rounded-lg text-sm shadow-lg"
-             style={{
-               background: 'rgba(34, 197, 94, 0.1)',
-               border: '1px solid rgba(34, 197, 94, 0.3)',
-               color: 'var(--success-green)',
-               boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-             }}>
-          <i className="fas fa-shield-alt" />
-          <span>100% 클라이언트 처리 - 서버 전송 0%</span>
-        </div>
+        {/* 플로팅 토스트 메시지 */}
+        {toastMessage && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg backdrop-blur-sm animate-bounce">
+            {toastMessage}
+          </div>
+        )}
       </div>
     </MiniAppLayout>
   );
 }
-
-export default App;
