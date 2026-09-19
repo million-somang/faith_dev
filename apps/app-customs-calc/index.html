@@ -4,12 +4,25 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>2026 해외직구 관·부가세 계산기 - 미국($200)·일반($150) 목록통관 면세 판별 및 실시간 세액 계산 | VERA</title>
-    <meta name="description" content="2026 최신 관세법 기준 해외직구 관세·부가세 계산기입니다. 미국 $200 이하, 일반국가 $150 이하 목록통관 면세 기준 자동 판별, 실시간 외환 환율 연동, 카테고리별 관세율(0%~13%) 및 예상 납부세액을 즉시 계산하세요." />
-    <meta name="keywords" content="해외직구 관세 계산기, 직구 부가세 계산기, 목록통관 면세 한도, 미국 200달러 관세, 직구 영양제 관세, 관부가세 계산, 합산과세, 관세청 고시환율" />
+    <title>2026 해외직구 관·부가세 계산기 - 미국($200)·일반($150) 면세 판별 및 예상 세액 산출 | VeraNex</title>
+    <meta name="description" content="2026년 관세법 및 최신 관세청 통관 기준 해외직구 관세·부가세 정밀 계산기입니다. 미국 $200, 일반국가 $150 목록통관 면세 판별, 영양제/의약품 일반통관 적용, 실시간 환율 연동 세액 영수증을 즉시 산출하세요." />
+    <meta name="keywords" content="해외직구 관세 계산기, 직구 부가세 계산기, 목록통관 면세 한도, 미국 200달러 관세, 직구 영양제 6병, 관부가세 계산, 합산과세, 관세청 고시환율, VeraNex" />
     <link rel="canonical" href="https://veranex.app/app/customs-calc/" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+
+    <!-- Open Graph / Facebook / Kakao -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://veranex.app/app/customs-calc/" />
+    <meta property="og:title" content="2026 해외직구 관·부가세 계산기 | VeraNex" />
+    <meta property="og:description" content="미국 $200, 일반국가 $150 목록통관 면세 판별 및 관세·부가세 실시간 정밀 산출 도구" />
+    <meta property="og:image" content="https://veranex.app/images/og-customs-calc.png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="2026 해외직구 관·부가세 계산기 | VeraNex" />
+    <meta name="twitter:description" content="미국 $200, 일반국가 $150 목록통관 면세 판별 및 품목별 관·부가세 실시간 정밀 계산" />
+    <meta name="twitter:image" content="https://veranex.app/images/og-customs-calc.png" />
 
     <!-- Pretendard 웹폰트 -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -19,71 +32,73 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "해외직구 관·부가세 계산기",
-      "alternateName": "Overseas Direct Purchase Customs & VAT Calculator",
-      "description": "해외 직구 결제 금액과 국가, 품목을 입력하면 실시간 환율을 반영하여 목록통관 면세 여부($200/$150)와 예상 관세 및 부가세를 즉시 계산해 주는 스마트 생활도구",
-      "url": "https://veranex.app/app/customs-calc/",
-      "applicationCategory": "FinancialApplication, UtilityApplication",
-      "operatingSystem": "All",
-      "browserRequirements": "Requires HTML5 and JavaScript support.",
-      "featureList": "미국 $200 목록통관 자동 판별, 일반국가 $150 면세 기준 판별, 영양제/의약품 $150 일반통관 강제 적용, 품목별 표준 관세율 DB, 실시간 외환 환율 연계, 관세 및 부가세 10% 자동 산출",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "KRW"
-      }
-    }
-    </script>
-
-    <!-- Schema.org JSON-LD: HowTo -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "HowTo",
-      "name": "예금·적금 이자 및 비과세 혜택 정확하게 계산하는 방법",
-      "description": "금융감독원 및 세법 기준 예적금 단리/복리 이자와 과세 유형별 실수령액을 확인하는 단계별 가이드",
-      "step": [
+      "@graph": [
         {
-          "@type": "HowToStep",
-          "name": "저축 상품 유형 선택",
-          "text": "목돈을 한 번에 묶어두는 '정기예금(거치식)' 또는 매월 일정 금액을 모으는 '정기적금(적립식)' 중 원하는 방식을 선택합니다."
-        },
-        {
-          "@type": "HowToStep",
-          "name": "예치 금액, 기간, 약정 이율 입력",
-          "text": "원금(월 납입액), 가입 기간(개월/년), 은행 약정 연이율(%)을 입력하거나 퀵 버튼을 눌러 설정합니다."
-        },
-        {
-          "@type": "HowToStep",
-          "name": "이자 계산 방식(단리/복리) 및 과세 유형 비교",
-          "text": "단리와 월복리 이자를 비교하고, 일반과세(15.4%), 세금우대(9.5%), 비과세(0%)에 따른 최종 세후 수령액과 절세 차액을 확인합니다."
-        }
-      ]
-    }
-    </script>
-
-    <!-- Schema.org JSON-LD: FAQPage -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "예금과 적금의 이자 계산 방식은 어떻게 다른가요?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "정기예금은 전체 원금이 가입 첫날부터 만기까지 거치되므로 전체 기간에 약정 이율이 100% 적용됩니다. 반면 정기적금은 매월 불입하므로 1회차 납입액만 12개월치 이자가 붙고, 마지막 회차는 1개월치 이자만 붙어 실제 수령 이자는 예금보다 적습니다."
+          "@type": "WebApplication",
+          "name": "해외직구 관·부가세 계산기",
+          "alternateName": "VeraNex Overseas Direct Purchase Customs & VAT Calculator",
+          "description": "2026 최신 관세법을 준수하여 미국($200) 및 일반국가($150) 목록통관 면세 여부를 자동 판별하고, 실시간 외환 환율 기반 예상 관세 및 부가세를 즉시 계산해 주는 스마트 생활도구",
+          "url": "https://veranex.app/app/customs-calc/",
+          "applicationCategory": "UtilityApplication, FinancialApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires HTML5 and JavaScript support.",
+          "featureList": "미국 $200 목록통관 자동 판별, 일반국가 $150 면세 기준 판별, 영양제/건강기능식품 일반통관 강제 적용, 품목별 표준 관세율 DB, 실시간 외환 환율 연동, 관세 및 부가세 10% 자동 산출",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
           }
         },
         {
-          "@type": "Question",
-          "name": "일반과세(15.4%), 세금우대(9.5%), 비과세(0%)의 차이는 무엇인가요?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "일반과세는 이자소득세 14%와 지방소득세 1.4%가 합산되어 15.4%를 원천징수합니다. 세금우대는 상호금융(신협, 농협, 수협, 새마을금고) 준조합원/조합원 예탁금 등에 적용되어 농특세만 부과됩니다. 비과세는 ISA(개인종합자산관리계좌), 청년도약계좌, 65세 이상 비과세종합저축 가입 시 이자소득세가 전액 면제(0원)됩니다."
-          }
+          "@type": "HowTo",
+          "name": "해외직구 관세 및 부가세 면세 한도 계산하는 방법",
+          "description": "관세청 최신 통관 규정에 맞춰 결제 금액과 국가, 품목에 따른 예상 세액을 확인하는 단계별 가이드",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "1. 구매 국가 선택",
+              "text": "미국(한미 FTA $200 면세) 또는 일본, 중국, 유럽 등 일반국가($150 면세)를 선택합니다."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "2. 직구 물품 품목 카테고리 지정",
+              "text": "의류, 전자기기(관세 0%), 영양제(일반통관 $150), 화장품 등 물품의 정확한 분류를 선택합니다."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "3. 결제 금액 및 통화 입력",
+              "text": "결제할 외화(USD, JPY, EUR 등) 또는 원화 금액과 국제 배송비를 입력하고 결과 리포트를 산출합니다."
+            }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "미국 직구인데 $180 어치 영양제를 샀는데 왜 세금이 나오나요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "미국 직구의 $200 면세 혜택은 목록통관 대상 품목에만 한정됩니다. 영양제, 의약품, 식품 등은 일반통관 대상으로 국가와 무관하게 총 물품가격 $150 이하만 면세되며 초과 시 전액 과세됩니다."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "면세 한도를 초과하면 초과분에 대해서만 세금을 내나요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "아닙니다. 면세 한도를 단 1센트라도 넘으면 초과분이 아닌 '전체 결제 금액(물품가격 + 국제운임)' 전액에 대해 관세와 부가세가 부과됩니다."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "합산과세는 어떤 경우에 발생하나요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "서로 다른 날 주문했더라도 국내 공항이나 항만에 같은 날 입항(도착)하게 되면 세관에서 두 화물의 금액을 합산하여 면세 한도 초과 여부를 심사합니다."
+              }
+            }
+          ]
         }
       ]
     }
@@ -104,7 +119,7 @@
        crossorigin="anonymous"></script>
 </head>
 
-<body class="bg-slate-900 text-slate-100 antialiased font-sans">
+<body class="bg-slate-50 text-slate-900 antialiased font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 </body>

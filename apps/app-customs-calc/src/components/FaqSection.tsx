@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { sound } from '../utils/sound';
 
 interface FaqItem {
     q: string;
@@ -31,46 +32,59 @@ const FAQS: FaqItem[] = [
 export default function FaqSection() {
     const [openIdx, setOpenIdx] = useState<number | null>(0);
 
+    const toggleFaq = (idx: number) => {
+        sound.playClick();
+        setOpenIdx((prev) => (prev === idx ? null : idx));
+    };
+
     return (
-        <div className="nm-card p-6 sm:p-8 space-y-5">
-            <div>
-                <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-xl nm-btn flex items-center justify-center text-indigo-600 text-sm">
-                        <i className="fas fa-question-circle"></i>
-                    </span>
-                    해외직구 관·부가세 자주 묻는 질문 (FAQ)
+        <section className="min-h-[calc(850px-140px)] bg-white rounded-3xl p-5 border border-slate-200/80 shadow-xs space-y-4 animate-fade-in">
+            {/* 상단 헤더 */}
+            <div className="border-b border-slate-100 pb-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">FREQUENTLY ASKED</span>
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <i className="fas fa-question-circle text-indigo-600"></i>
+                    <span>해외직구 관·부가세 자주 묻는 질문 (FAQ)</span>
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                    직구 초보자부터 알뜰 직구족까지 가장 많이 묻는 통관 질문을 모았습니다.
+                <p className="text-xs text-slate-500 mt-0.5">
+                    직구 초보자부터 알뜰 직구족까지 가장 많이 묻는 핵심 질의응답
                 </p>
             </div>
 
-            <div className="space-y-3">
+            {/* 아코디언 FAQ 목록 */}
+            <div className="space-y-2.5">
                 {FAQS.map((faq, idx) => {
                     const isOpen = openIdx === idx;
                     return (
-                        <div key={idx} className="nm-card-sm overflow-hidden transition-all duration-200">
+                        <div
+                            key={idx}
+                            className="rounded-2xl border border-slate-200/80 overflow-hidden transition-all bg-slate-50/50"
+                        >
                             <button
                                 type="button"
-                                onClick={() => setOpenIdx(isOpen ? null : idx)}
-                                className="w-full p-4 sm:p-4.5 text-left flex items-center justify-between gap-3 font-bold text-xs sm:text-sm text-slate-800 hover:text-indigo-600 cursor-pointer"
+                                onClick={() => toggleFaq(idx)}
+                                className="w-full p-3.5 text-left flex items-center justify-between gap-3 font-extrabold text-xs text-slate-800 hover:text-indigo-600 transition-colors cursor-pointer"
                             >
-                                <span className="flex items-center gap-2.5">
-                                    <span className="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-mono shrink-0">
+                                <span className="flex items-center gap-2">
+                                    <span className="w-5 h-5 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-mono shrink-0">
                                         Q
                                     </span>
-                                    {faq.q}
+                                    <span>{faq.q}</span>
                                 </span>
-                                <i className={`fas fa-chevron-down text-xs text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-indigo-600' : ''}`}></i>
+                                <i
+                                    className={`fas fa-chevron-down text-xs text-slate-400 transition-transform duration-200 shrink-0 ${
+                                        isOpen ? 'rotate-180 text-indigo-600' : ''
+                                    }`}
+                                ></i>
                             </button>
 
                             {isOpen && (
-                                <div className="p-4 pt-1 sm:p-4.5 sm:pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-200/50 bg-slate-50/50">
-                                    <div className="flex items-start gap-2.5">
-                                        <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-mono shrink-0 mt-0.5 font-bold">
+                                <div className="p-3.5 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-white animate-fade-in">
+                                    <div className="flex items-start gap-2 pt-1.5">
+                                        <span className="w-5 h-5 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-mono shrink-0 font-bold mt-0.5">
                                             A
                                         </span>
-                                        <p className="flex-1">{faq.a}</p>
+                                        <p className="flex-1 text-[11px] leading-relaxed text-slate-600">{faq.a}</p>
                                     </div>
                                 </div>
                             )}
@@ -78,6 +92,6 @@ export default function FaqSection() {
                     );
                 })}
             </div>
-        </div>
+        </section>
     );
 }
