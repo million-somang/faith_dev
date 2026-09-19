@@ -1,4 +1,5 @@
 import { PRESETS, type PresetConfig } from '../hooks/useSvgConverter';
+import { sound } from '../utils/sound';
 
 interface ControlPanelProps {
   activePreset: string;
@@ -13,75 +14,172 @@ interface ControlPanelProps {
   onCopy: () => Promise<boolean>;
   onDownload: () => void;
   onBase64Link: () => void;
+  showToast: (msg: string) => void;
 }
 
 export default function ControlPanel({
-  activePreset, colorCount, smoothness, svgResult, hasImage,
-  onPresetSelect, onColorCountChange, onSmoothnessChange, onCustomConvert,
-  onCopy, onDownload, onBase64Link,
+  activePreset,
+  colorCount,
+  smoothness,
+  svgResult,
+  hasImage,
+  onPresetSelect,
+  onColorCountChange,
+  onSmoothnessChange,
+  onCustomConvert,
+  onCopy,
+  onDownload,
+  onBase64Link,
+  showToast,
 }: ControlPanelProps) {
-
   const handleCopy = async () => {
     const ok = await onCopy();
-    if (ok) alert('SVG 코드가 복사되었습니다!');
-    else alert('복사할 SVG가 없습니다.');
+    if (ok) {
+      showToast('📋 SVG 코드가 클립보드에 복사되었습니다.');
+    } else {
+      showToast('복사할 SVG 코드가 없습니다.');
+    }
+  };
+
+  const handleDownload = () => {
+    onDownload();
+    showToast('📥 SVG 파일이 다운로드되었습니다.');
   };
 
   return (
-    <div className="flex flex-col gap-4 items-center">
-      {/* 프리셋 */}
-      <div className="flex flex-wrap gap-3 justify-center">
-        {PRESETS.map((preset: PresetConfig) => (
+    <div className="space-y-3">
+      {/* 1. 프리셋 칩 선택 카드 */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+            <i className="fas fa-sliders text-indigo-600"></i>
+            <span>최적화 변환 프리셋</span>
+          </label>
+          <span className="text-[10px] text-slate-400 font-bold">1-클릭 자동 튜닝</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {PRESETS.map((preset: PresetConfig) => {
+            const isSelected = activePreset === preset.key;
+            return (
+              <button
+                key={preset.key}
+                type="button"
+                onClick={() => onPresetSelect(preset.key)}
+                disabled={!hasImage}
+                className={`p-2.5 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all cursor-pointer text-center disabled:opacity-40 disabled:cursor-not-allowed ${
+                  isSelected
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-950 font-black shadow-2xs'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 font-bold'
+                }`}
+              >
+                <span className="text-xl">{preset.emoji}</span>
+                <span className="text-xs leading-tight">{preset.label}</span>
+                <span className="text-[9px] text-slate-400 font-normal leading-tight">
+                  {preset.description}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 2. 세부 파라미터 조절 슬라이더 */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+            <i className="fas fa-palette text-indigo-600"></i>
+            <span>정밀 벡터 커스텀 설정</span>
+          </label>
+          {activePreset === 'custom' && (
+            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+              커스텀 적용 중
+            </span>
+          )}
+        </div>
+
+        <div className="space-y-3">
+          {/* 색상 수 조절 */}
+          <div>
+            <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
+              <span>추출 색상 수</span>
+              <span className="text-indigo-600 font-black">{colorCount}색</span>
+            </div>
+            <input
+              type="range"
+              min={2}
+              max={64}
+              value={colorCount}
+              onChange={(e) => onColorCountChange(Number(e.target.value))}
+              disabled={!hasImage}
+              className="w-full"
+            />
+          </div>
+
+          {/* 곡선 부드러움 조절 */}
+          <div>
+            <div className="flex justify-between text-[11px] font-bold text-slate-600 mb-1">
+              <span>곡선 부드러움 (Smoothness)</span>
+              <span className="text-indigo-600 font-black">{smoothness.toFixed(1)}</span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={5}
+              step={0.5}
+              value={smoothness}
+              onChange={(e) => onSmoothnessChange(Number(e.target.value))}
+              disabled={!hasImage}
+              className="w-full"
+            />
+          </div>
+
           <button
-            key={preset.key}
-            className={`preset-btn ${activePreset === preset.key ? 'active' : ''}`}
-            onClick={() => onPresetSelect(preset.key)}
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onCustomConvert();
+            }}
             disabled={!hasImage}
+            className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-98"
           >
-            <span>{preset.emoji}</span>
-            <span>{preset.label}</span>
+            <i className="fas fa-arrows-rotate text-indigo-600"></i>
+            <span>커스텀 파라미터로 재변환</span>
           </button>
-        ))}
+        </div>
       </div>
 
-      {/* 슬라이더 + 커스텀 변환 */}
-      <div className="flex items-end gap-6 flex-wrap justify-center">
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
-          <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-            <i className="fas fa-palette mr-1" />색상 수: <span className="text-white">{colorCount}</span>
-          </label>
-          <input type="range" min={2} max={128} value={colorCount} onChange={e => onColorCountChange(Number(e.target.value))} />
-        </div>
-        <div className="flex flex-col gap-1.5 min-w-[180px]">
-          <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>
-            <i className="fas fa-wave-square mr-1" />곡선 부드러움: <span className="text-white">{smoothness.toFixed(1)}</span>
-          </label>
-          <input type="range" min={0} max={5} step={0.5} value={smoothness} onChange={e => onSmoothnessChange(Number(e.target.value))} />
-        </div>
-        <button onClick={onCustomConvert} disabled={!hasImage}
-          className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent-blue)' }}>
-          <i className="fas fa-cog mr-2" />커스텀 변환
+      {/* 3. 하단 액션 독: 코드 복사 + SVG 다운로드 + Base64 */}
+      <div className="pt-1 flex gap-2">
+        <button
+          type="button"
+          onClick={handleCopy}
+          disabled={!svgResult}
+          data-screenshot-click="result"
+          className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-98"
+        >
+          <i className="fas fa-copy text-indigo-600"></i>
+          <span>코드 복사</span>
         </button>
-      </div>
 
-      {/* 액션 버튼 */}
-      <div className="flex items-center gap-3 flex-wrap justify-center">
-        <button onClick={handleCopy} disabled={!svgResult}
-          className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent-green)' }}>
-          <i className="fas fa-copy mr-2" />코드 복사
+        <button
+          type="button"
+          onClick={handleDownload}
+          disabled={!svgResult}
+          className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-black rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-98"
+        >
+          <i className="fas fa-download text-amber-300"></i>
+          <span>SVG 다운로드</span>
         </button>
-        <button onClick={onDownload} disabled={!svgResult}
-          className="px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-40"
-          style={{ background: 'var(--accent-violet)' }}>
-          <i className="fas fa-download mr-2" />SVG 다운로드
-        </button>
+
         {svgResult && (
-          <button onClick={onBase64Link}
-            className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all border"
-            style={{ borderColor: 'var(--accent-amber)', color: 'var(--accent-amber)', background: 'rgba(245,158,11,0.08)' }}>
-            <i className="fas fa-link mr-2" />Base64 변환 →
+          <button
+            type="button"
+            onClick={onBase64Link}
+            className="px-3 py-3.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-black rounded-xl border border-amber-200 transition-all flex items-center justify-center cursor-pointer active:scale-98"
+            title="Base64 Data URI 변환 도구로 전송"
+          >
+            <i className="fas fa-arrow-up-right-from-square"></i>
           </button>
         )}
       </div>

@@ -3,65 +3,123 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>SVG 변환기 - SVG 이미지·코드 편집 | VERA</title>
-  <meta name="description" content="SVG 이미지와 코드를 변환·편집하는 무료 온라인 도구." />
-    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <title>Vector Studio - 이미지 to SVG 벡터 변환기 (PNG·JPG 벡터화) | VeraNex</title>
+    <meta name="description" content="PNG, JPG, WEBP 이미지를 깨지지 않는 선명한 SVG 벡터 파일과 코드로 즉시 변환합니다. 100% 클라이언트 안전 처리, 로고 및 일러스트 최적화 프리셋 무료 제공." />
+    <meta name="keywords" content="SVG 변환기, 이미지 SVG 변환, PNG to SVG, JPG to SVG, 벡터 변환, 로고 벡터화, 아이콘 추출, VeraNex" />
+    <link rel="canonical" href="https://veranex.app/app/svg-converter/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
 
-  <!-- PWA Manifest & App Icons -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="VERA" />
-  <link rel="apple-touch-icon" href="/logo-192.png" />
-  <link rel="icon" type="image/png" href="/logo-192.png" />
+    <!-- Open Graph / Facebook / Kakao -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://veranex.app/app/svg-converter/" />
+    <meta property="og:site_name" content="VeraNex" />
+    <meta property="og:title" content="Vector Studio - 이미지 to SVG 벡터 변환기 | VeraNex" />
+    <meta property="og:description" content="PNG, JPG 래스터 이미지를 깨끗한 벡터 SVG 파일 및 코드로 즉시 변환하는 무료 유틸리티" />
+    <meta property="og:image" content="https://veranex.app/images/og-svg-converter.png" />
 
-  <!-- Open Graph -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="VERA" />
-  <meta property="og:title" content="SVG 변환기 - SVG 이미지·코드 편집 | VERA" />
-  <meta property="og:description" content="SVG 이미지와 코드를 변환·편집하는 무료 온라인 도구." />
-  <meta property="og:locale" content="ko_KR" />
-  <meta property="og:image" content="https://veranex.app/logo-512.png" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="SVG 변환기 - SVG 이미지·코드 편집 | VERA" />
-  <meta name="twitter:description" content="SVG 이미지와 코드를 변환·편집하는 무료 온라인 도구." />
-  <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vector Studio - 이미지 to SVG 벡터 변환기 | VeraNex" />
+    <meta name="twitter:description" content="깨지지 않는 무한 해상도 벡터 SVG 변환 도구. 단색 로고, 컬러 로고, 일러스트 프리셋 제공" />
+    <meta name="twitter:image" content="https://veranex.app/images/og-svg-converter.png" />
 
-  <script>
-    window.deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      window.deferredPrompt = e;
-    });
-  </script>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J62JHHDLRY"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+    <!-- Pretendard 웹폰트 -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
 
-    gtag('config', 'G-J62JHHDLRY');
-  </script>
+    <!-- Schema.org JSON-LD: WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "Vector Studio - SVG 벡터 변환기",
+          "alternateName": "VeraNex Image to SVG Vector Converter",
+          "description": "PNG, JPG, WEBP 비트맵 래스터 이미지를 100% 클라이언트 브라우저 환경에서 품질 손실 없는 무한 해상도의 SVG 벡터 그래픽으로 실시간 변환해 주는 도구",
+          "url": "https://veranex.app/app/svg-converter/",
+          "applicationCategory": "DesignApplication, MultimediaApplication",
+          "operatingSystem": "All",
+          "browserRequirements": "Requires HTML5 Canvas and JavaScript support.",
+          "featureList": "100% 브라우저 클라이언트 처리 (서버 업로드 없음), 단색 로고 / 컬러 로고 / 일러스트 3대 프리셋, 색상수 및 곡선 부드러움 정밀 조절, 인라인 SVG 코드 복사, .svg 다운로드, Base64 연동",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
+          }
+        },
+        {
+          "@type": "HowTo",
+          "name": "일반 이미지(PNG/JPG)를 SVG 벡터로 변환하는 방법",
+          "description": "비트맵 이미지를 깨지지 않는 선명한 SVG 코드로 변환하는 3단계 가이드",
+          "step": [
+            {
+              "@type": "HowToStep",
+              "name": "1. 이미지 파일 업로드",
+              "text": "변환하고자 하는 PNG, JPG, WEBP 파일을 드래그하여 놓거나 클릭하여 선택합니다."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "2. 최적 프리셋 또는 커스텀 설정 선택",
+              "text": "단색 로고, 컬러 로고, 일러스트 프리셋 중 하나를 선택하거나 슬라이더로 색상 수와 곡선 부드러움을 조절합니다."
+            },
+            {
+              "@type": "HowToStep",
+              "name": "3. SVG 코드 복사 또는 파일 다운로드",
+              "text": "실시간 Before/After 비교 뷰를 확인한 뒤 원클릭으로 SVG 코드를 복사하거나 .svg 파일로 저장합니다."
+            }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "업로드한 이미지가 외부 서버에 저장되거나 전송되나요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "절대 저장되지 않습니다. Vector Studio는 100% 사용자의 웹 브라우저 메모리 내부에서만 벡터 트레이싱을 수행하므로 보안 및 저작권에 완벽히 안전합니다."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "SVG 벡터 파일의 장점은 무엇인가요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "일반 PNG/JPG와 달리 픽셀이 아닌 수학적 좌표와 곡선(Path)으로 렌더링되므로, 스마트폰 화면부터 대형 현수막까지 아무리 확대해도 선명도가 100% 유지됩니다."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "어떤 이미지에 가장 적합한가요?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "경계선이 뚜렷한 회사 로고, 엠블럼, 심볼 마크, 아이콘, 캘리그라피, 캐릭터 일러스트 변환에 가장 뛰어난 품질을 제공합니다."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
 
-  <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
-     crossorigin="anonymous"></script>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J62JHHDLRY"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-J62JHHDLRY');
+    </script>
+
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
+       crossorigin="anonymous"></script>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900 antialiased font-sans">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-          console.log('SW registered: ', registration);
-        }).catch(registrationError => {
-          console.log('SW registration failed: ', registrationError);
-        });
-      });
-    }
-  </script>
 </body>
 </html>

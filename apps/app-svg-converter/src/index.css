@@ -1,140 +1,92 @@
 @import "tailwindcss";
+@source "../../../packages/mini-app-sdk/src/**/*.tsx";
+@source "../../../packages/mini-app-sdk/src/**/*.ts";
 
-:root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --border-color: #475569;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --accent-violet: #8b5cf6;
-  --accent-blue: #3b82f6;
-  --accent-green: #10b981;
-  --accent-amber: #f59e0b;
+/* MiniAppLayout 내부의 중복 헤더 영역을 숨김 (자체 스티키 헤더 사용) */
+#root > div > header {
+  display: none !important;
 }
 
-* {
+/* ========================================
+   VeraNex Design System — Light Neumorphism
+   ======================================== */
+:root {
+  --font-main: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+html, body, #root {
+  min-height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  font-family: var(--font-main);
+  background-color: #f8fafc;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+/* ========================================
+   애니메이션 키프레임
+   ======================================== */
+@keyframes floatAnim {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
 }
 
-/* 드롭존 */
-.drop-zone {
-  border: 2px dashed var(--border-color);
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: var(--bg-secondary);
+@keyframes fadeInAnim {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.drop-zone:hover,
-.drop-zone.drag-over {
-  border-color: var(--accent-violet);
-  background: rgba(139, 92, 246, 0.08);
-  box-shadow: 0 0 30px rgba(139, 92, 246, 0.1);
+.animate-float {
+  animation: floatAnim 3.2s ease-in-out infinite;
 }
 
-/* 프리셋 버튼 */
-.preset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.25s;
-  border: 2px solid var(--border-color);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+.animate-fade-in {
+  animation: fadeInAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.preset-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+/* ========================================
+   뉴모피즘 유틸리티 클래스
+   ======================================== */
+.nm-card {
+  background: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 20px -2px rgba(148, 163, 184, 0.15), 0 2px 6px -1px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.9);
 }
 
-.preset-btn.active {
-  border-color: var(--accent-violet);
-  background: rgba(139, 92, 246, 0.15);
-  box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+.nm-inset {
+  background: #f8fafc;
+  border-radius: 0.875rem;
+  box-shadow: inset 1px 1px 3px rgba(148, 163, 184, 0.15), inset -1px -1px 3px rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-/* 비교 뷰 패널 */
-.compare-panel {
-  border-radius: 12px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+.nm-btn {
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.12), 0 1px 2px rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.15s ease-out;
 }
 
-.compare-panel .panel-header {
-  padding: 12px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.nm-btn:hover {
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
-.compare-panel .panel-body {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  overflow: auto;
-  min-height: 0;
+.nm-btn:active {
+  transform: scale(0.98);
+  box-shadow: inset 0 2px 4px rgba(148, 163, 184, 0.15);
 }
 
-.compare-panel .panel-body img,
-.compare-panel .panel-body svg {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-/* 스피너 */
-.spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--accent-violet);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 슬라이더 */
+/* 슬라이더 스타일 */
 input[type="range"] {
   -webkit-appearance: none;
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: var(--bg-tertiary);
+  background: #e2e8f0;
   outline: none;
 }
 
@@ -143,12 +95,17 @@ input[type="range"]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--accent-violet);
+  background: #6366f1;
   cursor: pointer;
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+  transition: transform 0.1s;
 }
 
-/* SVG 렌더링 컨테이너 — imagetracerjs의 고정 크기 SVG를 패널에 맞춤 */
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+/* SVG 렌더링 컨테이너 */
 .svg-render-container {
   width: 100%;
   height: 100%;
@@ -163,4 +120,13 @@ input[type="range"]::-webkit-slider-thumb {
   width: auto !important;
   height: auto !important;
   object-fit: contain;
+}
+
+/* 스크롤바 숨김 */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
