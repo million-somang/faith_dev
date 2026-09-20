@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import { Share2, Trophy, BookOpen, Play, VolumeX } from 'lucide-react';
+import { Share2, Trophy, BookOpen, Play, VolumeX, X, Sparkles, Check, LogIn, ShieldAlert } from 'lucide-react';
 import { TeamProfile } from './types/baseball';
 import { useBaseballGame } from './hooks/useBaseballGame';
 import ScoreboardHeader from './components/ScoreboardHeader';
@@ -10,6 +10,9 @@ import { BaseballKeypad } from './components/BaseballKeypad';
 import { LeagueLeaderboard } from './components/LeagueLeaderboard';
 import { BaseballGuide } from './components/BaseballGuide';
 import { GameResultModal } from './components/GameResultModal';
+
+// 세션 쿠키 자동 동기화
+axios.defaults.withCredentials = true;
 
 export default function App() {
   // 스플래시 인트로 화면 (miniapp.md 4초 프로그레스 기준)
@@ -29,6 +32,12 @@ export default function App() {
     totalInnings: 0,
     winRate: 0,
   });
+
+  // 구단명 수정 모달 및 게스트 안내 상태
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+  const [showGuestNotice, setShowGuestNotice] = useState(false);
+  const [newTeamName, setNewTeamName] = useState('베라 마린스');
+  const [isSubmittingTeamName, setIsSubmittingTeamName] = useState(false);
 
   // 토스트 메시지
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -55,6 +64,7 @@ export default function App() {
         setIsMember(res.data.isMember);
         if (res.data.profile) {
           setProfile(res.data.profile);
+          setNewTeamName(res.data.profile.teamName);
         }
       }
     } catch (_err) {
@@ -128,22 +138,45 @@ export default function App() {
     }
   }, [game.status, game.badge, game.currentInning, isMember, fetchProfile]);
 
-  // 구단명 수정
-  const handleUpdateTeamName = async (newName: string): Promise<boolean> => {
+  // 구단명 모달 열기 핸들러
+  const handleOpenTeamModal = useCallback(() => {
+    if (!isMember) {
+      setShowGuestNotice(true);
+    } else {
+      setNewTeamName(profile.teamName);
+      setIsTeamModalOpen(true);
+    }
+  }, [isMember, profile.teamName]);
+
+  // 구단명 저장 핸들러
+  const handleSaveTeamName = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newTeamName.trim();
+    if (trimmed.length < 2 || trimmed.length > 10) {
+      showToast('구단명은 2자 이상 10자 이내로 입력해주세요.');
+      return;
+    }
+    setIsSubmittingTeamName(true);
     try {
       const res = await axios.put<{ success: boolean; teamName: string }>(
         '/api/games/baseball/team-name',
-        { teamName: newName }
+        { teamName: trimmed }
       );
       if (res.data.success) {
         setProfile((prev) => ({ ...prev, teamName: res.data.teamName }));
-        return true;
+        setIsTeamModalOpen(false);
+        showToast(`🏆 구단명이 '${res.data.teamName}'(으)로 확정되었습니다!`);
+      } else {
+        showToast('구단명 변경에 실패했습니다.');
       }
-      return false;
     } catch (_err) {
-      return false;
+      showToast('구단명 변경 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmittingTeamName(false);
     }
   };
+
+  const sampleNames = ['의왕 타이탄즈', '네온 바이퍼스', '베라 이글스', '블루 드래곤즈'];
 
   // 공유하기 기능 (Web Share API 및 클립보드 복사 폴백)
   const handleShare = async () => {
@@ -320,8 +353,7 @@ export default function App() {
                 lastStrikes={lastStrikes}
                 lastBalls={lastBalls}
                 lastIsOut={lastIsOut}
-                onUpdateTeamName={handleUpdateTeamName}
-                showToast={showToast}
+                onOpenTeamModal={handleOpenTeamModal}
               />
 
               {/* 다이아몬드 구장 SVG 캔버스 */}
@@ -332,7 +364,7 @@ export default function App() {
                 inputDigits={game.inputDigits}
               />
 
-              {/* 이닝별 투구 기록 테이블 */}
+              {/* 이닝별 투구 기록 테이블 (최신 투구 결과가 상단에 노출) */}
               <InningHistory
                 history={game.history}
                 currentInning={game.currentInning}
@@ -352,7 +384,11 @@ export default function App() {
 
           {activeTab === 'leaderboard' && (
             <div className="flex-1 flex flex-col justify-start">
-              <LeagueLeaderboard isMember={isMember} profile={profile} />
+              <LeagueLeaderboard
+                isMember={isMember}
+                profile={profile}
+                onOpenTeamModal={handleOpenTeamModal}
+              />
             </div>
           )}
 
@@ -372,6 +408,130 @@ export default function App() {
           isMember={isMember}
           onRestart={game.startNewGame}
         />
+
+        {/* 비회원 클릭 시 구단 창단 로그인 안내 모달 */}
+        {showGuestNotice && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-[#f0f4f8] rounded-3xl p-5 w-full max-w-xs shadow-2xl border border-white flex flex-col items-center text-center space-y-3 animate-in zoom-in-95">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-inner">
+                <ShieldAlert className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900">구단명 등록 안내</h3>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  나만의 커스텀 구단명과 정규 시즌 랭킹전 참여는 <strong>로그인 회원</strong> 전용 혜택입니다.
+                </p>
+              </div>
+              <div className="w-full flex flex-col gap-2 pt-1">
+                <a
+                  href="/app/auth/login?redirect=/app/baseball/"
+                  className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>로그인 / 구단 창단하기</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setShowGuestNotice(false)}
+                  className="w-full py-2 bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                >
+                  게스트로 계속 플레이
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 구단명 변경 모달 (회원 전용) */}
+        {isTeamModalOpen && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+            <div className="bg-[#f0f4f8] rounded-3xl p-5 w-full max-w-xs shadow-2xl border border-white space-y-4 animate-in zoom-in-95">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                    ⚾
+                  </div>
+                  <h3 className="text-sm font-black text-slate-900">내 구단명 설정</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsTeamModalOpen(false)}
+                  className="w-7 h-7 rounded-full hover:bg-slate-200 text-slate-400 hover:text-slate-700 text-xs flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveTeamName} className="space-y-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-[11px] font-bold text-slate-600">
+                      구단명 입력 (2~10자)
+                    </label>
+                    <span
+                      className={`text-[10px] font-mono ${
+                        newTeamName.trim().length > 10 ? 'text-rose-500 font-bold' : 'text-slate-400'
+                      }`}
+                    >
+                      {newTeamName.trim().length}/10자
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    maxLength={10}
+                    placeholder="예: 의왕 타이탄즈, 네온 바이퍼스"
+                    className="w-full px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none shadow-inner"
+                    autoFocus
+                  />
+                </div>
+
+                {/* 추천 구단명 칩 버튼 */}
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    추천 구단명 선택:
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sampleNames.map((name) => (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => setNewTeamName(name)}
+                        className="px-2 py-1 rounded-lg bg-slate-200/70 hover:bg-indigo-100 hover:text-indigo-700 text-[10px] font-bold text-slate-600 transition-all active:scale-95 cursor-pointer"
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsTeamModalOpen(false)}
+                    className="flex-1 py-2.5 bg-slate-200/80 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      isSubmittingTeamName ||
+                      newTeamName.trim().length < 2 ||
+                      newTeamName.trim().length > 10
+                    }
+                    className="flex-1 py-2.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 text-white text-xs font-black rounded-xl transition-all shadow-md cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{isSubmittingTeamName ? '저장 중...' : '구단명 확정'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

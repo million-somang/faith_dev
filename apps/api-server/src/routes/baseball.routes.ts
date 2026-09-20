@@ -1,8 +1,11 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
-import { requireAuth } from '../middleware/auth.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 
 export const baseballRoutes = new Hono<{ Variables: { user?: { id: string; email: string } } }>();
+
+// 모든 야구 API에 세션 인증 미들웨어 적용 (로그인 회원 식별)
+baseballRoutes.use('*', optionalAuth);
 
 // 1. 내 구단 프로필 & 전적 조회
 baseballRoutes.get('/api/games/baseball/profile', async (c) => {

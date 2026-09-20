@@ -22,14 +22,15 @@ export const InningHistory: React.FC<InningHistoryProps> = ({ history, currentIn
         </span>
       </div>
 
-      {/* 이닝 스크롤 또는 컴팩트 그리드 */}
+      {/* 이닝 스크롤 또는 컴팩트 그리드 (최신 투구 결과가 상단에 노출) */}
       <div className="max-h-[140px] overflow-y-auto space-y-1.5 pr-0.5 custom-scrollbar">
         {history.length === 0 ? (
           <div className="py-5 text-center text-xs text-slate-400 font-medium">
             ⚾ 1회말 공격 시작! 3자리 숫자를 입력하고 [투구] 버튼을 누르세요.
           </div>
         ) : (
-          history.map((record) => {
+          [...history].reverse().map((record, index) => {
+            const isLatest = index === 0;
             const isStrikeout = record.strikes === 3;
             const isOut = record.isOut;
 
@@ -41,14 +42,23 @@ export const InningHistory: React.FC<InningHistoryProps> = ({ history, currentIn
                     ? 'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 shadow-[inset_2px_2px_5px_rgba(245,158,11,0.1)]'
                     : isOut
                     ? 'bg-rose-50/70 border border-rose-200/60'
+                    : isLatest
+                    ? 'bg-white border-2 border-indigo-200 shadow-[2px_2px_6px_#cbd5e1]'
                     : 'bg-white/80 border border-slate-100 shadow-[inset_1px_1px_3px_#e2e8f0]'
                 }`}
               >
                 {/* 이닝 번호 */}
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center justify-center w-6 h-5 rounded-md bg-slate-200/80 text-[11px] font-bold text-slate-700">
+                  <span className={`inline-flex items-center justify-center px-1.5 h-5 rounded-md text-[11px] font-bold ${
+                    isLatest ? 'bg-indigo-600 text-white' : 'bg-slate-200/80 text-slate-700'
+                  }`}>
                     {record.inning}회
                   </span>
+                  {isLatest && (
+                    <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 px-1 py-0.2 rounded border border-indigo-200">
+                      최신
+                    </span>
+                  )}
                   <span className="font-mono font-bold text-sm tracking-widest text-slate-800">
                     {record.guess}
                   </span>

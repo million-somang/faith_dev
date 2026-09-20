@@ -6,9 +6,10 @@ import { LeaderboardItem, TeamProfile } from '../types/baseball';
 interface LeagueLeaderboardProps {
   isMember: boolean;
   profile: TeamProfile;
+  onOpenTeamModal?: () => void;
 }
 
-export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, profile }) => {
+export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, profile, onOpenTeamModal }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -52,7 +53,7 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
         <button
           onClick={fetchLeaderboard}
           disabled={loading}
-          className="p-2 rounded-xl bg-white/80 text-slate-500 hover:text-slate-800 shadow-[2px_2px_5px_#cbd5e1] active:scale-95 transition-all"
+          className="p-2 rounded-xl bg-white/80 text-slate-500 hover:text-slate-800 shadow-[2px_2px_5px_#cbd5e1] active:scale-95 transition-all cursor-pointer"
           title="새로고침"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -90,7 +91,18 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
         <div className="p-2.5 bg-white/90 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between text-xs">
           <div>
             <div className="text-[10px] text-slate-400 font-bold uppercase">내 구단 성적</div>
-            <div className="font-black text-slate-800 text-sm">{profile.teamName}</div>
+            <div className="font-black text-slate-800 text-sm flex items-center gap-1.5 mt-0.5">
+              <span>{profile.teamName}</span>
+              {onOpenTeamModal && (
+                <button
+                  type="button"
+                  onClick={onOpenTeamModal}
+                  className="px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 transition-all cursor-pointer"
+                >
+                  구단명 변경 ✏️
+                </button>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3 text-right">
             <div>
