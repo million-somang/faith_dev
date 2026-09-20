@@ -119,6 +119,9 @@ app.route('/', comboyRoutes);
 import { sfcRoutes } from './routes/sfc.routes.js';
 app.route('/', sfcRoutes);
 
+import { baseballRoutes } from './routes/baseball.routes.js';
+app.route('/', baseballRoutes);
+
 import { gameRoutes } from './routes/game.routes.js';
 app.route('/', gameRoutes);
 
@@ -139,9 +142,6 @@ app.route('/', geoRoutes);
 
 import { shoppingRoutes } from './routes/shopping.routes.js';
 app.route('/', shoppingRoutes);
-
-import { baseballRoutes } from './routes/baseball.routes.js';
-app.route('/', baseballRoutes);
 
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',

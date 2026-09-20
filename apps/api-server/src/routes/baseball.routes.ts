@@ -226,7 +226,8 @@ baseballRoutes.post('/api/games/baseball/record', async (c) => {
 });
 
 // 4. 주간 정규 시즌 리그 순위 (TOP 20)
-// 1순위: 승률 DESC, 2순위: 다승 DESC, 3순위: 평균 소모 이닝 ASC
+// [방안 1: 다승 우선 순위제]
+// 1순위: 다승 DESC, 2순위: 승률 DESC, 3순위: 완봉승 DESC, 4순위: 평균 소모 이닝 ASC
 baseballRoutes.get('/api/games/baseball/leaderboard', async (c) => {
     const DB = getDB(c);
 
@@ -240,14 +241,17 @@ baseballRoutes.get('/api/games/baseball/leaderboard', async (c) => {
                 bp.shutouts,
                 bp.total_innings,
                 bp.win_rate,
+                bp.updated_at as created_at,
+                u.email,
                 COALESCE(u.name, '선수') as player_name,
                 ROUND(CAST(bp.total_innings AS REAL) / NULLIF(bp.wins + bp.losses, 0), 2) as avg_innings
             FROM baseball_profiles bp
             JOIN users u ON bp.user_id = u.id
             WHERE (bp.wins + bp.losses) > 0
             ORDER BY 
-                bp.win_rate DESC,
                 bp.wins DESC,
+                bp.win_rate DESC,
+                bp.shutouts DESC,
                 (CAST(bp.total_innings AS REAL) / NULLIF(bp.wins + bp.losses, 0)) ASC
             LIMIT 20
         `).all();
@@ -257,11 +261,13 @@ baseballRoutes.get('/api/games/baseball/leaderboard', async (c) => {
             userId: row.user_id,
             teamName: row.team_name || '베라 마린스',
             playerName: row.player_name || '선수',
+            email: row.email || null,
             wins: Number(row.wins) || 0,
             losses: Number(row.losses) || 0,
             shutouts: Number(row.shutouts) || 0,
             winRate: Number(row.win_rate) || 0.0,
             avgInnings: row.avg_innings ? Number(row.avg_innings) : 0,
+            created_at: row.created_at || new Date().toISOString(),
         }));
 
         return c.json({ success: true, data: leaderboard, leaderboard });

@@ -329,7 +329,7 @@ export default function GameInfoPage() {
                                 </div>
                             </div>
                         ) : (
-                            <GameLeaderboard apiUrl={config.leaderboardUrl} />
+                            <GameLeaderboard apiUrl={config.leaderboardUrl} gameId={gameId} />
                         )}
                     </div>
                 </div>

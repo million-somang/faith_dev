@@ -16,9 +16,9 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
   const fetchLeaderboard = async () => {
     setLoading(true);
     try {
-      const res = await axios.get<{ success: boolean; data: LeaderboardItem[] }>('/api/games/baseball/leaderboard');
+      const res = await axios.get<{ success: boolean; data?: LeaderboardItem[]; leaderboard?: LeaderboardItem[] }>('/api/games/baseball/leaderboard');
       if (res.data.success) {
-        setLeaderboard(res.data.data);
+        setLeaderboard(res.data.data || res.data.leaderboard || []);
       }
     } catch (err) {
       console.error('Failed to load leaderboard', err);
@@ -45,7 +45,7 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
               <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500 text-white font-bold">LIVE</span>
             </h3>
             <p className="text-[10px] text-slate-500">
-              산정 기준: 승률(%) &gt; 다승 &gt; 평균 소모 이닝(낮을수록 우위)
+              산정 기준: 다승 &gt; 승률(%) &gt; 완봉승 &gt; 평균 소모 이닝(낮을수록 우위)
             </p>
           </div>
         </div>
@@ -126,8 +126,8 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
         <div className="flex items-center justify-between px-2 py-1 text-[11px] font-bold text-slate-500 border-b border-slate-200/80 mb-1">
           <div className="w-10">순위</div>
           <div className="flex-1">구단명 (구단주)</div>
-          <div className="w-16 text-right">승률</div>
           <div className="w-16 text-right">전적(승/패)</div>
+          <div className="w-16 text-right">승률</div>
           <div className="w-12 text-right">평균이닝</div>
         </div>
 
@@ -193,14 +193,14 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
                     )}
                   </div>
 
-                  {/* 승률 */}
+                  {/* 전적 */}
                   <div className="w-16 text-right font-mono font-bold text-amber-600">
-                    {Number(item.winRate || 0).toFixed(1)}%
+                    {item.wins}승 {item.losses}패
                   </div>
 
-                  {/* 전적 */}
-                  <div className="w-16 text-right font-mono text-slate-600">
-                    {item.wins}승 {item.losses}패
+                  {/* 승률 */}
+                  <div className="w-16 text-right font-mono font-bold text-slate-700">
+                    {Number(item.winRate || 0).toFixed(1)}%
                   </div>
 
                   {/* 평균이닝 */}
