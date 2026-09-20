@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { Base64 } from 'js-base64';
-import { sound } from '../utils/sound';
 
 export interface JwtInfo {
   header: Record<string, unknown>;
@@ -67,7 +66,6 @@ export function useBase64(): UseBase64Return {
         setJwtInfo(null);
         return;
       }
-      sound.playClick();
       try {
         let encoded = Base64.encode(val);
         if (urlSafe) {
@@ -75,7 +73,6 @@ export function useBase64(): UseBase64Return {
         }
         setOutput(encoded);
         checkJWT(encoded);
-        sound.playSuccess();
       } catch (e) {
         const err = e as Error;
         setOutput('인코딩 오류: ' + err.message);
@@ -90,7 +87,6 @@ export function useBase64(): UseBase64Return {
       setJwtInfo(null);
       return;
     }
-    sound.playClick();
     try {
       let toDecode = input.trim();
       if (urlSafe || toDecode.includes('-') || toDecode.includes('_')) {
@@ -102,7 +98,6 @@ export function useBase64(): UseBase64Return {
       const decoded = Base64.decode(toDecode);
       setOutput(decoded);
       checkJWT(toDecode);
-      sound.playSuccess();
     } catch (e) {
       const err = e as Error;
       setOutput('유효하지 않은 Base64 형식입니다: ' + err.message);
@@ -111,7 +106,6 @@ export function useBase64(): UseBase64Return {
 
   const showJwtPayload = useCallback(() => {
     if (jwtInfo) {
-      sound.playClick();
       setOutput(jwtInfo.formatted);
     }
   }, [jwtInfo]);
@@ -140,7 +134,6 @@ export function useBase64(): UseBase64Return {
 
   const copyOutput = useCallback(async (): Promise<boolean> => {
     if (!output) return false;
-    sound.playClick();
     try {
       await navigator.clipboard.writeText(output);
       return true;
@@ -150,7 +143,6 @@ export function useBase64(): UseBase64Return {
   }, [output]);
 
   const clearAll = useCallback(() => {
-    sound.playReset();
     setInputState('');
     setOutput('');
     setJwtInfo(null);
@@ -158,7 +150,6 @@ export function useBase64(): UseBase64Return {
 
   const loadSampleText = useCallback(
     (type: 'korean' | 'jwt' | 'json') => {
-      sound.playClick();
       if (type === 'korean') {
         const text = '안녕하세요, VeraNex Base64 Studio입니다! ✨ 한글 UTF-8 인코딩을 지원합니다.';
         setInputState(text);
@@ -178,7 +169,6 @@ export function useBase64(): UseBase64Return {
         setOutput(enc);
         setJwtInfo(null);
       }
-      sound.playSuccess();
     },
     [urlSafe, decode]
   );
@@ -188,19 +178,16 @@ export function useBase64(): UseBase64Return {
       alert('이미지 파일만 업로드 가능합니다.');
       return;
     }
-    sound.playClick();
     setImageFileName(file.name);
     const reader = new FileReader();
     reader.onloadend = () => {
       setImageData(reader.result as string);
-      sound.playSuccess();
     };
     reader.readAsDataURL(file);
   }, []);
 
   // 원클릭 샘플 이미지 로드 (Canvas로 400x400 배지 생성)
   const loadSampleImage = useCallback(() => {
-    sound.playClick();
     const canvas = document.createElement('canvas');
     canvas.width = 300;
     canvas.height = 300;
@@ -228,11 +215,9 @@ export function useBase64(): UseBase64Return {
     const dataUrl = canvas.toDataURL('image/png');
     setImageData(dataUrl);
     setImageFileName('sample_badge.png');
-    sound.playSuccess();
   }, []);
 
   const clearImage = useCallback(() => {
-    sound.playReset();
     setImageData(null);
     setImageFileName('');
   }, []);
@@ -240,7 +225,6 @@ export function useBase64(): UseBase64Return {
   const getImageCopyText = useCallback(
     (format: 'raw' | 'html' | 'css'): string => {
       if (!imageData) return '';
-      sound.playClick();
       switch (format) {
         case 'raw':
           return imageData;
