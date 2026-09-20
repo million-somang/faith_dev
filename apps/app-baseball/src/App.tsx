@@ -259,23 +259,23 @@ export default function App() {
   const lastIsOut = lastRecord ? lastRecord.isOut : false;
 
   return (
-    <div className="min-h-screen bg-[#e8eef5] flex justify-center items-center py-0 sm:py-4 selection:bg-amber-400 selection:text-slate-900 font-sans">
-      {/* 450px x 850px 표준 모바일 컨테이너 */}
-      <main className="w-full max-w-[450px] min-h-[850px] bg-[#f0f4f8] shadow-2xl rounded-none sm:rounded-3xl border border-white/80 flex flex-col justify-between p-3.5 relative overflow-hidden">
+    <div className="h-screen max-h-screen overflow-hidden bg-[#e8eef5] flex justify-center items-center select-none font-sans py-0 sm:py-2">
+      {/* 450px x 850px 표준 모바일 컨테이너 (1화면 고정 Zero-Scroll) */}
+      <main className="w-full max-w-[450px] h-full max-h-[850px] bg-[#f0f4f8] shadow-2xl rounded-none sm:rounded-3xl border border-white/80 flex flex-col justify-between p-2.5 sm:p-3 relative overflow-hidden">
         {/* 토스트 팝업 */}
         {toastMessage && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-slate-900/90 text-white text-xs font-bold rounded-2xl shadow-xl backdrop-blur-xs flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 bg-slate-900/90 text-white text-xs font-bold rounded-2xl shadow-xl backdrop-blur-xs flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2">
             <span>⚾</span>
             <span>{toastMessage}</span>
           </div>
         )}
 
         {/* 상단 헤더 바 (앱 타이틀, 볼륨 음소거 표시, 공유 버튼) */}
-        <header className="flex items-center justify-between px-1 mb-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⚾</span>
+        <header className="flex items-center justify-between px-1 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-lg">⚾</span>
             <div>
-              <h1 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-1.5">
+              <h1 className="text-xs font-black text-slate-800 tracking-tight flex items-center gap-1">
                 베라 숫자야구
                 <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-200 text-slate-600 font-bold">
                   9 INNINGS
@@ -287,30 +287,30 @@ export default function App() {
           <div className="flex items-center gap-1.5">
             {/* 무음 표시 (소리 항상 제거 규칙 준수) */}
             <div
-              className="w-8 h-8 rounded-xl bg-[#f0f4f8] shadow-[3px_3px_6px_#d1d9e6,-3px_-3px_6px_#ffffff] text-slate-400 flex items-center justify-center text-xs"
+              className="w-7 h-7 rounded-lg bg-[#f0f4f8] shadow-[2px_2px_5px_#d1d9e6,-2px_-2px_5px_#ffffff] text-slate-400 flex items-center justify-center text-xs"
               title="사운드 음소거 모드"
             >
-              <VolumeX className="w-3.5 h-3.5" />
+              <VolumeX className="w-3 h-3" />
             </div>
 
             {/* 공유하기 버튼 */}
             <button
               onClick={handleShare}
-              className="w-8 h-8 rounded-xl bg-[#f0f4f8] shadow-[3px_3px_6px_#d1d9e6,-3px_-3px_6px_#ffffff] hover:shadow-[1px_1px_3px_#d1d9e6,-1px_-1px_3px_#ffffff] active:shadow-[inset_2px_2px_4px_#d1d9e6,inset_-2px_-2px_4px_#ffffff] text-slate-600 flex items-center justify-center transition-all cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-[#f0f4f8] shadow-[2px_2px_5px_#d1d9e6,-2px_-2px_5px_#ffffff] hover:shadow-[1px_1px_3px_#d1d9e6,-1px_-1px_3px_#ffffff] active:shadow-[inset_2px_2px_4px_#d1d9e6,inset_-2px_-2px_4px_#ffffff] text-slate-600 flex items-center justify-center transition-all cursor-pointer"
               title="친구에게 공유"
             >
-              <Share2 className="w-3.5 h-3.5" />
+              <Share2 className="w-3 h-3" />
             </button>
           </div>
         </header>
 
         {/* 3-탭 선택 바 (경기장 / 랭킹전 / 경기 룰) */}
-        <nav className="grid grid-cols-3 gap-1.5 p-1 bg-slate-200/60 rounded-2xl mb-2.5">
+        <nav className="grid grid-cols-3 gap-1 p-0.5 bg-slate-200/60 rounded-2xl mb-1.5 shrink-0">
           <button
             onClick={() => setActiveTab('stadium')}
-            className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
               activeTab === 'stadium'
-                ? 'bg-[#f0f4f8] text-slate-900 shadow-[3px_3px_6px_#cbd5e1,-3px_-3px_6px_#ffffff]'
+                ? 'bg-[#f0f4f8] text-slate-900 shadow-[2px_2px_5px_#cbd5e1,-2px_-2px_5px_#ffffff]'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -319,9 +319,9 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('leaderboard')}
-            className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
               activeTab === 'leaderboard'
-                ? 'bg-[#f0f4f8] text-slate-900 shadow-[3px_3px_6px_#cbd5e1,-3px_-3px_6px_#ffffff]'
+                ? 'bg-[#f0f4f8] text-slate-900 shadow-[2px_2px_5px_#cbd5e1,-2px_-2px_5px_#ffffff]'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -330,9 +330,9 @@ export default function App() {
           </button>
           <button
             onClick={() => setActiveTab('guide')}
-            className={`py-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
+            className={`py-1.5 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer ${
               activeTab === 'guide'
-                ? 'bg-[#f0f4f8] text-slate-900 shadow-[3px_3px_6px_#cbd5e1,-3px_-3px_6px_#ffffff]'
+                ? 'bg-[#f0f4f8] text-slate-900 shadow-[2px_2px_5px_#cbd5e1,-2px_-2px_5px_#ffffff]'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -341,10 +341,10 @@ export default function App() {
           </button>
         </nav>
 
-        {/* 탭별 메인 컨텐츠 영역 (균형 잡힌 전체 높이 구성) */}
-        <div className="flex-1 flex flex-col justify-between">
+        {/* 탭별 메인 컨텐츠 영역 (균형 잡힌 1화면 고정 구성) */}
+        <div className="flex-1 flex flex-col justify-between min-h-0">
           {activeTab === 'stadium' && (
-            <div className="flex-1 flex flex-col justify-between gap-2.5">
+            <div className="flex-1 flex flex-col justify-between gap-1.5 min-h-0">
               {/* 전광판 헤더 */}
               <ScoreboardHeader
                 isMember={isMember}
@@ -361,10 +361,9 @@ export default function App() {
                 runners={game.runners}
                 isPitching={game.isPitching}
                 pitchEffect={game.pitchEffect}
-                inputDigits={game.inputDigits}
               />
 
-              {/* 이닝별 투구 기록 테이블 (최신 투구 결과가 상단에 노출) */}
+              {/* 이닝별 투구 기록 테이블 (고정 2열 그리드) */}
               <InningHistory
                 history={game.history}
                 currentInning={game.currentInning}
@@ -383,7 +382,7 @@ export default function App() {
           )}
 
           {activeTab === 'leaderboard' && (
-            <div className="flex-1 flex flex-col justify-start">
+            <div className="flex-1 flex flex-col justify-start overflow-y-auto custom-scrollbar">
               <LeagueLeaderboard
                 isMember={isMember}
                 profile={profile}
@@ -393,7 +392,7 @@ export default function App() {
           )}
 
           {activeTab === 'guide' && (
-            <div className="flex-1 flex flex-col justify-start">
+            <div className="flex-1 flex flex-col justify-start overflow-y-auto custom-scrollbar">
               <BaseballGuide />
             </div>
           )}

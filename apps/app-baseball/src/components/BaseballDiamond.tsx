@@ -4,42 +4,18 @@ interface BaseballDiamondProps {
   runners: BaseRunners;
   isPitching: boolean;
   pitchEffect: PitchEffect | null;
-  inputDigits: string[];
 }
 
 export default function BaseballDiamond({
   runners,
   isPitching,
   pitchEffect,
-  inputDigits,
 }: BaseballDiamondProps) {
   return (
-    <div className="relative w-full bg-gradient-to-b from-emerald-50 via-slate-50 to-white rounded-2xl border border-slate-200/90 shadow-xs overflow-hidden p-3 flex flex-col items-center">
-      {/* 1. 현재 입력 대기 숫자 표시 바 (Home Plate 인근) */}
-      <div className="w-full flex items-center justify-between px-2 mb-1.5 z-10">
-        <div className="flex items-center gap-1 text-[11px] font-black text-slate-700">
-          <i className="fas fa-crosshairs text-indigo-600 text-xs"></i>
-          <span>투구할 3자리 숫자:</span>
-        </div>
-        <div className="flex gap-1.5 font-mono">
-          {[0, 1, 2].map((idx) => (
-            <span
-              key={idx}
-              className={`w-7 h-7 rounded-lg border flex items-center justify-center text-sm font-black transition-all ${
-                inputDigits[idx]
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                  : 'bg-white text-slate-300 border-slate-200 border-dashed'
-              }`}
-            >
-              {inputDigits[idx] || '?'}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* 2. 벡터 다이아몬드 구장 캔버스 (SVG 280 x 170) */}
-      <div className="relative w-full max-w-[340px] h-[170px] flex items-center justify-center">
-        <svg viewBox="0 0 300 160" className="w-full h-full drop-shadow-sm select-none">
+    <div className="relative w-full bg-gradient-to-b from-emerald-50 via-slate-50 to-white rounded-2xl border border-slate-200/90 shadow-[4px_4px_10px_#d1d9e6,-4px_-4px_10px_#ffffff] overflow-hidden p-2 flex flex-col items-center">
+      {/* 벡터 다이아몬드 구장 캔버스 (SVG 300 x 135) */}
+      <div className="relative w-full max-w-[310px] h-[120px] flex items-center justify-center">
+        <svg viewBox="0 0 300 135" className="w-full h-full drop-shadow-xs select-none">
           <defs>
             {/* 외야 잔디 그라데이션 */}
             <linearGradient id="grassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
@@ -56,72 +32,72 @@ export default function BaseballDiamond({
 
           {/* 외야 잔디 부채꼴 */}
           <path
-            d="M 150 145 L 30 50 A 170 170 0 0 1 270 50 Z"
+            d="M 150 125 L 45 42 A 150 150 0 0 1 255 42 Z"
             fill="url(#grassGrad)"
             stroke="#a7f3d0"
-            strokeWidth="1.5"
+            strokeWidth="1.2"
           />
 
           {/* 내야 흙 원형 영역 */}
-          <ellipse cx="150" cy="85" rx="80" ry="55" fill="url(#dirtGrad)" stroke="#fcd34d" strokeWidth="1.2" />
+          <ellipse cx="150" cy="72" rx="72" ry="46" fill="url(#dirtGrad)" stroke="#fcd34d" strokeWidth="1" />
 
           {/* 내야 잔디 다이아몬드 내부 */}
-          <polygon points="150,45 205,85 150,125 95,85" fill="#ecfdf5" stroke="#6ee7b7" strokeWidth="1" />
+          <polygon points="150,36 198,72 150,108 102,72" fill="#ecfdf5" stroke="#6ee7b7" strokeWidth="1" />
 
           {/* 베이스 러닝 라인 (하얀 분필 라인) */}
-          <line x1="150" y1="130" x2="205" y2="85" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="3 2" />
-          <line x1="205" y1="85" x2="150" y2="40" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="3 2" />
-          <line x1="150" y1="40" x2="95" y2="85" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="3 2" />
-          <line x1="95" y1="85" x2="150" y2="130" stroke="#ffffff" strokeWidth="2.5" strokeDasharray="3 2" />
+          <line x1="150" y1="110" x2="198" y2="72" stroke="#ffffff" strokeWidth="2" strokeDasharray="3 2" />
+          <line x1="198" y1="72" x2="150" y2="34" stroke="#ffffff" strokeWidth="2" strokeDasharray="3 2" />
+          <line x1="150" y1="34" x2="102" y2="72" stroke="#ffffff" strokeWidth="2" strokeDasharray="3 2" />
+          <line x1="102" y1="72" x2="150" y2="110" stroke="#ffffff" strokeWidth="2" strokeDasharray="3 2" />
 
           {/* 투수 마운드 (중앙) */}
-          <circle cx="150" cy="85" r="9" fill="#fed7aa" stroke="#f59e0b" strokeWidth="1.5" />
-          <rect x="145" y="83.5" width="10" height="3" fill="#ffffff" rx="1" />
+          <circle cx="150" cy="72" r="8" fill="#fed7aa" stroke="#f59e0b" strokeWidth="1.2" />
+          <rect x="146" y="70.5" width="8" height="2.5" fill="#ffffff" rx="0.5" />
 
           {/* 2루 베이스 (상단) */}
           <polygon
-            points="150,33 157,40 150,47 143,40"
+            points="150,28 156,34 150,40 144,34"
             fill={runners.second ? '#f59e0b' : '#ffffff'}
             stroke={runners.second ? '#d97706' : '#94a3b8'}
-            strokeWidth="2"
+            strokeWidth="1.5"
             className="transition-colors duration-300"
           />
           {runners.second && (
-            <circle cx="150" cy="40" r="10" fill="#f59e0b" opacity="0.25" className="animate-ping" />
+            <circle cx="150" cy="34" r="8" fill="#f59e0b" opacity="0.3" className="animate-ping" />
           )}
 
           {/* 1루 베이스 (우측) */}
           <polygon
-            points="205,78 212,85 205,92 198,85"
+            points="198,66 204,72 198,78 192,72"
             fill={runners.first ? '#10b981' : '#ffffff'}
             stroke={runners.first ? '#047857' : '#94a3b8'}
-            strokeWidth="2"
+            strokeWidth="1.5"
             className="transition-colors duration-300"
           />
           {runners.first && (
-            <circle cx="205" cy="85" r="10" fill="#10b981" opacity="0.25" className="animate-ping" />
+            <circle cx="198" cy="72" r="8" fill="#10b981" opacity="0.3" className="animate-ping" />
           )}
 
           {/* 3루 베이스 (좌측) */}
           <polygon
-            points="95,78 102,85 95,92 88,85"
+            points="102,66 108,72 102,78 96,72"
             fill={runners.third ? '#f59e0b' : '#ffffff'}
             stroke={runners.third ? '#d97706' : '#94a3b8'}
-            strokeWidth="2"
+            strokeWidth="1.5"
             className="transition-colors duration-300"
           />
           {runners.third && (
-            <circle cx="95" cy="85" r="10" fill="#f59e0b" opacity="0.25" className="animate-ping" />
+            <circle cx="102" cy="72" r="8" fill="#f59e0b" opacity="0.3" className="animate-ping" />
           )}
 
           {/* 홈플레이트 (하단 오각형) */}
-          <polygon points="150,135 156,128 156,123 144,123 144,128" fill="#ffffff" stroke="#334155" strokeWidth="1.5" />
+          <polygon points="150,115 155,109 155,105 145,105 145,109" fill="#ffffff" stroke="#334155" strokeWidth="1.2" />
         </svg>
 
         {/* 투구 중 야구공 비행 애니메이션 */}
         {isPitching && (
-          <div className="absolute top-[85px] left-[150px] -translate-x-1/2 -translate-y-1/2 z-20 animate-pitch pointer-events-none">
-            <div className="w-5 h-5 rounded-full bg-white border border-slate-300 shadow-md flex items-center justify-center text-[10px]">
+          <div className="absolute top-[72px] left-[150px] -translate-x-1/2 -translate-y-1/2 z-20 animate-pitch pointer-events-none">
+            <div className="w-4 h-4 rounded-full bg-white border border-slate-300 shadow-md flex items-center justify-center text-[8px]">
               ⚾
             </div>
           </div>
@@ -129,29 +105,29 @@ export default function BaseballDiamond({
 
         {/* 출루 주자 아이콘 표시 */}
         {runners.first && (
-          <div className="absolute top-[85px] left-[205px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-xs">
+          <div className="absolute top-[72px] left-[198px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-[11px]">
             🏃
           </div>
         )}
         {runners.second && (
-          <div className="absolute top-[40px] left-[150px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-xs">
+          <div className="absolute top-[34px] left-[150px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-[11px]">
             🏃
           </div>
         )}
         {runners.third && (
-          <div className="absolute top-[85px] left-[95px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-xs">
+          <div className="absolute top-[72px] left-[102px] -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-[11px]">
             🏃
           </div>
         )}
       </div>
 
-      {/* 3. 판정 플로팅 오버레이 배너 (실제 야구 중계 효과) */}
-      {pitchEffect && (
+      {/* 판정 플로팅 오버레이 배너 (실제 야구 중계 효과 - 슬림형) */}
+      {pitchEffect ? (
         <div
           key={pitchEffect.key}
-          className={`w-full text-center py-1.5 px-3 rounded-xl border font-black text-xs transition-all shadow-xs animate-pop ${
+          className={`w-full text-center py-1 px-2 rounded-xl border font-black text-[11px] transition-all shadow-2xs animate-pop ${
             pitchEffect.type === 'HOMERUN'
-              ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 border-amber-300 shadow-amber-200'
+              ? 'bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 border-amber-300'
               : pitchEffect.type === 'HIT'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
               : pitchEffect.type === 'STRIKE'
@@ -162,6 +138,10 @@ export default function BaseballDiamond({
           }`}
         >
           {pitchEffect.message}
+        </div>
+      ) : (
+        <div className="text-[10px] font-semibold text-slate-400 py-0.5">
+          ⚾ 번호를 입력하고 [투구]를 눌러 타석을 공략하세요
         </div>
       )}
     </div>
