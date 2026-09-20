@@ -278,7 +278,7 @@ export default function App() {
           </div>
 
           {/* 3. 모드별 컨텐츠 */}
-          <main className="flex-1 px-4 py-3 overflow-y-auto">
+          <main className="flex-1 px-4 py-3 flex flex-col overflow-y-auto">
             {activeTab === 'text' && (
               <TextMode
                 input={input}

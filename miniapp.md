@@ -1,9 +1,9 @@
 # VeraNex 미니앱(Sub-App) 마스터 개발 및 디자인 가이드
 
-> **문서 버전**: 2.4 (그래픽 & 애니메이션 고도화 원칙 신설 + FaithLink 명칭 전면 배제 & VeraNex 브랜드 일원화 + 다크 디자인 배제 & 100% 풀스크린 에디션)  
+> **문서 버전**: 2.5 (상단 쏠림 완전 방지 & 850px 전 영역 균등 배치(Full-Height Balanced Layout) 공식 원칙 신설 에디션)  
 > **적용 대상**: 전체 미니앱 (`apps/app-*`)  
-> **디자인 원칙**: 100% 밝은 배경의 프리미엄 클린 뉴모피즘 + 화면 전체를 넓게 채우는 풀 하이트 리포트 + 최고급 그래픽 & 인터랙티브 모션 애니메이션  
-> **기준 모델**: 베라오목 (`app-omok`), 베라 팝 (`app-vera-pop`), 예·적금 계산기 (`app-interest-calc`), 퇴직금 계산기 (`app-severance-calc`)
+> **디자인 원칙**: 100% 밝은 배경의 프리미엄 클린 뉴모피즘 + 상단 쏠림 없는 850px 전 영역 균등 분할 풀 하이트 레이아웃 + 최고급 그래픽 & 인터랙티브 모션 애니메이션  
+> **기준 모델**: 베라오목 (`app-omok`), 베라 팝 (`app-vera-pop`), 예·적금 계산기 (`app-interest-calc`), Base64 변환기 (`app-base64-converter`), 퇴직금 계산기 (`app-severance-calc`)
 
 이 문서는 VeraNex 통합 플랫폼 내부에서 구동되는 모든 신규 미니앱(금융 도구, 유틸리티, 계산기, 미니게임 등)을 기획, 설계, 개발 및 배포할 때 반드시 준수해야 하는 **아키텍처, 팝업 규격, 화면 전체 활용 표준, 마케팅 자동 캡처, 검색엔진(SEO) 및 인공지능(GEO/AIO) 최적화, 100% 밝은 프리미엄 UX/UI 디자인 시스템 및 JSX 템플릿**을 망라한 단일 공식 표준 가이드입니다.
 
@@ -12,7 +12,10 @@
 ## 📌 핵심 원칙 요약 (Golden Rules)
 
 1. **팝업 고정 규격 (450px × 850px)**: 모든 미니앱은 가로 **450px**, 세로 **850px** 크기의 독립된 팝업 뷰포트에 최적화되어 렌더링됩니다.
-2. **화면 전체 넓게 쓰기 (하단 빈칸 방지 필수 의무)**: 컨텐츠 양이 적다고 화면 위쪽에 옹기종기 반만 채우고 **아래쪽 절반을 텅 빈 공백(Dead Space)으로 방치하는 것을 엄격히 금지**합니다. 450px × 850px 전체 높이를 시원하고 품격 있게 꽉 채우는 **풀 하이트(Full-Height) 레이아웃**(`min-h-full`, `flex-1 flex flex-col justify-between`)과 풍성한 서브 인포/분석 인사이트 패널을 반드시 구성합니다.
+2. **화면 전체 균등 배치 (상단 쏠림 및 하단 공백 영구 금지 의무)**:
+   - 컨텐츠 양이 적다고 화면 위쪽에만 옹기종기 몰아넣고 **아래쪽 30~50%를 텅 빈 공백(Dead Space)으로 방치하는 것을 엄격히 금지**합니다.
+   - 고정된 작은 높이(`h-28`, `h-32` 등)로 입력창/출력창을 묶어두는 안티패턴을 배제하고, `flex-1 min-h-[130px]` 형태의 **가변 세로 확장(Dynamic Flexible Workspace)**을 적용합니다.
+   - 도구형/유틸리티 앱이라도 850px 전체 높이에 걸쳐 **[상단 퀵 프리셋] ➔ [가변 입력창] ➔ [액션 컨트롤러] ➔ [가변 결과창] ➔ [실시간 분석 메트릭 & 툴바] ➔ [하단 보안 푸터]**의 밸런스 있는 다단 배치를 필수로 완성해야 합니다.
 3. **다크 디자인 무조건 배제 (100% 밝고 화사한 라이트 디자인)**: **다크 모드, 어두운 배경, 딥 네이비/블랙 계열은 어떠한 경우에도 절대 사용하지 않습니다.** 전 화면을 **순백색 카드(`bg-white`)**, **소프트 슬레이트 라이트 배경(`bg-slate-50`)**, 은은한 파스텔 악센트, **선명한 고대비 텍스트(`text-slate-900`)**로 구성하여 눈이 편안하고 신뢰감 넘치는 최고급 금융/유틸리티 비주얼을 제공합니다.
 4. **4초 스플래시 & 1~100% 실시간 프로그레스 로딩 화면**: 앱 진입 시 **4초(4,000ms) 동안** 공식 인트로를 의무 노출합니다. 이때 프로그레스 바는 **1%에서 100%까지 매끄럽게 차오르는 실시간 숫자 카운트 및 게이지 애니메이션**을 구동하며, **화면 하단에는 전용 광고/스폰서 배너 슬롯**을 필수로 배치합니다.
 5. **마케팅 자동화 3단계 캡처 선언**: 관리자 및 SNS 카드뉴스 생성을 위해 `data-screenshot-*` 속성을 3단계(진입 ➡️ 조작 ➡️ 결과)로 컴포넌트에 반드시 표기합니다.
@@ -26,14 +29,17 @@
 
 ## 제1장. 플랫폼 아키텍처 및 화면 공간 최적화 규격
 
-### 1.1 팝업 규격 및 전체 화면(850px) 100% 활용 표준
+### 1.1 팝업 규격 및 전체 화면(850px) 균등 분할(Full-Height Balanced Layout) 표준
 - 미니앱은 메인 포털에서 독립된 팝업 형태로 실행됩니다.
 - **너비**: `450px` 고정
 - **높이**: `850px` 고정
-- **공간 활용 의무**: 
-  - 450px × 850px 팝업 창 안에서 **컨텐츠가 상단에만 쏠리고 아래 절반이 휑하게 비어 있는 UI는 불합격 처리**됩니다.
-  - 최상위 컨테이너에 `min-h-[calc(850px-헤더높이)]` 또는 `flex flex-col justify-between`을 부여하여 하단 끝까지 밸런스 있게 요소를 채워야 합니다.
-  - 입력 폼이 간단한 경우에도 **[빠른 프리셋 퀵 칩]**, **[실시간 계산 안내 배너]**, **[주요 팁 박스]**, **[시원시원한 대형 버튼]**, **[하단 스폰서 배너]**를 함께 배치하여 화면 전체가 꽉 차고 세련되게 보이도록 연출합니다.
+- **상단 쏠림(Top-Heavy Clustering) 방지 및 균등 분할 의무 규격**: 
+  - 450px × 850px 팝업 창 안에서 **컨텐츠가 상단 50%에만 다닥다닥 몰려있고 아래 40% 이상이 휑하게 비어 있는 UI는 즉시 불합격 처리**됩니다.
+  - 최상위 컨테이너 `main`에 `flex-1 flex flex-col justify-between`을 부여하고, 내부 컴포넌트 또한 세로 축 공간을 균형 있게 나눠 갖도록 설계합니다.
+  - **입력 폼/텍스트 도구의 가변 확장 원칙**:
+    - 입력창(textarea)이나 캔버스를 `h-28`, `h-32` 등의 고정 픽셀로 작게 고정하지 말고, `flex-1 min-h-[130px]`로 지정하여 화면 세로 비율에 맞추어 시원하게 늘어나도록 합니다.
+  - **하단 필수 보조 패널 구성 원칙 (Value-Add Sections)**:
+    - 텍스트/데이터 변환기, 유틸리티 도구는 하단 빈 공간에 반드시 **[실시간 데이터 분석 & 메트릭 통계 패널 (Bytes, Ratio, Lines)]**, **[스마트 퀵 툴즈 (Download, Clean, Format)]**, **[보안 및 표준 규격 보증 배지]**를 결합하여 850px 전 영역에 걸쳐 시각적 밀도와 전문성을 완성합니다.
 
 ### 1.2 프로젝트 생성 및 디렉터리 구조
 VeraNex 플랫폼은 **Turborepo** 기반의 모노레포로 운영됩니다. 새로운 미니앱은 반드시 `apps/` 디렉터리 하위에 생성해야 합니다.
@@ -282,19 +288,21 @@ FAQ 탭이나 가이드 섹션에 질문 바로 아래 **1~2문장의 명쾌하�
 > **다크 모드, 어두운 배경, 딥 네이비, 블랙 계열의 화면 구성은 일체 금지**됩니다.  
 > 모든 화면은 화사하고 깨끗한 화이트/소프트 슬레이트 기반의 **100% 밝은 배경**을 유지합니다.
 
-> 📐 **화면 전체를 넓게 채우는 공간 활용 원칙 (Full Viewport Utilization)**  
-> 450px × 850px 팝업에서 **컨텐츠 양이 작다고 위쪽에만 반을 차지하고 아래쪽을 휑한 빈칸으로 방치하는 것은 엄격히 금지**됩니다.  
-> 1) **수직 확장 레이아웃**: `min-h-[calc(850px-130px)]` 및 `flex flex-col justify-between`을 기본 적용합니다.  
-> 2) **풍성한 다층 리포트 구성**: 결과 화면에서는 거대 히어로 수치뿐만 아니라 **세부 2분할 카드**, **3단 과세/조건별 비교표**, **정밀 분석 인사이트 팁 박스**, **하단 액션 버튼 독**을 촘촘히 연결하여 850px 높이 전체를 꽉 채우는 고급스러운 대시보드를 연출합니다.  
-> 3) **시원한 터치 여백**: 모바일에서 누르기 편하도록 카드 패딩(`p-5`), 버튼 높이(`py-3.5`), 칩 여백을 넉넉하게 주어 화면이 좁아 보이지 않고 시원시원하게 느껴지도록 설계합니다.
+> 📐 **화면 전체를 균등하게 채우는 공간 활용 원칙 (Full Viewport Balanced Layout)**  
+> 450px × 850px 팝업에서 **컨텐츠가 상단에만 쏠리고 아래쪽이 텅 빈 공백(Dead Space)으로 방치되는 레이아웃은 전면 금지**됩니다.  
+> 1) **가변 세로 확장 (Flex-1 Dynamic Sizing)**: 입력 영역(Textarea/Canvas)을 작은 고정 픽셀(`h-28`)로 박제하지 않고, `flex-1 min-h-[130px]`로 부여하여 뷰포트 높이에 맞추어 자연스럽게 확장되도록 합니다.  
+> 2) **풍성한 다층 리포트 및 유틸리티 패널 결합**:
+>    - **계산기/금융 앱**: 거대 히어로 수치 + 세부 2분할 카드 + 3단 비교표 + 절세 인사이트 팁 박스 + 하단 액션 독.
+>    - **텍스트/유틸리티 앱**: 가변 입력창 + 중앙 제어바 + 가변 결과창 + **[실시간 데이터 분석 4분할 메트릭스(바이트, 비율, 라인)]** + **[스마트 빠른 툴바(.txt/.b64 다운로드, 공백제거)]**.  
+> 3) **시원한 터치 여백 & 대칭 밸런스**: 입력 카드와 결과 카드가 상하 대칭으로 안정된 무게중심을 이루며, 모바일에서 누르기 편하도록 카드 패딩(`p-3.5~p-5`), 버튼 높이(`py-3~py-4`)를 넉넉하게 주어 화면 전체가 꽉 차고 세련되게 보이도록 설계합니다.
 
 ```
-[1단계: 4초 스플래시]    ➔  [2단계: 입력 화면 (Input)]  ➔  [3단계: 결과 리포트 (Result)]
-- 밝은 화이트/슬레이트 배경   - 소프트 화이트 뉴모피즘        - 850px 꽉 채우는 풍성한 리포트
-- 공인 기준 뱃지             - 파스텔 블루 안내 배너        - 블루/인디고 거대 히어로 메트릭
-- 3D 플로팅 아이콘           - 빠른 퀵 칩 + 세그먼트 토글   - 3단 비교 카드 + 세부 분석 패널
-- 1~100% 프로그레스 바       - 고대비 그라데이션 CTA       - 하단 밀착형 공유 & 재계산 독
-- 하단 필수 광고 배너
+[1단계: 4초 스플래시]    ➔  [2단계: 가변 입력/작업창]  ➔  [3단계: 가변 결과 & 통계 분석]
+- 밝은 화이트/슬레이트 배경   - 소프트 화이트 뉴모피즘        - 850px 상하 균형 꽉 찬 레이아웃
+- 공인 기준 뱃지             - 퀵 칩 + 가변 입력창(flex-1)   - 가변 결과창(flex-1) + 복사 버튼
+- 3D 플로팅 아이콘           - 중앙 액션 컨트롤러           - 실시간 메트릭 통계(4분할 카드)
+- 1~100% 프로그레스 바       - 하단 빈칸 없는 대칭 밸런스   - 스마트 유틸리티 & 다운로드 바
+- 하단 필수 광고 배너                                      - 100% 클라이언트 로컬 보안 푸터
 ```
 
 ---
@@ -759,6 +767,175 @@ useEffect(() => {
     >
       결과 공유하기 📤
     </button>
+  </div>
+</div>
+```
+
+---
+
+#### [화면 4-B] 텍스트 및 유틸리티 도구 전용 풀-하이트 균등 배치 템플릿 (상단 쏠림 원천 차단 표준)
+
+> 💡 **도구형 미니앱 상단 쏠림 방지 표준**:  
+> 텍스트/데이터 변환기, 포매터, 인코더 등 입력창과 결과창이 공존하는 도구형 앱에서 화면 위쪽에만 요소들이 찌그러져 있고 아래 절반이 휑하게 비는 문제를 완벽히 해결한 공식 템플릿입니다.  
+> **상단 프리셋 ➔ 가변 입력창(flex-1) ➔ 중앙 컨트롤러 ➔ 가변 결과창(flex-1) ➔ 실시간 메트릭 분석 & 스마트 툴바**의 5단계 수직 대칭 밸런스로 850px 전체를 품격 있게 꽉 채웁니다.
+
+```tsx
+<div className="flex-1 flex flex-col justify-between gap-3 min-h-full animate-fade-in">
+  {/* 1. 상단 퀵 프리셋 & 정리 툴바 */}
+  <div className="flex items-center justify-between gap-2 overflow-x-auto pb-0.5 shrink-0 hide-scrollbar">
+    <div className="flex items-center gap-1 shrink-0">
+      <span className="text-[10px] text-slate-400 font-extrabold mr-1">샘플:</span>
+      <button
+        type="button"
+        onClick={() => onLoadSample('sample1')}
+        data-screenshot-click="action"
+        className="px-2.5 py-1 text-[11px] font-extrabold rounded-lg border bg-white border-slate-200 text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-300 transition-all cursor-pointer shadow-2xs active:scale-95"
+      >
+        기본 샘플
+      </button>
+    </div>
+
+    <div className="flex items-center gap-1.5 shrink-0">
+      <button
+        type="button"
+        onClick={handleClean}
+        className="px-2 py-1 text-[10px] font-bold rounded-lg border bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
+      >
+        공백 정리
+      </button>
+      <button
+        type="button"
+        onClick={handleClear}
+        className="px-2.5 py-1 text-[10px] font-bold rounded-lg border bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100 transition-all cursor-pointer shrink-0"
+      >
+        초기화
+      </button>
+    </div>
+  </div>
+
+  {/* 2. 가변 입력 패널 (Flex-1 확장으로 상단 쏠림 해소) */}
+  <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col gap-2 flex-1 min-h-[130px]">
+    <div className="flex items-center justify-between shrink-0">
+      <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+        <i className="fas fa-arrow-down-long-arrow-up-long text-indigo-600"></i>
+        <span>변환할 텍스트 입력 (Input)</span>
+      </label>
+      <span className="text-[10px] text-slate-400 font-mono font-medium">
+        {input.length}자 · {inputBytes} bytes
+      </span>
+    </div>
+
+    <textarea
+      data-screenshot-input="Sample Data"
+      className="w-full flex-1 min-h-[90px] base64-textarea resize-none leading-relaxed"
+      placeholder="처리할 텍스트를 입력하세요..."
+      value={input}
+      onChange={(e) => setInput(e.target.value)}
+    />
+  </div>
+
+  {/* 3. 중앙 액션 바 및 옵션 토글 */}
+  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-xs space-y-2 shrink-0">
+    <div className="flex items-center justify-between text-xs px-1">
+      <label className="flex items-center gap-1.5 cursor-pointer text-slate-700 font-bold select-none">
+        <input
+          type="checkbox"
+          checked={autoRun}
+          onChange={(e) => setAutoRun(e.target.checked)}
+          className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5 cursor-pointer"
+        />
+        <span>실시간 자동 변환</span>
+      </label>
+    </div>
+
+    <div className="grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={handleExecute}
+        data-screenshot-click="result"
+        className="py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+      >
+        <i className="fas fa-bolt text-amber-300 text-xs"></i>
+        <span>변환 실행 ⬇</span>
+      </button>
+      <button
+        type="button"
+        onClick={handleReverse}
+        className="py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-200 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+      >
+        <i className="fas fa-rotate-left text-indigo-600 text-xs"></i>
+        <span>역변환 복원 ⬆</span>
+      </button>
+    </div>
+  </div>
+
+  {/* 4. 가변 출력 패널 (입력창과 대칭 밸런스 형성) */}
+  <div
+    data-screenshot-point="result"
+    className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-xs flex flex-col gap-2 flex-1 min-h-[130px]"
+  >
+    <div className="flex items-center justify-between shrink-0">
+      <label className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+        <i className="fas fa-check-double text-emerald-600"></i>
+        <span>변환 결과 (Output)</span>
+      </label>
+      <button
+        type="button"
+        onClick={handleCopy}
+        disabled={!output}
+        className="px-3 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 disabled:opacity-40 cursor-pointer active:scale-95 shadow-2xs shrink-0"
+      >
+        <i className="fas fa-copy text-xs"></i>
+        <span>결과 복사</span>
+      </button>
+    </div>
+
+    <textarea
+      className="w-full flex-1 min-h-[90px] base64-textarea bg-slate-50/70 resize-none leading-relaxed"
+      placeholder="변환 결과가 여기에 표시됩니다..."
+      value={output}
+      readOnly
+    />
+  </div>
+
+  {/* 5. 실시간 데이터 분석 & 스마트 유틸리티 툴바 (하단 데드스페이스 해소) */}
+  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-xs space-y-2 shrink-0">
+    <div className="grid grid-cols-4 gap-1.5 text-center">
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+        <span className="block text-[9px] font-bold text-slate-400">입력 크기</span>
+        <span className="text-[11px] font-mono font-black text-slate-700">{inputBytes} B</span>
+      </div>
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+        <span className="block text-[9px] font-bold text-slate-400">출력 크기</span>
+        <span className="text-[11px] font-mono font-black text-indigo-600">{outputBytes} B</span>
+      </div>
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+        <span className="block text-[9px] font-bold text-slate-400">변화율</span>
+        <span className="text-[11px] font-mono font-black text-amber-600">{sizeDiffRate}</span>
+      </div>
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-1.5">
+        <span className="block text-[9px] font-bold text-slate-400">상태</span>
+        <span className="text-[10px] font-mono font-bold text-emerald-600 block">정상 완료</span>
+      </div>
+    </div>
+
+    <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-xs">
+      <span className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        100% 로컬 클라이언트 처리
+      </span>
+      <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => handleDownload('txt')}
+          disabled={!output}
+          className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 transition-all disabled:opacity-40 cursor-pointer flex items-center gap-1"
+        >
+          <i className="fas fa-file-lines text-slate-500 text-[9px]"></i>
+          <span>.txt 저장</span>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 ```
