@@ -140,10 +140,13 @@ app.route('/', geoRoutes);
 import { shoppingRoutes } from './routes/shopping.routes.js';
 app.route('/', shoppingRoutes);
 
+import { baseballRoutes } from './routes/baseball.routes.js';
+app.route('/', baseballRoutes);
+
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr', 'janggi'
+    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr', 'janggi', 'baseball'
 ];
 
 miniApps.forEach(appName => {

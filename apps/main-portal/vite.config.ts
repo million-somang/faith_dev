@@ -113,6 +113,10 @@ export default defineConfig({
                 target: 'http://localhost:5036',
                 changeOrigin: true,
             },
+            '^/app/baseball.*': {
+                target: 'http://localhost:5038',
+                changeOrigin: true,
+            },
         },
     },
 });

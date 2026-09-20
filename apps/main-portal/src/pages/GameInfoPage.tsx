@@ -40,6 +40,23 @@ const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-janggi',
         leaderboardUrl: '/api/games/janggi/leaderboard',
     },
+    baseball: {
+        label: '베라 숫자야구 (Vera Baseball)',
+        icon: 'fas fa-baseball-bat-ball',
+        gradient: 'from-amber-600 via-orange-600 to-red-600',
+        buttonGradient: 'from-amber-600 to-rose-600 hover:from-amber-700 hover:to-rose-700',
+        tagline: '9이닝 정규 리그! 실시간 다이아몬드 구장에서 펼쳐지는 두뇌 추론 배틀',
+        description: '서로 다른 3자리 숫자를 9회말 이닝 종료 전에 추리하는 정통 야구 룰 게임입니다. 나만의 구단을 창단하고 완봉승(3이닝 이내)과 퀄리티 스타트 배지를 획득하여 주간 랭킹 1위에 도전하세요.',
+        controls: [
+            { keys: '0~9 숫자 키패드', desc: '중복 없는 3자리 숫자 선택' },
+            { keys: '투구 (PITCH)', desc: '볼 카운트 및 주자 진루 판정' },
+            { keys: '완봉승 (3이닝)', desc: '3이닝 이내 정답 적중 시 특별 완봉승 배지' },
+            { keys: '전광판 랭킹전', desc: '승률 및 평균 소모 이닝 기준 주간 TOP 10' },
+        ],
+        appUrl: '/app/baseball/',
+        appName: 'app-baseball',
+        leaderboardUrl: '/api/games/baseball/leaderboard',
+    },
     omok: {
         label: '베라오목 (Vera Omok)',
         icon: 'fas fa-circle-dot',

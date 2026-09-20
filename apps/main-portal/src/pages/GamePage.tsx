@@ -338,6 +338,35 @@ function JanggiThumb() {
     );
 }
 
+// 베라 숫자야구: 9이닝 다이아몬드 구장 + 야구공 & 전광판
+function BaseballThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="bbGrass" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#047857" />
+                </linearGradient>
+                <radialGradient id="bbDirt" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#fed7aa" />
+                    <stop offset="100%" stopColor="#f59e0b" />
+                </radialGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#bbGrass)" />
+            <polygon points="160,15 250,60 160,105 70,60" fill="url(#bbDirt)" stroke="#ffffff" strokeWidth="2" strokeDasharray="4 3" />
+            <polygon points="160,25 235,60 160,95 85,60" fill="#059669" />
+            <circle cx="160" cy="60" r="10" fill="#fed7aa" stroke="#d97706" strokeWidth="1.5" />
+            <rect x="230" y="55" width="10" height="10" fill="#ffffff" transform="rotate(45 235 60)" />
+            <rect x="155" y="20" width="10" height="10" fill="#fbbf24" transform="rotate(45 160 25)" />
+            <rect x="80" y="55" width="10" height="10" fill="#ffffff" transform="rotate(45 85 60)" />
+            <polygon points="160,102 165,97 165,93 155,93 155,97" fill="#ffffff" />
+            <circle cx="160" cy="60" r="14" fill="#ffffff" stroke="#e2e8f0" strokeWidth="1.5" />
+            <path d="M 152 48 Q 157 60 152 72" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 1.5" />
+            <path d="M 168 48 Q 163 60 168 72" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeDasharray="2 1.5" />
+        </svg>
+    );
+}
+
 // 베라오목: 천연 온목재 15x15 격자판 + 3D 흑돌/백돌 5목 연결
 function OmokThumb() {
     return (
@@ -581,6 +610,21 @@ export default function GamePage() {
                                         <span className="text-xs bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-md font-bold">정통 9×10 & 묘수풀이</span>
                                     </h3>
                                     <p className="text-slate-500 text-xs leading-relaxed">4대 상차림(마상상마/원앙마 등), 공식 73.5점 덤 규정, 1일 1외통수 매일 묘수풀이 및 특수 스킬 배틀을 즐겨보세요.</p>
+                                </div>
+                            </button>
+
+                            {/* 🌟 1.5 베라 숫자야구 (Vera Baseball) - 9이닝 정규 리그 */}
+                            <button onClick={() => navigate('/game/baseball')} className="bg-white border-2 text-left border-red-200 rounded-2xl overflow-hidden hover:border-red-400 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    9 INNINGS
+                                </div>
+                                <div className="overflow-hidden bg-[#047857]"><BaseballThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-red-700 mb-1 group-hover:text-red-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Baseball (베라 숫자야구)</span>
+                                        <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">정규 9이닝 리그</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">서로 다른 3자리 숫자를 9회말 이내에 추리! 완봉승(3이닝 이내)과 퀄리티 스타트에 도전하세요.</p>
                                 </div>
                             </button>
 
