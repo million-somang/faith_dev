@@ -106,8 +106,10 @@ baseballRoutes.post('/api/games/baseball/record', async (c) => {
     const user = c.get('user');
 
     try {
-        const { isWin, inningsUsed, secretLength } = await c.req.json();
-        const innings = Math.min(Math.max(Number(inningsUsed) || 1, 1), 9);
+        const body = await c.req.json();
+        const isWin = Boolean(body.won ?? body.isWin);
+        const innings = Math.min(Math.max(Number(body.innings ?? body.inningsUsed) || 1, 1), 9);
+        const secretLength = Number(body.secretLength) || 3;
 
         // 비회원은 전적 저장 없이 가상 결과만 반환
         if (!user) {
@@ -235,15 +237,15 @@ baseballRoutes.get('/api/games/baseball/leaderboard', async (c) => {
                 bp.shutouts,
                 bp.total_innings,
                 bp.win_rate,
-                COALESCE(u.username, u.name, '선수') as player_name,
-                ROUND(bp.total_innings::numeric / NULLIF(bp.wins + bp.losses, 0), 2) as avg_innings
+                COALESCE(u.name, '선수') as player_name,
+                ROUND(CAST(bp.total_innings AS REAL) / NULLIF(bp.wins + bp.losses, 0), 2) as avg_innings
             FROM baseball_profiles bp
             JOIN users u ON bp.user_id = u.id
             WHERE (bp.wins + bp.losses) > 0
             ORDER BY 
                 bp.win_rate DESC,
                 bp.wins DESC,
-                (bp.total_innings::float / NULLIF(bp.wins + bp.losses, 0)) ASC
+                (CAST(bp.total_innings AS REAL) / NULLIF(bp.wins + bp.losses, 0)) ASC
             LIMIT 20
         `).all();
 
@@ -259,7 +261,7 @@ baseballRoutes.get('/api/games/baseball/leaderboard', async (c) => {
             avgInnings: row.avg_innings ? Number(row.avg_innings) : 0,
         }));
 
-        return c.json({ success: true, leaderboard });
+        return c.json({ success: true, data: leaderboard, leaderboard });
     } catch (error) {
         console.error('[Baseball] Leaderboard error:', error);
         return c.json({ success: false, message: '순위표 조회 중 오류가 발생했습니다.' }, 500);
