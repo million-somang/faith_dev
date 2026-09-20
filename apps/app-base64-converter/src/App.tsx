@@ -7,7 +7,6 @@ import { useBase64 } from './hooks/useBase64';
 import TextMode from './components/TextMode';
 import ImageMode from './components/ImageMode';
 import Base64Guide from './components/Base64Guide';
-import { sound } from './utils/sound';
 
 type ActiveTab = 'text' | 'image' | 'guide';
 
@@ -15,7 +14,6 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('text');
   const [loadingProgress, setLoadingProgress] = useState<number>(1);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const [toastMessage, setToastMessage] = useState<string>('');
 
   const {
@@ -68,31 +66,67 @@ export default function App() {
   };
 
   const handleTabChange = (tab: ActiveTab) => {
-    sound.playClick();
     setActiveTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const toggleSound = () => {
-    const next = sound.toggle();
-    setSoundEnabled(next);
-    showToast(next ? '🔊 효과음이 켜졌습니다.' : '🔇 효과음이 꺼졌습니다.');
+  // 클립보드 안전 복사 (Clipboard API + textarea fallback)
+  const copyToClipboard = async (text: string): Promise<boolean> => {
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (_e) {
+        // 계속해서 레거시 폴백 시도
+      }
+    }
+
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) return true;
+    } catch (_e) {
+      // 실패
+    }
+
+    return false;
   };
 
-  const handleShare = () => {
-    sound.playClick();
-    if (navigator.share) {
-      navigator
-        .share({
-          title: 'Base64 Studio - 텍스트 & 이미지 Base64 변환기 | VeraNex',
-          text: '한글 UTF-8 완벽 지원, URL-Safe 및 이미지 Data URI 원클릭 변환기',
-          url: window.location.href,
-        })
-        .catch(() => {});
+  // 공유 버튼 핸들러 (모바일 Native Share ➔ Clipboard API ➔ Fallback)
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: 'Base64 Studio - 텍스트 & 이미지 Base64 변환기 | VeraNex',
+      text: '한글 UTF-8 완벽 지원, URL-Safe 및 이미지 Data URI 원클릭 변환기',
+      url: shareUrl,
+    };
+
+    // 모바일 브라우저의 경우 네이티브 공유 다이얼로그 우선 시도
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if (isMobile && navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return; // 단순 닫기 시 중단
+      }
+    }
+
+    // 데스크탑 및 Web Share 미지원/실패 시 즉시 클립보드 복사
+    const ok = await copyToClipboard(shareUrl);
+    if (ok) {
+      showToast('🔗 변환기 주소가 클립보드에 복사되었습니다.');
     } else {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        showToast('🔗 변환기 주소가 복사되었습니다.');
-      });
+      showToast('주소 복사에 실패했습니다.');
     }
   };
 
@@ -139,7 +173,7 @@ export default function App() {
             {/* 1~100% 실시간 프로그레스 바 & 숫자 퍼센트 게이지 */}
             <div className="w-full max-w-xs space-y-1.5 mb-3">
               <div className="flex justify-between items-center text-[11px] font-bold text-slate-600 px-1">
-                <span>바이트 스트림 인코더 & Web Audio 준비</span>
+                <span>바이트 스트림 인코더 엔진 초기화</span>
                 <span className="font-black text-indigo-600 text-xs tabular-nums">{loadingProgress}%</span>
               </div>
               <div className="w-full bg-slate-200/80 border border-slate-300/80 h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
@@ -208,7 +242,7 @@ export default function App() {
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-sm font-extrabold text-slate-900 tracking-tight">Base64 Studio</h1>
                   <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200/70 px-1.5 py-0.2 rounded">
-                    v2.4
+                    v2.5
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 font-medium leading-none mt-0.5">VeraNex Tool Suite</p>
@@ -218,19 +252,12 @@ export default function App() {
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={toggleSound}
-                className="w-8 h-8 rounded-xl neu-flat hover:neu-pressed flex items-center justify-center text-slate-600 text-xs transition-all"
-                title="효과음 설정"
-              >
-                <i className={soundEnabled ? 'fas fa-volume-high text-indigo-600' : 'fas fa-volume-xmark text-slate-400'}></i>
-              </button>
-              <button
-                type="button"
                 onClick={handleShare}
-                className="w-8 h-8 rounded-xl neu-flat hover:neu-pressed flex items-center justify-center text-slate-600 text-xs transition-all"
-                title="공유하기"
+                className="px-2.5 py-1.5 rounded-xl neu-flat hover:neu-pressed flex items-center gap-1.5 text-slate-700 hover:text-indigo-600 text-xs font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                title="페이지 주소 공유 / 복사"
               >
-                <i className="fas fa-share-nodes"></i>
+                <i className="fas fa-share-nodes text-indigo-600 text-xs"></i>
+                <span className="text-[11px]">공유</span>
               </button>
             </div>
           </header>
@@ -332,10 +359,10 @@ export default function App() {
           </footer>
         </div>
 
-        {/* 플로팅 토스트 메시지 */}
+        {/* 플로팅 토스트 메시지 (상단 중앙 고정) */}
         {toastMessage && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg backdrop-blur-sm animate-bounce">
-            {toastMessage}
+          <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-2 border border-slate-700/80 animate-fadeIn">
+            <span>{toastMessage}</span>
           </div>
         )}
       </div>

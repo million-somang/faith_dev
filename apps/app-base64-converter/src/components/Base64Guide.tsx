@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { sound } from '../utils/sound';
 
 interface FaqItem {
   question: string;
@@ -44,7 +43,6 @@ export default function Base64Guide() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   const toggleFaq = (idx: number) => {
-    sound.playClick();
     setOpenIndex(openIndex === idx ? null : idx);
   };
 
