@@ -688,15 +688,44 @@ const GAME_META: Record<string, { title: string; description: string }> = {
     freecell: { title: '클래식 프리셀 무료 온라인 게임 - VERA', description: '클래식 프리셀 카드 솔리테어를 무료로. 99.9% 이상 클리어 가능한 퍼즐 수싸움에 도전하세요.' },
 };
 
+// 정적 사전 렌더링 HTML(prerender.js 결과물: /guides, /guides/:slug, /privacy, /about 등) 우선 직접 서빙
+app.use('*', async (c, next) => {
+    const reqPath = c.req.path;
+    if (reqPath.startsWith('/api') || reqPath.includes('.')) {
+        return next();
+    }
+    const cleanPath = reqPath.replace(/\/$/, '');
+    if (cleanPath) {
+        const prerenderFile = path.resolve(`./apps/main-portal/dist${cleanPath}/index.html`);
+        if (fs.existsSync(prerenderFile)) {
+            return c.html(fs.readFileSync(prerenderFile, 'utf-8'));
+        }
+    }
+    return next();
+});
+
 for (const [routePath, meta] of Object.entries(ROUTE_META)) {
-    app.get(routePath, (c) => {
+    const handler = (c: any) => {
         try {
+            // 1. 해당 경로의 정적 사전 렌더링 파일(prerender.js 결과물)이 존재하는지 확인 (예: dist/privacy/index.html)
+            if (routePath !== '/') {
+                const staticFilePath = path.resolve(`./apps/main-portal/dist${routePath}/index.html`);
+                if (fs.existsSync(staticFilePath)) {
+                    return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
+                }
+            }
+            // 2. 루트(/)이거나 전용 정적 파일이 없는 경우 동적 메타 주입 후 서빙
             return c.html(renderSpaWithMeta(buildMetaBlock({ ...meta, path: routePath })));
         } catch (e) {
             console.error('[SEO] meta injection error:', routePath, e);
             return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
         }
-    });
+    };
+
+    app.get(routePath, handler);
+    if (routePath !== '/') {
+        app.get(`${routePath}/`, handler);
+    }
 }
 
 app.get('/game/:id', (c) => {

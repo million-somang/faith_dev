@@ -290,6 +290,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
 
                     {activeMode === 'general' && (
                         <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
+                            <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                             <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('뉴스', currentLang)}</a>
                             <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('생활도구', currentLang)}</a>
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
@@ -299,7 +300,6 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             {user?.email === 'sukman@naver.com' && (
                                 <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}
-                            <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                         </nav>
                     )}
 
@@ -387,13 +387,13 @@ export const QuickMenu = () => {
                 <div className="flex justify-start sm:justify-center items-center gap-4 sm:gap-6 lg:gap-8 min-w-max">
                     {[
                         { label: tr('뉴스', currentLang), icon: 'fa-newspaper', bg: 'bg-blue-50', color: 'text-blue-600', href: '/news' },
+                        { label: tr('지식 가이드', currentLang), icon: 'fa-book-open', bg: 'bg-teal-50', color: 'text-teal-600', href: '/guides' },
                         { label: tr('유틸리티', currentLang), icon: 'fa-home', bg: 'bg-green-50', color: 'text-green-600', href: '/lifestyle' },
-                        { label: tr('게임', currentLang), icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', href: '/game' },
                         { label: tr('금융', currentLang), icon: 'fa-won-sign', bg: 'bg-orange-50', color: 'text-orange-600', href: '/finance' },
+                        { label: tr('게임', currentLang), icon: 'fa-gamepad', bg: 'bg-purple-50', color: 'text-purple-600', href: '/game' },
                         { label: tr('라운지', currentLang), icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', href: '/lounge' },
                         { label: tr('쇼핑', currentLang), icon: 'fa-shopping-bag', bg: 'bg-pink-50', color: 'text-pink-600', href: '/shopping' },
                         { label: tr('엔터', currentLang), icon: 'fa-film', bg: 'bg-red-50', color: 'text-red-600', href: '/entertainment' },
-                        { label: tr('교육', currentLang), icon: 'fa-graduation-cap', bg: 'bg-indigo-50', color: 'text-indigo-600', href: '/education' },
                     ].map((item) => (
                         <a key={item.label} href={item.href} className="group text-center flex-shrink-0 relative">
                             {item.href === '/lounge' && (

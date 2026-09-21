@@ -1023,41 +1023,90 @@ function generateLegalPages(template) {
             description: '세상의 모든 유용한 정보를 하나로 연결하는 신뢰의 라이프 포털 VERA의 비전과 서비스 소개입니다.',
             heading: 'VERA 서비스 소개',
             content: `
-                <h2 class="text-2xl font-bold mb-4">우리의 비전</h2>
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    VERA(베라)는 '진실과 신뢰'를 바탕으로 사용자의 일상에 실질적인 가치를 더하는 올인원 웹 라이프 포털입니다.
-                    실시간 주요 뉴스 브리핑, 실생활 계산 유틸리티, 뇌 건강을 위한 두뇌 게임, 금융 정보, 전통 인문학 칼럼에 이르기까지 
-                    신뢰할 수 있는 디지털 경험을 하나의 플랫폼에서 끊김 없이 제공합니다.
-                </p>
-                <h2 class="text-2xl font-bold mb-4">핵심 가치</h2>
-                <ul class="list-disc ml-6 space-y-2 text-gray-700 mb-6">
-                    <li><strong>투명성과 정확성:</strong> 검증된 데이터와 공신력 있는 출처 기반의 정보를 제공합니다.</li>
-                    <li><strong>사용자 중심 인터페이스:</strong> 군더더기 없는 직관적인 UX와 빠른 로딩 속도를 보장합니다.</li>
-                    <li><strong>지속적인 발전:</strong> 사용자의 피드백을 수렴하여 매일 새로운 기능과 양질의 지식 콘텐츠를 확장합니다.</li>
-                </ul>
+                <div class="space-y-6">
+                    <h2 class="text-2xl font-bold mb-3 text-slate-900">우리의 비전</h2>
+                    <p class="text-gray-700 leading-relaxed">
+                        VERA(베라)는 '진실과 신뢰'를 바탕으로 사용자의 일상에 실질적인 가치를 더하는 올인원 웹 라이프 포털입니다.
+                        실시간 주요 뉴스 브리핑, 실생활 계산 유틸리티, 뇌 건강을 위한 두뇌 게임, 금융 지표 대시보드, 전통 인문학 칼럼에 이르기까지 
+                        신뢰할 수 있는 디지털 경험을 하나의 플랫폼에서 끊김 없이 제공합니다.
+                    </p>
+                    <h2 class="text-2xl font-bold mb-3 text-slate-900">핵심 서비스 영역</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">📰 실시간 뉴스 큐레이션</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">카테고리별 주요 뉴스를 빠르게 전달하며, 바쁜 현대인을 위해 핵심 요약 브리핑을 제공합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">📖 18편 전문 지식 가이드 & 칼럼</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">금융 절세, 청약 가점, 퇴직금 정산, 웹소설 작법, 명리학 등 검증된 오리지널 지식을 심층 연재합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">🛠️ 스마트 생활도구 & 계산기</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">만나이 계산기, D-Day 카운터, 평수 환산기, WebP 이미지 변환기 등 일상 유틸리티를 제공합니다.</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">🎮 클린 두뇌 미니게임 센터</h3>
+                            <p class="text-xs text-slate-600 leading-relaxed">스도쿠, 2048, 베라오목, 베라 팝, 지뢰찾기, 프리셀 등 무설치 브라우저 게임을 지원합니다.</p>
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-3 text-slate-900">운영 원칙</h2>
+                    <ul class="list-disc ml-6 space-y-2 text-gray-700">
+                        <li><strong>투명성과 정확성:</strong> 검증된 데이터와 공신력 있는 출처 기반의 정보를 제공합니다.</li>
+                        <li><strong>사용자 중심 인터페이스:</strong> 불필요한 팝업이나 방해 없이 직관적인 UX와 빠른 페이지 속도를 보장합니다.</li>
+                        <li><strong>신뢰와 상생:</strong> 독자 피드백을 지속적으로 반영하며 양질의 콘텐츠를 매일 업데이트합니다.</li>
+                    </ul>
+                </div>
             `
         },
         {
             route: 'privacy',
             title: '개인정보처리방침 (Privacy Policy) | VERA',
-            description: 'VERA는 이용자의 개인정보를 소중히 여기며 관련 법령을 철저히 준수합니다.',
+            description: 'VERA 포털의 개인정보처리방침, 쿠키 및 Google AdSense 광고 식별자 수집 안내입니다.',
             heading: '개인정보처리방침',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    본 방침은 VERA(이하 '회사')가 제공하는 서비스의 개인정보 수집, 이용, 보관 및 파기에 관한 기준을 명시합니다.
-                </p>
-                <h2 class="text-2xl font-bold mb-4">1. 수집하는 개인정보 항목</h2>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    회사는 회원가입 및 원활한 서비스 제공을 위해 이메일, 닉네임, 서비스 이용 기록 등을 수집할 수 있습니다.
-                </p>
-                <h2 class="text-2xl font-bold mb-4">2. 개인정보의 이용 목적</h2>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    수집된 정보는 사용자 인증, 서비스 맞춤 설정, 불법 행위 방지 및 문의 응대에만 활용됩니다.
-                </p>
-                <h2 class="text-2xl font-bold mb-4">3. 쿠키 및 광고 식별자 안내</h2>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    회사는 Google AdSense 등 제3자 광고 서비스를 사용할 수 있으며, 이용자는 브라우저 설정을 통해 쿠키 수집을 거부할 수 있습니다.
-                </p>
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed">
+                        본 방침은 VERA(이하 '회사' 또는 '포털')가 제공하는 모든 서비스의 개인정보 수집, 이용, 보관, 파기 및 쿠키 운영에 관한 기준을 명시합니다.
+                    </p>
+                    <section class="bg-blue-50/70 border border-blue-200 rounded-2xl p-6">
+                        <h2 class="text-xl font-bold text-blue-900 mb-3 flex items-center gap-2">
+                            <span>🛡️ 쿠키(Cookie) 및 맞춤형 광고(Google AdSense) 관련 안내 [필수]</span>
+                        </h2>
+                        <p class="text-slate-700 mb-3 text-sm leading-relaxed">
+                            본 웹사이트는 이용자에게 개별적인 맞춤 서비스를 제공하고, 타겟팅 광고를 게재하기 위해 <strong>쿠키(Cookie)</strong> 및 기타 인터넷 기술을 사용합니다.
+                        </p>
+                        <ul class="list-disc pl-5 space-y-2 text-slate-700 text-sm leading-relaxed">
+                            <li>
+                                <strong>제3자 광고 제공업체 서비스 이용:</strong> 구글(Google LLC)을 포함한 제3자 제공업체는 웹사이트 방문자의 이전 방문 기록을 바탕으로 광고를 게재합니다.
+                            </li>
+                            <li>
+                                <strong>Google 광고 쿠키(DART 쿠키) 사용:</strong> 구글 및 그 파트너는 쿠키를 통해 본 사이트 및 인터넷상의 다른 사이트 방문 기록을 바탕으로 이용자에게 유용한 맞춤형 광고를 제공합니다.
+                            </li>
+                            <li>
+                                <strong>맞춤형 광고 수집 거부(Opt-Out) 방법:</strong> 이용자는 언제든지 구글 광고 설정 페이지(<a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-bold">https://www.google.com/settings/ads</a>)에 방문하여 맞춤형 광고 설정을 해제할 수 있습니다. 또한, <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline font-bold">www.aboutads.info</a>를 방문하여 제3자 제공업체의 맞춤형 광고 쿠키 사용을 선택 해제할 수 있습니다.
+                            </li>
+                        </ul>
+                    </section>
+                    <h2 class="text-xl font-bold text-slate-900">1. 개인정보의 수집 및 이용 목적</h2>
+                    <p class="text-gray-700 leading-relaxed text-sm">
+                        회사는 회원가입, 맞춤 포털 대시보드 저장, 서비스 개선, 불법 행위 방지 및 문의 응대를 위해 필요한 최소한의 정보를 수집합니다.
+                    </p>
+                    <h2 class="text-xl font-bold text-slate-900">2. 수집하는 개인정보 항목</h2>
+                    <ul class="list-disc ml-6 space-y-1 text-gray-700 text-sm">
+                        <li>회원가입 시: 이메일 주소, 닉네임, 비밀번호(단방향 암호화 저장)</li>
+                        <li>서비스 이용 시 자동 수집: 접속 IP, 브라우저 정보, 접속 일시, 쿠키</li>
+                    </ul>
+                    <h2 class="text-xl font-bold text-slate-900">3. 개인정보의 보유 및 이용 기간</h2>
+                    <p class="text-gray-700 leading-relaxed text-sm">
+                        이용 목적 달성 시 지체 없이 파기하며, 관련 법령(전자상거래법 등)에 명시된 보존 의무가 있는 경우 해당 법정 기간 동안 안전하게 분리 보관합니다.
+                    </p>
+                    <h2 class="text-xl font-bold text-slate-900">4. 이용자의 권리 및 문의처</h2>
+                    <div class="bg-slate-100 rounded-xl p-4 text-sm text-slate-800 space-y-1">
+                        <p><strong>개인정보 보호 책임자:</strong> VERA 서비스 운영팀</p>
+                        <p><strong>공식 이메일:</strong> contact@veranex.app / sukman@naver.com</p>
+                        <p><strong>고객센터 운영:</strong> 평일 09:00 ~ 18:00</p>
+                    </div>
+                </div>
             `
         },
         {
@@ -1066,14 +1115,24 @@ function generateLegalPages(template) {
             description: 'VERA 서비스 이용에 관한 기본 권리와 의무를 규정합니다.',
             heading: '서비스 이용약관',
             content: `
-                <h2 class="text-2xl font-bold mb-4">제1조 (목적)</h2>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    본 약관은 VERA 포털이 제공하는 모든 제반 서비스의 이용 조건 및 절차를 규정함을 목적으로 합니다.
-                </p>
-                <h2 class="text-2xl font-bold mb-4">제2조 (면책 조항)</h2>
-                <p class="text-gray-700 leading-relaxed mb-4">
-                    포털에서 제공하는 금융, 계산기, 명리학 콘텐츠는 참고용 정보이며, 최종 투자 및 의사결정의 책임은 이용자 본인에게 있습니다.
-                </p>
+                <div class="space-y-6 text-sm text-gray-700 leading-relaxed">
+                    <h2 class="text-lg font-bold text-slate-900">제1조 (목적)</h2>
+                    <p>
+                        본 약관은 VERA 포털(이하 '포털')이 제공하는 제반 서비스의 이용 조건 및 절차, 이용자와 포털 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+                    </p>
+                    <h2 class="text-lg font-bold text-slate-900">제2조 (서비스의 내용)</h2>
+                    <p>
+                        포털은 실시간 뉴스, 전문 지식 칼럼, 금융 및 생활 계산 유틸리티, 브라우저 미니게임 등의 디지털 콘텐츠와 편의 도구를 제공합니다.
+                    </p>
+                    <h2 class="text-lg font-bold text-slate-900">제3조 (정보의 신뢰성 및 면책 조항)</h2>
+                    <p>
+                        포털에서 제공하는 금융 시세, 계산기 결과값, 명리학 콘텐츠는 일상 참고 자료로서 제공되며, 최종 투자나 법률·세무 의사결정의 책임은 전적으로 이용자 본인에게 있습니다.
+                    </p>
+                    <h2 class="text-lg font-bold text-slate-900">제4조 (지식재산권의 보호)</h2>
+                    <p>
+                        포털에 게시된 오리지널 지식 칼럼과 아티클, 디자인 저작권은 포털 운영팀에 귀속되며, 무단 복제 및 상업적 재배포를 금지합니다.
+                    </p>
+                </div>
             `
         },
         {
@@ -1082,13 +1141,22 @@ function generateLegalPages(template) {
             description: 'VERA 포털에 대한 질문, 피드백, 비즈니스 제휴 문의를 남겨주세요.',
             heading: '고객 문의 & 제휴',
             content: `
-                <p class="text-gray-700 leading-relaxed mb-6">
-                    VERA 서비스 이용 중 불편하신 점이나 비즈니스 제휴 제안이 있으시면 언제든지 편하게 연락 주시기 바랍니다.
-                </p>
-                <div class="bg-gray-100 p-6 rounded-xl text-sm text-gray-800 space-y-2">
-                    <p><strong>공식 이메일:</strong> support@veranex.app / business@veranex.app</p>
-                    <p><strong>응대 시간:</strong> 평일 10:00 ~ 18:00 (주말 및 공휴일 제외)</p>
-                    <p><strong>운영 주체:</strong> VERA 서비스 운영팀</p>
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed">
+                        VERA 서비스 이용 중 발생한 기술적 오류 제보, 신규 도구 제안, 콘텐츠 제휴 문의를 항상 환영합니다.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">✉️ 대표 문의 이메일</h3>
+                            <p class="text-xs text-slate-600 font-mono">contact@veranex.app</p>
+                            <p class="text-xs text-slate-600 font-mono">sukman@naver.com</p>
+                        </div>
+                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <h3 class="font-bold text-slate-900 mb-1">⏰ 운영 및 응대 시간</h3>
+                            <p class="text-xs text-slate-600">평일 09:00 ~ 18:00</p>
+                            <p class="text-xs text-slate-400">이메일 문의는 24시간 상시 접수됩니다.</p>
+                        </div>
+                    </div>
                 </div>
             `
         }
