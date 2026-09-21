@@ -759,13 +759,7 @@ export default function GamePage() {
                                 </div>
                             </button>
                         </div>
-                    ) : (
-                        <div className="py-20 flex flex-col items-center justify-center text-slate-500 bg-slate-50 rounded-xl border border-slate-100 border-dashed">
-                            <i className="fas fa-screwdriver-wrench text-4xl mb-4 text-slate-300"></i>
-                            <p className="font-semibold text-slate-600">온라인게임 라인업 준비중입니다.</p>
-                            <p className="text-sm mt-1 text-slate-400">새로운 실시간 온라인 게임을 곧 선보일 예정입니다. [미니게임] 탭에서 베라오목을 먼저 즐겨보세요!</p>
-                        </div>
-                    )}
+                    ) : null}
                 </div>
 
                 {/* 탭별 맞춤 가이드 & 규칙 섹션 */}

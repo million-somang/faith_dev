@@ -9,7 +9,6 @@ import { CompactDashboardWidgets } from '../components/homepage/CompactDashboard
 import { MyLifeSection } from '../components/mypage/MyLifeSection';
 import { useUserPreferenceContext } from '../context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '../types/homepage.types';
-import { BannerSlot } from '../components/BannerSlot';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
@@ -801,11 +800,6 @@ const DEFAULT_SHOPPING_ITEMS = [
                                 <span>{user.email}</span>
                             </div>
                         )}
-                    </div>
-
-                    {/* 상단 광고 배너 슬롯 */}
-                    <div className="w-full flex flex-col items-center">
-                        <BannerSlot slotKey="mypage_top" fallbackSlotKey="home_main_top" className="w-full" />
                     </div>
                 </div>
 

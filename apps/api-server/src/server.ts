@@ -331,43 +331,22 @@ app.get('/sitemap.xml', async (c) => {
         baseXml = fs.readFileSync(publicSitemapPath, 'utf-8');
     }
 
-    // DB에서 최근 뉴스 150개 가져오기
-    let newsUrls: { loc: string; lastmod: string }[] = [];
-    try {
-        const newsResult = await pool.query(
-            "SELECT id, created_at FROM news ORDER BY created_at DESC LIMIT 150"
-        );
-        newsUrls = newsResult.rows.map((n: any) => ({
-            loc: `/news/${n.id}`,
-            lastmod: new Date(n.created_at).toISOString().split('T')[0],
-        }));
-    } catch (e) {
-        console.warn('[SEO] News query for sitemap failed:', e);
-    }
-
-    const newsXml = newsUrls.map(n => `  <url>
-    <loc>${SITE_URL}${n.loc}</loc>
-    <lastmod>${n.lastmod}</lastmod>
-    <changefreq>never</changefreq>
-    <priority>0.7</priority>
-  </url>`).join('\n');
-
-    if (baseXml && baseXml.includes('</urlset>')) {
-        const combined = baseXml.replace('</urlset>', `${newsXml}\n</urlset>`);
-        return c.text(combined, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
+    // 파일이 존재하면 고품질 정적 sitemap.xml 그대로 서빙 (구글 애드센스 정책 준수를 위해 외부 수집 뉴스는 사이트맵에 절대 포함하지 않음)
+    if (baseXml) {
+        return c.text(baseXml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
     }
 
     const staticPages = [
         { loc: '/', priority: '1.0', changefreq: 'daily' },
         { loc: '/guides', priority: '0.95', changefreq: 'daily' },
-        { loc: '/news', priority: '0.9', changefreq: 'hourly' },
+        { loc: '/news', priority: '0.8', changefreq: 'daily' },
         { loc: '/finance', priority: '0.9', changefreq: 'daily' },
+        { loc: '/finance/util', priority: '0.9', changefreq: 'daily' },
+        { loc: '/entertainment/saju', priority: '0.9', changefreq: 'daily' },
         { loc: '/game', priority: '0.85', changefreq: 'weekly' },
         { loc: '/lifestyle', priority: '0.85', changefreq: 'weekly' },
-        { loc: '/lounge', priority: '0.8', changefreq: 'daily' },
-        { loc: '/b2b', priority: '0.8', changefreq: 'weekly' },
+        { loc: '/editorial-policy', priority: '0.7', changefreq: 'monthly' },
         { loc: '/about', priority: '0.6', changefreq: 'monthly' },
-        { loc: '/editorial-policy', priority: '0.6', changefreq: 'monthly' },
         { loc: '/privacy', priority: '0.6', changefreq: 'monthly' },
         { loc: '/terms', priority: '0.6', changefreq: 'monthly' },
         { loc: '/contact', priority: '0.6', changefreq: 'monthly' },
@@ -380,7 +359,6 @@ ${staticPages.map(p => `  <url>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join('\n')}
-${newsXml}
 </urlset>`;
 
     return c.text(xml, 200, { 'Content-Type': 'application/xml; charset=utf-8' });
@@ -406,42 +384,65 @@ app.get('/news/:id', async (c) => {
             [newsId]
         );
 
-        if (newsResult.rows.length > 0) {
-            const news = newsResult.rows[0] as any;
-            const title = `${news.title} - VERA 뉴스`;
-            const cleanContent = (news.content || '').replace(/<[^>]*>/g, '');
-            const description = cleanContent.substring(0, 160) || news.title;
-            const url = `${SITE_URL}/news/${newsId}`;
+        if (newsResult.rows.length === 0) {
+            return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <title>404 - 뉴스를 찾을 수 없습니다 | VERA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center font-sans">
+    <div class="max-w-md w-full bg-white p-8 rounded-3xl shadow-sm border border-gray-200 text-center space-y-4">
+        <span class="text-4xl">📰</span>
+        <h1 class="text-2xl font-bold text-gray-900">뉴스를 찾을 수 없습니다</h1>
+        <p class="text-sm text-gray-600">요청하신 뉴스가 삭제되었거나 존재하지 않습니다.</p>
+        <a href="/news" class="inline-block px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl transition-all">뉴스 홈으로 이동</a>
+    </div>
+</body>
+</html>`, 404);
+        }
 
-            // JSON-LD 구조화 데이터 (NewsArticle + Author + Publisher)
-            const jsonLd = JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "NewsArticle",
-                "headline": news.title,
-                "description": description,
-                "url": url,
-                "datePublished": news.created_at,
-                "mainEntityOfPage": {
-                    "@type": "WebPage",
-                    "@id": url
-                },
-                "author": {
-                    "@type": "Organization",
-                    "name": news.source || "VERA 뉴스"
-                },
-                "publisher": {
-                    "@type": "Organization",
-                    "name": "VERA 라이프 포털",
-                    "logo": {
-                        "@type": "ImageObject",
-                        "url": OG_IMAGE
-                    }
+        const news = newsResult.rows[0] as any;
+        const title = `${news.title} - VERA 뉴스`;
+        const cleanContent = (news.content || '').replace(/<[^>]*>/g, '');
+        const description = cleanContent.substring(0, 160) || news.title;
+        const url = `${SITE_URL}/news/${newsId}`;
+
+        // JSON-LD 구조화 데이터 (NewsArticle + Author + Publisher)
+        const jsonLd = JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "NewsArticle",
+            "headline": news.title,
+            "description": description,
+            "url": url,
+            "datePublished": news.created_at,
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": url
+            },
+            "author": {
+                "@type": "Organization",
+                "name": news.source || "VERA 뉴스"
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "VERA 라이프 포털",
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": OG_IMAGE
                 }
-            });
+            }
+        });
 
-            const metaTags = `
-    <title>${esc(title)}</title>
-    <meta name="description" content="${esc(description)}" />
+        // 1. Title, Description, Canonical 및 robots noindex 메타태그 치환 (구글 애드센스 스크랩 저작권 정책 준수)
+        html = html.replace(/<title>[\s\S]*?<\/title>/i, `<title>${esc(title)}</title>`);
+        html = html.replace(/<meta name="description" content="[^"]*"/i, `<meta name="description" content="${esc(description)}"`);
+        html = html.replace(/<meta name="robots" content="[^"]*"/i, `<meta name="robots" content="noindex, follow"`);
+        html = html.replace(/<link rel="canonical" href="[^"]*"[^>]*>/i, `<link rel="canonical" href="${url}" />`);
+
+        const extraMetaTags = `
     <meta property="og:title" content="${esc(title)}" />
     <meta property="og:description" content="${esc(description)}" />
     <meta property="og:url" content="${url}" />
@@ -452,46 +453,38 @@ app.get('/news/:id', async (c) => {
     <meta name="twitter:title" content="${esc(title)}" />
     <meta name="twitter:description" content="${esc(description)}" />
     <meta name="twitter:image" content="${OG_IMAGE}" />
-    <link rel="canonical" href="${url}" />
     <script type="application/ld+json">${jsonLd}</script>`;
+        html = html.replace('</head>', `${extraMetaTags}\n</head>`);
 
-            // <title>VERA</title> 을 동적 메타로 교체
-            html = html.replace('<title>VERA - 실시간 뉴스, 미니게임, 생활도구 포털</title>', metaTags);
-            html = html.replace('<title>VERA</title>', metaTags);
-
-            // 크롤러(Googlebot/Yeti) 소스보기(Ctrl+U) 시 텍스트 밀도 확보를 위한 noscript 본문 인젝션
-            const staticHtmlBody = `
-            <noscript>
-                <article style="padding: 20px; font-family: sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.7;">
-                    <h1>${esc(news.title)}</h1>
-                    <p style="color: #666; font-size: 0.9em; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                        출처: <strong>${esc(news.source || 'VERA 뉴스')}</strong> | 작성일: ${new Date(news.created_at).toLocaleString('ko-KR')}
-                    </p>
-                    ${news.ai_summary ? `
-                    <div style="background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
-                        <h3 style="margin-top: 0; color: #1e3a8a;">AI 3줄 핵심 요약</h3>
-                        <p style="margin-bottom: 0;">${esc(news.ai_summary)}</p>
-                        ${news.sentiment ? `<p style="margin-top: 8px; font-weight: bold; font-size: 0.9em; color: #475569;">분석 감정 지수: ${esc(news.sentiment)}</p>` : ''}
-                    </div>
-                    ` : ''}
-                    <div style="font-size: 1.1em; margin-top: 20px;">
-                        ${news.content || `<p>${esc(description)}</p>`}
-                    </div>
-                    <footer style="margin-top: 40px; padding-top: 15px; border-t: 1px solid #eee; color: #94a3b8; font-size: 0.85em;">
-                        본 콘텐츠는 VERA 실시간 뉴스 인덱싱 엔진에서 제공되며, 구글 검색 필수사항(Search Essentials) 및 애드센스 고품질 가이드라인을 준수합니다.
-                    </footer>
-                </article>
-            </noscript>`;
-            html = html.replace('<div id="root"></div>', `<div id="root"></div>${staticHtmlBody}`);
-        }
+        // 크롤러(Googlebot/Yeti) 소스보기 시 텍스트 밀도 확보를 위한 noscript 본문 인젝션
+        const staticHtmlBody = `
+        <noscript>
+            <article style="padding: 20px; font-family: sans-serif; max-width: 800px; margin: 0 auto; line-height: 1.7;">
+                <h1>${esc(news.title)}</h1>
+                <p style="color: #666; font-size: 0.9em; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                    출처: <strong>${esc(news.source || 'VERA 뉴스')}</strong> | 작성일: ${new Date(news.created_at).toLocaleString('ko-KR')}
+                </p>
+                ${news.ai_summary ? `
+                <div style="background: #f1f5f9; border-left: 4px solid #3b82f6; padding: 15px; margin: 15px 0; border-radius: 4px;">
+                    <h3 style="margin-top: 0; color: #1e3a8a;">AI 3줄 핵심 요약</h3>
+                    <p style="margin-bottom: 0;">${esc(news.ai_summary)}</p>
+                    ${news.sentiment ? `<p style="margin-top: 8px; font-weight: bold; font-size: 0.9em; color: #475569;">분석 감정 지수: ${esc(news.sentiment)}</p>` : ''}
+                </div>
+                ` : ''}
+                <div style="font-size: 1.1em; margin-top: 20px;">
+                    ${news.content || `<p>${esc(description)}</p>`}
+                </div>
+                <footer style="margin-top: 40px; padding-top: 15px; border-top: 1px solid #eee; color: #94a3b8; font-size: 0.85em;">
+                    본 콘텐츠는 VERA 실시간 뉴스 인덱싱 엔진에서 제공됩니다.
+                </footer>
+            </article>
+        </noscript>`;
+        html = html.replace('<div id="root"></div>', `<div id="root"></div>${staticHtmlBody}`);
 
         return c.html(html);
     } catch (e) {
         console.error('[SEO] News meta injection error:', e);
-        // 실패 시 일반 SPA로 폴백
-        const indexPath = path.resolve('./apps/main-portal/dist/index.html');
-        const html = fs.readFileSync(indexPath, 'utf-8');
-        return c.html(html);
+        return c.notFound();
     }
 });
 

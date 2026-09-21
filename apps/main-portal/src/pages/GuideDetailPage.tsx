@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
+import { BannerSlot } from '../components/BannerSlot';
 import { getGuideBySlug, getRelatedGuides } from '../data/guidesData';
 
 export default function GuideDetailPage() {
@@ -317,8 +318,14 @@ export default function GuideDetailPage() {
                             {renderFormattedContent(article.content)}
                         </div>
 
+                        {/* 구글 애드센스 고가치 콘텐츠 배너 슬롯 */}
+                        <div className="my-10 pt-6 border-t border-slate-100 flex flex-col items-center">
+                            <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase mb-2">ADVERTISEMENT</span>
+                            <BannerSlot slotKey="guides_detail_bottom" fallbackSlotKey="home_main_top" className="w-full" />
+                        </div>
+
                         {/* Tags */}
-                        <div className="mt-12 pt-6 border-t border-slate-100">
+                        <div className="mt-8 pt-6 border-t border-slate-100">
                             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">관련 태그</h4>
                             <div className="flex flex-wrap gap-2">
                                 {article.tags.map(tag => (

@@ -932,63 +932,6 @@ function generatePortalSectionPages(template) {
                     </div>
                 </div>
             `
-        },
-        {
-            route: 'b2b',
-            title: 'AI 비즈니스 솔루션 & 스마트 웹 빌더 | VERA B2B',
-            description: '기업 및 비즈니스 고객을 위한 AI 홈페이지 제작, 자동화 솔루션 및 맞춤형 디지털 전환 서비스를 제공합니다.',
-            heading: 'VERA B2B 스마트 비즈니스 솔루션',
-            content: `
-                <div class="space-y-8 text-gray-800">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        VERA B2B는 중견·중소기업 및 스타트업이 급변하는 디지털 시장에서 탁월한 경쟁력을 확보할 수 있도록 맞춤형 반응형 웹 플랫폼, 차세대 AI 자동화 파이프라인, 검색엔진 최적화(SEO) 아키텍처를 엔드투엔드로 제공하는 기업 전용 솔루션입니다.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">⚡ 차세대 웹 표준 & 성능 최적화</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                최신 모던 웹 스택(Vite, React, TypeScript)과 정적 사전 렌더링(SSG) 기술을 결합하여 0.5초 이내의 초고속 페이지 로딩 속도와 100% 모바일 반응형 인터페이스를 구현합니다.
-                            </p>
-                        </div>
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">🔍 검색엔진 최적화 (SEO) & 스키마</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                구글(Google)과 네이버(Naver)의 웹마스터 가이드라인에 완벽히 부합하는 시맨틱 HTML5 구조, JSON-LD 구조화 데이터, OpenGraph 태그 자동화를 통해 자연 검색 유입량을 극대화합니다.
-                            </p>
-                        </div>
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">🤖 엔터프라이즈 AI 자동화 워크플로우</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                고객 문의 응대 챗봇, 일일 비즈니스 데이터 요약 리포트, 재고 관리 연동 등 반복적인 사내 업무를 대규모 언어 모델(LLM) 파이프라인으로 연결하여 업무 생산성을 비약적으로 향상시킵니다.
-                            </p>
-                        </div>
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">🔒 엔터프라이즈 보안 & 무중단 인프라</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                SSL/TLS 완벽 암호화, DDoS 방어망, 클라우드 로드밸런싱 및 실시간 분산 백업을 통해 99.9% 이상의 가동률(SLA)과 무결성 높은 비즈니스 연속성을 보장합니다.
-                            </p>
-                        </div>
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">🌐 글로벌 다국어 & 결제 게이트웨이</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                해외 시장 진출을 위한 다국어(영어, 일본어, 중국어) 로컬라이징 및 글로벌 결제 모듈(Stripe, PayPal, 이니시스)과의 매끄러운 연동 환경을 구축합니다.
-                            </p>
-                        </div>
-                        <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
-                            <h4 class="font-bold text-base text-slate-900 mb-1">📊 실시간 비즈니스 데이터 분석 대시보드</h4>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                방문자 유입 경로, 페이지 체류 시간, 사용자 전환율(CVR) 지표를 직관적인 그래픽 차트로 시각화하여 경영진의 신속하고 정확한 데이터 기반 의사결정을 지원합니다.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100 text-xs text-gray-700 space-y-3">
-                        <h4 class="font-bold text-sm text-blue-950">💼 기업 제휴 및 솔루션 도입 문의</h4>
-                        <p class="leading-relaxed text-blue-900">
-                            귀사의 비즈니스 모델에 최적화된 디지털 전환 컨설팅과 견적 상담을 무료로 지원해 드립니다. 맞춤형 솔루션 도입을 원하시면 공식 제휴 메일(<a href="mailto:business@veranex.app" class="font-bold underline text-blue-800">business@veranex.app</a>)로 문의 바랍니다.
-                        </p>
-                    </div>
-                </div>
-            `
         }
     ];
 

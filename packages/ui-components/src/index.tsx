@@ -563,7 +563,6 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                                 <li><a href={`${baseUrl}/lifestyle`} className="hover:text-brand-green transition-colors">생활 유틸리티</a></li>
                                 <li><a href={`${baseUrl}/game`} className="hover:text-brand-green transition-colors">미니게임 센터</a></li>
                                 <li><a href={`${baseUrl}/finance`} className="hover:text-brand-green transition-colors">금융 대시보드</a></li>
-                                <li><a href={`${baseUrl}/b2b`} className="hover:text-brand-green transition-colors">비즈니스 & 웹빌더</a></li>
                             </ul>
                         </div>
                         <div>

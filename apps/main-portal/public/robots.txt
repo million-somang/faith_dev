@@ -35,8 +35,7 @@ Disallow: /
 User-agent: *
 Allow: /
 Allow: /guides/
-Allow: /blog/
-Allow: /news/
+Allow: /editorial-policy
 Allow: /lifestyle/
 Allow: /game/
 Allow: /finance/
@@ -44,6 +43,13 @@ Allow: /about
 Allow: /privacy
 Allow: /terms
 Allow: /contact
+Disallow: /news/
+Disallow: /b2b
+Disallow: /b2b/
+Disallow: /game/comboy
+Disallow: /game/comboy/
+Disallow: /game/sfc
+Disallow: /game/sfc/
 Disallow: /app/comboy
 Disallow: /app/comboy/
 Disallow: /app/sfc
@@ -55,15 +61,39 @@ Disallow: /api/
 # Google AdSense Crawler 전용 권한 허용
 User-agent: Mediapartners-Google
 Allow: /
+Allow: /guides/
+Allow: /editorial-policy
+Disallow: /news/
+Disallow: /b2b
+Disallow: /b2b/
+Disallow: /game/comboy
+Disallow: /game/sfc
 
 User-agent: AdsBot-Google
 Allow: /
+Allow: /guides/
+Allow: /editorial-policy
+Disallow: /news/
+Disallow: /b2b
+Disallow: /b2b/
 
 User-agent: AdsBot-Google-Mobile
 Allow: /
+Allow: /guides/
+Allow: /editorial-policy
+Disallow: /news/
+Disallow: /b2b
+Disallow: /b2b/
 
 User-agent: Googlebot
 Allow: /
+Allow: /guides/
+Allow: /editorial-policy
+Disallow: /news/
+Disallow: /b2b
+Disallow: /b2b/
+Disallow: /game/comboy
+Disallow: /game/sfc
 
 User-agent: Googlebot-Image
 Allow: /
