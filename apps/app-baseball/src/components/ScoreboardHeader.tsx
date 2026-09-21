@@ -43,12 +43,12 @@ export default function ScoreboardHeader({
               <span>변경</span>
             </button>
             {!isMember && (
-              <span className="text-[8px] font-bold text-slate-400 bg-slate-200/70 px-1 py-0.2 rounded shrink-0">
+              <span className="text-[8px] font-black text-slate-700 bg-slate-300 px-1 py-0.2 rounded shrink-0">
                 게스트
               </span>
             )}
           </div>
-          <p className="text-[9px] text-slate-500 font-medium truncate mt-0.5">
+          <p className="text-[9px] text-slate-700 font-bold truncate mt-0.5">
             {isMember
               ? `${profile.wins}승 ${profile.losses}패 (${profile.winRate.toFixed(0)}%) · 완봉 ${profile.shutouts}회`
               : '비회원 (로그인 시 랭킹 등록)'}
@@ -93,8 +93,8 @@ export default function ScoreboardHeader({
         </div>
 
         {/* 이닝 배지 */}
-        <div className="px-2 py-1 rounded-xl bg-indigo-50/90 border border-indigo-200/80 text-center shadow-2xs">
-          <span className="text-[8px] font-black text-indigo-500 block uppercase tracking-wider leading-none">INNING</span>
+        <div className="px-2 py-1 rounded-xl bg-indigo-100/90 border border-indigo-300 text-center shadow-2xs">
+          <span className="text-[8px] font-black text-indigo-700 block uppercase tracking-wider leading-none">INNING</span>
           <span className="text-xs font-black text-indigo-950 font-mono leading-tight">
             {currentInning}/9회
           </span>

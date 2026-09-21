@@ -405,6 +405,7 @@ export default function App() {
           secret={game.secret}
           inningsTaken={game.currentInning}
           isMember={isMember}
+          history={game.history}
           onRestart={game.startNewGame}
         />
 
