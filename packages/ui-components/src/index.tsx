@@ -569,6 +569,7 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                         <div>
                             <h4 className="font-bold text-gray-900 mb-4 text-sm">약관 및 운영 정책</h4>
                             <ul className="space-y-2 text-sm text-gray-500">
+                                <li><a href={`${baseUrl}/editorial-policy`} className="hover:text-brand-green transition-colors font-medium text-teal-800">편집 및 팩트체크 정책</a></li>
                                 <li><a href={`${baseUrl}/privacy`} className="font-semibold text-gray-700 hover:text-brand-green transition-colors">개인정보처리방침</a></li>
                                 <li><a href={`${baseUrl}/terms`} className="hover:text-brand-green transition-colors">서비스 이용약관</a></li>
                                 <li><a href={`${baseUrl}/about`} className="hover:text-brand-green transition-colors">서비스 소개</a></li>
@@ -579,6 +580,8 @@ export const Footer = ({ baseUrl = '' }: { baseUrl?: string } = {}) => {
                 </div>
                 <div className="pt-8 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex flex-wrap gap-3 sm:gap-4 text-xs text-gray-500">
+                        <a href={`${baseUrl}/editorial-policy`} className="hover:underline text-teal-800 font-medium">편집/팩트체크</a>
+                        <span>|</span>
                         <a href={`${baseUrl}/guides`} className="text-gray-700 hover:underline">가이드/칼럼</a>
                         <span>|</span>
                         <a href={`${baseUrl}/finance/util`} className="hover:underline">금융계산기</a>

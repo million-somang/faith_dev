@@ -147,6 +147,7 @@ export default function NewsDetailPage() {
                     description={(news.content || news.summary || '').replace(/<[^>]*>/g, '').substring(0, 160)}
                     path={`/news/${id}`}
                     type="article"
+                    robots="noindex, follow"
                     jsonLd={{
                         '@context': 'https://schema.org',
                         '@type': 'NewsArticle',
@@ -221,12 +222,6 @@ export default function NewsDetailPage() {
                             </div>
                         </div>
                     </div>
-
-                    {/* 상단 Zero CLS 광고 슬롯 */}
-                    <aside className="w-full min-h-[90px] flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-2 overflow-hidden" aria-label="스폰서 광고">
-                        <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-1">ADVERTISEMENT</span>
-                        <BannerSlot slotKey="news_detail_top" className="min-h-[50px] w-full" />
-                    </aside>
 
                     {/* 대표 이미지 */}
                     {news.thumbnail && (

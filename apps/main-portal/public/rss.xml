@@ -5,7 +5,7 @@
     <link>https://veranex.app</link>
     <description>실시간 뉴스, 금융 시뮬레이터, 전통문화, 창작 작법, 생활 계산기 및 게임 전략 전문 콘텐츠를 제공하는 믿음의 포털</description>
     <language>ko-KR</language>
-    <lastBuildDate>Mon, 21 Sep 2026 03:44:53 GMT</lastBuildDate>
+    <lastBuildDate>Mon, 21 Sep 2026 04:17:00 GMT</lastBuildDate>
     <atom:link href="https://veranex.app/rss.xml" rel="self" type="application/rss+xml"/>
     
     <item>
@@ -15,7 +15,7 @@
       <description><![CDATA[SCHD, JEPI 배당소득세(15.4%) 및 12개월 캘린더, 2026 스트레스 DSR 2단계 적용 주담대 한도, 법정 퇴직금 세후 실수령액 및 실업급여 무료 시뮬레이터]]></description>
       <category><![CDATA[스마트 금융도구]]></category>
       <author><![CDATA[VERA 금융팀]]></author>
-      <pubDate>Mon, 21 Sep 2026 03:44:53 GMT</pubDate>
+      <pubDate>Mon, 21 Sep 2026 04:17:00 GMT</pubDate>
     </item>
 
     <item>
@@ -186,6 +186,86 @@
       <category><![CDATA[IT & 개발자 도구]]></category>
       <author><![CDATA[VERA 기술 연구소]]></author>
       <pubDate>Sun, 02 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[스도쿠 고급 공략법: 단일 후보수부터 X-Wing 기법까지 논리적 퍼즐 정복 가이드]]></title>
+      <link>https://veranex.app/guides/sudoku-advanced-solving-techniques-naked-single-to-x-wing</link>
+      <guid isPermaLink="true">https://veranex.app/guides/sudoku-advanced-solving-techniques-naked-single-to-x-wing</guid>
+      <description><![CDATA[단순한 숫자 대입이 아닌 수학적 논리 추론으로 9×9 격자를 채우는 스도쿠의 기본 공식과 중·고급 후보수 소거 테크닉(Naked Single, Hidden Pair, X-Wing)을 상세히 해설합니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA 두뇌전략 연구소]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[클래식 프리셀(FreeCell) 승리 공식: 99.9% 클리어 가능한 공간 활용의 수학]]></title>
+      <link>https://veranex.app/guides/freecell-solitaire-winning-formula-and-space-utilization</link>
+      <guid isPermaLink="true">https://veranex.app/guides/freecell-solitaire-winning-formula-and-space-utilization</guid>
+      <description><![CDATA[운에 의존하는 클론다이크 솔리테어와 달리 99.99% 수학적으로 클리어 가능한 두뇌 게임 프리셀의 4대 임시 보관소(FreeCell) 운용법과 슈퍼무브(Supermove) 공식 및 카드 카운팅 전략을 제시합니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA 두뇌전략 연구소]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[2048 타일 퍼즐 완벽 공략: 가장 큰 수를 구석에 묶는 코너 고정 테크닉]]></title>
+      <link>https://veranex.app/guides/2048-tile-puzzle-strategy-corner-method</link>
+      <guid isPermaLink="true">https://veranex.app/guides/2048-tile-puzzle-strategy-corner-method</guid>
+      <description><![CDATA[단순한 방향키 조작이 아닌 4×4 격자 내 상태 공간을 통제하는 수학적 원리. 단방향 단조성(Monotonicity)과 코너 락(Corner Lock) 전략으로 2048 및 4096 타일을 달성하는 필승법을 다룹니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA 두뇌전략 연구소]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[지뢰찾기(Minesweeper) 확률론: 1-2-1 대칭 패턴과 모서리 판별 공식]]></title>
+      <link>https://veranex.app/guides/minesweeper-probability-and-pattern-strategy</link>
+      <guid isPermaLink="true">https://veranex.app/guides/minesweeper-probability-and-pattern-strategy</guid>
+      <description><![CDATA[운으로 찍는 지뢰찾기는 끝났습니다. 정밀한 대칭 패턴 분석(1-2-1, 1-2-2-1)과 경계선 확률 계산을 통해 90% 이상의 게임을 무감점 클리어하는 수학적 알고리즘을 공개합니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA 두뇌전략 연구소]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[레트로 게임 연대기: 16비트 슈퍼패미컴 명작들이 현대 게임 디자인에 남긴 유산]]></title>
+      <link>https://veranex.app/guides/retro-gaming-history-and-super-famicom-classics</link>
+      <guid isPermaLink="true">https://veranex.app/guides/retro-gaming-history-and-super-famicom-classics</guid>
+      <description><![CDATA[픽셀 아트의 황금기였던 1990년대 16비트 콘솔 게임의 역사적 변곡점과 크로노 트리거, 파이널 판타지 6, 슈퍼 마리오 월드가 현대 인디 게임 및 레벨 디자인에 미친 혁신적 영향을 탐구합니다.]]></description>
+      <category><![CDATA[두뇌게임 & 공략]]></category>
+      <author><![CDATA[VERA 게임문화 리서치팀]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[Base64 인코딩 원리와 웹 성능 최적화: Data URI 활용의 득과 실]]></title>
+      <link>https://veranex.app/guides/base64-encoding-principles-and-web-optimization</link>
+      <guid isPermaLink="true">https://veranex.app/guides/base64-encoding-principles-and-web-optimization</guid>
+      <description><![CDATA[이진 데이터(Binary)를 64개의 안전한 ASCII 문자로 변환하는 Base64의 비트 분할 연산 원리와 웹 프론트엔드에서 작은 이미지·폰트를 인라인 Data URI로 번들링할 때의 네트워크 이점과 33% 용량 증가 트레이드오프를 심층 해설합니다.]]></description>
+      <category><![CDATA[IT & 개발자 도구]]></category>
+      <author><![CDATA[VERA 테크 아키텍처팀]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[SVG 벡터 그래픽 최적화 가이드: 불필요한 메타데이터 제거와 클린 코드 작성법]]></title>
+      <link>https://veranex.app/guides/svg-vector-graphics-optimization-and-clean-code</link>
+      <guid isPermaLink="true">https://veranex.app/guides/svg-vector-graphics-optimization-and-clean-code</guid>
+      <description><![CDATA[디자인 도구(Figma, Illustrator)에서 내보낸 SVG 파일의 용량을 최대 80% 줄이는 뷰박스(viewBox) 정규화, 좌표 소수점 압축, 인라인 SVG 스타일 제어 및 접근성(A11y) 표준 준수 기법을 총망라합니다.]]></description>
+      <category><![CDATA[IT & 개발자 도구]]></category>
+      <author><![CDATA[VERA 테크 아키텍처팀]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
+    </item>
+
+    <item>
+      <title><![CDATA[생성형 AI 뉴스 큐레이션 시대: 넘쳐나는 정보 속 가짜 뉴스를 거르는 미디어 리터러시]]></title>
+      <link>https://veranex.app/guides/ai-news-curation-and-smart-current-affairs-literacy</link>
+      <guid isPermaLink="true">https://veranex.app/guides/ai-news-curation-and-smart-current-affairs-literacy</guid>
+      <description><![CDATA[하루 수만 건씩 쏟아지는 뉴스 기사를 인공지능이 3줄 요약하고 감정 지수를 분석하는 시대. 알고리즘 필터 버블(Filter Bubble)을 탈피하고 객관적 팩트를 교차 검증하는 현대인의 스마트 시사 독해법을 제안합니다.]]></description>
+      <category><![CDATA[IT & 개발자 도구]]></category>
+      <author><![CDATA[VERA 미디어분석팀]]></author>
+      <pubDate>Thu, 20 Aug 2026 00:00:00 GMT</pubDate>
     </item>
   </channel>
 </rss>

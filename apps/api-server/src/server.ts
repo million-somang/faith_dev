@@ -367,6 +367,7 @@ app.get('/sitemap.xml', async (c) => {
         { loc: '/lounge', priority: '0.8', changefreq: 'daily' },
         { loc: '/b2b', priority: '0.8', changefreq: 'weekly' },
         { loc: '/about', priority: '0.6', changefreq: 'monthly' },
+        { loc: '/editorial-policy', priority: '0.6', changefreq: 'monthly' },
         { loc: '/privacy', priority: '0.6', changefreq: 'monthly' },
         { loc: '/terms', priority: '0.6', changefreq: 'monthly' },
         { loc: '/contact', priority: '0.6', changefreq: 'monthly' },
@@ -645,6 +646,10 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
             ]
         }
     },
+    '/editorial-policy': {
+        title: '편집 및 팩트체크 정책 - VERA',
+        description: 'VERA 지식 가이드의 콘텐츠 작성 원칙, 전문성 및 신뢰성(E-E-A-T) 검증 프로세스, 팩트체크 및 정정 보도 가이드라인 안내입니다.',
+    },
     '/privacy': {
         title: '개인정보처리방침 - VERA',
         description: 'VERA 포털의 개인정보처리방침 및 쿠키, Google AdSense 맞춤형 광고 수집 안내입니다.',
@@ -752,6 +757,33 @@ app.get('/game/:id', (c) => {
         return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
     }
 });
+
+// /guides/:slug 아티클 서빙 및 미존재 시 명시적 HTTP 404 반환 (Soft 404 방지)
+app.get('/guides/:slug', (c) => {
+    const slug = c.req.param('slug');
+    const staticFilePath = path.resolve(`./apps/main-portal/dist/guides/${slug}/index.html`);
+    if (fs.existsSync(staticFilePath)) {
+        return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
+    }
+    return c.html(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, nofollow">
+    <title>404 - 가이드를 찾을 수 없습니다 | VERA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center font-sans">
+    <div class="max-w-md w-full bg-white p-8 rounded-3xl shadow-sm border border-gray-200 text-center space-y-4">
+        <span class="text-4xl">📚</span>
+        <h1 class="text-2xl font-bold text-gray-900">가이드를 찾을 수 없습니다</h1>
+        <p class="text-sm text-gray-600">요청하신 지식 가이드 페이지가 존재하지 않거나 이전되었습니다.</p>
+        <a href="/guides" class="inline-block px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl transition-all">전체 가이드 허브로 이동</a>
+    </div>
+</body>
+</html>`, 404);
+});
+app.get('/guides/:slug/', (c) => c.redirect(`/guides/${c.req.param('slug')}`, 301));
 
 // API 404 JSON 처리 및 SPA 라우트 처리
 app.notFound((c) => {

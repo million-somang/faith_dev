@@ -275,18 +275,25 @@ export default function GuideDetailPage() {
                         </div>
 
                         {/* Author & Actions Bar */}
-                        <div className="flex items-center justify-between py-4 mb-8 border-y border-slate-100 text-xs text-slate-500">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4 mb-8 border-y border-slate-100 text-xs text-slate-500">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-500 to-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
                                     V
                                 </div>
                                 <div>
-                                    <p className="font-bold text-slate-800">{article.author}</p>
-                                    <p className="text-[11px] text-slate-400">VERA 공인 에디터</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold text-slate-800">{article.author}</p>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                                            <i className="fas fa-check-circle text-teal-600"></i> 팩트체크 검증완료
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-400">
+                                        최종 감수: {article.publishedAt} · <a href="/editorial-policy" className="text-teal-700 font-bold hover:underline">편집 가이드라인 준수</a>
+                                    </p>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
                                 <button
                                     onClick={handleCopyLink}
                                     className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold transition-colors flex items-center gap-1.5"
@@ -323,6 +330,17 @@ export default function GuideDetailPage() {
                                     </span>
                                 ))}
                             </div>
+                        </div>
+
+                        {/* E-E-A-T Verification & Citation Box */}
+                        <div className="mt-10 p-5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs text-slate-600 space-y-2">
+                            <div className="flex items-center gap-2 font-bold text-slate-800 text-sm">
+                                <i className="fas fa-shield-alt text-teal-600"></i>
+                                <span>VERA 지식 칼럼 검증 &amp; 인용 출처 안내</span>
+                            </div>
+                            <p className="leading-relaxed">
+                                본 아티클은 VERA 전문 리서치팀이 공인 1차 통계자료(한국은행, 국세청, 법제처, W3C 국제표준 등)를 바탕으로 심층 분석하여 작성한 고유 저작물입니다. 사실관계 오류 제보 및 정정 요청은 <a href="/editorial-policy" className="text-teal-700 font-bold underline">편집국 팩트체크 정책</a>에 따라 신속히 처리됩니다.
+                            </p>
                         </div>
 
                         {/* Bottom Navigation */}

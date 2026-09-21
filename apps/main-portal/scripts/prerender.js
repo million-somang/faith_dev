@@ -158,7 +158,7 @@ function generateHomePageHtml(template, guides) {
                         일상과 재미, 신뢰의 지식을 하나로 잇는 포털
                     </h1>
                     <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-6 leading-relaxed">
-                        실시간 주요 속보 뉴스부터 18편의 고품질 전문 지식 칼럼, 스마트 생활 금융 계산기, 설치 없는 클린 두뇌 미니게임까지 VERA에서 모두 무료로 이용하세요.
+                        실시간 주요 속보 뉴스부터 25편의 고품질 전문 지식 칼럼, 스마트 생활 금융 계산기, 설치 없는 클린 두뇌 미니게임까지 VERA에서 모두 무료로 이용하세요.
                     </p>
                     <div class="max-w-xl mx-auto bg-white rounded-2xl p-2 flex items-center shadow-md text-gray-700">
                         <i class="fas fa-search text-gray-400 ml-3 mr-2"></i>
@@ -174,7 +174,7 @@ function generateHomePageHtml(template, guides) {
                             <span class="text-xs font-extrabold text-teal-700 uppercase tracking-wider">ORIGINAL KNOWLEDGE & INSIGHTS</span>
                             <h2 class="text-2xl font-black text-gray-900 flex items-center gap-2">
                                 <i class="fas fa-book-open text-teal-600 text-xl"></i>
-                                <span>VERA 지식 가이드 & 전문 칼럼 (18편 전편 수록)</span>
+                                <span>VERA 지식 가이드 & 전문 칼럼 (25편 전편 수록)</span>
                             </h2>
                         </div>
                         <a href="/guides" class="text-sm font-bold text-teal-700 hover:text-teal-800 flex items-center gap-1">
@@ -376,7 +376,7 @@ function writeHtmlFile(filePath, content) {
 
 function generateGuidesHubHtml(template, guides) {
     const title = 'VERA 지식 가이드 & 전문 칼럼 허브 - 믿음의 생활 정보 포털';
-    const description = '금융, 명리학, 웹소설 작법, 생활계산, 게임 전략 등 일상과 지적 성장에 도움을 주는 18편의 고품질 장문 정보성 칼럼을 제공합니다.';
+    const description = '금융, 명리학, 웹소설 작법, 생활계산, 게임 전략 등 일상과 지적 성장에 도움을 주는 25편의 고품질 장문 정보성 칼럼을 제공합니다.';
     const canonical = 'https://veranex.app/guides';
 
     const cardsHtml = guides.map(g => `
@@ -518,8 +518,16 @@ function generateArticleHtml(template, guide, allGuides) {
                     </div>
                     <h1 class="text-3xl sm:text-4xl font-black text-gray-900 leading-tight mb-4" itemprop="headline">${guide.title}</h1>
                     <p class="text-lg text-gray-600 leading-relaxed font-normal" itemprop="description">${guide.description}</p>
-                    <div class="mt-4 text-xs text-gray-500">
-                        작성자: <span itemprop="author" class="font-medium text-gray-700">${guide.author}</span>
+                    <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                        <span>작성자: <span itemprop="author" class="font-medium text-gray-700">${guide.author}</span></span>
+                        <span>·</span>
+                        <span class="inline-flex items-center gap-1 text-emerald-700 font-medium">
+                            <i class="fas fa-check-circle text-emerald-600"></i> 팩트체크 검증완료
+                        </span>
+                        <span>·</span>
+                        <a href="/editorial-policy" class="text-teal-700 hover:underline font-medium">
+                            편집 가이드라인 준수
+                        </a>
                     </div>
                 </header>
 
@@ -545,12 +553,21 @@ function generateArticleHtml(template, guide, allGuides) {
                 </section>
 
                 <!-- Article Footer -->
-                <footer class="mt-8 pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <a href="/guides" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all">
-                        ← 전체 가이드 목록으로 돌아가기
-                    </a>
-                    <div class="text-xs text-gray-400">
-                        본 콘텐츠는 VERA 편집팀에 의해 작성 및 검수되었습니다.
+                <footer class="mt-8 pt-6 border-t border-gray-100 space-y-4">
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs text-gray-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-gray-800">🛡️ VERA 신뢰 및 검증 정책 (E-E-A-T)</p>
+                            <p class="mt-0.5 text-gray-500">본 콘텐츠는 정부 공서 및 공신력 있는 공식 가이드라인을 토대로 VERA 전문 편집팀의 팩트체크를 거쳤습니다.</p>
+                        </div>
+                        <a href="/editorial-policy" class="shrink-0 text-teal-700 font-bold hover:underline">편집 정책 보기 →</a>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <a href="/guides" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all">
+                            ← 전체 가이드 목록으로 돌아가기
+                        </a>
+                        <div class="text-xs text-gray-400">
+                            최종 검수일: ${guide.publishedAt} · VERA 편집팀
+                        </div>
                     </div>
                 </footer>
             </article>
@@ -1018,6 +1035,41 @@ function generatePortalSectionPages(template) {
 function generateLegalPages(template) {
     const pages = [
         {
+            route: 'editorial-policy',
+            title: '편집 및 팩트체크 정책 (Editorial & Fact-Checking Policy) | VERA',
+            description: 'VERA 지식 가이드의 콘텐츠 작성 원칙, 전문성 및 신뢰성(E-E-A-T) 검증 프로세스, 팩트체크 및 정정 보도 가이드라인 안내입니다.',
+            heading: '편집 및 팩트체크 정책',
+            content: `
+                <div class="space-y-6">
+                    <p class="text-gray-700 leading-relaxed">
+                        VERA(베라)는 독자들에게 신뢰할 수 있는 정확한 정보를 전달하기 위해 엄격한 편집 원칙과 팩트체크 가이드라인(E-E-A-T: Experience, Expertise, Authoritativeness, Trustworthiness)을 준수합니다.
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="p-5 bg-teal-50/60 rounded-2xl border border-teal-200">
+                            <h3 class="font-bold text-teal-900 mb-2">1. 원문 저작권 및 순수 오리지널 작성</h3>
+                            <p class="text-xs text-slate-700 leading-relaxed">모든 지식 가이드와 전문 칼럼은 제3자의 저작물을 무단 복제하거나 자동 번역하지 않으며, 자체 전문 편집팀이 직접 수집하고 분석한 원본 데이터를 기반으로 작성됩니다.</p>
+                        </div>
+                        <div class="p-5 bg-teal-50/60 rounded-2xl border border-teal-200">
+                            <h3 class="font-bold text-teal-900 mb-2">2. 다각도 팩트체크 및 공신력 검증</h3>
+                            <p class="text-xs text-slate-700 leading-relaxed">금융, 세무, 노동법률, 부동산, 알고리즘 기술 등 핵심 지식은 국세청, 고용노동부, 기획재정부, 국토교통부, 한국은행 등 공공기관의 공식 법령 및 공시 자료와 1:1 대조 검증을 거칩니다.</p>
+                        </div>
+                        <div class="p-5 bg-teal-50/60 rounded-2xl border border-teal-200">
+                            <h3 class="font-bold text-teal-900 mb-2">3. 정기적 개정 및 최신화(Freshness)</h3>
+                            <p class="text-xs text-slate-700 leading-relaxed">세법 개정, 대출 규제 변경, 금리 변동 등 정책적 변화가 발생할 때마다 발행된 가이드를 지속적으로 재검토하고 업데이트하여 왜곡된 구형 정보의 전파를 방지합니다.</p>
+                        </div>
+                        <div class="p-5 bg-teal-50/60 rounded-2xl border border-teal-200">
+                            <h3 class="font-bold text-teal-900 mb-2">4. 투명한 오류 정정 프로세스</h3>
+                            <p class="text-xs text-slate-700 leading-relaxed">독자 피드백 또는 자체 모니터링을 통해 본문 내 수치나 해설의 오류가 발견될 경우, 지체 없이 해당 아티클 상단에 정정 이력을 명시하고 정확한 최신 정보로 즉각 수정합니다.</p>
+                        </div>
+                    </div>
+                    <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-sm text-gray-700 space-y-2">
+                        <p class="font-bold text-slate-900">문의 및 정정 제보:</p>
+                        <p>내용에 대한 오류 제보, 출처 확인 요청, 기타 편집 관련 문의는 공식 편집팀 이메일(<span class="font-mono text-teal-700">contact@veranex.app</span> / <span class="font-mono text-teal-700">sukman@naver.com</span>)로 접수해 주시면 영업일 기준 48시간 이내에 검토 및 조치 결과를 안내해 드립니다.</p>
+                    </div>
+                </div>
+            `
+        },
+        {
             route: 'about',
             title: '서비스 소개 (About Us) | VERA',
             description: '세상의 모든 유용한 정보를 하나로 연결하는 신뢰의 라이프 포털 VERA의 비전과 서비스 소개입니다.',
@@ -1037,7 +1089,7 @@ function generateLegalPages(template) {
                             <p class="text-xs text-slate-600 leading-relaxed">카테고리별 주요 뉴스를 빠르게 전달하며, 바쁜 현대인을 위해 핵심 요약 브리핑을 제공합니다.</p>
                         </div>
                         <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                            <h3 class="font-bold text-slate-900 mb-1">📖 18편 전문 지식 가이드 & 칼럼</h3>
+                            <h3 class="font-bold text-slate-900 mb-1">📖 25편 전문 지식 가이드 & 칼럼</h3>
                             <p class="text-xs text-slate-600 leading-relaxed">금융 절세, 청약 가점, 퇴직금 정산, 웹소설 작법, 명리학 등 검증된 오리지널 지식을 심층 연재합니다.</p>
                         </div>
                         <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">

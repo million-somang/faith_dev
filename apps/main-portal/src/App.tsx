@@ -43,6 +43,7 @@ const AboutUsPage = lazy(() => import('./pages/AboutUsPage'));
 const ContactUsPage = lazy(() => import('./pages/ContactUsPage'));
 const GuidesHubPage = lazy(() => import('./pages/GuidesHubPage'));
 const GuideDetailPage = lazy(() => import('./pages/GuideDetailPage'));
+const EditorialPolicyPage = lazy(() => import('./pages/EditorialPolicyPage'));
 const ShoppingPage = lazy(() => import('./pages/ShoppingPage'));
 
 function PageFallback() {
@@ -220,6 +221,7 @@ function App() {
                         <Route path="/terms" element={<TermsOfServicePage />} />
                         <Route path="/about" element={<AboutUsPage />} />
                         <Route path="/contact" element={<ContactUsPage />} />
+                        <Route path="/editorial-policy" element={<EditorialPolicyPage />} />
                         <Route path="/ads.txt" element={
                             <pre style={{ margin: 0, padding: '16px', fontFamily: 'monospace', fontSize: '14px', backgroundColor: '#fff', color: '#000' }}>
                                 google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0

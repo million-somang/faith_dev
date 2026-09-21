@@ -6,6 +6,7 @@ interface PageSEOProps {
     path?: string;
     type?: string;
     image?: string;
+    robots?: string;
     jsonLd?: Record<string, unknown>;
 }
 
@@ -13,7 +14,7 @@ const SITE_URL = 'https://veranex.app';
 const SITE_NAME = 'VERA';
 const DEFAULT_IMAGE = `${SITE_URL}/logo-512.png`;
 
-export function PageSEO({ title, description, path = '/', type = 'website', image = DEFAULT_IMAGE, jsonLd }: PageSEOProps) {
+export function PageSEO({ title, description, path = '/', type = 'website', image = DEFAULT_IMAGE, robots, jsonLd }: PageSEOProps) {
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
     const url = `${SITE_URL}${path}`;
 
@@ -22,6 +23,7 @@ export function PageSEO({ title, description, path = '/', type = 'website', imag
             <title>{fullTitle}</title>
             <meta name="description" content={description} />
             <link rel="canonical" href={url} />
+            {robots && <meta name="robots" content={robots} />}
 
             {/* Open Graph */}
             <meta property="og:title" content={fullTitle} />
