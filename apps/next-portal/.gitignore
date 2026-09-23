@@ -1,0 +1,15 @@
+# Next.js build output
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Turborepo
+.turbo/
+
+# Environment files
+.env*.local
+
+# Typescript
+next-env.d.ts
