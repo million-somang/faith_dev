@@ -96,7 +96,7 @@ async function loadGuides() {
 
 function generateHomePageHtml(template, guides) {
     const title = 'VERA - 세상의 모든 정보와 일상의 편리함을 잇는 라이프 포털';
-    const description = '실시간 속보 뉴스부터 18편의 고품질 전문 지식 칼럼, 금융 이자·퇴직금 계산기, WebP 이미지 변환기, 두뇌 미니게임까지 한곳에서 편리하게 이용하는 VERA 라이프 포털입니다.';
+    const description = '실시간 속보 뉴스부터 25편의 고품질 전문 지식 칼럼, 금융 이자·퇴직금 계산기, WebP 이미지 변환기, 두뇌 미니게임까지 한곳에서 편리하게 이용하는 VERA 라이프 포털입니다.';
     const canonical = 'https://veranex.app/';
 
     // 지식 칼럼 6선 추출
