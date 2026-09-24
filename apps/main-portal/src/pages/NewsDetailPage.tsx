@@ -128,6 +128,57 @@ export default function NewsDetailPage() {
         return [cleanEntities(news?.title || '')];
     };
 
+    // 스마트 문단 분할 및 띄어쓰기·줄바꿈 정제 엔진
+    const formatArticleParagraphs = (rawContent: string): string[] => {
+        if (!rawContent) return [];
+
+        // 1. H1 제목 중복 제거
+        let text = stripDuplicateTitle(rawContent);
+
+        // 2. HTML 줄바꿈 태그 변환 및 태그 제거
+        text = text
+            .replace(/<br\s*[\/]?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<[^>]*>/g, '')
+            .trim();
+
+        // 3. 엔티티 디코딩
+        text = cleanEntities(text);
+
+        // 4. 문장 부호 뒤 띄어쓰기 누락 자동 보정 (예: '다.이번' -> '다. 이번')
+        text = text.replace(/([가-힣\w\)]+[.?!])([가-힣“"‘\[(A-Z])/g, '$1 $2');
+        text = text.replace(/,([가-힣A-Za-z])/g, ', $1');
+
+        // 5. 1차 문단 분할 (\n\n 또는 \n)
+        let paragraphs = text
+            .split(/\n+/)
+            .map(p => p.trim())
+            .filter(p => p.length > 0);
+
+        // 6. 긴 통문장(줄바꿈 없이 200자 이상)인 경우 2~3문장 단위로 스마트 단락 호흡 분할
+        const formattedParagraphs: string[] = [];
+        for (const p of paragraphs) {
+            if (p.length > 200) {
+                const sentences = p.match(/[^.!?]+[.!?]+(?:["'”’]?\s*|$)/g) || [p];
+                let currentChunk = '';
+                for (let i = 0; i < sentences.length; i++) {
+                    currentChunk += sentences[i];
+                    if ((i + 1) % 2 === 0 || currentChunk.length >= 180) {
+                        formattedParagraphs.push(currentChunk.trim());
+                        currentChunk = '';
+                    }
+                }
+                if (currentChunk.trim()) {
+                    formattedParagraphs.push(currentChunk.trim());
+                }
+            } else {
+                formattedParagraphs.push(p);
+            }
+        }
+
+        return formattedParagraphs.filter(p => p.length > 0);
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col min-h-screen">
@@ -209,81 +260,73 @@ export default function NewsDetailPage() {
                                     {getCategoryName(cat)}
                                 </span>
                             ))}
-                            <span className="text-xs text-gray-400 font-medium">{getTimeAgo(news.published_at)}</span>
+                            <span className="text-xs text-slate-400 font-medium">{getTimeAgo(news.published_at)}</span>
                         </div>
-                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-gray-900 leading-tight">
+                        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-[1.3] tracking-tight">
                             {splitTitle(news.title).title}
                         </h1>
-                        <div className="flex items-center justify-between pb-6 border-b border-gray-100">
+                        <div className="flex items-center justify-between pb-6 border-b border-slate-200/80">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
-                                    <i className="fas fa-user-edit"></i>
+                                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-indigo-50 border border-slate-200 flex items-center justify-center text-indigo-600 shadow-2xs">
+                                    <i className="fas fa-newspaper text-lg"></i>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-bold text-gray-900">
-                                        {splitTitle(news.title).publisher || news.publisher || news.source || '기자 정보 없음'}
-                                    </p>
-                                    <p className="text-xs text-gray-400">VERA 뉴스룸 &amp; 분석 데스크</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-extrabold text-slate-900">
+                                            {splitTitle(news.title).publisher || news.publisher || news.source || 'VERA 뉴스룸'}
+                                        </p>
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-full">
+                                            <i className="fas fa-check-circle text-[9px]"></i> 팩트체크
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 font-medium">VERA 분석 데스크 큐레이션</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
-                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-blue-500 transition-colors flex items-center justify-center shadow-xs">
+                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-blue-500 transition-colors flex items-center justify-center shadow-xs" title="공유하기">
                                     <i className="fas fa-share-alt"></i>
                                 </button>
-                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-yellow-500 transition-colors flex items-center justify-center shadow-xs">
+                                <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-yellow-500 transition-colors flex items-center justify-center shadow-xs" title="북마크">
                                     <i className="far fa-bookmark"></i>
                                 </button>
-                            </div>
-                        </div>
-
-                        {/* 공식 출처 및 큐레이션 안내 배너 (구글 E-E-A-T & 저작권 투명성 준수) */}
-                        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 sm:p-4 flex items-start gap-3 text-xs text-slate-600">
-                            <i className="fas fa-shield-halved text-teal-600 text-base mt-0.5 shrink-0"></i>
-                            <div className="space-y-1">
-                                <p className="font-bold text-slate-800">
-                                    공식 언론사 큐레이션 및 팩트 브리핑 안내
-                                </p>
-                                <p className="leading-relaxed text-slate-600">
-                                    본 콘텐츠는 공식 뉴스 공급처(<span className="font-semibold text-slate-800">{splitTitle(news.title).publisher || news.publisher || news.source || '원문 언론사'}</span>)의 보도를 바탕으로 VERA 분석 데스크가 핵심 팩트를 추출하고 연관 도구 및 실생활 영향을 구조화한 브리핑입니다. 원작성 언론사의 저작권을 존중하며, 전체 심층 보도는 본문 하단의 [원문보기]를 통해 열람하실 수 있습니다.
-                                </p>
                             </div>
                         </div>
                     </div>
 
                     {/* 대표 이미지 */}
                     {news.thumbnail && (
-                        <div className="rounded-2xl overflow-hidden shadow-xs bg-gray-100">
+                        <div className="rounded-3xl overflow-hidden shadow-sm border border-slate-200/80 bg-slate-100">
                             <img
                                 src={news.thumbnail}
                                 alt={news.title}
-                                className="w-full max-h-[420px] object-cover"
+                                className="w-full max-h-[460px] object-cover"
                                 onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = 'none'; }}
                             />
                         </div>
                     )}
 
-                    {/* 핵심 3줄 요약 카드 (정확히 3가지 팩트 요약만 깔끔하게 노출) */}
+                    {/* 핵심 3줄 요약 카드 (가독성 높은 3-Points Brief) */}
                     {getThreeKeyPoints().length > 0 && (
-                        <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
-                            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 mb-3.5">
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
-                                    <h3 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
-                                        <i className="fas fa-list-check text-indigo-600 text-xs"></i>
-                                        <span>핵심 요약 (3가지 팩트)</span>
+                        <div className="bg-gradient-to-br from-indigo-50/60 via-slate-50 to-white rounded-3xl border border-indigo-150 p-5 sm:p-7 shadow-xs">
+                            <div className="flex items-center justify-between pb-3.5 border-b border-indigo-100/70 mb-4">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                                    <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+                                        <i className="fas fa-list-check text-indigo-600 text-sm"></i>
+                                        <span>핵심 요약 3가지</span>
                                     </h3>
                                 </div>
-                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                                <span className="text-[11px] font-black text-indigo-700 bg-indigo-100/70 border border-indigo-200 px-2.5 py-0.5 rounded-full">
                                     3-Points Brief
                                 </span>
                             </div>
-                            <ul className="space-y-2.5">
+                            <ul className="space-y-3">
                                 {getThreeKeyPoints().map((point, idx) => (
-                                    <li key={idx} className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs">
-                                        <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                    <li key={idx} className="flex items-start gap-3.5 bg-white p-4 rounded-2xl border border-slate-100 shadow-2xs hover:border-indigo-200 transition-colors">
+                                        <span className="w-6 h-6 rounded-xl bg-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
                                             {idx + 1}
                                         </span>
-                                        <span className="text-sm text-slate-800 leading-relaxed font-medium break-keep">
+                                        <span className="text-[15px] sm:text-base text-slate-800 leading-relaxed font-semibold break-keep">
                                             {point}
                                         </span>
                                     </li>
@@ -292,51 +335,44 @@ export default function NewsDetailPage() {
                         </div>
                     )}
 
-                    {/* Main Content */}
-                    <div className="text-gray-800 leading-relaxed space-y-6">
-                        {news.content ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
-                                <p className="text-lg leading-loose whitespace-pre-line">{stripDuplicateTitle(news.content)}</p>
-                            </div>
-                        ) : getSummaryLines().length > 0 ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs divide-y divide-gray-50">
-                                {getSummaryLines().map((line, idx) => (
-                                    <p key={idx} className="px-6 py-4 text-base leading-relaxed flex gap-3">
-                                        <i className="fas fa-angle-right text-blue-400 mt-1.5 flex-shrink-0"></i>
-                                        <span>{line}</span>
+                    {/* Main Content Card (단락별 여유로운 호흡과 프리미엄 타이포그래피) */}
+                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-10 space-y-6">
+                        {formatArticleParagraphs(news.content || news.summary || '').length > 0 ? (
+                            <div className="article-body">
+                                {formatArticleParagraphs(news.content || news.summary || '').map((paragraph, idx) => (
+                                    <p
+                                        key={idx}
+                                        className="text-[17px] sm:text-[18px] text-slate-800 leading-[1.9] tracking-[-0.015em] break-keep mb-6 font-normal selection:bg-indigo-100"
+                                    >
+                                        {paragraph}
                                     </p>
                                 ))}
                             </div>
-                        ) : (news?.summary || news?.description) ? (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs p-6">
-                                <p className="text-base leading-relaxed">{cleanEntities(news.summary || news.description)}</p>
-                            </div>
                         ) : (
-                            <p className="text-lg">이 기사의 상세 정보는 외부 링크를 통해 확인해 주세요.</p>
+                            <p className="text-base text-slate-500 py-6">이 기사의 상세 정보는 아래 원문보기를 통해 확인해 주세요.</p>
                         )}
 
                         {news.link && (
-                          <>
-                            <p className="mt-6 mb-2 text-xs text-gray-400 leading-relaxed flex items-start gap-1.5">
-                                <i className="fas fa-info-circle mt-0.5 flex-shrink-0"></i>
-                                <span>본 뉴스는 핵심 팩트 요약과 분석 정보를 제공하며, 전체 심층 보도는 아래 원문보기를 통해 확인하실 수 있습니다.</span>
-                            </p>
-                            <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100 flex items-center justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-gray-400 font-bold mb-1">ORIGINAL SOURCE</p>
-                                    <p className="text-sm font-medium text-gray-600 truncate">{news.link}</p>
+                            <div className="mt-8 pt-6 border-t border-slate-100">
+                                <div className="p-4 sm:p-5 bg-slate-50 rounded-2xl border border-slate-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                            <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">기사 원문 출처 (ORIGINAL SOURCE)</p>
+                                        </div>
+                                        <p className="text-xs text-slate-600 truncate font-mono">{news.link}</p>
+                                    </div>
+                                    <a
+                                        href={news.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 rounded-xl text-xs font-bold shadow-2xs hover:shadow-xs transition-all shrink-0"
+                                    >
+                                        <span>원문 기사 전문보기</span>
+                                        <i className="fas fa-external-link-alt text-[10px] text-slate-400"></i>
+                                    </a>
                                 </div>
-                                <a
-                                    href={news.link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="shrink-0 px-6 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl font-bold text-sm shadow-xs hover:shadow-md transition-all flex items-center gap-2"
-                                >
-                                    <span>원문보기</span>
-                                    <i className="fas fa-external-link-alt text-[10px]"></i>
-                                </a>
                             </div>
-                          </>
                         )}
                     </div>
 
