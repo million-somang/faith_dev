@@ -147,14 +147,7 @@ export default function NovelPage() {
   const [viewerTheme, setViewerTheme] = useState<'light' | 'sepia' | 'dark'>('light');
   const [isPurchasing, setIsPurchasing] = useState(false);
 
-  // 미로그인 가드 (사주 서비스와 일체화)
-  useEffect(() => {
-    if (!isAuthLoading && !user) {
-      alert('웹소설 연재관 서비스는 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
-      navigate('/login?redirect=/entertainment/novel');
-    }
-  }, [user, isAuthLoading, navigate]);
-
+  // 비회원도 웹소설 목록 및 무료 회차를 자유롭게 감상할 수 있도록 개방
   // 필명 자동 설정
   useEffect(() => {
     if (user?.name) {
@@ -604,6 +597,10 @@ export default function NovelPage() {
                         </button>
                         <button
                             onClick={() => {
+                              if (!user) {
+                                navigate('/login?redirect=/entertainment/novel');
+                                return;
+                              }
                               setAppMode('writer');
                               setSelectedWriterNovel(null);
                             }}

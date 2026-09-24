@@ -38,14 +38,9 @@ export default function EntertainmentPage() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'all' | 'saju' | 'five' | 'healing'>('all');
 
-    // 로그인 검증 및 라우팅 이동 가드
+    // 사주 분석 서비스 바로가기 (비회원도 무료 가이드 및 소개 열람 가능)
     const handleSajuNavigation = () => {
-        if (!user) {
-            alert('사주 분석 서비스는 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
-            navigate('/login?redirect=/entertainment/saju');
-        } else {
-            navigate('/entertainment/saju');
-        }
+        navigate('/entertainment/saju');
     };
 
     // 로그인 상태별 한줄 운세 및 팁 가동
@@ -64,7 +59,7 @@ export default function EntertainmentPage() {
     const tabContents = {
         all: [
             { title: '사주 오행 중 "木(목)"의 기운을 보완하는 방법', category: '명리학 지식', date: '오늘', author: '운세 마스터' },
-            { title: '내 손에 그려진 세 줄의 비밀 - 생명선, 두뇌선, 감정선', category: '손금 가이드', date: '어제', author: 'AI 손금 연구소' },
+            { title: '사주 일간(日干)으로 알아보는 타고난 기질과 직무 적성', category: '명리학 지식', date: '어제', author: '명리 분석관' },
             { title: '비 오는 날 보기 좋은 마음이 따뜻해지는 클래식 영화 3선', category: '힐링 무비', date: '3일 전', author: '무비 큐레이터' }
         ],
         saju: [
