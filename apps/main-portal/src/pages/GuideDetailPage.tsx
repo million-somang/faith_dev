@@ -318,11 +318,14 @@ export default function GuideDetailPage() {
                             {renderFormattedContent(article.content)}
                         </div>
 
-                        {/* 구글 애드센스 고가치 콘텐츠 배너 슬롯 */}
-                        <div className="my-10 pt-6 border-t border-slate-100 flex flex-col items-center">
-                            <span className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase mb-2">ADVERTISEMENT</span>
-                            <BannerSlot slotKey="guides_detail_bottom" fallbackSlotKey="home_main_top" className="w-full" />
-                        </div>
+                        {/* 구글 애드센스 고가치 콘텐츠 배너 슬롯 (배너/광고 존재 시에만 래퍼와 함께 노출) */}
+                        <BannerSlot 
+                            slotKey="guides_detail_bottom" 
+                            fallbackSlotKey="home_main_top" 
+                            label="ADVERTISEMENT"
+                            wrapperClassName="my-10 pt-6 border-t border-slate-100 flex flex-col items-center w-full"
+                            className="w-full" 
+                        />
 
                         {/* Tags */}
                         <div className="mt-8 pt-6 border-t border-slate-100">

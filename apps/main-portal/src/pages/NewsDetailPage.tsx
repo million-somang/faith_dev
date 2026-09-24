@@ -312,11 +312,13 @@ export default function NewsDetailPage() {
                         content={news.content || news.summary || ''}
                     />
 
-                    {/* 본문 하단 Zero CLS 광고 슬롯 */}
-                    <aside className="w-full min-h-[250px] flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-4 overflow-hidden" aria-label="스폰서 광고">
-                        <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-2">ADVERTISEMENT</span>
-                        <BannerSlot slotKey="news_detail_bottom" className="min-h-[200px] w-full" />
-                    </aside>
+                    {/* 본문 하단 스폰서/애드센스 슬롯 (배너/광고 데이터가 존재할 때만 안전하게 노출) */}
+                    <BannerSlot 
+                        slotKey="news_detail_bottom" 
+                        label="ADVERTISEMENT"
+                        wrapperClassName="w-full flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-4 overflow-hidden my-4"
+                        className="min-h-[200px] w-full" 
+                    />
 
                     {/* Interaction Bar */}
                     <div className="py-6 border-t border-b border-gray-100 flex flex-col items-center gap-4">

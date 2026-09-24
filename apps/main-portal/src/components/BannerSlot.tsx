@@ -19,11 +19,20 @@ interface Banner {
  * - 여러 개면 일정 간격으로 로테이션
  * - 배너가 없으면 영역 자체를 렌더링하지 않음
  */
-export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs = 8000 }: {
+export function BannerSlot({ 
+    slotKey, 
+    fallbackSlotKey, 
+    className = '', 
+    rotateMs = 8000,
+    label,
+    wrapperClassName = ''
+}: {
     slotKey: string;
     fallbackSlotKey?: string;
     className?: string;
     rotateMs?: number;
+    label?: string;
+    wrapperClassName?: string;
 }) {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [idx, setIdx] = useState(0);
@@ -100,27 +109,14 @@ export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs 
 
     if (banners.length === 0) return null;
 
-    // 구글 에드센스 광고 배너 렌더링
-    if (banner.ad_code) {
-        return (
-            <div 
-                ref={adRef}
-                className={`w-full flex justify-center overflow-hidden ${className}`}
-                dangerouslySetInnerHTML={{ __html: banner.ad_code }}
-            />
-        );
-    }
-
-    // 일반 이미지 배너 렌더링
-    const img = (
-        <img
-            src={banner.image_url}
-            alt={banner.title}
-            className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
+    // 배너 본문 (구글 에드센스 또는 이미지 배너)
+    const content = banner.ad_code ? (
+        <div 
+            ref={adRef}
+            className={`w-full flex justify-center overflow-hidden ${className}`}
+            dangerouslySetInnerHTML={{ __html: banner.ad_code }}
         />
-    );
-
-    return (
+    ) : (
         <div className={`w-full flex justify-center ${className}`}>
             {banner.link_url ? (
                 <a
@@ -130,11 +126,33 @@ export function BannerSlot({ slotKey, fallbackSlotKey, className = '', rotateMs 
                     referrerPolicy="unsafe-url"
                     className="block hover:shadow-md transition-shadow rounded-xl overflow-hidden"
                 >
-                    {img}
+                    <img
+                        src={banner.image_url}
+                        alt={banner.title}
+                        className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
+                    />
                 </a>
-            ) : img}
+            ) : (
+                <img
+                    src={banner.image_url}
+                    alt={banner.title}
+                    className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
+                />
+            )}
         </div>
     );
+
+    // 라벨이 지정된 경우, 배너가 존재할 때만 래퍼와 라벨을 함께 렌더링
+    if (label) {
+        return (
+            <aside className={wrapperClassName || "w-full flex flex-col items-center justify-center p-4 overflow-hidden"} aria-label={label}>
+                <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-2 uppercase">{label}</span>
+                {content}
+            </aside>
+        );
+    }
+
+    return content;
 }
 
 export default BannerSlot;

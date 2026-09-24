@@ -58,6 +58,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        <meta name="google-adsense-account" content="ca-pub-9041638273592776" />
         <link
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"

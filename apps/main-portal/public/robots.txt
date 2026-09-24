@@ -35,10 +35,11 @@ Disallow: /
 User-agent: *
 Allow: /
 Allow: /guides/
-Allow: /editorial-policy
+Allow: /tools/
 Allow: /lifestyle/
 Allow: /game/
 Allow: /finance/
+Allow: /editorial-policy
 Allow: /about
 Allow: /privacy
 Allow: /terms
@@ -62,6 +63,10 @@ Disallow: /api/
 User-agent: Mediapartners-Google
 Allow: /
 Allow: /guides/
+Allow: /tools/
+Allow: /lifestyle/
+Allow: /game/
+Allow: /finance/
 Allow: /editorial-policy
 Disallow: /news/
 Disallow: /b2b
@@ -72,6 +77,10 @@ Disallow: /game/sfc
 User-agent: AdsBot-Google
 Allow: /
 Allow: /guides/
+Allow: /tools/
+Allow: /lifestyle/
+Allow: /game/
+Allow: /finance/
 Allow: /editorial-policy
 Disallow: /news/
 Disallow: /b2b
@@ -80,6 +89,10 @@ Disallow: /b2b/
 User-agent: AdsBot-Google-Mobile
 Allow: /
 Allow: /guides/
+Allow: /tools/
+Allow: /lifestyle/
+Allow: /game/
+Allow: /finance/
 Allow: /editorial-policy
 Disallow: /news/
 Disallow: /b2b
@@ -88,6 +101,10 @@ Disallow: /b2b/
 User-agent: Googlebot
 Allow: /
 Allow: /guides/
+Allow: /tools/
+Allow: /lifestyle/
+Allow: /game/
+Allow: /finance/
 Allow: /editorial-policy
 Disallow: /news/
 Disallow: /b2b

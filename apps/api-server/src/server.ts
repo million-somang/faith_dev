@@ -243,8 +243,11 @@ const SITE_URL = process.env.SITE_URL || 'https://veranex.app';
 // robots.txt (네이버 Yeti 및 구글 애드센스 심사 봇 크롤링 지원)
 app.get('/robots.txt', (c) => {
     try {
-        const publicRobots = path.resolve('./apps/main-portal/dist/robots.txt');
-        if (fs.existsSync(publicRobots)) {
+        const distRobots = path.resolve('./apps/main-portal/dist/robots.txt');
+        const publicRobots = path.resolve('./apps/main-portal/public/robots.txt');
+        if (fs.existsSync(distRobots)) {
+            return c.text(fs.readFileSync(distRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        } else if (fs.existsSync(publicRobots)) {
             return c.text(fs.readFileSync(publicRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
         }
     } catch (e) {
@@ -515,6 +518,7 @@ function buildMetaBlock(opts: { title: string; description: string; path: string
     const url = `${SITE_URL}${routePath}`;
     return `
     <title>${esc(title)}</title>
+    <meta name="google-adsense-account" content="ca-pub-9041638273592776" />
     <meta name="description" content="${esc(description)}" />
     <link rel="canonical" href="${url}" />
     <meta property="og:title" content="${esc(title)}" />
