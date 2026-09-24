@@ -39,7 +39,7 @@ export function AdSlot({
         <ins
           className="adsbygoogle"
           style={{ display: 'block', width: '100%', textAlign: 'center' }}
-          data-ad-client="ca-pub-YOUR_ADSENSE_ID"
+          data-ad-client="ca-pub-9041638273592776"
           data-ad-slot={slotId}
           data-ad-format={format}
           data-full-width-responsive="true"

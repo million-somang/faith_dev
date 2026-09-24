@@ -66,7 +66,7 @@ export default function RootLayout({
         {/* Google AdSense Script (비동기 주입) */}
         <script
           async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_ADSENSE_ID"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
           crossOrigin="anonymous"
         />
       </head>
