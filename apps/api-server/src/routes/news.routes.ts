@@ -573,10 +573,33 @@ const handleCreateNewsApi = async (c: any) => {
         const finalSource = (source || publisher || 'VERA 뉴스데스크').trim();
         const finalSummary = summary ? summary.trim() : rawContent.replace(/<[^>]*>/g, '').substring(0, 160).trim();
         
-        // AI 요약: 사용자가 제공하면 그대로 사용, 미제공 시 본문에서 3줄 자동 추출
-        const finalAiSummary = aiSummary && String(aiSummary).trim().length > 0
-            ? String(aiSummary).trim()
-            : extractAutoAiSummary(rawContent, title.trim());
+        // AI 요약: 배열 형태(["요약1", "요약2", "요약3"]) 또는 문자열 모두 지원 (정확히 3개 항목 정규화)
+        let finalAiSummary = '';
+        if (Array.isArray(aiSummary)) {
+            const cleanItems = aiSummary
+                .filter(Boolean)
+                .map(s => String(s).trim().replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .filter(s => s.length > 0)
+                .slice(0, 3);
+            if (cleanItems.length > 0) {
+                finalAiSummary = cleanItems.map(s => `• ${s}`).join('\n');
+            }
+        } else if (aiSummary && typeof aiSummary === 'string' && aiSummary.trim().length > 0) {
+            const lines = aiSummary
+                .split(/\n+/)
+                .map(l => l.trim().replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .filter(l => l.length > 0)
+                .slice(0, 3);
+            if (lines.length > 0) {
+                finalAiSummary = lines.map(l => `• ${l}`).join('\n');
+            } else {
+                finalAiSummary = aiSummary.trim();
+            }
+        }
+        
+        if (!finalAiSummary) {
+            finalAiSummary = extractAutoAiSummary(rawContent, title.trim());
+        }
 
         const finalTags = Array.isArray(keywords || tags) 
             ? (keywords || tags).join(',') 

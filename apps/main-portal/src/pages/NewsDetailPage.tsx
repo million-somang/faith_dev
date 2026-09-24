@@ -5,7 +5,6 @@ import { getCategoryName, getCategoryColor, getTimeAgo, decodeHtmlEntities } fro
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
-import { NewsInsightWidget } from '../components/news/NewsInsightWidget';
 import { NewsRelatedToolsWidget } from '../components/news/NewsRelatedToolsWidget';
 import { BannerSlot } from '../components/BannerSlot';
 import { useAppLauncher } from '../hooks/useAppLauncher';
@@ -112,6 +111,21 @@ export default function NewsDetailPage() {
                 if (title.length < 8) return true;
                 return !(line === title || line.startsWith(title) || title.startsWith(line));
             });
+    };
+
+    // 3가지 핵심 요약 추출 (DB의 ai_summary 최우선 파싱 -> 정확히 3개 항목 보장)
+    const getThreeKeyPoints = (): string[] => {
+        if (news?.ai_summary) {
+            const lines = String(news.ai_summary)
+                .split(/\n+/)
+                .map(line => cleanEntities(line).replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .filter(line => line.length > 0);
+            if (lines.length > 0) return lines.slice(0, 3);
+        }
+        const fallbackLines = getSummaryLines();
+        if (fallbackLines.length >= 3) return fallbackLines.slice(0, 3);
+        if (fallbackLines.length > 0) return fallbackLines;
+        return [cleanEntities(news?.title || '')];
     };
 
     if (loading) {
@@ -248,13 +262,35 @@ export default function NewsDetailPage() {
                         </div>
                     )}
 
-                    {/* 1. 기사 내용 맞춤 추천 유틸리티 도구 연계 위젯 (대표 이미지와 본문 사이에 배치하여 시선 유도) */}
-                    <NewsRelatedToolsWidget 
-                        title={news.title}
-                        category={String(news.category || '')}
-                        content={news.content || news.summary || ''}
-                        onOpenTool={handleOpenMiniApp}
-                    />
+                    {/* 핵심 3줄 요약 카드 (정확히 3가지 팩트 요약만 깔끔하게 노출) */}
+                    {getThreeKeyPoints().length > 0 && (
+                        <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 rounded-2xl border border-slate-200/90 p-5 sm:p-6 shadow-xs">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 mb-3.5">
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+                                    <h3 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
+                                        <i className="fas fa-list-check text-indigo-600 text-xs"></i>
+                                        <span>핵심 요약 (3가지 팩트)</span>
+                                    </h3>
+                                </div>
+                                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">
+                                    3-Points Brief
+                                </span>
+                            </div>
+                            <ul className="space-y-2.5">
+                                {getThreeKeyPoints().map((point, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-slate-100 shadow-xs">
+                                        <span className="w-5 h-5 rounded-lg bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                                            {idx + 1}
+                                        </span>
+                                        <span className="text-sm text-slate-800 leading-relaxed font-medium break-keep">
+                                            {point}
+                                        </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
 
                     {/* Main Content */}
                     <div className="text-gray-800 leading-relaxed space-y-6">
@@ -304,12 +340,12 @@ export default function NewsDetailPage() {
                         )}
                     </div>
 
-                    {/* 2. AI 핵심 요약 & 실생활 영향 분석 위젯 (기사 본문 바로 아래 배치) */}
-                    <NewsInsightWidget 
+                    {/* 기사 연계 맞춤 도구 (본문 하단에 깔끔하게 배치) */}
+                    <NewsRelatedToolsWidget 
                         title={news.title}
                         category={String(news.category || '')}
-                        summaryLines={getSummaryLines()}
                         content={news.content || news.summary || ''}
+                        onOpenTool={handleOpenMiniApp}
                     />
 
                     {/* 본문 하단 스폰서/애드센스 슬롯 (배너/광고 데이터가 존재할 때만 안전하게 노출) */}
