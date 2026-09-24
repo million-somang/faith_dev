@@ -1,4 +1,6 @@
 import { Hono } from 'hono';
+import fs from 'node:fs';
+import path from 'node:path';
 import { pool } from '@faithportal/database';
 import {
     findRelatedStocks,
@@ -383,6 +385,117 @@ news.post('/api/news/schedule', async (c) => {
     }
 });
 
+/**
+ * 뉴스 카테고리 정규화 헬퍼 (한글 및 영문 호환)
+ */
+export function normalizeNewsCategory(cat?: string): string {
+    if (!cat) return 'economy';
+    const lower = String(cat).toLowerCase().trim();
+    if (['정치', 'politics'].includes(lower)) return 'politics';
+    if (['경제', 'economy', '증시', '금융', 'stock', 'finance', '비즈니스', 'business'].includes(lower)) return 'economy';
+    if (['사회', 'society'].includes(lower)) return 'society';
+    if (['it', '과학', '기술', 'tech', 'science', 'it/과학'].includes(lower)) return 'tech';
+    if (['세계', '국제', 'world', 'global'].includes(lower)) return 'world';
+    if (['생활', '문화', 'lifestyle', 'culture', '생활/문화'].includes(lower)) return 'lifestyle';
+    if (['연예', '엔터', 'entertainment', 'fun', '연예/스타'].includes(lower)) return 'entertainment';
+    if (['스포츠', 'sports'].includes(lower)) return 'sports';
+    return lower;
+}
+
+/**
+ * AI 요약문 자동 추출 헬퍼 (미제공 시 본문에서 3줄 추출)
+ */
+function extractAutoAiSummary(content: string, title: string): string {
+    const cleanText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const sentences = cleanText.split(/(?<=[.?!])\s+/).filter(s => s.length >= 10);
+    
+    if (sentences.length >= 3) {
+        return `• ${sentences[0].trim()}\n• ${sentences[1].trim()}\n• ${sentences[2].trim()}`;
+    } else if (sentences.length > 0) {
+        return sentences.map(s => `• ${s.trim()}`).join('\n');
+    }
+    return `• ${title}\n• 상세 내용은 본문 기사를 확인해주세요.`;
+}
+
+// POST /api/news/upload-image - 뉴스 대표 사진 멀티파트 직접 업로드
+const handleUploadNewsImage = async (c: any) => {
+    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+    const user = c.get('user');
+    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+
+    if (!isAuthorized) {
+        return c.json({
+            success: false,
+            error: {
+                code: 401,
+                message: 'Unauthorized: Invalid or missing API Key. Please provide X-API-KEY header.'
+            }
+        }, 401);
+    }
+
+    try {
+        const body = await c.req.parseBody();
+        const file = body['file'] || body['image'];
+
+        if (!file || typeof file === 'string') {
+            return c.json({
+                success: false,
+                error: { code: 400, message: 'Bad Request: "file" or "image" field is required (multipart/form-data).' }
+            }, 400);
+        }
+
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+        const originalName = file.name || 'image.jpg';
+        const ext = path.extname(originalName).toLowerCase();
+
+        if (!allowedExtensions.includes(ext)) {
+            return c.json({
+                success: false,
+                error: { code: 400, message: `Invalid file format. Allowed formats: ${allowedExtensions.join(', ')}` }
+            }, 400);
+        }
+
+        // 저장 디렉토리 확보 (root public 및 api-server public 둘 다 지원)
+        const primaryDir = path.resolve(process.cwd(), 'public/uploads/news');
+        const secondaryDir = path.resolve(process.cwd(), 'apps/api-server/public/uploads/news');
+
+        for (const dir of [primaryDir, secondaryDir]) {
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+        }
+
+        const fileName = `news_${Date.now()}_${Math.random().toString(36).substring(2, 8)}${ext}`;
+        const primaryPath = path.join(primaryDir, fileName);
+        const secondaryPath = path.join(secondaryDir, fileName);
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        fs.writeFileSync(primaryPath, buffer);
+        try {
+            fs.writeFileSync(secondaryPath, buffer);
+        } catch { /* best-effort secondary copy */ }
+
+        const relativeUrl = `/uploads/news/${fileName}`;
+        const fullUrl = `https://veranex.app${relativeUrl}`;
+
+        return c.json({
+            success: true,
+            message: '이미지가 성공적으로 업로드되었습니다.',
+            imageUrl: relativeUrl,
+            fullUrl: fullUrl,
+            fileName: fileName,
+            fileSize: buffer.length
+        }, 201);
+    } catch (error: any) {
+        console.error('[Upload News Image Error]', error);
+        return c.json({
+            success: false,
+            error: { code: 500, message: 'Image upload failed: ' + (error.message || 'Server error') }
+        }, 500);
+    }
+};
+
 // POST /api/news/create (및 POST /api/news) - 뉴스 기사 외부 API 등록
 const handleCreateNewsApi = async (c: any) => {
     const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
@@ -407,7 +520,7 @@ const handleCreateNewsApi = async (c: any) => {
             title,
             content,
             summary,
-            category = 'fun',
+            category,
             imageUrl,
             thumbnail,
             sourceUrl,
@@ -420,57 +533,79 @@ const handleCreateNewsApi = async (c: any) => {
             tags
         } = body;
 
-        if (!title || (!content && !summary)) {
+        // 필수 필드 검증
+        if (!title || typeof title !== 'string' || title.trim().length < 3) {
             return c.json({
                 success: false,
                 error: {
                     code: 400,
-                    message: 'Bad Request: title and content (or summary) are required.'
+                    message: 'Bad Request: "title" is required and must be at least 3 characters.'
                 }
             }, 400);
         }
 
-        const finalThumbnail = imageUrl || thumbnail || '';
+        const rawContent = (content || summary || '').trim();
+        if (!rawContent || rawContent.length < 10) {
+            return c.json({
+                success: false,
+                error: {
+                    code: 400,
+                    message: 'Bad Request: "content" (or "summary") is required and must be at least 10 characters.'
+                }
+            }, 400);
+        }
+
+        const normalizedCategory = normalizeNewsCategory(category);
+        const finalThumbnail = (imageUrl || thumbnail || '').trim();
+        
         let finalLink = (sourceUrl || link || '').trim();
         if (!finalLink) {
             finalLink = `https://veranex.app/news/ref/${Date.now()}-${Math.floor(Math.random() * 10000)}`;
         }
 
-        // 중복 link 방지: DB에 이미 동일한 link가 존재하면 유니크 피닉스 쿼리 파라미터 부여
+        // 중복 link 방지: DB에 이미 동일한 link가 존재하면 유니크 파라미터 부여
         const checkExisting = await pool.query('SELECT id FROM news WHERE link = $1', [finalLink]);
         if (checkExisting.rows && checkExisting.rows.length > 0) {
             const separator = finalLink.includes('?') ? '&' : '?';
             finalLink = `${finalLink}${separator}_v=${Date.now()}`;
         }
 
-        const finalSource = source || publisher || 'VERA 재미있는 뉴스';
-        const finalSummary = summary || (content ? content.replace(/<[^>]*>/g, '').substring(0, 160) : title);
-        const finalTags = Array.isArray(keywords || tags) ? (keywords || tags).join(',') : (keywords || tags || '');
+        const finalSource = (source || publisher || 'VERA 뉴스데스크').trim();
+        const finalSummary = summary ? summary.trim() : rawContent.replace(/<[^>]*>/g, '').substring(0, 160).trim();
+        
+        // AI 요약: 사용자가 제공하면 그대로 사용, 미제공 시 본문에서 3줄 자동 추출
+        const finalAiSummary = aiSummary && String(aiSummary).trim().length > 0
+            ? String(aiSummary).trim()
+            : extractAutoAiSummary(rawContent, title.trim());
+
+        const finalTags = Array.isArray(keywords || tags) 
+            ? (keywords || tags).join(',') 
+            : (keywords || tags || '');
 
         const result = await pool.query(`
             INSERT INTO news (
                 title, summary, content, category, thumbnail, link, source, 
-                ai_summary, sentiment, tags, published_at, created_at
+                ai_summary, sentiment, tags, popularity_score, ai_processed, published_at, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 100, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING id, title, category, created_at
         `, [
-            title,
+            title.trim(),
             finalSummary,
-            content || finalSummary,
-            category,
+            rawContent,
+            normalizedCategory,
             finalThumbnail,
             finalLink,
             finalSource,
-            aiSummary || null,
+            finalAiSummary,
             sentiment,
             finalTags
         ]);
 
         const newNews = (result.rows && result.rows[0]) ? result.rows[0] : null;
         const insertedId = newNews?.id || (result as any).lastInsertRowid || (result as any).insertId || Date.now();
-        const insertedTitle = newNews?.title || title;
-        const insertedCategory = newNews?.category || category;
+        const insertedTitle = newNews?.title || title.trim();
+        const insertedCategory = newNews?.category || normalizedCategory;
 
         return c.json({
             success: true,
@@ -479,6 +614,8 @@ const handleCreateNewsApi = async (c: any) => {
                 id: insertedId,
                 title: insertedTitle,
                 category: insertedCategory,
+                aiSummary: finalAiSummary,
+                thumbnail: finalThumbnail,
                 articleUrl: `https://veranex.app/news/${insertedId}`,
                 createdAt: newNews?.created_at || new Date().toISOString()
             }
@@ -497,9 +634,10 @@ const handleCreateNewsApi = async (c: any) => {
 
 import { bodyLimit } from 'hono/body-limit';
 
+news.post('/api/news/upload-image', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUploadNewsImage);
 news.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 news.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 news.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 
-export { handleCreateNewsApi };
+export { handleCreateNewsApi, handleUploadNewsImage };
 export default news;

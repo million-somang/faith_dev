@@ -68,10 +68,11 @@ app.get('/api/health', async (c) => {
 });
 
 // News API
-import newsRoutes, { handleCreateNewsApi } from './routes/news.routes.js';
+import newsRoutes, { handleCreateNewsApi, handleUploadNewsImage } from './routes/news.routes.js';
 import { bodyLimit } from 'hono/body-limit';
 
 app.route('/', newsRoutes);
+app.post('/api/news/upload-image', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUploadNewsImage);
 app.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 app.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 app.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
@@ -832,9 +833,10 @@ serve({
     hostname: '0.0.0.0'
 });
 
-// 자동 뉴스 가져오기 스케줄러 시작 (news_schedule 설정에 따라 주기 수집)
-import { startNewsScheduler } from './services/newsScheduler.js';
-startNewsScheduler();
+// 구글 뉴스 자동 크롤러 영구 비활성화 (자체 API 발행 체계로 전면 전환)
+// import { startNewsScheduler } from './services/newsScheduler.js';
+// startNewsScheduler();
+console.log('📢 [News System] 구글 크롤링 스케줄러가 비활성화되었습니다. (자체 API 발행 모드 활성)');
 
 // 일정 1시간 전 푸시 알림 스케줄러 시작
 import { startSchedulePushScheduler } from './services/schedulePushScheduler.js';
