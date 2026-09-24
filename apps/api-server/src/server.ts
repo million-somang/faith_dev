@@ -42,6 +42,10 @@ app.use('*', async (c, next) => {
     const path = c.req.path;
     if (path === '/health' || path === '/api/health') return next();
 
+    // x-api-key 헤더가 포함된 공인 API 호출은 봇 스크래핑 차단 예외 처리
+    const apiKey = c.req.header('x-api-key') || c.req.header('authorization');
+    if (apiKey) return next();
+
     const ua = (c.req.header('User-Agent') || '').toLowerCase();
     if (ua) {
         const isBlocked = BLOCKED_BOT_PATTERNS.some(bot => ua.includes(bot));
