@@ -219,6 +219,23 @@ app.use('/finance/*', serveStatic({
 }));
 app.get('/finance', serveStatic({ path: './apps/finance/dist/index.html' }));
 
+// Next.js 정적 리소스 서빙 (_next/static/*)
+app.use('/_next/static/*', serveStatic({
+    root: './apps/next-portal/.next/static',
+    rewriteRequestPath: (path) => path.replace(/^\/_next\/static/, '')
+}));
+
+// Next.js Tools 개별 SSG 페이지 서빙 (/tools/:slug)
+app.get('/tools/:slug', (c) => {
+    const slug = c.req.param('slug');
+    const staticFilePath = path.resolve(`./apps/next-portal/.next/server/app/tools/${slug}.html`);
+    if (fs.existsSync(staticFilePath)) {
+        return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
+    }
+    return c.redirect('/lifestyle', 302);
+});
+app.get('/tools/:slug/', (c) => c.redirect(`/tools/${c.req.param('slug')}`, 301));
+
 // ==================== SEO 라우트 ====================
 
 const SITE_URL = process.env.SITE_URL || 'https://veranex.app';
@@ -728,6 +745,10 @@ for (const [routePath, meta] of Object.entries(ROUTE_META)) {
 
 app.get('/game/:id', (c) => {
     const id = c.req.param('id');
+    const nextGameFile = path.resolve(`./apps/next-portal/.next/server/app/game/${id}.html`);
+    if (fs.existsSync(nextGameFile)) {
+        return c.html(fs.readFileSync(nextGameFile, 'utf-8'));
+    }
     const meta = GAME_META[id];
     try {
         if (meta) {

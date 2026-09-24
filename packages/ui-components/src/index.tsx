@@ -161,7 +161,7 @@ const FULL_MENU_ITEMS = [
     { label: '지식 가이드', icon: 'fa-book-open-reader', bg: 'bg-teal-50', color: 'text-teal-600', path: '/guides' },
     { label: '라운지', icon: 'fa-comments', bg: 'bg-violet-50', color: 'text-violet-600', path: '/lounge' },
     { label: '마이페이지', icon: 'fa-user', bg: 'bg-indigo-50', color: 'text-indigo-600', path: '/mypage' },
-    { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
+    // { label: '쇼핑', icon: 'fa-bag-shopping', bg: 'bg-pink-50', color: 'text-pink-600', path: '/shopping' },
     { label: '리워드', icon: 'fa-gift', bg: 'bg-amber-50', color: 'text-amber-600', path: '/reward' },
     { label: '홈페이지 제작', icon: 'fa-magic', bg: 'bg-emerald-50', color: 'text-emerald-600', path: '/b2b' },
 ];
@@ -296,7 +296,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
                             <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
-                            <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-pink-600 font-extrabold`}>{tr('쇼핑', currentLang)}</a>
+                            {/* <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-pink-600 font-extrabold`}>{tr('쇼핑', currentLang)}</a> */}
                             {user?.email === 'sukman@naver.com' && (
                                 <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
                             )}

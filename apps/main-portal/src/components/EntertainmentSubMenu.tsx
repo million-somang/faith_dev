@@ -11,11 +11,6 @@ export default function EntertainmentSubMenu() {
     const navigate = useNavigate();
     const { user } = useAuth();
 
-    const handleInactiveClick = (e: React.MouseEvent, label: string) => {
-        e.preventDefault();
-        alert(`${label} 서비스는 현재 열심히 준비 중입니다. 곧 찾아뵙겠습니다! ✨`);
-    };
-
     const handleAppClick = (e: React.MouseEvent, path: string, label: string) => {
         e.preventDefault();
         if (!user) {
@@ -33,18 +28,6 @@ export default function EntertainmentSubMenu() {
                 <div className="flex sm:hidden gap-1.5 py-2.5 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
-                        if (!item.active) {
-                            return (
-                                <button
-                                    key={item.path}
-                                    onClick={(e) => handleInactiveClick(e, item.label)}
-                                    className="flex-1 flex flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-xs font-bold whitespace-nowrap bg-slate-100 text-slate-400 border border-transparent"
-                                >
-                                    <i className={`${item.icon} text-base`}></i>
-                                    {item.label} (준비중)
-                                </button>
-                            );
-                        }
                         if (item.isApp) {
                             return (
                                 <button
@@ -78,18 +61,6 @@ export default function EntertainmentSubMenu() {
                 <div className="hidden sm:flex space-x-8 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
                         const isActive = location.pathname === item.path;
-                        if (!item.active) {
-                            return (
-                                <button
-                                    key={item.path}
-                                    onClick={(e) => handleInactiveClick(e, item.label)}
-                                    className="px-4 py-4 whitespace-nowrap transition-all flex items-center gap-2 font-bold text-slate-400 cursor-not-allowed"
-                                >
-                                    <i className={item.icon}></i>
-                                    {item.label} <span className="text-[10px] bg-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-bold ml-1">준비중</span>
-                                </button>
-                            );
-                        }
                         if (item.isApp) {
                             return (
                                 <button

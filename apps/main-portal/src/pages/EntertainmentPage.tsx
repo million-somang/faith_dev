@@ -48,15 +48,6 @@ export default function EntertainmentPage() {
         }
     };
 
-    const handleInactiveClick = (label: string) => {
-        if (!user) {
-            alert('로그인 후 서비스를 확인하실 수 있습니다. 로그인 페이지로 이동합니다.');
-            navigate('/login');
-            return;
-        }
-        alert(`${label} 서비스는 현재 열심히 준비 중입니다. 곧 찾아뵙겠습니다! ✨`);
-    };
-
     // 로그인 상태별 한줄 운세 및 팁 가동
     let fortuneText = "";
     let luckyDirection = "";
@@ -116,17 +107,17 @@ export default function EntertainmentPage() {
                             </h2>
                             <div className="flex items-center gap-1">
                                 <span className="text-xs text-violet-600 font-black">1</span>
-                                <span className="text-xs text-slate-400">/ 3</span>
+                                <span className="text-xs text-slate-400">/ 2</span>
                             </div>
                         </div>
 
-                        {/* 가로 3개 슬롯 */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* 가로 2개 슬롯 (사주 & 웹소설 완제품) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             
                             {/* 슬롯 1: 무료 전통 사주 (활성 - 클릭 시 로그인 가드 적용) */}
                             <button
                                 onClick={handleSajuNavigation}
-                                className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-violet-600 to-indigo-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5"
+                                className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-violet-600 to-indigo-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
                             >
                                 <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors"></div>
                                 <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-xl group-hover:scale-110 transition-transform"></div>
@@ -147,31 +138,7 @@ export default function EntertainmentPage() {
                                 </div>
                             </button>
 
-                            {/* 슬롯 2: AI 스마트 손금 (준비중) */}
-                            <button
-                                onClick={() => handleInactiveClick('AI 스마트 손금')}
-                                className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-slate-500 to-slate-700 text-white shadow-sm hover:opacity-95 transition-all"
-                            >
-                                <div className="absolute top-3 right-3 bg-slate-900/60 text-white text-[9px] font-bold px-2 py-0.5 rounded-full z-20">
-                                    준비 중 ⏳
-                                </div>
-                                <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
-                                    <div className="flex justify-between items-start">
-                                        <span className="bg-white/20 backdrop-blur-md text-[10px] font-black px-2 py-0.5 rounded-full">AI 분석</span>
-                                        <i className="fas fa-hand-paper text-2xl text-slate-300"></i>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-black text-base leading-snug mb-1">
-                                            손바닥에 그려진<br />나의 운명선 찾기
-                                        </h3>
-                                        <p className="text-slate-300 text-[10px] font-medium">
-                                            스마트 렌즈 분석 커밍순
-                                        </p>
-                                    </div>
-                                </div>
-                            </button>
-
-                            {/* 슬롯 3: 베라 웹소설 연재관 */}
+                            {/* 슬롯 2: 베라 웹소설 연재관 */}
                             <button
                                 onClick={() => {
                                     if (!user) {

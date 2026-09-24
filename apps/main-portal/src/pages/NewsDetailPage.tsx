@@ -209,7 +209,7 @@ export default function NewsDetailPage() {
                                     <p className="text-sm font-bold text-gray-900">
                                         {splitTitle(news.title).publisher || news.publisher || news.source || '기자 정보 없음'}
                                     </p>
-                                    <p className="text-xs text-gray-400">FaithPortal News &amp; Insight</p>
+                                    <p className="text-xs text-gray-400">VERA 뉴스룸 &amp; 분석 데스크</p>
                                 </div>
                             </div>
                             <div className="flex gap-2">
@@ -219,6 +219,19 @@ export default function NewsDetailPage() {
                                 <button className="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-500 hover:text-yellow-500 transition-colors flex items-center justify-center shadow-xs">
                                     <i className="far fa-bookmark"></i>
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* 공식 출처 및 큐레이션 안내 배너 (구글 E-E-A-T & 저작권 투명성 준수) */}
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 sm:p-4 flex items-start gap-3 text-xs text-slate-600">
+                            <i className="fas fa-shield-halved text-teal-600 text-base mt-0.5 shrink-0"></i>
+                            <div className="space-y-1">
+                                <p className="font-bold text-slate-800">
+                                    공식 언론사 큐레이션 및 팩트 브리핑 안내
+                                </p>
+                                <p className="leading-relaxed text-slate-600">
+                                    본 콘텐츠는 공식 뉴스 공급처(<span className="font-semibold text-slate-800">{splitTitle(news.title).publisher || news.publisher || news.source || '원문 언론사'}</span>)의 보도를 바탕으로 VERA 분석 데스크가 핵심 팩트를 추출하고 연관 도구 및 실생활 영향을 구조화한 브리핑입니다. 원작성 언론사의 저작권을 존중하며, 전체 심층 보도는 본문 하단의 [원문보기]를 통해 열람하실 수 있습니다.
+                                </p>
                             </div>
                         </div>
                     </div>
