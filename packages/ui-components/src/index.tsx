@@ -18,7 +18,7 @@ export const Card = ({ children, className = "" }: { children: React.ReactNode, 
 );
 
 export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, hideActions = false, onVote }: { news: any, index?: number, isBookmarked?: boolean, onBookmarkToggle?: (id: number) => void, hideActions?: boolean, onVote?: (id: number, type: 'up' | 'down') => void }) => {
-    const timeAgo = getTimeAgo(news.published_at || news.created_at);
+    const timeAgo = getTimeAgo(news.created_at || news.published_at);
     // 다중 카테고리 지원: 'stock,general' 형태 → 배지 여러 개
     const categories: string[] = String(news.category || '').split(',').map((s: string) => s.trim()).filter(Boolean);
 

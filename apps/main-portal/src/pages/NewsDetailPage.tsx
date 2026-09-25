@@ -260,7 +260,7 @@ export default function NewsDetailPage() {
                                     {getCategoryName(cat)}
                                 </span>
                             ))}
-                            <span className="text-xs text-slate-400 font-medium">{getTimeAgo(news.published_at)}</span>
+                            <span className="text-xs text-slate-400 font-medium">{getTimeAgo(news.created_at || news.published_at)}</span>
                         </div>
                         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 leading-[1.3] tracking-tight">
                             {splitTitle(news.title).title}

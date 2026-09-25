@@ -40,7 +40,7 @@ news.get('/api/news', async (c) => {
             params.push(`% - ${escaped}`);
         }
 
-        query += ` ORDER BY published_at DESC, created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` ORDER BY COALESCE(created_at, published_at) DESC, published_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(limit, offset);
 
         const result = await pool.query(query, params);
@@ -138,7 +138,7 @@ news.get('/api/news/search', async (c) => {
                 WHERE news_fts MATCH $1
             )
               AND (hidden IS NULL OR hidden = 0)
-            ORDER BY published_at DESC, created_at DESC
+            ORDER BY COALESCE(created_at, published_at) DESC, published_at DESC
             LIMIT $2 OFFSET $3
         `, [ftsQuery, limit, offset]);
 

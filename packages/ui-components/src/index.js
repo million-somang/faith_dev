@@ -3,7 +3,7 @@ import { getCategoryName, getCategoryColor, getTimeAgo } from '@faithportal/core
 export const Button = ({ children, onClick, className = "" }) => (_jsx("button", { onClick: onClick, className: `px-4 py-2 font-bold rounded-lg transition-all duration-200 ${className}`, children: children }));
 export const Card = ({ children, className = "" }) => (_jsx("div", { className: `content-card p-6 ${className}`, children: children }));
 export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, hideActions = false, onVote }) => {
-    const timeAgo = getTimeAgo(news.published_at || news.created_at);
+    const timeAgo = getTimeAgo(news.created_at || news.published_at);
     const categoryColor = getCategoryColor(news.category);
     const isAnalyzed = (news.title.includes('환율') || news.title.includes('주가') || news.title.includes('증시') || news.title.includes('달러') || news.title.includes('코스피') || news.title.includes('경제'));
     let keywords = [];

@@ -61,14 +61,39 @@ export function decodeHtmlEntities(input) {
     }
     return result;
 }
-// 시간 전 표시
+// 문자열 또는 Date 객체를 타임존 안전 Date로 변환
+export function parseDate(dateInput) {
+    if (!dateInput) return new Date();
+    if (dateInput instanceof Date) return dateInput;
+
+    let str = String(dateInput).trim();
+    if (!str) return new Date();
+
+    // 'YYYY-MM-DD HH:mm:ss' (SQLite/PostgreSQL 기본 UTC 타임스탬프 형식) 처리
+    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}/.test(str)) {
+        str = str.replace(' ', 'T');
+        if (!str.endsWith('Z') && !/[+-]\d{2}(:\d{2})?$/.test(str)) {
+            str += 'Z';
+        }
+    }
+
+    const parsed = new Date(str);
+    return isNaN(parsed.getTime()) ? new Date() : parsed;
+}
+// 시간 전 표시 (업로드/발행 일시 기준 상대 시간)
 export function getTimeAgo(dateString) {
+    if (!dateString) return '방금 전';
     const now = new Date();
-    const past = new Date(dateString);
+    const past = parseDate(dateString);
     const diffMs = now.getTime() - past.getTime();
+
+    // 미래 시각 오차(클라이언트-서버 시계 불일치) 방어
+    if (diffMs < 0) return '방금 전';
+
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
+
     if (diffMins < 1)
         return '방금 전';
     if (diffMins < 60)
@@ -79,3 +104,4 @@ export function getTimeAgo(dateString) {
         return `${diffDays}일 전`;
     return past.toLocaleDateString('ko-KR');
 }
+

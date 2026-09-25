@@ -704,7 +704,7 @@ export default function FinancePage() {
                                         <div className="flex items-center gap-2 text-xs text-gray-400">
                                             {news.source && <span>{news.source}</span>}
                                             {news.source && <span>·</span>}
-                                            <span>{getTimeAgo(news.published_at || news.created_at || '')}</span>
+                                            <span>{getTimeAgo(news.created_at || news.published_at || '')}</span>
                                         </div>
                                     </a>
                                 ))
