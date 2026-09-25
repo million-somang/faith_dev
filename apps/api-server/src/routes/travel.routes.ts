@@ -184,6 +184,11 @@ travelRoutes.get('/api/travel/:id{[0-9]+}', async (c) => {
 
         const article = result.rows[0];
         article.view_count += 1;
+        if (article.metadata && typeof article.metadata === 'string') {
+            try {
+                article.metadata = JSON.parse(article.metadata);
+            } catch {}
+        }
 
         // 관련 추천 여행지 (동일 권역 3건)
         const relatedRes = await pool.query(
@@ -339,7 +344,8 @@ const handleCreateTravel = async (c: any) => {
             is_featured,
             isFeatured,
             published_at,
-            publishedAt
+            publishedAt,
+            metadata
         } = body;
 
         // 필수 필드 검증
@@ -378,6 +384,9 @@ const handleCreateTravel = async (c: any) => {
         const finalSource = source || null;
         const finalSourceUrl = source_url || sourceUrl || null;
         const finalFeatured = (is_featured || isFeatured) ? 1 : 0;
+        const finalMetadata = typeof metadata === 'object' && metadata !== null 
+            ? JSON.stringify(metadata) 
+            : (typeof metadata === 'string' ? metadata : null);
         
         let finalTags = '';
         if (Array.isArray(tags)) {
@@ -395,13 +404,13 @@ const handleCreateTravel = async (c: any) => {
             INSERT INTO travel_articles (
                 title, destination, region, category, summary, ai_summary, content,
                 travel_tips, thumbnail, gallery, best_season, duration, estimated_cost,
-                location_address, tags, author, source, source_url, is_featured,
+                location_address, tags, author, source, source_url, is_featured, metadata,
                 view_count, like_count, published_at, created_at, updated_at
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7,
                 $8, $9, $10, $11, $12, $13,
-                $14, $15, $16, $17, $18, $19,
-                0, 0, $20, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                $14, $15, $16, $17, $18, $19, $20,
+                0, 0, $21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
         `;
 
@@ -425,6 +434,7 @@ const handleCreateTravel = async (c: any) => {
             finalSource,
             finalSourceUrl,
             finalFeatured,
+            finalMetadata,
             finalPublishedAt
         ];
 

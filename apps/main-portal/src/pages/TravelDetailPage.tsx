@@ -32,6 +32,7 @@ interface TravelArticle {
     view_count: number;
     like_count: number;
     published_at: string;
+    metadata?: any;
 }
 
 export default function TravelDetailPage() {
@@ -100,6 +101,41 @@ export default function TravelDetailPage() {
             return [article.summary];
         }
         return [article?.title || ''];
+    };
+
+    
+    // 🏛️ 실측 여행지 표준 운영 명세서 (Fact Sheet) 데이터 추출 (metadata 우선, content 폴백)
+    const getFactSheetData = () => {
+        if (!article) return null;
+        if (article.metadata) {
+            const meta = typeof article.metadata === 'string' 
+                ? (() => { try { return JSON.parse(article.metadata); } catch { return null; } })()
+                : article.metadata;
+            if (meta && typeof meta === 'object') return meta;
+        }
+
+        if (article.content) {
+            const telMatch = article.content.match(/•\s*(?:문의\s*전화|문의|전화번호)\s*:\s*([^\n]+)/);
+            const hoursMatch = article.content.match(/•\s*(?:운영\s*시간|영업\s*시간)\s*:\s*([^\n]+)/);
+            const closingMatch = article.content.match(/•\s*(?:쉬는\s*날|정기\s*휴무|휴무)\s*:\s*([^\n]+)/);
+            const parkingMatch = article.content.match(/•\s*주차\s*(?:시설)?\s*:\s*([^\n]+)/);
+            const feeMatch = article.content.match(/•\s*(?:이용\s*요금|입장료)\s*:\s*([^\n]+)/);
+            const webMatch = article.content.match(/•\s*공식\s*채널\s*:\s*(https?:\/\/[^\s\n]+)/);
+
+            if (telMatch || hoursMatch || parkingMatch) {
+                return {
+                    title: article.destination || article.title,
+                    tel: telMatch ? telMatch[1].trim() : null,
+                    roadAddress: article.location_address,
+                    businessHours: hoursMatch ? hoursMatch[1].trim() : null,
+                    closingDays: closingMatch ? closingMatch[1].trim() : null,
+                    parking: parkingMatch ? parkingMatch[1].trim() : null,
+                    admissionFee: feeMatch ? feeMatch[1].trim() : null,
+                    websiteUrl: webMatch ? webMatch[1].trim() : null,
+                };
+            }
+        }
+        return null;
     };
 
     // 스마트 문단 분할 및 가독성 개선
@@ -315,6 +351,204 @@ export default function TravelDetailPage() {
                         </div>
                     </section>
                 )}
+
+                
+                {/* 🏛️ 여행지 표준 운영 명세서 (Fact Sheet Table) */}
+                {(() => {
+                    const factData = getFactSheetData();
+                    if (!factData) return null;
+                    return (
+                        <section className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-emerald-600 text-sm">
+                                    <i className="fas fa-award"></i>
+                                </span>
+                                <h3 className="text-sm font-black text-slate-900">
+                                    🏛️ 여행지 표준 운영 명세서 (Fact Sheet)
+                                </h3>
+                                <span className="text-[11px] text-slate-400 font-medium">한국관광공사 실측 기준</span>
+                            </div>
+
+                            <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                                <table className="w-full text-xs text-left border-collapse">
+                                    <tbody>
+                                        {/* 정식 명칭 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600 w-28 sm:w-36">
+                                                정식 명칭
+                                            </th>
+                                            <td className="py-3 px-4 font-bold text-slate-900">
+                                                {factData.title || article.title}
+                                            </td>
+                                        </tr>
+
+                                        {/* 전화번호 / 안내 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-phone text-emerald-600"></i>
+                                                    <span>전화번호 / 안내</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 font-bold text-slate-900">
+                                                {factData.tel ? (
+                                                    <a
+                                                        href={`tel:${factData.tel}`}
+                                                        className="text-emerald-600 hover:underline font-mono inline-flex items-center gap-1"
+                                                    >
+                                                        <span>{factData.tel}</span>
+                                                        <span className="text-[10px] text-slate-400 font-normal">(통화 연결)</span>
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-slate-400">안내센터 등록 정보 없음</span>
+                                                )}
+                                            </td>
+                                        </tr>
+
+                                        {/* 주소 정보 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-map-marker-alt text-emerald-600"></i>
+                                                    <span>주소 정보</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 text-slate-800">
+                                                <div className="font-bold">
+                                                    {factData.roadAddress || article.location_address}
+                                                </div>
+                                                {factData.jibunAddress && (
+                                                    <div className="text-[11px] text-slate-400 mt-0.5">
+                                                        지번: {factData.jibunAddress}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+
+                                        {/* 영업 / 이용시간 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-clock text-emerald-600"></i>
+                                                    <span>영업 / 이용시간</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 font-bold text-slate-900">
+                                                {factData.businessHours || '현장 및 유선 문의 권장'}
+                                            </td>
+                                        </tr>
+
+                                        {/* 쉬는 날 (휴무) */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-calendar-alt text-emerald-600"></i>
+                                                    <span>쉬는 날 (휴무)</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4">
+                                                <span
+                                                    className={`font-black px-2 py-0.5 rounded text-[11px] ${
+                                                        factData.closingDays?.includes('연중무휴') || !factData.closingDays
+                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                            : 'bg-rose-100 text-rose-800'
+                                                    }`}
+                                                >
+                                                    {factData.closingDays || '연중무휴'}
+                                                </span>
+                                            </td>
+                                        </tr>
+
+                                        {/* 주차 시설 / 요금 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-car text-emerald-600"></i>
+                                                    <span>주차 시설 / 요금</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 text-slate-800">
+                                                <span className="font-bold">
+                                                    {factData.parking || '주차 가능 여부 현장 확인'}
+                                                </span>
+                                                {factData.parkingFee && (
+                                                    <span className="text-slate-500 ml-2">
+                                                        (요금: {factData.parkingFee})
+                                                    </span>
+                                                )}
+                                            </td>
+                                        </tr>
+
+                                        {/* 입장료 / 요금 */}
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-ticket-alt text-emerald-600"></i>
+                                                    <span>입장료 / 요금</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 font-bold text-slate-900">
+                                                {factData.admissionFee || '무료 또는 시설 내 이용료 별도'}
+                                            </td>
+                                        </tr>
+
+                                        {/* 지도 좌표 */}
+                                        {factData.coordinates && (factData.coordinates.lat || factData.coordinates.lng) && (
+                                            <tr className="border-b border-slate-100">
+                                                <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <i className="fas fa-compass text-emerald-600"></i>
+                                                        <span>지도 좌표</span>
+                                                    </div>
+                                                </th>
+                                                <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                                                    위도(Lat): {factData.coordinates.lat?.toFixed(6) || '-'}, 경도(Lng): {factData.coordinates.lng?.toFixed(6) || '-'}
+                                                </td>
+                                            </tr>
+                                        )}
+
+                                        {/* 공식 채널 */}
+                                        {factData.websiteUrl && (
+                                            <tr>
+                                                <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <i className="fas fa-globe text-emerald-600"></i>
+                                                        <span>공식 채널</span>
+                                                    </div>
+                                                </th>
+                                                <td className="py-3 px-4">
+                                                    <a
+                                                        href={factData.websiteUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1.5 break-all"
+                                                    >
+                                                        <span>{factData.websiteUrl}</span>
+                                                        <i className="fas fa-external-link-alt text-[10px]"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* 한국관광공사 공식 상세 개요 */}
+                            {factData.overview && (
+                                <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 text-xs text-slate-600 leading-relaxed space-y-1">
+                                    <div className="font-bold text-slate-700 flex items-center gap-1.5">
+                                        <i className="fas fa-info-circle text-slate-400"></i>
+                                        <span>한국관광공사 공식 상세 개요</span>
+                                    </div>
+                                    <p className="text-slate-600 whitespace-pre-line pl-5">
+                                        {factData.overview}
+                                    </p>
+                                </div>
+                            )}
+                        </section>
+                    );
+                })()}
+
 
                 {/* 6. 상세 여행 스토리 본문 */}
                 <article className="bg-white rounded-3xl p-6 sm:p-9 border border-slate-200/90 shadow-xs space-y-5">
