@@ -148,6 +148,10 @@ app.route('/', geoRoutes);
 import { shoppingRoutes } from './routes/shopping.routes.js';
 app.route('/', shoppingRoutes);
 
+import { travelRoutes } from './routes/travel.routes.js';
+app.route('/', travelRoutes);
+
+
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',

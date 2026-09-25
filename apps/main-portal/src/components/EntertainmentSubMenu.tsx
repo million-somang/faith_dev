@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
     { path: '/entertainment/saju', label: '사주', icon: 'fas fa-yin-yang', active: true },
+    { path: '/entertainment/travel', label: '여행', icon: 'fas fa-plane-departure', active: true },
     { path: '/entertainment/novel', label: '웹소설', icon: 'fas fa-book-open', active: true, isApp: false },
 ];
+
 
 export default function EntertainmentSubMenu() {
     const location = useLocation();

@@ -1,11 +1,11 @@
 # VeraNex 미니앱(Sub-App) 마스터 개발 및 디자인 가이드
 
-> **문서 버전**: 2.6 (Zero-Scroll 680px 1화면 완결 컴팩트 최적화 & 상단 쏠림 방지 균등 배치 통합 에디션)  
+> **문서 버전**: 3.0 (애드센스 독립 도메인 단독 승인 & 엔터프라이즈 보안 및 코드 무결성 통합 에디션)  
 > **적용 대상**: 전체 미니앱 (`apps/app-*`)  
 > **디자인 원칙**: 100% 밝은 배경의 프리미엄 클린 뉴모피즘 + 680px 이내 1화면 완결(Zero-Scroll) 고밀도 컴팩트 최적화 + 850px 전 영역 균등 분할 풀 하이트 레이아웃 + 최고급 그래픽 & 인터랙티브 모션 애니메이션  
 > **기준 모델**: 베라 숫자야구 (`app-baseball`), 베라오목 (`app-omok`), 베라 팝 (`app-vera-pop`), 예·적금 계산기 (`app-interest-calc`), Base64 변환기 (`app-base64-converter`), 퇴직금 계산기 (`app-severance-calc`)
 
-이 문서는 VeraNex 통합 플랫폼 내부에서 구동되는 모든 신규 미니앱(금융 도구, 유틸리티, 계산기, 미니게임 등)을 기획, 설계, 개발 및 배포할 때 반드시 준수해야 하는 **아키텍처, 팝업 규격, 화면 전체 활용 표준, 마케팅 자동 캡처, 검색엔진(SEO) 및 인공지능(GEO/AIO) 최적화, 100% 밝은 프리미엄 UX/UI 디자인 시스템 및 JSX 템플릿**을 망라한 단일 공식 표준 가이드입니다.
+이 문서는 VeraNex 통합 플랫폼 내부에서 구동되는 모든 신규 미니앱(금융 도구, 유틸리티, 계산기, 미니게임 등)을 기획, 설계, 개발 및 배포할 때 반드시 준수해야 하는 **아키텍처, 팝업 규격, 화면 전체 활용 표준, 마케팅 자동 캡처, 검색엔진(SEO) 및 인공지능(GEO/AIO) 최적화, 100% 밝은 프리미엄 UX/UI 디자인 시스템, 구글 애드센스 독립 도메인 승인 규격, 엔터프라이즈 보안 및 코드 무결성 안정화 표준**을 망라한 단일 공식 표준 가이드입니다.
 
 ---
 
@@ -30,6 +30,14 @@
 9. **그래픽과 애니메이션에 많은 생각과 정성을 할애 (Visual & Motion Polish Mandatory)**:
    - 모든 미니앱은 단순한 정적 텍스트와 밋밋한 사각형 박스 배치를 단호히 지양하고, **시각적 완성도를 극대화하는 그래픽 에셋(고품질 벡터 SVG, 입체 3D 셰이딩, 질감/텍스처, 고급 그라데이션)과 부드러운 인터랙티브 애니메이션(스프링 탄성 바운스, 파문/리플 효과, 펄스 인디케이터, 유려한 상태 전환 트랜지션, 축하 이펙트 등)의 기획 및 개발에 많은 생각과 시간을 할애**해야 합니다.
    - 사용자 상호작용(클릭, 터치, 드래그, 호버)에 즉각적이고 생동감 넘치는 시각적·청각적 피드백(Web Audio API 무의존성 사운드 합성 등)을 제공하여, 단순 기능성 도구를 넘어 "다루는 손맛과 시각적 즐거움이 가득한 프리미엄 소프트웨어" 수준으로 마감해야 합니다.
+10. **애드센스 독립 도메인(Standalone Domain) 듀얼 호스팅 표준**:
+    - 미니앱은 메인 포털 팝업(450px) 내부뿐 아니라, **단독 도메인(예: `calc.veranex.app` 또는 독립 도메인)으로 개별 배포되어 단독으로 구글 애드센스 심사를 통과할 수 있는 구조**로 설계되어야 합니다.
+    - 독립 도메인 서빙 시 반응형 데스크톱 레이아웃 확장, `ads.txt` 연동, 필수 4대 E-E-A-T 페이지(소개, 개인정보처리방침 및 DART 쿠키 명시, 이용약관, 문의), 1,000자 이상의 사전렌더링 본문(가치 없는 콘텐츠 판정 원천 무효화), CLS 0 준수 배너 슬롯을 필수 탑재합니다.
+11. **엔터프라이즈 보안 및 코드 무결성 안정화 (Security & Code Stability)**:
+    - **XSS 살균 및 클라이언트 로컬 격리 (Privacy-First)**: 사용자 입력 데이터(금융 자산, 개인정보, 텍스트)는 외부 서버로 무단 전송하지 않고 100% 브라우저 로컬 메모리에서 처리하며, 모든 입출력은 XSS 살균 처리를 거칩니다.
+    - **부동소수점 오차 방지 (Precision Math)**: 자바스크립트의 IEEE 754 부동소수점 오류(`0.1 + 0.2 !== 0.3`)로 인한 금융·세금 계산 왜곡을 정수 변환 및 반올림 유틸리티로 완벽히 방어합니다.
+    - **React Error Boundary 필수 적용**: 런타임 예외 발생 시 전체 앱이 하얗게 뻗는 현상(White Screen of Death)을 방지하고 자동 복구 UI를 제공합니다.
+    - **메모리 누수 제로 (Lifecycle Cleanup)**: `setInterval`, `setTimeout`, Web Audio API 오디오 컨텍스트, 윈도우 이벤트 리스너의 완벽한 언마운트 해제(`cleanup`)를 의무화합니다.
 
 ---
 
@@ -204,6 +212,47 @@ proxy: {
 | **미니게임류**<br>(숫자야구, 오목, 지뢰찾기, 2048 등) | • 통합 전광판 (48px)<br>• 메인 게임 보드/캔버스 (120~180px)<br>• 고정 2열 투구/착수 기록 (76px)<br>• 컴팩트 컨트롤러/키패드 (210px) | • 게임판 축소 및 중복 입력 슬롯 제거<br>• 회차 진행 시 세로 확장 차단 (2열 그리드)<br>• 키패드 38px 규격화 |
 | **금융/이자 계산기류**<br>(예·적금, 대출, 복리, 퇴직금 등) | • 원라인 프리셋 칩 (34px)<br>• 컴팩트 입력 폼 카드 (220px)<br>• 2열 실시간 요약 메트릭 (75px)<br>• 하단 고정 CTA 버튼 (42px) | • 폼 필드 간격 `gap-2` 슬림화<br>• 상세 결과는 '결과 모드'로 화면 전환하여 분리<br>• 입력 화면 조작 시 스크롤 제로 유지 |
 | **유틸리티 & 변환기류**<br>(Base64, JSON, 웹변환, 텍스트 검사기 등) | • 컴팩트 상단 툴바 (36px)<br>• 가변 2단 입력/출력 뷰 (`flex-1`, 각 160~180px)<br>• 원라인 메트릭 분석 바 (30px)<br>• 하단 퀵 액션 독 (44px) | • 텍스트 영역의 가변 `flex-1` 균형 배분<br>• 보조 옵션(포맷, 인코딩)을 팝오버/모달로 격리<br>• 전체 스크롤바 발생 원천 차단 |
+
+
+### 1.7 애드센스 승인용 독립 도메인(Standalone Host) 및 듀얼 모드 아키텍처
+
+미니앱은 메인 포털 내부의 450px 팝업뿐 아니라, **독립된 개별 도메인(예: `https://calc.veranex.app` 또는 별도 도메인)으로 단독 호스팅되어 구글 애드센스 사이트 승인을 획득할 수 있는 듀얼 모드 아키텍처**를 필수로 지원해야 합니다.
+
+#### 1) 듀얼 모드 감지 및 반응형 레이아웃 스위처
+앱 구동 환경이 포털 내부 팝업/iframe인지, 독립 브라우저 탭/도메인인지 자동으로 판별하여 최적화된 레이아웃을 제공합니다.
+
+```tsx
+// hooks/useViewMode.ts
+export function useViewMode() {
+  const isEmbed = typeof window !== 'undefined' && (
+    window.self !== window.top || 
+    new URLSearchParams(window.location.search).get('embed') === 'true'
+  );
+  return {
+    isEmbed,              // 포털 팝업/임베드 모드 (450px x 850px 고정)
+    isStandalone: !isEmbed // 독립 도메인 모드 (반응형 데스크톱 + 모바일 전체화면)
+  };
+}
+```
+
+- **임베드/팝업 모드 (`isEmbed: true`)**: 450px × 850px 뷰포트 잠금 및 680px 1화면 완결 Zero-Scroll 인터랙션 적용.
+- **독립 도메인 모드 (`isStandalone: true`)**: 데스크톱에서는 중앙 집중형 프리미엄 반응형 컨테이너(`max-w-xl sm:max-w-2xl mx-auto py-8 sm:py-12`), 모바일에서는 100vw 전체화면으로 매끄럽게 확장되며, 상단 글로벌 내비게이션과 하단 애드센스 E-E-A-T 법적 푸터를 완전히 렌더링합니다.
+
+#### 2) 독립 도메인 Vite 빌드 환경 분리 (`vite.config.ts`)
+```ts
+export default defineConfig(({ mode }) => {
+  const isStandalone = process.env.BUILD_TARGET === 'standalone';
+  return {
+    plugins: [react()],
+    // 독립 도메인 배포 시에는 루트 경로('/'), 포털 서브패스 배포 시에는 '/app/calc/'
+    base: isStandalone ? '/' : '/app/calc/',
+    build: {
+      outDir: isStandalone ? 'dist-standalone' : 'dist',
+    },
+  };
+});
+```
+
 
 ---
 
@@ -1111,8 +1160,16 @@ useEffect(() => {
 | [ ] | **원클릭 클립보드 복사 & 공유** | 결과 카드 우상단에 `[결과 복사]`, 하단에 `[결과 공유하기]` 버튼 배치 |
 | [ ] | **마케팅 캡처 속성 표기** | 조작 요소에 `data-screenshot-click="action"`, 폼에 `data-screenshot-input`, 결과 버튼에 `data-screenshot-click="result"`, 결과 카드에 `data-screenshot-point="result"` 속성 선언 |
 | [ ] | **SEO & AIO / GEO 최적화** | `<title>`, Open Graph, `WebApplication` & `FAQPage` JSON-LD, `public/llms.txt` 제공 |
+| [ ] | **애드센스 독립 도메인 듀얼 모드** | 단독 URL 접속 시 반응형 데스크톱 확장 및 E-E-A-T 푸터 노출, 포털 임베드 시 450px 팝업 자동 전환 |
+| [ ] | **독립 ads.txt & robots.txt & sitemap** | 도메인 루트에 올바른 `ads.txt` 및 구글봇 허용 `robots.txt`, `sitemap.xml` 서빙 검증 |
+| [ ] | **Thin Content 방어 초기 텍스트** | JS 비활성화 시에도 초기 HTML에 1,000자 이상의 사용법·공식·FAQ 시맨틱 텍스트 존재 확인 |
+| [ ] | **XSS 살균 및 로컬 데이터 격리** | 민감 데이터 외부 전송 차단(100% 브라우저 메모리 연산) 및 DOMPurify 살균 적용 |
+| [ ] | **부동소수점 정밀 연산 (Precision Math)**| `0.1 + 0.2` 오차 없는 금융·이자 반올림 및 경계값 오버플로우 방어 |
+| [ ] | **React Error Boundary 장착** | 연산 오류나 비정상 데이터 입력 시 화이트 스크린 없이 [다시 계산하기] 복구 UI 노출 |
+| [ ] | **메모리 누수 제로 (Cleanup)** | `useEffect` 언마운트 시 타이머, 사운드 오실레이터, 윈도우 리스너 100% 해제 검증 |
 
 ---
+
 
 ### 4.5 본 가이드 구축에 사용된 스킬 (Used Skills)
 
@@ -1126,46 +1183,477 @@ useEffect(() => {
    - **위치**: `d:\project\faithportal\.agents\skills\brainstorming\SKILL.md`
    - 모든 유형의 미니앱에 범용적으로 이식될 수 있도록 모듈화된 템플릿과 체크리스트 체계 수립.
 
+## 제5장. 🛡️ 보안(Security) 및 코드 안정화(Code Stabilization) 마스터 표준
+
+금융 계산기, 데이터 변환 도구, 브라우저 게임 등 사용자가 직접 수치를 입력하고 데이터를 다루는 미니앱은 **악의적인 스크립트 삽입(XSS)을 방어하고, 민감한 개인정보를 안전하게 격리하며, 런타임 크래시 없이 99.99% 무결성으로 연산할 수 있는 안정성 체계**가 필수입니다.
+
 ---
 
-## 제5장. AI 바이브코딩 표준 프롬프트 (v0, Cursor, Antigravity)
+### 5.1 XSS 방어 및 사용자 입력값 살균 (Input Sanitization & Safe DOM)
 
-새로운 미니앱을 AI(v0, Cursor, Antigravity 등)에 의뢰할 때, 아래 프롬프트를 최상단에 붙여넣으면 플랫폼 아키텍처 및 디자인 가이드에 100% 부합하는 고품질 코드가 즉시 생성됩니다.
+1. **`dangerouslySetInnerHTML` 원칙적 사용 금지**:
+   - 리액트의 기본 가상 DOM 텍스트 이스케이프(`{text}`)를 사용해야 하며, HTML 태그를 직접 주입하는 패턴은 엄격히 지양합니다.
+2. **부득이하게 HTML을 렌더링해야 할 경우 DOMPurify 필수 적용**:
+   - SVG 렌더러, 서식 있는 텍스트 프리뷰어의 경우 반드시 `dompurify` 라이브러리로 악성 태그(`<script>`, `onload=`, `javascript:`)를 완벽히 살균합니다.
+   ```tsx
+   import DOMPurify from 'dompurify';
+
+   export function SafeHtmlViewer({ htmlContent }: { htmlContent: string }) {
+     const cleanHtml = DOMPurify.sanitize(htmlContent, {
+       USE_PROFILES: { html: true, svg: true },
+       FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form'],
+       FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover']
+     });
+
+     return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+   }
+   ```
+3. **정규식 및 텍스트 이스케이프 유틸리티 내장**:
+   ```ts
+   // utils/security.ts
+   export function escapeHtml(str: string): string {
+     return str
+       .replace(/&/g, '&amp;')
+       .replace(/</g, '&lt;')
+       .replace(/>/g, '&gt;')
+       .replace(/"/g, '&quot;')
+       .replace(/'/g, '&#039;');
+   }
+   ```
+
+---
+
+### 5.2 100% 클라이언트 로컬 보안 격리 (Privacy-First Data Isolation)
+
+1. **민감 데이터의 외부 서버 전송 일체 금지**:
+   - 사용자가 입력하는 예·적금 원금, 월 급여, 퇴직금 계산 내역, 비밀번호, Base64 원문 데이터 등은 **일체 백엔드 API나 외부 수집 서버로 전송하지 않습니다.**
+   - 모든 비즈니스 로직, 데이터 변환, 금융 공식 연산은 **사용자의 브라우저 로컬 메모리(V8 엔진) 내에서 100% 완결**되어야 합니다.
+2. **로컬 스토리지 예외 방어 (Storage Safety)**:
+   - 시크릿 모드나 디스크 용량 한도 초과 시 발생하는 `QuotaExceededError`로 인해 앱이 다운되지 않도록 안전한 래퍼를 사용합니다.
+   ```ts
+   export const safeStorage = {
+     get: (key: string, fallback: any = null) => {
+       try {
+         const item = localStorage.getItem(key);
+         return item ? JSON.parse(item) : fallback;
+       } catch (e) {
+         console.warn(`[Storage] Failed to read ${key}:`, e);
+         return fallback;
+       }
+     },
+     set: (key: string, value: any): boolean => {
+       try {
+         localStorage.setItem(key, JSON.stringify(value));
+         return true;
+       } catch (e) {
+         console.warn(`[Storage] QuotaExceeded or Private Mode:`, e);
+         return false;
+       }
+     }
+   };
+   ```
+
+---
+
+### 5.3 부동소수점 연산 오차 방지 및 금융 산식 안정화 (Precision Math)
+
+JavaScript의 IEEE 754 부동소수점 규격으로 인해 `0.1 + 0.2 === 0.30000000000000004`와 같은 미세 오차가 발생하여 **이자, 세금, 퇴직금 산출 시 원 단위 왜곡이 발생하는 치명적 결함**을 원천 방지합니다.
+
+```ts
+// utils/mathPrecision.ts
+
+/**
+ * 소수점 곱셈 및 나눗셈 오차를 방지하는 정수 스케일링 반올림 함수
+ * @param value 계산할 실수
+ * @param decimals 보존할 소수점 자리수 (기본 0: 원 단위 절사/반올림)
+ */
+export function roundTo(value: number, decimals: number = 0): number {
+  if (!Number.isFinite(value)) return 0;
+  const factor = Math.pow(10, decimals);
+  return Math.round((value + Number.EPSILON) * factor) / factor;
+}
+
+/**
+ * 안전한 정수형 금융 금액 포매팅 (원 단위)
+ */
+export function formatCurrency(amount: number): string {
+  if (isNaN(amount) || !Number.isFinite(amount)) return '0';
+  return Math.floor(amount).toLocaleString('ko-KR');
+}
+
+/**
+ * 비정상 입력값(음수, NaN, 무한대, 오버플로우) 경계값 검증
+ */
+export function sanitizeNumberInput(val: unknown, min: number = 0, max: number = 1000000000000): number {
+  const num = typeof val === 'number' ? val : Number(val);
+  if (isNaN(num) || !Number.isFinite(num)) return min;
+  return Math.max(min, Math.min(num, max));
+}
+```
+
+---
+
+### 5.4 React Error Boundary (장애 격리 및 우아한 자동 복구)
+
+어떤 컴포넌트나 연산 로직에서 예측하지 못한 런타임 오류(`TypeError`, 파싱 실패 등)가 발생해도, **전체 화면이 하얗게 뻗어버리는 현상(White Screen of Death)을 방지하고 복구 액션을 제공**하는 에러 바운더리를 최상위에 감쌉니다.
+
+```tsx
+// components/ErrorBoundary.tsx
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+
+interface Props {
+  children: ReactNode;
+  fallbackTitle?: string;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  public state: State = { hasError: false, error: null };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[MiniApp Uncaught Error]:', error, errorInfo);
+  }
+
+  public handleReset = () => {
+    this.setState({ hasError: false, error: null });
+    window.location.reload();
+  };
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-slate-50 flex flex-col justify-between items-center p-6 text-center select-none animate-fade-in">
+          <div className="w-full max-w-sm my-auto space-y-4">
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-2xl shadow-xs border border-rose-200">
+              <i className="fas fa-triangle-exclamation"></i>
+            </div>
+            <div>
+              <h2 className="text-lg font-black text-slate-900 mb-1">
+                일시적인 연산 오류가 발생했습니다
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-xs mx-auto">
+                입력하신 데이터 형식을 확인해 주세요. 지속될 경우 아래 초기화 버튼을 눌러주세요.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={this.handleReset}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all cursor-pointer active:scale-98"
+              >
+                초기화 후 다시 시도
+              </button>
+            </div>
+          </div>
+          <div className="text-[10px] text-slate-400">
+            © 2026 VeraNex. Secure Client-Side Sandbox.
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+```
+
+---
+
+### 5.5 타이머·오디오·이벤트 리소스 메모리 누수 방지 (Lifecycle Cleanup)
+
+미니앱을 팝업으로 여러 번 열고 닫거나 탭을 전환할 때 브라우저 메모리가 고갈되지 않도록 **모든 리소스는 언마운트 시 100% 해제(Clean-up)**해야 합니다.
+
+```tsx
+// hooks/useAudioFeedback.ts (Web Audio API 안전 해제 예시)
+import { useEffect, useRef } from 'react';
+
+export function useAudioFeedback() {
+  const ctxRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    // 마운트 시 필요에 따라 지연 생성
+    return () => {
+      // 언마운트 시 브라우저 오디오 컨텍스트 완전히 닫기
+      if (ctxRef.current && ctxRef.current.state !== 'closed') {
+        ctxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
+
+  const playBeep = () => {
+    try {
+      if (!ctxRef.current) {
+        ctxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+      if (ctxRef.current.state === 'suspended') {
+        ctxRef.current.resume();
+      }
+      const osc = ctxRef.current.createOscillator();
+      const gain = ctxRef.current.createGain();
+      osc.connect(gain);
+      gain.connect(ctxRef.current.destination);
+      osc.frequency.setValueAtTime(800, ctxRef.current.currentTime);
+      gain.gain.setValueAtTime(0.05, ctxRef.current.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctxRef.current.currentTime + 0.08);
+      osc.start();
+      osc.stop(ctxRef.current.currentTime + 0.08);
+    } catch (e) {
+      // 오디오 정책 차단 시 무시
+    }
+  };
+
+  return { playBeep };
+}
+```
+
+---
+
+### 5.6 보안 HTTP 헤더 및 도메인 격리 정책 (Nginx & Web Server)
+
+미니앱이 독립 도메인에서 안전하게 서빙되도록 웹 서버(Nginx)에 아래 보안 헤더를 필수로 적용합니다.
+
+```nginx
+# /etc/nginx/sites-available/app-calculator.conf
+server {
+    server_name calc.veranex.app;
+
+    # 1. 클릭재킹 방지 (포털 허용 + 단독 브라우징 허용)
+    add_header Content-Security-Policy "frame-ancestors 'self' https://veranex.app https://*.veranex.app;" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # 2. HTTPS 강제 및 HSTS
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    location / {
+        root /var/www/apps/app-calculator/dist;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 3. 구글 애드센스 필수 ads.txt
+    location = /ads.txt {
+        root /var/www/apps/app-calculator/dist;
+        access_log off;
+    }
+}
+```
+
+---
+
+## 제6장. 🌐 구글 애드센스(AdSense) 독립 도메인 단독 승인 마스터 규격
+
+미니앱을 포털 내부 팝업에 머물지 않고, **독립된 개별 도메인(예: `calc.veranex.app` 또는 `financial-tool.com`)으로 단독 신청하여 구글 애드센스 승인을 취득하기 위한 5대 필수 심사 기준**입니다.
+
+```
++-------------------------------------------------------------------------+
+|                구글 애드센스 독립 도메인 단독 승인 5대 체크리스트               |
++-------------------------------------------------------------------------+
+| 1. [ads.txt]       도메인 루트에 올바른 pub-ID 레코드 200 OK 서빙          |
+| 2. [Thin Content]  JS 미실행 상태에서도 초기 HTML 1,000자 이상 시맨틱 텍스트 |
+| 3. [E-E-A-T 4대]   About(소개), Privacy(DART 쿠키), Terms, Contact 완비   |
+| 4. [Crawlability]  robots.txt 구글봇 전체 허용 & sitemap.xml 등록       |
+| 5. [Ad Placement]  빈 슬롯 레이아웃 시프트(CLS) 제로 & 'SPONSORED AD' 라벨 |
++-------------------------------------------------------------------------+
+```
+
+---
+
+### 6.1 독립 도메인 vs 포털 팝업 듀얼 모드 반응형 레이아웃 설계
+
+독립 도메인 접속 시에는 450px 팝업 틀에 갇히지 않고, 데스크톱 사용자에게 알맞은 **중앙 정렬 반응형 카드 컨테이너(`max-w-xl sm:max-w-2xl mx-auto`)**로 렌더링되며, 상단 브랜드 바와 하단 E-E-A-T 푸터가 완벽히 출력됩니다.
+
+```tsx
+// App.tsx
+import { useViewMode } from './hooks/useViewMode';
+import { BannerSlot } from './components/BannerSlot';
+import { ErrorBoundary } from './components/ErrorBoundary';
+
+export default function App() {
+  const { isStandalone } = useViewMode();
+
+  return (
+    <ErrorBoundary>
+      <div className={`min-h-screen bg-slate-50 text-slate-800 ${isStandalone ? 'w-full py-6 sm:py-10 px-4' : 'w-full'}`}>
+        <div className={`mx-auto flex flex-col justify-between ${isStandalone ? 'max-w-xl bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden min-h-[850px]' : 'h-screen max-h-[850px] overflow-hidden'}`}>
+          {/* 상단 헤더 & 알약 탭 */}
+          <AppHeader isStandalone={isStandalone} />
+
+          {/* 메인 콘텐츠 작업 영역 */}
+          <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
+            <CalculatorCore />
+            
+            {/* 애드센스 자동 슬롯 (승인 전 빈 박스 숨김) */}
+            <BannerSlot slotKey="tool-bottom-ad" label="SPONSORED AD" />
+          </main>
+
+          {/* 하단 푸터 (독립 도메인 접속 시 E-E-A-T 링크 필수 노출) */}
+          <AppFooter isStandalone={isStandalone} />
+        </div>
+      </div>
+    </ErrorBoundary>
+  );
+}
+```
+
+---
+
+### 6.2 `ads.txt`, `robots.txt`, `sitemap.xml` 독립 호스팅 표준
+
+독립 도메인 프로젝트의 `public/` 디렉터리에 아래 3개 파일을 기본 배치하여 빌드 시 도메인 루트(`/`)로 자동 배포되도록 합니다.
+
+#### 1) `public/ads.txt`
+```txt
+google.com, pub-9041638273592776, DIRECT, f08c47fec0942fa0
+```
+
+#### 2) `public/robots.txt`
+애드센스 심사 봇(`Mediapartners-Google`, `AdsBot-Google`)과 일반 검색 봇을 전면 허용합니다.
+```txt
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: *
+Allow: /
+
+Sitemap: https://calc.veranex.app/sitemap.xml
+```
+
+#### 3) `public/sitemap.xml`
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://calc.veranex.app/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://calc.veranex.app/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://calc.veranex.app/privacy</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+</urlset>
+```
+
+---
+
+### 6.3 애드센스 필수 4대 E-E-A-T 페이지 내장
+
+구글 애드센스 심사관 및 봇은 사이트의 신뢰도(E-E-A-T)를 검증하기 위해 아래 4대 페이지를 무조건 확인합니다. 독립 도메인 미니앱은 이를 모달 또는 독립 라우트로 반드시 제공해야 합니다.
+
+1. **서비스 소개 (`/about`)**:
+   - 운영 주체(VeraNex), 도구의 개발 취지, 데이터 공인 출처(예: 2026년 대한민국 소득세법 및 은행연합회 공시 금리 산식) 명시.
+2. **개인정보처리방침 (`/privacy`) - ★가장 중요**:
+   - **Google AdSense의 DART 쿠키 사용 조항 필수 기재**:
+     > "본 웹사이트는 구글(Google)의 애드센스 광고 서비스를 이용합니다. 구글은 사용자의 이전 방문 기록을 바탕으로 관심 기반 맞춤형 광고를 제공하기 위해 쿠키(DART 쿠키 등)를 사용할 수 있습니다. 사용자는 Google 광고 설정 페이지에서 맞춤 광고를 거부할 수 있습니다."
+   - 사용자가 입력한 계산 데이터는 서버에 저장되지 않고 100% 로컬 메모리에서 즉시 소멸된다는 보안 원칙 명시.
+3. **이용약관 (`/terms`)**:
+   - 본 계산 도구의 결과는 참고용이며 법적 증빙 효력을 갖지 않는다는 일반 면책 조항 명시.
+4. **고객 문의 (`/contact`)**:
+   - 공식 문의 이메일(`contact@veranex.app`), 운영 시간, 책임자 정보 기재.
+
+---
+
+### 6.4 초기 HTML 텍스트 볼륨 확보 (Thin Content 판정 원천 무효화 기법)
+
+구글 애드센스 불합격의 90%는 "가치 없는 콘텐츠(Thin Content)"입니다. 단순 계산기 화면은 자바스크립트가 실행되기 전에는 빈 껍데기로 보이므로, **`index.html` 파일 내부(또는 정적 빌드 시)에 1,000자 이상의 상세 사용법, 공식 해설, FAQ 텍스트를 시맨틱 태그로 사전에 박아넣어야(Prerender) 합니다.**
+
+```html
+<!-- apps/app-calculator/index.html 내부 예시 -->
+<div id="root">
+  <!-- React 하이드레이션 전 구글 크롤러가 읽는 풍부한 시맨틱 본문 -->
+  <article class="seo-crawler-content">
+    <h1>2026 스마트 예·적금 이자 및 비과세 절세 계산기</h1>
+    <p>본 계산기는 2026년 최신 소득세법을 준수하여 정기예금과 정기적금의 단리, 복리 만기 수령액과 세후 실수령액을 1원 단위까지 정밀 산출합니다.</p>
+    
+    <h2>1. 정기예금과 정기적금의 이자 산정 공식 비교</h2>
+    <p>정기예금은 원금 전체가 예치 기간 동안 거치되므로 [예치원금 × 연이율 × 기간]으로 계산됩니다. 반면 정기적금은 매월 불입되므로 첫 달 불입금은 12개월간, 마지막 달 불입금은 1개월간의 이자만 적용받는 등차수열 공식을 따릅니다.</p>
+
+    <h2>2. 과세 유형별 실수령액 차이 (일반과세 vs 세금우대 vs 비과세)</h2>
+    <p>대한민국 소득세법상 일반과세는 이자의 15.4%(소득세 14% + 지방소득세 1.4%)가 원천징수됩니다. ISA(개인종합자산관리계좌)나 비과세 종합저축을 활용할 경우 세금이 전액 감면되어 실질 수익률이 크게 향상됩니다.</p>
+  </article>
+</div>
+```
+
+---
+
+### 6.5 애드센스 배너 슬롯(BannerSlot) 및 CLS 0 준수 규격
+
+* 광고가 아직 활성화되지 않았거나 로드 중일 때 **빈 프레임이나 흰 박스로 남아 화면이 덜컹거리는 현상(CLS: Cumulative Layout Shift)을 원천 차단**합니다.
+* 광고 단위에는 `aria-label="SPONSORED AD"`를 지정하고 상단에 `[AD]` 또는 `[SPONSORED AD]` 표식을 은은하게 부착하여, 구글 정책인 "콘텐츠와 광고의 혼동 유도 금지"를 완벽히 준수합니다.
+
+---
+
+## 제7장. AI 바이브코딩 표준 프롬프트 (v0, Cursor, Antigravity)
+
+새로운 미니앱을 AI(v0, Cursor, Antigravity 등)에 의뢰할 때, 아래 프롬프트를 최상단에 붙여넣으면 플랫폼 아키텍처, 680px Zero-Scroll, 애드센스 독립 도메인 승인 규격 및 보안 표준에 100% 부합하는 코드가 즉시 생성됩니다.
 
 ```text
 # Role
 Next.js/Vite, React, Tailwind CSS 및 모바일 유틸리티 웹 전문 시니어 프론트엔드 엔지니어입니다.
 
-# Global Requirements (VeraNex Mini-App Standard)
-1. 팝업 규격: 450px × 850px 독립 팝업 내부에서 동작합니다.
+# Global Requirements (VeraNex Mini-App Master Standard)
+1. 팝업 규격 & 독립 도메인 듀얼 모드:
+   - 팝업/임베드 시: 450px × 850px 독립 뷰포트 내부에서 1화면 완결 동작.
+   - 독립 도메인 접속 시: max-w-xl 반응형 데스크톱 확장 및 E-E-A-T 법적 푸터(About, Privacy, Terms, Contact) 노출.
 2. 680px 이내 1화면 완결 (Zero-Scroll) 컴팩트 최적화:
-   - 브라우저 상단바와 OS 작업표시줄 제약을 고려하여, 핵심 조작 모드(게임판, 계산기 키패드, 입력폼+액션버튼)는 순수 680px 이내에 100% 배치합니다.
-   - 조작 중 세로 스크롤 영구 금지: 버튼 조작이나 결과를 보기 위해 스크롤을 위아래로 올렸다 내리는 안티패턴을 허용하지 않습니다.
-   - 동적 세로 팽창 차단: 회차, 이닝, 계산 기록이 누적되어도 부모 화면이 길어지지 않도록 고정 높이(h-[76px]) + 2열 그리드(grid-cols-2) + 내부 스크롤로 가둡니다.
-   - 원라인 통합 헤더(~48px), 중복 입력 슬롯 단일화, 키패드 버튼 38px(h-9.5) 컴팩트 표준을 준수합니다.
-3. 화면 전체 100% 활용 의무 (하단 빈 공간 절대 금지):
-   - 컨텐츠 양이 적다고 화면 상단에 반만 배치하고 아래를 휑한 공백(Dead Space)으로 두지 마세요.
+   - 핵심 조작 모드(게임판, 계산기 키패드, 입력폼+액션버튼)는 순수 680px 이내에 100% 배치.
+   - 조작 중 세로 스크롤 영구 금지: 스크롤을 위아래로 올렸다 내리는 안티패턴을 허용하지 않습니다.
+   - 동적 세로 팽창 차단: 이닝/계산 기록 누적 시에도 부모 화면이 길어지지 않도록 고정 높이(h-[76px]) + 2열 그리드(grid-cols-2) + 내부 스크롤로 격리.
+   - 원라인 통합 헤더(~48px), 중복 입력 슬롯 단일화, 키패드 버튼 38px(h-9.5) 컴팩트 표준 준수.
+3. 화면 전체 100% 균등 활용 의무 (하단 빈 공간 절대 금지):
+   - 컨텐츠를 상단에만 몰아넣고 아래쪽을 휑한 공백(Dead Space)으로 두지 마세요.
    - min-h-[calc(850px-140px)]와 flex flex-col justify-between을 적용하여 850px 높이 전체를 꽉 채우세요.
-   - 메인 카드 아래에 세부 내역 패널, 3단 비교 카드, 실시간 인사이트 팁 박스, 하단 액션 버튼을 밸런스 있게 채워 넣으세요.
+   - 메인 카드 아래에 세부 내역 패널, 3단 비교 카드, 실시간 인사이트 팁 박스, 하단 액션 버튼을 밸런스 있게 배치하세요.
 4. 디자인 시스템 (다크 디자인 무조건 금지! 100% 밝은 라이트 디자인):
    - 다크 모드, 어두운 배경, 딥 네이비/블랙 계열은 일체 사용하지 않습니다.
-   - 입력 단계: 소프트 화이트 뉴모피즘(bg-slate-50, border-slate-200, 퀵 칩, 세그먼트 토글, 고대비 그라데이션 CTA 버튼).
-   - 결과 단계: 프리미엄 클린 라이트 리포트(bg-white, border-slate-200, bg-gradient-to-br from-blue-50/80 to-white 히어로 카드, text-blue-900 거대 볼드 수치, 파스텔 3단 비교 카드, 분석 팁 패널, 결과 복사 및 공유 버튼).
-5. 레이아웃 래퍼: 이미 루트에 제공되는 <MiniAppLayout title="Title"> 내부에 들어갈 컴포넌트만 작성합니다. 최상위 width, height, overflow 래퍼를 씌우지 마세요.
-6. 4초 스플래시 & 1~100% 프로그레스 바 & 하단 광고 배너:
-   - 진입 시 4초(4,000ms) 동안 1%에서 100%까지 매끄럽게 채워지는 프로그레스 바 및 실시간 숫자 카운트 인트로 화면을 표시합니다.
-   - 화면 하단에는 필수 제휴 광고 배너(SPONSORED AD, 320x50 ~ 300x100 규격) 영역을 반드시 배치합니다.
-7. 상단 스티키 헤더 & 알약 탭:
+   - 순백색 카드(bg-white), 소프트 슬레이트 배경(bg-slate-50), 선명한 고대비 텍스트(text-slate-900), 부드러운 파스텔 포인트.
+5. 4초 스플래시 & 1~100% 프로그레스 바 & 하단 광고 배너:
+   - 진입 시 4초(4,000ms) 동안 1%에서 100%까지 매끄럽게 채워지는 프로그레스 바 및 실시간 숫자 카운트 인트로 화면 표시.
+   - 화면 하단에는 필수 제휴 광고 배너(SPONSORED AD, 320x50 ~ 300x100 규격) 영역 배치.
+6. 상단 스티키 헤더 & 알약 탭:
    - [메인 기능, 사용방법(How-to), FAQ] 3단 탭 및 우측 공유 버튼 구성.
-8. 검색엔진 및 AI 최적화 (SEO & GEO):
-   - 단일 H1, WebApplication 및 FAQPage JSON-LD 스키마, Open Graph 메타 태그, 명확한 단답형 질의응답 및 공식 텍스트 명시.
-9. 마케팅 자동 캡처 속성 필수 선언:
-   - 조작 요소: data-screenshot-click="action"
-   - 입력 폼: data-screenshot-input="기본값"
-   - 결과 버튼: data-screenshot-click="result"
-   - 결과 컨테이너: data-screenshot-point="result"
-10. SDK 및 통신:
+7. 엔터프라이즈 보안 및 무결성 안정화:
+   - 입력값 XSS 살균 및 dangerouslySetInnerHTML 금지 (필요 시 DOMPurify 적용).
+   - 100% 클라이언트 로컬 격리: 사용자의 금융/계산 데이터를 서버로 전송하지 않고 브라우저 메모리 내 완결.
+   - 부동소수점 오차 방지: 0.1 + 0.2 오차 없는 정수 스케일링 roundTo() 적용.
+   - React Error Boundary를 최상위에 씌워 런타임 크래시(White Screen) 원천 방어.
+   - 언마운트 시 모든 타이머, Web Audio 컨텍스트, 이벤트 리스너의 철저한 cleanup.
+8. 구글 애드센스 독립 도메인 승인 규격 준수:
+   - 도메인 루트에 ads.txt, robots.txt, sitemap.xml 기본 서빙 구조 마련.
+   - Thin Content 방지를 위해 사용법, 공식, FAQ 등 1,000자 이상의 사전렌더링 텍스트를 초기 HTML에 내장.
+   - 광고 슬롯은 미송출 시 영역 자체를 숨겨(null) 빈 프레임 및 CLS(레이아웃 이동) 방지.
+9. 검색엔진 및 AI 최적화 (SEO & GEO):
+   - 단일 H1, WebApplication 및 FAQPage JSON-LD 스키마, Open Graph 메타 태그, 명확한 단답형 질의응답 명시.
+10. 마케팅 자동 캡처 속성 필수 선언:
+    - 조작 요소: data-screenshot-click="action"
+    - 입력 폼: data-screenshot-input="기본값"
+    - 결과 버튼: data-screenshot-click="result"
+    - 결과 컨테이너: data-screenshot-point="result"
+11. SDK 및 통신:
     - 메인 포털 이벤트 전달: const { sendToPortal } = usePortalMessenger(); -> sendToPortal('MISSION_CLEAR');
     - 사용자 인증: const { user } = useAuth();
-    - 아이콘: FontAwesome 또는 lucide-react 사용.
+    - 브랜드명: 'VeraNex' 또는 베라넥스 통일 (FaithLink 명칭 전면 배제).
 ```
+

@@ -33,7 +33,10 @@ const NewsBySourcePage = lazy(() => import('./pages/NewsBySourcePage'));
 const NewsDetailPage = lazy(() => import('./pages/NewsDetailPage'));
 const EntertainmentPage = lazy(() => import('./pages/EntertainmentPage'));
 const SajuInfoPage = lazy(() => import('./pages/SajuInfoPage'));
+const TravelPage = lazy(() => import('./pages/TravelPage'));
+const TravelDetailPage = lazy(() => import('./pages/TravelDetailPage'));
 const NovelPage = lazy(() => import('./pages/NovelPage'));
+
 const LoungePage = lazy(() => import('./pages/LoungePage'));
 const LoungeTopicPage = lazy(() => import('./pages/LoungeTopicPage'));
 const B2BPage = lazy(() => import('./pages/B2BPage'));
@@ -196,7 +199,11 @@ function App() {
                         <Route path="/game/:gameId" element={<GameInfoPage />} />
                         <Route path="/entertainment" element={<EntertainmentPage />} />
                         <Route path="/entertainment/saju" element={<SajuInfoPage />} />
+                        <Route path="/entertainment/travel" element={<TravelPage />} />
+                        <Route path="/entertainment/travel/:id" element={<TravelDetailPage />} />
+                        <Route path="/travel" element={<Navigate to="/entertainment/travel" replace />} />
                         <Route path="/entertainment/novel" element={<NovelPage />} />
+
                         <Route path="/entertainment/novel/:novelId" element={<NovelPage />} />
                         <Route path="/novel" element={<NovelPage />} />
                         <Route path="/app/novel" element={<NovelPage />} />
