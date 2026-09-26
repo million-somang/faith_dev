@@ -87,6 +87,8 @@ travelRoutes.get('/api/travel', async (c) => {
     const featured = c.req.query('featured');
     const limit = parseInt(c.req.query('limit') || '20');
     const offset = parseInt(c.req.query('offset') || '0');
+    const province = c.req.query('province');
+    const city = c.req.query('city');
     const sort = c.req.query('sort') || 'latest'; // latest, popular
 
     try {
@@ -103,13 +105,25 @@ travelRoutes.get('/api/travel', async (c) => {
             params.push(category);
         }
 
+        if (province && province !== 'all') {
+            const escapedProv = province.replace(/[\\%_]/g, (ch) => '\\' + ch);
+            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
+            params.push(`%${escapedProv}%`);
+        }
+
+        if (city && city !== 'all') {
+            const escapedCity = city.replace(/[\\%_]/g, (ch) => '\\' + ch);
+            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
+            params.push(`%${escapedCity}%`);
+        }
+
         if (featured === 'true' || featured === '1') {
             query += ` AND is_featured = 1`;
         }
 
         if (keyword) {
             const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            query += ` AND (title LIKE $${params.length + 1} ESCAPE '\\' OR destination LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
+            query += ` AND (title LIKE $${params.length + 1} ESCAPE '\\' OR destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
             params.push(`%${escaped}%`);
         }
 
@@ -135,9 +149,19 @@ travelRoutes.get('/api/travel', async (c) => {
             countQuery += ` AND category = $${countParams.length + 1}`;
             countParams.push(category);
         }
+        if (province && province !== 'all') {
+            const escapedProv = province.replace(/[\\%_]/g, (ch) => '\\' + ch);
+            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
+            countParams.push(`%${escapedProv}%`);
+        }
+        if (city && city !== 'all') {
+            const escapedCity = city.replace(/[\\%_]/g, (ch) => '\\' + ch);
+            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
+            countParams.push(`%${escapedCity}%`);
+        }
         if (keyword) {
             const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            countQuery += ` AND (title LIKE $${countParams.length + 1} ESCAPE '\\' OR destination LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
+            countQuery += ` AND (title LIKE $${countParams.length + 1} ESCAPE '\\' OR destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
             countParams.push(`%${escaped}%`);
         }
         const countRes = await pool.query(countQuery, countParams);

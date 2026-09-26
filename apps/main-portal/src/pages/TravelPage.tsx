@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
 import { BannerSlot } from '../components/BannerSlot';
+import InteractiveKoreaMap from '../components/travel/InteractiveKoreaMap';
 
 const API_BASE_URL = '';
 
@@ -60,15 +61,35 @@ export default function TravelPage() {
     const [loading, setLoading] = useState(true);
     const [selectedRegion, setSelectedRegion] = useState('all');
     const [selectedCategory, setSelectedCategory] = useState('all');
+    const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
+    const [selectedCity, setSelectedCity] = useState<string | null>(null);
+    const [allMapArticles, setAllMapArticles] = useState<TravelArticle[]>([]);
     const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const limit = 12;
 
+    // 지도 렌더링용 전체 여행지 목록 1회 일괄 조회
+    useEffect(() => {
+        const fetchMapSpots = async () => {
+            try {
+                const res = await axios.get(`${API_BASE_URL}/api/travel`, {
+                    params: { limit: 100 }
+                });
+                if (res.data?.success) {
+                    setAllMapArticles(res.data.articles || []);
+                }
+            } catch (err) {
+                console.error('[Fetch Map Spots Error]', err);
+            }
+        };
+        fetchMapSpots();
+    }, []);
+
     useEffect(() => {
         fetchTravelArticles();
-    }, [selectedRegion, selectedCategory, sortBy, page]);
+    }, [selectedRegion, selectedCategory, selectedProvince, selectedCity, sortBy, page]);
 
     const fetchTravelArticles = async () => {
         setLoading(true);
@@ -78,6 +99,8 @@ export default function TravelPage() {
                 params: {
                     region: selectedRegion,
                     category: selectedCategory,
+                    province: selectedProvince || undefined,
+                    city: selectedCity || undefined,
                     sort: sortBy,
                     keyword: searchTerm.trim() || undefined,
                     limit,
@@ -100,6 +123,15 @@ export default function TravelPage() {
             console.error('[Fetch Travel Articles Error]', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSelectLocation = (province: string | null, city: string | null) => {
+        setSelectedProvince(province);
+        setSelectedCity(city);
+        setPage(1);
+        if (province) {
+            setSelectedRegion('domestic');
         }
     };
 
@@ -200,8 +232,16 @@ export default function TravelPage() {
                     </div>
                 </div>
 
-                {/* 2. 상단 스포트라이트 추천 여행지 (Featured) */}
-                {featured && page === 1 && !searchTerm && (
+                {/* 2. 인터랙티브 대한민국 감성 여행 지도 탐색기 */}
+                <InteractiveKoreaMap
+                    articles={allMapArticles.length > 0 ? allMapArticles : articles}
+                    selectedProvince={selectedProvince}
+                    selectedCity={selectedCity}
+                    onSelectLocation={handleSelectLocation}
+                />
+
+                {/* 3. 상단 스포트라이트 추천 여행지 (Featured) */}
+                {featured && page === 1 && !searchTerm && !selectedProvince && (
                     <section className="bg-white rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-xs hover:border-emerald-300 transition-all group">
                         <div className="flex items-center gap-2 mb-4 text-xs font-black text-emerald-700">
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
