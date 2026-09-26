@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { PROVINCES, KOREA_MAP_VIEWBOX, ProvinceMeta } from './koreaMapData';
 
 export interface TravelSpot {
     id: number;
@@ -21,163 +22,15 @@ interface InteractiveKoreaMapProps {
     onSelectLocation: (province: string | null, city: string | null) => void;
 }
 
-interface ProvinceMeta {
-    id: string;
-    name: string; // 공식 풀네임
-    shortName: string; // 2글자 약칭
-    centerX: number;
-    centerY: number;
-    path: string;
-    cities: Array<{ name: string; icon: string; x: number; y: number }>;
-}
-
-// 대한민국 8대 핵심 권역 SVG 경로 데이터 (500x650 뷰박스 기준)
-const PROVINCES: ProvinceMeta[] = [
-    {
-        id: 'gangwon',
-        name: '강원특별자치도',
-        shortName: '강원',
-        centerX: 285,
-        centerY: 125,
-        // 강원도 외곽선 (철원-고성-강릉-태백-영월-춘천)
-        path: 'M 205 78 L 265 52 L 315 58 L 345 88 L 368 142 L 362 188 L 332 212 L 290 205 L 255 190 L 225 180 L 205 130 Z',
-        cities: [
-            { name: '속초시', icon: '🌊', x: 330, y: 85 },
-            { name: '인제군', icon: '🏎️', x: 265, y: 105 },
-            { name: '강릉시', icon: '☕', x: 350, y: 145 },
-            { name: '춘천시', icon: '🛶', x: 235, y: 120 },
-            { name: '평창군', icon: '⛷️', x: 295, y: 165 },
-        ]
-    },
-    {
-        id: 'gyeonggi',
-        name: '경기도',
-        shortName: '경기·서울',
-        centerX: 165,
-        centerY: 140,
-        // 경기도 및 서울/인천 외곽선
-        path: 'M 140 75 L 205 78 L 205 130 L 225 180 L 195 210 L 155 215 L 125 185 L 115 135 L 130 95 Z',
-        cities: [
-            { name: '파주시', icon: '📚', x: 150, y: 88 },
-            { name: '가평군', icon: '🏕️', x: 195, y: 110 },
-            { name: '수원시', icon: '🏰', x: 162, y: 175 },
-            { name: '양평군', icon: '🌿', x: 195, y: 155 },
-        ]
-    },
-    {
-        id: 'chungnam',
-        name: '충청남도',
-        shortName: '충남·대전',
-        centerX: 140,
-        centerY: 265,
-        // 충남 외곽선 (태안-당진-천안-금산-서천-보령)
-        path: 'M 125 185 L 155 215 L 195 210 L 190 265 L 195 310 L 145 320 L 115 310 L 92 270 L 98 215 Z',
-        cities: [
-            { name: '보령시', icon: '🏖️', x: 115, y: 285 },
-            { name: '태안군', icon: '🌅', x: 95, y: 235 },
-            { name: '천안시', icon: '🌰', x: 175, y: 230 },
-            { name: '공주시', icon: '👑', x: 160, y: 275 },
-        ]
-    },
-    {
-        id: 'chungbuk',
-        name: '충청북도',
-        shortName: '충북',
-        centerX: 235,
-        centerY: 245,
-        // 충북 외곽선 (제천-단양-충주-청주-영동)
-        path: 'M 225 180 L 255 190 L 290 205 L 285 240 L 260 285 L 225 315 L 190 265 L 195 210 Z',
-        cities: [
-            { name: '청주시', icon: '🏛️', x: 215, y: 265 },
-            { name: '단양군', icon: '🪨', x: 270, y: 210 },
-            { name: '충주시', icon: '🍎', x: 245, y: 225 },
-        ]
-    },
-    {
-        id: 'gyeongbuk',
-        name: '경상북도',
-        shortName: '경북·대구',
-        centerX: 335,
-        centerY: 275,
-        // 경북 외곽선 (울진-포항-경주-청도-문경-영주)
-        path: 'M 290 205 L 332 212 L 372 235 L 388 285 L 380 345 L 335 365 L 295 345 L 260 285 L 285 240 Z',
-        cities: [
-            { name: '포항시', icon: '🌅', x: 375, y: 310 },
-            { name: '경주시', icon: '⛩️', x: 365, y: 345 },
-            { name: '안동시', icon: '🎭', x: 325, y: 250 },
-            { name: '문경시', icon: '⛰️', x: 280, y: 255 },
-        ]
-    },
-    {
-        id: 'jeonbuk',
-        name: '전북특별자치도',
-        shortName: '전북',
-        centerX: 160,
-        centerY: 360,
-        // 전북 외곽선 (군산-익산-무주-남원-고창-부안)
-        path: 'M 115 310 L 145 320 L 195 310 L 225 315 L 228 385 L 175 410 L 120 405 L 105 355 Z',
-        cities: [
-            { name: '완주군', icon: '🌿', x: 180, y: 350 },
-            { name: '전주시', icon: '🏮', x: 155, y: 365 },
-            { name: '군산시', icon: '🚂', x: 120, y: 335 },
-            { name: '남원시', icon: '🌙', x: 195, y: 395 },
-        ]
-    },
-    {
-        id: 'gyeongnam',
-        name: '경상남도',
-        shortName: '경남·부산',
-        centerX: 300,
-        centerY: 425,
-        // 경남 외곽선 (합천-밀양-양산-부산-거제-남해-하동)
-        path: 'M 228 385 L 260 380 L 295 345 L 335 365 L 368 405 L 350 450 L 315 480 L 255 470 L 225 435 Z',
-        cities: [
-            { name: '거제시', icon: '⛵', x: 315, y: 468 },
-            { name: '통영시', icon: '🦪', x: 285, y: 465 },
-            { name: '남해군', icon: '🏝️', x: 245, y: 468 },
-            { name: '부산광역시', icon: '🌊', x: 355, y: 435 },
-        ]
-    },
-    {
-        id: 'jeonnam',
-        name: '전라남도',
-        shortName: '전남·광주',
-        centerX: 145,
-        centerY: 465,
-        // 전남 외곽선 (영광-담양-구례-여수-완도-목포)
-        path: 'M 120 405 L 175 410 L 228 385 L 225 435 L 255 470 L 210 520 L 155 525 L 95 490 L 98 440 Z',
-        cities: [
-            { name: '여수시', icon: '🌉', x: 220, y: 485 },
-            { name: '순천시', icon: '🌾', x: 195, y: 460 },
-            { name: '목포시', icon: '⚓', x: 110, y: 480 },
-            { name: '담양군', icon: '🎋', x: 155, y: 430 },
-        ]
-    },
-    {
-        id: 'jeju',
-        name: '제주특별자치도',
-        shortName: '제주',
-        centerX: 135,
-        centerY: 585,
-        // 제주도 타원 외곽선
-        path: 'M 85 585 C 85 565, 185 565, 185 585 C 185 605, 85 605, 85 585 Z',
-        cities: [
-            { name: '서귀포시', icon: '🍊', x: 135, y: 593 },
-            { name: '제주시', icon: '✈️', x: 135, y: 575 },
-        ]
-    },
-    {
-        id: 'ulleung',
-        name: '경상북도 울릉군',
-        shortName: '울릉·독도',
-        centerX: 435,
-        centerY: 185,
-        // 울릉도 / 독도 미니 섬
-        path: 'M 425 185 C 425 178, 445 178, 445 185 C 445 192, 425 192, 425 185 Z M 460 190 C 460 186, 468 186, 468 190 C 468 194, 460 194, 460 190 Z',
-        cities: [
-            { name: '울릉군', icon: '🦑', x: 435, y: 185 }
-        ]
-    }
+// 7대 대표 권역 그룹 정의 (상단 퀵 바용)
+const REGION_GROUPS = [
+    { label: '전국', id: 'all' },
+    { label: '수도권', id: 'gyeonggi', provNames: ['서울특별시', '경기도', '인천광역시'] },
+    { label: '강원권', id: 'gangwon', provNames: ['강원특별자치도'] },
+    { label: '충청권', id: 'chungcheong', provNames: ['충청북도', '충청남도', '대전광역시', '세종특별자치시'] },
+    { label: '호남권', id: 'honam', provNames: ['전북특별자치도', '전라남도', '광주광역시'] },
+    { label: '영남권', id: 'yeongnam', provNames: ['경상북도', '경상남도', '대구광역시', '부산광역시', '울산광역시'] },
+    { label: '제주권', id: 'jeju', provNames: ['제주특별자치도'] },
 ];
 
 export default function InteractiveKoreaMap({
@@ -189,23 +42,26 @@ export default function InteractiveKoreaMap({
     const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
     const [selectedSpot, setSelectedSpot] = useState<TravelSpot | null>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(true);
+
+    // 기사 - 도 매칭 헬퍼 함수
+    const isArticleInProvince = (article: TravelSpot, prov: ProvinceMeta): boolean => {
+        const text = `${article.location_address || ''} ${article.destination || ''} ${article.region || ''}`;
+        if (text.includes(prov.name) || text.includes(prov.shortName)) return true;
+        if (prov.id === 'jeonbuk' && (text.includes('전라북도') || text.includes('전북'))) return true;
+        if (prov.id === 'gangwon' && (text.includes('강원도') || text.includes('강원'))) return true;
+        if (prov.id === 'gyeonggi' && (text.includes('경기도') || text.includes('경기'))) return true;
+        if (prov.id === 'seoul' && (text.includes('서울특별시') || text.includes('서울'))) return true;
+        if (prov.id === 'jeju' && (text.includes('제주특별자치도') || text.includes('제주'))) return true;
+        return false;
+    };
 
     // 각 도별 등록된 실제 여행지 개수 계산
     const provinceCounts = useMemo(() => {
         const counts: Record<string, number> = {};
         for (const prov of PROVINCES) {
-            counts[prov.name] = 0;
+            counts[prov.name] = articles.filter(a => isArticleInProvince(a, prov)).length;
         }
-
-        articles.forEach(article => {
-            const addr = article.location_address || article.destination || '';
-            PROVINCES.forEach(prov => {
-                if (addr.includes(prov.shortName) || addr.includes(prov.name)) {
-                    counts[prov.name] = (counts[prov.name] || 0) + 1;
-                }
-            });
-        });
-
         return counts;
     }, [articles]);
 
@@ -215,22 +71,33 @@ export default function InteractiveKoreaMap({
         return PROVINCES.find(p => p.name === selectedProvince || p.shortName === selectedProvince) || null;
     }, [selectedProvince]);
 
+    // 동적 뷰박스 (도 선택 시 부드러운 줌인 효과 지원)
+    const activeViewBox = useMemo(() => {
+        if (!activeProvinceMeta || !isZoomed || !activeProvinceMeta.bbox) {
+            return KOREA_MAP_VIEWBOX;
+        }
+        const [minX, minY, maxX, maxY] = activeProvinceMeta.bbox;
+        const padX = Math.max((maxX - minX) * 0.28, 45);
+        const padY = Math.max((maxY - minY) * 0.28, 45);
+        const w = Math.max((maxX - minX) + padX * 2, 240);
+        const h = Math.max((maxY - minY) + padY * 2, 220);
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        return `${Math.round(cx - w / 2)} ${Math.round(cy - h / 2)} ${Math.round(w)} ${Math.round(h)}`;
+    }, [activeProvinceMeta, isZoomed]);
+
     // 현재 선택된 도/시에 속한 여행지 목록
     const filteredSpots = useMemo(() => {
-        if (!selectedProvince) return [];
+        if (!activeProvinceMeta) return articles;
         return articles.filter(a => {
-            const addr = a.location_address || a.destination || '';
-            const matchProvince = activeProvinceMeta 
-                ? addr.includes(activeProvinceMeta.shortName) || addr.includes(activeProvinceMeta.name)
-                : false;
-            
-            if (!matchProvince) return false;
+            if (!isArticleInProvince(a, activeProvinceMeta)) return false;
             if (selectedCity && selectedCity !== 'all') {
+                const addr = `${a.location_address || ''} ${a.destination || ''}`;
                 return addr.includes(selectedCity);
             }
             return true;
         });
-    }, [articles, selectedProvince, selectedCity, activeProvinceMeta]);
+    }, [articles, activeProvinceMeta, selectedCity]);
 
     // 해당 도에 실제 데이터가 존재하는 시/군 목록 추출
     const availableCitiesInProvince = useMemo(() => {
@@ -238,9 +105,8 @@ export default function InteractiveKoreaMap({
         const cityCountMap: Record<string, number> = {};
 
         articles.forEach(a => {
-            const addr = a.location_address || a.destination || '';
-            if (addr.includes(activeProvinceMeta.shortName) || addr.includes(activeProvinceMeta.name)) {
-                // 주소 두 번째 단어 추출 (예: '강원특별자치도 속초시 ...' -> '속초시')
+            if (isArticleInProvince(a, activeProvinceMeta)) {
+                const addr = a.location_address || a.destination || '';
                 const parts = addr.split(' ');
                 if (parts.length >= 2) {
                     const cityName = parts[1];
@@ -251,291 +117,455 @@ export default function InteractiveKoreaMap({
             }
         });
 
-        const list = Object.entries(cityCountMap).map(([name, count]) => {
-            const foundPreset = activeProvinceMeta.cities.find(c => c.name === name);
-            return {
-                name,
-                count,
-                icon: foundPreset?.icon || '📍',
-                x: foundPreset?.x || activeProvinceMeta.centerX,
-                y: foundPreset?.y || activeProvinceMeta.centerY
-            };
+        // 메타데이터에 등록된 기본 시/군 목록과 DB 실제 카운트 결합
+        const result = activeProvinceMeta.cities.map(c => ({
+            ...c,
+            count: cityCountMap[c.name] || 0
+        }));
+
+        // DB에만 존재하는 추가 시/군도 목록에 포함
+        Object.entries(cityCountMap).forEach(([cityName, count]) => {
+            if (!result.find(r => r.name === cityName)) {
+                result.push({
+                    name: cityName,
+                    icon: '📍',
+                    x: activeProvinceMeta.centerX,
+                    y: activeProvinceMeta.centerY,
+                    count
+                });
+            }
         });
 
-        // 등록된 스팟 수가 많은 순으로 정렬
-        return list.sort((a, b) => b.count - a.count);
+        return result.sort((a, b) => b.count - a.count);
     }, [articles, activeProvinceMeta]);
 
     // 도 클릭 핸들러
-    const handleProvinceClick = (province: ProvinceMeta) => {
-        setSelectedSpot(null);
-        if (selectedProvince === province.name) {
-            // 이미 선택된 도를 다시 누르면 전체 지도로 복귀
+    const handleProvinceClick = (prov: ProvinceMeta) => {
+        if (selectedProvince === prov.name) {
+            // 이미 선택된 상태에서 클릭 시 전체 시점으로 전환
             onSelectLocation(null, null);
         } else {
-            onSelectLocation(province.name, null);
+            onSelectLocation(prov.name, null);
         }
+        setSelectedSpot(null);
     };
 
     // 시/군 클릭 핸들러
     const handleCityClick = (cityName: string | null) => {
-        setSelectedSpot(null);
         onSelectLocation(selectedProvince, cityName);
+        setSelectedSpot(null);
     };
 
-    // 전체 리셋
-    const handleReset = () => {
+    // 권역 퀵 바 클릭 핸들러
+    const handleRegionGroupClick = (group: typeof REGION_GROUPS[0]) => {
+        if (group.id === 'all') {
+            onSelectLocation(null, null);
+        } else if (group.provNames && group.provNames.length > 0) {
+            // 해당 권역의 첫 번째 대표 도 선택
+            onSelectLocation(group.provNames[0], null);
+        }
         setSelectedSpot(null);
-        onSelectLocation(null, null);
     };
 
     return (
-        <section className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden transition-all">
-            {/* 1. 상단 컨트롤 헤더 */}
-            <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-gradient-to-r from-emerald-50/50 via-teal-50/30 to-white">
+        <section className="my-8 rounded-3xl bg-gradient-to-b from-slate-50 via-white to-slate-50 border border-slate-200/90 shadow-xl overflow-hidden transition-all duration-300">
+            {/* 상단 컨트롤 헤더 */}
+            <div className="px-6 py-4 border-b border-slate-200/80 bg-white/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-sm">
-                        <i className="fas fa-map-location-dot"></i>
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-md shadow-emerald-600/20 text-lg">
+                        <i className="fas fa-map-marked-alt"></i>
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
-                            <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                                대한민국 감성 여행 탐색기
+                            <h2 className="text-lg font-black text-slate-900 tracking-tight">
+                                대한민국 인터랙티브 여행 지도
                             </h2>
-                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-200">
-                                Interactive Map
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                SGIS 공공 행정구역 기반
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 font-medium">
-                            {selectedProvince 
-                                ? `${selectedProvince}의 숨겨진 명소를 탐색 중입니다.`
-                                : '지도의 도/광역시를 클릭하면 해당 지역의 세부 시·군과 여행지가 나타납니다.'}
+                            지도의 도/시를 클릭하여 가고 싶은 지역의 명소를 한눈에 찾아보세요.
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* 브레드크럼 & 리셋 버튼 */}
+                    {/* 전국 지도로 보기 리셋 버튼 */}
                     {selectedProvince && (
                         <button
-                            onClick={handleReset}
-                            className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-black border border-slate-200 shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                            onClick={() => onSelectLocation(null, null)}
+                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
                         >
-                            <i className="fas fa-arrow-rotate-left text-emerald-600 text-[11px]"></i>
+                            <i className="fas fa-undo-alt text-[10px]"></i>
                             <span>전국 지도로 보기</span>
                         </button>
                     )}
 
+                    {/* 확대/전체 토글 버튼 (도 선택 시 노출) */}
+                    {selectedProvince && (
+                        <button
+                            onClick={() => setIsZoomed(!isZoomed)}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                            title={isZoomed ? "전국 시점으로 보기" : "지역 확대 보기"}
+                        >
+                            <i className={`fas ${isZoomed ? 'fa-compress-arrows-alt' : 'fa-expand-arrows-alt'} text-slate-500`}></i>
+                            <span>{isZoomed ? "전국 시점" : "지역 확대"}</span>
+                        </button>
+                    )}
+
+                    {/* 지도 접기/펼치기 토글 */}
                     <button
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition-colors cursor-pointer"
+                        className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                         title={isCollapsed ? '지도 펼치기' : '지도 접기'}
                     >
-                        <i className={`fas fa-chevron-${isCollapsed ? 'down' : 'up'}`}></i>
+                        <i className={`fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'} text-[11px]`}></i>
+                        <span>{isCollapsed ? '지도 펼치기' : '지도 접기'}</span>
                     </button>
                 </div>
             </div>
 
-            {/* 2. 지도 본체 영역 (접기/펼치기 가능) */}
+            {/* 권역 퀵 선택 바 (빠른 내비게이션) */}
             {!isCollapsed && (
-                <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                    {/* 좌측: SVG 벡터 지도 캔버스 */}
-                    <div className="lg:col-span-7 flex flex-col items-center justify-center relative bg-slate-50/80 rounded-2xl border border-slate-200/70 p-3 sm:p-6 min-h-[460px]">
-                        
-                        {/* 지도 상단 권역 안내 배지 */}
-                        <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                            <span className="text-xs font-extrabold text-slate-700 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-xl border border-slate-200/80 shadow-2xs">
+                <div className="px-6 py-2.5 bg-slate-100/60 border-b border-slate-200/60 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                    <span className="text-[11px] font-extrabold text-slate-500 shrink-0 mr-1 flex items-center gap-1">
+                        <i className="fas fa-location-arrow text-[10px] text-emerald-600"></i>
+                        빠른 탐색:
+                    </span>
+                    {REGION_GROUPS.map(group => {
+                        const isGroupActive = group.id === 'all'
+                            ? !selectedProvince
+                            : group.provNames?.includes(selectedProvince || '');
+                        return (
+                            <button
+                                key={group.id}
+                                onClick={() => handleRegionGroupClick(group)}
+                                className={`px-3 py-1 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
+                                    isGroupActive
+                                        ? 'bg-emerald-600 text-white shadow-xs'
+                                        : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200/80'
+                                }`}
+                            >
+                                {group.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
+            {!isCollapsed && (
+                <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    {/* 좌측: 대한민국 정밀 벡터 지도 캔버스 */}
+                    <div className="lg:col-span-7 bg-gradient-to-b from-[#f0fdf4]/50 via-white to-[#f8fafc] rounded-2xl border border-slate-200/90 p-4 relative shadow-inner overflow-hidden select-none">
+                        {/* 현재 선택 브레드크럼 배너 */}
+                        <div className="absolute top-4 left-4 z-10 flex items-center gap-2">
+                            <span className="px-3 py-1 rounded-xl bg-white/95 backdrop-blur-md text-xs font-extrabold text-slate-800 shadow-sm border border-slate-200 flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${selectedProvince ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
                                 {selectedProvince ? (
                                     <>
-                                        <span className="text-slate-400">지역: </span>
-                                        <strong className="text-emerald-700">{selectedProvince}</strong>
-                                        {selectedCity && <span className="text-slate-800"> · {selectedCity}</span>}
+                                        <span className="text-slate-500">전국</span>
+                                        <i className="fas fa-chevron-right text-[9px] text-slate-400"></i>
+                                        <span className="text-emerald-700">{selectedProvince}</span>
+                                        {selectedCity && (
+                                            <>
+                                                <i className="fas fa-chevron-right text-[9px] text-slate-400"></i>
+                                                <span className="text-slate-900 font-black">{selectedCity}</span>
+                                            </>
+                                        )}
                                     </>
                                 ) : (
-                                    '전국 8대 권역 (도 클릭 시 확대)'
+                                    <span>전국 전체 (총 {articles.length}곳)</span>
                                 )}
                             </span>
                         </div>
 
-                        {/* 대한민국 SVG 벡터 지도 */}
+                        {/* 해양 라벨 워터마크 */}
+                        <div className="absolute top-12 right-6 text-right pointer-events-none opacity-40 select-none">
+                            <div className="text-[12px] font-black text-slate-400 tracking-widest">동 해</div>
+                            <div className="text-[9px] font-medium text-slate-400">East Sea</div>
+                        </div>
+                        <div className="absolute top-1/2 left-6 pointer-events-none opacity-40 select-none">
+                            <div className="text-[12px] font-black text-slate-400 tracking-widest">서 해</div>
+                            <div className="text-[9px] font-medium text-slate-400">Yellow Sea</div>
+                        </div>
+                        <div className="absolute bottom-6 right-16 pointer-events-none opacity-40 select-none">
+                            <div className="text-[12px] font-black text-slate-400 tracking-widest">남 해</div>
+                            <div className="text-[9px] font-medium text-slate-400">South Sea</div>
+                        </div>
+
+                        {/* 나침반 아이콘 */}
+                        <div className="absolute bottom-4 left-4 pointer-events-none opacity-30 flex flex-col items-center">
+                            <i className="fas fa-compass text-2xl text-slate-600"></i>
+                            <span className="text-[8px] font-black text-slate-500">N</span>
+                        </div>
+
+                        {/* 메인 SVG 인터랙티브 지도 */}
                         <svg
-                            viewBox="70 40 410 580"
-                            className="w-full max-w-[400px] h-auto drop-shadow-md select-none transition-all duration-500"
+                            viewBox={activeViewBox}
+                            className="w-full h-auto max-h-[560px] mx-auto transition-all duration-500 ease-out"
+                            style={{ filter: 'drop-shadow(0 6px 14px rgba(15, 23, 42, 0.08))' }}
                         >
-                            {/* 바다/배경 그리드 느낌 */}
                             <defs>
-                                <linearGradient id="mapGradientDefault" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#e2e8f0" />
-                                    <stop offset="100%" stopColor="#cbd5e1" />
-                                </linearGradient>
-                                <linearGradient id="mapGradientActive" x1="0%" y1="0%" x2="100%" y2="100%">
+                                {/* 선택된 도 그라데이션 */}
+                                <linearGradient id="selected-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stopColor="#059669" />
-                                    <stop offset="100%" stopColor="#0d9488" />
+                                    <stop offset="100%" stopColor="#047857" />
                                 </linearGradient>
-                                <linearGradient id="mapGradientHover" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#a7f3d0" />
-                                    <stop offset="100%" stopColor="#6ee7b7" />
+                                {/* 호버된 도 그라데이션 */}
+                                <linearGradient id="hover-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#6ee7b7" />
+                                    <stop offset="100%" stopColor="#34d399" />
                                 </linearGradient>
-                                <filter id="pinShadow" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.3" />
+                                {/* 부드러운 그림자 필터 */}
+                                <filter id="glow-selected" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#059669" floodOpacity="0.35" />
+                                </filter>
+                                <filter id="pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.25" />
                                 </filter>
                             </defs>
 
-                            {/* 1. 도(Province) 영역 패스 렌더링 */}
-                            {PROVINCES.map((prov) => {
-                                const count = provinceCounts[prov.name] || 0;
-                                const isSelected = selectedProvince === prov.name;
-                                const isHovered = hoveredProvince === prov.id;
-                                const hasData = count > 0;
+                            {/* 17개 광역시·도 실제 통계청 SGIS 정밀 패스 렌더링 */}
+                            <g id="korea-provinces" className="transition-all duration-300">
+                                {PROVINCES.map((prov) => {
+                                    const isSelected = selectedProvince === prov.name;
+                                    const isHovered = hoveredProvince === prov.name;
+                                    const count = provinceCounts[prov.name] || 0;
+                                    const hasSelectedOther = selectedProvince !== null && !isSelected;
 
-                                let fill = 'url(#mapGradientDefault)';
-                                if (isSelected) fill = 'url(#mapGradientActive)';
-                                else if (isHovered) fill = 'url(#mapGradientHover)';
-                                else if (hasData) fill = '#e6f4ea'; // 스팟이 있는 지역은 연한 초록빛 강조
-
-                                return (
-                                    <g key={prov.id} className="cursor-pointer transition-all duration-300">
+                                    return (
                                         <path
+                                            key={prov.id}
                                             d={prov.path}
-                                            fill={fill}
-                                            stroke={isSelected ? '#047857' : isHovered ? '#10b981' : '#94a3b8'}
-                                            strokeWidth={isSelected ? '3.5' : '1.5'}
-                                            strokeLinejoin="round"
-                                            className="transition-colors duration-200"
-                                            onMouseEnter={() => setHoveredProvince(prov.id)}
-                                            onMouseLeave={() => setHoveredProvince(null)}
                                             onClick={() => handleProvinceClick(prov)}
-                                        />
-
-                                        {/* 도 이름 레이블 */}
-                                        <text
-                                            x={prov.centerX}
-                                            y={prov.centerY - 6}
-                                            textAnchor="middle"
-                                            className={`text-[12px] font-black select-none pointer-events-none transition-colors ${
-                                                isSelected ? 'fill-white' : 'fill-slate-700'
-                                            }`}
+                                            onMouseEnter={() => setHoveredProvince(prov.name)}
+                                            onMouseLeave={() => setHoveredProvince(null)}
+                                            className="transition-all duration-200 cursor-pointer"
+                                            style={{
+                                                fill: isSelected
+                                                    ? 'url(#selected-province-grad)'
+                                                    : isHovered
+                                                    ? 'url(#hover-province-grad)'
+                                                    : count > 0
+                                                    ? '#ecfdf5' // 데이터 있는 도: 산뜻한 민트 연녹색
+                                                    : '#f8fafc', // 데이터 없는 도: 소프트 슬레이트
+                                                stroke: isSelected
+                                                    ? '#064e3b'
+                                                    : isHovered
+                                                    ? '#059669'
+                                                    : count > 0
+                                                    ? '#a7f3d0'
+                                                    : '#cbd5e1',
+                                                strokeWidth: isSelected ? 3 : isHovered ? 2.2 : 1.2,
+                                                opacity: hasSelectedOther && !isHovered ? 0.35 : 1,
+                                                filter: isSelected ? 'url(#glow-selected)' : undefined,
+                                            }}
                                         >
-                                            {prov.shortName}
-                                        </text>
+                                            <title>{prov.name} ({count}곳 등록됨)</title>
+                                        </path>
+                                    );
+                                })}
+                            </g>
 
-                                        {/* 여행지 개수 뱃지 (스팟이 1개 이상 있을 때) */}
-                                        {count > 0 && (
+                            {/* 울릉도·독도 특별 주석 라벨 */}
+                            {(!selectedProvince || selectedProvince === '경상북도') && (
+                                <g transform="translate(635, 190)" className="pointer-events-none select-none">
+                                    <rect x="-8" y="-14" width="70" height="20" rx="6" fill="white" fillOpacity="0.9" stroke="#94a3b8" strokeWidth="0.8" />
+                                    <text x="27" y="0" textAnchor="middle" fontSize="9" fontWeight="800" fill="#334155">
+                                        울릉·독도 🏝️
+                                    </text>
+                                </g>
+                            )}
+
+                            {/* 각 도별 중심 뱃지 (전국 시점이거나 호버 시 표시) */}
+                            {(!selectedProvince || !isZoomed) && (
+                                <g id="province-badges">
+                                    {PROVINCES.map((prov) => {
+                                        const count = provinceCounts[prov.name] || 0;
+                                        const isSelected = selectedProvince === prov.name;
+                                        const isHovered = hoveredProvince === prov.name;
+                                        const cx = prov.centerX;
+                                        const cy = prov.centerY;
+
+                                        return (
                                             <g
-                                                transform={`translate(${prov.centerX}, ${prov.centerY + 12})`}
-                                                className="select-none pointer-events-none"
+                                                key={`badge-${prov.id}`}
+                                                transform={`translate(${cx}, ${cy})`}
+                                                onClick={() => handleProvinceClick(prov)}
+                                                onMouseEnter={() => setHoveredProvince(prov.name)}
+                                                onMouseLeave={() => setHoveredProvince(null)}
+                                                className="cursor-pointer transition-transform hover:scale-110 active:scale-95"
                                             >
+                                                {/* 뱃지 배경 필 */}
                                                 <rect
-                                                    x="-18"
-                                                    y="-9"
-                                                    width="36"
-                                                    height="18"
-                                                    rx="9"
-                                                    fill={isSelected ? '#ffffff' : '#059669'}
-                                                    className="shadow-sm"
+                                                    x={count > 0 ? -32 : -22}
+                                                    y={-14}
+                                                    width={count > 0 ? 64 : 44}
+                                                    height={24}
+                                                    rx={12}
+                                                    fill={isSelected ? '#064e3b' : isHovered ? '#059669' : count > 0 ? '#ffffff' : '#f1f5f9'}
+                                                    stroke={isSelected ? '#ffffff' : isHovered ? '#ffffff' : count > 0 ? '#059669' : '#cbd5e1'}
+                                                    strokeWidth={isSelected || isHovered ? 2 : 1.2}
+                                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.12))' }}
                                                 />
+                                                {/* 지역명 */}
+                                                <text
+                                                    x={count > 0 ? -6 : 0}
+                                                    y={2}
+                                                    textAnchor="middle"
+                                                    fontSize="11"
+                                                    fontWeight="900"
+                                                    fill={isSelected || isHovered ? '#ffffff' : '#1e293b'}
+                                                >
+                                                    {prov.shortName}
+                                                </text>
+                                                {/* 개수 뱃지 (여행지가 1개 이상 있는 경우) */}
+                                                {count > 0 && (
+                                                    <g transform="translate(18, 0)">
+                                                        <circle
+                                                            cx="0"
+                                                            cy="-2"
+                                                            r="8"
+                                                            fill={isSelected || isHovered ? '#ffffff' : '#10b981'}
+                                                        />
+                                                        <text
+                                                            x="0"
+                                                            y="1"
+                                                            textAnchor="middle"
+                                                            fontSize="9"
+                                                            fontWeight="900"
+                                                            fill={isSelected || isHovered ? '#064e3b' : '#ffffff'}
+                                                        >
+                                                            {count > 99 ? '99+' : count}
+                                                        </text>
+                                                    </g>
+                                                )}
+                                            </g>
+                                        );
+                                    })}
+                                </g>
+                            )}
+
+                            {/* 도 선택 시: 해당 도의 세부 시·군 핀 렌더링 */}
+                            {activeProvinceMeta && (
+                                <g id="city-pins" className="animate-fadeIn">
+                                    {availableCitiesInProvince.map((city) => {
+                                        const isCitySelected = selectedCity === city.name;
+                                        const hasSpots = city.count > 0;
+
+                                        return (
+                                            <g
+                                                key={`pin-${city.name}`}
+                                                transform={`translate(${city.x}, ${city.y})`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleCityClick(city.name);
+                                                }}
+                                                className="cursor-pointer transition-transform hover:scale-125"
+                                                style={{ filter: 'url(#pin-shadow)' }}
+                                            >
+                                                {/* 펄스 애니메이션 링 (명소가 등록된 도시인 경우) */}
+                                                {hasSpots && (
+                                                    <circle
+                                                        cx="0"
+                                                        cy="0"
+                                                        r="14"
+                                                        fill="#10b981"
+                                                        fillOpacity="0.4"
+                                                        className="animate-ping"
+                                                    />
+                                                )}
+
+                                                {/* 핀 바깥 원 */}
+                                                <circle
+                                                    cx="0"
+                                                    cy="0"
+                                                    r={isCitySelected ? 13 : 10}
+                                                    fill={isCitySelected ? '#047857' : hasSpots ? '#10b981' : '#ffffff'}
+                                                    stroke="#ffffff"
+                                                    strokeWidth={2.5}
+                                                />
+
+                                                {/* 핀 아이콘/이모지 */}
                                                 <text
                                                     x="0"
-                                                    y="4"
+                                                    y={isCitySelected ? 4 : 3}
                                                     textAnchor="middle"
-                                                    className={`text-[10px] font-extrabold ${
-                                                        isSelected ? 'fill-emerald-800' : 'fill-white'
-                                                    }`}
+                                                    fontSize={isCitySelected ? 10 : 8}
                                                 >
-                                                    {count}곳
+                                                    {city.icon}
                                                 </text>
+
+                                                {/* 시/군 라벨 캡슐 */}
+                                                <g transform="translate(0, 18)">
+                                                    <rect
+                                                        x={-28}
+                                                        y={-9}
+                                                        width={56}
+                                                        height={18}
+                                                        rx={9}
+                                                        fill={isCitySelected ? '#0f172a' : '#ffffff'}
+                                                        stroke={isCitySelected ? '#38bdf8' : '#94a3b8'}
+                                                        strokeWidth={1.2}
+                                                    />
+                                                    <text
+                                                        x="0"
+                                                        y="3.5"
+                                                        textAnchor="middle"
+                                                        fontSize="9"
+                                                        fontWeight="900"
+                                                        fill={isCitySelected ? '#ffffff' : '#0f172a'}
+                                                    >
+                                                        {city.name.replace(/(시|군|구)$/, '')} {city.count > 0 ? `(${city.count})` : ''}
+                                                    </text>
+                                                </g>
                                             </g>
-                                        )}
-                                    </g>
-                                );
-                            })}
-
-                            {/* 2. 도가 선택되었을 때: 해당 권역 내 시/군 핀 마커 표시 */}
-                            {activeProvinceMeta && availableCitiesInProvince.map((city) => {
-                                const isCitySelected = selectedCity === city.name;
-                                return (
-                                    <g
-                                        key={city.name}
-                                        transform={`translate(${city.x}, ${city.y})`}
-                                        className="cursor-pointer transition-transform duration-300 hover:scale-125"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleCityClick(isCitySelected ? null : city.name);
-                                        }}
-                                        filter="url(#pinShadow)"
-                                    >
-                                        {/* 펄스 링 */}
-                                        {isCitySelected && (
-                                            <circle r="14" fill="#10b981" opacity="0.35" className="animate-ping" />
-                                        )}
-
-                                        {/* 핀 헤드 */}
-                                        <circle
-                                            r="10"
-                                            fill={isCitySelected ? '#f59e0b' : '#047857'}
-                                            stroke="#ffffff"
-                                            strokeWidth="2"
-                                        />
-                                        <text
-                                            x="0"
-                                            y="3.5"
-                                            textAnchor="middle"
-                                            className="text-[9px] font-black fill-white pointer-events-none"
-                                        >
-                                            {city.count}
-                                        </text>
-
-                                        {/* 시/군 명칭 텍스트 */}
-                                        <text
-                                            x="0"
-                                            y="22"
-                                            textAnchor="middle"
-                                            className="text-[10px] font-extrabold fill-slate-900 drop-shadow-sm pointer-events-none bg-white"
-                                        >
-                                            {city.name}
-                                        </text>
-                                    </g>
-                                );
-                            })}
+                                        );
+                                    })}
+                                </g>
+                            )}
                         </svg>
 
-                        {/* 지도 하단 간단 도움말 */}
-                        <div className="mt-2 text-center text-[11px] text-slate-500 font-medium">
-                            <i className="fas fa-hand-pointer text-emerald-600 mr-1"></i>
-                            도 또는 시·군 핀을 클릭하면 아래 목록이 실시간으로 동기화됩니다.
+                        {/* 지도 하단 가이드 문구 */}
+                        <div className="mt-3 text-center text-[11px] text-slate-500 font-semibold flex items-center justify-center gap-1.5">
+                            <i className="fas fa-hand-pointer text-emerald-600 animate-bounce"></i>
+                            <span>도 또는 시·군 핀을 클릭하면 아래 목록이 실시간으로 동기화됩니다.</span>
                         </div>
                     </div>
 
                     {/* 우측: 시/군 필터 및 퀵 여행지 카드 패널 */}
                     <div className="lg:col-span-5 flex flex-col space-y-4">
                         {/* 권역 요약 타이틀 바 */}
-                        <div className="bg-slate-100/80 rounded-2xl p-4 border border-slate-200/80">
+                        <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-4 text-white shadow-lg">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <span className="text-[11px] font-black text-emerald-700 tracking-wider uppercase">
-                                        REGION EXPLORER
+                                    <span className="text-[10px] font-black text-emerald-400 tracking-wider uppercase flex items-center gap-1">
+                                        <i className="fas fa-compass"></i> REGION EXPLORER
                                     </span>
-                                    <h3 className="text-lg font-black text-slate-900 mt-0.5">
+                                    <h3 className="text-xl font-black text-white mt-1">
                                         {selectedProvince || '전국 여행 명소 전체'}
                                     </h3>
                                 </div>
-                                <span className="px-3 py-1 rounded-xl bg-white text-slate-800 text-xs font-black border border-slate-200 shadow-2xs">
-                                    총 {selectedProvince ? filteredSpots.length : articles.length}곳
+                                <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black border border-emerald-400/30">
+                                    총 {filteredSpots.length}곳
                                 </span>
                             </div>
 
                             {/* 해당 도의 시/군 칩 목록 */}
                             {activeProvinceMeta && availableCitiesInProvince.length > 0 && (
-                                <div className="mt-3 pt-3 border-t border-slate-200/70">
-                                    <p className="text-[11px] font-bold text-slate-500 mb-2">세부 시·군 선택:</p>
-                                    <div className="flex flex-wrap gap-1.5">
+                                <div className="mt-4 pt-3 border-t border-slate-700/80">
+                                    <p className="text-[11px] font-extrabold text-slate-300 mb-2.5 flex items-center gap-1">
+                                        <i className="fas fa-filter text-emerald-400"></i>
+                                        세부 시·군 선택:
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
                                         <button
                                             onClick={() => handleCityClick(null)}
-                                            className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                                            className={`px-3 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
                                                 !selectedCity
-                                                    ? 'bg-emerald-600 text-white shadow-2xs'
-                                                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                                    ? 'bg-emerald-500 text-white shadow-md'
+                                                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                                             }`}
                                         >
                                             전체 ({filteredSpots.length})
@@ -546,8 +576,8 @@ export default function InteractiveKoreaMap({
                                                 onClick={() => handleCityClick(city.name)}
                                                 className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
                                                     selectedCity === city.name
-                                                        ? 'bg-emerald-600 text-white shadow-2xs'
-                                                        : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
+                                                        ? 'bg-emerald-500 text-white shadow-md'
+                                                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                                                 }`}
                                             >
                                                 <span>{city.icon}</span>
@@ -560,24 +590,24 @@ export default function InteractiveKoreaMap({
                             )}
                         </div>
 
-                        {/* 선택된 스팟 팝오버 프리뷰 또는 추천 리스트 */}
-                        <div className="space-y-3 flex-1 overflow-y-auto max-h-[380px] pr-1">
+                        {/* 추천 스팟 퀵 카드 리스트 */}
+                        <div className="space-y-3 flex-1 overflow-y-auto max-h-[420px] pr-1 scrollbar-thin">
                             {filteredSpots.length > 0 ? (
-                                filteredSpots.slice(0, 4).map(spot => (
+                                filteredSpots.slice(0, 5).map(spot => (
                                     <div
                                         key={spot.id}
                                         onClick={() => setSelectedSpot(spot)}
-                                        className={`p-3 rounded-2xl border transition-all cursor-pointer group flex gap-3 items-center ${
+                                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer group flex gap-3.5 items-center ${
                                             selectedSpot?.id === spot.id
-                                                ? 'bg-emerald-50/80 border-emerald-400 ring-2 ring-emerald-200'
-                                                : 'bg-white border-slate-200/80 hover:border-emerald-300 hover:bg-slate-50/50'
+                                                ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-300'
+                                                : 'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-slate-50/60 shadow-xs'
                                         }`}
                                     >
-                                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 relative">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-slate-100 relative shadow-inner">
                                             <img
                                                 src={spot.thumbnail || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=300&q=80'}
                                                 alt={spot.title}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                 onError={(e) => {
                                                     (e.currentTarget as HTMLElement).style.display = 'none';
                                                 }}
@@ -585,7 +615,7 @@ export default function InteractiveKoreaMap({
                                         </div>
                                         <div className="flex-1 min-w-0 space-y-1">
                                             <div className="flex items-center gap-1.5">
-                                                <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                                                     📍 {spot.destination.split(' ').slice(0, 2).join(' ')}
                                                 </span>
                                             </div>
@@ -598,7 +628,7 @@ export default function InteractiveKoreaMap({
                                         </div>
                                         <Link
                                             to={`/entertainment/travel/${spot.id}`}
-                                            className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-extrabold shrink-0 transition-colors shadow-2xs"
+                                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-emerald-600 text-white text-[11px] font-extrabold shrink-0 transition-colors shadow-sm"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             보기
@@ -609,7 +639,7 @@ export default function InteractiveKoreaMap({
                                 <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
                                     <i className="fas fa-map-pin text-2xl text-slate-300"></i>
                                     <p className="text-xs font-bold text-slate-600">
-                                        지도의 도/광역시를 클릭해 보세요!
+                                        지도의 도/시를 클릭해 보세요!
                                     </p>
                                     <p className="text-[11px] text-slate-400">
                                         지역별 명소 핀과 추천 여행 코스를 바로 확인할 수 있습니다.
@@ -617,9 +647,9 @@ export default function InteractiveKoreaMap({
                                 </div>
                             )}
 
-                            {filteredSpots.length > 4 && (
-                                <p className="text-center text-[11px] text-slate-400 font-medium">
-                                    외 {filteredSpots.length - 4}개의 명소가 하단 리스트에 정렬되어 있습니다 ↓
+                            {filteredSpots.length > 5 && (
+                                <p className="text-center text-[11px] text-slate-400 font-semibold py-1">
+                                    외 {filteredSpots.length - 5}개의 명소가 하단 리스트에 정렬되어 있습니다 ↓
                                 </p>
                             )}
                         </div>
