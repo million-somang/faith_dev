@@ -574,26 +574,27 @@ const handleCreateNewsApi = async (c: any) => {
         const finalSummary = summary ? summary.trim() : rawContent.replace(/<[^>]*>/g, '').substring(0, 160).trim();
         
         // AI 요약: 배열 형태(["요약1", "요약2", "요약3"]) 또는 문자열 모두 지원 (정확히 3개 항목 정규화)
+        const rawAiSummary = aiSummary !== undefined ? aiSummary : (body as any).ai_summary;
         let finalAiSummary = '';
-        if (Array.isArray(aiSummary)) {
-            const cleanItems = aiSummary
+        if (Array.isArray(rawAiSummary)) {
+            const cleanItems = rawAiSummary
                 .filter(Boolean)
-                .map(s => String(s).trim().replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .map(s => String(s).trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
                 .filter(s => s.length > 0)
                 .slice(0, 3);
             if (cleanItems.length > 0) {
                 finalAiSummary = cleanItems.map(s => `• ${s}`).join('\n');
             }
-        } else if (aiSummary && typeof aiSummary === 'string' && aiSummary.trim().length > 0) {
-            const lines = aiSummary
+        } else if (rawAiSummary && typeof rawAiSummary === 'string' && rawAiSummary.trim().length > 0) {
+            const lines = rawAiSummary
                 .split(/\n+/)
-                .map(l => l.trim().replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .map(l => l.trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
                 .filter(l => l.length > 0)
                 .slice(0, 3);
             if (lines.length > 0) {
                 finalAiSummary = lines.map(l => `• ${l}`).join('\n');
             } else {
-                finalAiSummary = aiSummary.trim();
+                finalAiSummary = rawAiSummary.trim();
             }
         }
         
@@ -657,10 +658,127 @@ const handleCreateNewsApi = async (c: any) => {
 
 import { bodyLimit } from 'hono/body-limit';
 
+const handleUpdateNewsApi = async (c: any) => {
+    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+
+    const user = c.get('user');
+    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+
+    if (!isAuthorized) {
+        return c.json({
+            success: false,
+            error: {
+                code: 401,
+                message: 'Unauthorized: Invalid or missing API Key. Please provide X-API-KEY header.'
+            }
+        }, 401);
+    }
+
+    const id = c.req.param('id');
+    if (!id) {
+        return c.json({ success: false, error: { code: 400, message: 'Article ID is required.' } }, 400);
+    }
+
+    try {
+        const body = await c.req.json();
+        const {
+            title,
+            content,
+            summary,
+            aiSummary,
+            ai_summary,
+            category,
+            imageUrl,
+            thumbnail,
+            tags
+        } = body;
+
+        const existing = await pool.query('SELECT * FROM news WHERE id = $1', [id]);
+        if (!existing.rows || existing.rows.length === 0) {
+            return c.json({ success: false, error: { code: 404, message: 'Article not found.' } }, 404);
+        }
+        const curr = existing.rows[0];
+
+        const targetTitle = title ? title.trim() : curr.title;
+        const targetContent = content ? content.trim() : curr.content;
+        const targetSummary = summary ? summary.trim() : (content ? content.replace(/<[^>]*>/g, '').substring(0, 160).trim() : curr.summary);
+        const targetCategory = category ? normalizeNewsCategory(category) : curr.category;
+        const targetThumbnail = imageUrl || thumbnail || curr.thumbnail;
+        const targetTags = tags ? (Array.isArray(tags) ? tags.join(',') : tags) : curr.tags;
+
+        const rawAiSummary = aiSummary !== undefined ? aiSummary : ai_summary;
+        let finalAiSummary = curr.ai_summary;
+        if (rawAiSummary !== undefined) {
+            if (Array.isArray(rawAiSummary)) {
+                const cleanItems = rawAiSummary
+                    .filter(Boolean)
+                    .map(s => String(s).trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
+                    .filter(s => s.length > 0)
+                    .slice(0, 3);
+                if (cleanItems.length > 0) {
+                    finalAiSummary = cleanItems.map(s => `• ${s}`).join('\n');
+                }
+            } else if (typeof rawAiSummary === 'string' && rawAiSummary.trim().length > 0) {
+                const lines = rawAiSummary
+                    .split(/\n+/)
+                    .map(l => l.trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
+                    .filter(l => l.length > 0)
+                    .slice(0, 3);
+                if (lines.length > 0) {
+                    finalAiSummary = lines.map(l => `• ${l}`).join('\n');
+                } else {
+                    finalAiSummary = rawAiSummary.trim();
+                }
+            }
+        }
+
+        await pool.query(`
+            UPDATE news
+            SET title = $1, summary = $2, content = $3, category = $4,
+                thumbnail = $5, ai_summary = $6, tags = $7,
+                ai_processed = 1
+            WHERE id = $8
+        `, [
+            targetTitle,
+            targetSummary,
+            targetContent,
+            targetCategory,
+            targetThumbnail,
+            finalAiSummary,
+            targetTags,
+            id
+        ]);
+
+        return c.json({
+            success: true,
+            message: '뉴스가 성공적으로 업데이트되었습니다.',
+            article: {
+                id: Number(id),
+                title: targetTitle,
+                category: targetCategory,
+                aiSummary: finalAiSummary,
+                thumbnail: targetThumbnail,
+                articleUrl: `https://veranex.app/news/${id}`
+            }
+        });
+    } catch (error: any) {
+        console.error('[Update News API Error]', error);
+        return c.json({
+            success: false,
+            error: {
+                code: 500,
+                message: 'Failed to update news: ' + (error.message || 'Server error')
+            }
+        }, 500);
+    }
+};
+
 news.post('/api/news/upload-image', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUploadNewsImage);
 news.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 news.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
 news.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+news.put('/api/news/:id', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUpdateNewsApi);
 
-export { handleCreateNewsApi, handleUploadNewsImage };
+export { handleCreateNewsApi, handleUpdateNewsApi, handleUploadNewsImage };
 export default news;
