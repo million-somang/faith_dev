@@ -40,7 +40,6 @@ export default function InteractiveKoreaMap({
     onSelectLocation
 }: InteractiveKoreaMapProps) {
     const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
-    const [hoveredCity, setHoveredCity] = useState<string | null>(null);
     const [selectedSpot, setSelectedSpot] = useState<TravelSpot | null>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isZoomed, setIsZoomed] = useState(true);
@@ -101,12 +100,10 @@ export default function InteractiveKoreaMap({
         return `${Math.round(cx - w / 2)} ${Math.round(cy - h / 2)} ${Math.round(w)} ${Math.round(h)}`;
     }, [activeProvinceMeta, isZoomed]);
 
-    // 현재 뷰박스 가로폭 기반 축척 계수 (전국 = 1.0, 대형도 = ~0.35, 서울/도심 = ~0.10)
-    const zoomScale = useMemo(() => {
-        if (!activeViewBox) return 1.0;
+    // 뷰박스 분해 좌표 [vbX, vbY, vbW, vbH] (HTML 오버레이 핀 백분율 매핑용)
+    const [vbX, vbY, vbW, vbH] = useMemo(() => {
         const parts = activeViewBox.split(' ').map(Number);
-        const vbWidth = parts[2] || 800;
-        return Math.min(Math.max(vbWidth / 800, 0.08), 1.0);
+        return [parts[0] || 0, parts[1] || 0, parts[2] || 800, parts[3] || 759];
     }, [activeViewBox]);
 
     // 현재 선택된 도/시에 속한 여행지 목록
@@ -323,264 +320,181 @@ export default function InteractiveKoreaMap({
                             <span className="text-[8px] font-black text-slate-500">N</span>
                         </div>
 
-                        {/* 메인 SVG 인터랙티브 지도 */}
-                        <svg
-                            viewBox={activeViewBox}
-                            className="w-full h-auto max-h-[560px] mx-auto transition-all duration-500 ease-out"
-                            style={{ filter: 'drop-shadow(0 6px 14px rgba(15, 23, 42, 0.08))' }}
-                        >
-                            <defs>
-                                {/* 선택된 도 그라데이션 */}
-                                <linearGradient id="selected-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#059669" />
-                                    <stop offset="100%" stopColor="#047857" />
-                                </linearGradient>
-                                {/* 호버된 도 그라데이션 */}
-                                <linearGradient id="hover-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#6ee7b7" />
-                                    <stop offset="100%" stopColor="#34d399" />
-                                </linearGradient>
-                                {/* 부드러운 그림자 필터 */}
-                                <filter id="glow-selected" x="-20%" y="-20%" width="140%" height="140%">
-                                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#059669" floodOpacity="0.35" />
-                                </filter>
-                                <filter id="pin-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                                    <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#0f172a" floodOpacity="0.25" />
-                                </filter>
-                            </defs>
+                        {/* 지도 및 HTML 오버레이 래퍼 */}
+                        <div className="relative w-full max-w-[620px] mx-auto">
+                            {/* 메인 SVG 인터랙티브 지도 (순수 벡터 지형 캔버스) */}
+                            <svg
+                                viewBox={activeViewBox}
+                                className="w-full h-auto block transition-all duration-500 ease-out"
+                                style={{ filter: 'drop-shadow(0 6px 14px rgba(15, 23, 42, 0.08))' }}
+                            >
+                                <defs>
+                                    <linearGradient id="selected-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#059669" />
+                                        <stop offset="100%" stopColor="#047857" />
+                                    </linearGradient>
+                                    <linearGradient id="hover-province-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stopColor="#6ee7b7" />
+                                        <stop offset="100%" stopColor="#34d399" />
+                                    </linearGradient>
+                                    <filter id="glow-selected" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#059669" floodOpacity="0.35" />
+                                    </filter>
+                                </defs>
 
-                            {/* 17개 광역시·도 실제 통계청 SGIS 정밀 패스 렌더링 */}
-                            <g id="korea-provinces" className="transition-all duration-300">
-                                {PROVINCES.map((prov) => {
-                                    const isSelected = selectedProvince === prov.name;
-                                    const isHovered = hoveredProvince === prov.name;
-                                    const count = provinceCounts[prov.name] || 0;
-                                    const hasSelectedOther = selectedProvince !== null && !isSelected;
-
-                                    return (
-                                        <path
-                                            key={prov.id}
-                                            d={prov.path}
-                                            onClick={() => handleProvinceClick(prov)}
-                                            onMouseEnter={() => setHoveredProvince(prov.name)}
-                                            onMouseLeave={() => setHoveredProvince(null)}
-                                            className="transition-all duration-200 cursor-pointer"
-                                            style={{
-                                                fill: isSelected
-                                                    ? 'url(#selected-province-grad)'
-                                                    : isHovered
-                                                    ? 'url(#hover-province-grad)'
-                                                    : count > 0
-                                                    ? '#ecfdf5' // 데이터 있는 도: 산뜻한 민트 연녹색
-                                                    : '#f8fafc', // 데이터 없는 도: 소프트 슬레이트
-                                                stroke: isSelected
-                                                    ? '#064e3b'
-                                                    : isHovered
-                                                    ? '#059669'
-                                                    : count > 0
-                                                    ? '#a7f3d0'
-                                                    : '#cbd5e1',
-                                                strokeWidth: isSelected ? 3 : isHovered ? 2.2 : 1.2,
-                                                opacity: hasSelectedOther && !isHovered ? 0.35 : 1,
-                                                filter: isSelected ? 'url(#glow-selected)' : undefined,
-                                            }}
-                                        >
-                                            <title>{prov.name} ({count}곳 등록됨)</title>
-                                        </path>
-                                    );
-                                })}
-                            </g>
-
-                            {/* 울릉도·독도 특별 주석 라벨 */}
-                            {(!selectedProvince || selectedProvince === '경상북도') && (
-                                <g transform="translate(635, 190)" className="pointer-events-none select-none">
-                                    <rect x="-8" y="-14" width="70" height="20" rx="6" fill="white" fillOpacity="0.9" stroke="#94a3b8" strokeWidth="0.8" />
-                                    <text x="27" y="0" textAnchor="middle" fontSize="9" fontWeight="800" fill="#334155">
-                                        울릉·독도 🏝️
-                                    </text>
-                                </g>
-                            )}
-
-                            {/* 각 도별 중심 뱃지 (전국 시점이거나 호버 시 표시) */}
-                            {(!selectedProvince || !isZoomed) && (
-                                <g id="province-badges">
+                                {/* 17개 광역시·도 실제 통계청 SGIS 정밀 패스 렌더링 */}
+                                <g id="korea-provinces" className="transition-all duration-300">
                                     {PROVINCES.map((prov) => {
-                                        const count = provinceCounts[prov.name] || 0;
                                         const isSelected = selectedProvince === prov.name;
                                         const isHovered = hoveredProvince === prov.name;
-                                        const cx = prov.centerX;
-                                        const cy = prov.centerY;
+                                        const count = provinceCounts[prov.name] || 0;
+                                        const hasSelectedOther = selectedProvince !== null && !isSelected;
 
                                         return (
-                                            <g
-                                                key={`badge-${prov.id}`}
-                                                transform={`translate(${cx}, ${cy})`}
+                                            <path
+                                                key={prov.id}
+                                                d={prov.path}
                                                 onClick={() => handleProvinceClick(prov)}
                                                 onMouseEnter={() => setHoveredProvince(prov.name)}
                                                 onMouseLeave={() => setHoveredProvince(null)}
-                                                className="cursor-pointer"
-                                            >
-                                                {/* 뱃지 배경 필 */}
-                                                <rect
-                                                    x={count > 0 ? -32 : -22}
-                                                    y={-14}
-                                                    width={count > 0 ? 64 : 44}
-                                                    height={24}
-                                                    rx={12}
-                                                    fill={isSelected ? '#064e3b' : isHovered ? '#059669' : count > 0 ? '#ffffff' : '#f1f5f9'}
-                                                    stroke={isSelected ? '#ffffff' : isHovered ? '#ffffff' : count > 0 ? '#059669' : '#cbd5e1'}
-                                                    strokeWidth={isSelected || isHovered ? 2 : 1.2}
-                                                    style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.12))' }}
-                                                />
-                                                {/* 지역명 */}
-                                                <text
-                                                    x={count > 0 ? -6 : 0}
-                                                    y={2}
-                                                    textAnchor="middle"
-                                                    fontSize="11"
-                                                    fontWeight="900"
-                                                    fill={isSelected || isHovered ? '#ffffff' : '#1e293b'}
-                                                >
-                                                    {prov.shortName}
-                                                </text>
-                                                {/* 개수 뱃지 (여행지가 1개 이상 있는 경우) */}
-                                                {count > 0 && (
-                                                    <g transform="translate(18, 0)">
-                                                        <circle
-                                                            cx="0"
-                                                            cy="-2"
-                                                            r="8"
-                                                            fill={isSelected || isHovered ? '#ffffff' : '#10b981'}
-                                                        />
-                                                        <text
-                                                            x="0"
-                                                            y="1"
-                                                            textAnchor="middle"
-                                                            fontSize="9"
-                                                            fontWeight="900"
-                                                            fill={isSelected || isHovered ? '#064e3b' : '#ffffff'}
-                                                        >
-                                                            {count > 99 ? '99+' : count}
-                                                        </text>
-                                                    </g>
-                                                )}
-                                            </g>
-                                        );
-                                    })}
-                                </g>
-                            )}
-
-                            {/* 도 선택 시: 해당 도의 세부 시·군 핀 렌더링 */}
-                            {activeProvinceMeta && (
-                                <g id="city-pins" className="animate-fadeIn">
-                                    {availableCitiesInProvince.map((city) => {
-                                        const isCitySelected = selectedCity === city.name;
-                                        const isCityHovered = hoveredCity === city.name;
-                                        const hasSpots = city.count > 0;
-
-                                        // 축척 계수에 따른 동적 핀 치수 계산 (서울 등 초소형 도시에서도 겹침 없음)
-                                        const pinR = Math.max(10 * zoomScale, 2.3);
-                                        const pinSelR = Math.max(12 * zoomScale, 2.9);
-                                        const pinHovR = Math.max(11.5 * zoomScale, 2.7);
-                                        const activeR = isCitySelected ? pinSelR : isCityHovered ? pinHovR : pinR;
-
-                                        const emojiSize = Math.max(8 * zoomScale, 1.8);
-                                        const emojiY = Math.max(3 * zoomScale, 0.7);
-
-                                        const labelGapY = Math.max(16 * zoomScale, 4.0);
-                                        const labelW = Math.max(48 * zoomScale, 12);
-                                        const labelH = Math.max(16 * zoomScale, 3.8);
-                                        const labelRx = labelH / 2;
-                                        const labelFontSize = Math.max(7.8 * zoomScale, 1.9);
-                                        const labelTextY = Math.max(3.0 * zoomScale, 0.7);
-
-                                        const hitboxR = Math.max(18 * zoomScale, 4.8);
-                                        const pingR = Math.max(14 * zoomScale, 3.4);
-                                        const strokeW = Math.max(2 * zoomScale, 0.5);
-
-                                        return (
-                                            <g
-                                                key={`pin-${city.name}`}
-                                                transform={`translate(${city.x}, ${city.y})`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleCityClick(city.name);
-                                                }}
-                                                onMouseEnter={() => setHoveredCity(city.name)}
-                                                onMouseLeave={() => setHoveredCity(null)}
-                                                className="cursor-pointer"
+                                                className="transition-all duration-200 cursor-pointer"
                                                 style={{
-                                                    filter: isCityHovered || isCitySelected ? 'url(#glow-selected)' : 'url(#pin-shadow)',
-                                                    transition: 'filter 0.15s ease',
+                                                    fill: isSelected
+                                                        ? 'url(#selected-province-grad)'
+                                                        : isHovered
+                                                        ? 'url(#hover-province-grad)'
+                                                        : count > 0
+                                                        ? '#ecfdf5' // 데이터 있는 도: 산뜻한 민트 연녹색
+                                                        : '#f8fafc', // 데이터 없는 도: 소프트 슬레이트
+                                                    stroke: isSelected
+                                                        ? '#064e3b'
+                                                        : isHovered
+                                                        ? '#059669'
+                                                        : count > 0
+                                                        ? '#a7f3d0'
+                                                        : '#cbd5e1',
+                                                    strokeWidth: isSelected ? 3 : isHovered ? 2.2 : 1.2,
+                                                    opacity: hasSelectedOther && !isHovered ? 0.35 : 1,
+                                                    filter: isSelected ? 'url(#glow-selected)' : undefined,
                                                 }}
                                             >
-                                                {/* 안정적인 고정 투명 히트박스 (크기/위치 불변으로 튕김 현상 원천 방지) */}
-                                                <circle cx="0" cy="0" r={hitboxR} fill="transparent" />
-
-                                                {/* 펄스 애니메이션 링 (마우스 이벤트 간섭 차단) */}
-                                                {hasSpots && (
-                                                    <circle
-                                                        cx="0"
-                                                        cy="0"
-                                                        r={pingR}
-                                                        fill="#10b981"
-                                                        fillOpacity="0.45"
-                                                        className="animate-ping pointer-events-none"
-                                                    />
-                                                )}
-
-                                                {/* 핀 바깥 원 (줌 레벨에 맞춘 비율 최적화) */}
-                                                <circle
-                                                    cx="0"
-                                                    cy="0"
-                                                    r={activeR}
-                                                    fill={isCitySelected ? '#047857' : isCityHovered ? '#10b981' : hasSpots ? '#059669' : '#ffffff'}
-                                                    stroke="#ffffff"
-                                                    strokeWidth={strokeW}
-                                                    className="pointer-events-none transition-all duration-150"
-                                                />
-
-                                                {/* 핀 아이콘/이모지 */}
-                                                <text
-                                                    x="0"
-                                                    y={emojiY}
-                                                    textAnchor="middle"
-                                                    fontSize={emojiSize}
-                                                    className="pointer-events-none select-none"
-                                                >
-                                                    {city.icon}
-                                                </text>
-
-                                                {/* 시/군 라벨 캡슐 (줌인 시 알맞게 축소되어 이웃 시/군과 겹치지 않음) */}
-                                                <g transform={`translate(0, ${labelGapY})`} className="pointer-events-none select-none">
-                                                    <rect
-                                                        x={-labelW / 2}
-                                                        y={-labelH / 2}
-                                                        width={labelW}
-                                                        height={labelH}
-                                                        rx={labelRx}
-                                                        fill={isCitySelected ? '#0f172a' : isCityHovered ? '#047857' : '#ffffff'}
-                                                        stroke={isCitySelected ? '#38bdf8' : isCityHovered ? '#10b981' : '#94a3b8'}
-                                                        strokeWidth={Math.max(1.2 * zoomScale, 0.4)}
-                                                        style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.15))' }}
-                                                    />
-                                                    <text
-                                                        x="0"
-                                                        y={labelTextY}
-                                                        textAnchor="middle"
-                                                        fontSize={labelFontSize}
-                                                        fontWeight="900"
-                                                        fill={isCitySelected || isCityHovered ? '#ffffff' : '#0f172a'}
-                                                    >
-                                                        {city.name.replace(/(시|군|구)$/, '')} {city.count > 0 ? `(${city.count})` : ''}
-                                                    </text>
-                                                </g>
-                                            </g>
+                                                <title>{prov.name} ({count}곳 등록됨)</title>
+                                            </path>
                                         );
                                     })}
                                 </g>
-                            )}
-                        </svg>
+
+                                {/* 울릉도·독도 특별 주석 라벨 */}
+                                {(!selectedProvince || selectedProvince === '경상북도') && (
+                                    <g transform="translate(635, 190)" className="pointer-events-none select-none">
+                                        <rect x="-8" y="-14" width="70" height="20" rx="6" fill="white" fillOpacity="0.9" stroke="#94a3b8" strokeWidth="0.8" />
+                                        <text x="27" y="0" textAnchor="middle" fontSize="9" fontWeight="800" fill="#334155">
+                                            울릉·독도 🏝️
+                                        </text>
+                                    </g>
+                                )}
+                            </svg>
+
+                            {/* 고선명 HTML 오버레이 레이어 (어느 확대 비율에서도 12px 표준 가독성 완벽 보장) */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                {/* 1. 도 선택 시: 해당 도의 세부 시·군 핀 (HTML 캡슐) */}
+                                {activeProvinceMeta && availableCitiesInProvince.map((city) => {
+                                    const isCitySelected = selectedCity === city.name;
+                                    const hasSpots = city.count > 0;
+
+                                    const leftPct = ((city.x - vbX) / vbW) * 100;
+                                    const topPct = ((city.y - vbY) / vbH) * 100;
+
+                                    if (leftPct < 3 || leftPct > 97 || topPct < 3 || topPct > 97) return null;
+
+                                    return (
+                                        <div
+                                            key={`html-city-${city.name}`}
+                                            style={{ left: `${leftPct}%`, top: `${topPct}%` }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleCityClick(city.name);
+                                            }}
+                                            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group select-none transition-transform duration-150 hover:scale-110 active:scale-95 z-20 hover:z-30"
+                                        >
+                                            {/* 펄스 링 */}
+                                            {hasSpots && (
+                                                <span className="absolute -inset-1 rounded-full bg-emerald-400 opacity-60 animate-ping pointer-events-none" />
+                                            )}
+
+                                            <div
+                                                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-md text-xs font-black transition-all ${
+                                                    isCitySelected
+                                                        ? 'bg-slate-900 text-white ring-2 ring-emerald-400 shadow-emerald-500/20 shadow-lg'
+                                                        : hasSpots
+                                                        ? 'bg-white text-slate-800 hover:bg-emerald-600 hover:text-white border border-emerald-400 shadow-sm'
+                                                        : 'bg-white/95 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-200/90 shadow-2xs'
+                                                }`}
+                                            >
+                                                <span className="text-sm shrink-0 leading-none">{city.icon}</span>
+                                                <span className="whitespace-nowrap tracking-tight">
+                                                    {city.name.replace(/(시|군|구)$/, '')}
+                                                </span>
+                                                {city.count > 0 && (
+                                                    <span
+                                                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-black shrink-0 ${
+                                                            isCitySelected
+                                                                ? 'bg-emerald-500 text-slate-950'
+                                                                : 'bg-emerald-600 text-white group-hover:bg-white group-hover:text-emerald-800'
+                                                        }`}
+                                                    >
+                                                        {city.count}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+
+                                {/* 2. 전국 시점: 17개 광역시·도 대표 뱃지 (HTML 캡슐) */}
+                                {(!selectedProvince || !isZoomed) && PROVINCES.map((prov) => {
+                                    const count = provinceCounts[prov.name] || 0;
+                                    const isSelected = selectedProvince === prov.name;
+
+                                    const leftPct = ((prov.centerX - vbX) / vbW) * 100;
+                                    const topPct = ((prov.centerY - vbY) / vbH) * 100;
+
+                                    if (leftPct < 3 || leftPct > 97 || topPct < 3 || topPct > 97) return null;
+
+                                    return (
+                                        <div
+                                            key={`html-prov-${prov.id}`}
+                                            style={{ left: `${leftPct}%`, top: `${topPct}%` }}
+                                            onClick={() => handleProvinceClick(prov)}
+                                            onMouseEnter={() => setHoveredProvince(prov.name)}
+                                            onMouseLeave={() => setHoveredProvince(null)}
+                                            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer select-none transition-transform duration-150 hover:scale-110 active:scale-95 z-10 hover:z-25"
+                                        >
+                                            <div
+                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md text-xs font-black border transition-all ${
+                                                    isSelected
+                                                        ? 'bg-emerald-800 text-white border-white shadow-emerald-800/30'
+                                                        : count > 0
+                                                        ? 'bg-white text-slate-800 border-emerald-400 hover:bg-emerald-600 hover:text-white'
+                                                        : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
+                                                }`}
+                                            >
+                                                <span>{prov.shortName}</span>
+                                                {count > 0 && (
+                                                    <span
+                                                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                            isSelected ? 'bg-white text-emerald-800' : 'bg-emerald-600 text-white'
+                                                        }`}
+                                                    >
+                                                        {count > 99 ? '99+' : count}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
 
                         {/* 지도 하단 가이드 문구 */}
                         <div className="mt-3 text-center text-[11px] text-slate-500 font-semibold flex items-center justify-center gap-1.5">
