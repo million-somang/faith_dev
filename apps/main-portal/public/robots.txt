@@ -34,17 +34,6 @@ Disallow: /
 
 User-agent: *
 Allow: /
-Allow: /guides/
-Allow: /tools/
-Allow: /lifestyle/
-Allow: /game/
-Allow: /finance/
-Allow: /editorial-policy
-Allow: /about
-Allow: /privacy
-Allow: /terms
-Allow: /contact
-Disallow: /news/
 Disallow: /b2b
 Disallow: /b2b/
 Disallow: /game/comboy
@@ -59,58 +48,42 @@ Disallow: /admin
 Disallow: /admin/
 Disallow: /api/
 
-# Google AdSense Crawler 전용 권한 허용
+# Google AdSense Crawler 전용 권한 허용 (광고 게재 및 심사용 봇 전체 접근)
 User-agent: Mediapartners-Google
 Allow: /
-Allow: /guides/
-Allow: /tools/
-Allow: /lifestyle/
-Allow: /game/
-Allow: /finance/
-Allow: /editorial-policy
-Disallow: /news/
 Disallow: /b2b
 Disallow: /b2b/
 Disallow: /game/comboy
 Disallow: /game/sfc
+Disallow: /admin
+Disallow: /api/
 
 User-agent: AdsBot-Google
 Allow: /
-Allow: /guides/
-Allow: /tools/
-Allow: /lifestyle/
-Allow: /game/
-Allow: /finance/
-Allow: /editorial-policy
-Disallow: /news/
-Disallow: /b2b
-Disallow: /b2b/
-
-User-agent: AdsBot-Google-Mobile
-Allow: /
-Allow: /guides/
-Allow: /tools/
-Allow: /lifestyle/
-Allow: /game/
-Allow: /finance/
-Allow: /editorial-policy
-Disallow: /news/
-Disallow: /b2b
-Disallow: /b2b/
-
-User-agent: Googlebot
-Allow: /
-Allow: /guides/
-Allow: /tools/
-Allow: /lifestyle/
-Allow: /game/
-Allow: /finance/
-Allow: /editorial-policy
-Disallow: /news/
 Disallow: /b2b
 Disallow: /b2b/
 Disallow: /game/comboy
 Disallow: /game/sfc
+Disallow: /admin
+Disallow: /api/
+
+User-agent: AdsBot-Google-Mobile
+Allow: /
+Disallow: /b2b
+Disallow: /b2b/
+Disallow: /game/comboy
+Disallow: /game/sfc
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Googlebot
+Allow: /
+Disallow: /b2b
+Disallow: /b2b/
+Disallow: /game/comboy
+Disallow: /game/sfc
+Disallow: /admin
+Disallow: /api/
 
 User-agent: Googlebot-Image
 Allow: /
