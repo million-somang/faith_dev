@@ -406,13 +406,21 @@ export function normalizeNewsCategory(cat?: string): string {
  * AI 요약문 자동 추출 헬퍼 (미제공 시 본문에서 3줄 추출)
  */
 function extractAutoAiSummary(content: string, title: string): string {
-    const cleanText = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const sentences = cleanText.split(/(?<=[.?!])\s+/).filter(s => s.length >= 10);
+    const cleanText = content
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/([.!?])([가-힣A-Z0-9])/g, '$1 $2')
+        .replace(/(?:기사문의|제보|카톡|라인|카카오톡|당신이 담은 순간|자료사진|무단\s*전재)[\\s\\S]*$/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    const sentences = cleanText
+        .split(/(?<=[.?!])\s+/)
+        .map(s => s.trim())
+        .filter(s => s.length >= 25 && s.length <= 180 && !s.includes('기자') && !s.includes('무단') && !s.includes('카카오톡') && !s.includes('jebo') && !s.includes('자동요약') && !s.includes('자료사진'));
     
     if (sentences.length >= 3) {
-        return `• ${sentences[0].trim()}\n• ${sentences[1].trim()}\n• ${sentences[2].trim()}`;
+        return `• ${sentences[0]}\n• ${sentences[1]}\n• ${sentences[2]}`;
     } else if (sentences.length > 0) {
-        return sentences.map(s => `• ${s.trim()}`).join('\n');
+        return sentences.slice(0, 3).map(s => `• ${s}`).join('\n');
     }
     return `• ${title}\n• 상세 내용은 본문 기사를 확인해주세요.`;
 }
@@ -580,7 +588,12 @@ const handleCreateNewsApi = async (c: any) => {
             const cleanItems = rawAiSummary
                 .filter(Boolean)
                 .map(s => String(s).trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
-                .filter(s => s.length > 0)
+                .filter(s => {
+                    if (s.length < 15 || s.length > 200) return false;
+                    const lower = s.toLowerCase();
+                    if (lower.includes('카카오톡') || lower.includes('jebo') || lower.includes('무단전재') || lower.includes('자료사진') || lower.includes('재배포 금지') || lower.includes('자동요약') || lower.includes('본문 보기를 권장') || lower.includes('all rights reserved')) return false;
+                    return true;
+                })
                 .slice(0, 3);
             if (cleanItems.length > 0) {
                 finalAiSummary = cleanItems.map(s => `• ${s}`).join('\n');
@@ -714,7 +727,12 @@ const handleUpdateNewsApi = async (c: any) => {
                 const cleanItems = rawAiSummary
                     .filter(Boolean)
                     .map(s => String(s).trim().replace(/^(?:[•\-\*]|\d+[\.\)])\s*/, '').trim())
-                    .filter(s => s.length > 0)
+                    .filter(s => {
+                    if (s.length < 15 || s.length > 200) return false;
+                    const lower = s.toLowerCase();
+                    if (lower.includes('카카오톡') || lower.includes('jebo') || lower.includes('무단전재') || lower.includes('자료사진') || lower.includes('재배포 금지') || lower.includes('자동요약') || lower.includes('본문 보기를 권장') || lower.includes('all rights reserved')) return false;
+                    return true;
+                })
                     .slice(0, 3);
                 if (cleanItems.length > 0) {
                     finalAiSummary = cleanItems.map(s => `• ${s}`).join('\n');
