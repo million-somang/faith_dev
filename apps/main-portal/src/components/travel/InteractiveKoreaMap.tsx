@@ -72,20 +72,42 @@ export default function InteractiveKoreaMap({
         return PROVINCES.find(p => p.name === selectedProvince || p.shortName === selectedProvince) || null;
     }, [selectedProvince]);
 
-    // 동적 뷰박스 (도 선택 시 부드러운 줌인 효과 지원)
+    // 동적 뷰박스 (각 시·도의 실제 지형 크기에 꼭 맞게 밀착 줌인)
     const activeViewBox = useMemo(() => {
         if (!activeProvinceMeta || !isZoomed || !activeProvinceMeta.bbox) {
             return KOREA_MAP_VIEWBOX;
         }
         const [minX, minY, maxX, maxY] = activeProvinceMeta.bbox;
-        const padX = Math.max((maxX - minX) * 0.28, 45);
-        const padY = Math.max((maxY - minY) * 0.28, 45);
-        const w = Math.max((maxX - minX) + padX * 2, 240);
-        const h = Math.max((maxY - minY) + padY * 2, 220);
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        // 크기에 비례하는 자연스러운 패딩 (최소 6, 최대 30)
+        const padX = Math.max(Math.min(width * 0.18, 30), 6);
+        const padY = Math.max(Math.min(height * 0.18, 30), 6);
+
+        let w = width + padX * 2;
+        let h = height + padY * 2;
+
+        // 800:759 (약 1.054) 캔버스 종횡비 유지
+        const targetAspect = 800 / 759;
+        if (w / h > targetAspect) {
+            h = w / targetAspect;
+        } else {
+            w = h * targetAspect;
+        }
+
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
         return `${Math.round(cx - w / 2)} ${Math.round(cy - h / 2)} ${Math.round(w)} ${Math.round(h)}`;
     }, [activeProvinceMeta, isZoomed]);
+
+    // 현재 뷰박스 가로폭 기반 축척 계수 (전국 = 1.0, 대형도 = ~0.35, 서울/도심 = ~0.10)
+    const zoomScale = useMemo(() => {
+        if (!activeViewBox) return 1.0;
+        const parts = activeViewBox.split(' ').map(Number);
+        const vbWidth = parts[2] || 800;
+        return Math.min(Math.max(vbWidth / 800, 0.08), 1.0);
+    }, [activeViewBox]);
 
     // 현재 선택된 도/시에 속한 여행지 목록
     const filteredSpots = useMemo(() => {
@@ -456,6 +478,26 @@ export default function InteractiveKoreaMap({
                                         const isCityHovered = hoveredCity === city.name;
                                         const hasSpots = city.count > 0;
 
+                                        // 축척 계수에 따른 동적 핀 치수 계산 (서울 등 초소형 도시에서도 겹침 없음)
+                                        const pinR = Math.max(10 * zoomScale, 2.3);
+                                        const pinSelR = Math.max(12 * zoomScale, 2.9);
+                                        const pinHovR = Math.max(11.5 * zoomScale, 2.7);
+                                        const activeR = isCitySelected ? pinSelR : isCityHovered ? pinHovR : pinR;
+
+                                        const emojiSize = Math.max(8 * zoomScale, 1.8);
+                                        const emojiY = Math.max(3 * zoomScale, 0.7);
+
+                                        const labelGapY = Math.max(16 * zoomScale, 4.0);
+                                        const labelW = Math.max(48 * zoomScale, 12);
+                                        const labelH = Math.max(16 * zoomScale, 3.8);
+                                        const labelRx = labelH / 2;
+                                        const labelFontSize = Math.max(7.8 * zoomScale, 1.9);
+                                        const labelTextY = Math.max(3.0 * zoomScale, 0.7);
+
+                                        const hitboxR = Math.max(18 * zoomScale, 4.8);
+                                        const pingR = Math.max(14 * zoomScale, 3.4);
+                                        const strokeW = Math.max(2 * zoomScale, 0.5);
+
                                         return (
                                             <g
                                                 key={`pin-${city.name}`}
@@ -473,14 +515,14 @@ export default function InteractiveKoreaMap({
                                                 }}
                                             >
                                                 {/* 안정적인 고정 투명 히트박스 (크기/위치 불변으로 튕김 현상 원천 방지) */}
-                                                <circle cx="0" cy="0" r={isZoomed ? 16 : 20} fill="transparent" />
+                                                <circle cx="0" cy="0" r={hitboxR} fill="transparent" />
 
                                                 {/* 펄스 애니메이션 링 (마우스 이벤트 간섭 차단) */}
                                                 {hasSpots && (
                                                     <circle
                                                         cx="0"
                                                         cy="0"
-                                                        r={isZoomed ? 11 : 14}
+                                                        r={pingR}
                                                         fill="#10b981"
                                                         fillOpacity="0.45"
                                                         className="animate-ping pointer-events-none"
@@ -491,42 +533,42 @@ export default function InteractiveKoreaMap({
                                                 <circle
                                                     cx="0"
                                                     cy="0"
-                                                    r={isCitySelected ? (isZoomed ? 9.5 : 12) : isCityHovered ? (isZoomed ? 9 : 11.5) : (isZoomed ? 7.5 : 10)}
+                                                    r={activeR}
                                                     fill={isCitySelected ? '#047857' : isCityHovered ? '#10b981' : hasSpots ? '#059669' : '#ffffff'}
                                                     stroke="#ffffff"
-                                                    strokeWidth={isCityHovered ? 2.5 : 2}
+                                                    strokeWidth={strokeW}
                                                     className="pointer-events-none transition-all duration-150"
                                                 />
 
                                                 {/* 핀 아이콘/이모지 */}
                                                 <text
                                                     x="0"
-                                                    y={isZoomed ? 2.5 : 3.5}
+                                                    y={emojiY}
                                                     textAnchor="middle"
-                                                    fontSize={isZoomed ? 7 : 9}
+                                                    fontSize={emojiSize}
                                                     className="pointer-events-none select-none"
                                                 >
                                                     {city.icon}
                                                 </text>
 
                                                 {/* 시/군 라벨 캡슐 (줌인 시 알맞게 축소되어 이웃 시/군과 겹치지 않음) */}
-                                                <g transform={`translate(0, ${isZoomed ? 13 : 18})`} className="pointer-events-none select-none">
+                                                <g transform={`translate(0, ${labelGapY})`} className="pointer-events-none select-none">
                                                     <rect
-                                                        x={isZoomed ? -22 : -28}
-                                                        y={isZoomed ? -7 : -9}
-                                                        width={isZoomed ? 44 : 56}
-                                                        height={isZoomed ? 14 : 18}
-                                                        rx={isZoomed ? 7 : 9}
+                                                        x={-labelW / 2}
+                                                        y={-labelH / 2}
+                                                        width={labelW}
+                                                        height={labelH}
+                                                        rx={labelRx}
                                                         fill={isCitySelected ? '#0f172a' : isCityHovered ? '#047857' : '#ffffff'}
                                                         stroke={isCitySelected ? '#38bdf8' : isCityHovered ? '#10b981' : '#94a3b8'}
-                                                        strokeWidth={isCityHovered || isCitySelected ? 1.5 : 1}
+                                                        strokeWidth={Math.max(1.2 * zoomScale, 0.4)}
                                                         style={{ filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.15))' }}
                                                     />
                                                     <text
                                                         x="0"
-                                                        y={isZoomed ? 2.5 : 3.5}
+                                                        y={labelTextY}
                                                         textAnchor="middle"
-                                                        fontSize={isZoomed ? 7.5 : 9}
+                                                        fontSize={labelFontSize}
                                                         fontWeight="900"
                                                         fill={isCitySelected || isCityHovered ? '#ffffff' : '#0f172a'}
                                                     >
