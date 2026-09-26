@@ -107,14 +107,16 @@ travelRoutes.get('/api/travel', async (c) => {
 
         if (province && province !== 'all') {
             const escapedProv = province.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
-            params.push(`%${escapedProv}%`);
+            const val = `%${escapedProv}%`;
+            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 2} ESCAPE '\\' OR tags LIKE $${params.length + 3} ESCAPE '\\')`;
+            params.push(val, val, val);
         }
 
         if (city && city !== 'all') {
             const escapedCity = city.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
-            params.push(`%${escapedCity}%`);
+            const val = `%${escapedCity}%`;
+            query += ` AND (destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 2} ESCAPE '\\' OR tags LIKE $${params.length + 3} ESCAPE '\\')`;
+            params.push(val, val, val);
         }
 
         if (featured === 'true' || featured === '1') {
@@ -123,8 +125,9 @@ travelRoutes.get('/api/travel', async (c) => {
 
         if (keyword) {
             const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            query += ` AND (title LIKE $${params.length + 1} ESCAPE '\\' OR destination LIKE $${params.length + 1} ESCAPE '\\' OR location_address LIKE $${params.length + 1} ESCAPE '\\' OR tags LIKE $${params.length + 1} ESCAPE '\\')`;
-            params.push(`%${escaped}%`);
+            const val = `%${escaped}%`;
+            query += ` AND (title LIKE $${params.length + 1} ESCAPE '\\' OR destination LIKE $${params.length + 2} ESCAPE '\\' OR location_address LIKE $${params.length + 3} ESCAPE '\\' OR tags LIKE $${params.length + 4} ESCAPE '\\')`;
+            params.push(val, val, val, val);
         }
 
         if (sort === 'popular') {
@@ -151,18 +154,21 @@ travelRoutes.get('/api/travel', async (c) => {
         }
         if (province && province !== 'all') {
             const escapedProv = province.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
-            countParams.push(`%${escapedProv}%`);
+            const val = `%${escapedProv}%`;
+            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 2} ESCAPE '\\' OR tags LIKE $${countParams.length + 3} ESCAPE '\\')`;
+            countParams.push(val, val, val);
         }
         if (city && city !== 'all') {
             const escapedCity = city.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
-            countParams.push(`%${escapedCity}%`);
+            const val = `%${escapedCity}%`;
+            countQuery += ` AND (destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 2} ESCAPE '\\' OR tags LIKE $${countParams.length + 3} ESCAPE '\\')`;
+            countParams.push(val, val, val);
         }
         if (keyword) {
             const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            countQuery += ` AND (title LIKE $${countParams.length + 1} ESCAPE '\\' OR destination LIKE $${countParams.length + 1} ESCAPE '\\' OR location_address LIKE $${countParams.length + 1} ESCAPE '\\' OR tags LIKE $${countParams.length + 1} ESCAPE '\\')`;
-            countParams.push(`%${escaped}%`);
+            const val = `%${escaped}%`;
+            countQuery += ` AND (title LIKE $${countParams.length + 1} ESCAPE '\\' OR destination LIKE $${countParams.length + 2} ESCAPE '\\' OR location_address LIKE $${countParams.length + 3} ESCAPE '\\' OR tags LIKE $${countParams.length + 4} ESCAPE '\\')`;
+            countParams.push(val, val, val, val);
         }
         const countRes = await pool.query(countQuery, countParams);
         const total = parseInt(countRes.rows[0]?.total || '0');
