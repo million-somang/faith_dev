@@ -138,16 +138,134 @@ export default function TravelDetailPage() {
         return null;
     };
 
-    // 스마트 문단 분할 및 가독성 개선
+    // 스마트 문단 분할 및 가독성 개선 (번호별 리스트 분리 지원)
     const formatParagraphs = (rawContent: string): string[] => {
         if (!rawContent) return [];
-        return rawContent
+        let formatted = rawContent
             .replace(/<br\s*[\/]?>/gi, '\n')
-            .replace(/<\/p>/gi, '\n\n')
-            .replace(/<[^>]*>/g, '')
+            .replace(/<\/p>/gi, '\n\n');
+
+        // 블로그 후기 번호(1. [, 2. [ 등) 또는 마크다운 헤더 앞 개행 보정
+        formatted = formatted.replace(/(\d+\.\s*(?:🔗|👉)?\s*\[)/g, '\n\n$1');
+        formatted = formatted.replace(/(\[후기\s*\d+\])/g, '\n\n$1');
+        formatted = formatted.replace(/(###\s*)/g, '\n\n$1');
+
+        return formatted
             .split(/\n{2,}|\r\n\r\n/)
             .map(p => p.trim())
             .filter(p => p.length > 0);
+    };
+
+    // 문단 내 URL 및 마크다운 링크 파싱 & 블로그 후기 10선 전용 카드 렌더링
+    const renderRichParagraph = (para: string, idx: number) => {
+        if (para.includes('실제 여행자 생생 방문 후기') || para.includes('추천 블로그 (BEST 10)')) {
+            const cleanHeader = para.replace(/^#+\s*/, '').replace(/방문\s*전.*/, '').trim();
+            return (
+                <div key={idx} className="mt-8 mb-4 p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200">
+                    <h4 className="text-base font-black text-teal-950 flex items-center gap-2">
+                        <span className="text-xl">📝</span>
+                        <span>{cleanHeader || '실제 여행자 생생 방문 후기 & 추천 블로그 (BEST 10)'}</span>
+                    </h4>
+                    <p className="text-xs text-teal-800 mt-1">
+                        방문 전 실제 여행자들의 생생한 내돈내산 후기와 현장 분위기를 확인해 보세요.
+                    </p>
+                </div>
+            );
+        }
+
+        // 블로그 번호 및 링크 매칭 (1. 🔗 [제목](url) 또는 [후기 1] [제목](url) 등)
+        const blogRegex = new RegExp('^(?:(\\d+)\\.\\s*(?:🔗|👉)?\\s*|\\[후기\\s*(\\d+)\\]\\s*)(?:\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\)]+)\\)|([^\\n]+)(?:\\n\\s*(?:👉|링크|URL)?\\s*(https?:\\/\\/[^\\s\\n]+))?)', 'i');
+        const blogMatch = para.match(blogRegex);
+
+        if (blogMatch) {
+            const reviewNum = blogMatch[1] || blogMatch[2] || String(idx + 1);
+            const title = (blogMatch[3] || blogMatch[5] || '').trim().replace(/^🔗\s*/, '');
+            const url = (blogMatch[4] || blogMatch[6] || '').trim();
+
+            return (
+                <div key={idx} className="my-2.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50 hover:bg-teal-50/60 border border-slate-200/90 hover:border-teal-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        <span className="px-2 py-0.5 rounded-lg bg-teal-600 text-white text-[11px] font-black shrink-0 mt-0.5">
+                            후기 {reviewNum}
+                        </span>
+                        {url ? (
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-bold text-slate-800 hover:text-teal-700 hover:underline leading-snug break-words transition-colors"
+                            >
+                                {title}
+                            </a>
+                        ) : (
+                            <span className="text-sm font-bold text-slate-800 leading-snug break-words">
+                                {title}
+                            </span>
+                        )}
+                    </div>
+                    {url && (
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black shrink-0 transition-colors shadow-xs"
+                        >
+                            <span>블로그 보기</span>
+                            <i className="fas fa-external-link-alt text-[10px]"></i>
+                        </a>
+                    )}
+                </div>
+            );
+        }
+
+        // 일반 텍스트 내 마크다운 링크 파싱
+        const linkRegex = new RegExp('\\[(.*?)\\]\\((https?:\\/\\/[^\\)]+)\\)|(https?:\\/\\/[^\\s\\)]+)', 'g');
+        const parts: any[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = linkRegex.exec(para)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(para.substring(lastIndex, match.index));
+            }
+            if (match[1] && match[2]) {
+                parts.push(
+                    <a
+                        key={'l-' + idx + '-' + match.index}
+                        href={match[2]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-800 font-bold hover:underline inline-flex items-center gap-0.5"
+                    >
+                        <span>{match[1]}</span>
+                        <i className="fas fa-external-link-alt text-[9px] ml-0.5"></i>
+                    </a>
+                );
+            } else if (match[3]) {
+                parts.push(
+                    <a
+                        key={'u-' + idx + '-' + match.index}
+                        href={match[3]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-800 font-bold hover:underline break-all"
+                    >
+                        {match[3]}
+                    </a>
+                );
+            }
+            lastIndex = linkRegex.lastIndex;
+        }
+
+        if (lastIndex < para.length) {
+            parts.push(para.substring(lastIndex));
+        }
+
+        return (
+            <p key={idx} className="text-sm sm:text-base text-slate-700 leading-loose whitespace-pre-line">
+                {parts.length > 0 ? parts : para}
+            </p>
+        );
     };
 
     // 갤러리 파싱
@@ -553,11 +671,7 @@ export default function TravelDetailPage() {
                 {/* 6. 상세 여행 스토리 본문 */}
                 <article className="bg-white rounded-3xl p-6 sm:p-9 border border-slate-200/90 shadow-xs space-y-5">
                     <div className="prose prose-slate max-w-none">
-                        {paragraphs.map((para, idx) => (
-                            <p key={idx} className="text-sm sm:text-base text-slate-700 leading-loose">
-                                {para}
-                            </p>
-                        ))}
+                        {paragraphs.map((para, idx) => renderRichParagraph(para, idx))}
                     </div>
 
                     {/* 출처 고지 */}
