@@ -189,7 +189,7 @@ export default function TravelDetailPage() {
             <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
                 <Header user={user} onLogout={logout} />
                 <EntertainmentSubMenu />
-                <div className="max-w-4xl mx-auto px-4 py-16 flex flex-col items-center justify-center space-y-4">
+                <div className="max-w-6xl mx-auto px-4 py-16 flex flex-col items-center justify-center space-y-4">
                     <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin"></div>
                     <p className="text-xs font-bold text-slate-500">여행기를 불러오는 중입니다...</p>
                 </div>
@@ -235,7 +235,7 @@ export default function TravelDetailPage() {
             
             <EntertainmentSubMenu />
 
-            <main className="flex-1 max-w-4xl mx-auto px-4 py-6 sm:py-8 w-full space-y-6">
+            <main className="flex-1 max-w-6xl mx-auto px-4 py-6 sm:py-8 w-full space-y-6">
                 
                 {/* 1. 상단 네비게이션 브레드크럼 */}
                 <nav className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
