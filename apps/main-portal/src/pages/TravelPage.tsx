@@ -177,6 +177,15 @@ export default function TravelPage() {
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    const handlePageChange = (newPage: number) => {
+        if (newPage < 1 || newPage > totalPages || newPage === page) return;
+        setPage(newPage);
+        const listEl = document.getElementById('travel-list-section');
+        if (listEl) {
+            listEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-800">
             <PageSEO
@@ -336,7 +345,7 @@ export default function TravelPage() {
                 </div>
 
                 {/* 4. 테마 필터 칩 & 정렬 컨트롤러 */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div id="travel-list-section" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 scroll-mt-20">
                     {/* 테마 알약 칩 */}
                     <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full hide-scrollbar">
                         {CATEGORY_CHIPS.map(chip => (
@@ -495,38 +504,80 @@ export default function TravelPage() {
                     </div>
                 )}
 
-                {/* 6. 페이지네이션 */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center items-center gap-1.5 pt-4">
-                        <button
-                            onClick={() => setPage(p => Math.max(1, p - 1))}
-                            disabled={page === 1}
-                            className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-40 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
-                        >
-                            이전
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                {/* 6. 페이지네이션 (10개 단위 블록) */}
+                {totalPages > 1 && (() => {
+                    const blockSize = 10;
+                    const currentBlock = Math.floor((page - 1) / blockSize);
+                    const startPage = currentBlock * blockSize + 1;
+                    const endPage = Math.min(startPage + blockSize - 1, totalPages);
+                    const pageNumbers = Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
+
+                    return (
+                        <nav aria-label="여행 목록 페이지네이션" className="flex flex-wrap justify-center items-center gap-1 sm:gap-1.5 pt-6 select-none">
+                            {/* 맨 처음 페이지 */}
                             <button
-                                key={p}
-                                onClick={() => setPage(p)}
-                                className={`w-9 h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                                    page === p
-                                        ? 'bg-emerald-600 text-white shadow-xs'
-                                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
-                                }`}
+                                onClick={() => handlePageChange(1)}
+                                disabled={page === 1}
+                                title="첫 페이지"
+                                aria-label="첫 페이지"
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-slate-200 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold hover:bg-slate-50 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
                             >
-                                {p}
+                                <i className="fas fa-angles-left text-[11px]"></i>
                             </button>
-                        ))}
-                        <button
-                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                            disabled={page === totalPages}
-                            className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-40 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
-                        >
-                            다음
-                        </button>
-                    </div>
-                )}
+
+                            {/* 이전 10개 단위 블록 이동 */}
+                            <button
+                                onClick={() => handlePageChange(Math.max(1, startPage - 1))}
+                                disabled={startPage === 1}
+                                title="이전 10페이지"
+                                aria-label="이전 10페이지"
+                                className="px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                            >
+                                <i className="fas fa-chevron-left text-[10px]"></i>
+                                <span className="hidden sm:inline">이전</span>
+                            </button>
+
+                            {/* 10개 번호 버튼 */}
+                            {pageNumbers.map(p => (
+                                <button
+                                    key={p}
+                                    onClick={() => handlePageChange(p)}
+                                    aria-current={page === p ? 'page' : undefined}
+                                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                        page === p
+                                            ? 'bg-emerald-600 text-white shadow-xs'
+                                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs'
+                                    }`}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+
+                            {/* 다음 10개 단위 블록 이동 */}
+                            <button
+                                onClick={() => handlePageChange(Math.min(totalPages, endPage + 1))}
+                                disabled={endPage === totalPages}
+                                title="다음 10페이지"
+                                aria-label="다음 10페이지"
+                                className="px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl bg-white border border-slate-200 text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-1 cursor-pointer shadow-2xs"
+                            >
+                                <span className="hidden sm:inline">다음</span>
+                                <i className="fas fa-chevron-right text-[10px]"></i>
+                            </button>
+
+                            {/* 맨 마지막 페이지 */}
+                            <button
+                                onClick={() => handlePageChange(totalPages)}
+                                disabled={page === totalPages}
+                                title="마지막 페이지"
+                                aria-label="마지막 페이지"
+                                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white border border-slate-200 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed text-xs font-bold hover:bg-slate-50 transition-all flex items-center justify-center cursor-pointer shadow-2xs"
+                            >
+                                <i className="fas fa-angles-right text-[11px]"></i>
+                            </button>
+                        </nav>
+                    );
+                })()}
 
                 {/* 7. 하단 애드센스 배너 슬롯 */}
                 <div className="pt-4">
