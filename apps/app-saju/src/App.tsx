@@ -997,30 +997,154 @@ export default function App() {
               {/* TAB 3: [궁합 & 럭키 툴즈] */}
               {activeTab === 'tools' && (
                 <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in overflow-y-auto custom-scrollbar pr-0.5">
-                  {/* 2인 궁합 배너 */}
-                  <div className="bg-gradient-to-r from-rose-50 to-indigo-50 rounded-2xl p-3 border border-rose-200/80 shadow-2xs flex items-center justify-between">
+                  {/* 1. 2인 궁합 배너 */}
+                  <div className="bg-gradient-to-r from-rose-50 via-white to-indigo-50 rounded-2xl p-2.5 border border-rose-200/80 shadow-2xs flex items-center justify-between">
                     <div>
-                      <span className="text-[9px] font-black text-rose-600 uppercase tracking-wide">
-                        COUPLE CHEMISTRY
-                      </span>
-                      <h4 className="text-xs font-black text-slate-900">
-                        2인 정밀 사주 궁합 분석
-                      </h4>
-                      <p className="text-[10px] text-slate-500">
-                        상대방과의 오행 상호 보완도와 속궁합 지수
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className="text-[9px] font-black text-rose-600 uppercase tracking-wide bg-rose-50 px-1.5 py-0.2 rounded border border-rose-100">
+                          COUPLE CHEMISTRY
+                        </span>
+                        <span className="text-[10px] font-black text-slate-800">
+                          2인 정밀 궁합
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-bold leading-tight">
+                        상대방과의 오행 상호 보완도와 속궁합 지수를 짚어드립니다.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setIsCoupleModalOpen(true)}
-                      className="px-3 py-2 bg-gradient-to-r from-rose-500 to-indigo-600 text-white text-xs font-black rounded-xl shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                      className="px-3 py-2 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white text-[11px] font-black rounded-xl shadow-xs active:scale-95 transition-all cursor-pointer shrink-0"
                     >
                       궁합 보기
                     </button>
                   </div>
 
-                  {/* 점심 메뉴 룰렛 */}
-                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                  {/* 2. [신규] 나의 3대 매력 신살(神煞) & 호감도 지수 카드 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                        <span className="text-xs font-black text-slate-900">
+                          나의 매력 신살(神煞) & 호감 지수
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.2 rounded-md">
+                        매력 총점 {result.loveCharm.charmScore}점
+                      </span>
+                    </div>
+
+                    {/* 3대 매력 게이지 (도화, 홍염, 화개) */}
+                    <div className="space-y-1">
+                      {/* 도화살 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-16 flex items-center gap-1 shrink-0">
+                          <span>🌸</span> 도화살
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-pink-400 to-rose-500 rounded-full"
+                            style={{ width: `${result.loveCharm.dohwa.level}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-rose-600 w-8 text-right tabular-nums">
+                          {result.loveCharm.dohwa.level}%
+                        </span>
+                      </div>
+
+                      {/* 홍염살 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-16 flex items-center gap-1 shrink-0">
+                          <span>✨</span> 홍염살
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-400 to-rose-400 rounded-full"
+                            style={{ width: `${result.loveCharm.hongyeom.level}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-amber-600 w-8 text-right tabular-nums">
+                          {result.loveCharm.hongyeom.level}%
+                        </span>
+                      </div>
+
+                      {/* 화개살 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-16 flex items-center gap-1 shrink-0">
+                          <span>🎨</span> 화개살
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-indigo-400 to-purple-500 rounded-full"
+                            style={{ width: `${result.loveCharm.hwagae.level}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-indigo-600 w-8 text-right tabular-nums">
+                          {result.loveCharm.hwagae.level}%
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-50/50 rounded-xl p-1.5 border border-rose-100 text-[10px] text-slate-600 font-bold truncate flex items-center gap-1">
+                      <span className="text-rose-500 font-black">💡 매력 피크:</span>
+                      <span>{result.loveCharm.loveTiming.peakMonths}에 호감과 인연 기운이 최고조!</span>
+                    </div>
+                  </div>
+
+                  {/* 3. [신규] 오늘의 12시진 골든 바이오리듬 카드 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                        <span className="text-xs font-black text-slate-900">
+                          오늘의 12시진 골든 바이오리듬
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400">
+                        에너지 피크 타임
+                      </span>
+                    </div>
+
+                    {/* TOP 2 골든 타임 칩 */}
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {(() => {
+                        const sortedHours = [...result.microDaily.hourlyEnergy].sort((a, b) => b.score - a.score);
+                        const top1 = sortedHours[0];
+                        const top2 = sortedHours[1];
+                        return (
+                          <>
+                            <div className="bg-amber-50/70 rounded-xl p-2 border border-amber-200/80 text-center">
+                              <span className="text-[9px] font-black text-amber-800 flex items-center justify-center gap-1">
+                                <span>🏆</span> 1위 골든 타임
+                              </span>
+                              <p className="text-[11px] font-black text-amber-950 mt-0.5 truncate">
+                                {top1.timeName} ({top1.score}점)
+                              </p>
+                              <span className="text-[8px] text-amber-700 block truncate">
+                                계약 · 제안 · 발표 최적
+                              </span>
+                            </div>
+
+                            <div className="bg-indigo-50/70 rounded-xl p-2 border border-indigo-200/80 text-center">
+                              <span className="text-[9px] font-black text-indigo-800 flex items-center justify-center gap-1">
+                                <span>✨</span> 2위 서브 타임
+                              </span>
+                              <p className="text-[11px] font-black text-indigo-950 mt-0.5 truncate">
+                                {top2.timeName} ({top2.score}점)
+                              </p>
+                              <span className="text-[8px] text-indigo-700 block truncate">
+                                창의적 작업 · 미팅 유리
+                              </span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* 4. 점심 메뉴 룰렛 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                         <span>🍱</span> 오늘의 오행 맞춤 점심 메뉴
@@ -1029,12 +1153,12 @@ export default function App() {
                         type="button"
                         onClick={rollMenu}
                         disabled={isMenuRolling}
-                        className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black border border-indigo-200 transition-all cursor-pointer disabled:opacity-50"
+                        className="px-2 py-0.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black border border-indigo-200 transition-all cursor-pointer disabled:opacity-50"
                       >
                         {isMenuRolling ? '추천 중...' : '메뉴 돌리기'}
                       </button>
                     </div>
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 text-center">
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/70 text-center">
                       <p className="text-xs font-black text-indigo-800">
                         {pickedMenu || result.microDaily.luckyMenu}
                       </p>
@@ -1044,8 +1168,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 오행 맞춤 로또 번호 추출기 */}
-                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                  {/* 5. 오행 맞춤 로또 번호 추출기 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
                         <span>🎱</span> 오늘의 행운 로또 번호 6개
@@ -1054,12 +1178,12 @@ export default function App() {
                         type="button"
                         onClick={drawLotto}
                         disabled={isLottoDrawing}
-                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-200 transition-all cursor-pointer disabled:opacity-50"
+                        className="px-2 py-0.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-200 transition-all cursor-pointer disabled:opacity-50"
                       >
                         {isLottoDrawing ? '추첨 중...' : '번호 뽑기'}
                       </button>
                     </div>
-                    <div className="flex items-center justify-center gap-1.5 py-1">
+                    <div className="flex items-center justify-center gap-1.5 py-0.5">
                       {(revealedLotto || result.microDaily.lottoNumbers).map((num, i) => (
                         <span
                           key={i}
@@ -1071,7 +1195,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 하단 퀵 액션 독 */}
+                  {/* 6. 하단 퀵 액션 독 */}
                   <div className="grid grid-cols-2 gap-1.5 pt-0.5">
                     <button
                       type="button"
