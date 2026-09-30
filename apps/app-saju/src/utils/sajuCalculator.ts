@@ -38,8 +38,16 @@ export interface SajuResult {
     };
     elementsSummary: {
         dominant: string;     // 가장 강한 오행 (예: 목(木))
+        dominantKey: 'wood' | 'fire' | 'earth' | 'metal' | 'water';
         deficient: string;    // 부족한 오행 (예: 금(金))
+        deficientKey: 'wood' | 'fire' | 'earth' | 'metal' | 'water';
         yongshin: string;     // 용신 (나를 돕는 핵심 기운)
+        yongshinKey: 'wood' | 'fire' | 'earth' | 'metal' | 'water';
+        lifestyleRemedies: {
+            color: string;
+            food: string;
+            item: string;
+        };
     };
     businessWealth: {
         entrepreneurScore: number; // 사업가/창업 지수 (0~100)
@@ -323,11 +331,44 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
         },
         pillars,
         elements,
-        elementsSummary: {
-            dominant: ELEMENT_CONFIG[dominantKey]?.name || '화(火)',
-            deficient: ELEMENT_CONFIG[deficientKey]?.name || '수(水)',
-            yongshin: ELEMENT_CONFIG[yongshinKey]?.name || '목(木)'
-        },
+        elementsSummary: (() => {
+            const remediesMap: Record<string, { color: string; food: string; item: string }> = {
+                wood: {
+                    color: '포레스트 그린 · 세이지',
+                    food: '신선한 샐러드 · 녹차 · 풋채소',
+                    item: '작은 다육식물 · 원목 책상 소품'
+                },
+                fire: {
+                    color: '선셋 레드 · 코랄 오렌지',
+                    food: '토마토 수프 · 따뜻한 블렌딩 홍차',
+                    item: '은은한 무드등 조명 · 아로마 캔들'
+                },
+                earth: {
+                    color: '웜 베이지 · 카멜 브라운',
+                    food: '단호박 솥밥 · 감자 · 꿀차',
+                    item: '도자기 머그컵 · 오가닉 패브릭'
+                },
+                metal: {
+                    color: '클린 화이트 · 메탈릭 실버',
+                    food: '도라지 배즙 · 무조림 · 흰목이버섯',
+                    item: '금속 볼펜/만년필 · 미니멀 시계'
+                },
+                water: {
+                    color: '딥 네이비 · 미드나잇 블랙',
+                    food: '따뜻한 미역국 · 검은콩차 · 해조류',
+                    item: '미니 탁상 가습기 · 블루 텀블러'
+                }
+            };
+            return {
+                dominant: ELEMENT_CONFIG[dominantKey]?.name || '화(火)',
+                dominantKey,
+                deficient: ELEMENT_CONFIG[deficientKey]?.name || '수(水)',
+                deficientKey,
+                yongshin: ELEMENT_CONFIG[yongshinKey]?.name || '목(木)',
+                yongshinKey,
+                lifestyleRemedies: remediesMap[deficientKey] || remediesMap.water
+            };
+        })(),
         businessWealth: {
             entrepreneurScore,
             careerScore,

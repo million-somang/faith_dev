@@ -777,20 +777,23 @@ export default function App() {
 
               {/* TAB 2: [오행 밸런스 & 체질 분석] */}
               {activeTab === 'elements' && (
-                <div className="h-full flex flex-col justify-between space-y-2 animate-fade-in">
-                  {/* 오행 그래프 카드 */}
-                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                      <span className="text-xs font-black text-slate-900">
-                        오행(五行) 에너지 분포도
-                      </span>
-                      <span className="text-[10px] font-bold text-indigo-600">
+                <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in overflow-y-auto custom-scrollbar pr-0.5">
+                  {/* 1. 오행 그래프 & 용신 뱃지 카드 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        <span className="text-xs font-black text-slate-900">
+                          오행(五行) 에너지 분포도
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.2 rounded-md">
                         용신(用神): {result.elementsSummary.yongshin}
                       </span>
                     </div>
 
                     {/* 오행 게이지 5개 */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1">
                       {(['wood', 'fire', 'earth', 'metal', 'water'] as const).map((elemKey) => {
                         const cfg = ELEMENT_CONFIG[elemKey];
                         const val = result.elements[elemKey];
@@ -799,7 +802,7 @@ export default function App() {
                             <span className={`text-[10px] font-black w-10 ${cfg.text}`}>
                               {cfg.name}
                             </span>
-                            <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div className="flex-1 bg-slate-100 h-1.5 rounded-full overflow-hidden">
                               <div
                                 className={`h-full ${cfg.bg} rounded-full transition-all duration-500`}
                                 style={{ width: `${val}%` }}
@@ -814,15 +817,61 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* 강한 기운 & 부족한 기운 분석 카드 */}
-                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                  {/* 2. [신규] 오행 상생(相生) 순환 플로우 칩 */}
+                  <div className="bg-indigo-50/70 border border-indigo-100/90 rounded-2xl p-2 shadow-2xs">
+                    <div className="flex items-center justify-between mb-1.5 px-0.5">
+                      <span className="text-[10px] font-black text-indigo-900 flex items-center gap-1">
+                        <span>🔄</span> 오행 상생(相生) 순환 흐름
+                      </span>
+                      <span className="text-[9px] font-bold text-indigo-500">
+                        에너지 선순환 고리
+                      </span>
+                    </div>
+
+                    {/* 5개 원형 아이콘 플로우 */}
+                    <div className="flex items-center justify-between px-1">
+                      {(['wood', 'fire', 'earth', 'metal', 'water'] as const).map((elemKey, idx) => {
+                        const cfg = ELEMENT_CONFIG[elemKey];
+                        const isDominant = result.elementsSummary.dominantKey === elemKey;
+                        const isDeficient = result.elementsSummary.deficientKey === elemKey;
+                        const isYongshin = result.elementsSummary.yongshinKey === elemKey;
+
+                        return (
+                          <React.Fragment key={elemKey}>
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black shadow-2xs transition-all ${
+                                  isDominant
+                                    ? `${cfg.bg} text-white ring-2 ring-indigo-400 ring-offset-1 scale-105`
+                                    : isDeficient
+                                    ? 'bg-white border-2 border-dashed border-rose-300 text-rose-500'
+                                    : 'bg-white border border-slate-200 text-slate-700'
+                                }`}
+                              >
+                                {cfg.name.split('(')[0]}
+                              </div>
+                              <span className="text-[8px] font-extrabold text-slate-500 mt-0.5">
+                                {isDominant ? '주도★' : isDeficient ? '보완○' : isYongshin ? '용신✦' : cfg.name.split('(')[1].replace(')', '')}
+                              </span>
+                            </div>
+                            {idx < 4 && (
+                              <i className="fas fa-chevron-right text-[8px] text-indigo-300 -mt-2"></i>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 3. 강한 기운 vs 보완할 기운 2분할 카드 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
                     <div className="grid grid-cols-2 gap-2">
                       <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-2 text-center">
                         <span className="text-[9px] font-black text-emerald-800 uppercase">
                           가장 강한 기운
                         </span>
                         <p className="text-xs font-black text-emerald-900 mt-0.5">
-                          {result.elementsSummary.dominant}
+                          {result.elementsSummary.dominant} ({result.elements[result.elementsSummary.dominantKey]}%)
                         </p>
                       </div>
                       <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-2 text-center">
@@ -830,35 +879,124 @@ export default function App() {
                           보완할 기운
                         </span>
                         <p className="text-xs font-black text-rose-900 mt-0.5">
-                          {result.elementsSummary.deficient}
+                          {result.elementsSummary.deficient} ({result.elements[result.elementsSummary.deficientKey]}%)
                         </p>
                       </div>
                     </div>
 
-                    <div className="bg-slate-50 rounded-xl p-2 border border-slate-200/70 text-[11px] leading-relaxed text-slate-700">
-                      <strong className="text-indigo-700 font-bold">도사의 오행 솔루션:</strong>{' '}
-                      {result.businessWealth.financeSector.reason}
+                    <div className="bg-slate-50 rounded-xl p-2 border border-slate-200/70 text-[10px] leading-relaxed text-slate-700 flex items-start gap-1.5">
+                      <span className="text-indigo-600 font-black shrink-0">💡 도사 해설:</span>
+                      <span>{result.businessWealth.financeSector.reason}</span>
                     </div>
                   </div>
 
-                  {/* 비즈니스 & 커리어 성향 */}
-                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs">
-                    <span className="text-[10px] font-black text-slate-500 block mb-1">
-                      적성 및 비즈니스 스타일
-                    </span>
-                    <h4 className="text-xs font-black text-slate-900 leading-snug">
-                      {result.businessWealth.typeTitle}
-                    </h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      추천 업종: {result.businessWealth.recommendedIndustries.join(', ')}
-                    </p>
+                  {/* 4. [신규] 부족한 오행을 채우는 3대 라이프스타일 처방 칩 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-black text-slate-700 px-0.5">
+                      <span className="flex items-center gap-1">
+                        <span>🍵</span> 부족한 {result.elementsSummary.deficient} 기운 보충 3대 솔루션
+                      </span>
+                      <span className="text-[9px] text-indigo-600 font-bold">일상 실천 칩</span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/70 text-center">
+                        <span className="text-[8px] font-bold text-slate-400 block">🎨 추천 패션</span>
+                        <span className="text-[10px] font-black text-indigo-800 block mt-0.5 truncate">
+                          {result.elementsSummary.lifestyleRemedies.color.split(' · ')[0]}
+                        </span>
+                      </div>
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/70 text-center">
+                        <span className="text-[8px] font-bold text-slate-400 block">🍵 힐링 푸드</span>
+                        <span className="text-[10px] font-black text-indigo-800 block mt-0.5 truncate">
+                          {result.elementsSummary.lifestyleRemedies.food.split(' · ')[0]}
+                        </span>
+                      </div>
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/70 text-center">
+                        <span className="text-[8px] font-bold text-slate-400 block">🪴 럭키 오브제</span>
+                        <span className="text-[10px] font-black text-indigo-800 block mt-0.5 truncate">
+                          {result.elementsSummary.lifestyleRemedies.item.split(' · ')[0]}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 5. [개편] 비즈니스 기질 & 듀얼 지수 게이지 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-black text-slate-700 px-0.5">
+                      <span className="flex items-center gap-1">
+                        <span>💼</span> 커리어 기질 및 적성 지수
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold">{result.businessWealth.typeTitle.split(' ')[1]}</span>
+                    </div>
+
+                    {/* 사업가 vs 전문직 듀얼 게이지 */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-slate-50 rounded-xl p-1.5 border border-slate-200/60">
+                        <div className="flex items-center justify-between text-[9px] font-black text-slate-600 mb-1">
+                          <span>🚀 사업가형</span>
+                          <span className="text-amber-700">{result.businessWealth.entrepreneurScore}점</span>
+                        </div>
+                        <div className="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                            style={{ width: `${result.businessWealth.entrepreneurScore}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-50 rounded-xl p-1.5 border border-slate-200/60">
+                        <div className="flex items-center justify-between text-[9px] font-black text-slate-600 mb-1">
+                          <span>🏛️ 전문직형</span>
+                          <span className="text-indigo-700">{result.businessWealth.careerScore}점</span>
+                        </div>
+                        <div className="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full"
+                            style={{ width: `${result.businessWealth.careerScore}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 추천 업종 태그 */}
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {result.businessWealth.recommendedIndustries.map((ind, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 text-[9px] font-bold border border-slate-200"
+                        >
+                          #{ind}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 6. [신규] 하단 퀵 액션 독 (Zero-Scroll 꽉 찬 마감) */}
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('summary')}
+                      className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-arrow-left text-[10px] text-slate-500"></i>
+                      <span>8글자 사주 요약 보기</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsCoupleModalOpen(true)}
+                      className="py-2 px-2.5 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white rounded-xl text-[11px] font-black shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-heart text-[10px]"></i>
+                      <span>2인 정밀 궁합 분석</span>
+                    </button>
                   </div>
                 </div>
               )}
 
               {/* TAB 3: [궁합 & 럭키 툴즈] */}
               {activeTab === 'tools' && (
-                <div className="h-full flex flex-col justify-between space-y-2 animate-fade-in">
+                <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in overflow-y-auto custom-scrollbar pr-0.5">
                   {/* 2인 궁합 배너 */}
                   <div className="bg-gradient-to-r from-rose-50 to-indigo-50 rounded-2xl p-3 border border-rose-200/80 shadow-2xs flex items-center justify-between">
                     <div>
@@ -931,6 +1069,26 @@ export default function App() {
                         </span>
                       ))}
                     </div>
+                  </div>
+
+                  {/* 하단 퀵 액션 독 */}
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('summary')}
+                      className="py-2 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-arrow-left text-[10px] text-slate-500"></i>
+                      <span>8글자 사주 요약 보기</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('elements')}
+                      className="py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-yin-yang text-[10px] text-indigo-600"></i>
+                      <span>오행 밸런스 보기</span>
+                    </button>
                   </div>
                 </div>
               )}
