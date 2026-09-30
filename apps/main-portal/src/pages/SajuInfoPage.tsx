@@ -134,13 +134,24 @@ export default function SajuInfoPage() {
                         </div>
                     </div>
 
-                    {/* 배경 음양오행 심볼 장식 (은은하고 고급스러운 동양적 질감) */}
-                    <div className="hidden md:flex absolute right-10 top-1/2 -translate-y-1/2 w-64 h-64 rounded-full border border-stone-200/60 items-center justify-center pointer-events-none opacity-40">
-                        <div className="w-48 h-48 rounded-full border border-stone-200/80 flex items-center justify-center">
-                            <div className="w-32 h-32 rounded-full border border-dashed border-stone-300 flex items-center justify-center font-serif text-3xl text-stone-400">
-                                陰陽
-                            </div>
+                    {/* 우측 MZ 앱도사 프리뷰 카드 */}
+                    <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col items-center p-6 bg-slate-50/90 border border-indigo-100 rounded-3xl shadow-sm text-center max-w-[260px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-amber-400 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-500/20 mb-3 border-2 border-white">
+                            <i className="fas fa-yin-yang"></i>
                         </div>
+                        <span className="text-[10px] font-black tracking-wider text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 mb-1">
+                            VERANEX APP-DOSA
+                        </span>
+                        <h4 className="text-sm font-black text-slate-900 mb-1">베라 앱도사의 사이다 요약</h4>
+                        <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                            8글자 3D 카드 플립과 오늘의 명쾌한 한 줄 사이다 풀이
+                        </p>
+                        <button
+                            onClick={handleStartSaju}
+                            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                        >
+                            앱도사 만나러 가기
+                        </button>
                     </div>
                 </section>
 

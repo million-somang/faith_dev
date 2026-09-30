@@ -1,911 +1,888 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MiniAppLayout, useAuth } from '@faithportal/mini-app-sdk';
 import axios from 'axios';
 import { calculateSaju, ELEMENT_CONFIG } from './utils/sajuCalculator';
 import type { SajuResult } from './utils/sajuCalculator';
-import SajuRadarChart from './components/SajuRadarChart';
+import AppDosaCharacter from './components/AppDosaCharacter';
+import SajuPillarsCard from './components/SajuPillarsCard';
 import CoupleMatchModal from './components/CoupleMatchModal';
 import SajuShareModal from './components/SajuShareModal';
 
-type Step = 'init-loading' | 'input' | 'processing' | 'result';
-type TabKey = 'natal' | 'business' | 'love' | 'micro';
-
-const FINANCE_URL = import.meta.env.DEV ? 'http://localhost:5010' : '/finance';
+type Step = 'splash' | 'input' | 'processing' | 'result';
+type TabKey = 'summary' | 'elements' | 'tools';
 
 export default function App() {
-    const { user } = useAuth();
-    const [step, setStep] = useState<Step>('init-loading');
+  const { user } = useAuth();
+  const [step, setStep] = useState<Step>('splash');
+  const [loadingProgress, setLoadingProgress] = useState(1);
 
-    // 1. 입력 폼 상태 (로컬 스토리지 및 기본값으로 초기화)
-    const [name, setName] = useState(() => {
-        return localStorage.getItem('faith_saju_name') || localStorage.getItem('user_name') || '';
-    });
-    const [gender, setGender] = useState<'M' | 'F'>(() => {
-        const saved = localStorage.getItem('faith_saju_gender');
-        return saved === 'F' ? 'F' : 'M';
-    });
-    const [birthDate, setBirthDate] = useState(() => {
-        return localStorage.getItem('faith_saju_birth_date') || localStorage.getItem('user_birth_date') || '1995-08-21';
-    });
-    const [birthTime, setBirthTime] = useState(() => {
-        return localStorage.getItem('faith_saju_birth_time') || '12'; // 기본 오시(午時) 또는 기입값
-    });
-    const [isSolar, setIsSolar] = useState(() => {
-        const saved = localStorage.getItem('faith_saju_is_solar');
-        return saved === 'false' ? false : true;
-    });
-
-    // 2. 결과 및 UI 상태
-    const [result, setResult] = useState<SajuResult | null>(null);
-    const [activeTab, setActiveTab] = useState<TabKey>('natal');
-    const [isCoupleModalOpen, setIsCoupleModalOpen] = useState(false);
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-
-    // 3. 인터랙티브 기능 상태 (점심 메뉴, 로또)
-    const [pickedMenu, setPickedMenu] = useState<string | null>(null);
-    const [isMenuRolling, setIsMenuRolling] = useState(false);
-    const [revealedLotto, setRevealedLotto] = useState<number[] | null>(null);
-    const [isLottoDrawing, setIsLottoDrawing] = useState(false);
-
-    // 회원 정보(user)가 로드되었을 때, 가입 시 등록했던 생년월일, 태어난시, 이름, 성별을 폼에 자동 입력
-    useEffect(() => {
-        if (user) {
-            if (user.name && !name) {
-                setName(user.name);
-                localStorage.setItem('faith_saju_name', user.name);
-            }
-            if (user.birth_date && birthDate === '1995-08-21') {
-                setBirthDate(user.birth_date);
-                localStorage.setItem('faith_saju_birth_date', user.birth_date);
-                localStorage.setItem('user_birth_date', user.birth_date);
-            }
-            if (user.birth_time && user.birth_time !== 'unknown') {
-                setBirthTime(user.birth_time);
-                localStorage.setItem('faith_saju_birth_time', user.birth_time);
-            }
-            if (user.gender) {
-                const g = user.gender === 'F' ? 'F' : 'M';
-                setGender(g);
-                localStorage.setItem('faith_saju_gender', g);
-            }
-            if (user.is_solar !== undefined && user.is_solar !== null) {
-                const s = Boolean(user.is_solar);
-                setIsSolar(s);
-                localStorage.setItem('faith_saju_is_solar', String(s));
-            }
-        }
-    }, [user]);
-
-    // 최초 진입 연출
-    useEffect(() => {
-        if (step === 'init-loading') {
-            const timer = setTimeout(() => {
-                setStep('input');
-            }, 600);
-            return () => clearTimeout(timer);
-        }
-    }, [step]);
-
-    // 생년월일/태어난시/성별/이름 영구 보관 헬퍼 함수
-    const persistSajuProfile = async (targetName: string, targetBirthDate: string, targetBirthTime: string, targetGender: string, targetIsSolar: boolean) => {
-        // 1. 브라우저 로컬 스토리지에 즉시 저장
-        try {
-            localStorage.setItem('faith_saju_name', targetName);
-            localStorage.setItem('faith_saju_birth_date', targetBirthDate);
-            localStorage.setItem('user_birth_date', targetBirthDate);
-            localStorage.setItem('faith_saju_birth_time', targetBirthTime);
-            localStorage.setItem('faith_saju_gender', targetGender);
-            localStorage.setItem('faith_saju_is_solar', String(targetIsSolar));
-        } catch (e) {
-            console.warn('LocalStorage save failed:', e);
-        }
-
-        // 2. 로그인된 상태라면 서버 DB에도 자동 영구 저장
-        if (user) {
-            try {
-                await axios.post('/api/user/saju-profile', {
-                    name: targetName,
-                    birthDate: targetBirthDate,
-                    birthTime: targetBirthTime,
-                    gender: targetGender,
-                    isSolar: targetIsSolar
-                }, { withCredentials: true });
-            } catch (err) {
-                // 비로그인 또는 네트워크 오류 시 조용히 스킵
-            }
-        }
-    };
-
-    // 태어난 시간 변경 시 즉시 자동 저장
-    const handleBirthTimeChange = (newTime: string) => {
-        setBirthTime(newTime);
-        localStorage.setItem('faith_saju_birth_time', newTime);
-        if (user) {
-            persistSajuProfile(name || user.name || '이용자', birthDate, newTime, gender, isSolar);
-        }
-    };
-
-    // 사주 연산 실행
-    const handleAnalyze = (e: React.FormEvent) => {
-        e.preventDefault();
-        const targetName = name.trim() || (user && user.name) || '이용자';
-
-        // 분석 실행 시 입력된 모든 프로필 정보를 자동 저장 (다음번 재방문 시 자동 반영)
-        persistSajuProfile(targetName, birthDate, birthTime, gender, isSolar);
-
-        setStep('processing');
-        setTimeout(() => {
-            try {
-                const calculated = calculateSaju(targetName, gender, birthDate, birthTime, isSolar);
-                setResult(calculated);
-                setStep('result');
-                setPickedMenu(null);
-                setRevealedLotto(null);
-            } catch (err) {
-                console.error('Saju Calculation Error:', err);
-                const fallback = calculateSaju('이용자', 'M', '1995-08-21', '12', true);
-                setResult(fallback);
-                setStep('result');
-            }
-        }, 500);
-    };
-
-    // 메뉴 룰렛
-    const rollMenu = () => {
-        if (!result) return;
-        setIsMenuRolling(true);
-        const menuPool = [
-            result.microDaily.luckyMenu,
-            '맑은 나물 비빔밥 & 된장국',
-            '담백한 소고기 전골 & 솥밥',
-            '신선한 생선구이 정식',
-            '버섯 들깨 칼국수',
-            '정갈한 안심 돈카츠',
-            '따뜻한 삼계탕'
-        ];
-        setTimeout(() => {
-            const random = menuPool[Math.floor(Math.random() * menuPool.length)];
-            setPickedMenu(random);
-            setIsMenuRolling(false);
-        }, 600);
-    };
-
-    // 로또 번호 추출
-    const drawLotto = () => {
-        if (!result) return;
-        setIsLottoDrawing(true);
-        setTimeout(() => {
-            setRevealedLotto(result.microDaily.lottoNumbers);
-            setIsLottoDrawing(false);
-        }, 700);
-    };
-
+  // 1. 입력 폼 상태 (veranex_saju_* 우선 로드, 기존 faith_saju_* 호환 fallback)
+  const [name, setName] = useState(() => {
     return (
-        <MiniAppLayout>
-            <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 pb-20 text-slate-800 font-sans antialiased bg-[#FAF9F6] min-h-screen">
-                
-                {/* 1. 단아한 화이트 인트로 로딩 */}
-                {step === 'init-loading' && (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-                        <div className="w-12 h-12 rounded-full border-3 border-stone-200 border-t-indigo-600 animate-spin"></div>
-                        <h2 className="text-xl font-serif font-bold text-slate-900">베라 정통 만세력</h2>
-                        <p className="text-xs text-slate-500 font-normal">회원 사주 데이터와 천문역법을 불러오고 있습니다...</p>
-                    </div>
-                )}
-
-                {/* 2. 사주 입력 폼 (정갈하고 화사한 화이트 에디토리얼 스타일) */}
-                {step === 'input' && (
-                    <div className="max-w-lg mx-auto">
-                        <div className="text-center mb-8 space-y-2">
-                            <span className="inline-block px-3.5 py-1 bg-white text-indigo-700 rounded-full text-xs font-bold tracking-wide border border-indigo-100 shadow-2xs">
-                                四柱八字 · 萬歲曆
-                            </span>
-                            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 tracking-tight">
-                                생년월일시 사주 분석
-                            </h1>
-                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                                {user ? `${user.name || '회원'}님의 회원정보가 자동으로 적용되었습니다.` : '태어난 날의 천간과 지지를 짚어 오행의 균형과 기질을 풀이합니다.'}
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleAnalyze} className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 space-y-5">
-                            
-                            {/* 안내 뱃지 */}
-                            <div className="bg-indigo-50/60 border border-indigo-100 p-3 rounded-2xl flex items-center justify-between text-xs text-indigo-900 font-medium">
-                                <span className="flex items-center gap-1.5">
-                                    <i className="fas fa-magic text-indigo-600"></i> 정보 자동 저장 연동 중
-                                </span>
-                                <span className="text-[11px] text-indigo-500">한번 입력 시 다음 방문 시 자동 유지</span>
-                            </div>
-
-                            {/* 이름 */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5">이름 (또는 닉네임)</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="이름을 입력해 주세요"
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium text-sm transition-all"
-                                    required
-                                />
-                            </div>
-
-                            {/* 성별 & 양력/음력 */}
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">성별</label>
-                                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
-                                        <button
-                                            type="button"
-                                            onClick={() => setGender('M')}
-                                            className={`py-2 text-xs font-bold rounded-lg transition-all ${gender === 'M' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                        >
-                                            남성
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setGender('F')}
-                                            className={`py-2 text-xs font-bold rounded-lg transition-all ${gender === 'F' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                        >
-                                            여성
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1.5">달력 구분</label>
-                                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-1 rounded-xl">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsSolar(true)}
-                                            className={`py-2 text-xs font-bold rounded-lg transition-all ${isSolar ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                        >
-                                            양력
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsSolar(false)}
-                                            className={`py-2 text-xs font-bold rounded-lg transition-all ${!isSolar ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-                                        >
-                                            음력
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* 생년월일 */}
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1.5">생년월일</label>
-                                <input
-                                    type="date"
-                                    value={birthDate}
-                                    onChange={(e) => {
-                                        setBirthDate(e.target.value);
-                                        localStorage.setItem('faith_saju_birth_date', e.target.value);
-                                        localStorage.setItem('user_birth_date', e.target.value);
-                                    }}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium text-sm transition-all"
-                                    required
-                                />
-                            </div>
-
-                            {/* 태어난 시간 (선택 및 자동 저장) */}
-                            <div>
-                                <div className="flex items-center justify-between mb-1.5">
-                                    <label className="block text-xs font-bold text-slate-700">태어난 시간 (12시진)</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleBirthTimeChange(birthTime === 'unknown' ? '12' : 'unknown')}
-                                        className="text-xs text-indigo-600 hover:underline font-semibold"
-                                    >
-                                        {birthTime === 'unknown' ? '시간 직접 선택' : '시간 모름 (기본)'}
-                                    </button>
-                                </div>
-                                <select
-                                    value={birthTime}
-                                    onChange={(e) => handleBirthTimeChange(e.target.value)}
-                                    disabled={birthTime === 'unknown'}
-                                    className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-medium text-sm transition-all disabled:bg-slate-100 disabled:text-slate-400"
-                                >
-                                    <option value="0">자시 (子時 · 23:30 ~ 01:30)</option>
-                                    <option value="2">축시 (丑時 · 01:30 ~ 03:30)</option>
-                                    <option value="4">인시 (寅時 · 03:30 ~ 05:30)</option>
-                                    <option value="6">묘시 (卯時 · 05:30 ~ 07:30)</option>
-                                    <option value="8">진시 (辰時 · 07:30 ~ 09:30)</option>
-                                    <option value="10">사시 (巳時 · 09:30 ~ 11:30)</option>
-                                    <option value="12">오시 (午時 · 11:30 ~ 13:30)</option>
-                                    <option value="14">미시 (未時 · 13:30 ~ 15:30)</option>
-                                    <option value="16">신시 (申時 · 15:30 ~ 17:30)</option>
-                                    <option value="18">유시 (酉時 · 17:30 ~ 19:30)</option>
-                                    <option value="20">술시 (戌時 · 19:30 ~ 21:30)</option>
-                                    <option value="22">해시 (亥時 · 21:30 ~ 23:30)</option>
-                                </select>
-                            </div>
-
-                            <button
-                                type="submit"
-                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm sm:text-base rounded-xl shadow-md transition-all active:scale-[0.99] mt-2 cursor-pointer"
-                            >
-                                사주 및 오행 분석하기
-                            </button>
-                        </form>
-                    </div>
-                )}
-
-                {/* 3. 처리 중 애니메이션 (화이트 테마) */}
-                {step === 'processing' && (
-                    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
-                        <div className="w-12 h-12 rounded-full border-3 border-slate-200 border-t-indigo-600 animate-spin"></div>
-                        <div>
-                            <h3 className="text-lg font-serif font-bold text-slate-900 mb-1">천간지지 및 오행 조화 분석 중</h3>
-                            <p className="text-xs text-slate-500">사주 8글자의 원국과 대운 흐름을 차분히 짚어내고 있습니다.</p>
-                        </div>
-                    </div>
-                )}
-
-                {/* 4. 사주 대시보드 결과 뷰 (화이트 & 모던 에디토리얼 테마) */}
-                {step === 'result' && result && (
-                    <div className="space-y-6">
-                        {/* 상단 프로필 헤더 카드 (고급스러운 화이트 카드 테마) */}
-                        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm relative overflow-hidden">
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-10">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <span className="px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold border border-indigo-100">
-                                            {result.basic.zodiac}
-                                        </span>
-                                        <span className="px-3 py-1 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
-                                            {result.pillars.day.gan}{result.pillars.day.ji} 일주 (나 자신)
-                                        </span>
-                                    </div>
-                                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900">
-                                        {result.basic.name} 님의 사주 원국표
-                                    </h2>
-                                    <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-                                        {result.businessWealth.typeTitle}
-                                    </p>
-                                </div>
-
-                                <div className="flex items-center gap-2 self-stretch sm:self-auto">
-                                    <button
-                                        onClick={() => setIsShareModalOpen(true)}
-                                        className="flex-1 sm:flex-none px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition-colors cursor-pointer"
-                                    >
-                                        <i className="fas fa-share-nodes mr-1.5"></i> 결과 공유
-                                    </button>
-                                    <button
-                                        onClick={() => setStep('input')}
-                                        className="flex-1 sm:flex-none px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
-                                    >
-                                        <i className="fas fa-redo-alt mr-1.5"></i> 다시 입력
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* 4대 탭 바 (화이트 모던 세그먼트) */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
-                            <button
-                                onClick={() => setActiveTab('natal')}
-                                className={`py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                                    activeTab === 'natal'
-                                        ? 'bg-white text-indigo-700 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                종합 만세력
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('business')}
-                                className={`py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                                    activeTab === 'business'
-                                        ? 'bg-white text-indigo-700 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                진로 · 재물운
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('love')}
-                                className={`py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                                    activeTab === 'love'
-                                        ? 'bg-white text-indigo-700 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                인연 · 2인 궁합
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('micro')}
-                                className={`py-3 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-                                    activeTab === 'micro'
-                                        ? 'bg-white text-indigo-700 shadow-sm'
-                                        : 'text-slate-600 hover:text-slate-900'
-                                }`}
-                            >
-                                오늘의 12시진
-                            </button>
-                        </div>
-
-                        {/* ================= 탭 1: 종합 만세력 ================= */}
-                        {activeTab === 'natal' && (
-                            <div className="space-y-6">
-                                {/* 사주 8글자 표 (화이트 격자 카드) */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
-                                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                                        <h3 className="text-base font-serif font-bold text-slate-900">
-                                            사주팔자 원국 (四柱八字)
-                                        </h3>
-                                        <span className="text-xs text-slate-500 font-normal">
-                                            생시(時) ← 생일(日) ← 생월(月) ← 생년(年)
-                                        </span>
-                                    </div>
-
-                                    {/* 4주 8자 격자 */}
-                                    <div className="grid grid-cols-4 gap-2.5 sm:gap-4 text-center">
-                                        {/* 시주 */}
-                                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/60 flex flex-col items-center justify-between min-h-[220px]">
-                                            <span className="text-xs font-bold text-slate-500">시주 (時柱)</span>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.time.ganTenGod}</span>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.time.ganColor }}>
-                                                {result.pillars.time.gan}
-                                            </div>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.time.jiColor }}>
-                                                {result.pillars.time.ji}
-                                            </div>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.time.jiTenGod}</span>
-                                            <span className="text-[10px] text-slate-400 truncate max-w-full">{result.pillars.time.jijanggan}</span>
-                                        </div>
-
-                                        {/* 일주 (주인공) */}
-                                        <div className="p-3 sm:p-4 rounded-2xl bg-amber-50/70 border-2 border-amber-300 flex flex-col items-center justify-between min-h-[220px] relative shadow-2xs">
-                                            <span className="text-xs font-bold text-amber-900">일주 (日柱 ⭐)</span>
-                                            <span className="text-[11px] font-bold text-amber-800">{result.pillars.day.ganTenGod}</span>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1 ring-2 ring-white" style={{ backgroundColor: result.pillars.day.ganColor }}>
-                                                {result.pillars.day.gan}
-                                            </div>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1 ring-2 ring-white" style={{ backgroundColor: result.pillars.day.jiColor }}>
-                                                {result.pillars.day.ji}
-                                            </div>
-                                            <span className="text-[11px] font-bold text-amber-800">{result.pillars.day.jiTenGod}</span>
-                                            <span className="text-[10px] text-amber-700 truncate max-w-full font-medium">{result.pillars.day.jijanggan}</span>
-                                        </div>
-
-                                        {/* 월주 */}
-                                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/60 flex flex-col items-center justify-between min-h-[220px]">
-                                            <span className="text-xs font-bold text-slate-500">월주 (月柱)</span>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.month.ganTenGod}</span>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.month.ganColor }}>
-                                                {result.pillars.month.gan}
-                                            </div>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.month.jiColor }}>
-                                                {result.pillars.month.ji}
-                                            </div>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.month.jiTenGod}</span>
-                                            <span className="text-[10px] text-slate-400 truncate max-w-full">{result.pillars.month.jijanggan}</span>
-                                        </div>
-
-                                        {/* 년주 */}
-                                        <div className="p-3 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/60 flex flex-col items-center justify-between min-h-[220px]">
-                                            <span className="text-xs font-bold text-slate-500">년주 (年柱)</span>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.year.ganTenGod}</span>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.year.ganColor }}>
-                                                {result.pillars.year.gan}
-                                            </div>
-                                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-serif font-bold text-white shadow-sm my-1" style={{ backgroundColor: result.pillars.year.jiColor }}>
-                                                {result.pillars.year.ji}
-                                            </div>
-                                            <span className="text-[11px] text-slate-400 font-medium">{result.pillars.year.jiTenGod}</span>
-                                            <span className="text-[10px] text-slate-400 truncate max-w-full">{result.pillars.year.jijanggan}</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 오행 밸런스 레이더 차트 & 분포율 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm flex flex-col items-center justify-center">
-                                        <h3 className="text-base font-serif font-bold text-slate-900 mb-2 self-start">
-                                            오행 균형 레이더 (五行)
-                                        </h3>
-                                        <SajuRadarChart elements={result.elements} />
-                                    </div>
-
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
-                                        <div>
-                                            <h3 className="text-base font-serif font-bold text-slate-900 mb-3">
-                                                오행 분포 및 용신(用神) 진단
-                                            </h3>
-                                            <div className="space-y-2.5 text-xs">
-                                                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                                    <span className="text-slate-600">가장 강한 기운 (주도)</span>
-                                                    <strong className="text-slate-900 font-bold">{result.elementsSummary.dominant}</strong>
-                                                </div>
-                                                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                                    <span className="text-slate-600">부족한 기운 (보완 필요)</span>
-                                                    <strong className="text-slate-900 font-bold">{result.elementsSummary.deficient}</strong>
-                                                </div>
-                                                <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                                                    <span className="text-amber-900 font-bold">나를 돕는 귀한 기운 (용신)</span>
-                                                    <strong className="text-amber-900 font-bold">{result.elementsSummary.yongshin}</strong>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <p className="text-xs text-slate-500 leading-relaxed border-t border-slate-100 pt-3">
-                                            부족한 기운인 <strong>{result.elementsSummary.deficient}</strong>을 채우기 위해 해당 오행의 색상이나 활동을 가까이하시면 삶의 균형을 맞추는 데 큰 도움이 됩니다.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* 10년 대운 타임라인 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-                                    <h3 className="text-base font-serif font-bold text-slate-900">
-                                        인생의 10년 대운(大運) 흐름
-                                    </h3>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {result.daeunTimeline.map((item, idx) => (
-                                            <div key={idx} className="p-4 rounded-2xl bg-slate-50 border border-slate-200/60 space-y-2">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-700">{item.age}</span>
-                                                    <span className="text-xs font-bold text-indigo-700">{item.score}점</span>
-                                                </div>
-                                                <h4 className="text-xs font-bold text-slate-900">{item.title}</h4>
-                                                <p className="text-[11px] text-slate-500 leading-relaxed font-normal">{item.desc}</p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ================= 탭 2: 진로 · 재물운 ================= */}
-                        {activeTab === 'business' && (
-                            <div className="space-y-6">
-                                {/* 사업가형 vs 전문직형 게이지 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
-                                    <h3 className="text-base font-serif font-bold text-slate-900">
-                                        직업 기질 및 비즈니스 적합도
-                                    </h3>
-
-                                    <div className="space-y-4">
-                                        <div>
-                                            <div className="flex justify-between text-xs font-bold mb-1.5">
-                                                <span className="text-slate-700">사업가 · 창업가형 (식상생재)</span>
-                                                <span className="text-slate-900 font-mono">{result.businessWealth.entrepreneurScore}%</span>
-                                            </div>
-                                            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-indigo-600 rounded-full transition-all duration-700"
-                                                    style={{ width: `${result.businessWealth.entrepreneurScore}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-xs font-bold mb-1.5">
-                                                <span className="text-slate-700">전문직 · 조직 관리자형 (관인상생)</span>
-                                                <span className="text-slate-900 font-mono">{result.businessWealth.careerScore}%</span>
-                                            </div>
-                                            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-amber-500 rounded-full transition-all duration-700"
-                                                    style={{ width: `${result.businessWealth.careerScore}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
-                                        <h4 className="text-xs font-bold text-slate-900">추천 직무 및 산업 분야</h4>
-                                        <div className="flex flex-wrap gap-2 pt-1">
-                                            {result.businessWealth.recommendedIndustries.map((ind, i) => (
-                                                <span key={i} className="px-3 py-1 bg-white text-slate-800 rounded-lg text-xs font-medium border border-slate-200 shadow-2xs">
-                                                    {ind}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 투자 성향 및 금융 섹터 연동 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-                                        <h3 className="text-base font-serif font-bold text-slate-900">
-                                            투자 성향 및 자산 관리 조언
-                                        </h3>
-                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 space-y-2">
-                                            <strong className="text-xs font-bold text-slate-900 block">{result.businessWealth.investmentStyle}</strong>
-                                            <p className="text-xs text-slate-600 leading-relaxed">{result.businessWealth.investmentDesc}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm flex flex-col justify-between space-y-4">
-                                        <div>
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h3 className="text-base font-serif font-bold text-slate-900">
-                                                    오행 맞춤 주식 테마
-                                                </h3>
-                                                <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 rounded-full">
-                                                    {result.businessWealth.financeSector.element}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs font-bold text-slate-800 mb-1">
-                                                {result.businessWealth.financeSector.theme}
-                                            </p>
-                                            <p className="text-xs text-slate-500 leading-relaxed">
-                                                {result.businessWealth.financeSector.reason}
-                                            </p>
-                                        </div>
-
-                                        <a
-                                            href={FINANCE_URL}
-                                            target="_top"
-                                            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl text-center transition-colors shadow-sm cursor-pointer"
-                                        >
-                                            베라 금융 주식 시세 확인하기 →
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ================= 탭 3: 인연 · 2인 궁합 ================= */}
-                        {activeTab === 'love' && (
-                            <div className="space-y-6">
-                                {/* 종합 매력 지수 & 3대 신살 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-5">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                                        <div>
-                                            <h3 className="text-base font-serif font-bold text-slate-900">
-                                                나의 매력 신살(神煞) 지수
-                                            </h3>
-                                            <p className="text-xs text-slate-500">사주 속 타고난 이성 매력과 친화력 아우라</p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs text-slate-500 font-medium">종합 매력 점수:</span>
-                                            <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full font-mono font-bold text-xs border border-indigo-100">
-                                                {result.loveCharm?.charmScore || 85}점
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                        <div className="p-4 bg-rose-50/50 rounded-2xl border border-rose-100 space-y-1.5">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-xs font-bold text-rose-800">도화살 (桃花)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.dohwa?.level || 75}점</span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                                                {result.loveCharm?.dohwa?.desc || '사람의 이목을 끄는 대중적 매력과 친화력입니다.'}
-                                            </p>
-                                        </div>
-                                        <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 space-y-1.5">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-xs font-bold text-amber-800">홍염살 (紅艶)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.hongyeom?.level || 70}점</span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                                                {result.loveCharm?.hongyeom?.desc || '은근하게 상대를 사로잡는 깊은 유대감과 매혹입니다.'}
-                                            </p>
-                                        </div>
-                                        <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-1.5">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-xs font-bold text-indigo-800">화개살 (華蓋)</span>
-                                                <span className="text-xs font-bold text-slate-900 font-mono">{result.loveCharm?.hwagae?.level || 80}점</span>
-                                            </div>
-                                            <p className="text-[11px] text-slate-600 leading-relaxed">
-                                                {result.loveCharm?.hwagae?.desc || '예술적 감수성과 지적인 아우라를 나타냅니다.'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 애정운 최적 타이밍 & 조언 */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">최고의 인연 흐름 시기</h4>
-                                        <p className="text-sm font-serif font-bold text-slate-900">
-                                            {result.loveCharm?.loveTiming?.peakMonths || '올해 하반기 & 내년 봄'}
-                                        </p>
-                                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600 leading-relaxed">
-                                            <strong>나와 잘 맞는 파트너 유형:</strong>
-                                            <p className="mt-1 text-slate-800 font-medium">{result.loveCharm?.loveTiming?.idealType || '안정적인 미래 비전을 공유할 수 있는 파트너'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3">
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">인연을 위한 명리 조언</h4>
-                                        <p className="text-xs text-slate-700 leading-relaxed bg-amber-50/60 p-4 rounded-xl border border-amber-100 font-medium">
-                                            💡 {result.loveCharm?.loveTiming?.advice || '상대방의 사소한 단점에 집중하기보다 큰 가치관과 인생의 방향성에 초점을 맞추세요.'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* 2인 정밀 궁합 모달 열기 카드 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-                                    <div className="space-y-1">
-                                        <h3 className="text-lg font-serif font-bold text-slate-900">
-                                            상대방과의 2인 정밀 궁합 확인
-                                        </h3>
-                                        <p className="text-xs text-slate-500">
-                                            연인, 친구, 동업자의 생년월일을 입력하여 오행 상호 보완도(%)와 궁합 티어를 확인하세요.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setIsCoupleModalOpen(true)}
-                                        className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition-colors whitespace-nowrap cursor-pointer"
-                                    >
-                                        2인 궁합 분석 창 열기
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ================= 탭 4: 오늘의 12시진 ================= */}
-                        {activeTab === 'micro' && (
-                            <div className="space-y-6">
-                                {/* 오늘의 한 줄 조언 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm text-center space-y-2">
-                                    <span className="text-xs font-bold text-indigo-600 tracking-wider uppercase">오늘의 명리 조언</span>
-                                    <p className="text-base sm:text-lg font-serif font-bold text-slate-900 leading-relaxed">
-                                        "{result.microDaily.quote}"
-                                    </p>
-                                    <span className="text-xs text-slate-500 block pt-1">
-                                        오늘의 에너지 지수: <strong className="text-indigo-700 font-mono font-bold">{result.microDaily.generalScore}점</strong>
-                                    </span>
-                                </div>
-
-                                {/* 12시진 바이오리듬 표 */}
-                                <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <h3 className="text-base font-serif font-bold text-slate-900">
-                                            12시진(24시간) 에너지 흐름
-                                        </h3>
-                                        <span className="text-xs text-slate-500">집중 시간대를 확인하세요</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                                        {result.microDaily.hourlyEnergy.map((hour, idx) => (
-                                            <div
-                                                key={idx}
-                                                className={`p-3 rounded-2xl border text-center space-y-1 transition-all ${
-                                                    hour.isBest
-                                                        ? 'bg-amber-50/80 border-amber-300 ring-1 ring-amber-200 shadow-2xs'
-                                                        : 'bg-slate-50 border-slate-200/60'
-                                                }`}
-                                            >
-                                                <span className={`text-xs font-bold block ${hour.isBest ? 'text-amber-900' : 'text-slate-700'}`}>
-                                                    {hour.timeName}
-                                                </span>
-                                                <span className="text-[10px] text-slate-400 block">{hour.hourLabel}</span>
-                                                <span className={`text-xs font-bold block pt-1 font-mono ${hour.isBest ? 'text-amber-800' : 'text-slate-600'}`}>
-                                                    {hour.score}점 {hour.isBest && '★'}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* 행운 아이템 4종 */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1 text-center">
-                                        <span className="text-xs text-slate-500 block">행운의 색상</span>
-                                        <span className="text-xs font-bold text-slate-900 block">{result.microDaily.luckyColorName}</span>
-                                    </div>
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1 text-center">
-                                        <span className="text-xs text-slate-500 block">행운의 숫자</span>
-                                        <span className="text-xs font-bold text-slate-900 font-mono block">{result.microDaily.luckyNumbers.join(', ')}</span>
-                                    </div>
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1 text-center">
-                                        <span className="text-xs text-slate-500 block">행운의 방위</span>
-                                        <span className="text-xs font-bold text-slate-900 block">{result.microDaily.luckyDirection}</span>
-                                    </div>
-                                    <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-1 text-center">
-                                        <span className="text-xs text-slate-500 block">오늘의 주의사항</span>
-                                        <span className="text-xs font-bold text-rose-600 block truncate">{result.microDaily.dailyWarning}</span>
-                                    </div>
-                                </div>
-
-                                {/* 인터랙티브 도구: 점심 메뉴 룰렛 & 로또 번호 */}
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3 text-center">
-                                        <h4 className="text-sm font-bold text-slate-900">오늘의 추천 메뉴 뽑기</h4>
-                                        <div className="h-12 flex items-center justify-center bg-slate-50 rounded-xl font-bold text-sm text-slate-800 border border-slate-200/60">
-                                            {isMenuRolling ? '메뉴 고르는 중...' : (pickedMenu || result.microDaily.luckyMenu)}
-                                        </div>
-                                        <button
-                                            onClick={rollMenu}
-                                            disabled={isMenuRolling}
-                                            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                                        >
-                                            새로운 메뉴 추천받기
-                                        </button>
-                                    </div>
-
-                                    <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3 text-center">
-                                        <h4 className="text-sm font-bold text-slate-900">오행 공명 번호 6자리</h4>
-                                        <div className="h-12 flex items-center justify-center gap-1.5 bg-slate-50 rounded-xl font-bold text-sm text-slate-800 border border-slate-200/60">
-                                            {isLottoDrawing ? (
-                                                <span className="text-xs text-slate-400">번호 추첨 중...</span>
-                                            ) : revealedLotto ? (
-                                                revealedLotto.map((num, i) => (
-                                                    <span key={i} className="w-7 h-7 rounded-full bg-indigo-600 text-white text-xs flex items-center justify-center font-bold font-mono shadow-2xs">
-                                                        {num}
-                                                    </span>
-                                                ))
-                                            ) : (
-                                                <span className="text-xs text-slate-400">버튼을 눌러 확인하세요</span>
-                                            )}
-                                        </div>
-                                        <button
-                                            onClick={drawLotto}
-                                            disabled={isLottoDrawing}
-                                            className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                                        >
-                                            오행 번호 추출하기
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 🌟 소프트 락인 넛지 배너 (비회원/회원 모두에게 유용한 저장 & 알림 유도) */}
-                        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4 border border-purple-800/40">
-                            <div className="space-y-1 text-center sm:text-left">
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-300 bg-white/10 px-2.5 py-0.5 rounded-full">
-                                    <i className="fas fa-sparkles"></i> 스마트 락인
-                                </span>
-                                <h4 className="text-base sm:text-lg font-bold">
-                                    내 사주 정보 저장하고 매일 아침 맞춤 운세 알림 받기
-                                </h4>
-                                <p className="text-xs text-purple-200/80">
-                                    {user ? '사주 정보가 안전하게 보관되어 있습니다. 마이페이지에서 언제든 다시 확인하세요.' : '지금 가입하시면 방금 확인한 만세력 원국이 영구 보관되며 매일 아침 행운 리포트를 제공합니다.'}
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => {
-                                    if (!user) {
-                                        if (window.top) {
-                                            window.top.location.href = '/signup?redirect=' + encodeURIComponent('/entertainment/saju');
-                                        } else {
-                                            window.location.href = '/signup?redirect=' + encodeURIComponent('/entertainment/saju');
-                                        }
-                                    } else {
-                                        if (window.top) {
-                                            window.top.location.href = '/mypage';
-                                        } else {
-                                            window.location.href = '/mypage';
-                                        }
-                                    }
-                                }}
-                                className="px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white text-xs font-bold rounded-xl shadow-md transition-all whitespace-nowrap cursor-pointer shrink-0"
-                            >
-                                <i className="fas fa-bookmark mr-1.5"></i>
-                                {user ? '마이페이지 사주 관리' : '1초 만에 사주 정보 저장하기'}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* 2인 궁합 모달 */}
-                {result && (
-                    <CoupleMatchModal
-                        isOpen={isCoupleModalOpen}
-                        onClose={() => setIsCoupleModalOpen(false)}
-                        person1={result}
-                    />
-                )}
-
-                {/* 결과 공유 모달 */}
-                {result && (
-                    <SajuShareModal
-                        isOpen={isShareModalOpen}
-                        onClose={() => setIsShareModalOpen(false)}
-                        result={result}
-                    />
-                )}
-            </div>
-        </MiniAppLayout>
+      localStorage.getItem('veranex_saju_name') ||
+      localStorage.getItem('faith_saju_name') ||
+      localStorage.getItem('user_name') ||
+      ''
     );
+  });
+  const [gender, setGender] = useState<'M' | 'F'>(() => {
+    const saved = localStorage.getItem('veranex_saju_gender') || localStorage.getItem('faith_saju_gender');
+    return saved === 'F' ? 'F' : 'M';
+  });
+  const [birthDate, setBirthDate] = useState(() => {
+    return (
+      localStorage.getItem('veranex_saju_birth_date') ||
+      localStorage.getItem('faith_saju_birth_date') ||
+      localStorage.getItem('user_birth_date') ||
+      '1996-08-21'
+    );
+  });
+  const [birthTime, setBirthTime] = useState(() => {
+    return (
+      localStorage.getItem('veranex_saju_birth_time') ||
+      localStorage.getItem('faith_saju_birth_time') ||
+      '12'
+    );
+  });
+  const [isSolar, setIsSolar] = useState(() => {
+    const saved = localStorage.getItem('veranex_saju_is_solar') || localStorage.getItem('faith_saju_is_solar');
+    return saved === 'false' ? false : true;
+  });
+
+  // 2. 결과 및 모달 상태
+  const [result, setResult] = useState<SajuResult | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>('summary');
+  const [isCoupleModalOpen, setIsCoupleModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+
+  // 3. 인터랙티브 기능 (점심 룰렛, 로또)
+  const [pickedMenu, setPickedMenu] = useState<string | null>(null);
+  const [isMenuRolling, setIsMenuRolling] = useState(false);
+  const [revealedLotto, setRevealedLotto] = useState<number[] | null>(null);
+  const [isLottoDrawing, setIsLottoDrawing] = useState(false);
+
+  // 4초(4000ms) 실시간 1~100% 프로그레스 스플래시
+  useEffect(() => {
+    if (step !== 'splash') return;
+
+    const duration = 4000;
+    const intervalTime = 40;
+    const stepIncrement = 100 / (duration / intervalTime);
+
+    const timer = setInterval(() => {
+      setLoadingProgress((prev) => {
+        const next = prev + stepIncrement;
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => setStep('input'), 250);
+          return 100;
+        }
+        return Math.floor(next);
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [step]);
+
+  // 회원 프로필 자동 연동
+  useEffect(() => {
+    if (user) {
+      if (user.name && !name) {
+        setName(user.name);
+        localStorage.setItem('veranex_saju_name', user.name);
+      }
+      if (user.birth_date && birthDate === '1996-08-21') {
+        setBirthDate(user.birth_date);
+        localStorage.setItem('veranex_saju_birth_date', user.birth_date);
+      }
+      if (user.birth_time && user.birth_time !== 'unknown') {
+        setBirthTime(user.birth_time);
+        localStorage.setItem('veranex_saju_birth_time', user.birth_time);
+      }
+      if (user.gender) {
+        const g = user.gender === 'F' ? 'F' : 'M';
+        setGender(g);
+        localStorage.setItem('veranex_saju_gender', g);
+      }
+      if (user.is_solar !== undefined && user.is_solar !== null) {
+        const s = Boolean(user.is_solar);
+        setIsSolar(s);
+        localStorage.setItem('veranex_saju_is_solar', String(s));
+      }
+    }
+  }, [user]);
+
+  // 프로필 로컬 및 서버 영구 보관
+  const persistProfile = async (
+    targetName: string,
+    targetBirthDate: string,
+    targetBirthTime: string,
+    targetGender: string,
+    targetIsSolar: boolean
+  ) => {
+    try {
+      localStorage.setItem('veranex_saju_name', targetName);
+      localStorage.setItem('veranex_saju_birth_date', targetBirthDate);
+      localStorage.setItem('veranex_saju_birth_time', targetBirthTime);
+      localStorage.setItem('veranex_saju_gender', targetGender);
+      localStorage.setItem('veranex_saju_is_solar', String(targetIsSolar));
+    } catch (e) {
+      console.warn('LocalStorage save failed:', e);
+    }
+
+    if (user) {
+      try {
+        await axios.post(
+          '/api/user/saju-profile',
+          {
+            name: targetName,
+            birthDate: targetBirthDate,
+            birthTime: targetBirthTime,
+            gender: targetGender,
+            isSolar: targetIsSolar,
+          },
+          { withCredentials: true }
+        );
+      } catch {
+        // 비로그인 또는 실패 시 조용히 통과
+      }
+    }
+  };
+
+  // 사주 분석 실행
+  const handleAnalyze = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetName = name.trim() || (user && user.name) || '이용자';
+    persistProfile(targetName, birthDate, birthTime, gender, isSolar);
+
+    setStep('processing');
+    setTimeout(() => {
+      try {
+        const calc = calculateSaju(targetName, gender, birthDate, birthTime, isSolar);
+        setResult(calc);
+        setStep('result');
+        setPickedMenu(null);
+        setRevealedLotto(null);
+      } catch (err) {
+        console.error('Saju calc error:', err);
+        const fallback = calculateSaju('이용자', 'M', '1996-08-21', '12', true);
+        setResult(fallback);
+        setStep('result');
+      }
+    }, 700);
+  };
+
+  // 점심 메뉴 룰렛
+  const rollMenu = () => {
+    if (!result) return;
+    setIsMenuRolling(true);
+    const pool = [
+      result.microDaily.luckyMenu,
+      '담백한 소고기 전골 & 솥밥',
+      '신선한 생선구이 정식',
+      '버섯 들깨 칼국수',
+      '정갈한 안심 돈카츠',
+      '따뜻한 삼계탕',
+      '아보카도 연어 포케',
+      '매콤한 순두부찌개',
+    ];
+    setTimeout(() => {
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      setPickedMenu(pick);
+      setIsMenuRolling(false);
+    }, 500);
+  };
+
+  // 로또 번호 추첨
+  const drawLotto = () => {
+    if (!result) return;
+    setIsLottoDrawing(true);
+    setTimeout(() => {
+      setRevealedLotto(result.microDaily.lottoNumbers);
+      setIsLottoDrawing(false);
+    }, 600);
+  };
+
+  return (
+    <MiniAppLayout title="베라 정통 만세력 & 사주">
+      {/* 팝업 규격: 450px × 850px 고정, 680px 이내 1화면 완결 Zero-Scroll 컨테이너 */}
+      <div className="w-full max-w-[450px] h-screen max-h-[850px] mx-auto overflow-hidden flex flex-col justify-between bg-slate-50 text-slate-800 font-sans select-none relative">
+        
+        {/* ============================================================== */}
+        {/* [화면 1] 4초 프리미엄 스플래시 & 1~100% 프로그레스 (data-screenshot-entry) */}
+        {/* ============================================================== */}
+        {step === 'splash' && (
+          <div
+            data-screenshot-entry="true"
+            className="w-full h-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-indigo-50/40 p-5 select-none animate-fade-in"
+          >
+            {/* 1. 상단 브랜딩 & 기준 배지 */}
+            <div className="w-full flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                <span className="text-xs font-black text-slate-700 tracking-wider uppercase">
+                  VERANEX
+                </span>
+              </div>
+              <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+                2026 공인 천문역법 준수
+              </span>
+            </div>
+
+            {/* 2. 중앙 메인 비주얼: 앱도사 캐릭터 + 도술 연산 중 */}
+            <div className="w-full flex flex-col items-center justify-center my-auto py-2 text-center">
+              <AppDosaCharacter
+                mood="loading"
+                size="lg"
+                speechBubble="천기누설 사주 데이터를 조율하고 있소!"
+              />
+
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-3 mb-1">
+                베라 정통 만세력 & 사주
+              </h1>
+              <p className="text-xs font-bold text-indigo-600 mb-1">
+                MZ 감성 앱도사가 짚어주는 오늘의 운명과 오행 밸런스
+              </p>
+              <p className="text-[11px] text-slate-400 mb-5 max-w-xs leading-relaxed">
+                정밀 만세력 8글자 분석과 사이다 한 줄 요약이 곧 시작됩니다
+              </p>
+
+              {/* 1~100% 실시간 프로그레스 바 */}
+              <div className="w-full max-w-[280px] space-y-1.5 mb-2">
+                <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 px-1">
+                  <span>음양오행 연산 및 모듈 동기화</span>
+                  <span className="font-black text-indigo-600 text-xs tabular-nums">
+                    {loadingProgress}%
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200/70 border border-slate-300/80 h-2.5 rounded-full overflow-hidden p-0.5 shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-indigo-600 via-sky-500 to-amber-400 rounded-full transition-all duration-75 ease-out shadow-xs"
+                    style={{ width: `${loadingProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-1.5 text-[11px] font-black text-indigo-600">
+                <i className="fas fa-spinner fa-spin text-indigo-500 text-xs"></i>
+                <span>천문 데이터 로딩 중... ({loadingProgress}%)</span>
+              </div>
+            </div>
+
+            {/* 3. 하단 필수 광고 / 스폰서 배너 슬롯 (miniapp.md 의무) */}
+            <div className="w-full flex flex-col items-center gap-1.5 pb-1">
+              <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-2.5 shadow-xs flex items-center justify-between hover:border-indigo-300 transition-colors">
+                <div className="flex items-center gap-2.5 overflow-hidden">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <i className="fas fa-bullhorn text-xs"></i>
+                  </div>
+                  <div className="text-left min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8px] font-black text-indigo-600 uppercase tracking-wider bg-indigo-50 px-1 py-0.2 rounded border border-indigo-100">
+                        AD
+                      </span>
+                      <span className="text-[11px] font-bold text-slate-800 truncate">
+                        2026 VeraNex 프리미엄 금융 허브
+                      </span>
+                    </div>
+                    <span className="text-[9px] text-slate-400 truncate block">
+                      포털 공식 제휴 프로모션 바로가기
+                    </span>
+                  </div>
+                </div>
+                <span className="shrink-0 px-2 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-black rounded-lg border border-indigo-200">
+                  확인
+                </span>
+              </div>
+              <p className="text-[9px] text-slate-400 text-center">
+                본 서비스는 2026년 한국 천문연구원 역법 기준을 준수합니다.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* [화면 2] 사주 입력 폼 (Zero-Scroll 680px 완결) (data-screenshot-input) */}
+        {/* ============================================================== */}
+        {step === 'input' && (
+          <div
+            data-screenshot-input="true"
+            className="w-full h-full flex flex-col justify-between bg-slate-50 p-3.5 select-none animate-fade-in"
+          >
+            {/* 1. 슬림 상단 원라인 헤더 */}
+            <div className="flex items-center justify-between bg-white px-3 py-2 rounded-2xl border border-slate-200/90 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs shadow-xs">
+                  <i className="fas fa-yin-yang"></i>
+                </div>
+                <div>
+                  <h1 className="text-xs font-black text-slate-900 leading-none">
+                    베라 정통 만세력 & 사주
+                  </h1>
+                  <span className="text-[9px] text-slate-400 font-bold">
+                    VeraNex 사주팔자 명리 엔진
+                  </span>
+                </div>
+              </div>
+              <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ● 실시간 자동저장
+              </span>
+            </div>
+
+            {/* 2. 중앙 컴팩트 폼 카드 */}
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs space-y-3 my-auto">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center gap-1.5">
+                  <AppDosaCharacter mood="idle" size="sm" />
+                  <div className="text-left">
+                    <span className="text-[10px] font-black text-indigo-600 block">
+                      베라 앱도사의 안내
+                    </span>
+                    <p className="text-xs font-bold text-slate-800 leading-tight">
+                      {user?.name ? `${user.name}님의 사주를 풀이해 드릴게요!` : '생년월일시를 꼼꼼히 짚어드립니다!'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <form onSubmit={handleAnalyze} className="space-y-2.5">
+                {/* 이름 */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-600 mb-1">
+                    이름 (또는 닉네임)
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="이름을 입력하세요"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-indigo-500 font-bold text-xs text-slate-800"
+                    required
+                  />
+                </div>
+
+                {/* 성별 & 양력/음력 (2열) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-600 mb-1">성별</label>
+                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setGender('M')}
+                        className={`py-1.5 text-xs font-black rounded-lg transition-all ${
+                          gender === 'M'
+                            ? 'bg-white text-indigo-700 shadow-2xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        남성
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender('F')}
+                        className={`py-1.5 text-xs font-black rounded-lg transition-all ${
+                          gender === 'F'
+                            ? 'bg-white text-rose-600 shadow-2xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        여성
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-600 mb-1">달력</label>
+                    <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/60">
+                      <button
+                        type="button"
+                        onClick={() => setIsSolar(true)}
+                        className={`py-1.5 text-xs font-black rounded-lg transition-all ${
+                          isSolar
+                            ? 'bg-white text-indigo-700 shadow-2xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        양력
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsSolar(false)}
+                        className={`py-1.5 text-xs font-black rounded-lg transition-all ${
+                          !isSolar
+                            ? 'bg-white text-indigo-700 shadow-2xs'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        음력
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 생년월일 */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-600 mb-1">
+                    생년월일
+                  </label>
+                  <input
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-indigo-500 font-bold text-xs text-slate-800"
+                    required
+                  />
+                </div>
+
+                {/* 태어난 시간 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[10px] font-black text-slate-600">
+                      태어난 시간 (12시진)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setBirthTime(birthTime === 'unknown' ? '12' : 'unknown')}
+                      className="text-[10px] text-indigo-600 hover:underline font-bold"
+                    >
+                      {birthTime === 'unknown' ? '시간 직접 선택' : '시간 모름'}
+                    </button>
+                  </div>
+                  <select
+                    value={birthTime}
+                    onChange={(e) => setBirthTime(e.target.value)}
+                    disabled={birthTime === 'unknown'}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-slate-50/70 focus:bg-white focus:outline-none focus:ring-1.5 focus:ring-indigo-500 font-bold text-xs text-slate-800 disabled:bg-slate-100 disabled:text-slate-400"
+                  >
+                    <option value="0">자시 (子時 · 23:30 ~ 01:30)</option>
+                    <option value="2">축시 (丑時 · 01:30 ~ 03:30)</option>
+                    <option value="4">인시 (寅時 · 03:30 ~ 05:30)</option>
+                    <option value="6">묘시 (卯時 · 05:30 ~ 07:30)</option>
+                    <option value="8">진시 (辰時 · 07:30 ~ 09:30)</option>
+                    <option value="10">사시 (巳時 · 09:30 ~ 11:30)</option>
+                    <option value="12">오시 (午時 · 11:30 ~ 13:30)</option>
+                    <option value="14">미시 (未時 · 13:30 ~ 15:30)</option>
+                    <option value="16">신시 (申時 · 15:30 ~ 17:30)</option>
+                    <option value="18">유시 (酉時 · 17:30 ~ 19:30)</option>
+                    <option value="20">술시 (戌時 · 19:30 ~ 21:30)</option>
+                    <option value="22">해시 (亥時 · 21:30 ~ 23:30)</option>
+                  </select>
+                </div>
+
+                {/* 메인 분석 버튼 */}
+                <button
+                  type="submit"
+                  className="w-full h-11 bg-gradient-to-r from-indigo-600 via-indigo-700 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 mt-2"
+                >
+                  <i className="fas fa-magic text-xs"></i>
+                  <span>앱도사에게 사주 풀이 받기</span>
+                </button>
+              </form>
+            </div>
+
+            {/* 3. 하단 보안 & 클라이언트 로컬 처리 보증 푸터 */}
+            <div className="text-center py-1">
+              <span className="text-[10px] font-bold text-slate-400">
+                🔒 VeraNex 클라이언트 보안 엔진 · 개인정보 100% 암호화 처리
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* [화면 3] 연산 중 화면 */}
+        {/* ============================================================== */}
+        {step === 'processing' && (
+          <div className="w-full h-full flex flex-col items-center justify-center p-6 bg-slate-50 text-center animate-fade-in select-none">
+            <AppDosaCharacter mood="loading" size="md" speechBubble="사주 원국과 오행을 짚는 중..." />
+            <h3 className="text-base font-black text-slate-900 mt-4 mb-1">
+              천간지지 및 대운 흐름 분석 중
+            </h3>
+            <p className="text-xs text-slate-500 max-w-xs">
+              사주팔자 8글자의 상생상극과 오행 밸런스를 계산하고 있습니다.
+            </p>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* [화면 4] 사주 결과 대시보드 (Zero-Scroll 680px 완결) (data-screenshot-result) */}
+        {/* ============================================================== */}
+        {step === 'result' && result && (
+          <div
+            data-screenshot-result="true"
+            className="w-full h-full flex flex-col justify-between bg-slate-50 p-2.5 select-none animate-fade-in"
+          >
+            {/* 1. 슬림 원라인 헤더 (높이 ~40px) */}
+            <div className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-xl border border-slate-200/90 shadow-2xs">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-600"></span>
+                <span className="text-xs font-black text-slate-900 tracking-tight">
+                  {result.basic.name} 님
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
+                  {result.basic.zodiac.split(' ')[1] || result.basic.zodiac}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsShareModalOpen(true)}
+                  className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-black border border-slate-200 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <i className="fas fa-share-nodes text-[9px]"></i>
+                  <span>공유</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep('input')}
+                  className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black border border-indigo-200 transition-all cursor-pointer flex items-center gap-1"
+                >
+                  <i className="fas fa-redo-alt text-[9px]"></i>
+                  <span>다시</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. 3대 컴팩트 알약 탭 바 (높이 ~34px) */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-200/70 p-1 rounded-xl border border-slate-300/60 my-1">
+              <button
+                type="button"
+                onClick={() => setActiveTab('summary')}
+                className={`py-1 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'summary'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                도사요약 · 8글자
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('elements')}
+                className={`py-1 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'elements'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                오행 밸런스
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('tools')}
+                className={`py-1 text-center text-xs font-black rounded-lg transition-all cursor-pointer ${
+                  activeTab === 'tools'
+                    ? 'bg-white text-indigo-700 shadow-2xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                궁합 · 행운도구
+              </button>
+            </div>
+
+            {/* 3. 탭별 메인 뷰포트 (순수 세로 680px 이내 완결) */}
+            <div className="flex-1 flex flex-col justify-between overflow-hidden">
+              
+              {/* TAB 1: [도사 요약 & 8글자 3D 플립 카드 & 3대 스코어] */}
+              {activeTab === 'summary' && (
+                <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in">
+                  {/* A. 앱도사 캐릭터 & 오늘의 한 줄 사이다 요약 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
+                    <AppDosaCharacter
+                      mood="result"
+                      size="sm"
+                      onClick={() => alert(`오늘의 도사 조언: ${result.appDosaSummary.punchline}`)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
+                          {result.appDosaSummary.moodTitle}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          오늘의 사이다 한마디
+                        </span>
+                      </div>
+                      <p className="text-xs font-black text-slate-900 leading-snug">
+                        {result.appDosaSummary.punchline}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* B. 8글자 사주팔자 3D 플립 카드 컴포넌트 */}
+                  <SajuPillarsCard pillars={result.pillars} />
+
+                  {/* C. 3대 라이프 스코어 바 (재물, 애정, 성취) */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-black text-slate-600 px-0.5">
+                      <span>3대 라이프 스코어</span>
+                      <span className="text-slate-400 font-bold">오행 에너지 기반</span>
+                    </div>
+
+                    <div className="space-y-1">
+                      {/* 재물운 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
+                          <span>💰</span> 재물
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
+                            style={{ width: `${result.appDosaSummary.wealthScore}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-amber-700 w-7 text-right tabular-nums">
+                          {result.appDosaSummary.wealthScore}점
+                        </span>
+                      </div>
+
+                      {/* 애정운 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
+                          <span>❤️</span> 애정
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full"
+                            style={{ width: `${result.appDosaSummary.loveScore}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-rose-600 w-7 text-right tabular-nums">
+                          {result.appDosaSummary.loveScore}점
+                        </span>
+                      </div>
+
+                      {/* 성취운 */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
+                          <span>🚀</span> 성취
+                        </span>
+                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full"
+                            style={{ width: `${result.appDosaSummary.growthScore}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-[10px] font-black text-indigo-700 w-7 text-right tabular-nums">
+                          {result.appDosaSummary.growthScore}점
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* D. 원라인 3대 행운 칩 */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
+                      <span className="text-[9px] font-bold text-slate-400 block">행운의 색상</span>
+                      <span
+                        className="text-[11px] font-black block mt-0.5 truncate"
+                        style={{ color: result.appDosaSummary.luckyItems.color.hex }}
+                      >
+                        ● {result.appDosaSummary.luckyItems.color.name}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
+                      <span className="text-[9px] font-bold text-slate-400 block">행운 시간</span>
+                      <span className="text-[11px] font-black text-slate-800 block mt-0.5 truncate">
+                        {result.appDosaSummary.luckyItems.time.split(' ')[0]}
+                      </span>
+                    </div>
+                    <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
+                      <span className="text-[9px] font-bold text-slate-400 block">추천 메뉴</span>
+                      <span className="text-[11px] font-black text-indigo-700 block mt-0.5 truncate">
+                        {result.appDosaSummary.luckyItems.food.split(' ')[0]}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: [오행 밸런스 & 체질 분석] */}
+              {activeTab === 'elements' && (
+                <div className="h-full flex flex-col justify-between space-y-2 animate-fade-in">
+                  {/* 오행 그래프 카드 */}
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                      <span className="text-xs font-black text-slate-900">
+                        오행(五行) 에너지 분포도
+                      </span>
+                      <span className="text-[10px] font-bold text-indigo-600">
+                        용신(用神): {result.elementsSummary.yongshin}
+                      </span>
+                    </div>
+
+                    {/* 오행 게이지 5개 */}
+                    <div className="space-y-1.5">
+                      {(['wood', 'fire', 'earth', 'metal', 'water'] as const).map((elemKey) => {
+                        const cfg = ELEMENT_CONFIG[elemKey];
+                        const val = result.elements[elemKey];
+                        return (
+                          <div key={elemKey} className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black w-10 ${cfg.text}`}>
+                              {cfg.name}
+                            </span>
+                            <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full ${cfg.bg} rounded-full transition-all duration-500`}
+                                style={{ width: `${val}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-[10px] font-black text-slate-700 w-7 text-right tabular-nums">
+                              {val}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 강한 기운 & 부족한 기운 분석 카드 */}
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-2 text-center">
+                        <span className="text-[9px] font-black text-emerald-800 uppercase">
+                          가장 강한 기운
+                        </span>
+                        <p className="text-xs font-black text-emerald-900 mt-0.5">
+                          {result.elementsSummary.dominant}
+                        </p>
+                      </div>
+                      <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-2 text-center">
+                        <span className="text-[9px] font-black text-rose-800 uppercase">
+                          보완할 기운
+                        </span>
+                        <p className="text-xs font-black text-rose-900 mt-0.5">
+                          {result.elementsSummary.deficient}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-2 border border-slate-200/70 text-[11px] leading-relaxed text-slate-700">
+                      <strong className="text-indigo-700 font-bold">도사의 오행 솔루션:</strong>{' '}
+                      {result.businessWealth.financeSector.reason}
+                    </div>
+                  </div>
+
+                  {/* 비즈니스 & 커리어 성향 */}
+                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs">
+                    <span className="text-[10px] font-black text-slate-500 block mb-1">
+                      적성 및 비즈니스 스타일
+                    </span>
+                    <h4 className="text-xs font-black text-slate-900 leading-snug">
+                      {result.businessWealth.typeTitle}
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5">
+                      추천 업종: {result.businessWealth.recommendedIndustries.join(', ')}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: [궁합 & 럭키 툴즈] */}
+              {activeTab === 'tools' && (
+                <div className="h-full flex flex-col justify-between space-y-2 animate-fade-in">
+                  {/* 2인 궁합 배너 */}
+                  <div className="bg-gradient-to-r from-rose-50 to-indigo-50 rounded-2xl p-3 border border-rose-200/80 shadow-2xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] font-black text-rose-600 uppercase tracking-wide">
+                        COUPLE CHEMISTRY
+                      </span>
+                      <h4 className="text-xs font-black text-slate-900">
+                        2인 정밀 사주 궁합 분석
+                      </h4>
+                      <p className="text-[10px] text-slate-500">
+                        상대방과의 오행 상호 보완도와 속궁합 지수
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCoupleModalOpen(true)}
+                      className="px-3 py-2 bg-gradient-to-r from-rose-500 to-indigo-600 text-white text-xs font-black rounded-xl shadow-xs hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                    >
+                      궁합 보기
+                    </button>
+                  </div>
+
+                  {/* 점심 메뉴 룰렛 */}
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                        <span>🍱</span> 오늘의 오행 맞춤 점심 메뉴
+                      </span>
+                      <button
+                        type="button"
+                        onClick={rollMenu}
+                        disabled={isMenuRolling}
+                        className="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-black border border-indigo-200 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isMenuRolling ? '추천 중...' : '메뉴 돌리기'}
+                      </button>
+                    </div>
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200/70 text-center">
+                      <p className="text-xs font-black text-indigo-800">
+                        {pickedMenu || result.microDaily.luckyMenu}
+                      </p>
+                      <span className="text-[9px] text-slate-400">
+                        부족한 오행 에너지를 보충해주는 최적의 식단
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 오행 맞춤 로또 번호 추출기 */}
+                  <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                        <span>🎱</span> 오늘의 행운 로또 번호 6개
+                      </span>
+                      <button
+                        type="button"
+                        onClick={drawLotto}
+                        disabled={isLottoDrawing}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-black border border-amber-200 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isLottoDrawing ? '추첨 중...' : '번호 뽑기'}
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 py-1">
+                      {(revealedLotto || result.microDaily.lottoNumbers).map((num, i) => (
+                        <span
+                          key={i}
+                          className="w-7 h-7 rounded-full bg-gradient-to-tr from-indigo-600 to-sky-500 text-white font-black text-xs flex items-center justify-center shadow-xs"
+                        >
+                          {num}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 4. 슬림 하단 푸터 (VeraNex 단독 브랜딩) */}
+            <div className="text-center pt-1 border-t border-slate-200/60 mt-1">
+              <span className="text-[9px] font-bold text-slate-400">
+                © 2026 VeraNex. All rights reserved. · 정통 만세력 엔진
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* 2인 궁합 모달 */}
+        {result && (
+          <CoupleMatchModal
+            person1={result}
+            isOpen={isCoupleModalOpen}
+            onClose={() => setIsCoupleModalOpen(false)}
+          />
+        )}
+
+        {/* 결과 공유 모달 */}
+        {result && (
+          <SajuShareModal
+            result={result}
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+          />
+        )}
+      </div>
+    </MiniAppLayout>
+  );
 }

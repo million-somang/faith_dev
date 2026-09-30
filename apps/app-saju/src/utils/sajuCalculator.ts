@@ -79,6 +79,18 @@ export interface SajuResult {
         dailyWarning: string;      // 오후 4시 이후 충동 지출 주의
         lottoNumbers: number[];    // 오행 맞춤 6자리 로또 번호
     };
+    appDosaSummary: {
+        punchline: string;        // MZ 1줄 사이다 요약
+        moodTitle: string;        // 오늘의 에너지 타입 명칭
+        wealthScore: number;      // 0~100 (💰 재물운)
+        loveScore: number;        // 0~100 (❤️ 애정/인간관계운)
+        growthScore: number;      // 0~100 (🚀 성취/학업운)
+        luckyItems: {
+            color: { name: string; hex: string };
+            time: string;
+            food: string;
+        };
+    };
     daeunTimeline: { age: string; title: string; score: number; desc: string }[];
 }
 
@@ -378,6 +390,66 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
             dailyWarning: WARNINGS[seed % WARNINGS.length],
             lottoNumbers: Array.from(lottoSet).sort((a, b) => a - b)
         },
+        appDosaSummary: (() => {
+            const punchlinePool = {
+                wood: [
+                    "🌿 새로운 아이디어가 샘솟는 하루! 고민하지 말고 메모장에 즉시 적어두세요.",
+                    "🌱 작은 실천이 거대한 기회를 만듭니다. 오늘 시작한 일이 곧 큰 결실이 됩니다.",
+                    "🎋 유연한 태도가 최고의 무기! 상대방 의견에 고개 끄덕여주면 술술 풀려요."
+                ],
+                fire: [
+                    "🔥 오늘은 머리보다 발이 빨라야 승리! 망설이지 말고 행동으로 승부하세요.",
+                    "⚡ 넘치는 열정과 자신감이 행운을 부릅니다. 당당하게 앞장서서 주도하세요!",
+                    "✨ 숨겨둔 잠재력이 터지는 타이밍! 나의 가치를 멋지게 증명할 날입니다."
+                ],
+                earth: [
+                    "🏔️ 든든한 태산처럼 중심을 지키세요. 주변이 소란스러워도 나는 평온합니다.",
+                    "🧱 서두르지 말고 차분하게 내 실속을 챙기세요. 꾸준함이 최고의 자산입니다.",
+                    "🌾 묵묵한 성실함이 빛을 발하는 날! 든든한 조력자가 내 곁을 지켜줍니다."
+                ],
+                metal: [
+                    "💎 묵묵히 내 실속을 챙길 골든 타이밍! 불필요한 감정 소모는 단호히 컷!",
+                    "🗡️ 날카로운 직관과 결단력이 정답입니다. 미뤄뒀던 결정은 오늘 내리세요.",
+                    "🛡️ 확실한 원칙과 깔끔한 마무리가 감탄을 부릅니다. 프로답게 끝내세요!"
+                ],
+                water: [
+                    "💧 물처럼 유연하게 처신하면 뜻밖의 귀인이 찾아와 생각지도 못한 문을 엽니다.",
+                    "🌊 조용히 흐르는 물이 바위를 뚫듯, 은근한 끈기가 상대를 감동시킵니다.",
+                    "🌌 깊은 통찰력이 빛을 발하는 하루! 직관을 믿고 중요한 방향을 결정하세요."
+                ]
+            };
+
+            const dayElementKey = pillars.day.ganElem || 'wood';
+            const pool = punchlinePool[dayElementKey as keyof typeof punchlinePool] || punchlinePool.wood;
+            const punchline = pool[seed % pool.length];
+
+            const moodTitles: Record<string, string> = {
+                wood: '도전적 개척자형',
+                fire: '열정보스 추진형',
+                earth: '든든한 중심형',
+                metal: '칼같은 전략가형',
+                water: '지혜로운 통찰형'
+            };
+
+            const wealthScore = Math.min(99, Math.max(72, Math.round(entrepreneurScore * 0.4 + 50 + (seed % 10))));
+            const loveScore = Math.min(99, Math.max(70, Math.round(charmScore * 0.5 + 45 + ((seed * 3) % 10))));
+            const growthScore = Math.min(99, Math.max(75, Math.round(careerScore * 0.4 + 55 + ((seed * 7) % 8))));
+
+            const bestHour = hourlyEnergy.find(h => h.isBest)?.timeName || '오후 1시 ~ 3시 (미시)';
+
+            return {
+                punchline,
+                moodTitle: moodTitles[dayElementKey] || '행운의 조화형',
+                wealthScore,
+                loveScore,
+                growthScore,
+                luckyItems: {
+                    color: { name: pickedColor.name, hex: pickedColor.hex },
+                    time: bestHour,
+                    food: MENUS[seed % MENUS.length]
+                }
+            };
+        })(),
         daeunTimeline: [
             { age: '20대 (초년운)', title: '씨앗을 뿌리는 탐색과 성장의 시기', score: 78, desc: '새로운 기술과 인맥을 넓히며 인생의 든든한 기초 체력을 다지는 구간입니다.' },
             { age: '30대 (청년운)', title: '비즈니스와 커리어의 황금 도약기', score: 92, desc: '주도적인 프로젝트 성공과 자산 형성이 본격화되며 대운의 탄력을 크게 받습니다.' },
