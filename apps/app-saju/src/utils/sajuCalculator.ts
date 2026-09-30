@@ -82,13 +82,20 @@ export interface SajuResult {
     appDosaSummary: {
         punchline: string;        // MZ 1줄 사이다 요약
         moodTitle: string;        // 오늘의 에너지 타입 명칭
+        hashtags: string[];       // 해시태그 목록
+        actionAdvice: string;     // 도사의 실천 가이드 1문장
+        todayEnergyBrief: string; // 오늘 일진과 사주 상생 설명
         wealthScore: number;      // 0~100 (💰 재물운)
+        wealthTip: string;        // 재물운 1줄 실전 팁
         loveScore: number;        // 0~100 (❤️ 애정/인간관계운)
+        loveTip: string;          // 애정운 1줄 실전 팁
         growthScore: number;      // 0~100 (🚀 성취/학업운)
+        growthTip: string;        // 성취운 1줄 실전 팁
         luckyItems: {
             color: { name: string; hex: string };
             time: string;
             food: string;
+            direction: string;
         };
     };
     daeunTimeline: { age: string; title: string; score: number; desc: string }[];
@@ -431,22 +438,105 @@ export function calculateSaju(name: string, gender: 'M' | 'F', dateStr: string, 
                 water: '지혜로운 통찰형'
             };
 
+            const hashtagsMap: Record<string, string[][]> = {
+                wood: [
+                    ['#성장모멘텀', '#새로운시작', '#아이디어만발'],
+                    ['#기회포착', '#직관력MAX', '#행동이답'],
+                    ['#유연한사고', '#소통의힘', '#협업대성']
+                ],
+                fire: [
+                    ['#열정보스', '#직진본능', '#추진력폭발'],
+                    ['#선제공격', '#당당한자신감', '#리더십'],
+                    ['#하이라이트', '#존재감발휘', '#승부수']
+                ],
+                earth: [
+                    ['#태산같은중심', '#안정제일', '#실속챙기기'],
+                    ['#꾸준함의힘', '#장기투자', '#신뢰구축'],
+                    ['#평온한마음', '#든든한조력자', '#기초체력']
+                ],
+                metal: [
+                    ['#칼같은결단', '#효율극대화', '#군더더기컷'],
+                    ['#골든타이밍', '#프로페셔널', '#확실한수익'],
+                    ['#원칙과소신', '#냉철한판단', '#정면돌파']
+                ],
+                water: [
+                    ['#지혜의물결', '#귀인상봉', '#막힘없는해결'],
+                    ['#부드러운카리스마', '#심리전승리', '#유연함'],
+                    ['#깊은통찰력', '#내면의힘', '#행운의파도']
+                ]
+            };
+
+            const adviceMap: Record<string, string[]> = {
+                wood: [
+                    '망설이던 아이디어가 있다면 오늘 바로 메모장에 정리하고 실행에 옮기시오.',
+                    '작은 실천 하나가 생각보다 큰 파동을 일으키니 주저 말고 시작해보시오.'
+                ],
+                fire: [
+                    '주저하는 순간 기회는 다른 사람에게 넘어가니 당당하게 앞장서시오.',
+                    '솔직하고 자신감 넘치는 태도가 주변 사람들을 내 편으로 끌어당길 것이오.'
+                ],
+                earth: [
+                    '소란스러운 주변 분위기에 휩쓸리지 말고 내 실속을 차분히 챙기시오.',
+                    '약속과 원칙을 지키는 듬직한 모습이 최고의 무기이자 자산이오.'
+                ],
+                metal: [
+                    '불필요한 잔가지와 미련은 단호히 쳐내고 핵심 본질에만 집중하시오.',
+                    '미뤄두었던 중요한 결정이 있다면 오늘 명확하게 마침표를 찍으시오.'
+                ],
+                water: [
+                    '상대방과 대립하기보다 부드럽게 감싸 안으면 결국 내가 주도권을 쥐게 되오.',
+                    '내면의 직관이 가리키는 방향을 믿고 물 흐르듯 유연하게 처신하시오.'
+                ]
+            };
+
+            const wealthTips = [
+                '오후 2시 이후 예상치 못한 득재 기운! 실속을 단단히 챙기세요.',
+                '단기 충동소비만 절제하면 안정적인 현금 흐름이 유지됩니다.',
+                '협업이나 정보 교류 속에서 짭짤한 부가 수익 힌트를 얻습니다.'
+            ];
+
+            const loveTips = [
+                '가벼운 칭찬과 경청 한마디가 상대방의 호감도를 2배로 끌어올립니다.',
+                '내 생각을 강요하기보다 먼저 공감해 주면 깊은 신뢰가 싹틉니다.',
+                '예상치 못한 자리에서 든든한 귀인이나 호감 가는 인연을 마주합니다.'
+            ];
+
+            const growthTips = [
+                '새로운 기획안 제출이나 아이디어 피칭을 밀어붙이기에 최고의 날입니다.',
+                '묵묵히 쌓아온 노력이 동료와 상사에게 뚜렷하게 인정받는 순간입니다.',
+                '문제가 생겨도 유연하게 발상을 전환하면 오히려 전화위복이 됩니다.'
+            ];
+
+            const hashtagsPool = hashtagsMap[dayElementKey] || hashtagsMap.wood;
+            const hashtags = hashtagsPool[seed % hashtagsPool.length];
+
+            const advicePool = adviceMap[dayElementKey] || adviceMap.wood;
+            const actionAdvice = advicePool[seed % advicePool.length];
+
             const wealthScore = Math.min(99, Math.max(72, Math.round(entrepreneurScore * 0.4 + 50 + (seed % 10))));
             const loveScore = Math.min(99, Math.max(70, Math.round(charmScore * 0.5 + 45 + ((seed * 3) % 10))));
             const growthScore = Math.min(99, Math.max(75, Math.round(careerScore * 0.4 + 55 + ((seed * 7) % 8))));
 
             const bestHour = hourlyEnergy.find(h => h.isBest)?.timeName || '오후 1시 ~ 3시 (미시)';
+            const todayEnergyBrief = `${pillars.day.gan}일주 본인의 타고난 ${ELEMENT_CONFIG[dayElementKey].name} 기운이 오늘 일진의 흐름과 만나 ${moodTitles[dayElementKey]}의 강력한 시너지를 형성하고 있습니다.`;
 
             return {
                 punchline,
                 moodTitle: moodTitles[dayElementKey] || '행운의 조화형',
+                hashtags,
+                actionAdvice,
+                todayEnergyBrief,
                 wealthScore,
+                wealthTip: wealthTips[seed % wealthTips.length],
                 loveScore,
+                loveTip: loveTips[((seed * 3) % loveTips.length)],
                 growthScore,
+                growthTip: growthTips[((seed * 7) % growthTips.length)],
                 luckyItems: {
                     color: { name: pickedColor.name, hex: pickedColor.hex },
                     time: bestHour,
-                    food: MENUS[seed % MENUS.length]
+                    food: MENUS[seed % MENUS.length],
+                    direction: DIRECTIONS[seed % DIRECTIONS.length]
                 }
             };
         })(),

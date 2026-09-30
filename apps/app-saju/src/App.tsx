@@ -582,115 +582,195 @@ export default function App() {
             {/* 3. 탭별 메인 뷰포트 (순수 세로 680px 이내 완결) */}
             <div className="flex-1 flex flex-col justify-between overflow-hidden">
               
-              {/* TAB 1: [도사 요약 & 8글자 3D 플립 카드 & 3대 스코어] */}
+              {/* TAB 1: [도사 요약 & 8글자 3D 플립 카드 & 3대 스코어 & 4대 행운 가이드] */}
               {activeTab === 'summary' && (
-                <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in">
-                  {/* A. 앱도사 캐릭터 & 오늘의 한 줄 사이다 요약 */}
-                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs flex items-center gap-3">
-                    <AppDosaCharacter
-                      mood="result"
-                      size="sm"
-                      onClick={() => alert(`오늘의 도사 조언: ${result.appDosaSummary.punchline}`)}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                          {result.appDosaSummary.moodTitle}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400">
-                          오늘의 사이다 한마디
-                        </span>
+                <div className="h-full flex flex-col justify-between space-y-1.5 animate-fade-in overflow-y-auto custom-scrollbar pr-0.5">
+                  {/* A. 오늘의 사주 한마디 (대폭 강조된 히어로 카드) */}
+                  <div className="bg-gradient-to-br from-indigo-50/90 via-white to-amber-50/60 rounded-2xl p-2.5 border border-indigo-200/90 shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <AppDosaCharacter
+                        mood="result"
+                        size="sm"
+                        onClick={() => alert(`오늘의 도사 조언: ${result.appDosaSummary.punchline}`)}
+                      />
+                      <div className="flex-1 min-w-0">
+                        {/* 뱃지 및 해시태그 */}
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded-md bg-indigo-600 text-white shadow-2xs">
+                              도사의 사이다 처방
+                            </span>
+                            <span className="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-1.5 py-0.2 rounded-md">
+                              {result.appDosaSummary.moodTitle}
+                            </span>
+                          </div>
+                          <span className="text-[9px] font-bold text-slate-400">
+                            {result.appDosaSummary.hashtags[0]}
+                          </span>
+                        </div>
+
+                        {/* 강조된 사이다 한 줄 텍스트 */}
+                        <div className="bg-white/95 rounded-xl p-2 border border-indigo-100 shadow-2xs">
+                          <p className="text-[13px] sm:text-sm font-black text-slate-900 leading-snug tracking-tight">
+                            “{result.appDosaSummary.punchline}”
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs font-black text-slate-900 leading-snug">
-                        {result.appDosaSummary.punchline}
-                      </p>
+                    </div>
+
+                    {/* 도사의 1줄 실전 가이드 팁 */}
+                    <div className="mt-1.5 pt-1.5 border-t border-indigo-100/70 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-600 font-bold truncate flex items-center gap-1">
+                        <span className="text-amber-500 font-black">💡 도사 조언:</span>
+                        <span>{result.appDosaSummary.actionAdvice}</span>
+                      </span>
+                      <div className="hidden sm:flex items-center gap-1 text-[9px] text-indigo-500 font-bold shrink-0">
+                        {result.appDosaSummary.hashtags.slice(1).map((tag, idx) => (
+                          <span key={idx}>{tag}</span>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* B. 8글자 사주팔자 3D 플립 카드 컴포넌트 */}
+                  {/* B. 사주팔자 원국 8글자 3D 플립 카드 */}
                   <SajuPillarsCard pillars={result.pillars} />
 
-                  {/* C. 3대 라이프 스코어 바 (재물, 애정, 성취) */}
-                  <div className="bg-white rounded-2xl p-2.5 border border-slate-200/90 shadow-2xs space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] font-black text-slate-600 px-0.5">
-                      <span>3대 라이프 스코어</span>
-                      <span className="text-slate-400 font-bold">오행 에너지 기반</span>
+                  {/* C. 오늘의 일진 & 사주 조화 브릿지 바 (중간 빈 공간 완벽 해소) */}
+                  <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl px-2.5 py-1.5 flex items-center justify-between text-[10px]">
+                    <span className="font-extrabold text-indigo-950 truncate flex items-center gap-1">
+                      <span className="text-indigo-600 font-black">⚡ 오행 조화:</span>
+                      <span className="text-slate-700 truncate">{result.appDosaSummary.todayEnergyBrief}</span>
+                    </span>
+                    <span className="text-[9px] font-black text-indigo-700 bg-white px-1.5 py-0.5 rounded-md border border-indigo-200 shrink-0">
+                      상생 길일
+                    </span>
+                  </div>
+
+                  {/* D. 3대 라이프 스코어 & 맞춤 실전 팁 */}
+                  <div className="bg-white rounded-2xl p-2 border border-slate-200/90 shadow-2xs space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-black text-slate-700 px-0.5">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-600"></span>
+                        오늘의 3대 라이프 스코어 & 실전 가이드
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold">오행 에너지 환산</span>
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {/* 재물운 */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
-                          <span>💰</span> 재물
-                        </span>
-                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/60">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
+                            <span>💰</span> 재물운
+                          </span>
+                          <span className="text-[10px] font-black text-amber-700 tabular-nums">
+                            {result.appDosaSummary.wealthScore}점
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200/70 h-1.5 rounded-full overflow-hidden mb-1">
                           <div
                             className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full"
                             style={{ width: `${result.appDosaSummary.wealthScore}%` }}
                           ></div>
                         </div>
-                        <span className="text-[10px] font-black text-amber-700 w-7 text-right tabular-nums">
-                          {result.appDosaSummary.wealthScore}점
-                        </span>
+                        <p className="text-[9px] text-slate-500 font-bold truncate">
+                          {result.appDosaSummary.wealthTip}
+                        </p>
                       </div>
 
                       {/* 애정운 */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
-                          <span>❤️</span> 애정
-                        </span>
-                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/60">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
+                            <span>❤️</span> 애정 · 대인운
+                          </span>
+                          <span className="text-[10px] font-black text-rose-600 tabular-nums">
+                            {result.appDosaSummary.loveScore}점
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200/70 h-1.5 rounded-full overflow-hidden mb-1">
                           <div
                             className="h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full"
                             style={{ width: `${result.appDosaSummary.loveScore}%` }}
                           ></div>
                         </div>
-                        <span className="text-[10px] font-black text-rose-600 w-7 text-right tabular-nums">
-                          {result.appDosaSummary.loveScore}점
-                        </span>
+                        <p className="text-[9px] text-slate-500 font-bold truncate">
+                          {result.appDosaSummary.loveTip}
+                        </p>
                       </div>
 
                       {/* 성취운 */}
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-slate-700 w-12 flex items-center gap-1 shrink-0">
-                          <span>🚀</span> 성취
-                        </span>
-                        <div className="flex-1 bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div className="bg-slate-50/80 rounded-xl p-1.5 border border-slate-200/60">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className="text-[10px] font-black text-slate-800 flex items-center gap-1">
+                            <span>🚀</span> 성취 · 커리어운
+                          </span>
+                          <span className="text-[10px] font-black text-indigo-700 tabular-nums">
+                            {result.appDosaSummary.growthScore}점
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200/70 h-1.5 rounded-full overflow-hidden mb-1">
                           <div
                             className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full"
                             style={{ width: `${result.appDosaSummary.growthScore}%` }}
                           ></div>
                         </div>
-                        <span className="text-[10px] font-black text-indigo-700 w-7 text-right tabular-nums">
-                          {result.appDosaSummary.growthScore}점
-                        </span>
+                        <p className="text-[9px] text-slate-500 font-bold truncate">
+                          {result.appDosaSummary.growthTip}
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* D. 원라인 3대 행운 칩 */}
-                  <div className="grid grid-cols-3 gap-1.5">
+                  {/* E. 4대 행운 칩 (컬러, 시간, 메뉴, 방위) */}
+                  <div className="grid grid-cols-4 gap-1">
                     <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
-                      <span className="text-[9px] font-bold text-slate-400 block">행운의 색상</span>
+                      <span className="text-[8px] font-bold text-slate-400 block">행운 색상</span>
                       <span
-                        className="text-[11px] font-black block mt-0.5 truncate"
+                        className="text-[10px] font-black block mt-0.5 truncate"
                         style={{ color: result.appDosaSummary.luckyItems.color.hex }}
                       >
-                        ● {result.appDosaSummary.luckyItems.color.name}
+                        ● {result.appDosaSummary.luckyItems.color.name.split(' ')[0]}
                       </span>
                     </div>
                     <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
-                      <span className="text-[9px] font-bold text-slate-400 block">행운 시간</span>
-                      <span className="text-[11px] font-black text-slate-800 block mt-0.5 truncate">
+                      <span className="text-[8px] font-bold text-slate-400 block">골든 타임</span>
+                      <span className="text-[10px] font-black text-slate-800 block mt-0.5 truncate">
                         {result.appDosaSummary.luckyItems.time.split(' ')[0]}
                       </span>
                     </div>
                     <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
-                      <span className="text-[9px] font-bold text-slate-400 block">추천 메뉴</span>
-                      <span className="text-[11px] font-black text-indigo-700 block mt-0.5 truncate">
+                      <span className="text-[8px] font-bold text-slate-400 block">추천 메뉴</span>
+                      <span className="text-[10px] font-black text-indigo-700 block mt-0.5 truncate">
                         {result.appDosaSummary.luckyItems.food.split(' ')[0]}
                       </span>
                     </div>
+                    <div className="bg-white rounded-xl p-1.5 border border-slate-200/90 shadow-2xs text-center">
+                      <span className="text-[8px] font-bold text-slate-400 block">길방(吉方)</span>
+                      <span className="text-[10px] font-black text-emerald-700 block mt-0.5 truncate">
+                        {result.appDosaSummary.luckyItems.direction}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* F. 하단 퀵 액션 독 (Zero-Scroll 꽉 찬 마감) */}
+                  <div className="grid grid-cols-2 gap-1.5 pt-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsCoupleModalOpen(true)}
+                      className="py-2 px-2.5 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white rounded-xl text-[11px] font-black shadow-xs transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-heart text-[10px]"></i>
+                      <span>2인 정밀 궁합 분석</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('tools')}
+                      className="py-2 px-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-xl text-[11px] font-black transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <i className="fas fa-dice text-[10px] text-indigo-600"></i>
+                      <span>점심 룰렛 & 로또 번호</span>
+                    </button>
                   </div>
                 </div>
               )}
