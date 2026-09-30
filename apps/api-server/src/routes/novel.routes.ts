@@ -141,8 +141,12 @@ router.get('/detail', async (c) => {
     const user = await checkSession(c);
     const isAuthor = user && novel.author_id === user.id;
 
+    const selectCols = isAuthor
+        ? "id, novel_id, episode_no, title, content, is_free, price, views, status, publish_at, created_at"
+        : "id, novel_id, episode_no, title, is_free, price, views, status, publish_at, created_at";
+
     let queryStr = `
-        SELECT id, novel_id, episode_no, title, is_free, price, views, status, publish_at, created_at 
+        SELECT ${selectCols} 
         FROM novel_episodes_v2 
         WHERE novel_id = ?
     `;
@@ -209,6 +213,56 @@ router.post('/create', requireAuth, async (c) => {
     return c.json({ success: true, novelId: res.lastInsertRowid });
 });
 
+// 5-1. [인증] 작가 소설 정보 수정 API
+router.put('/update', requireAuth, async (c) => {
+    const db = await getDB(c);
+    const user = c.get('user');
+    const { id, title, author, description, coverUrl, genre } = await c.req.json();
+
+    if (!id || !title || !author || !genre) {
+        return c.json({ success: false, message: '필수 항목이 누락되었습니다.' }, 400);
+    }
+
+    const novel = await db.prepare('SELECT author_id, cover_url FROM novel_novels WHERE id = ?').bind(id).first();
+    if (!novel) return c.json({ success: false, message: '존재하지 않는 소설입니다.' }, 404);
+    if (novel.author_id !== user.id && user.role !== 'admin') {
+        return c.json({ success: false, message: '수정 권한이 없습니다.' }, 403);
+    }
+
+    const finalCoverUrl = coverUrl !== undefined ? coverUrl : novel.cover_url;
+
+    await db.prepare(
+        `UPDATE novel_novels 
+         SET title = ?, author = ?, description = ?, cover_url = ?, genre = ?
+         WHERE id = ?`
+    ).bind(title, author, description || '', finalCoverUrl, genre, id).run();
+
+    return c.json({ success: true, message: '소설 정보가 성공적으로 수정되었습니다.' });
+});
+
+// 5-2. [인증] 작가 소설 삭제 API (에피소드 및 관련 데이터 캐스케이딩 삭제)
+router.delete('/:id', requireAuth, async (c) => {
+    const db = await getDB(c);
+    const user = c.get('user');
+    const id = parseInt(c.req.param('id') || '0', 10);
+
+    if (!id) return c.json({ success: false, message: '유효하지 않은 소설 ID입니다.' }, 400);
+
+    const novel = await db.prepare('SELECT author_id FROM novel_novels WHERE id = ?').bind(id).first();
+    if (!novel) return c.json({ success: false, message: '존재하지 않는 소설입니다.' }, 404);
+    if (novel.author_id !== user.id && user.role !== 'admin') {
+        return c.json({ success: false, message: '삭제 권한이 없습니다.' }, 403);
+    }
+
+    await db.prepare('DELETE FROM novel_novels WHERE id = ?').bind(id).run();
+    await db.prepare('DELETE FROM novel_episodes_v2 WHERE novel_id = ?').bind(id).run();
+    await db.prepare('DELETE FROM novel_purchases WHERE novel_id = ?').bind(id).run();
+    await db.prepare('DELETE FROM novel_bookmarks WHERE novel_id = ?').bind(id).run();
+    await db.prepare('DELETE FROM novel_history WHERE novel_id = ?').bind(id).run();
+
+    return c.json({ success: true, message: '소설 및 관련 데이터가 모두 삭제되었습니다.' });
+});
+
 // 6. [인증] 작가 내 창작 작품 리스트 조회 API
 router.get('/writer/list', requireAuth, async (c) => {
     const db = await getDB(c);
@@ -257,6 +311,65 @@ router.post('/episode/create', requireAuth, async (c) => {
     ).run();
 
     return c.json({ success: true, episodeNo: nextEpNo });
+});
+
+// 7-1. [인증] 작가 회차 수정 API
+router.put('/episode/update', requireAuth, async (c) => {
+    const db = await getDB(c);
+    const user = c.get('user');
+    const { id, title, content, isFree, price, status, publishAt } = await c.req.json();
+
+    if (!id || !title || !content) {
+        return c.json({ success: false, message: '필수 항목이 누락되었습니다.' }, 400);
+    }
+
+    const ep = await db.prepare('SELECT novel_id FROM novel_episodes_v2 WHERE id = ?').bind(id).first();
+    if (!ep) return c.json({ success: false, message: '존재하지 않는 회차입니다.' }, 404);
+
+    const novel = await db.prepare('SELECT author_id FROM novel_novels WHERE id = ?').bind(ep.novel_id).first();
+    if (!novel || (novel.author_id !== user.id && user.role !== 'admin')) {
+        return c.json({ success: false, message: '해당 회차의 수정 권한이 없습니다.' }, 403);
+    }
+
+    const finalPublishAt = (status === 'scheduled' && publishAt) ? publishAt : new Date().toISOString();
+
+    await db.prepare(
+        `UPDATE novel_episodes_v2 
+         SET title = ?, content = ?, is_free = ?, price = ?, status = ?, publish_at = ?
+         WHERE id = ?`
+    ).bind(
+        title, 
+        content, 
+        isFree ? 1 : 0, 
+        isFree ? 0 : (price || 100), 
+        status || 'published', 
+        finalPublishAt, 
+        id
+    ).run();
+
+    return c.json({ success: true, message: '회차가 성공적으로 수정되었습니다.' });
+});
+
+// 7-2. [인증] 작가 회차 삭제 API
+router.delete('/episode/:id', requireAuth, async (c) => {
+    const db = await getDB(c);
+    const user = c.get('user');
+    const id = parseInt(c.req.param('id') || '0', 10);
+
+    if (!id) return c.json({ success: false, message: '유효하지 않은 회차 ID입니다.' }, 400);
+
+    const ep = await db.prepare('SELECT novel_id, episode_no FROM novel_episodes_v2 WHERE id = ?').bind(id).first();
+    if (!ep) return c.json({ success: false, message: '존재하지 않는 회차입니다.' }, 404);
+
+    const novel = await db.prepare('SELECT author_id FROM novel_novels WHERE id = ?').bind(ep.novel_id).first();
+    if (!novel || (novel.author_id !== user.id && user.role !== 'admin')) {
+        return c.json({ success: false, message: '해당 회차의 삭제 권한이 없습니다.' }, 403);
+    }
+
+    await db.prepare('DELETE FROM novel_episodes_v2 WHERE id = ?').bind(id).run();
+    await db.prepare('DELETE FROM novel_purchases WHERE novel_id = ? AND episode_no = ?').bind(ep.novel_id, ep.episode_no).run();
+
+    return c.json({ success: true, message: '회차가 성공적으로 삭제되었습니다.' });
 });
 
 // 8. [인증] 독자 회차 읽기 API (유/무료 잠금 필터링 & 최근 본 내역 등록)

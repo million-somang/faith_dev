@@ -129,6 +129,29 @@ export default function NovelPage() {
   const [newEpStatus, setNewEpStatus] = useState<'published' | 'draft' | 'scheduled'>('published');
   const [newEpPublishAt, setNewEpPublishAt] = useState<string>('');
   const [isCreatingEpisode, setIsCreatingEpisode] = useState(false);
+
+  // 소설 정보 수정 상태
+  const [showEditNovel, setShowEditNovel] = useState(false);
+  const [editNovelId, setEditNovelId] = useState<number | null>(null);
+  const [editNovelTitle, setEditNovelTitle] = useState('');
+  const [editNovelAuthor, setEditNovelAuthor] = useState('');
+  const [editNovelGenre, setEditNovelGenre] = useState('현대판타지');
+  const [editNovelDesc, setEditNovelDesc] = useState('');
+  const [editNovelCoverUrl, setEditNovelCoverUrl] = useState('');
+  const [editNovelCoverFile, setEditNovelCoverFile] = useState<File | null>(null);
+  const [editNovelCoverPreview, setEditNovelCoverPreview] = useState('');
+  const [isEditingNovel, setIsEditingNovel] = useState(false);
+
+  // 회차 정보 수정 상태
+  const [showEditEpisode, setShowEditEpisode] = useState(false);
+  const [editEpId, setEditEpId] = useState<number | null>(null);
+  const [editEpTitle, setEditEpTitle] = useState('');
+  const [editEpContent, setEditEpContent] = useState('');
+  const [editEpIsFree, setEditEpIsFree] = useState(true);
+  const [editEpPrice, setEditEpPrice] = useState(100);
+  const [editEpStatus, setEditEpStatus] = useState<'published' | 'draft' | 'scheduled'>('published');
+  const [editEpPublishAt, setEditEpPublishAt] = useState<string>('');
+  const [isEditingEpisode, setIsEditingEpisode] = useState(false);
   
   // 골드 & 지갑 상태
   const [goldBalance, setGoldBalance] = useState<number>(0);
@@ -471,6 +494,176 @@ export default function NovelPage() {
       alert('회차 등록 실패: ' + (err.response?.data?.message || err.message));
     } finally {
       setIsCreatingEpisode(false);
+    }
+  };
+
+  // 12-1. 작가용 - 소설 정보 수정 모달 열기
+  const handleOpenEditNovel = (novel: Novel) => {
+    setEditNovelId(novel.id);
+    setEditNovelTitle(novel.title);
+    setEditNovelAuthor(novel.author);
+    setEditNovelGenre(novel.genre);
+    setEditNovelDesc(novel.description || '');
+    setEditNovelCoverUrl(novel.cover_url || '');
+    setEditNovelCoverFile(null);
+    setEditNovelCoverPreview(novel.cover_url || '');
+    setShowEditNovel(true);
+  };
+
+  // 작가용 - 소설 수정용 표지 파일 프리뷰
+  const handleEditCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setEditNovelCoverFile(file);
+      const url = URL.createObjectURL(file);
+      setEditNovelCoverPreview(url);
+    }
+  };
+
+  // 12-2. 작가용 - 소설 정보 수정 제출
+  const handleEditNovelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editNovelId || !editNovelTitle || !editNovelAuthor || !editNovelGenre) {
+      alert('필수 항목을 모두 기입해 주세요.');
+      return;
+    }
+
+    setIsEditingNovel(true);
+    try {
+      let finalCoverUrl = editNovelCoverUrl;
+
+      if (editNovelCoverFile) {
+        const formData = new FormData();
+        formData.append('image', editNovelCoverFile);
+
+        const uploadRes = await axios.post('/api/novel/upload-cover', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true
+        });
+        if (uploadRes.data.success) {
+          finalCoverUrl = uploadRes.data.cover_url;
+        }
+      }
+
+      const res = await axios.put('/api/novel/update', {
+        id: editNovelId,
+        title: editNovelTitle,
+        author: editNovelAuthor,
+        description: editNovelDesc,
+        coverUrl: finalCoverUrl,
+        genre: editNovelGenre
+      }, { withCredentials: true });
+
+      if (res.data.success) {
+        alert('🎉 소설 정보가 성공적으로 수정되었습니다!');
+        setShowEditNovel(false);
+        fetchWriterNovels();
+        fetchNovels();
+        if (selectedWriterNovel && selectedWriterNovel.id === editNovelId) {
+          setSelectedWriterNovel({
+            ...selectedWriterNovel,
+            title: editNovelTitle,
+            author: editNovelAuthor,
+            genre: editNovelGenre,
+            description: editNovelDesc,
+            cover_url: finalCoverUrl
+          });
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('소설 수정 실패: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsEditingNovel(false);
+    }
+  };
+
+  // 12-3. 작가용 - 소설 삭제
+  const handleDeleteNovel = async (novelId: number, novelTitle: string) => {
+    if (!window.confirm(`'${novelTitle}' 소설을 정말 삭제하시겠습니까?\n등록된 모든 회차와 독자 기록이 함께 영구 삭제되며 복원할 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const res = await axios.delete(`/api/novel/${novelId}`, { withCredentials: true });
+      if (res.data.success) {
+        alert('소설이 정상적으로 삭제되었습니다.');
+        if (selectedWriterNovel && selectedWriterNovel.id === novelId) {
+          setSelectedWriterNovel(null);
+        }
+        fetchWriterNovels();
+        fetchNovels();
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('소설 삭제 실패: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  // 12-4. 작가용 - 회차 수정 모달 열기
+  const handleOpenEditEpisode = (ep: Episode) => {
+    setEditEpId(ep.id);
+    setEditEpTitle(ep.title);
+    setEditEpContent(ep.content || '');
+    setEditEpIsFree(ep.is_free === 1);
+    setEditEpPrice(ep.price || 100);
+    setEditEpStatus((ep.status as any) || 'published');
+    setEditEpPublishAt(ep.publish_at || '');
+    setShowEditEpisode(true);
+  };
+
+  // 12-5. 작가용 - 회차 수정 제출
+  const handleEditEpisodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editEpId || !editEpTitle || !editEpContent) {
+      alert('회차 제목과 본문 내용을 작성해 주세요.');
+      return;
+    }
+
+    setIsEditingEpisode(true);
+    try {
+      const res = await axios.put('/api/novel/episode/update', {
+        id: editEpId,
+        title: editEpTitle,
+        content: editEpContent,
+        isFree: editEpIsFree,
+        price: editEpIsFree ? 0 : editEpPrice,
+        status: editEpStatus,
+        publishAt: editEpPublishAt
+      }, { withCredentials: true });
+
+      if (res.data.success) {
+        alert('🎉 회차가 성공적으로 수정되었습니다!');
+        setShowEditEpisode(false);
+        if (selectedWriterNovel) {
+          handleSelectWriterNovel(selectedWriterNovel);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('회차 수정 실패: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsEditingEpisode(false);
+    }
+  };
+
+  // 12-6. 작가용 - 회차 삭제
+  const handleDeleteEpisode = async (episodeId: number, epTitle: string) => {
+    if (!window.confirm(`'${epTitle}' 회차를 정말 삭제하시겠습니까?\n삭제된 회차는 복구할 수 없습니다.`)) {
+      return;
+    }
+
+    try {
+      const res = await axios.delete(`/api/novel/episode/${episodeId}`, { withCredentials: true });
+      if (res.data.success) {
+        alert('회차가 성공적으로 삭제되었습니다.');
+        if (selectedWriterNovel) {
+          handleSelectWriterNovel(selectedWriterNovel);
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('회차 삭제 실패: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -1003,11 +1196,29 @@ export default function NovelPage() {
 
                   <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex gap-3.5 shadow-inner">
                     {renderCover(selectedWriterNovel.cover_url, "w-16 h-22")}
-                    <div>
-                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
-                        {selectedWriterNovel.genre}
-                      </span>
-                      <h3 className="text-base sm:text-lg font-black text-slate-800 mt-1 leading-tight">{selectedWriterNovel.title}</h3>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
+                          {selectedWriterNovel.genre}
+                        </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditNovel(selectedWriterNovel)}
+                            className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-violet-300 text-xs font-bold text-slate-700 flex items-center gap-1 hover:text-violet-600 transition-all cursor-pointer shadow-xs"
+                          >
+                            <i className="fas fa-edit text-violet-500"></i> 작품 수정
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteNovel(selectedWriterNovel.id, selectedWriterNovel.title)}
+                            className="px-2.5 py-1 rounded-lg bg-white border border-rose-100 hover:border-rose-300 text-xs font-bold text-rose-600 flex items-center gap-1 transition-all cursor-pointer shadow-xs"
+                          >
+                            <i className="fas fa-trash-alt"></i> 삭제
+                          </button>
+                        </div>
+                      </div>
+                      <h3 className="text-base sm:text-lg font-black text-slate-800 mt-1 leading-tight truncate">{selectedWriterNovel.title}</h3>
                       <span className="text-xs sm:text-sm text-slate-500 font-extrabold mt-0.5 block">작가 필명: {selectedWriterNovel.author}</span>
                     </div>
                   </div>
@@ -1026,9 +1237,9 @@ export default function NovelPage() {
                     {writerEpisodes.map((ep) => (
                       <div
                         key={ep.id}
-                        className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm"
+                        className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between shadow-sm gap-2"
                       >
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-sm sm:text-base font-bold text-slate-800">{ep.title}</span>
                             {ep.status === 'draft' ? (
@@ -1049,7 +1260,7 @@ export default function NovelPage() {
                             조회수: {ep.views.toLocaleString()} • 등록일: {new Date(ep.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2 shrink-0">
                           {ep.is_free === 1 ? (
                             <span className="text-xs font-black px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-100">
                               무료 연재
@@ -1059,6 +1270,24 @@ export default function NovelPage() {
                               유료 ({ep.price} G)
                             </span>
                           )}
+                          <div className="flex items-center gap-1 border-l border-slate-200 pl-2">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditEpisode(ep)}
+                              className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:border-violet-300 text-xs font-bold text-slate-600 hover:text-violet-600 transition-all cursor-pointer shadow-2xs"
+                              title="회차 수정"
+                            >
+                              <i className="fas fa-edit mr-1"></i>수정
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteEpisode(ep.id, ep.title)}
+                              className="px-2 py-1 rounded-lg bg-white border border-rose-100 hover:border-rose-300 text-xs font-bold text-rose-500 hover:text-rose-700 transition-all cursor-pointer shadow-2xs"
+                              title="회차 삭제"
+                            >
+                              <i className="fas fa-trash-alt mr-1"></i>삭제
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -1087,17 +1316,43 @@ export default function NovelPage() {
                       <div
                         key={novel.id}
                         onClick={() => handleSelectWriterNovel(novel)}
-                        className="p-3 bg-slate-50 border border-slate-100 hover:border-violet-250 cursor-pointer rounded-2xl flex gap-3.5 transition-all shadow-sm"
+                        className="p-3.5 bg-slate-50 border border-slate-100 hover:border-violet-250 cursor-pointer rounded-2xl flex gap-3.5 transition-all shadow-sm group"
                       >
                         {renderCover(novel.cover_url, "w-16 h-22")}
-                        <div className="flex-1 flex flex-col justify-center">
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
-                              {novel.genre}
-                            </span>
-                            <span className="text-xs sm:text-sm text-slate-500 font-extrabold">필명: {novel.author}</span>
+                        <div className="flex-1 flex flex-col justify-center min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600 border border-violet-100">
+                                {novel.genre}
+                              </span>
+                              <span className="text-xs sm:text-sm text-slate-500 font-extrabold truncate">필명: {novel.author}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEditNovel(novel);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-white border border-slate-200 hover:border-violet-300 text-xs font-bold text-slate-600 hover:text-violet-600 transition-all shadow-xs"
+                                title="소설 정보 수정"
+                              >
+                                <i className="fas fa-edit mr-1"></i>수정
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteNovel(novel.id, novel.title);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-white border border-rose-100 hover:border-rose-300 text-xs font-bold text-rose-500 hover:text-rose-700 transition-all shadow-xs"
+                                title="소설 삭제"
+                              >
+                                <i className="fas fa-trash-alt mr-1"></i>삭제
+                              </button>
+                            </div>
                           </div>
-                          <h4 className="text-base sm:text-lg font-black text-slate-800 mt-1.5 leading-tight">{novel.title}</h4>
+                          <h4 className="text-base sm:text-lg font-black text-slate-800 mt-1.5 leading-tight group-hover:text-violet-600 transition-colors truncate">{novel.title}</h4>
                         </div>
                       </div>
                     ))}
@@ -1367,6 +1622,257 @@ export default function NovelPage() {
                 className="w-full py-3 bg-violet-600 hover:bg-violet-750 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all disabled:opacity-40 mt-4 cursor-pointer shadow-md"
               >
                 {isCreatingEpisode ? '에피소드 업로드 중...' : '스토리 발행 배포하기'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2-1. 작가용 - 소설 정보 수정 모달 */}
+      {showEditNovel && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-5 shadow-2xl flex flex-col max-h-[90vh] text-slate-800 animate-slide-up">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                <i className="fas fa-edit text-violet-500"></i>
+                소설 정보 수정
+              </h3>
+              <button onClick={() => setShowEditNovel(false)} className="p-1 rounded hover:bg-slate-100" aria-label="모달 닫기">
+                <i className="fas fa-times text-slate-400"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditNovelSubmit} className="flex-1 overflow-y-auto space-y-3.5 pr-1">
+              <div>
+                <label className="text-xs font-black text-slate-500 block mb-1">소설 작품 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={editNovelTitle}
+                  onChange={(e) => setEditNovelTitle(e.target.value)}
+                  placeholder="예: 현대 의학 쟁패의 침구사"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-black text-slate-500 block mb-1">작가 필명 *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editNovelAuthor}
+                    onChange={(e) => setEditNovelAuthor(e.target.value)}
+                    placeholder="작가 필명 기입"
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-500 block mb-1">장르 선택 *</label>
+                  <select
+                    value={editNovelGenre}
+                    onChange={(e) => setEditNovelGenre(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850"
+                  >
+                    <option value="현대판타지">현대판타지</option>
+                    <option value="판타지">판타지</option>
+                    <option value="무협">무협</option>
+                    <option value="로맨스">로맨스</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-500 block mb-1">작품 줄거리 요약</label>
+                <textarea
+                  rows={3}
+                  value={editNovelDesc}
+                  onChange={(e) => setEditNovelDesc(e.target.value)}
+                  placeholder="독자들의 흥미를 자극할 매혹적인 시놉시스를 기록하세요."
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850 resize-none"
+                />
+              </div>
+
+              {/* 로컬 표지 이미지 선택 / 변경 */}
+              <div>
+                <label className="text-xs font-black text-slate-500 block mb-1.5">타이틀 표지 교체 (선택)</label>
+                <div className="flex gap-3 items-center">
+                  <div className="w-14 h-20 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                    {editNovelCoverPreview ? (
+                      <img src={editNovelCoverPreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <i className="fas fa-image text-slate-400"></i>
+                    )}
+                  </div>
+                  <label className="flex-1 flex flex-col items-center justify-center p-3 rounded-xl border border-dashed border-slate-200 hover:border-violet-400 hover:bg-violet-50/20 cursor-pointer bg-slate-50 text-xs text-slate-500 transition-colors">
+                    <i className="fas fa-cloud-upload-alt mb-1 text-slate-400 text-sm"></i>
+                    새 표지 이미지 선택
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleEditCoverFileChange} 
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isEditingNovel}
+                className="w-full py-3 bg-violet-600 hover:bg-violet-700 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all disabled:opacity-40 mt-4 cursor-pointer shadow-md"
+              >
+                {isEditingNovel ? '작품 정보 수정 중...' : '수정 사항 저장'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 2-2. 작가용 - 회차 정보 수정 모달 */}
+      {showEditEpisode && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 w-full max-w-sm rounded-3xl p-5 shadow-2xl flex flex-col max-h-[95vh] text-slate-800 animate-slide-up">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+              <h3 className="text-sm sm:text-base font-black text-slate-800 flex items-center gap-1.5">
+                <i className="fas fa-edit text-violet-500"></i>
+                회차 수정
+              </h3>
+              <button onClick={() => setShowEditEpisode(false)} className="p-1 rounded hover:bg-slate-100" aria-label="모달 닫기">
+                <i className="fas fa-times text-slate-450"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditEpisodeSubmit} className="flex-1 overflow-y-auto space-y-3.5 pr-1">
+              <div>
+                <label className="text-xs font-black text-slate-500 block mb-1">회차 에피소드 제목 *</label>
+                <input
+                  type="text"
+                  required
+                  value={editEpTitle}
+                  onChange={(e) => setEditEpTitle(e.target.value)}
+                  placeholder="예: 5화: 무림맹주의 숨겨진 운명선"
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850"
+                />
+              </div>
+
+              {/* 무료 / 유료 지정 슬라이드 스위치 */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between shadow-inner">
+                <div>
+                  <label className="text-xs font-black text-slate-800 block">유료화 연재 설정</label>
+                  <span className="text-xs text-slate-400 font-bold block mt-0.5">유료 지정 시 독자 리딩시 100골드가 과금됩니다.</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditEpIsFree(true)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      editEpIsFree 
+                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-250 shadow-sm' 
+                        : 'bg-white text-slate-400 border border-slate-200'
+                    }`}
+                  >
+                    무료 연재
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditEpIsFree(false)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                      !editEpIsFree 
+                        ? 'bg-violet-50 text-violet-650 border border-violet-250 shadow-sm' 
+                        : 'bg-white text-slate-400 border border-slate-200'
+                    }`}
+                  >
+                    유료 연재
+                  </button>
+                </div>
+              </div>
+
+              {/* 발행 방식 설정 (즉시발행 / 임시저장 / 예약발행) */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col gap-2.5 shadow-inner">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-xs font-black text-slate-800 block">발행 방식 설정</label>
+                    <span className="text-xs text-slate-400 font-bold block mt-0.5">원하시는 발행 형태를 선택해 주세요.</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 bg-white p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setEditEpStatus('published')}
+                      className={`px-2 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                        editEpStatus === 'published' 
+                          ? 'bg-violet-50 text-violet-655 border border-violet-200/50 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      즉시발행
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditEpStatus('draft')}
+                      className={`px-2 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                        editEpStatus === 'draft' 
+                          ? 'bg-slate-100 text-slate-700 border border-slate-200 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      임시저장
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditEpStatus('scheduled')}
+                      className={`px-2 py-1 rounded-md text-xs font-black transition-all cursor-pointer ${
+                        editEpStatus === 'scheduled' 
+                          ? 'bg-amber-50 text-amber-600 border border-amber-200/50 shadow-sm' 
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      예약발행
+                    </button>
+                  </div>
+                </div>
+
+                {/* 예약 발행일 때만 예약 일시 입력 인풋 노출 */}
+                {editEpStatus === 'scheduled' && (
+                  <div className="flex flex-col gap-1 border-t border-slate-200/50 pt-2 animate-fade-in">
+                    <label className="text-xs font-black text-slate-500 block">예약 발행일시 설정 *</label>
+                    <input
+                      type="datetime-local"
+                      required
+                      value={editEpPublishAt ? editEpPublishAt.slice(0, 16) : ''}
+                      onChange={(e) => setEditEpPublishAt(e.target.value)}
+                      className="w-full text-xs p-2 rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-violet-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-xs font-black text-slate-500">스토리 본문 내용 *</label>
+                  <span className="text-xs font-bold text-slate-400">
+                    공백 포함: <span className="text-violet-650 font-extrabold">{editEpContent.length.toLocaleString()}</span>자 | 
+                    공백 제외: <span className="text-indigo-600 font-extrabold">{editEpContent.replace(/\s/g, '').length.toLocaleString()}</span>자
+                  </span>
+                </div>
+                <textarea
+                  rows={10}
+                  required
+                  value={editEpContent}
+                  onChange={(e) => setEditEpContent(e.target.value)}
+                  placeholder="본 회차의 스토리를 상세하게 집필해 주세요."
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-200 focus:border-violet-500 focus:outline-none bg-slate-50 text-slate-850 resize-none font-serif leading-relaxed"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isEditingEpisode}
+                className="w-full py-3 bg-violet-600 hover:bg-violet-750 active:scale-95 text-white text-xs font-extrabold rounded-xl transition-all disabled:opacity-40 mt-4 cursor-pointer shadow-md"
+              >
+                {isEditingEpisode ? '회차 수정 저장 중...' : '회차 수정 사항 저장'}
               </button>
             </form>
           </div>
