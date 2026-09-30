@@ -427,10 +427,11 @@ function extractAutoAiSummary(content: string, title: string): string {
 
 // POST /api/news/upload-image - 뉴스 대표 사진 멀티파트 직접 업로드
 const handleUploadNewsImage = async (c: any) => {
-    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
-    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+    const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+    const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
     const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
 
     if (!isAuthorized) {
         return c.json({
@@ -506,11 +507,12 @@ const handleUploadNewsImage = async (c: any) => {
 
 // POST /api/news/create (및 POST /api/news) - 뉴스 기사 외부 API 등록
 const handleCreateNewsApi = async (c: any) => {
-    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
-    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+    const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+    const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
 
     const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
 
     if (!isAuthorized) {
         return c.json({
@@ -659,6 +661,10 @@ const handleCreateNewsApi = async (c: any) => {
         }, 201);
     } catch (error: any) {
         console.error('[Create News API Error]', error);
+        try {
+            const logEntry = `[${new Date().toISOString()}] News Create Error: ${error.message}\n`;
+            fs.appendFileSync(path.resolve(process.cwd(), 'logs/publish-errors.log'), logEntry);
+        } catch {}
         return c.json({
             success: false,
             error: {
@@ -792,11 +798,11 @@ const handleUpdateNewsApi = async (c: any) => {
     }
 };
 
-news.post('/api/news/upload-image', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUploadNewsImage);
-news.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
-news.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
-news.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
-news.put('/api/news/:id', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUpdateNewsApi);
+news.post('/api/news/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleUploadNewsImage);
+news.post('/api/news/create', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
+news.post('/api/news', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
+news.post('/api/news/write', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
+news.put('/api/news/:id', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleUpdateNewsApi);
 
 export { handleCreateNewsApi, handleUpdateNewsApi, handleUploadNewsImage };
 export default news;

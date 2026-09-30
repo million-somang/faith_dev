@@ -80,6 +80,12 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
         const levelDistribution = await DB.prepare("SELECT level, COUNT(*) as count FROM users WHERE status != 'deleted' GROUP BY level ORDER BY level").all()
         const recentUsers = await DB.prepare("SELECT id, email, name, level, created_at FROM users WHERE status != 'deleted' ORDER BY created_at DESC LIMIT 10").all()
 
+        // 뉴스 및 여행 자동 발행 집계
+        const todayNews = await DB.prepare("SELECT COUNT(*) as count FROM news WHERE DATE(created_at) = DATE('now')").first()
+        const totalNews = await DB.prepare("SELECT COUNT(*) as count FROM news").first()
+        const todayTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles WHERE DATE(created_at) = DATE('now')").first()
+        const totalTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles").first()
+
         // 오늘 방문자(UV) & 오늘 페이지뷰(PV) & 누적 방문자 집계
         let todayVisitors = 0
         let todayViews = 0
@@ -112,6 +118,10 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
             activeUsers: (activeUsers as any)?.count || 0,
             suspendedUsers: (suspendedUsers as any)?.count || 0,
             todaySignups: (todaySignups as any)?.count || 0,
+            todayNews: (todayNews as any)?.count || 0,
+            totalNews: (totalNews as any)?.count || 0,
+            todayTravel: (todayTravel as any)?.count || 0,
+            totalTravel: (totalTravel as any)?.count || 0,
             todayVisitors,
             todayViews,
             totalVisitors,

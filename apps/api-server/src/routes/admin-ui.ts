@@ -672,6 +672,47 @@ adminUi.get('/admin', async (c) => {
                 </div>
             </div>
 
+            <!-- 뉴스 & 여행 자동 발행 실시간 현황 카드 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-indigo-500">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
+                                <p class="text-gray-500 text-xs sm:text-sm font-medium">뉴스 자동 발행</p>
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">실시간 가동중</span>
+                            </div>
+                            <div class="flex items-baseline space-x-1 mt-1">
+                                <p id="today-news" class="text-2xl sm:text-3xl font-bold text-indigo-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">건 발행 (오늘)</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">총 누적 기사: <span id="total-news" class="font-semibold text-gray-600">0</span>건</p>
+                        </div>
+                        <div class="bg-indigo-100 text-indigo-600 rounded-full p-3 sm:p-4 shrink-0">
+                            <i class="fas fa-newspaper text-xl sm:text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-4 sm:p-6 border-l-4 border-teal-500">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
+                                <p class="text-gray-500 text-xs sm:text-sm font-medium">여행 큐레이션 자동 발행</p>
+                                <span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full">실시간 가동중</span>
+                            </div>
+                            <div class="flex items-baseline space-x-1 mt-1">
+                                <p id="today-travel" class="text-2xl sm:text-3xl font-bold text-teal-600">0</p>
+                                <span class="text-xs text-gray-500 font-medium">건 발행 (오늘)</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400 mt-1">총 누적 여행지: <span id="total-travel" class="font-semibold text-gray-600">0</span>건</p>
+                        </div>
+                        <div class="bg-teal-100 text-teal-600 rounded-full p-3 sm:p-4 shrink-0">
+                            <i class="fas fa-plane-departure text-xl sm:text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SNS 마케팅 자동화 배너 / 퀵 액션 카드 -->
             <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl shadow-lg p-5 sm:p-6 mb-6 sm:mb-8 text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
@@ -776,6 +817,10 @@ adminUi.get('/admin', async (c) => {
                     document.getElementById('active-users').textContent = (data.activeUsers || 0).toLocaleString();
                     document.getElementById('suspended-users').textContent = (data.suspendedUsers || 0).toLocaleString();
                     document.getElementById('today-signups').textContent = (data.todaySignups || 0).toLocaleString();
+                    if (document.getElementById('today-news')) document.getElementById('today-news').textContent = (data.todayNews || 0).toLocaleString();
+                    if (document.getElementById('total-news')) document.getElementById('total-news').textContent = (data.totalNews || 0).toLocaleString();
+                    if (document.getElementById('today-travel')) document.getElementById('today-travel').textContent = (data.todayTravel || 0).toLocaleString();
+                    if (document.getElementById('total-travel')) document.getElementById('total-travel').textContent = (data.totalTravel || 0).toLocaleString();
                     
                     // 등급별 차트
                     createLevelChart(data.levelDistribution);

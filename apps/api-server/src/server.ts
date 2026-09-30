@@ -43,7 +43,7 @@ app.use('*', async (c, next) => {
     if (path === '/health' || path === '/api/health') return next();
 
     // x-api-key 헤더가 포함된 공인 API 호출은 봇 스크래핑 차단 예외 처리
-    const apiKey = c.req.header('x-api-key') || c.req.header('authorization');
+    const apiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('x-api-token') || c.req.header('authorization');
     if (apiKey) return next();
 
     const ua = (c.req.header('User-Agent') || '').toLowerCase();
@@ -76,10 +76,10 @@ import newsRoutes, { handleCreateNewsApi, handleUploadNewsImage } from './routes
 import { bodyLimit } from 'hono/body-limit';
 
 app.route('/', newsRoutes);
-app.post('/api/news/upload-image', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleUploadNewsImage);
-app.post('/api/news/create', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
-app.post('/api/news', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
-app.post('/api/news/write', bodyLimit({ maxSize: 10 * 1024 * 1024 }), handleCreateNewsApi);
+app.post('/api/news/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleUploadNewsImage);
+app.post('/api/news/create', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
+app.post('/api/news', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
+app.post('/api/news/write', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateNewsApi);
 
 import mypageRoutes from './routes/mypage.routes.js';
 app.route('/api/user', mypageRoutes);
@@ -841,10 +841,15 @@ serve({
     hostname: '0.0.0.0'
 });
 
-// 구글 뉴스 자동 크롤러 영구 비활성화 (자체 API 발행 체계로 전면 전환)
-// import { startNewsScheduler } from './services/newsScheduler.js';
-// startNewsScheduler();
-console.log('📢 [News System] 구글 크롤링 스케줄러가 비활성화되었습니다. (자체 API 발행 모드 활성)');
+// 뉴스 자체 크롤링 스케줄러 (기본은 외부 자체 API 발행 모드이며, 필요 시 ENABLE_RSS_SCHEDULER=true 로 가동)
+if (process.env.ENABLE_RSS_SCHEDULER === 'true') {
+    import('./services/newsScheduler.js').then(({ startNewsScheduler }) => {
+        startNewsScheduler();
+        console.log('📢 [News System] 자체 백업 RSS 수집 스케줄러가 활성화되었습니다.');
+    });
+} else {
+    console.log('📢 [News System] 자체 API 전용 발행 모드 활성 (x-api-key 연동 대기)');
+}
 
 // 일정 1시간 전 푸시 알림 스케줄러 시작
 import { startSchedulePushScheduler } from './services/schedulePushScheduler.js';

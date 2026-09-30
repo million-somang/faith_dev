@@ -22,7 +22,7 @@ const db = new Database(dbPath);
 try {
     db.pragma('journal_mode = WAL');
     db.pragma('synchronous = NORMAL');
-    db.pragma('busy_timeout = 5000');
+    db.pragma('busy_timeout = 10000');
 } catch (pragmaErr) {
     console.warn('[Database] Failed to set SQLite PRAGMA:', pragmaErr);
 }

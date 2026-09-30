@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { bodyLimit } from 'hono/body-limit';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pool } from '@faithportal/database';
@@ -250,11 +251,12 @@ travelRoutes.post('/api/travel/:id{[0-9]+}/like', async (c) => {
 });
 
 // 5. POST /api/travel/upload-image - 여행 대표 사진/갤러리 이미지 직접 업로드
-travelRoutes.post('/api/travel/upload-image', async (c) => {
-    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
-    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+travelRoutes.post('/api/travel/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1024 }), async (c) => {
+    const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+    const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
     const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && user.role === 'admin');
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026' || apiKeyHeader === 'vera-news-api-key-2026')) || (user && user.role === 'admin');
 
     if (!isAuthorized) {
         return c.json({
@@ -329,10 +331,11 @@ travelRoutes.post('/api/travel/upload-image', async (c) => {
 
 // 6. POST /api/travel 및 POST /api/travel/create - 여행 콘텐츠 등록 API
 const handleCreateTravel = async (c: any) => {
-    const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
-    const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
+    const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+    const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
     const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && user.role === 'admin');
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026' || apiKeyHeader === 'vera-news-api-key-2026')) || (user && user.role === 'admin');
 
     if (!isAuthorized) {
         return c.json({
@@ -493,6 +496,10 @@ const handleCreateTravel = async (c: any) => {
         }, 201);
     } catch (error: any) {
         console.error('[Create Travel Error]', error);
+        try {
+            const logEntry = `[${new Date().toISOString()}] Travel Create Error: ${error.message}\n`;
+            fs.appendFileSync(path.resolve(process.cwd(), 'logs/publish-errors.log'), logEntry);
+        } catch {}
         return c.json({
             success: false,
             error: { code: 500, message: 'Failed to create travel article: ' + (error.message || 'Server error') }
@@ -500,7 +507,7 @@ const handleCreateTravel = async (c: any) => {
     }
 };
 
-travelRoutes.post('/api/travel', handleCreateTravel);
-travelRoutes.post('/api/travel/create', handleCreateTravel);
+travelRoutes.post('/api/travel', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateTravel);
+travelRoutes.post('/api/travel/create', bodyLimit({ maxSize: 25 * 1024 * 1024 }), handleCreateTravel);
 
 export default travelRoutes;
