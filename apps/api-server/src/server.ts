@@ -172,56 +172,30 @@ miniApps.forEach(appName => {
     app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
-// 회원 전용 아케이드 에뮬레이터 (비회원/심사봇 차단: 로그인 페이지로 리다이렉트)
+// 아케이드 에뮬레이터 (comboy, sfc)
 ['comboy', 'sfc'].forEach(appName => {
     const basePath = `/app/${appName}`;
     const distPath = `./apps/app-${appName}/dist`;
     
-    app.use(`${basePath}/*`, async (c, next) => {
-        const user = await checkSession(c);
-        if (!user) {
-            return c.redirect('/login?msg=member_only');
-        }
-        return serveStatic({ 
-            root: distPath,
-            rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
-        })(c, next);
-    });
-    
-    app.get(basePath, async (c, next) => {
-        const user = await checkSession(c);
-        if (!user) {
-            return c.redirect('/login?msg=member_only');
-        }
-        return serveStatic({ path: `${distPath}/index.html` })(c, next);
-    });
+    app.use(`${basePath}/*`, serveStatic({ 
+        root: distPath,
+        rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
+    }));
+    app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
-// 회원 전용 실시간 온라인게임 (/onlinegame/:gameName)
+// 실시간 온라인게임 (/onlinegame/:gameName)
 const onlineGames = ['omok-pvp', 'ffrpg'];
 
 onlineGames.forEach(gameName => {
     const basePath = `/onlinegame/${gameName}`;
     const distPath = `./onlinegame/${gameName}/dist`;
     
-    app.use(`${basePath}/*`, async (c, next) => {
-        const user = await checkSession(c);
-        if (!user) {
-            return c.redirect('/login?msg=member_only');
-        }
-        return serveStatic({ 
-            root: distPath,
-            rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
-        })(c, next);
-    });
-    
-    app.get(basePath, async (c, next) => {
-        const user = await checkSession(c);
-        if (!user) {
-            return c.redirect('/login?msg=member_only');
-        }
-        return serveStatic({ path: `${distPath}/index.html` })(c, next);
-    });
+    app.use(`${basePath}/*`, serveStatic({ 
+        root: distPath,
+        rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
+    }));
+    app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
 // Finance app 정적 파일 서빙
