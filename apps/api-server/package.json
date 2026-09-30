@@ -12,10 +12,12 @@
         "@faithportal/core-utils": "*",
         "@faithportal/database": "*",
         "@hono/node-server": "^1.19.9",
+        "@types/ws": "^8.18.2",
         "better-sqlite3": "^12.6.2",
         "dotenv": "^17.2.3",
         "hono": "^4.10.3",
-        "web-push": "^3.6.7"
+        "web-push": "^3.6.7",
+        "ws": "^8.22.0"
     },
     "devDependencies": {
         "@types/web-push": "^3.6.4",

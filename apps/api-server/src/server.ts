@@ -139,6 +139,9 @@ app.route('/', analyticsRoutes);
 import novelRoutes from './routes/novel.routes.js';
 app.route('/api/novel', novelRoutes);
 
+import omokRoutes from './routes/omok.routes.js';
+app.route('/api/omok', omokRoutes);
+
 import { financeRoutes } from './routes/finance.routes.js';
 app.route('/', financeRoutes);
 
@@ -835,11 +838,14 @@ const port = parseInt(process.env.PORT || '4200', 10);
 
 console.log(`Server is running on port ${port} - watch trigger 6`);
 
-serve({
+const serverInstance = serve({
     fetch: app.fetch,
     port,
     hostname: '0.0.0.0'
 });
+
+import { omokGameManager } from './services/omok/OmokGameManager.js';
+omokGameManager.init(serverInstance as any);
 
 // 뉴스 자체 크롤링 스케줄러 (기본은 외부 자체 API 발행 모드이며, 필요 시 ENABLE_RSS_SCHEDULER=true 로 가동)
 if (process.env.ENABLE_RSS_SCHEDULER === 'true') {
