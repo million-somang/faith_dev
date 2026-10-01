@@ -73,6 +73,7 @@ const APP_SLUG_ALIASES: Record<string, string> = {
     'age': 'age-calc',
     'interest': 'interest-calc',
     'severance': 'severance-calc',
+    'salary': 'severance-calc',
     'text': 'text-checker',
     'pyeong': 'pyeong-calc',
     'base64': 'base64-converter',
