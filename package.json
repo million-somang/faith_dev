@@ -11,6 +11,8 @@
     "scripts": {
       "build": "turbo run build",
       "start:prod": "tsx apps/api-server/src/server.ts",
+      "capture:app": "node scripts/capture-single-miniapp.cjs",
+      "capture:all": "node scripts/batch-capture-live-miniapps.cjs",
       "dev": "turbo run dev --concurrency 35",
       "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

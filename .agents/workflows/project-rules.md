@@ -19,7 +19,8 @@ description: 프로젝트 규칙 및 코딩 표준 참조
    - 지시한 것 이외의 코드는 절대 수정하거나 삭제하지 않음
    - 코드 완성 후 테스트 확인 필수
    - Monorepo 구조 유지 (apps 폴더 아래 Sub-App 구조)
-   - 미니앱 코드 작성 시 `MINI_APP_GUIDE.md` 및 `MINI_APP_MODAL_SEO_GUIDE.md` 참고
+   - 미니앱 코드 작성 시 `miniapp.md`, `MINI_APP_GUIDE.md` 및 `MINI_APP_MODAL_SEO_GUIDE.md` 참고
+   - 미니앱 신규 개발/UI 수정 시 3단계 실화면 자동 캡처 필수 실행 (`npm run capture:app <slug>` 또는 `npm run capture:all`)
    - 구글 SEO 및 구글 애드센스(AdSense) 수익 최적화를 항상 최우선으로 고려
    - 서버 실행 시 포트 충돌 방지 (strictPort: true, 기존 프로세스 확인)
 

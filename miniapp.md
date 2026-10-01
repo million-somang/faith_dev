@@ -281,6 +281,22 @@ export default defineConfig(({ mode }) => {
 - **결과 스크롤 타겟**: `<div data-screenshot-point="result">최종 산출 결과</div>`
 - *예시*: 이자 계산기의 `[결과 리포트 산출하기]` 버튼, 결과 리포트 컨테이너 최상단
 
+### 2.4 🚀 프로그램 개발 단계에서의 자동 캡처 실행 의무 (CLI)
+신규 미니앱을 코딩하거나 UI를 업데이트한 개발자는 코딩 완료 즉시 아래 명령어를 실행하여 3단계 실화면 캡처를 생성·저장해야 합니다:
+
+```bash
+# 1. 단일 미니앱 자동 캡처 (기본 운영 서버 기준)
+npm run capture:app <slug>
+# 예: npm run capture:app calculator
+
+# 2. 로컬 개발 서버에서 개발 중 즉시 캡처할 때 (로컬 포트 지정)
+npm run capture:app <slug> http://localhost:5002
+
+# 3. 전체 25개 미니앱 일괄 캡처 및 갱신
+npm run capture:all
+```
+위 명령어를 실행하면 `scripts/capture-single-miniapp.cjs`가 헤드리스 브라우저로 실행되어 앱에 정의된 `data-screenshot-*` 속성을 자동으로 탐지하고 클릭/입력하여 `step1`, `step2`, `step3` 고해상도 실제 PNG를 `public/uploads/marketing/screenshots/` 및 `apps/api-server/public/uploads/marketing/screenshots/`에 즉시 저장합니다.
+
 ---
 
 ## 제3장. 검색엔진(SEO) 및 인공지능(GEO / AIO) 최적화 마스터 가이드
