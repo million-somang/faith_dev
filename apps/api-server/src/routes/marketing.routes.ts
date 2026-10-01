@@ -319,6 +319,78 @@ const APP_REGISTRY: Record<string, AppRegistryMeta> = {
         resultTitle: '흑(Black) 5목 완성 승리!',
         resultMetric: '총 착수: 32수 · 완벽한 승리 전략',
         appUrl: '/app/omok/'
+    },
+    'comboy': {
+        name: '베라 컴보이 아케이드',
+        category: '게임 · 레트로',
+        color: '#EF4444',
+        icon: '🕹️',
+        description: '8비트 패미콤 NES 에뮬레이터 레트로 게임기',
+        features: ['클래식 레트로 게임 브라우저 플레이', '가상 패드 및 키보드 매핑', '실시간 세이브/로드'],
+        actionLabel: '게임 롬 구동하기',
+        resultTitle: 'GAME CLEAR! 하이스코어',
+        resultMetric: '플레이 타임: 18분 · 레트로 감성 100%',
+        appUrl: '/app/comboy/'
+    },
+    'sfc': {
+        name: '베라 슈퍼컴보이',
+        category: '게임 · 16비트레트로',
+        color: '#8B5CF6',
+        icon: '🎮',
+        description: '16비트 슈퍼패미콤 SNES 에뮬레이터 플레이어',
+        features: ['풍성한 16비트 사운드와 그래픽', '풀스크린 모드 및 터보 키 지원', '스테이트 세이브 지원'],
+        actionLabel: '슈퍼패미콤 실행하기',
+        resultTitle: 'STAGE COMPLETED!',
+        resultMetric: '16-BIT 60FPS 안정 구동',
+        appUrl: '/app/sfc/'
+    },
+    'freecell': {
+        name: '베라 프리셀 클래식',
+        category: '게임 · 카드게임',
+        color: '#15803D',
+        icon: '♠️',
+        description: '논리적인 카드 정리 명작 프리셀 솔리테어',
+        features: ['모든 번호별 배치 솔루션 지원', '무제한 실행 취소 및 힌트', '자동 완료 및 기록 관리'],
+        actionLabel: '새로운 프리셀 대국 시작',
+        resultTitle: '프리셀 클리어 완료!',
+        resultMetric: '소요시간 3분 45초 · 이동 68회',
+        appUrl: '/app/freecell/'
+    },
+    'janggi': {
+        name: '베라 정통 장기',
+        category: '게임 · 전통보드',
+        color: '#B91C1C',
+        icon: '🎴',
+        description: '초·한 대국 정통 한국 장기 게임',
+        features: ['스마트 AI 대전 및 2인 대국', '기보 복기 및 승부 판정', '장군·멍군 햅틱 및 효과음'],
+        actionLabel: '새 장기 대국 시작하기',
+        resultTitle: '외통 장군승 달성!',
+        resultMetric: '한(漢) 승리 · 48수 마감',
+        appUrl: '/app/janggi/'
+    },
+    'vera-pop': {
+        name: '베라 팝 (버블 퍼즐)',
+        category: '게임 · 캐주얼',
+        color: '#EC4899',
+        icon: '🫧',
+        description: '같은 색 방울을 맞추어 터뜨리는 버블 슈터',
+        features: ['다양한 스테이지 및 특수 버블', '화려한 콤보 이펙트 및 타격감', '별 3개 최고 득점 도전'],
+        actionLabel: '버블 발사 조준하기',
+        resultTitle: 'STAGE CLEAR! 3-Star 달성',
+        resultMetric: '스코어 89,400점 · 콤보 x12',
+        appUrl: '/app/vera-pop/'
+    },
+    'novel': {
+        name: '베라 웹소설 스튜디오',
+        category: '엔터 · 창작',
+        color: '#6366F1',
+        icon: '📖',
+        description: '회차별 웹소설 감상 및 작가 창작 스튜디오',
+        features: ['몰입형 웹소설 뷰어 및 서재', '작가 연재 및 회차 관리 툴', '독자 반응 및 북마크 보관함'],
+        actionLabel: '소설 뷰어 열기',
+        resultTitle: '독서 완료 · 다음 회차 감상',
+        resultMetric: '누적 1,840 독자 · 별점 9.8',
+        appUrl: '/app/novel/'
     }
 };
 
