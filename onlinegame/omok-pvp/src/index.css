@@ -3,8 +3,43 @@
 
 /* ==========================================================================
    베라오목 온라인 (Vera Omok Online) 전용 스타일 시트
-   100% 라이트 뉴모피즘 + 450px × 850px 팝업 레이아웃
+   100% 라이트 웜 베이지 뉴모피즘 + 450px × 850px 팝업 레이아웃
    ========================================================================== */
+
+/* 웜 베이지 테마 유틸리티 */
+:root {
+  --omok-bg: #f7f4ed;
+  --omok-surface: #fdfbf7;
+  --omok-card: #ffffff;
+  --omok-border: #e8e1d5;
+  --omok-border-subtle: #f0ebe1;
+  --omok-text-main: #2d261e;
+  --omok-text-muted: #786e63;
+}
+
+.bg-omok-bg {
+  background-color: #f7f4ed;
+}
+
+.bg-omok-surface {
+  background-color: #fdfbf7;
+}
+
+.border-omok {
+  border-color: #e8e1d5;
+}
+
+.border-omok-subtle {
+  border-color: #f0ebe1;
+}
+
+.text-omok-main {
+  color: #2d261e;
+}
+
+.text-omok-muted {
+  color: #786e63;
+}
 
 @keyframes stoneDrop {
   0% {

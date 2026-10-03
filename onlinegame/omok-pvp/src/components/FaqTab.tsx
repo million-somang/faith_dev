@@ -15,7 +15,7 @@ export const FaqTab: React.FC = () => {
     },
     {
       q: '비공개 방으로 친구와 1:1 대결을 하려면 어떻게 하나요?',
-      a: '로비에서 [방 만들기] 시 "비공개 방" 옵션을 선택하면 4자리 입장 코드가 발급됩니다. 친구에게 해당 코드를 공유하여 [비공개 코드 입장]을 통해 참여할 수 있습니다.',
+      a: '로비에서 [방 만들기] 시 "비공개 방" 옵션을 선택하면 4자리 입장 코드가 발급됩니다. 친구에게 해당 코드를 공유하여 [코드 입장]을 통해 참여할 수 있습니다.',
       icon: Sparkles
     },
     {
@@ -31,57 +31,56 @@ export const FaqTab: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-4 animate-fade-in text-slate-800 text-xs leading-relaxed">
+    <div className="flex-1 overflow-y-auto p-3.5 space-y-3 animate-fade-in text-[#2d261e] text-xs leading-relaxed bg-[#f7f4ed]">
       {/* 타이틀 배너 */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl p-4 shadow-md">
-        <div className="flex items-center gap-2 mb-1">
-          <HelpCircle className="w-4 h-4 text-purple-200" />
-          <h2 className="text-sm font-black tracking-tight">자주 묻는 질문 (FAQ) & 시스템 안내</h2>
+      <div className="bg-gradient-to-r from-[#b45309] to-[#78350f] text-white rounded-2xl p-3.5 shadow-sm">
+        <div className="flex items-center gap-2 mb-0.5">
+          <HelpCircle className="w-4 h-4 text-amber-200" />
+          <h2 className="text-xs font-black tracking-tight">자주 묻는 질문 (FAQ) & 티어 안내</h2>
         </div>
-        <p className="text-[11px] text-purple-100">
+        <p className="text-[11px] text-amber-100">
           베라오목 온라인의 경기 진행 및 시스템에 대해 자주 묻는 질문들을 모았습니다.
         </p>
       </div>
 
       {/* 티어 체계 요약 카드 */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-2">
-        <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
-          <Trophy className="w-4 h-4 text-amber-500" />
+      <div className="bg-white rounded-2xl p-3.5 border border-[#e8e1d5] shadow-2xs space-y-2">
+        <h3 className="text-xs font-black text-[#2d261e] flex items-center gap-1.5">
+          <Trophy className="w-3.5 h-3.5 text-amber-600" />
           <span>시즌 랭킹 티어 체계 (LP 기준)</span>
         </h3>
-        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-          <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center justify-between">
+        <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#f0ebe1] flex items-center justify-between">
             <span className="font-extrabold text-amber-700">🥉 브론즈</span>
-            <span className="text-slate-500">1,000 LP 미만</span>
+            <span className="text-[#786e63]">1,000 LP 미만</span>
           </div>
-          <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center justify-between">
+          <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#f0ebe1] flex items-center justify-between">
             <span className="font-extrabold text-slate-500">🥈 실버</span>
-            <span className="text-slate-500">1,000 ~ 1,199 LP</span>
+            <span className="text-[#786e63]">1,000 ~ 1,199 LP</span>
           </div>
-          <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center justify-between">
+          <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#f0ebe1] flex items-center justify-between">
             <span className="font-extrabold text-amber-500">🥇 골드</span>
-            <span className="text-slate-500">1,200 ~ 1,499 LP</span>
+            <span className="text-[#786e63]">1,200 ~ 1,499 LP</span>
           </div>
-          <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex items-center justify-between">
+          <div className="bg-[#fdfbf7] p-2 rounded-xl border border-[#f0ebe1] flex items-center justify-between">
             <span className="font-extrabold text-cyan-600">💎 다이아몬드</span>
-            <span className="text-slate-500">1,500 LP 이상</span>
+            <span className="text-[#786e63]">1,500 LP 이상</span>
           </div>
         </div>
       </div>
 
-      {/* FAQ 아코디언/카드 목록 */}
-      <div className="space-y-2.5">
+      {/* FAQ 목록 */}
+      <div className="space-y-2">
         {faqs.map((faq, idx) => {
-          const Icon = faq.icon;
           return (
-            <div key={idx} className="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-2xs space-y-1.5">
+            <div key={idx} className="bg-white rounded-2xl p-3 border border-[#e8e1d5] shadow-2xs space-y-1">
               <div className="flex items-start gap-2">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-black shrink-0 text-[11px] mt-0.5">
+                <span className="w-4 h-4 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center font-black shrink-0 text-[10px] mt-0.5 border border-amber-200">
                   Q
                 </span>
-                <h4 className="font-extrabold text-xs text-slate-900 leading-snug">{faq.q}</h4>
+                <h4 className="font-extrabold text-[11px] text-[#2d261e] leading-snug">{faq.q}</h4>
               </div>
-              <div className="pl-7 text-slate-600 text-[11px]">
+              <div className="pl-6 text-[#5c5245] text-[11px]">
                 {faq.a}
               </div>
             </div>
