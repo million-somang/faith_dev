@@ -425,6 +425,14 @@ export default function App() {
     }
   };
 
+  // 마케팅 스크린샷 캡처 및 승리 연출 데모 트리거
+  const triggerDemoWin = () => {
+    setGameResult('WIN');
+    setGameEndReason('축하합니다! 5목을 먼저 연결하여 승리를 거두셨습니다.');
+    playWinSound();
+    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+  };
+
   // 퀵 채팅 전송
   const sendQuickChat = (text: string) => {
     if (gameMode === 'ONLINE' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -567,7 +575,6 @@ export default function App() {
                 {/* 빠른 1:1 온라인 매칭 */}
                 <button
                   onClick={handleQuickMatch}
-                  data-screenshot-click="action"
                   className="w-full py-3 px-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-md hover:shadow-lg transition-all group active:scale-[0.99] cursor-pointer"
                 >
                   <div className="flex items-center gap-2.5">
@@ -588,6 +595,7 @@ export default function App() {
                 {/* AI 싱글 연습 대국 */}
                 <button
                   onClick={startAiPractice}
+                  data-screenshot-click="action"
                   className="w-full py-2 px-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between shadow-xs hover:shadow-md transition-all group active:scale-[0.99] cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
@@ -944,6 +952,14 @@ export default function App() {
                     </button>
                   ))}
                 </div>
+
+                {/* 자동 캡처용 승리 트리거 버튼 */}
+                <button
+                  data-screenshot-click="result"
+                  onClick={triggerDemoWin}
+                  className="hidden"
+                  aria-hidden="true"
+                />
               </div>
 
               {/* 승패 모달 */}
@@ -981,7 +997,6 @@ export default function App() {
                           if (gameMode === 'ONLINE') handleQuickMatch();
                           else startAiPractice();
                         }}
-                        data-screenshot-click="result"
                         className="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold cursor-pointer shadow-md"
                       >
                         새 대국 시작

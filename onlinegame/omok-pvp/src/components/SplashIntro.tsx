@@ -29,7 +29,7 @@ export const SplashIntro: React.FC<SplashIntroProps> = ({ onComplete }) => {
   }, [onComplete]);
 
   return (
-    <div className="w-full max-w-[450px] min-h-[850px] mx-auto bg-gradient-to-b from-white via-slate-50 to-blue-50/40 flex flex-col justify-between p-6 select-none relative overflow-hidden font-sans shadow-2xl animate-fade-in">
+    <div className="loading-screen w-full max-w-[450px] min-h-[850px] mx-auto bg-gradient-to-b from-[#fdfbf7] via-[#f7f4ed] to-[#eee8dc] flex flex-col justify-between p-6 select-none relative overflow-hidden font-sans shadow-2xl animate-fade-in border-x border-[#e8e1d5]">
       {/* 상단 공인 뱃지 */}
       <div className="pt-8 flex flex-col items-center text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-black tracking-wide shadow-2xs">
