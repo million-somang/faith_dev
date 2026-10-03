@@ -190,6 +190,28 @@ travelRoutes.get('/api/travel', async (c) => {
     }
 });
 
+// 1-1. GET /api/travel/map-spots - 인터랙티브 지도 전용 전국 명소 일괄 초경량 조회
+travelRoutes.get('/api/travel/map-spots', async (c) => {
+    try {
+        const query = `
+            SELECT id, title, destination, region, category, thumbnail, 
+                   location_address, summary, ai_summary, is_featured, view_count, like_count
+            FROM travel_articles 
+            WHERE (hidden IS NULL OR hidden = 0)
+            ORDER BY id ASC
+        `;
+        const result = await pool.query(query);
+        return c.json({
+            success: true,
+            total: result.rows.length,
+            articles: result.rows
+        });
+    } catch (error: any) {
+        console.error('[Get Travel Map Spots Error]', error);
+        return c.json({ success: false, message: 'Failed to fetch map spots: ' + error.message }, 500);
+    }
+});
+
 // 2. GET /api/travel/featured - 추천 여행지 하이라이트
 travelRoutes.get('/api/travel/featured', async (c) => {
     try {

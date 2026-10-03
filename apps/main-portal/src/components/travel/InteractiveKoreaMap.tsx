@@ -44,16 +44,52 @@ export default function InteractiveKoreaMap({
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isZoomed, setIsZoomed] = useState(true);
 
-    // 기사 - 도 매칭 헬퍼 함수
+    // 기사 - 도 정밀 매칭 헬퍼 함수
     const isArticleInProvince = (article: TravelSpot, prov: ProvinceMeta): boolean => {
-        const text = `${article.location_address || ''} ${article.destination || ''} ${article.region || ''}`;
-        if (text.includes(prov.name) || text.includes(prov.shortName)) return true;
-        if (prov.id === 'jeonbuk' && (text.includes('전라북도') || text.includes('전북'))) return true;
-        if (prov.id === 'gangwon' && (text.includes('강원도') || text.includes('강원'))) return true;
-        if (prov.id === 'gyeonggi' && (text.includes('경기도') || text.includes('경기'))) return true;
-        if (prov.id === 'seoul' && (text.includes('서울특별시') || text.includes('서울'))) return true;
-        if (prov.id === 'jeju' && (text.includes('제주특별자치도') || text.includes('제주'))) return true;
-        return false;
+        // 1순위: 공식 도로명/지번 주소(location_address) 기준 정밀 매칭
+        const addr = article.location_address?.trim() || '';
+        if (addr) {
+            if (prov.id === 'gwangju') return addr.includes('광주광역시') || addr.includes('광주 ');
+            if (prov.id === 'jeonnam') return addr.includes('전라남도') || addr.includes('전남 ');
+            if (prov.id === 'jeonbuk') return addr.includes('전북특별자치도') || addr.includes('전라북도') || addr.includes('전북 ');
+            if (prov.id === 'gangwon') return addr.includes('강원특별자치도') || addr.includes('강원도') || addr.includes('강원 ');
+            if (prov.id === 'gyeonggi') return addr.includes('경기도') || addr.includes('경기 ');
+            if (prov.id === 'seoul') return addr.includes('서울특별시') || addr.includes('서울 ');
+            if (prov.id === 'incheon') return addr.includes('인천광역시') || addr.includes('인천 ');
+            if (prov.id === 'daejeon') return addr.includes('대전광역시') || addr.includes('대전 ');
+            if (prov.id === 'daegu') return addr.includes('대구광역시') || addr.includes('대구 ');
+            if (prov.id === 'busan') return addr.includes('부산광역시') || addr.includes('부산 ');
+            if (prov.id === 'ulsan') return addr.includes('울산광역시') || addr.includes('울산 ');
+            if (prov.id === 'sejong') return addr.includes('세종특별자치시') || addr.includes('세종 ');
+            if (prov.id === 'chungbuk') return addr.includes('충청북도') || addr.includes('충북 ');
+            if (prov.id === 'chungnam') return addr.includes('충청남도') || addr.includes('충남 ');
+            if (prov.id === 'gyeongbuk') return addr.includes('경상북도') || addr.includes('경북 ');
+            if (prov.id === 'gyeongnam') return addr.includes('경상남도') || addr.includes('경남 ');
+            if (prov.id === 'jeju') return addr.includes('제주특별자치도') || addr.includes('제주도') || addr.includes('제주 ');
+            return addr.includes(prov.name) || addr.startsWith(prov.shortName);
+        }
+
+        // 2순위: 주소가 없는 경우 목적지(destination) 기준 매칭
+        const dest = article.destination?.trim() || '';
+        if (prov.id === 'gwangju') return dest.includes('광주광역시') || dest.includes('광주 ');
+        if (prov.id === 'jeonnam') return dest.includes('전라남도') || dest.includes('전남 ');
+        if (prov.id === 'jeonbuk') return dest.includes('전북특별자치도') || dest.includes('전라북도') || dest.includes('전북 ');
+        if (prov.id === 'gangwon') return dest.includes('강원특별자치도') || dest.includes('강원도') || dest.includes('강원 ');
+        if (prov.id === 'gyeonggi') return dest.includes('경기도') || dest.includes('경기 ');
+        if (prov.id === 'seoul') return dest.includes('서울특별시') || dest.includes('서울 ');
+        if (prov.id === 'incheon') return dest.includes('인천광역시') || dest.includes('인천 ');
+        if (prov.id === 'daejeon') return dest.includes('대전광역시') || dest.includes('대전 ');
+        if (prov.id === 'daegu') return dest.includes('대구광역시') || dest.includes('대구 ');
+        if (prov.id === 'busan') return dest.includes('부산광역시') || dest.includes('부산 ');
+        if (prov.id === 'ulsan') return dest.includes('울산광역시') || dest.includes('울산 ');
+        if (prov.id === 'sejong') return dest.includes('세종특별자치시') || dest.includes('세종 ');
+        if (prov.id === 'chungbuk') return dest.includes('충청북도') || dest.includes('충북 ');
+        if (prov.id === 'chungnam') return dest.includes('충청남도') || dest.includes('충남 ');
+        if (prov.id === 'gyeongbuk') return dest.includes('경상북도') || dest.includes('경북 ');
+        if (prov.id === 'gyeongnam') return dest.includes('경상남도') || dest.includes('경남 ');
+        if (prov.id === 'jeju') return dest.includes('제주특별자치도') || dest.includes('제주도') || dest.includes('제주 ');
+
+        return dest.includes(prov.name) || dest.startsWith(prov.shortName);
     };
 
     // 각 도별 등록된 실제 여행지 개수 계산
@@ -486,7 +522,7 @@ export default function InteractiveKoreaMap({
                                                             isSelected ? 'bg-white text-emerald-800' : 'bg-emerald-600 text-white'
                                                         }`}
                                                     >
-                                                        {count > 99 ? '99+' : count}
+                                                        {count > 999 ? '999+' : count}
                                                     </span>
                                                 )}
                                             </div>

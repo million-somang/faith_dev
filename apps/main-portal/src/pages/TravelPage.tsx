@@ -70,13 +70,11 @@ export default function TravelPage() {
     const [totalCount, setTotalCount] = useState(0);
     const limit = 12;
 
-    // 지도 렌더링용 전체 여행지 목록 1회 일괄 조회
+    // 지도 렌더링용 전체 여행지 목록 1회 일괄 조회 (초경량 전국 명소 엔드포인트)
     useEffect(() => {
         const fetchMapSpots = async () => {
             try {
-                const res = await axios.get(`${API_BASE_URL}/api/travel`, {
-                    params: { limit: 100 }
-                });
+                const res = await axios.get(`${API_BASE_URL}/api/travel/map-spots`);
                 if (res.data?.success) {
                     setAllMapArticles(res.data.articles || []);
                 }
