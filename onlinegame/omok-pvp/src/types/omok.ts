@@ -2,6 +2,10 @@ export type Player = 'BLACK' | 'WHITE';
 export type Cell = Player | null;
 export type Board = Cell[][];
 
+export type AppTab = 'game' | 'rules' | 'faq';
+export type GameMode = 'ONLINE' | 'AI';
+export type ViewMode = 'LOBBY' | 'MATCHING' | 'WAITING' | 'GAME';
+
 export interface Point {
   r: number;
   c: number;
@@ -28,4 +32,10 @@ export interface PlayerProfile {
   tier: string;
   wins: number;
   losses: number;
+}
+
+export interface MoveRecord {
+  step: number;
+  player: Player;
+  point: Point;
 }
