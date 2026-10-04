@@ -15,11 +15,13 @@
         "@types/ws": "^8.18.2",
         "better-sqlite3": "^12.6.2",
         "dotenv": "^17.2.3",
+        "geoip-lite": "^1.4.10",
         "hono": "^4.10.3",
         "web-push": "^3.6.7",
         "ws": "^8.22.0"
     },
     "devDependencies": {
+        "@types/geoip-lite": "^1.4.4",
         "@types/web-push": "^3.6.4",
         "tsx": "^4.21.0",
         "typescript": "^5.0.0"

@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { getDB } from '../db/adapter.js'
 import { requireAdmin } from './admin.routes.js'
+import geoip from 'geoip-lite'
 
 const analyticsRoutes = new Hono()
 
@@ -289,8 +290,35 @@ export interface ReferrerInfo {
     isExternal: boolean;
 }
 
-export function classifyReferrer(rawRef: string | null | undefined): ReferrerInfo {
+export function classifyReferrer(rawRef: string | null | undefined, userAgent?: string | null): ReferrerInfo {
+    const ua = (userAgent || '').toLowerCase();
+
     if (!rawRef || rawRef === 'null' || rawRef === 'undefined' || rawRef === '1' || rawRef.trim() === '') {
+        // User-Agent 기반 인앱 브라우저 및 앱 유입 스마트 역추적
+        if (ua.includes('kakaotalk')) {
+            return { channel: 'social', channelName: '소셜 SNS (카카오톡)', source: '카카오톡 인앱 링크', domain: 'kakaotalk', isExternal: true };
+        }
+        if (ua.includes('naver(inapp') || (ua.includes('naver') && ua.includes('app'))) {
+            return { channel: 'search', channelName: '포털 앱 (네이버)', source: '네이버 앱 링크', domain: 'naver.com', isExternal: true };
+        }
+        if (ua.includes('instagram')) {
+            return { channel: 'social', channelName: '소셜 SNS (인스타그램)', source: '인스타그램 인앱', domain: 'instagram.com', isExternal: true };
+        }
+        if (ua.includes('fb_iab') || ua.includes('fban') || ua.includes('fbav')) {
+            return { channel: 'social', channelName: '소셜 SNS (페이스북)', source: '페이스북 인앱', domain: 'facebook.com', isExternal: true };
+        }
+        if (ua.includes('daumapps')) {
+            return { channel: 'search', channelName: '포털 앱 (다음)', source: '다음 앱 유입', domain: 'daum.net', isExternal: true };
+        }
+        if (ua.includes('line/')) {
+            return { channel: 'social', channelName: '소셜 SNS (라인)', source: '라인 메신저', domain: 'line.me', isExternal: true };
+        }
+        if (ua.includes('twitter') || ua.includes('tweet') || ua.includes('x-client')) {
+            return { channel: 'social', channelName: '소셜 SNS (X/트위터)', source: 'X (트위터) 앱', domain: 'x.com', isExternal: true };
+        }
+        if (ua.includes('threads')) {
+            return { channel: 'social', channelName: '소셜 SNS (스레드)', source: '스레드 인앱', domain: 'threads.net', isExternal: true };
+        }
         return { channel: 'direct', channelName: '직접 접속', source: '직접 접속 (URL/즐겨찾기)', domain: 'direct', isExternal: false };
     }
     const ref = rawRef.trim();
@@ -352,6 +380,231 @@ export function classifyReferrer(rawRef: string | null | undefined): ReferrerInf
     }
 }
 
+// ==================== 지오로케이션(IP 주소/지역) & 환경 분석기 ====================
+export interface LocationInfo {
+    country: string;
+    countryCode: string;
+    regionName: string;
+    city: string;
+    flag: string;
+    isLocal: boolean;
+}
+
+const KR_REGIONS: Record<string, string> = {
+    '11': '서울', '26': '부산', '27': '대구', '28': '인천', '29': '광주',
+    '30': '대전', '31': '울산', '41': '경기', '42': '강원', '43': '충북',
+    '44': '충남', '45': '전북', '46': '전남', '47': '경북', '48': '경남',
+    '49': '제주', '50': '세종'
+};
+
+const COUNTRY_NAMES: Record<string, { name: string; flag: string }> = {
+    'KR': { name: '대한민국', flag: '🇰🇷' },
+    'US': { name: '미국', flag: '🇺🇸' },
+    'JP': { name: '일본', flag: '🇯🇵' },
+    'CN': { name: '중국', flag: '🇨🇳' },
+    'VN': { name: '베트남', flag: '🇻🇳' },
+    'GB': { name: '영국', flag: '🇬🇧' },
+    'DE': { name: '독일', flag: '🇩🇪' },
+    'CA': { name: '캐나다', flag: '🇨🇦' },
+    'AU': { name: '호주', flag: '🇦🇺' },
+    'SG': { name: '싱가포르', flag: '🇸🇬' },
+    'HK': { name: '홍콩', flag: '🇭🇰' },
+    'TW': { name: '대만', flag: '🇹🇼' },
+    'FR': { name: '프랑스', flag: '🇫🇷' },
+    'NL': { name: '네덜란드', flag: '🇳🇱' },
+    'RU': { name: '러시아', flag: '🇷🇺' }
+};
+
+export function parseIpLocation(ip: string | null | undefined): LocationInfo {
+    if (!ip || ip === '0.0.0.0' || ip === '127.0.0.1' || ip === '::1' || ip === 'localhost' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
+        return {
+            country: '로컬/내부망',
+            countryCode: 'LOCAL',
+            regionName: '내부망',
+            city: '개발/테스트',
+            flag: '🏠',
+            isLocal: true
+        };
+    }
+
+    try {
+        const geo = geoip.lookup(ip);
+        if (!geo || !geo.country) {
+            return {
+                country: '공인 IP (해외)',
+                countryCode: 'GLOBAL',
+                regionName: '',
+                city: '',
+                flag: '🌐',
+                isLocal: false
+            };
+        }
+
+        const countryData = COUNTRY_NAMES[geo.country] || { name: geo.country, flag: '🌐' };
+        let regionStr = geo.region || '';
+        if (geo.country === 'KR' && KR_REGIONS[geo.region]) {
+            regionStr = KR_REGIONS[geo.region];
+        }
+
+        return {
+            country: countryData.name,
+            countryCode: geo.country,
+            regionName: regionStr,
+            city: geo.city || '',
+            flag: countryData.flag,
+            isLocal: false
+        };
+    } catch {
+        return {
+            country: '알 수 없음',
+            countryCode: 'UNKNOWN',
+            regionName: '',
+            city: '',
+            flag: '🌐',
+            isLocal: false
+        };
+    }
+}
+
+export interface DeviceInfo {
+    deviceType: 'PC' | '모바일' | '태블릿';
+    deviceIcon: string;
+    os: string;
+    browser: string;
+}
+
+export function parseUserAgent(ua: string | null | undefined): DeviceInfo {
+    if (!ua) {
+        return { deviceType: 'PC', deviceIcon: 'fa-desktop', os: '알 수 없음', browser: '알 수 없음' };
+    }
+    const lower = ua.toLowerCase();
+
+    // 1. 디바이스 구분
+    let deviceType: 'PC' | '모바일' | '태블릿' = 'PC';
+    let deviceIcon = 'fa-desktop';
+    if (lower.includes('ipad') || lower.includes('tablet')) {
+        deviceType = '태블릿';
+        deviceIcon = 'fa-tablet-alt';
+    } else if (lower.includes('iphone') || (lower.includes('android') && lower.includes('mobile')) || lower.includes('mobile')) {
+        deviceType = '모바일';
+        deviceIcon = 'fa-mobile-alt';
+    }
+
+    // 2. OS 분석
+    let os = '기타 OS';
+    if (lower.includes('windows nt 10.0')) os = 'Windows 10/11';
+    else if (lower.includes('windows')) os = 'Windows';
+    else if (lower.includes('iphone') || lower.includes('ipad') || lower.includes('ios')) {
+        const match = ua.match(/OS (\d+[_.]\d+)/i);
+        os = match ? `iOS ${match[1].replace('_', '.')}` : 'iOS';
+    } else if (lower.includes('android')) {
+        const match = ua.match(/Android (\d+([.]\d+)?)/i);
+        os = match ? `Android ${match[1]}` : 'Android';
+    } else if (lower.includes('mac os x') || lower.includes('macintosh')) {
+        os = 'macOS';
+    } else if (lower.includes('linux')) {
+        os = 'Linux';
+    } else if (lower.includes('cros')) {
+        os = 'ChromeOS';
+    }
+
+    // 3. 브라우저 및 앱 분석
+    let browser = '웹 브라우저';
+    if (lower.includes('kakaotalk')) browser = '카카오톡';
+    else if (lower.includes('naver(inapp') || (lower.includes('naver') && lower.includes('app'))) browser = '네이버 앱';
+    else if (lower.includes('instagram')) browser = '인스타그램';
+    else if (lower.includes('fb_iab') || lower.includes('fban') || lower.includes('fbav')) browser = '페이스북';
+    else if (lower.includes('samsungbrowser')) browser = '삼성 인터넷';
+    else if (lower.includes('whale')) browser = '네이버 웨일';
+    else if (lower.includes('edg/') || lower.includes('edge/')) browser = 'MS Edge';
+    else if (lower.includes('crios')) browser = 'Chrome (iOS)';
+    else if (lower.includes('chrome') && !lower.includes('chromium')) browser = 'Chrome';
+    else if (lower.includes('safari') && !lower.includes('chrome')) browser = 'Safari';
+    else if (lower.includes('firefox')) browser = 'Firefox';
+
+    return { deviceType, deviceIcon, os, browser };
+}
+
+export function resolvePageTitle(path: string): { title: string; category: string; icon: string } {
+    if (!path || path === '/') return { title: '메인 홈', category: '홈', icon: 'fa-home' };
+    
+    if (path.startsWith('/news')) {
+        if (path === '/news') return { title: '뉴스 메인', category: '뉴스', icon: 'fa-newspaper' };
+        if (path.includes('/detail/')) return { title: '뉴스 기사 상세', category: '뉴스', icon: 'fa-file-alt' };
+        if (path.includes('/source/')) return { title: '언론사별 뉴스', category: '뉴스', icon: 'fa-building' };
+        return { title: '뉴스 센터', category: '뉴스', icon: 'fa-newspaper' };
+    }
+    if (path.startsWith('/game')) {
+        if (path.includes('/omok')) return { title: '베라 오목', category: '게임', icon: 'fa-circle' };
+        if (path.includes('/janggi')) return { title: '베라 장기', category: '게임', icon: 'fa-chess' };
+        if (path.includes('/2048')) return { title: '2048 퍼즐', category: '게임', icon: 'fa-th' };
+        if (path.includes('/minesweeper')) return { title: '지뢰찾기', category: '게임', icon: 'fa-bomb' };
+        if (path.includes('/freecell')) return { title: '프리셀', category: '게임', icon: 'fa-clone' };
+        if (path.includes('/vera-pop')) return { title: '베라 팝', category: '게임', icon: 'fa-gem' };
+        return { title: '웹게임 라운지', category: '게임', icon: 'fa-gamepad' };
+    }
+    if (path.startsWith('/travel')) {
+        if (path.includes('/detail')) return { title: '여행지 상세', category: '여행', icon: 'fa-map-pin' };
+        return { title: '전국 여행 지도', category: '여행', icon: 'fa-map-marked-alt' };
+    }
+    if (path.startsWith('/saju') || path.startsWith('/entertainment/saju')) {
+        return { title: '정통 사주 만세력', category: '운세', icon: 'fa-yin-yang' };
+    }
+    if (path.startsWith('/utility')) return { title: '스마트 유틸 도구함', category: '도구', icon: 'fa-tools' };
+    if (path.startsWith('/finance')) return { title: '금융 & 대출이자 계산기', category: '금융', icon: 'fa-calculator' };
+    if (path.startsWith('/reward')) return { title: '리워드 & 출석체크 센터', category: '리워드', icon: 'fa-gift' };
+    if (path.startsWith('/novel')) return { title: '웹소설 연구실', category: '문화', icon: 'fa-book-open' };
+    if (path.startsWith('/shopping')) return { title: '핫딜 쇼핑몰', category: '쇼핑', icon: 'fa-shopping-bag' };
+    if (path.startsWith('/lounge')) return { title: '커뮤니티 라운지', category: '커뮤니티', icon: 'fa-comments' };
+    if (path.startsWith('/mypage')) return { title: '마이페이지', category: '회원', icon: 'fa-user' };
+    if (path.startsWith('/login')) return { title: '로그인', category: '인증', icon: 'fa-sign-in-alt' };
+    if (path.startsWith('/signup')) return { title: '회원가입', category: '인증', icon: 'fa-user-plus' };
+    if (path.startsWith('/search')) return { title: '통합 검색', category: '검색', icon: 'fa-search' };
+    if (path.startsWith('/guides')) return { title: '가이드 & 칼럼', category: '가이드', icon: 'fa-book' };
+
+    return { title: path, category: '기타', icon: 'fa-link' };
+}
+
+export interface PersonaInfo {
+    tag: 'heavy' | 'explorer' | 'single' | 'bounce';
+    label: string;
+    badgeColor: string;
+    description: string;
+}
+
+export function evaluatePersona(pageCount: number, totalDurationSec: number, uniqueCategories: number): PersonaInfo {
+    if (pageCount >= 4 && totalDurationSec >= 120) {
+        return {
+            tag: 'heavy',
+            label: '🔥 헤비 유저',
+            badgeColor: 'bg-red-100 text-red-700 border-red-200',
+            description: '다양한 페이지를 장시간 깊이 있게 이용'
+        };
+    }
+    if (pageCount >= 3 || uniqueCategories >= 2) {
+        return {
+            tag: 'explorer',
+            label: '🔍 탐색형 방문자',
+            badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
+            description: '여러 메뉴와 서비스를 활발히 이동'
+        };
+    }
+    if (pageCount === 1 && totalDurationSec < 10) {
+        return {
+            tag: 'bounce',
+            label: '🚪 즉시 이탈',
+            badgeColor: 'bg-gray-100 text-gray-500 border-gray-200',
+            description: '1페이지만 잠깐 보고 10초 내 이탈'
+        };
+    }
+    return {
+        tag: 'single',
+        label: '🎯 목적형 단발 유입',
+        badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        description: '특정 페이지만 집중 열람 후 종료'
+    };
+}
+
 // 가이드 및 정적 콘텐츠 제목 매핑 사전
 const GUIDE_TITLES: Record<string, string> = {
     'loan-interest-calculation-and-repayment-methods': '대출이자 계산법 및 원리금균등·원금균등 상환방식 비교',
@@ -395,21 +648,22 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
         // 세션별 최초 진입 페이지 및 유입 경로 (봇 제외, Window Function을 통해 내부 페이지 이동 중복 제거)
         const rowsResult = await DB.prepare(
             `WITH first_pv AS (
-                SELECT session_id, referrer, path, created_at,
+                SELECT session_id, referrer, user_agent, path, created_at,
                        ROW_NUMBER() OVER (PARTITION BY session_id ORDER BY created_at ASC) as rn
                 FROM page_views
                 WHERE ${getKstDateCondition(days)}
                 ${BOT_SQL_FILTER}
              )
-             SELECT referrer, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
+             SELECT referrer, user_agent, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
              FROM first_pv 
              WHERE rn = 1
-             GROUP BY referrer, path 
+             GROUP BY referrer, user_agent, path 
              ORDER BY views DESC`
         ).all()
 
         const rawRows = (rowsResult.results || []) as Array<{
             referrer: string | null;
+            user_agent: string | null;
             path: string;
             views: number;
             visitors: number;
@@ -454,7 +708,7 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
         let totalExternalViews = 0;
 
         for (const row of rawRows) {
-            const classified = classifyReferrer(row.referrer);
+            const classified = classifyReferrer(row.referrer, row.user_agent);
             
             // 사이트 내부 이동(veranex.app 등)은 유입 통계에서 100% 완전 제외
             if (classified.channel === 'internal') {
@@ -549,6 +803,184 @@ analyticsRoutes.get('/api/admin/analytics/referrers', requireAdmin, async (c) =>
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error)
         console.error('Referrers error:', msg)
+        return c.json({ success: false, message: msg }, 500)
+    }
+})
+
+// ==================== 관리자: 실시간 방문자 여정 & 성격 분석 (Visitor Journey) ====================
+analyticsRoutes.get('/api/admin/analytics/visitor-logs', requireAdmin, async (c) => {
+    const DB = getDB(c)
+    const days = parseInt(c.req.query('days') || '7')
+    const limit = Math.min(parseInt(c.req.query('limit') || '50'), 200)
+    const filter = c.req.query('filter') || 'all' // all | multi_page | social | search | direct
+
+    try {
+        // 1. 해당 기간 내 세션 목록 집계 (KST 기준, 봇 제외)
+        const sessionSummaries = await DB.prepare(`
+            SELECT 
+                session_id,
+                MAX(ip_address) as ip_address,
+                MAX(user_agent) as user_agent,
+                MIN(created_at) as first_seen,
+                MAX(created_at) as last_seen,
+                COUNT(*) as page_count,
+                SUM(COALESCE(duration_ms, 0)) as total_duration_ms
+            FROM page_views
+            WHERE ${getKstDateCondition(days)}
+            ${BOT_SQL_FILTER}
+            GROUP BY session_id
+            ORDER BY last_seen DESC
+            LIMIT ?
+        `).bind(limit * 3).all()
+
+        const rawSessions = (sessionSummaries.results || []) as Array<{
+            session_id: string;
+            ip_address: string;
+            user_agent: string;
+            first_seen: string;
+            last_seen: string;
+            page_count: number;
+            total_duration_ms: number;
+        }>
+
+        if (rawSessions.length === 0) {
+            return c.json({
+                success: true,
+                visitors: [],
+                totalCount: 0,
+                summary: {
+                    totalVisitors: 0,
+                    avgPageCount: 0,
+                    avgDurationSec: 0,
+                    mobileCount: 0,
+                    desktopCount: 0,
+                    topLocations: []
+                }
+            })
+        }
+
+        // 2. 세션별 둘러본 URL (pageviews) 상세 로드
+        const sessionIds = rawSessions.map(s => s.session_id)
+        const placeholders = sessionIds.map(() => '?').join(',')
+        const pvsResult = await DB.prepare(`
+            SELECT id, session_id, path, referrer, duration_ms, created_at
+            FROM page_views
+            WHERE session_id IN (${placeholders})
+            ORDER BY created_at ASC, id ASC
+        `).bind(...sessionIds).all()
+
+        const pvsBySession = new Map<string, Array<{
+            id: number;
+            path: string;
+            referrer: string | null;
+            duration_ms: number;
+            created_at: string;
+        }>>()
+
+        for (const pv of (pvsResult.results || []) as any[]) {
+            if (!pvsBySession.has(pv.session_id)) {
+                pvsBySession.set(pv.session_id, [])
+            }
+            pvsBySession.get(pv.session_id)!.push({
+                id: pv.id,
+                path: pv.path,
+                referrer: pv.referrer,
+                duration_ms: pv.duration_ms || 0,
+                created_at: pv.created_at
+            })
+        }
+
+        const visitorsList: any[] = []
+        const locationMap = new Map<string, { label: string; count: number; flag: string }>()
+        let totalPagesSum = 0
+        let totalDurationSum = 0
+        let mobileCount = 0
+        let desktopCount = 0
+
+        for (const sess of rawSessions) {
+            const pvs = pvsBySession.get(sess.session_id) || []
+            const firstPv = pvs[0] || null
+            const initialReferrer = firstPv ? firstPv.referrer : null
+
+            const inflow = classifyReferrer(initialReferrer, sess.user_agent)
+            const location = parseIpLocation(sess.ip_address)
+            const device = parseUserAgent(sess.user_agent)
+
+            const totalDurationSec = Math.round((sess.total_duration_ms || 0) / 1000)
+            const categories = new Set(pvs.map(p => resolvePageTitle(p.path).category))
+            const persona = evaluatePersona(sess.page_count, totalDurationSec, categories.size)
+
+            if (device.deviceType === '모바일') mobileCount++
+            else desktopCount++
+
+            // 지역 통계 집계
+            const locKey = location.isLocal ? '로컬/내부망' : (location.country + (location.regionName ? ` ${location.regionName}` : ''))
+            const existingLoc = locationMap.get(locKey)
+            if (existingLoc) {
+                existingLoc.count++
+            } else {
+                locationMap.set(locKey, { label: locKey, count: 1, flag: location.flag })
+            }
+
+            // 둘러본 URL 체인 (Journey)
+            const journey = pvs.map(p => {
+                const pageMeta = resolvePageTitle(p.path)
+                return {
+                    path: p.path,
+                    title: pageMeta.title,
+                    category: pageMeta.category,
+                    icon: pageMeta.icon,
+                    durationSec: Math.round(p.duration_ms / 1000),
+                    visitedAt: p.created_at ? (p.created_at.includes('T') ? p.created_at.split('T')[1].slice(0, 8) : p.created_at.split(' ')[1] || p.created_at) : ''
+                }
+            })
+
+            // 필터링 적용
+            if (filter === 'social' && inflow.channel !== 'social') continue
+            if (filter === 'search' && inflow.channel !== 'search') continue
+            if (filter === 'direct' && inflow.channel !== 'direct') continue
+            if (filter === 'multi_page' && sess.page_count < 2) continue
+
+            totalPagesSum += sess.page_count
+            totalDurationSum += totalDurationSec
+
+            visitorsList.push({
+                sessionId: sess.session_id,
+                ipAddress: sess.ip_address,
+                location,
+                device,
+                source: inflow,
+                persona,
+                firstSeen: sess.first_seen ? (sess.first_seen.replace('T', ' ').slice(5, 16)) : '-',
+                lastSeen: sess.last_seen ? (sess.last_seen.replace('T', ' ').slice(5, 16)) : '-',
+                totalDurationSec,
+                pageCount: sess.page_count,
+                journey
+            })
+
+            if (visitorsList.length >= limit) break
+        }
+
+        const topLocations = Array.from(locationMap.values())
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5)
+
+        return c.json({
+            success: true,
+            visitors: visitorsList,
+            totalCount: visitorsList.length,
+            summary: {
+                totalVisitors: visitorsList.length,
+                avgPageCount: visitorsList.length > 0 ? Math.round((totalPagesSum / visitorsList.length) * 10) / 10 : 0,
+                avgDurationSec: visitorsList.length > 0 ? Math.round(totalDurationSum / visitorsList.length) : 0,
+                mobileCount,
+                desktopCount,
+                topLocations
+            }
+        })
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error)
+        console.error('Visitor logs error:', msg)
         return c.json({ success: false, message: msg }, 500)
     }
 })
@@ -1053,13 +1485,60 @@ analyticsRoutes.get('/api/admin/analytics/export', requireAdmin, async (c) => {
         } else if (type === 'referrers' || type === 'referrers_detail') {
             csv += '유입출처,채널,상세URL,랜딩페이지,유입수,순방문자,최근유입일시\n'
             const data = await DB.prepare(
-                `SELECT referrer, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
+                `SELECT referrer, user_agent, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
                  FROM page_views WHERE created_at >= DATE('now', '-${days} days')
-                 GROUP BY referrer, path ORDER BY views DESC`
+                 GROUP BY referrer, user_agent, path ORDER BY views DESC`
             ).all()
             for (const row of (data.results as any[])) {
-                const classified = classifyReferrer(row.referrer);
+                const classified = classifyReferrer(row.referrer, row.user_agent);
                 csv += `"${classified.source}","${classified.channelName}","${row.referrer || '(직접 접속)'}","${row.path || '/'}","${row.views}","${row.visitors}","${row.last_seen}"\n`
+            }
+        } else if (type === 'visitor_journey' || type === 'visitors_detail') {
+            csv += '세션ID,접속일시,최근활동,IP주소,접속국가,지역/도시,기기,OS,브라우저,유입출처,방문자성격,열람페이지수,총체류시간(초),둘러본URL경로체인\n'
+            const sessionSummaries = await DB.prepare(`
+                SELECT session_id, MAX(ip_address) as ip_address, MAX(user_agent) as user_agent,
+                       MIN(created_at) as first_seen, MAX(created_at) as last_seen, COUNT(*) as page_count,
+                       SUM(COALESCE(duration_ms, 0)) as total_duration_ms
+                FROM page_views
+                WHERE created_at >= DATE('now', '-${days} days')
+                ${BOT_SQL_FILTER}
+                GROUP BY session_id
+                ORDER BY last_seen DESC
+                LIMIT 200
+            `).all()
+
+            const sessList = (sessionSummaries.results || []) as any[]
+            if (sessList.length > 0) {
+                const sids = sessList.map(s => s.session_id)
+                const phs = sids.map(() => '?').join(',')
+                const allPvs = await DB.prepare(`
+                    SELECT session_id, path, referrer, duration_ms, created_at
+                    FROM page_views WHERE session_id IN (${phs})
+                    ORDER BY created_at ASC
+                `).bind(...sids).all()
+
+                const pvMap = new Map<string, any[]>()
+                for (const p of (allPvs.results || []) as any[]) {
+                    if (!pvMap.has(p.session_id)) pvMap.set(p.session_id, [])
+                    pvMap.get(p.session_id)!.push(p)
+                }
+
+                for (const s of sessList) {
+                    const pvs = pvMap.get(s.session_id) || []
+                    const firstRef = pvs[0] ? pvs[0].referrer : null
+                    const inflow = classifyReferrer(firstRef, s.user_agent)
+                    const loc = parseIpLocation(s.ip_address)
+                    const dev = parseUserAgent(s.user_agent)
+                    const durSec = Math.round(s.total_duration_ms / 1000)
+                    const cats = new Set(pvs.map(p => resolvePageTitle(p.path).category))
+                    const persona = evaluatePersona(s.page_count, durSec, cats.size)
+                    const chainStr = pvs.map(p => {
+                        const meta = resolvePageTitle(p.path)
+                        return `${meta.title}(${p.path})`;
+                    }).join(' -> ')
+
+                    csv += `"${s.session_id}","${s.first_seen}","${s.last_seen}","${s.ip_address}","${loc.country}","${loc.regionName || loc.city}","${dev.deviceType}","${dev.os}","${dev.browser}","${inflow.source}","${persona.label}","${s.page_count}","${durSec}","${chainStr}"\n`
+                }
             }
         }
 

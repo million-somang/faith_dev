@@ -68,12 +68,13 @@ function AdminRedirect() {
     return <div className="min-h-screen flex items-center justify-center">관리자 페이지로 이동 중입니다...</div>;
 }
 
-// 페이지뷰 트래킹 훅
+// 페이지뷰 트래킹 훅 (쿼리 파라미터 및 하위 화면 전환 추적 포함)
 function usePageTracking() {
     const location = useLocation();
     useEffect(() => {
-        trackPageView(location.pathname);
-    }, [location.pathname]);
+        const fullPath = location.pathname + (location.search || '');
+        trackPageView(fullPath);
+    }, [location.pathname, location.search]);
 }
 
 // 라우트 변경 시 페이지 맨 위로 스크롤
