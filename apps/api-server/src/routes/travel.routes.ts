@@ -210,6 +210,32 @@ travelRoutes.get('/api/travel', async (c) => {
     }
 });
 
+export async function prewarmMapSpotsCache() {
+    try {
+        const query = `
+            SELECT id, title, destination, region, category, thumbnail, location_address
+            FROM travel_articles 
+            WHERE (hidden IS NULL OR hidden = 0)
+            ORDER BY id ASC
+        `;
+        const result = await pool.query(query);
+        cachedMapSpots = {
+            success: true,
+            total: result.rows.length,
+            articles: result.rows
+        };
+        mapSpotsCacheTime = Date.now();
+        console.log(`[Travel Cache] Prewarmed ${result.rows.length} map spots into memory.`);
+    } catch (e) {
+        console.error('[Travel Cache] Prewarm error:', e);
+    }
+}
+
+// 서버 기동 직후 1초 후 백그라운드 사전 캐싱 실행
+setTimeout(() => {
+    prewarmMapSpotsCache();
+}, 1000);
+
 // 1-1. GET /api/travel/map-spots - 인터랙티브 지도 전용 전국 명소 초경량 캐시 조회 (6.4MB -> 150KB, 47초 -> 0.01초)
 travelRoutes.get('/api/travel/map-spots', async (c) => {
     // 1. 메모리 캐시 유효 시 즉시 반환 (0ms)
