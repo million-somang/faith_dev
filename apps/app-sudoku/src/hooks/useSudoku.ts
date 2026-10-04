@@ -63,32 +63,31 @@ function createEmptyNotes(): number[][][] {
     );
 }
 
+function newGameState(difficulty: Difficulty): GameState {
+    const { puzzle, solution } = generatePuzzle(difficulty);
+    return {
+        puzzle: puzzle.map(r => [...r]),
+        board: puzzle.map(r => [...r]),
+        solution,
+        notes: createEmptyNotes(),
+        difficulty,
+        selectedCell: null,
+        mistakes: 0,
+        isComplete: false,
+        timer: 0,
+        isPaused: false,
+        isGameOver: false,
+        isPencilMode: false,
+        hintsRemaining: 3
+    };
+}
+
 export function useSudoku() {
     const [state, setState] = useState<GameState>(() => newGameState('easy'));
     const [stats, setStats] = useState<GameStats>(loadStats);
     const historyRef = useRef<HistoryEntry[]>([]);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const gameOverHandled = useRef<boolean>(false);
-
-    function newGameState(difficulty: Difficulty): GameState {
-        const { puzzle, solution } = generatePuzzle(difficulty);
-        historyRef.current = [];
-        return {
-            puzzle: puzzle.map(r => [...r]),
-            board: puzzle.map(r => [...r]),
-            solution,
-            notes: createEmptyNotes(),
-            difficulty,
-            selectedCell: null,
-            mistakes: 0,
-            isComplete: false,
-            timer: 0,
-            isPaused: false,
-            isGameOver: false,
-            isPencilMode: false,
-            hintsRemaining: 3
-        };
-    }
 
     // 타이머 처리
     useEffect(() => {
