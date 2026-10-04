@@ -18,6 +18,9 @@ adminStatsUi.use('/admin/stats', async (c, next) => {
 });
 
 adminStatsUi.get('/admin/stats', async (c) => {
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+    c.header('Pragma', 'no-cache');
+    c.header('Expires', '0');
     return c.html(`
     <!DOCTYPE html>
     <html lang="ko">
@@ -425,7 +428,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
             </div>
 
             <!-- 방문자 상세 여정 팝업 모달 (Visitor Journey Detail Modal) -->
-            <div id="visitor-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden transition-all duration-200" onclick="handleBackdropClick(event)">
+            <div id="visitor-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 items-center justify-center p-3 sm:p-6 transition-all duration-200" style="display:none;" onclick="handleBackdropClick(event)">
                 <div id="visitor-modal-dialog" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden transform transition-all duration-200 scale-95 opacity-0">
                     <!-- 모달 헤더 -->
                     <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex justify-between items-center flex-shrink-0 border-b border-indigo-900/50">
@@ -904,25 +907,40 @@ adminStatsUi.get('/admin/stats', async (c) => {
                 const idx = visitors.findIndex(v => v.sessionId === sessionId);
                 if (idx === -1) return;
                 currentModalVisitorIndex = idx;
-                renderModalVisitor(visitors[idx]);
 
                 const backdrop = document.getElementById('visitor-modal-backdrop');
                 const dialog = document.getElementById('visitor-modal-dialog');
-                backdrop.classList.remove('hidden');
+                
+                if (backdrop) {
+                    backdrop.style.display = 'flex';
+                    backdrop.classList.remove('hidden');
+                }
                 document.body.classList.add('overflow-hidden');
-                requestAnimationFrame(() => {
-                    dialog.classList.remove('scale-95', 'opacity-0');
-                    dialog.classList.add('scale-100', 'opacity-100');
-                });
+
+                try {
+                    renderModalVisitor(visitors[idx]);
+                } catch (renderErr) {
+                    console.error('Modal render error:', renderErr);
+                }
+
+                if (dialog) {
+                    requestAnimationFrame(() => {
+                        dialog.classList.remove('scale-95', 'opacity-0');
+                        dialog.classList.add('scale-100', 'opacity-100');
+                    });
+                }
             }
 
             function closeVisitorModal() {
                 const backdrop = document.getElementById('visitor-modal-backdrop');
                 const dialog = document.getElementById('visitor-modal-dialog');
-                if (!backdrop || backdrop.classList.contains('hidden')) return;
-                dialog.classList.remove('scale-100', 'opacity-100');
-                dialog.classList.add('scale-95', 'opacity-0');
+                if (!backdrop || backdrop.style.display === 'none') return;
+                if (dialog) {
+                    dialog.classList.remove('scale-100', 'opacity-100');
+                    dialog.classList.add('scale-95', 'opacity-0');
+                }
                 setTimeout(() => {
+                    backdrop.style.display = 'none';
                     backdrop.classList.add('hidden');
                     document.body.classList.remove('overflow-hidden');
                 }, 150);
@@ -939,9 +957,11 @@ adminStatsUi.get('/admin/stats', async (c) => {
             }
 
             function renderModalVisitor(v) {
-                const visitors = cachedVisitorLogs.visitors;
+                const visitors = (cachedVisitorLogs && cachedVisitorLogs.visitors) ? cachedVisitorLogs.visitors : [];
                 // 네비게이션 버튼 상태 갱신
-                document.getElementById('modal-visitor-index').textContent = (currentModalVisitorIndex + 1) + ' / ' + visitors.length;
+                const indexEl = document.getElementById('modal-visitor-index');
+                if (indexEl) indexEl.textContent = (currentModalVisitorIndex + 1) + ' / ' + visitors.length;
+
                 const prevBtn = document.getElementById('modal-prev-btn');
                 const nextBtn = document.getElementById('modal-next-btn');
                 if (prevBtn) {
@@ -957,35 +977,66 @@ adminStatsUi.get('/admin/stats', async (c) => {
 
                 // 헤더 정보
                 const pers = v.persona || {};
-                document.getElementById('modal-persona-badge').innerHTML = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (pers.badgeColor || 'bg-slate-100 text-slate-700') + '">' + (pers.label || '일반 방문자') + '</span>';
-                document.getElementById('modal-time-range').innerHTML = '<i class="far fa-clock mr-1"></i>' + v.firstSeen + (v.firstSeen !== v.lastSeen ? ' ~ ' + v.lastSeen.slice(11) : '');
-                document.getElementById('modal-session-id').textContent = '세션: ' + (v.sessionId ? v.sessionId.slice(0, 16) + '...' : '-');
+                const badgeEl = document.getElementById('modal-persona-badge');
+                if (badgeEl) {
+                    badgeEl.innerHTML = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (pers.badgeColor || 'bg-slate-100 text-slate-700') + '">' + (pers.label || '일반 방문자') + '</span>';
+                }
+                const timeEl = document.getElementById('modal-time-range');
+                if (timeEl) {
+                    timeEl.innerHTML = '<i class="far fa-clock mr-1"></i>' + v.firstSeen + (v.firstSeen !== v.lastSeen ? ' ~ ' + v.lastSeen.slice(11) : '');
+                }
+                const sessEl = document.getElementById('modal-session-id');
+                if (sessEl) {
+                    sessEl.textContent = '세션: ' + (v.sessionId ? v.sessionId.slice(0, 16) + '...' : '-');
+                }
 
                 // 프로필 4열 카드
                 const loc = v.location || {};
                 const locText = loc.isLocal ? '로컬/내부 접속' : ((loc.flag || '') + ' ' + (loc.country || '') + (loc.regionName ? ' ' + loc.regionName : '') + (loc.city ? ' (' + loc.city + ')' : ''));
-                document.getElementById('modal-location-text').textContent = locText;
-                document.getElementById('modal-location-text').title = locText;
+                const locEl = document.getElementById('modal-location-text');
+                if (locEl) {
+                    locEl.textContent = locText;
+                    locEl.title = locText;
+                }
                 const ipEl = document.getElementById('modal-ip-text');
-                ipEl.textContent = v.ipAddress || '-';
-                ipEl.dataset.fullIp = v.ipAddress || '';
+                if (ipEl) {
+                    ipEl.textContent = v.ipAddress || '-';
+                    ipEl.dataset.fullIp = v.ipAddress || '';
+                }
 
                 const dev = v.device || {};
-                document.getElementById('modal-device-text').innerHTML = '<i class="fas ' + (dev.deviceIcon || 'fa-laptop') + ' text-indigo-600 mr-1.5"></i>' + (dev.deviceType || 'PC');
-                document.getElementById('modal-os-browser-text').textContent = (dev.os || '-') + ' · ' + (dev.browser || '-');
+                const devTypeEl = document.getElementById('modal-device-type') || document.getElementById('modal-device-text');
+                if (devTypeEl) {
+                    devTypeEl.innerHTML = '<i class="fas ' + (dev.deviceIcon || 'fa-laptop') + ' text-indigo-600 mr-1.5"></i>' + (dev.deviceType || 'PC');
+                }
+                const devMetaEl = document.getElementById('modal-device-meta') || document.getElementById('modal-os-browser-text');
+                if (devMetaEl) {
+                    devMetaEl.textContent = (dev.os || '-') + ' · ' + (dev.browser || '-');
+                }
 
                 const src = v.source || {};
-                document.getElementById('modal-source-text').textContent = src.source || '직접 접속';
-                document.getElementById('modal-channel-text').textContent = (src.channelName || '직접 접속') + (src.isExternal ? ' (외부 유입)' : ' (사이트 내/직접)');
+                const srcEl = document.getElementById('modal-inflow-source') || document.getElementById('modal-source-text');
+                if (srcEl) {
+                    srcEl.textContent = src.source || '직접 접속';
+                }
+                const channelEl = document.getElementById('modal-inflow-channel') || document.getElementById('modal-channel-text');
+                if (channelEl) {
+                    channelEl.textContent = (src.channelName || '직접 접속') + (src.isExternal ? ' (외부 유입)' : ' (사이트 내/직접)');
+                }
 
-                document.getElementById('modal-total-duration').textContent = formatSec(v.totalDurationSec || 0);
-                document.getElementById('modal-total-pages').textContent = '총 ' + (v.pageCount || 0) + '개 페이지 (' + ((v.journey || []).length) + '회 이동)';
+                const durEl = document.getElementById('modal-total-duration');
+                if (durEl) durEl.textContent = formatSec(v.totalDurationSec || 0);
+
+                const pagesEl = document.getElementById('modal-total-pages');
+                if (pagesEl) pagesEl.textContent = '총 ' + (v.pageCount || 0) + '개 페이지 (' + ((v.journey || []).length) + '회 이동)';
 
                 // 수직 타임라인 렌더링
                 const container = document.getElementById('modal-timeline-container');
                 const journey = v.journey || [];
-                document.getElementById('modal-timeline-step-count').textContent = '총 ' + journey.length + '개 스텝';
+                const stepCountEl = document.getElementById('modal-timeline-step-count');
+                if (stepCountEl) stepCountEl.textContent = '총 ' + journey.length + '개 스텝';
 
+                if (!container) return;
                 if (journey.length === 0) {
                     container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs"><i class="fas fa-inbox text-2xl mb-2 text-slate-300 block"></i>상세 페이지 이동 기록이 없습니다.</div>';
                     return;
@@ -1059,7 +1110,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
             // ESC 키 및 좌우 방향키 네비게이션 등록
             document.addEventListener('keydown', function(event) {
                 const backdrop = document.getElementById('visitor-modal-backdrop');
-                if (!backdrop || backdrop.classList.contains('hidden')) return;
+                if (!backdrop || backdrop.style.display === 'none') return;
 
                 if (event.key === 'Escape') {
                     closeVisitorModal();
