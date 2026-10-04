@@ -850,7 +850,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
                         '</div>';
                     }
 
-                    return '<tr onclick="openVisitorModal(\'' + v.sessionId + '\')" class="hover:bg-indigo-50/60 cursor-pointer transition-colors group">' +
+                    return '<tr data-session-id="' + v.sessionId + '" class="visitor-row hover:bg-indigo-50/60 cursor-pointer transition-colors group">' +
                         '<td class="px-3.5 py-2.5 whitespace-nowrap text-gray-500 font-mono text-[11px]">' +
                             '<div>' + v.firstSeen + '</div>' +
                             (v.firstSeen !== v.lastSeen ? '<div class="text-[10px] text-gray-400">~ ' + v.lastSeen.slice(6) + '</div>' : '') +
@@ -890,13 +890,24 @@ adminStatsUi.get('/admin/stats', async (c) => {
                             '<div class="text-gray-400 text-[11px]">' + v.pageCount + '개 페이지</div>' +
                         '</td>' +
                         '<td class="px-3.5 py-2.5 text-center whitespace-nowrap">' +
-                            '<button onclick="event.stopPropagation(); openVisitorModal(\'' + v.sessionId + '\')" class="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-md border border-indigo-200 transition-all flex items-center gap-1 mx-auto shadow-xs group-hover:bg-indigo-600 group-hover:text-white">' +
+                            '<button type="button" data-session-id="' + v.sessionId + '" class="visitor-detail-btn px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-md border border-indigo-200 transition-all flex items-center gap-1 mx-auto shadow-xs group-hover:bg-indigo-600 group-hover:text-white">' +
                                 '<i class="fas fa-search-plus text-[10px]"></i> 여정 상세' +
                             '</button>' +
                         '</td>' +
                     '</tr>';
                 }).join('');
             }
+
+            // 테이블 행/버튼 클릭 이벤트 위임 등록 (따옴표 오류 원천 방지)
+            document.addEventListener('click', function(e) {
+                const trigger = e.target.closest('[data-session-id]');
+                if (trigger && !e.target.closest('#visitor-modal-dialog')) {
+                    const sId = trigger.getAttribute('data-session-id');
+                    if (sId) {
+                        openVisitorModal(sId);
+                    }
+                }
+            });
 
             // ==================== 방문자 여정 모달 컨트롤러 ====================
             let currentModalVisitorIndex = -1;
