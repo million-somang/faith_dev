@@ -212,17 +212,18 @@ adminStatsUi.get('/admin/stats', async (c) => {
                         <thead class="bg-gray-50 text-gray-700 uppercase font-semibold sticky top-0 border-b border-gray-200 z-10">
                             <tr>
                                 <th class="px-3.5 py-2.5 w-28 whitespace-nowrap">접속 일시</th>
-                                <th class="px-3.5 py-2.5 w-48 whitespace-nowrap">접속 주소 (IP / 지역)</th>
-                                <th class="px-3.5 py-2.5 w-36 whitespace-nowrap">기기 & 브라우저</th>
+                                <th class="px-3.5 py-2.5 w-44 whitespace-nowrap">접속 주소 (IP / 지역)</th>
+                                <th class="px-3.5 py-2.5 w-32 whitespace-nowrap">기기 & 브라우저</th>
                                 <th class="px-3.5 py-2.5 w-32 whitespace-nowrap">유입 출처</th>
                                 <th class="px-3.5 py-2.5 w-28 whitespace-nowrap">방문자 성격</th>
-                                <th class="px-3.5 py-2.5 min-w-[280px]">돌아본 URL 이동 경로 (타임라인 체인)</th>
+                                <th class="px-3.5 py-2.5">둘러본 경로 요약</th>
                                 <th class="px-3.5 py-2.5 text-right w-24 whitespace-nowrap">체류 / 탐색</th>
+                                <th class="px-3.5 py-2.5 text-center w-24 whitespace-nowrap">상세 여정</th>
                             </tr>
                         </thead>
                         <tbody id="visitor-logs-body" class="divide-y divide-gray-100">
                             <tr>
-                                <td colspan="7" class="text-center py-10 text-gray-400">방문자 세션 데이터를 집계 중입니다...</td>
+                                <td colspan="8" class="text-center py-10 text-gray-400">방문자 세션 데이터를 집계 중입니다...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -422,6 +423,114 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     </button>
                 </div>
             </div>
+
+            <!-- 방문자 상세 여정 팝업 모달 (Visitor Journey Detail Modal) -->
+            <div id="visitor-modal-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 hidden transition-all duration-200" onclick="handleBackdropClick(event)">
+                <div id="visitor-modal-dialog" class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden transform transition-all duration-200 scale-95 opacity-0">
+                    <!-- 모달 헤더 -->
+                    <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex justify-between items-center flex-shrink-0 border-b border-indigo-900/50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+                                <i class="fas fa-route text-lg"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base sm:text-lg font-bold">방문자 세션 상세 여정 (Visitor Journey)</h3>
+                                    <span id="modal-persona-badge"></span>
+                                </div>
+                                <p class="text-xs text-indigo-200 mt-0.5 flex items-center gap-2">
+                                    <span id="modal-time-range"><i class="far fa-clock mr-1"></i>-</span>
+                                    <span class="text-indigo-400">·</span>
+                                    <span id="modal-session-id" class="font-mono text-[11px] text-indigo-300"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- 이전 / 다음 방문자 탐색 -->
+                            <div class="flex items-center bg-white/10 rounded-lg p-0.5 border border-white/10 mr-1">
+                                <button onclick="navigateVisitorModal(-1)" id="modal-prev-btn" class="px-2.5 py-1 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded transition flex items-center gap-1" title="이전 방문자">
+                                    <i class="fas fa-chevron-left text-[10px]"></i>이전
+                                </button>
+                                <span id="modal-visitor-index" class="text-[11px] text-white/60 px-2 font-mono">1 / 10</span>
+                                <button onclick="navigateVisitorModal(1)" id="modal-next-btn" class="px-2.5 py-1 text-xs text-white/80 hover:text-white hover:bg-white/10 rounded transition flex items-center gap-1" title="다음 방문자">
+                                    다음<i class="fas fa-chevron-right text-[10px]"></i>
+                                </button>
+                            </div>
+                            <button onclick="closeVisitorModal()" class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white/80 hover:text-white flex items-center justify-center transition" title="닫기 (ESC)">
+                                <i class="fas fa-times text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 모달 본문 (스크롤 영역) -->
+                    <div class="p-5 sm:p-6 overflow-y-auto flex-1 space-y-5 bg-slate-50/60">
+                        <!-- 1. 프로필 요약 카드 (4열) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div class="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                                    <i class="fas fa-map-marker-alt text-rose-500 mr-1"></i>접속 위치 & IP
+                                </span>
+                                <div id="modal-location-text" class="text-sm font-bold text-slate-800 truncate">-</div>
+                                <div class="flex items-center gap-1.5 mt-1">
+                                    <span id="modal-ip-text" class="font-mono text-xs text-slate-500">-</span>
+                                    <button onclick="copyModalIp()" class="text-[10px] text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-0.5" title="IP 복사">
+                                        <i class="far fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                                    <i class="fas fa-laptop text-blue-500 mr-1"></i>기기 환경
+                                </span>
+                                <div id="modal-device-type" class="text-sm font-bold text-slate-800 truncate">-</div>
+                                <div id="modal-device-meta" class="text-xs text-slate-500 truncate mt-1">-</div>
+                            </div>
+
+                            <div class="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                                    <i class="fas fa-sign-in-alt text-emerald-500 mr-1"></i>유입 경로
+                                </span>
+                                <div id="modal-inflow-source" class="text-sm font-bold text-slate-800 truncate">-</div>
+                                <div id="modal-inflow-channel" class="text-xs text-slate-500 truncate mt-1">-</div>
+                            </div>
+
+                            <div class="bg-white border border-slate-200/80 rounded-xl p-3.5 shadow-sm">
+                                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">
+                                    <i class="fas fa-stopwatch text-amber-500 mr-1"></i>체류 및 탐색
+                                </span>
+                                <div id="modal-total-duration" class="text-sm font-bold text-slate-800">-</div>
+                                <div id="modal-total-pages" class="text-xs text-slate-500 mt-1">-</div>
+                            </div>
+                        </div>
+
+                        <!-- 2. 수직 타임라인 여정 리스트 -->
+                        <div class="bg-white rounded-xl border border-slate-200/80 p-5 shadow-sm">
+                            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                                <h4 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-history text-indigo-600"></i>
+                                    시간 순서별 페이지 이동 타임라인 (전체 이동 내역)
+                                </h4>
+                                <span id="modal-timeline-step-count" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">총 0개 스텝</span>
+                            </div>
+
+                            <div id="modal-timeline-container" class="relative pl-6 space-y-3.5 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-indigo-100">
+                                <!-- 타임라인 아이템들이 동적으로 주입됨 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 모달 푸터 -->
+                    <div class="px-6 py-3 bg-white border-t border-slate-100 flex justify-between items-center flex-shrink-0">
+                        <span class="text-xs text-slate-400 flex items-center gap-1.5">
+                            <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-100 border border-slate-200 rounded text-slate-600">ESC</kbd> 키를 누르면 팝업이 닫힙니다.
+                        </span>
+                        <button onclick="closeVisitorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-medium transition shadow-sm">
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            </div>
         </main>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -592,7 +701,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
 
             async function loadVisitorLogs() {
                 const tbody = document.getElementById('visitor-logs-body');
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-1.5"></i> 방문자 세션 및 탐색 경로 로딩 중...</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-1.5"></i> 방문자 세션 및 탐색 경로 로딩 중...</td></tr>';
                 try {
                     const r = await axios.get('/api/admin/analytics/visitor-logs?days=' + currentPeriod + '&limit=60&filter=' + currentVisitorFilter, { headers });
                     cachedVisitorLogs = r.data;
@@ -621,7 +730,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     renderVisitorLogsTable();
                 } catch(e) {
                     console.error('Visitor logs error:', e);
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-red-500">방문자 세션 데이터를 불러오지 못했습니다.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-red-500">방문자 세션 데이터를 불러오지 못했습니다.</td></tr>';
                 }
             }
 
@@ -646,7 +755,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
                 document.getElementById('visitor-list-count').textContent = '조회된 방문자 세션: ' + visitors.length + '개';
 
                 if (visitors.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-3xl mb-2 text-gray-300 block"></i>해당 조건의 방문자 탐색 데이터가 없습니다.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-12 text-gray-400"><i class="fas fa-inbox text-3xl mb-2 text-gray-300 block"></i>해당 조건의 방문자 탐색 데이터가 없습니다.</td></tr>';
                     return;
                 }
 
@@ -658,7 +767,7 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     const journey = v.journey || [];
 
                     // 출처 뱃지 색상
-                    let srcBadgeColor = 'bg-slate-100 text-slate-700';
+                    let srcBadgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
                     if (src.channel === 'social') srcBadgeColor = 'bg-pink-100 text-pink-700 border-pink-200';
                     else if (src.channel === 'search') srcBadgeColor = 'bg-blue-100 text-blue-700 border-blue-200';
                     else if (src.channel === 'community' || src.channel === 'campaign') srcBadgeColor = 'bg-amber-100 text-amber-800 border-amber-200';
@@ -667,66 +776,273 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     const locText = loc.isLocal ? '로컬/내부 접속' : (loc.country + (loc.regionName ? ' ' + loc.regionName : '') + (loc.city ? ' (' + loc.city + ')' : ''));
                     const displayIp = maskIp(v.ipAddress);
 
-                    // 둘러본 URL 체인 생성
-                    const chainHtml = journey.length === 0
-                        ? '<span class="text-gray-400 italic">탐색 기록 없음</span>'
-                        : journey.map((j, idx) => {
-                            const isLast = idx === journey.length - 1;
-                            const durTag = j.durationSec > 0 ? '<span class="ml-1 text-[10px] text-indigo-600 bg-indigo-50 font-semibold px-1 rounded">' + formatSec(j.durationSec) + '</span>' : '';
-                            return '<div class="inline-flex items-center gap-1 group relative my-0.5">' +
-                                '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-800 transition font-medium" title="'+j.visitedAt+' 방문 - '+j.title+' ('+j.path+')">' +
-                                    '<i class="fas '+j.icon+' text-slate-400 text-[10px]"></i>' +
-                                    '<span class="font-semibold text-gray-900">'+j.title+'</span>' +
-                                    durTag +
-                                '</span>' +
-                                (!isLast ? '<i class="fas fa-chevron-right text-indigo-300 text-[9px] mx-0.5"></i>' : '') +
-                            '</div>';
-                        }).join(' ');
+                    // 둘러본 경로 컴팩트 1줄 요약 (테이블 높이 팽창 방지)
+                    let previewHtml = '';
+                    if (journey.length === 0) {
+                        previewHtml = '<span class="text-gray-400 italic text-xs">탐색 기록 없음</span>';
+                    } else if (journey.length === 1) {
+                        const j0 = journey[0];
+                        previewHtml = '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium">' +
+                            '<i class="fas ' + j0.icon + ' text-slate-400 text-[10px]"></i>' +
+                            '<span class="truncate max-w-[200px] font-semibold text-slate-800">' + j0.title + '</span>' +
+                            (j0.durationSec > 0 ? '<span class="text-[10px] text-indigo-600 font-mono bg-indigo-50 px-1 rounded">' + formatSec(j0.durationSec) + '</span>' : '') +
+                        '</span>';
+                    } else if (journey.length === 2) {
+                        const j0 = journey[0];
+                        const j1 = journey[1];
+                        previewHtml = '<div class="inline-flex items-center gap-1.5 overflow-hidden text-xs">' +
+                            '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium truncate max-w-[130px]">' +
+                                '<i class="fas ' + j0.icon + ' text-slate-400 text-[10px]"></i>' +
+                                '<span class="truncate">' + j0.title + '</span>' +
+                            '</span>' +
+                            '<i class="fas fa-chevron-right text-indigo-300 text-[9px] flex-shrink-0"></i>' +
+                            '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-900 font-medium truncate max-w-[130px]">' +
+                                '<i class="fas ' + j1.icon + ' text-indigo-500 text-[10px]"></i>' +
+                                '<span class="truncate font-semibold">' + j1.title + '</span>' +
+                            '</span>' +
+                        '</div>';
+                    } else {
+                        const j0 = journey[0];
+                        const jLast = journey[journey.length - 1];
+                        const middleCount = journey.length - 2;
+                        previewHtml = '<div class="inline-flex items-center gap-1.5 overflow-hidden text-xs">' +
+                            '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-50 border border-slate-200 text-slate-700 font-medium truncate max-w-[110px]" title="' + j0.title + '">' +
+                                '<i class="fas ' + j0.icon + ' text-slate-400 text-[10px]"></i>' +
+                                '<span class="truncate">' + j0.title + '</span>' +
+                            '</span>' +
+                            '<i class="fas fa-chevron-right text-indigo-300 text-[9px] flex-shrink-0"></i>' +
+                            '<span class="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 font-mono text-[10px] flex-shrink-0" title="중간 ' + middleCount + '개 페이지 거침">...' + middleCount + '개...</span>' +
+                            '<i class="fas fa-chevron-right text-indigo-300 text-[9px] flex-shrink-0"></i>' +
+                            '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 border border-indigo-200 text-indigo-900 font-medium truncate max-w-[110px]" title="' + jLast.title + '">' +
+                                '<i class="fas ' + jLast.icon + ' text-indigo-500 text-[10px]"></i>' +
+                                '<span class="truncate font-semibold">' + jLast.title + '</span>' +
+                            '</span>' +
+                            '<span class="text-[11px] font-semibold text-indigo-600 flex-shrink-0 ml-1">(총 ' + journey.length + 'P)</span>' +
+                        '</div>';
+                    }
 
-                    return '<tr class="hover:bg-indigo-50/40 transition-colors">' +
-                        '<td class="px-3.5 py-3 whitespace-nowrap text-gray-500 font-mono text-[11px]">' +
-                            '<div>'+v.firstSeen+'</div>' +
-                            (v.firstSeen !== v.lastSeen ? '<div class="text-[10px] text-gray-400">~ '+v.lastSeen.slice(6)+'</div>' : '') +
+                    return '<tr onclick="openVisitorModal(\'' + v.sessionId + '\')" class="hover:bg-indigo-50/60 cursor-pointer transition-colors group">' +
+                        '<td class="px-3.5 py-2.5 whitespace-nowrap text-gray-500 font-mono text-[11px]">' +
+                            '<div>' + v.firstSeen + '</div>' +
+                            (v.firstSeen !== v.lastSeen ? '<div class="text-[10px] text-gray-400">~ ' + v.lastSeen.slice(6) + '</div>' : '') +
                         '</td>' +
-                        '<td class="px-3.5 py-3 whitespace-nowrap">' +
+                        '<td class="px-3.5 py-2.5 whitespace-nowrap">' +
                             '<div class="flex items-center gap-1.5 font-bold text-gray-800">' +
-                                '<span class="text-base leading-none">'+loc.flag+'</span>' +
-                                '<span class="truncate max-w-[140px]" title="'+locText+'">'+locText+'</span>' +
+                                '<span class="text-base leading-none">' + loc.flag + '</span>' +
+                                '<span class="truncate max-w-[140px]" title="' + locText + '">' + locText + '</span>' +
                             '</div>' +
                             '<div class="font-mono text-[11px] text-gray-400 mt-0.5 flex items-center gap-1">' +
                                 '<i class="fas fa-network-wired text-[10px]"></i>' +
-                                '<span>'+displayIp+'</span>' +
+                                '<span>' + displayIp + '</span>' +
                             '</div>' +
                         '</td>' +
-                        '<td class="px-3.5 py-3 whitespace-nowrap">' +
+                        '<td class="px-3.5 py-2.5 whitespace-nowrap">' +
                             '<div class="font-bold text-gray-800 flex items-center gap-1.5">' +
-                                '<i class="fas '+dev.deviceIcon+' text-indigo-600"></i>' +
-                                '<span>'+dev.deviceType+'</span>' +
+                                '<i class="fas ' + dev.deviceIcon + ' text-indigo-600"></i>' +
+                                '<span>' + dev.deviceType + '</span>' +
                             '</div>' +
-                            '<div class="text-gray-400 text-[11px] mt-0.5 truncate max-w-[130px]" title="'+dev.os+' · '+dev.browser+'">'+dev.os+' · '+dev.browser+'</div>' +
+                            '<div class="text-gray-400 text-[11px] mt-0.5 truncate max-w-[130px]" title="' + dev.os + ' · ' + dev.browser + '">' + dev.os + ' · ' + dev.browser + '</div>' +
                         '</td>' +
-                        '<td class="px-3.5 py-3 whitespace-nowrap">' +
-                            '<span class="px-2 py-0.5 rounded text-[11px] font-semibold border inline-flex items-center gap-1 '+srcBadgeColor+'" title="'+src.channelName+'">' +
-                                '<span>'+src.source+'</span>' +
+                        '<td class="px-3.5 py-2.5 whitespace-nowrap">' +
+                            '<span class="px-2 py-0.5 rounded text-[11px] font-semibold border inline-flex items-center gap-1 ' + srcBadgeColor + '" title="' + src.channelName + '">' +
+                                '<span>' + src.source + '</span>' +
                             '</span>' +
                         '</td>' +
-                        '<td class="px-3.5 py-3 whitespace-nowrap">' +
-                            '<span class="px-2 py-0.5 rounded text-[11px] font-bold border '+pers.badgeColor+'" title="'+pers.description+'">' +
+                        '<td class="px-3.5 py-2.5 whitespace-nowrap">' +
+                            '<span class="px-2 py-0.5 rounded text-[11px] font-bold border ' + pers.badgeColor + '" title="' + pers.description + '">' +
                                 pers.label +
                             '</span>' +
                         '</td>' +
-                        '<td class="px-3.5 py-3">' +
-                            '<div class="flex flex-wrap items-center gap-1 leading-relaxed">' +
-                                chainHtml +
-                            '</div>' +
+                        '<td class="px-3.5 py-2.5 max-w-sm overflow-hidden">' +
+                            previewHtml +
                         '</td>' +
-                        '<td class="px-3.5 py-3 text-right whitespace-nowrap">' +
-                            '<div class="font-bold text-indigo-900">'+formatSec(v.totalDurationSec)+'</div>' +
-                            '<div class="text-gray-400 text-[11px]">'+v.pageCount+'개 페이지</div>' +
+                        '<td class="px-3.5 py-2.5 text-right whitespace-nowrap">' +
+                            '<div class="font-bold text-indigo-900">' + formatSec(v.totalDurationSec) + '</div>' +
+                            '<div class="text-gray-400 text-[11px]">' + v.pageCount + '개 페이지</div>' +
+                        '</td>' +
+                        '<td class="px-3.5 py-2.5 text-center whitespace-nowrap">' +
+                            '<button onclick="event.stopPropagation(); openVisitorModal(\'' + v.sessionId + '\')" class="px-2.5 py-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-600 hover:text-white rounded-md border border-indigo-200 transition-all flex items-center gap-1 mx-auto shadow-xs group-hover:bg-indigo-600 group-hover:text-white">' +
+                                '<i class="fas fa-search-plus text-[10px]"></i> 여정 상세' +
+                            '</button>' +
                         '</td>' +
                     '</tr>';
                 }).join('');
             }
+
+            // ==================== 방문자 여정 모달 컨트롤러 ====================
+            let currentModalVisitorIndex = -1;
+
+            function openVisitorModal(sessionId) {
+                if (!cachedVisitorLogs || !cachedVisitorLogs.visitors) return;
+                const visitors = cachedVisitorLogs.visitors;
+                const idx = visitors.findIndex(v => v.sessionId === sessionId);
+                if (idx === -1) return;
+                currentModalVisitorIndex = idx;
+                renderModalVisitor(visitors[idx]);
+
+                const backdrop = document.getElementById('visitor-modal-backdrop');
+                const dialog = document.getElementById('visitor-modal-dialog');
+                backdrop.classList.remove('hidden');
+                document.body.classList.add('overflow-hidden');
+                requestAnimationFrame(() => {
+                    dialog.classList.remove('scale-95', 'opacity-0');
+                    dialog.classList.add('scale-100', 'opacity-100');
+                });
+            }
+
+            function closeVisitorModal() {
+                const backdrop = document.getElementById('visitor-modal-backdrop');
+                const dialog = document.getElementById('visitor-modal-dialog');
+                if (!backdrop || backdrop.classList.contains('hidden')) return;
+                dialog.classList.remove('scale-100', 'opacity-100');
+                dialog.classList.add('scale-95', 'opacity-0');
+                setTimeout(() => {
+                    backdrop.classList.add('hidden');
+                    document.body.classList.remove('overflow-hidden');
+                }, 150);
+            }
+
+            function navigateVisitorModal(delta) {
+                if (!cachedVisitorLogs || !cachedVisitorLogs.visitors) return;
+                const visitors = cachedVisitorLogs.visitors;
+                const nextIdx = currentModalVisitorIndex + delta;
+                if (nextIdx >= 0 && nextIdx < visitors.length) {
+                    currentModalVisitorIndex = nextIdx;
+                    renderModalVisitor(visitors[nextIdx]);
+                }
+            }
+
+            function renderModalVisitor(v) {
+                const visitors = cachedVisitorLogs.visitors;
+                // 네비게이션 버튼 상태 갱신
+                document.getElementById('modal-visitor-index').textContent = (currentModalVisitorIndex + 1) + ' / ' + visitors.length;
+                const prevBtn = document.getElementById('modal-prev-btn');
+                const nextBtn = document.getElementById('modal-next-btn');
+                if (prevBtn) {
+                    prevBtn.disabled = currentModalVisitorIndex <= 0;
+                    prevBtn.classList.toggle('opacity-40', currentModalVisitorIndex <= 0);
+                    prevBtn.classList.toggle('cursor-not-allowed', currentModalVisitorIndex <= 0);
+                }
+                if (nextBtn) {
+                    nextBtn.disabled = currentModalVisitorIndex >= visitors.length - 1;
+                    nextBtn.classList.toggle('opacity-40', currentModalVisitorIndex >= visitors.length - 1);
+                    nextBtn.classList.toggle('cursor-not-allowed', currentModalVisitorIndex >= visitors.length - 1);
+                }
+
+                // 헤더 정보
+                const pers = v.persona || {};
+                document.getElementById('modal-persona-badge').innerHTML = '<span class="px-2.5 py-0.5 rounded-full text-xs font-bold border ' + (pers.badgeColor || 'bg-slate-100 text-slate-700') + '">' + (pers.label || '일반 방문자') + '</span>';
+                document.getElementById('modal-time-range').innerHTML = '<i class="far fa-clock mr-1"></i>' + v.firstSeen + (v.firstSeen !== v.lastSeen ? ' ~ ' + v.lastSeen.slice(11) : '');
+                document.getElementById('modal-session-id').textContent = '세션: ' + (v.sessionId ? v.sessionId.slice(0, 16) + '...' : '-');
+
+                // 프로필 4열 카드
+                const loc = v.location || {};
+                const locText = loc.isLocal ? '로컬/내부 접속' : ((loc.flag || '') + ' ' + (loc.country || '') + (loc.regionName ? ' ' + loc.regionName : '') + (loc.city ? ' (' + loc.city + ')' : ''));
+                document.getElementById('modal-location-text').textContent = locText;
+                document.getElementById('modal-location-text').title = locText;
+                const ipEl = document.getElementById('modal-ip-text');
+                ipEl.textContent = v.ipAddress || '-';
+                ipEl.dataset.fullIp = v.ipAddress || '';
+
+                const dev = v.device || {};
+                document.getElementById('modal-device-text').innerHTML = '<i class="fas ' + (dev.deviceIcon || 'fa-laptop') + ' text-indigo-600 mr-1.5"></i>' + (dev.deviceType || 'PC');
+                document.getElementById('modal-os-browser-text').textContent = (dev.os || '-') + ' · ' + (dev.browser || '-');
+
+                const src = v.source || {};
+                document.getElementById('modal-source-text').textContent = src.source || '직접 접속';
+                document.getElementById('modal-channel-text').textContent = (src.channelName || '직접 접속') + (src.isExternal ? ' (외부 유입)' : ' (사이트 내/직접)');
+
+                document.getElementById('modal-total-duration').textContent = formatSec(v.totalDurationSec || 0);
+                document.getElementById('modal-total-pages').textContent = '총 ' + (v.pageCount || 0) + '개 페이지 (' + ((v.journey || []).length) + '회 이동)';
+
+                // 수직 타임라인 렌더링
+                const container = document.getElementById('modal-timeline-container');
+                const journey = v.journey || [];
+                document.getElementById('modal-timeline-step-count').textContent = '총 ' + journey.length + '개 스텝';
+
+                if (journey.length === 0) {
+                    container.innerHTML = '<div class="text-center py-8 text-slate-400 text-xs"><i class="fas fa-inbox text-2xl mb-2 text-slate-300 block"></i>상세 페이지 이동 기록이 없습니다.</div>';
+                    return;
+                }
+
+                container.innerHTML = journey.map((step, idx) => {
+                    const isFirst = idx === 0;
+                    const isLast = idx === journey.length - 1;
+                    const stepNum = idx + 1;
+
+                    let stepBadge = '<span class="w-6 h-6 rounded-full bg-slate-100 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-300 flex-shrink-0">' + stepNum + '</span>';
+                    if (isFirst) {
+                        stepBadge = '<span class="w-6 h-6 rounded-full bg-emerald-500 text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0" title="첫 유입 착륙">' + stepNum + '</span>';
+                    } else if (isLast && journey.length > 1) {
+                        stepBadge = '<span class="w-6 h-6 rounded-full bg-rose-500 text-white font-bold text-xs flex items-center justify-center shadow-xs flex-shrink-0" title="마지막 이탈">' + stepNum + '</span>';
+                    }
+
+                    let tagHtml = '';
+                    if (isFirst) {
+                        tagHtml += '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">🚀 첫 착륙 (Landing)</span>';
+                    }
+                    if (isLast && journey.length > 1) {
+                        tagHtml += '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">🚪 마지막 이탈 (Exit)</span>';
+                    }
+                    if (step.durationSec > 0) {
+                        tagHtml += '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200"><i class="fas fa-stopwatch mr-1"></i>체류: ' + formatSec(step.durationSec) + '</span>';
+                    }
+
+                    return '<div class="relative flex items-start gap-3.5 group">' +
+                        '<div class="relative z-10">' + stepBadge + '</div>' +
+                        '<div class="flex-1 bg-slate-50/80 hover:bg-indigo-50/40 rounded-xl p-3 border border-slate-200/80 transition shadow-2xs">' +
+                            '<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">' +
+                                '<div class="flex items-center gap-2 flex-wrap">' +
+                                    '<span class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-slate-500 text-xs shadow-2xs">' +
+                                        '<i class="fas ' + (step.icon || 'fa-file') + '"></i>' +
+                                    '</span>' +
+                                    '<span class="font-bold text-slate-900 text-sm">' + (step.title || '페이지') + '</span>' +
+                                    tagHtml +
+                                '</div>' +
+                                '<span class="text-[11px] font-mono text-slate-400 flex items-center gap-1">' +
+                                    '<i class="far fa-clock text-[10px]"></i>' + (step.visitedAt || '') +
+                                '</span>' +
+                            '</div>' +
+                            '<div class="flex items-center justify-between gap-2 mt-1">' +
+                                '<a href="' + (step.path || '#') + '" target="_blank" class="font-mono text-xs text-indigo-600 hover:text-indigo-800 hover:underline truncate flex items-center gap-1" title="새 창에서 열기">' +
+                                    '<span>' + (step.path || '/') + '</span>' +
+                                    '<i class="fas fa-external-link-alt text-[9px] text-slate-400"></i>' +
+                                '</a>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            function copyModalIp() {
+                const ip = document.getElementById('modal-ip-text').dataset.fullIp || '';
+                if (!ip) return;
+                navigator.clipboard.writeText(ip).then(() => {
+                    alert('IP 주소가 복사되었습니다: ' + ip);
+                }).catch(() => {
+                    prompt('IP 주소를 복사하세요:', ip);
+                });
+            }
+
+            function handleBackdropClick(event) {
+                if (event.target.id === 'visitor-modal-backdrop') {
+                    closeVisitorModal();
+                }
+            }
+
+            // ESC 키 및 좌우 방향키 네비게이션 등록
+            document.addEventListener('keydown', function(event) {
+                const backdrop = document.getElementById('visitor-modal-backdrop');
+                if (!backdrop || backdrop.classList.contains('hidden')) return;
+
+                if (event.key === 'Escape') {
+                    closeVisitorModal();
+                } else if (event.key === 'ArrowLeft') {
+                    navigateVisitorModal(-1);
+                } else if (event.key === 'ArrowRight') {
+                    navigateVisitorModal(1);
+                }
+            });
 
             // ==================== 유입 경로 로딩 및 테이블 렌더링 ====================
             async function loadReferrers() {
