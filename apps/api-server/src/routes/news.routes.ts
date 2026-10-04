@@ -15,6 +15,19 @@ import { requireAuth, optionalAuth, SessionUser } from '../middleware/auth.js';
 
 const news = new Hono<{ Variables: { user: SessionUser | null } }>();
 
+const NEWS_LIST_FIELDS = `
+    id, title, category, source, published_at, created_at,
+    view_count, vote_up, vote_down, thumbnail, summary,
+    description, tags, author, original_link, popularity_score
+`;
+
+let cachedHotNews: { data: any[]; timestamp: number } | null = null;
+const HOT_NEWS_CACHE_TTL = 120 * 1000; // 2 minutes
+
+export function invalidateNewsCache() {
+    cachedHotNews = null;
+}
+
 // GET /api/news - Get news list
 news.get('/api/news', async (c) => {
     const category = c.req.query('category');
@@ -23,7 +36,7 @@ news.get('/api/news', async (c) => {
     const includeStocks = c.req.query('includeStocks') === 'true';
 
     try {
-        let query = 'SELECT * FROM news WHERE (hidden IS NULL OR hidden = 0)';
+        let query = `SELECT ${NEWS_LIST_FIELDS} FROM news WHERE (hidden IS NULL OR hidden = 0)`;
         const params: any[] = [];
 
         if (category && category !== 'all') {
@@ -97,17 +110,30 @@ news.get('/api/news', async (c) => {
 news.get('/api/news/hot', async (c) => {
     const limit = parseInt(c.req.query('limit') || '10');
     try {
+        const now = Date.now();
+        if (cachedHotNews && (now - cachedHotNews.timestamp < HOT_NEWS_CACHE_TTL)) {
+            c.header('Cache-Control', 'public, max-age=120');
+            return c.json({
+                success: true,
+                news: cachedHotNews.data.slice(0, limit)
+            });
+        }
+
         const result = await pool.query(`
-            SELECT * FROM news
+            SELECT ${NEWS_LIST_FIELDS} FROM news
             WHERE created_at >= NOW() - INTERVAL '7 days'
               AND (hidden IS NULL OR hidden = 0)
             ORDER BY popularity_score DESC, created_at DESC
-            LIMIT $1
-        `, [limit]);
+            LIMIT 50
+        `);
+
+        const rows = result.rows || [];
+        cachedHotNews = { data: rows, timestamp: now };
+        c.header('Cache-Control', 'public, max-age=120');
 
         return c.json({
             success: true,
-            news: result.rows || []
+            news: rows.slice(0, limit)
         });
     } catch (error) {
         console.error('Fetch hot news error:', error);

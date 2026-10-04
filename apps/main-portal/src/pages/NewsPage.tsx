@@ -38,7 +38,11 @@ export default function NewsPage() {
     ];
 
     useEffect(() => {
-        checkAuthAndFetchUserData();
+        // 메인 뉴스 콘텐츠 로딩을 최우선으로 완료하기 위해 인증/북마크 조회를 미세 지연(200ms) 처리
+        const timer = setTimeout(() => {
+            checkAuthAndFetchUserData();
+        }, 200);
+        return () => clearTimeout(timer);
     }, []);
 
     const checkAuthAndFetchUserData = async () => {
@@ -46,8 +50,11 @@ export default function NewsPage() {
             const authRes = await axios.get(`${API_BASE_URL}/api/auth/me`, { withCredentials: true });
             if (authRes.data.success && authRes.data.user) {
                 setIsLoggedIn(true);
-                fetchBookmarks();
-                fetchKeywords();
+                // 북마크와 키워드도 병렬로 백그라운드 호출
+                Promise.allSettled([
+                    fetchBookmarks(),
+                    fetchKeywords()
+                ]);
             }
         } catch (error) {
             // Not logged in or error
