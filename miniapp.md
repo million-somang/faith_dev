@@ -55,6 +55,47 @@
   - **하단 필수 보조 패널 구성 원칙 (Value-Add Sections)**:
     - 텍스트/데이터 변환기, 유틸리티 도구는 하단 빈 공간에 반드시 **[실시간 데이터 분석 & 메트릭 통계 패널 (Bytes, Ratio, Lines)]**, **[스마트 퀵 툴즈 (Download, Clean, Format)]**, **[보안 및 표준 규격 보증 배지]**를 결합하여 850px 전 영역에 걸쳐 시각적 밀도와 전문성을 완성합니다.
 
+### 1.1.1 [필수 표준] '징검다리(Stepping-Stone)' 부유 레이아웃 엄격 금지 및 상단 밀착 그룹화 + 가변 워크스페이스 패턴
+- **안티패턴 경고: `justify-between` 남용으로 인한 징검다리 현상 영구 금지**:
+  - 부모 컨테이너에 무비판적으로 `justify-between`을 지정하여 프로필, 입력창, 액션 버튼, 목록 박스들 사이에 거대한 공백(80~100px)이 강제로 벌어져 요소들이 섬처럼 둥둥 떠다니는 현상은 **절대 금지**합니다.
+  - 조작 요소 간의 거리가 지나치게 멀어지면 시각적 응집도(Gestalt Proximity)가 붕괴되고 완성도가 현저히 떨어져 보입니다.
+- **공식 표준 아키텍처 (Top-Anchored Control Group + Flexible Workspace)**:
+  1. **Zone 1: 상단 밀착 조작부 그룹 (Top-Anchored Group)**
+     - 프로필 카드, 모드 선택 탭, CTA 버튼, 옵션 셀렉터 등 상단 조작 UI는 `<div className="space-y-2 shrink-0">` (또는 `gap-2`)로 묶어 **상단에 쫀쫀하게 밀착 배치**합니다.
+  2. **Zone 2: 메인 가변 워크스페이스 (Flexible Workspace)**
+     - 하단에 생성되는 컨텐츠(대결방 목록, 채팅 로그, 계산 히스토리, 그래픽 캔버스 등)를 담는 카드는 반드시 **`flex-1 min-h-0 flex flex-col`**을 부여하여 남은 세로 공간을 100% 흡수하도록 설계합니다.
+     - `max-h-[200px]` 등으로 인위적 높이 상한을 걸어 아래에 빈 공백을 남기는 행위를 금지합니다.
+     - 방이나 데이터가 없을 때(`length === 0`)는 전용 **Empty State 비주얼(아이콘 + 안내 문구)**을 중앙에 풍성하게 채워 넣습니다.
+  3. **Zone 3: 하단 도킹 푸터 (Pinned Footer)**
+     - 보안 푸터 및 저작권 표기는 `<footer className="shrink-0 pt-2 text-center ...">`로 최하단에 안정감 있게 도킹합니다.
+
+```tsx
+/* 🏆 미니앱 표준 3단 레이아웃 템플릿 (징검다리 제로 보장) */
+<div className="flex-1 flex flex-col p-3 overflow-hidden bg-[#f7f4ed]">
+  {/* Zone 1: 상단 밀착 조작부 그룹 (공백 없이 쫀쫀하게 결합) */}
+  <div className="space-y-2 shrink-0">
+    <ProfileCard />
+    <ActionButtons />
+    <SubControls />
+  </div>
+
+  {/* Zone 2: 메인 가변 워크스페이스 (남은 세로 공간 100% 흡수) */}
+  <div className="flex-1 min-h-0 mt-2.5 bg-white rounded-2xl p-3 border border-[#e8e1d5] flex flex-col overflow-hidden">
+    <div className="flex items-center justify-between mb-2 shrink-0">
+      <h3 className="text-xs font-black">실시간 목록</h3>
+    </div>
+    <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+      {items.length === 0 ? <EmptyState /> : items.map(renderItem)}
+    </div>
+  </div>
+
+  {/* Zone 3: 하단 도킹 푸터 */}
+  <footer className="shrink-0 pt-2 text-center text-[10px] text-slate-500">
+    <span>공인 표준 엔진 • © 2026 VeraNex</span>
+  </footer>
+</div>
+```
+
 ### 1.2 프로젝트 생성 및 디렉터리 구조
 VeraNex 플랫폼은 **Turborepo** 기반의 모노레포로 운영됩니다. 새로운 미니앱은 반드시 `apps/` 디렉터리 하위에 생성해야 합니다.
 

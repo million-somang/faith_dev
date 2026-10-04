@@ -539,98 +539,101 @@ export default function App() {
       {activeTab === 'game' && (
         <main className="flex-1 flex flex-col justify-between overflow-hidden bg-[#f7f4ed]">
           {/* ---------------------------------------------------------------------
-              뷰 모드 1: LOBBY (온라인 로비 및 AI 훈련장) - Zero-Scroll 완결
+              뷰 모드 1: LOBBY (온라인 로비 및 AI 훈련장) - 상단 밀착 + 가변 대국실 워크스페이스
              --------------------------------------------------------------------- */}
           {viewMode === 'LOBBY' && (
-            <div className="flex-1 flex flex-col justify-between p-3 animate-fade-in overflow-hidden">
-              {/* 1. 상단 프로필 & 네트워크 현황 */}
-              <div className="bg-white/95 rounded-2xl p-2.5 border border-[#e8e1d5] shadow-2xs flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
-                    {myProfile.name.slice(0, 1)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-extrabold text-[#2d261e] text-xs">{myProfile.name}</span>
-                      <span className="text-[9px] font-black bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full border border-amber-200">
-                        {myProfile.tier}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-[#786e63] font-medium">
-                      {myProfile.rating} LP • {myProfile.wins}승 {myProfile.losses}패
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                  isConnected ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-[#786e63] bg-[#eee8dc] border-[#e8e1d5]'
-                }`}>
-                  <Wifi className="w-3 h-3" />
-                  <span>{isConnected ? `온라인 ${onlineCount}명` : 'AI 연습 가능'}</span>
-                </div>
-              </div>
-
-              {/* 2. 빠른 매칭 CTA & AI 싱글 연습 모드 */}
-              <div className="space-y-1.5 py-0.5">
-                {/* 빠른 1:1 온라인 매칭 */}
-                <button
-                  onClick={handleQuickMatch}
-                  className="w-full py-3 px-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-md hover:shadow-lg transition-all group active:scale-[0.99] cursor-pointer"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
-                      <Play className="w-4 h-4 fill-white" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-black text-xs sm:text-sm flex items-center gap-1.5">
-                        <span>빠른 1:1 온라인 매칭</span>
-                        <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded-full">LIVE</span>
-                      </div>
-                      <div className="text-[10px] text-blue-100">실시간 접속 유저와 30초 턴 자동 매칭</div>
-                    </div>
-                  </div>
-                  <span className="text-base group-hover:translate-x-1 transition-transform">→</span>
-                </button>
-
-                {/* AI 싱글 연습 대국 */}
-                <button
-                  onClick={startAiPractice}
-                  data-screenshot-click="action"
-                  className="w-full py-2 px-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between shadow-xs hover:shadow-md transition-all group active:scale-[0.99] cursor-pointer"
-                >
+            <div className="flex-1 flex flex-col p-3 animate-fade-in overflow-hidden">
+              {/* 상단 밀착 조작부 그룹 (프로필 + 매칭 CTA + 방 만들기) */}
+              <div className="space-y-2 shrink-0">
+                {/* 1. 프로필 & 네트워크 현황 */}
+                <div className="bg-white/95 rounded-2xl p-2.5 border border-[#e8e1d5] shadow-2xs flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white">
-                      <Bot className="w-3.5 h-3.5" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-xs">
+                      {myProfile.name.slice(0, 1)}
                     </div>
-                    <div className="text-left">
-                      <span className="font-extrabold text-xs">AI 싱글 훈련 모드</span>
-                      <span className="text-[10px] text-emerald-100 ml-2">대기 없이 즉시 플레이</span>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-extrabold text-[#2d261e] text-xs">{myProfile.name}</span>
+                        <span className="text-[9px] font-black bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full border border-amber-200">
+                          {myProfile.tier}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-[#786e63] font-medium">
+                        {myProfile.rating} LP • {myProfile.wins}승 {myProfile.losses}패
+                      </div>
                     </div>
                   </div>
-                  <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-lg">연습 시작</span>
-                </button>
+
+                  <div className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
+                    isConnected ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : 'text-[#786e63] bg-[#eee8dc] border-[#e8e1d5]'
+                  }`}>
+                    <Wifi className="w-3 h-3" />
+                    <span>{isConnected ? `온라인 ${onlineCount}명` : 'AI 연습 가능'}</span>
+                  </div>
+                </div>
+
+                {/* 2. 빠른 매칭 CTA & AI 싱글 연습 모드 */}
+                <div className="space-y-1.5">
+                  {/* 빠른 1:1 온라인 매칭 */}
+                  <button
+                    onClick={handleQuickMatch}
+                    className="w-full py-3 px-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white flex items-center justify-between shadow-md hover:shadow-lg transition-all group active:scale-[0.99] cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white">
+                        <Play className="w-4 h-4 fill-white" />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-black text-xs sm:text-sm flex items-center gap-1.5">
+                          <span>빠른 1:1 온라인 매칭</span>
+                          <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded-full">LIVE</span>
+                        </div>
+                        <div className="text-[10px] text-blue-100">실시간 접속 유저와 30초 턴 자동 매칭</div>
+                      </div>
+                    </div>
+                    <span className="text-base group-hover:translate-x-1 transition-transform">→</span>
+                  </button>
+
+                  {/* AI 싱글 연습 대국 */}
+                  <button
+                    onClick={startAiPractice}
+                    data-screenshot-click="action"
+                    className="w-full py-2 px-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between shadow-xs hover:shadow-md transition-all group active:scale-[0.99] cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white">
+                        <Bot className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="text-left">
+                        <span className="font-extrabold text-xs">AI 싱글 훈련 모드</span>
+                        <span className="text-[10px] text-emerald-100 ml-2">대기 없이 즉시 플레이</span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold bg-white/20 px-2 py-0.5 rounded-lg">연습 시작</span>
+                  </button>
+                </div>
+
+                {/* 3. 방 만들기 & 비공개 코드 입장 */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    onClick={handleCreateRoom}
+                    className="py-2 px-2.5 bg-white/95 rounded-xl border border-[#e8e1d5] shadow-2xs hover:bg-[#fdfbf7] flex items-center justify-center gap-1 text-xs font-bold text-[#2d261e] transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-blue-600" />
+                    <span>방 만들기</span>
+                  </button>
+                  <button
+                    onClick={handleJoinByCode}
+                    className="py-2 px-2.5 bg-white/95 rounded-xl border border-[#e8e1d5] shadow-2xs hover:bg-[#fdfbf7] flex items-center justify-center gap-1 text-xs font-bold text-[#2d261e] transition-colors cursor-pointer"
+                  >
+                    <Key className="w-3.5 h-3.5 text-amber-600" />
+                    <span>코드 입장</span>
+                  </button>
+                </div>
               </div>
 
-              {/* 3. 방 만들기 & 비공개 코드 입장 */}
-              <div className="grid grid-cols-2 gap-1.5">
-                <button
-                  onClick={handleCreateRoom}
-                  className="py-2 px-2.5 bg-white/95 rounded-xl border border-[#e8e1d5] shadow-2xs hover:bg-[#fdfbf7] flex items-center justify-center gap-1 text-xs font-bold text-[#2d261e] transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5 text-blue-600" />
-                  <span>방 만들기</span>
-                </button>
-                <button
-                  onClick={handleJoinByCode}
-                  className="py-2 px-2.5 bg-white/95 rounded-xl border border-[#e8e1d5] shadow-2xs hover:bg-[#fdfbf7] flex items-center justify-center gap-1 text-xs font-bold text-[#2d261e] transition-colors cursor-pointer"
-                >
-                  <Key className="w-3.5 h-3.5 text-amber-600" />
-                  <span>코드 입장</span>
-                </button>
-              </div>
-
-              {/* 4. 실시간 활성 대국실 리스트 (높이 압축) */}
-              <div className="bg-white/95 rounded-2xl p-2.5 border border-[#e8e1d5] shadow-2xs flex-1 flex flex-col overflow-hidden min-h-[140px] max-h-[220px]">
+              {/* 4. 실시간 활성 대국실 리스트 (유연 확장: flex-1 min-h-0) */}
+              <div className="flex-1 min-h-0 mt-2.5 bg-white/95 rounded-2xl p-2.5 border border-[#e8e1d5] shadow-2xs flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-1.5 shrink-0">
                   <h2 className="text-xs font-black text-[#2d261e] flex items-center gap-1.5">
                     <Globe className="w-3.5 h-3.5 text-blue-600" />
@@ -648,11 +651,13 @@ export default function App() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto space-y-1 pr-0.5">
+                <div className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-0.5">
                   {rooms.length === 0 ? (
-                    <div className="h-full flex flex-col items-center justify-center text-center py-4 text-[#786e63]">
-                      <Users className="w-6 h-6 mb-1 text-[#b5aa9b]" />
-                      <span className="text-xs font-bold">현재 대기 중인 방이 없습니다.</span>
+                    <div className="h-full flex flex-col items-center justify-center text-center py-6 text-[#786e63]">
+                      <div className="w-12 h-12 rounded-2xl bg-[#f7f4ed] border border-[#e8e1d5] flex items-center justify-center mb-2 text-[#b5aa9b] shadow-2xs">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <span className="text-xs font-bold text-[#2d261e]">현재 대기 중인 방이 없습니다.</span>
                       <span className="text-[10px] text-[#786e63] mt-0.5">직접 방을 만들거나 AI 연습을 시작해 보세요!</span>
                     </div>
                   ) : (
@@ -685,7 +690,7 @@ export default function App() {
               </div>
 
               {/* 5. 하단 보안 및 공인 표준 푸터 */}
-              <footer className="text-center text-[10px] text-[#786e63] pt-1 shrink-0">
+              <footer className="text-center text-[10px] text-[#786e63] pt-2 shrink-0">
                 <div className="flex items-center justify-center gap-2 mb-0.5">
                   <span className="flex items-center gap-1 font-bold text-[#5c5245]">
                     <Shield className="w-3 h-3 text-blue-600" /> 공인 15×15 렌주룰 엔진
