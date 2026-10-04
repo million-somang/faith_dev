@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { MiniAppLayout, useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
+import { useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
 import axios from 'axios';
 import '@faithportal/mini-app-sdk/src/mini-app.css';
 
@@ -243,20 +243,29 @@ function App() {
         );
     }
 
+    // 닫기 핸들러
+    const handleClose = () => {
+        if (window.opener && window.opener !== window) {
+            window.close();
+        } else {
+            window.location.href = '/';
+        }
+    };
+
     // 2. [화면 2] 메인 미니앱 레이아웃 (Zero-Scroll 680px 완결 뷰)
     return (
-        <MiniAppLayout title="베라 스도쿠">
-            <div className="h-screen max-h-[850px] w-full max-w-[450px] mx-auto bg-slate-50 flex flex-col justify-between overflow-hidden select-none border-x border-slate-200 shadow-xl">
+        <div className="h-screen max-h-screen w-full overflow-hidden bg-slate-100 flex justify-center items-center select-none font-sans">
+            <main className="w-full max-w-[450px] h-full max-h-[850px] bg-slate-50 flex flex-col justify-between overflow-hidden shadow-2xl border-x border-slate-200 relative">
                 
-                {/* 1. 상단 바 (36px): 브랜딩 + 음소거 + 공유 */}
-                <header className="h-9 px-3 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-2xs">
-                    <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-[10px] font-black shadow-2xs">
+                {/* 1. 원라인 통합 상단 바 (38px): 브랜딩 + 음소거 + 공유 + 닫기 */}
+                <header className="h-10 px-3 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-2xs">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xs font-black shadow-2xs">
                             <i className="fas fa-cubes"></i>
                         </div>
                         <span className="text-xs font-black text-slate-900 tracking-tight">베라 스도쿠</span>
-                        <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200/70 px-1.5 py-0.2 rounded-md">
-                            PRO
+                        <span className="text-[9px] font-black text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.2 rounded-md">
+                            2026 PRO
                         </span>
                     </div>
 
@@ -264,7 +273,7 @@ function App() {
                         <button
                             type="button"
                             onClick={sound.toggleMute}
-                            className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-[11px] transition-colors cursor-pointer"
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
                             title={sound.isMuted ? '음소거 해제' : '음소거'}
                         >
                             <i className={`fas ${sound.isMuted ? 'fa-volume-xmark text-rose-500' : 'fa-volume-high text-blue-600'}`}></i>
@@ -272,10 +281,18 @@ function App() {
                         <button
                             type="button"
                             onClick={handleShare}
-                            className="w-6 h-6 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-[11px] transition-colors cursor-pointer"
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
                             title="공유하기"
                         >
                             <i className="fas fa-share-nodes"></i>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleClose}
+                            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-500 flex items-center justify-center text-xs transition-colors cursor-pointer"
+                            title="닫기"
+                        >
+                            <i className="fas fa-times"></i>
                         </button>
                     </div>
                 </header>
@@ -680,8 +697,8 @@ function App() {
 
                 {/* E-E-A-T 4대 정책 모달 */}
                 <PolicyModal type={policyType} onClose={() => setPolicyType(null)} />
-            </div>
-        </MiniAppLayout>
+            </main>
+        </div>
     );
 }
 
