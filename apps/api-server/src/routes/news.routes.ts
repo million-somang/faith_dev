@@ -18,7 +18,7 @@ const news = new Hono<{ Variables: { user: SessionUser | null } }>();
 const NEWS_LIST_FIELDS = `
     id, title, category, source, published_at, created_at,
     view_count, vote_up, vote_down, thumbnail, summary,
-    description, tags, author, original_link, popularity_score
+    description, tags, author, link, popularity_score
 `;
 
 let cachedHotNews: { data: any[]; timestamp: number } | null = null;
