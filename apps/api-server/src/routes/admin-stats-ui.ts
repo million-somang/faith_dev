@@ -547,22 +547,48 @@ adminStatsUi.get('/admin/stats', async (c) => {
             let referrersChartInstance = null;
             let devicesChartInstance = null;
 
-            const authToken = localStorage.getItem('auth_token');
-            if (!authToken || authToken === 'true') {
-                fetch('/api/auth/me', { credentials: 'include' })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.loggedIn) {
-                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
-                            localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role || 'user');
-                            localStorage.setItem('user_level', String(data.user.level || 0));
+            // Axios 인증 및 쿠키 기본 설정
+            axios.defaults.withCredentials = true;
+
+            // 모든 Axios 요청 시 최신 토큰을 실시간 주입
+            axios.interceptors.request.use(function(config) {
+                config.withCredentials = true;
+                const token = localStorage.getItem('auth_token');
+                if (token && token !== 'true') {
+                    config.headers = config.headers || {};
+                    config.headers['Authorization'] = 'Bearer ' + token;
+                }
+                return config;
+            }, function(error) {
+                return Promise.reject(error);
+            });
+
+            // 401 발생 시 토큰 갱신 및 재시도 인터셉터
+            axios.interceptors.response.use(function(response) {
+                return response;
+            }, async function(error) {
+                if (error.response && error.response.status === 401 && !error.config._retry) {
+                    error.config._retry = true;
+                    try {
+                        const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+                        const meData = await meRes.json();
+                        if (meData.loggedIn && meData.user && (meData.user.role === 'admin' || meData.user.level >= 6)) {
+                            const newToken = btoa(meData.user.id + ':faith');
+                            localStorage.setItem('auth_token', newToken);
+                            localStorage.setItem('user_email', meData.user.email);
+                            error.config.headers['Authorization'] = 'Bearer ' + newToken;
+                            return axios(error.config);
                         }
-                    }).catch(() => {});
+                    } catch (e) {}
+                }
+                return Promise.reject(error);
+            });
+
+            function getHeaders() {
+                const token = localStorage.getItem('auth_token');
+                return (token && token !== 'true') ? { 'Authorization': 'Bearer ' + token } : {};
             }
-            
-            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
-            const headers = { 'Authorization': 'Bearer ' + authToken };
+            const headers = getHeaders();
 
             function changePeriod(days) {
                 currentPeriod = days;
@@ -1327,7 +1353,32 @@ adminStatsUi.get('/admin/stats', async (c) => {
                 loadDevices();
             }
 
-            loadAll();
+            async function initAuthAndLoad() {
+                try {
+                    let token = localStorage.getItem('auth_token');
+                    if (!token || token === 'true') {
+                        const res = await fetch('/api/auth/me', { credentials: 'include' });
+                        const data = await res.json();
+                        if (data.loggedIn && data.user) {
+                            token = btoa(data.user.id + ':faith');
+                            localStorage.setItem('auth_token', token);
+                            localStorage.setItem('user_email', data.user.email);
+                            localStorage.setItem('user_role', data.user.role || 'user');
+                            localStorage.setItem('user_level', String(data.user.level || 0));
+                        }
+                    }
+                    const adminNameEl = document.getElementById('admin-name');
+                    if (adminNameEl) {
+                        adminNameEl.textContent = localStorage.getItem('user_email') || '관리자';
+                    }
+                } catch (e) {
+                    console.error('Auth initialization error:', e);
+                } finally {
+                    loadAll();
+                }
+            }
+
+            initAuthAndLoad();
         </script>
     </body>
     </html>

@@ -1134,7 +1134,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                 if (newsIdMap.size > 0) {
                     const idList = Array.from(newsIdMap.keys()).join(',');
                     const newsRows = await DB.prepare(
-                        `SELECT id, title, publisher, category, vote_up, published_at 
+                        `SELECT id, title, source as publisher, category, vote_up, published_at 
                          FROM news 
                          WHERE id IN (${idList})`
                     ).all()
@@ -1164,7 +1164,7 @@ analyticsRoutes.get('/api/admin/analytics/content-detail', requireAdmin, async (
                 // 해당 기간 조회가 없으면 최신 등록 뉴스 안내용으로 제공
                 if (newsItems.length === 0) {
                     const recentNews = await DB.prepare(
-                        `SELECT id, title, publisher, category, vote_up FROM news ORDER BY id DESC LIMIT 5`
+                        `SELECT id, title, source as publisher, category, vote_up FROM news ORDER BY id DESC LIMIT 5`
                     ).all();
                     newsItems = ((recentNews.results || []) as any[]).map(n => ({
                         id: n.id,
