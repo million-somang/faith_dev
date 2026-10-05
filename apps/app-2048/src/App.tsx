@@ -363,49 +363,49 @@ function App() {
             </header>
 
             {/* 2. 알약 탭 네비게이션 (34px) */}
-            <nav className="h-[34px] px-3 bg-white border-b border-slate-200/60 flex items-center gap-1 shrink-0">
+            <nav className="h-[34px] px-2.5 bg-white border-b border-slate-200/60 flex items-center gap-1 shrink-0">
                 <button
                     onClick={() => setActiveTab('game')}
-                    className={`flex-1 py-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-black whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         activeTab === 'game'
                             ? 'bg-purple-600 text-white shadow-xs'
                             : 'text-slate-500 hover:bg-slate-100'
                     }`}
                 >
-                    <i className="fas fa-gamepad text-[11px]"></i>
-                    <span>2048 슬라이드</span>
+                    <i className="fas fa-gamepad text-[10px]"></i>
+                    <span>2048 게임</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('leaderboard')}
-                    className={`flex-1 py-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-black whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         activeTab === 'leaderboard'
                             ? 'bg-purple-600 text-white shadow-xs'
                             : 'text-slate-500 hover:bg-slate-100'
                     }`}
                 >
-                    <i className="fas fa-trophy text-[11px]"></i>
+                    <i className="fas fa-trophy text-[10px]"></i>
                     <span>명예의 전당</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('guide')}
-                    className={`flex-1 py-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-black whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         activeTab === 'guide'
                             ? 'bg-purple-600 text-white shadow-xs'
                             : 'text-slate-500 hover:bg-slate-100'
                     }`}
                 >
-                    <i className="fas fa-book-open text-[11px]"></i>
+                    <i className="fas fa-book-open text-[10px]"></i>
                     <span>공략 가이드</span>
                 </button>
                 <button
                     onClick={() => setActiveTab('faq')}
-                    className={`flex-1 py-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`flex-1 py-1 px-1.5 rounded-lg text-[11px] font-black whitespace-nowrap transition-all flex items-center justify-center gap-1 cursor-pointer ${
                         activeTab === 'faq'
                             ? 'bg-purple-600 text-white shadow-xs'
                             : 'text-slate-500 hover:bg-slate-100'
                     }`}
                 >
-                    <i className="fas fa-circle-question text-[11px]"></i>
+                    <i className="fas fa-circle-question text-[10px]"></i>
                     <span>FAQ</span>
                 </button>
             </nav>
@@ -478,6 +478,7 @@ function App() {
                     <div className="shrink-0 flex flex-col items-center gap-1">
                         <div className="flex items-center gap-1.5">
                             <button
+                                data-screenshot-click="action"
                                 onClick={() => handleMove('left')}
                                 className="w-10 h-7 rounded-lg bg-white border border-slate-200 shadow-2xs text-slate-600 hover:text-purple-600 hover:border-purple-300 flex items-center justify-center text-xs transition-colors cursor-pointer active:scale-90"
                                 title="왼쪽으로 밀기"
@@ -493,6 +494,7 @@ function App() {
                                     <i className="fas fa-arrow-up"></i>
                                 </button>
                                 <button
+                                    data-screenshot-click="result"
                                     onClick={() => handleMove('down')}
                                     className="w-10 h-7 rounded-lg bg-white border border-slate-200 shadow-2xs text-slate-600 hover:text-purple-600 hover:border-purple-300 flex items-center justify-center text-xs transition-colors cursor-pointer active:scale-90"
                                     title="아래로 밀기"
