@@ -198,7 +198,7 @@ function App() {
     // 1. [화면 1] 4초 프리미엄 스플래시 로딩 화면
     if (isSplashLoading || authLoading) {
         return (
-            <div className="h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 select-none animate-fade-in font-sans">
+            <div className="h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 select-none animate-fade-in font-sans loading-screen" aria-label="로딩">
                 {/* 상단 브랜딩 & 기준 배지 */}
                 <div className="w-full max-w-sm flex items-center justify-between pt-2">
                     <div className="flex items-center gap-2">
