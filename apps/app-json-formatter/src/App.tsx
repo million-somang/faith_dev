@@ -312,7 +312,7 @@ export default function App() {
         {/* ========================================================= */}
         {/* [메인 컨텐츠 영역] 680px 이내 Zero-Scroll 완결 구조 */}
         {/* ========================================================= */}
-        <main className="flex-1 flex flex-col overflow-hidden relative" data-screenshot-content="true">
+        <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative" data-screenshot-content="true">
           {activeTab === 'formatter' && (
             <JsonFormatterTab
               jsonText={jsonText}
