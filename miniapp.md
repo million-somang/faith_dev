@@ -22,8 +22,8 @@
    - **인터랙션 중 동적 세로 팽창 차단 (Zero Dynamic Layout Shift)**: 회차/이닝 진행, 히스토리 누적, 계산 로그 추가 시 부모 컨테이너가 아래로 길어져 하단 키패드나 버튼을 밀어내는 현상을 원천 차단합니다. 가변 리스트는 **고정 높이(Fixed-Height Container) + 2열 그리드(Grid) + 내부 스크롤**로 제한합니다.
    - **중복 UI 요소 과감한 일원화**: 상단 캔버스/전광판과 하단 키패드에 동일한 입력값/선택 박스가 2중으로 존재하는 등의 세로 공간 낭비를 단호히 제거합니다.
    - **원라인(One-Line) 통합 헤더 & 36~38px 컴팩트 컨트롤러**: 프로필/전광판을 1행으로 슬림 통합하고, 키패드/버튼 높이를 `h-9`~`h-9.5`(36~38px)로 표준화하여 팝업 1화면에 100% 노출을 보장합니다.
-4. **다크 디자인 무조건 배제 (100% 밝고 화사한 라이트 디자인)**: **다크 모드, 어두운 배경, 딥 네이비/블랙 계열은 어떠한 경우에도 절대 사용하지 않습니다.** 전 화면을 **순백색 카드(`bg-white`)**, **소프트 슬레이트 라이트 배경(`bg-slate-50`)**, 은은한 파스텔 악센트, **선명한 고대비 텍스트(`text-slate-900`)**로 구성하여 눈이 편안하고 신뢰감 넘치는 최고급 금융/유틸리티 비주얼을 제공합니다.
-5. **4초 스플래시 & 1~100% 실시간 프로그레스 로딩 화면**: 앱 진입 시 **4초(4,000ms) 동안** 공식 인트로를 의무 노출합니다. 이때 프로그레스 바는 **1%에서 100%까지 매끄럽게 차오르는 실시간 숫자 카운트 및 게이지 애니메이션**을 구동하며, **화면 하단에는 전용 광고/스폰서 배너 슬롯**을 필수로 배치합니다.
+4. **다크 디자인 무조건 배제 & 옅은 베이지색 배경 (Light Warm Beige Neumorphism)**: **다크 모드, 어두운 배경, 딥 네이비/블랙 계열은 어떠한 경우에도 절대 사용하지 않습니다.** 차가운 그레이/블루 슬레이트 대신, 모든 미니앱은 따뜻하고 눈이 편안한 **옅은 베이지색(`bg-[#FAF8F5]` / `bg-[#F7F4EE]`)**을 표준 배경으로 채택합니다. 컨텐츠 카드는 **순백색(`bg-white`)**과 섬세한 베이지 보더(`border-[#EBE6DD]`), 부드러운 웜 뉴모피즘 음영, **고대비 웜 차콜 텍스트(`text-[#2D2A26]`)**로 구성하여 프리미엄 질감을 구현합니다.
+5. **4초 스플래시 & 1~100% 실시간 프로그레스 로딩 화면 (100% 불투명 & 하단 광고 의무 노출)**: 앱 진입 시 **4초(4,000ms) 동안** 공식 인트로를 의무 노출합니다. 이때 프로그레스 바는 **1%에서 100%까지 매끄럽게 차오르는 실시간 숫자 카운트 및 게이지 애니메이션**을 구동하며, **아래 화면이 절대 비치지 않도록 100% 불투명 옅은 베이지 배경(`bg-[#FAF8F5]`)**을 적용합니다. 또한 **화면 하단에는 전용 광고/스폰서 배너 슬롯**이 850px 뷰포트 내에 잘림 없이 필수로 노출되어야 합니다.
 6. **마케팅 자동화 3단계 캡처 선언**: 관리자 및 SNS 카드뉴스 생성을 위해 `data-screenshot-*` 속성을 3단계(진입 ➡️ 조작 ➡️ 결과)로 컴포넌트에 반드시 표기합니다.
 7. **검색엔진(SEO) 및 인공지능(GEO/AIO) 동시 최적화**: 구글·네이버 검색봇뿐만 아니라 **ChatGPT Search, Perplexity, Gemini, Claude 등 최신 AI 검색 에이전트**가 내용을 정확히 읽고 답변에 인용할 수 있도록 시맨틱 HTML5, `llms.txt` 규격, How-to & FAQ 탭 분리, Schema.org JSON-LD(`WebApplication`, `FAQPage`), Open Graph 메타 태그를 완비합니다.
 8. **'FaithLink' 명칭 전면 배제 (100% VeraNex 브랜드 통일 원칙)**: **앞으로 생성하거나 수정하는 모든 미니앱의 화면(UI), 타이틀, 헤더, 푸터, 스플래시 화면, 메타데이터(SEO/OG), 안내 문구, 도움말 및 저작권 표기 등 어디에도 'FaithLink' 또는 'faithlink'라는 단어를 일절 노출하거나 사용하지 않습니다.** 모든 대외 브랜드명과 저작권 표기는 **'VeraNex' (또는 베라넥스)** 및 서비스별 고유 명칭(예: 베라오목, 베라 팝, 베라 숫자야구 등)으로 100% 통일합니다. (예: `© 2026 VeraNex. All rights reserved.`)
@@ -38,6 +38,13 @@
     - **부동소수점 오차 방지 (Precision Math)**: 자바스크립트의 IEEE 754 부동소수점 오류(`0.1 + 0.2 !== 0.3`)로 인한 금융·세금 계산 왜곡을 정수 변환 및 반올림 유틸리티로 완벽히 방어합니다.
     - **React Error Boundary 필수 적용**: 런타임 예외 발생 시 전체 앱이 하얗게 뻗는 현상(White Screen of Death)을 방지하고 자동 복구 UI를 제공합니다.
     - **메모리 누수 제로 (Lifecycle Cleanup)**: `setInterval`, `setTimeout`, Web Audio API 오디오 컨텍스트, 윈도우 이벤트 리스너의 완벽한 언마운트 해제(`cleanup`)를 의무화합니다.
+12. **헤더 표준 규격 (VeraNex 홈 링크 좌측 + 미니앱 로고 우측 배치 & 음소거·도움말 제거)**:
+    - **헤더 좌측**: VeraNex 심볼/로고 + `https://veranex.app` 홈으로 이동하는 공식 링크(`<a href="https://veranex.app" target="_top">`)를 배치하여 포털 복귀 경험을 항상 제공합니다.
+    - **헤더 우측**: 해당 미니앱의 고유 로고 / 대표 아이콘을 배치합니다.
+    - **소리끄기(음소거) 및 도움말 아이콘 전면 영구 제거**: 상단 헤더에 음소거 버튼이나 도움말(i) 아이콘을 두지 않고, 좌측 VeraNex 홈 링크와 우측 미니앱 로고를 중심으로 심플하고 명확하게 정돈합니다.
+13. **스플래시 화면 100% 불투명 및 하단 광고 상시 노출 의무 (Zero Bleed-Through & Pinned AD)**:
+    - 4초 스플래시 로딩 화면은 **100% 완전 불투명(Opaque) 옅은 베이지 배경(`bg-[#FAF8F5]`)**을 적용하여 **배경이나 다음 화면이 비치는 현상(Bleed-Through)을 완벽히 차단**해야 합니다.
+    - 850px 팝업 창 안에서 **하단 스폰서 광고 슬롯(SPONSORED AD)이 잘리거나 숨겨지지 않고 한눈에 온전히 노출**되도록 높이 및 패딩을 완벽히 제어해야 합니다.
 
 ---
 
@@ -536,84 +543,89 @@ useEffect(() => {
 }, []);
 ```
 
-##### 2) 4초 스플래시 & 하단 광고 슬롯 UI 템플릿
+##### 2) 4초 스플래시 & 하단 광고 슬롯 UI 템플릿 (100% 불투명 옅은 베이지)
 ```tsx
-<div className="min-h-screen w-full flex flex-col justify-between items-center bg-gradient-to-b from-slate-50 via-white to-slate-100 p-6 sm:p-8 select-none animate-fade-in">
+<div className="h-[850px] max-h-[850px] w-full flex flex-col justify-between items-center bg-[#FAF8F5] p-6 sm:p-7 select-none animate-fade-in overflow-hidden relative z-50">
   {/* 1. 상단 브랜딩 & 기준 배지 */}
-  <div className="w-full max-w-sm flex items-center justify-between pt-2">
-    <div className="flex items-center gap-2">
-      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-      <span className="text-xs font-extrabold text-slate-500 tracking-wide uppercase">VERANEX</span>
-    </div>
-    <span className="text-[11px] font-black text-blue-700 bg-blue-50 border border-blue-200/80 px-3 py-1 rounded-full shadow-2xs">
+  <div className="w-full max-w-sm flex items-center justify-between pt-1 shrink-0">
+    <a
+      href="https://veranex.app"
+      target="_top"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+      title="VeraNex 포털 홈"
+    >
+      <img src="https://veranex.app/logo-192.png" alt="VERA Logo" className="w-6 h-6 rounded-md object-contain" />
+      <span className="text-xs font-black text-[#2D2A26] tracking-wider uppercase">VERANEX</span>
+    </a>
+    <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
       2026 공인 기준 준수
     </span>
   </div>
 
   {/* 2. 중앙 메인 비주얼 & 1~100% 실시간 프로그레스 */}
-  <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-6 text-center">
-    <div className="relative mb-6">
-      <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center text-3xl sm:text-4xl shadow-xl shadow-blue-500/20 animate-float border-2 border-white">
+  <div className="w-full max-w-sm flex flex-col items-center justify-center my-auto py-4 text-center shrink-0">
+    <div className="relative mb-5">
+      <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-3xl bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 text-white flex items-center justify-center text-3xl shadow-xl shadow-amber-500/20 animate-float border-2 border-white">
         <i className="fas fa-coins"></i>
       </div>
-      <div className="absolute -bottom-1.5 -right-1.5 bg-white text-blue-600 rounded-full p-1.5 shadow-md border border-slate-100 text-xs">
-        <i className="fas fa-check-circle text-emerald-500"></i>
+      <div className="absolute -bottom-1 -right-1 bg-white text-emerald-600 rounded-full p-1 shadow-md border border-[#EBE6DD] text-xs">
+        <i className="fas fa-check-circle"></i>
       </div>
     </div>
 
-    <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-2">
+    <h1 className="text-xl sm:text-2xl font-black text-[#2D2A26] tracking-tight mb-1.5">
       스마트 이자 & 자산 계산기
     </h1>
-    <p className="text-sm font-bold text-slate-700 mb-1">
+    <p className="text-xs font-bold text-amber-800 mb-1">
       단리·복리 및 과세유형별 절세 혜택 정밀 산정
     </p>
-    <p className="text-xs text-slate-400 mb-6 max-w-xs leading-relaxed">
+    <p className="text-[11px] text-[#7A7369] mb-5 max-w-xs leading-relaxed">
       2026년 최신 개정 규정과 공인 금융 산식 데이터를 실시간 동기화하고 있습니다
     </p>
 
     {/* 1~100% 실시간 프로그레스 바 & 숫자 퍼센트 게이지 */}
-    <div className="w-full max-w-xs space-y-1.5 mb-3">
-      <div className="flex justify-between items-center text-[11px] font-bold text-slate-500 px-1">
+    <div className="w-full max-w-xs space-y-1.5 mb-2">
+      <div className="flex justify-between items-center text-[10px] font-bold text-[#7A7369] px-1">
         <span>시스템 초기화 및 공인 데이터 연동</span>
-        <span className="font-black text-blue-600 text-xs tabular-nums">{loadingProgress}%</span>
+        <span className="font-black text-amber-700 text-xs tabular-nums">{loadingProgress}%</span>
       </div>
-      <div className="w-full bg-slate-100 border border-slate-200 h-3 rounded-full overflow-hidden p-0.5 shadow-inner">
+      <div className="w-full bg-[#EBE6DD] h-2.5 rounded-full overflow-hidden p-0.5 shadow-inner">
         <div
-          className="h-full bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 rounded-full transition-all duration-75 ease-out shadow-xs"
+          className="h-full bg-gradient-to-r from-amber-600 to-orange-500 rounded-full transition-all duration-75 ease-out shadow-xs"
           style={{ width: `${loadingProgress}%` }}
         ></div>
       </div>
     </div>
-    <div className="flex items-center justify-center gap-2 text-xs font-black text-blue-600">
-      <i className="fas fa-spinner fa-spin text-blue-500 text-xs"></i>
+    <div className="flex items-center justify-center gap-1.5 text-[11px] font-black text-amber-800">
+      <i className="fas fa-spinner fa-spin text-xs"></i>
       <span>보안 채널 연결 및 모듈 로딩 중... ({loadingProgress}%)</span>
     </div>
   </div>
 
-  {/* 3. 하단 필수 광고 / 스폰서 배너 영역 (4초 로딩 중 의무 노출) */}
-  <div className="w-full max-w-sm flex flex-col items-center gap-2.5 pb-2">
-    {/* 광고 컨테이너 슬롯 (320x50 ~ 300x100 반응형 광고 배너) */}
-    <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-3.5 shadow-sm flex items-center justify-between hover:border-blue-300 transition-colors">
-      <div className="flex items-center gap-3 overflow-hidden">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-          <i className="fas fa-bullhorn text-sm"></i>
+  {/* 3. 하단 필수 광고 / 스폰서 배너 영역 (850px 뷰포트 내 상시 온전 노출 의무) */}
+  <div className="w-full max-w-sm flex flex-col items-center gap-2 pb-1 shrink-0">
+    <div className="w-full bg-white border border-[#EBE6DD] rounded-2xl p-3 shadow-xs flex items-center justify-between hover:border-amber-300 transition-colors">
+      <div className="flex items-center gap-2.5 overflow-hidden">
+        <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs text-sm">
+          <i className="fas fa-bullhorn text-xs"></i>
         </div>
         <div className="text-left min-w-0">
           <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-black text-blue-600 uppercase tracking-wider bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">AD</span>
-            <span className="text-xs font-bold text-slate-800 truncate">2026 비과세 절세 특판 ISA</span>
+            <span className="text-[9px] font-black text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">AD</span>
+            <span className="text-xs font-bold text-[#2D2A26] truncate">2026 비과세 절세 특판 ISA</span>
           </div>
-          <span className="text-[10px] text-slate-500 truncate block mt-0.5">포털 제휴 공식 프로모션 바로가기</span>
+          <span className="text-[10px] text-[#7A7369] truncate block mt-0.5">포털 제휴 공식 프로모션 바로가기</span>
         </div>
       </div>
       <button
         type="button"
-        className="shrink-0 px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-black rounded-lg border border-blue-200 transition-all cursor-pointer"
+        className="shrink-0 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-black rounded-lg border border-amber-200 transition-all cursor-pointer"
       >
         확인
       </button>
     </div>
-    <p className="text-[10px] text-slate-400 text-center leading-relaxed">
+    <p className="text-[9px] text-[#A39C90] text-center leading-relaxed">
       본 유틸리티는 2026년 공인 표준 규정 및 소득세법을 준수합니다.
     </p>
   </div>
@@ -622,46 +634,57 @@ useEffect(() => {
 
 ---
 
-#### [화면 2] 상단 스티키 헤더 & 알약(Pill) 탭 바
+#### [화면 2] 상단 스티키 헤더 & 알약(Pill) 탭 바 (좌측 VeraNex 홈 링크 + 우측 미니앱 로고)
 
-팝업 내부 상단에 고정(`sticky top-0 z-30`)되며 블러 백드롭(`backdrop-blur-md`)을 적용합니다.
+팝업 내부 상단에 고정(`sticky top-0 z-30`)되며, **좌측에는 VeraNex 공식 홈 링크, 우측에는 미니앱 고유 로고**를 배치합니다. **소리끄기 및 도움말 아이콘은 헤더에서 전면 영구 제거**합니다.
 
 ```tsx
-<header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 shadow-xs">
-  <div className="flex items-center justify-between mb-3">
+<header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#EBE6DD] px-4 py-2.5 shadow-2xs">
+  <div className="flex items-center justify-between mb-2">
+    {/* 좌측: VeraNex 포털 홈 복귀 링크 */}
+    <a
+      href="https://veranex.app"
+      target="_top"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group"
+      title="VeraNex 포털 홈으로 이동"
+    >
+      <img src="https://veranex.app/logo-192.png" alt="VERA Logo" className="w-6 h-6 rounded-md object-contain drop-shadow-xs" />
+      <div className="flex flex-col">
+        <span className="font-black text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-amber-700 transition-colors">
+          V<span className="text-amber-600">ERANEX</span>
+        </span>
+        <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
+          PORTAL HOME
+        </span>
+      </div>
+    </a>
+
+    {/* 우측: 해당 미니앱의 고유 로고 / 대표 아이콘 (음소거 및 도움말 아이콘 영구 배제) */}
     <div className="flex items-center gap-2">
-      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+      <div className="text-right">
+        <div className="text-xs font-black text-[#2D2A26] leading-tight">
+          예·적금 이자 계산기
+        </div>
+        <div className="text-[9px] font-bold text-amber-700 leading-none">
+          스마트 금융 도구
+        </div>
+      </div>
+      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shadow-xs text-sm">
         <i className="fas fa-coins text-xs"></i>
       </div>
-      <div>
-        <h1 className="text-sm font-black text-slate-900 leading-tight">예·적금 이자 계산기</h1>
-        <span className="text-[10px] text-slate-500">2026 공인 금융 규정 기준</span>
-      </div>
-    </div>
-    <div className="flex items-center gap-1.5">
-      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-        FREE
-      </span>
-      <button
-        type="button"
-        onClick={handleShare}
-        className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-all cursor-pointer"
-        title="공유하기"
-      >
-        <i className="fas fa-share-alt"></i>
-      </button>
     </div>
   </div>
 
   {/* 3단 알약 탭 (계산 도구, 사용방법, FAQ) */}
-  <nav className="flex bg-slate-100/80 p-1 rounded-xl gap-1 text-xs font-black">
+  <nav className="flex bg-[#F5F2EB] p-1 rounded-xl gap-1 text-xs font-black">
     <button
       type="button"
       onClick={() => setActiveTab('calc')}
-      className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+      className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
         activeTab === 'calc'
-          ? 'bg-white text-blue-700 shadow-xs'
-          : 'text-slate-600 hover:text-slate-900'
+          ? 'bg-white text-amber-800 shadow-xs'
+          : 'text-[#7A7369] hover:text-[#2D2A26]'
       }`}
     >
       <i className="fas fa-calculator text-[11px]"></i>
@@ -670,10 +693,10 @@ useEffect(() => {
     <button
       type="button"
       onClick={() => setActiveTab('howto')}
-      className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+      className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
         activeTab === 'howto'
-          ? 'bg-white text-blue-700 shadow-xs'
-          : 'text-slate-600 hover:text-slate-900'
+          ? 'bg-white text-amber-800 shadow-xs'
+          : 'text-[#7A7369] hover:text-[#2D2A26]'
       }`}
     >
       <i className="fas fa-book-open text-[11px]"></i>
@@ -682,10 +705,10 @@ useEffect(() => {
     <button
       type="button"
       onClick={() => setActiveTab('faq')}
-      className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+      className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
         activeTab === 'faq'
-          ? 'bg-white text-blue-700 shadow-xs'
-          : 'text-slate-600 hover:text-slate-900'
+          ? 'bg-white text-amber-800 shadow-xs'
+          : 'text-[#7A7369] hover:text-[#2D2A26]'
       }`}
     >
       <i className="fas fa-question-circle text-[11px]"></i>

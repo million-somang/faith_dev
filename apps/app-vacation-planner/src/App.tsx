@@ -17,12 +17,12 @@ export const App: React.FC = () => {
   const [progress, setProgress] = useState(1);
 
   // Sound hook
-  const { isMuted, toggleSound, playClick, playSelect, playFanfare, playCopy } = usePlannerSound();
+  const { playClick, playSelect, playFanfare, playCopy } = usePlannerSound();
 
   // App core states
   const [currentTab, setCurrentTab] = useState<TabType>('planner');
   const [selectedYear, setSelectedYear] = useState<number>(2026);
-  const [vacationDays, setVacationDays] = useState<number>(3); // Default 3 days as in prompt
+  const [vacationDays, setVacationDays] = useState<number>(3); // Default 3 days
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<number>(5); // Default to May or plan's month
 
@@ -84,7 +84,6 @@ export const App: React.FC = () => {
 
   const handleCalculateClick = () => {
     playFanfare();
-    // Re-focus or highlight best plan
     if (plans.length > 0) {
       setSelectedPlanId(plans[0].id);
       setCalendarMonth(plans[0].month);
@@ -102,116 +101,136 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-100 flex items-center justify-center p-0 sm:p-4 text-slate-800 antialiased font-sans">
-      {/* 450px x 850px Popup Container with Zero-Scroll Standard */}
-      <div className="w-full max-w-[450px] min-h-[850px] bg-slate-50 border border-slate-200/80 shadow-2xl rounded-none sm:rounded-3xl flex flex-col overflow-hidden relative">
+    <div className="w-full min-h-screen bg-[#F0ECE1] flex items-center justify-center p-0 sm:p-4 text-[#2D2A26] antialiased font-sans">
+      {/* 450px x 850px Popup Container with Zero-Scroll Standard & Light Beige Palette */}
+      <div className="w-full max-w-[450px] h-[850px] max-h-[850px] bg-[#FAF8F5] border border-[#EBE6DD] shadow-2xl rounded-none sm:rounded-3xl flex flex-col overflow-hidden relative">
         {/* ============================================================== */}
-        {/* 4-SECOND SPLASH SCREEN (miniapp.md Standard) */}
+        {/* 4-SECOND SPLASH SCREEN (100% Opaque Light Beige & Pinned AD) */}
         {/* ============================================================== */}
         {loading && (
-          <div className="loading-screen loading-container absolute inset-0 z-50 bg-gradient-to-b from-slate-50 via-white to-indigo-50/40 flex flex-col justify-between p-6 animate-fade-in">
+          <div className="loading-screen loading-container absolute inset-0 z-50 bg-[#FAF8F5] flex flex-col justify-between p-6 sm:p-7 select-none animate-fade-in overflow-hidden">
             {/* Top brand header */}
-            <div className="flex items-center justify-between text-xs font-bold text-slate-400">
-              <span className="tracking-widest uppercase">VeraNex MiniApp</span>
-              <span className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100 text-[10px]">
-                v3.0 Certified
+            <div className="w-full flex items-center justify-between pt-1 shrink-0">
+              <a
+                href="https://veranex.app"
+                target="_top"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group"
+                title="VeraNex 포털 홈"
+              >
+                <img src="https://veranex.app/logo-192.png" alt="VERA Logo" className="w-6 h-6 rounded-md object-contain drop-shadow-xs" />
+                <span className="text-xs font-black text-[#2D2A26] tracking-wider uppercase group-hover:text-amber-700 transition-colors">
+                  VERANEX
+                </span>
+              </a>
+              <span className="text-[10px] font-black text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
+                2026 공인 기준 준수
               </span>
             </div>
 
             {/* Center animated hero */}
-            <div className="flex flex-col items-center justify-center text-center space-y-4 my-auto">
-              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-indigo-600 to-sky-500 shadow-xl shadow-indigo-200 flex items-center justify-center text-white text-3xl animate-bounce">
-                <i className="fas fa-calendar-check"></i>
+            <div className="flex flex-col items-center justify-center text-center space-y-4 my-auto shrink-0 py-4">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-400 shadow-xl shadow-amber-500/20 flex items-center justify-center text-white text-3xl animate-bounce border-2 border-white">
+                <i className="fas fa-umbrella-beach"></i>
               </div>
 
               <div className="space-y-1">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight">
+                <h1 className="text-xl font-black text-[#2D2A26] tracking-tight">
                   연차 극대화 플래너
                 </h1>
-                <p className="text-xs font-bold text-indigo-600">
+                <p className="text-xs font-bold text-amber-800">
                   황금연휴 루팡기 & 연휴 최적화 엔진
                 </p>
-                <p className="text-[11px] text-slate-500 max-w-[260px] mx-auto pt-1 leading-relaxed">
+                <p className="text-[11px] text-[#7A7369] max-w-[260px] mx-auto pt-1 leading-relaxed">
                   2026-2027 대체공휴일 및 법정 연휴 전수 연산 중...
                 </p>
               </div>
 
               {/* Progress counter & bar */}
-              <div className="w-full max-w-[240px] space-y-2 pt-2">
-                <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-600">
+              <div className="w-full max-w-[240px] space-y-1.5 pt-2">
+                <div className="flex items-center justify-between text-[11px] font-extrabold text-[#7A7369]">
                   <span>엔진 로딩 중</span>
-                  <span className="text-indigo-600">{progress}%</span>
+                  <span className="text-amber-800 font-black tabular-nums">{progress}%</span>
                 </div>
-                <div className="w-full h-2 bg-slate-200/80 rounded-full overflow-hidden p-0.5 border border-slate-300/40">
+                <div className="w-full h-2.5 bg-[#EBE6DD] rounded-full overflow-hidden p-0.5 shadow-inner">
                   <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-sky-500 rounded-full transition-all duration-75"
+                    className="h-full bg-gradient-to-r from-amber-600 to-orange-500 rounded-full transition-all duration-75 ease-out shadow-xs"
                     style={{ width: `${progress}%` }}
                   ></div>
                 </div>
               </div>
+              <div className="text-[11px] font-bold text-amber-800 flex items-center gap-1.5 pt-1">
+                <i className="fas fa-spinner fa-spin text-xs"></i>
+                <span>보안 채널 연결 및 모듈 로딩 중... ({progress}%)</span>
+              </div>
             </div>
 
-            {/* Bottom Sponsored Ad Banner Slot */}
-            <div className="w-full bg-white rounded-2xl p-3 border border-dashed border-slate-300 text-center shadow-xs">
-              <div className="text-[9px] font-black text-slate-400 tracking-wider uppercase mb-1">
-                SPONSORED ADVERTISEMENT
+            {/* Bottom Sponsored Ad Banner Slot (Pinned within 850px) */}
+            <div className="w-full bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-xs flex items-center justify-between gap-3 shrink-0">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 shadow-xs text-sm">
+                  <i className="fas fa-bullhorn text-xs"></i>
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-black text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">AD</span>
+                    <span className="text-xs font-bold text-[#2D2A26] truncate">황금연휴 특가 항공권 & 호텔</span>
+                  </div>
+                  <span className="text-[10px] text-[#7A7369] truncate block mt-0.5">스마트 휴가 설계는 VeraNex 플랫폼과 함께</span>
+                </div>
               </div>
-              <div className="h-12 bg-slate-100 rounded-xl flex items-center justify-center text-xs font-bold text-slate-400 gap-2">
-                <i className="fas fa-ad text-indigo-400"></i>
-                <span>스마트 휴가 설계는 VeraNex 플랫폼과 함께</span>
-              </div>
+              <button
+                type="button"
+                className="shrink-0 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 text-[10px] font-black rounded-lg border border-amber-200 transition-all cursor-pointer"
+              >
+                확인
+              </button>
             </div>
           </div>
         )}
 
         {/* ============================================================== */}
-        {/* MAIN APPLICATION CONTAINER (Zero Dark Policy / Neumorphism) */}
+        {/* MAIN APPLICATION CONTAINER (Light Beige Neumorphism) */}
         {/* ============================================================== */}
-        {/* Top Header */}
-        <header className="h-14 px-4 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-2xs">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs text-sm">
-              <i className="fas fa-umbrella-beach"></i>
+        {/* Top Header: Left VeraNex Home Link + Right Mini-App Logo (No mute/help icons) */}
+        <header className="h-14 px-4 bg-white/95 backdrop-blur-md border-b border-[#EBE6DD] flex items-center justify-between shrink-0 shadow-2xs">
+          {/* Left: VeraNex Home Link */}
+          <a
+            href="https://veranex.app"
+            target="_top"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group"
+            title="VeraNex 포털 홈으로 이동"
+          >
+            <img src="https://veranex.app/logo-192.png" alt="VERA Logo" className="w-6 h-6 rounded-md object-contain drop-shadow-xs" />
+            <div className="flex flex-col">
+              <span className="font-black text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-amber-700 transition-colors">
+                V<span className="text-amber-600">ERANEX</span>
+              </span>
+              <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
+                PORTAL HOME
+              </span>
             </div>
-            <div>
-              <h2 className="font-black text-sm text-slate-900 leading-tight">
+          </a>
+
+          {/* Right: Vacation Planner Logo & Title */}
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <h2 className="font-black text-xs text-[#2D2A26] leading-tight">
                 연차 극대화 플래너
               </h2>
-              <p className="text-[10px] font-bold text-indigo-600 leading-none">
+              <p className="text-[9px] font-bold text-amber-700 leading-none">
                 황금연휴 루팡기 🌴
               </p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {/* Audio Toggle */}
-            <button
-              onClick={() => {
-                toggleSound();
-                playClick();
-              }}
-              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-              title={isMuted ? '소리 켜기' : '소리 끄기'}
-            >
-              <i className={`fas ${isMuted ? 'fa-volume-mute text-rose-500' : 'fa-volume-up'}`}></i>
-            </button>
-
-            {/* Info / Policy */}
-            <button
-              onClick={() => {
-                playClick();
-                setPolicyType('about');
-              }}
-              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition-colors cursor-pointer"
-              title="도움말 & 정보"
-            >
-              <i className="fas fa-info-circle"></i>
-            </button>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shadow-xs text-sm">
+              <i className="fas fa-umbrella-beach"></i>
+            </div>
           </div>
         </header>
 
         {/* 4-Tab Navigation Bar */}
-        <nav className="h-11 px-2 bg-slate-100/80 border-b border-slate-200 flex items-center justify-around shrink-0 text-xs font-extrabold text-slate-600">
+        <nav className="h-11 px-2 bg-[#F5F2EB] border-b border-[#EBE6DD] flex items-center justify-around shrink-0 text-xs font-extrabold text-[#7A7369]">
           <button
             onClick={() => {
               playClick();
@@ -219,8 +238,8 @@ export const App: React.FC = () => {
             }}
             className={`flex-1 py-1.5 mx-1 rounded-xl text-center transition-all cursor-pointer ${
               currentTab === 'planner'
-                ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60 font-black'
-                : 'hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-[#EBE6DD] font-black'
+                : 'hover:text-[#2D2A26]'
             }`}
           >
             <i className="fas fa-calculator mr-1"></i>연차 플래너
@@ -232,8 +251,8 @@ export const App: React.FC = () => {
             }}
             className={`flex-1 py-1.5 mx-1 rounded-xl text-center transition-all cursor-pointer ${
               currentTab === 'calendar'
-                ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60 font-black'
-                : 'hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-[#EBE6DD] font-black'
+                : 'hover:text-[#2D2A26]'
             }`}
           >
             <i className="fas fa-calendar-alt mr-1"></i>황금연휴 달력
@@ -245,8 +264,8 @@ export const App: React.FC = () => {
             }}
             className={`flex-1 py-1.5 mx-1 rounded-xl text-center transition-all cursor-pointer ${
               currentTab === 'tips'
-                ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60 font-black'
-                : 'hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-[#EBE6DD] font-black'
+                : 'hover:text-[#2D2A26]'
             }`}
           >
             <i className="fas fa-lightbulb mr-1"></i>꿀팁 가이드
@@ -258,8 +277,8 @@ export const App: React.FC = () => {
             }}
             className={`flex-1 py-1.5 mx-1 rounded-xl text-center transition-all cursor-pointer ${
               currentTab === 'faq'
-                ? 'bg-white text-indigo-700 shadow-xs border border-slate-200/60 font-black'
-                : 'hover:text-slate-900'
+                ? 'bg-white text-amber-800 shadow-xs border border-[#EBE6DD] font-black'
+                : 'hover:text-[#2D2A26]'
             }`}
           >
             <i className="fas fa-question mr-1"></i>FAQ
@@ -272,13 +291,13 @@ export const App: React.FC = () => {
           {currentTab === 'planner' && (
             <div className="space-y-3.5">
               {/* Controls card: Year & Vacation Days Input */}
-              <div className="bg-white rounded-2xl p-3.5 border border-slate-200/90 shadow-2xs space-y-3">
+              <div className="bg-white rounded-2xl p-3.5 border border-[#EBE6DD] shadow-2xs space-y-3">
                 {/* Year Select & Header */}
                 <div className="flex items-center justify-between">
-                  <div className="text-xs font-black text-slate-800">
+                  <div className="text-xs font-black text-[#2D2A26]">
                     남은 연차 일수 입력
                   </div>
-                  <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200/60">
+                  <div className="flex items-center gap-1 bg-[#F5F2EB] p-0.5 rounded-xl border border-[#EBE6DD]">
                     {[2026, 2027].map((y) => (
                       <button
                         key={y}
@@ -288,8 +307,8 @@ export const App: React.FC = () => {
                         }}
                         className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                           selectedYear === y
-                            ? 'bg-white text-indigo-700 shadow-xs font-black'
-                            : 'text-slate-500 hover:text-slate-900'
+                            ? 'bg-white text-amber-800 shadow-xs font-black'
+                            : 'text-[#7A7369] hover:text-[#2D2A26]'
                         }`}
                       >
                         {y}년
@@ -307,8 +326,8 @@ export const App: React.FC = () => {
                       data-screenshot-click={days === 3 ? 'action' : undefined}
                       className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer shrink-0 ${
                         vacationDays === days
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-[#F5F2EB] text-[#2D2A26] hover:bg-[#EBE6DD]'
                       }`}
                     >
                       {days}일
@@ -318,13 +337,13 @@ export const App: React.FC = () => {
 
                 {/* Stepper Input & Action */}
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 py-1">
+                  <div className="flex-1 flex items-center bg-[#FAF8F5] border border-[#EBE6DD] rounded-xl px-2 py-1">
                     <button
                       onClick={() => {
                         playClick();
                         setVacationDays((prev) => Math.max(1, prev - 1));
                       }}
-                      className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-slate-100"
+                      className="w-7 h-7 rounded-lg bg-white border border-[#EBE6DD] text-[#2D2A26] flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-[#F5F2EB]"
                     >
                       -
                     </button>
@@ -338,24 +357,24 @@ export const App: React.FC = () => {
                         setVacationDays(Math.min(15, Math.max(1, val)));
                       }}
                       data-screenshot-input="3"
-                      className="flex-1 text-center font-black text-slate-900 bg-transparent text-sm focus:outline-none"
+                      className="flex-1 text-center font-black text-[#2D2A26] bg-transparent text-sm focus:outline-none"
                     />
                     <button
                       onClick={() => {
                         playClick();
                         setVacationDays((prev) => Math.min(15, prev + 1));
                       }}
-                      className="w-7 h-7 rounded-lg bg-white border border-slate-200 text-slate-600 flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-slate-100"
+                      className="w-7 h-7 rounded-lg bg-white border border-[#EBE6DD] text-[#2D2A26] flex items-center justify-center font-bold text-sm cursor-pointer hover:bg-[#F5F2EB]"
                     >
                       +
                     </button>
-                    <span className="text-xs font-bold text-slate-400 ml-1.5 mr-1">일</span>
+                    <span className="text-xs font-bold text-[#A39C90] ml-1.5 mr-1">일</span>
                   </div>
 
                   <button
                     onClick={handleCalculateClick}
                     data-screenshot-click="result"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition-transform"
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-98 transition-transform"
                   >
                     <i className="fas fa-magic"></i>
                     <span>최적 계산</span>
@@ -382,10 +401,10 @@ export const App: React.FC = () => {
 
                   {/* Alternative Plans List */}
                   {plans.length > 1 && (
-                    <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs space-y-2">
-                      <div className="text-xs font-black text-slate-700 flex items-center justify-between">
+                    <div className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-2xs space-y-2">
+                      <div className="text-xs font-black text-[#2D2A26] flex items-center justify-between">
                         <span>다른 황금연휴 추천 루트 ({plans.length}개)</span>
-                        <span className="text-[10px] text-slate-400">클릭 시 달력 반영</span>
+                        <span className="text-[10px] text-[#A39C90]">클릭 시 달력 반영</span>
                       </div>
                       <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-0.5">
                         {plans.slice(1, 6).map((plan) => {
@@ -396,17 +415,17 @@ export const App: React.FC = () => {
                               onClick={() => handlePlanSelect(plan)}
                               className={`w-full p-2 rounded-xl text-left border text-xs flex items-center justify-between transition-all cursor-pointer ${
                                 isSelected
-                                  ? 'bg-indigo-50 border-indigo-300 font-extrabold text-indigo-900'
-                                  : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                                  ? 'bg-amber-50 border-amber-300 font-extrabold text-amber-900'
+                                  : 'bg-[#FAF8F5] hover:bg-[#F5F2EB] border-[#EBE6DD] text-[#2D2A26]'
                               }`}
                             >
                               <div className="truncate mr-2">
                                 <div className="font-bold truncate">{plan.title}</div>
-                                <div className="text-[10px] text-slate-400">
+                                <div className="text-[10px] text-[#A39C90]">
                                   {plan.startDate.slice(5)} ~ {plan.endDate.slice(5)} (연차 {plan.vacationDaysUsed}일)
                                 </div>
                               </div>
-                              <span className="text-[11px] font-black text-indigo-600 shrink-0">
+                              <span className="text-[11px] font-black text-amber-700 shrink-0">
                                 총 {plan.totalDays}일
                               </span>
                             </button>
@@ -417,7 +436,7 @@ export const App: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl p-6 border border-slate-200 text-center text-slate-400 text-xs">
+                <div className="bg-white rounded-2xl p-6 border border-[#EBE6DD] text-center text-[#A39C90] text-xs">
                   조건에 맞는 휴가 일정이 없습니다. 연차 일수를 조절해 보세요.
                 </div>
               )}
@@ -443,33 +462,24 @@ export const App: React.FC = () => {
         </main>
 
         {/* E-E-A-T Footer with Legal Links */}
-        <footer className="h-10 px-3 bg-white border-t border-slate-200 flex items-center justify-between shrink-0 text-[10px] text-slate-400 font-medium">
+        <footer className="h-9 px-3 bg-white border-t border-[#EBE6DD] flex items-center justify-between shrink-0 text-[10px] text-[#A39C90] font-medium">
           <div>© 2026 VeraNex Life Engine</div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                playClick();
-                setPolicyType('privacy');
-              }}
-              className="hover:text-slate-600 underline cursor-pointer"
+              onClick={() => setPolicyType('privacy')}
+              className="hover:text-[#2D2A26] underline cursor-pointer"
             >
               개인정보처리
             </button>
             <button
-              onClick={() => {
-                playClick();
-                setPolicyType('terms');
-              }}
-              className="hover:text-slate-600 underline cursor-pointer"
+              onClick={() => setPolicyType('terms')}
+              className="hover:text-[#2D2A26] underline cursor-pointer"
             >
               이용약관
             </button>
             <button
-              onClick={() => {
-                playClick();
-                setPolicyType('contact');
-              }}
-              className="hover:text-slate-600 underline cursor-pointer"
+              onClick={() => setPolicyType('contact')}
+              className="hover:text-[#2D2A26] underline cursor-pointer"
             >
               고객지원
             </button>

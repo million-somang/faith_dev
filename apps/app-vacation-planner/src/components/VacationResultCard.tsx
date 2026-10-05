@@ -30,45 +30,45 @@ export const VacationResultCard: React.FC<VacationResultCardProps> = ({ plan, on
   };
 
   return (
-    <div className="bg-gradient-to-br from-indigo-50/80 via-white to-sky-50/50 rounded-2xl p-3.5 border border-indigo-100/90 shadow-sm relative overflow-hidden">
+    <div className="bg-gradient-to-br from-amber-50/70 via-white to-orange-50/30 rounded-2xl p-3.5 border border-[#EBE6DD] shadow-xs relative overflow-hidden">
       {/* Top badges */}
       <div className="flex items-center justify-between gap-2 mb-2">
-        <span className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 text-white px-2 py-0.5 rounded-full shadow-xs">
+        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-600 text-white px-2 py-0.5 rounded-full shadow-xs">
           가장 긴 황금루트 ⭐
         </span>
-        <span className="text-[11px] font-bold text-indigo-700 bg-white/80 px-2 py-0.5 rounded-full border border-indigo-200">
+        <span className="text-[11px] font-bold text-amber-800 bg-white/90 px-2 py-0.5 rounded-full border border-amber-200">
           효율 {plan.efficiency}%
         </span>
       </div>
 
       {/* Main title */}
-      <h3 className="font-extrabold text-slate-900 text-sm leading-snug mb-1">
+      <h3 className="font-extrabold text-[#2D2A26] text-sm leading-snug mb-1">
         {plan.title}
       </h3>
 
-      <div className="text-[11px] text-slate-500 font-medium mb-2.5">
+      <div className="text-[11px] text-[#7A7369] font-medium mb-2.5">
         {plan.startDate} ~ {plan.endDate}
       </div>
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 gap-2 mb-3">
-        <div className="bg-white/90 rounded-xl p-2 border border-slate-100 shadow-2xs text-center">
-          <div className="text-[10px] text-slate-500 font-bold mb-0.5">총 연속 휴가</div>
-          <div className="text-base font-black text-indigo-600 tracking-tight">
-            {plan.totalDays}<span className="text-xs font-bold text-slate-600 ml-0.5">일간</span>
+        <div className="bg-white rounded-xl p-2 border border-[#EBE6DD] shadow-2xs text-center">
+          <div className="text-[10px] text-[#7A7369] font-bold mb-0.5">총 연속 휴가</div>
+          <div className="text-base font-black text-amber-700 tracking-tight">
+            {plan.totalDays}<span className="text-xs font-bold text-[#7A7369] ml-0.5">일간</span>
           </div>
         </div>
-        <div className="bg-white/90 rounded-xl p-2 border border-slate-100 shadow-2xs text-center">
-          <div className="text-[10px] text-slate-500 font-bold mb-0.5">필요 연차 소진</div>
+        <div className="bg-white rounded-xl p-2 border border-[#EBE6DD] shadow-2xs text-center">
+          <div className="text-[10px] text-[#7A7369] font-bold mb-0.5">필요 연차 소진</div>
           <div className="text-base font-black text-emerald-600 tracking-tight">
-            {plan.vacationDaysUsed}<span className="text-xs font-bold text-slate-600 ml-0.5">일치</span>
+            {plan.vacationDaysUsed}<span className="text-xs font-bold text-[#7A7369] ml-0.5">일치</span>
           </div>
         </div>
       </div>
 
       {/* Vacation Dates recommendation badge list */}
-      <div className="bg-slate-50/90 rounded-xl p-2.5 border border-slate-200/70 mb-2.5">
-        <div className="text-[10px] font-bold text-slate-600 mb-1.5 flex items-center justify-between">
+      <div className="bg-[#FAF8F5] rounded-xl p-2.5 border border-[#EBE6DD] mb-2.5">
+        <div className="text-[10px] font-bold text-[#2D2A26] mb-1.5 flex items-center justify-between">
           <span>연차 신청 권장일</span>
           <span className="text-[9px] text-emerald-600 font-bold">총 {plan.vacationDates.length}일 소진</span>
         </div>
@@ -90,7 +90,7 @@ export const VacationResultCard: React.FC<VacationResultCardProps> = ({ plan, on
         className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
           copied
             ? 'bg-emerald-600 text-white'
-            : 'bg-indigo-600 hover:bg-indigo-700 text-white active:scale-98'
+            : 'bg-amber-600 hover:bg-amber-700 text-white active:scale-98'
         }`}
       >
         <i className={copied ? 'fas fa-check' : 'fas fa-copy'}></i>

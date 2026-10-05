@@ -29,17 +29,17 @@ export const HolidayCalendarTab: React.FC<HolidayCalendarTabProps> = ({
   return (
     <div className="space-y-3.5 pb-2">
       {/* Year Switcher */}
-      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-slate-200 shadow-2xs">
-        <span className="text-xs font-black text-slate-700 ml-1">연도 선택</span>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between bg-white p-2 rounded-2xl border border-[#EBE6DD] shadow-2xs">
+        <span className="text-xs font-black text-[#2D2A26] ml-1">연도 선택</span>
+        <div className="flex items-center gap-1 bg-[#F5F2EB] p-0.5 rounded-xl border border-[#EBE6DD]">
           {[2026, 2027].map((y) => (
             <button
               key={y}
               onClick={() => onYearChange(y)}
               className={`px-3 py-1 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
                 year === y
-                  ? 'bg-indigo-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-[#7A7369] hover:text-[#2D2A26]'
               }`}
             >
               {y}년
@@ -49,9 +49,9 @@ export const HolidayCalendarTab: React.FC<HolidayCalendarTabProps> = ({
       </div>
 
       {/* Summary Banner */}
-      <div className="bg-gradient-to-r from-indigo-500 to-sky-500 text-white rounded-2xl p-3 shadow-xs">
+      <div className="bg-gradient-to-r from-amber-600 to-orange-500 text-white rounded-2xl p-3 shadow-xs">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-[11px] font-bold text-indigo-100">{year}년 대한민국 법정공휴일</span>
+          <span className="text-[11px] font-bold text-amber-100">{year}년 대한민국 법정공휴일</span>
           <span className="text-[11px] font-extrabold bg-white/20 px-2 py-0.5 rounded-full">
             총 {holidays.length}일
           </span>
@@ -68,11 +68,11 @@ export const HolidayCalendarTab: React.FC<HolidayCalendarTabProps> = ({
           return (
             <div
               key={month}
-              className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs flex items-start gap-3"
+              className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-2xs flex items-start gap-3"
             >
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex flex-col items-center justify-center shrink-0">
-                <span className="text-[10px] font-bold text-indigo-500 leading-none">MONTH</span>
-                <span className="text-base font-black text-indigo-700 leading-tight">{month}월</span>
+              <div className="w-12 h-12 rounded-xl bg-amber-50 border border-amber-200/60 flex flex-col items-center justify-center shrink-0">
+                <span className="text-[10px] font-bold text-amber-700 leading-none">MONTH</span>
+                <span className="text-base font-black text-amber-800 leading-tight">{month}월</span>
               </div>
 
               <div className="flex-1 space-y-1.5 min-w-0">
@@ -82,14 +82,14 @@ export const HolidayCalendarTab: React.FC<HolidayCalendarTabProps> = ({
                   return (
                     <div key={h.date} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 truncate">
-                        <span className="font-extrabold text-slate-800 truncate">{h.name}</span>
+                        <span className="font-extrabold text-[#2D2A26] truncate">{h.name}</span>
                         {h.isSubstitute && (
-                          <span className="text-[9px] bg-amber-50 text-amber-700 font-bold px-1.5 py-0.2 rounded border border-amber-200">
+                          <span className="text-[9px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.2 rounded border border-amber-200">
                             대체휴일
                           </span>
                         )}
                       </div>
-                      <span className={`text-[11px] font-bold shrink-0 ${isWeekendDay ? 'text-rose-500' : 'text-slate-500'}`}>
+                      <span className={`text-[11px] font-bold shrink-0 ${isWeekendDay ? 'text-rose-500' : 'text-[#7A7369]'}`}>
                         {h.date.slice(5)} ({dayName})
                       </span>
                     </div>

@@ -78,15 +78,15 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-xs">
+    <div className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-xs">
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-2 px-1">
         <div className="flex items-center gap-1.5">
-          <span className="font-extrabold text-sm text-slate-800 tracking-tight">
+          <span className="font-extrabold text-sm text-[#2D2A26] tracking-tight">
             {year}년 {month}월
           </span>
           {plan && (
-            <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded-full border border-emerald-200/60">
+            <span className="text-[10px] bg-amber-50 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-200/80">
               추천 하이라이트
             </span>
           )}
@@ -95,14 +95,14 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={onPrevMonth}
-              className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] cursor-pointer transition-colors"
+              className="w-6 h-6 rounded-lg bg-[#F5F2EB] hover:bg-[#EBE6DD] text-[#2D2A26] flex items-center justify-center text-[10px] cursor-pointer transition-colors"
               title="이전 달"
             >
               <i className="fas fa-chevron-left"></i>
             </button>
             <button
               onClick={onNextMonth}
-              className="w-6 h-6 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] cursor-pointer transition-colors"
+              className="w-6 h-6 rounded-lg bg-[#F5F2EB] hover:bg-[#EBE6DD] text-[#2D2A26] flex items-center justify-center text-[10px] cursor-pointer transition-colors"
               title="다음 달"
             >
               <i className="fas fa-chevron-right"></i>
@@ -112,14 +112,14 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
       </div>
 
       {/* Weekday labels */}
-      <div className="grid grid-cols-7 text-center text-[11px] font-bold text-slate-400 mb-1 border-b border-slate-100 pb-1">
+      <div className="grid grid-cols-7 text-center text-[11px] font-bold text-[#A39C90] mb-1 border-b border-[#F5F2EB] pb-1">
         <span className="text-rose-500">일</span>
         <span>월</span>
         <span>화</span>
         <span>수</span>
         <span>목</span>
         <span>금</span>
-        <span className="text-sky-500">토</span>
+        <span className="text-sky-600">토</span>
       </div>
 
       {/* Day Cells Grid */}
@@ -127,21 +127,21 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
         {cells.map((cell, idx) => {
           if (!cell.isCurrentMonth) {
             return (
-              <div key={idx} className="h-8 flex items-center justify-center text-slate-300 text-[11px]">
+              <div key={idx} className="h-8 flex items-center justify-center text-[#D6D0C5] text-[11px]">
                 {cell.day}
               </div>
             );
           }
 
-          let bgClass = 'bg-transparent text-slate-700 hover:bg-slate-50';
+          let bgClass = 'bg-transparent text-[#2D2A26] hover:bg-[#FAF8F5]';
           let borderClass = 'border-transparent';
 
           if (cell.isVacation) {
             bgClass = 'bg-emerald-600 text-white font-extrabold shadow-xs shadow-emerald-200';
             borderClass = 'border-emerald-600';
           } else if (cell.isInPlanRange) {
-            bgClass = 'bg-indigo-50 text-indigo-900 font-bold';
-            borderClass = 'border-indigo-200';
+            bgClass = 'bg-amber-50 text-amber-900 font-bold';
+            borderClass = 'border-amber-200';
           } else if (cell.isHoliday) {
             bgClass = 'bg-rose-50 text-rose-600 font-bold';
             borderClass = 'border-rose-100';
@@ -172,7 +172,7 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-center gap-3 text-[10px] text-slate-500 font-medium">
+      <div className="mt-2.5 pt-2 border-t border-[#F5F2EB] flex items-center justify-center gap-3 text-[10px] text-[#7A7369] font-medium">
         <span className="flex items-center gap-1">
           <span className="w-2.5 h-2.5 rounded-sm bg-rose-100 border border-rose-300 inline-block"></span>
           공휴일
@@ -182,7 +182,7 @@ export const MiniCalendarView: React.FC<MiniCalendarViewProps> = ({
           연차사용
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2.5 h-2.5 rounded-sm bg-indigo-50 border border-indigo-200 inline-block"></span>
+          <span className="w-2.5 h-2.5 rounded-sm bg-amber-50 border border-amber-200 inline-block"></span>
           연속휴가
         </span>
       </div>

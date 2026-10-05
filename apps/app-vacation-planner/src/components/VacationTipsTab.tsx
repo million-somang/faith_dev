@@ -30,9 +30,9 @@ export const VacationTipsTab: React.FC = () => {
 
   return (
     <div className="space-y-3 pb-2">
-      <div className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl p-3.5 shadow-xs">
+      <div className="bg-gradient-to-r from-amber-600 to-orange-500 text-white rounded-2xl p-3.5 shadow-xs">
         <h4 className="font-black text-sm mb-1 flex items-center gap-1.5">
-          <i className="fas fa-lightbulb text-amber-300"></i>
+          <i className="fas fa-lightbulb text-amber-200"></i>
           스마트 직장인을 위한 연차 200% 활용 꿀팁
         </h4>
         <p className="text-xs text-white/90 font-medium leading-relaxed">
@@ -44,20 +44,20 @@ export const VacationTipsTab: React.FC = () => {
         {tips.map((tip, idx) => (
           <div
             key={idx}
-            className="bg-white rounded-2xl p-3 border border-slate-200/90 shadow-2xs hover:shadow-xs transition-shadow"
+            className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-2xs hover:shadow-xs transition-shadow"
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[10px] font-black bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-200">
+              <span className="text-[10px] font-black bg-amber-50 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200/80">
                 {tip.tag}
               </span>
-              <span className="text-slate-400 text-xs">
+              <span className="text-[#A39C90] text-xs">
                 <i className={`fas ${tip.icon}`}></i>
               </span>
             </div>
-            <h5 className="font-extrabold text-xs text-slate-900 mb-1 leading-snug">
+            <h5 className="font-extrabold text-xs text-[#2D2A26] mb-1 leading-snug">
               {tip.title}
             </h5>
-            <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+            <p className="text-[11px] text-[#7A7369] leading-relaxed font-normal">
               {tip.desc}
             </p>
           </div>

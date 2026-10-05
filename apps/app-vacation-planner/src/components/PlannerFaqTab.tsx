@@ -34,9 +34,9 @@ export const PlannerFaqTab: React.FC = () => {
 
   return (
     <div className="space-y-3 pb-2">
-      <div className="bg-gradient-to-r from-sky-500 to-indigo-600 text-white rounded-2xl p-3.5 shadow-xs">
+      <div className="bg-gradient-to-r from-amber-600 to-orange-500 text-white rounded-2xl p-3.5 shadow-xs">
         <h4 className="font-black text-sm mb-1 flex items-center gap-1.5">
-          <i className="fas fa-question-circle text-amber-300"></i>
+          <i className="fas fa-question-circle text-amber-200"></i>
           연차 및 공휴일 자주 묻는 질문 (FAQ)
         </h4>
         <p className="text-xs text-white/90 font-medium leading-relaxed">
@@ -50,30 +50,30 @@ export const PlannerFaqTab: React.FC = () => {
           return (
             <div
               key={idx}
-              className="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all"
+              className="bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs overflow-hidden transition-all"
             >
               <button
                 onClick={() => setOpenIdx(isOpen ? null : idx)}
-                className="w-full p-3.5 text-left flex items-start justify-between gap-2.5 cursor-pointer hover:bg-slate-50/80 transition-colors"
+                className="w-full p-3.5 text-left flex items-start justify-between gap-2.5 cursor-pointer hover:bg-[#FAF8F5] transition-colors"
               >
                 <div className="flex items-start gap-2">
-                  <span className="font-black text-xs text-indigo-600 shrink-0 mt-0.5">Q.</span>
-                  <span className="font-extrabold text-xs text-slate-800 leading-snug">
+                  <span className="font-black text-xs text-amber-700 shrink-0 mt-0.5">Q.</span>
+                  <span className="font-extrabold text-xs text-[#2D2A26] leading-snug">
                     {faq.q}
                   </span>
                 </div>
-                <span className={`text-slate-400 text-xs transition-transform duration-200 shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`}>
+                <span className={`text-[#A39C90] text-xs transition-transform duration-200 shrink-0 mt-0.5 ${isOpen ? 'rotate-180' : ''}`}>
                   <i className="fas fa-chevron-down"></i>
                 </span>
               </button>
 
               {isOpen && (
-                <div className="px-3.5 pb-3.5 pt-1 space-y-2 border-t border-slate-100 bg-slate-50/50">
+                <div className="px-3.5 pb-3.5 pt-1 space-y-2 border-t border-[#F5F2EB] bg-[#FAF8F5]">
                   {/* Direct Answer highlight for AI search / GEO */}
-                  <div className="p-2.5 rounded-xl bg-indigo-50/90 border border-indigo-100 text-xs font-bold text-indigo-900 leading-relaxed">
+                  <div className="p-2.5 rounded-xl bg-amber-50/90 border border-amber-200/80 text-xs font-bold text-amber-950 leading-relaxed">
                     💡 <strong>핵심 요약:</strong> {faq.directAnswer}
                   </div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                  <p className="text-[11px] text-[#7A7369] leading-relaxed font-normal">
                     {faq.detail}
                   </p>
                 </div>
