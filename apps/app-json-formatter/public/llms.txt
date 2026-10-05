@@ -1,0 +1,25 @@
+# Pro JSON Studio (VeraNex Verified Developer Utility)
+> 100% Client-Side In-Memory JSON Formatter, Syntax Repair (AutoFix), Interactive Tree Viewer, and TypeScript/YAML/CSV Converter.
+
+## Overview
+- **Name**: Pro JSON Studio
+- **Platform**: VeraNex (https://veranex.app)
+- **App Path**: /app/json-formatter/
+- **Standard**: RFC 8259 Standard JSON Compliance
+- **Security**: 100% Client-side in-memory execution. Zero server uploads, zero remote tracking.
+
+## Core Capabilities
+1. **JSON Pretty Print & Formatting**:
+   - Customizable indentation: 2 spaces, 4 spaces, or Tab.
+   - Real-time syntax validation with line/column error pinpointing.
+2. **One-Click AutoFix**:
+   - Automatically repairs missing key quotes, unquoted keys, single quotes, trailing commas, and JS comments.
+3. **Interactive Collapsible Tree Viewer**:
+   - Deep nested object/array node traversal with expand/collapse all controls and one-click JSON keypath copy (`user.orders[0].id`).
+4. **Multi-Format Converters**:
+   - TypeScript Interface Generator with nested type resolution.
+   - YAML 1.2 serialization.
+   - Standard XML document serialization.
+   - RFC 4180 compliant CSV export for array tables.
+5. **JSON Analytics**:
+   - Instant calculation of line count, total character count, byte size, maximum nesting depth, and total key count.
