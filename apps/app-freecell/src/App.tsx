@@ -20,6 +20,7 @@ export function App() {
     hintMessage,
     historyLength,
     isLoading,
+    splashProgress,
     moveRuleMode,
     setMoveRuleMode,
     getMaxMovableCards,
@@ -86,7 +87,7 @@ export function App() {
   return (
     <div className="min-h-screen bg-emerald-950 text-slate-100 flex flex-col font-sans select-none relative overflow-x-hidden">
       {/* 1. Loading Screen */}
-      {isLoading && <LoadingScreen seedNum={gameSeed} />}
+      {isLoading && <LoadingScreen seedNum={gameSeed} progress={splashProgress} />}
 
       {/* Top Header Bar */}
       <header className="sticky top-0 z-40 bg-emerald-900/90 backdrop-blur-md border-b border-emerald-800/80 px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg">

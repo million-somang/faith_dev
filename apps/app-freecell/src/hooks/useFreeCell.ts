@@ -27,22 +27,42 @@ export function useFreeCell() {
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [hintMessage, setHintMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [splashProgress, setSplashProgress] = useState<number>(1);
+  const isInitialMountRef = useRef<boolean>(true);
   // 이동 규칙 모드: 'relaxed' (자유 이동: 정렬된 뭉치 무제한 이동) | 'classic' (정통 룰: 빈 칸 개수 제한)
   const [moveRuleMode, setMoveRuleMode] = useState<'relaxed' | 'classic'>('relaxed');
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 로딩 화면 타이머
+  // 4초 스플래시 로딩 화면 타이머 (miniapp.md 표준 4,000ms & 1~100% 실시간 프로그레스)
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    const duration = 4000;
+    const intervalTime = 40;
+    const step = 100 / (duration / intervalTime);
+
+    const timer = setInterval(() => {
+      setSplashProgress(prev => {
+        const next = prev + step;
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            setIsLoading(false);
+            isInitialMountRef.current = false;
+          }, 250);
+          return 100;
+        }
+        return Math.floor(next);
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
   }, []);
 
   // 게임 시드 기반 초기화
   const initGame = useCallback((seedNum: number) => {
-    setIsLoading(true);
+    if (!isInitialMountRef.current) {
+      setIsLoading(true);
+    }
     setGameSeed(seedNum);
     setFreecells([null, null, null, null]);
     setFoundations({ spade: [], heart: [], diamond: [], club: [] });
@@ -66,9 +86,11 @@ export function useFreeCell() {
 
     setTableaus(newTableaus);
 
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 400);
+    if (!isInitialMountRef.current) {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 400);
+    }
   }, []);
 
   // 초기 1회 실행
@@ -638,6 +660,7 @@ export function useFreeCell() {
     hintMessage,
     historyLength: history.length,
     isLoading,
+    splashProgress,
     moveRuleMode,
     setMoveRuleMode,
     getMaxMovableCards,
