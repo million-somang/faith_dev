@@ -107,7 +107,7 @@ export default function App() {
         {/* ========================================================= */}
         {isLoading && (
           <div 
-            className="absolute inset-0 h-[850px] max-h-[850px] w-full flex flex-col justify-between items-center bg-[#FAF8F5] p-6 sm:p-7 select-none animate-fade-in overflow-hidden z-50"
+            className="loading-screen absolute inset-0 h-[850px] max-h-[850px] w-full flex flex-col justify-between items-center bg-[#FAF8F5] p-6 sm:p-7 select-none animate-fade-in overflow-hidden z-50"
             data-screenshot-splash="true"
           >
             {/* 1. 상단 브랜딩 & 기준 배지 */}

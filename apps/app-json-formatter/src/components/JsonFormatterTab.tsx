@@ -146,7 +146,7 @@ export const JsonFormatterTab: React.FC<JsonFormatterTabProps> = ({
             setJsonText(e.target.value);
             onValidate(e.target.value);
           }}
-          data-screenshot-input="{ id: 100, name: 'VeraNex' }"
+          data-screenshot-input='{"id": 1024, "username": "veranex_dev", "role": "admin", "verified": true}'
           placeholder="여기에 JSON 데이터를 직접 입력하거나 붙여넣으세요..."
           spellCheck={false}
           className="w-full h-full p-3 font-mono-code text-[11px] leading-relaxed text-[#2D2A26] bg-transparent resize-none focus:outline-none scrollbar-thin"
