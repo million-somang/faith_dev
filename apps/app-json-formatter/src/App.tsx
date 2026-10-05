@@ -212,28 +212,28 @@ export default function App() {
         )}
 
         {/* ========================================================= */}
-        {/* [화면 2] 상단 스티키 헤더 (VeraNex 홈 + 미니앱 로고, 소리/도움말 제거) */}
+        {/* [화면 2] 상단 스티키 헤더 (VeraNex 홈 + 미니앱 로고, 고가독성 메뉴) */}
         {/* ========================================================= */}
-        <header className="sticky top-0 z-30 bg-[#FAF8F5]/95 backdrop-blur-md border-b border-[#EBE6DD] px-3.5 py-2 shadow-2xs shrink-0">
-          <div className="flex items-center justify-between mb-2">
+        <header className="sticky top-0 z-30 bg-[#FAF8F5]/98 backdrop-blur-md border-b border-[#E2DBD0] px-3.5 py-2.5 shadow-2xs shrink-0">
+          <div className="flex items-center justify-between mb-2.5">
             {/* 좌측: VeraNex 포털 홈 복귀 링크 */}
             <a
               href="https://veranex.app"
               target="_top"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group"
+              className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer group"
               title="VeraNex 포털 홈으로 이동"
             >
               <img
                 src="https://veranex.app/logo-192.png"
                 alt="VERA Logo"
-                className="w-6 h-6 rounded-md object-contain drop-shadow-xs"
+                className="w-7 h-7 rounded-md object-contain drop-shadow-xs"
               />
               <div className="flex flex-col">
-                <span className="font-black text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-amber-700 transition-colors">
+                <span className="font-black text-[15px] tracking-wider text-[#2D2A26] leading-none group-hover:text-amber-700 transition-colors">
                   V<span className="text-amber-600">ERANEX</span>
                 </span>
-                <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
+                <span className="text-[9px] font-extrabold text-[#787166] leading-tight mt-0.5">
                   PORTAL HOME
                 </span>
               </div>
@@ -242,68 +242,68 @@ export default function App() {
             {/* 우측: 해당 미니앱의 고유 로고 / 타이틀 */}
             <div className="flex items-center gap-2">
               <div className="text-right">
-                <div className="text-xs font-black text-[#2D2A26] leading-tight">
+                <div className="text-[13px] font-black text-[#2D2A26] leading-tight">
                   Pro JSON Studio
                 </div>
-                <div className="text-[9px] font-bold text-amber-700 leading-none">
+                <div className="text-[10px] font-extrabold text-amber-800 leading-none mt-0.5">
                   경량 개발자 도구
                 </div>
               </div>
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shadow-xs text-sm">
+              <div className="w-8.5 h-8.5 rounded-xl bg-gradient-to-tr from-amber-600 to-orange-500 text-white flex items-center justify-center shadow-xs text-sm">
                 <i className="fa-solid fa-code text-xs"></i>
               </div>
             </div>
           </div>
 
-          {/* 4단 알약 탭 (포맷터, 트리, 변환, 문법&FAQ) */}
-          <nav className="flex bg-[#F5F2EB] p-1 rounded-xl gap-1 text-xs font-black">
+          {/* 4단 알약 탭 (포맷터, 트리, 변환, 문법&FAQ) - 가독성 강화 */}
+          <nav className="flex bg-[#ECE5D8] p-1 rounded-xl gap-1 border border-[#DDD5C7] shadow-inner text-[12.5px]">
             <button
               type="button"
               onClick={() => setActiveTab('formatter')}
-              className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'formatter'
-                  ? 'bg-white text-amber-800 shadow-xs'
-                  : 'text-[#7A7369] hover:text-[#2D2A26]'
+                  ? 'bg-white text-amber-900 shadow-sm border border-[#DDD5C7] font-black'
+                  : 'text-[#5C5449] hover:text-[#201D1A] hover:bg-white/40 font-bold'
               }`}
             >
-              <i className="fa-solid fa-align-left text-[11px]"></i>
+              <i className="fa-solid fa-align-left text-xs"></i>
               <span>포맷터</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('tree')}
               data-screenshot-click="result"
-              className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'tree'
-                  ? 'bg-white text-amber-800 shadow-xs'
-                  : 'text-[#7A7369] hover:text-[#2D2A26]'
+                  ? 'bg-white text-amber-900 shadow-sm border border-[#DDD5C7] font-black'
+                  : 'text-[#5C5449] hover:text-[#201D1A] hover:bg-white/40 font-bold'
               }`}
             >
-              <i className="fa-solid fa-sitemap text-[11px]"></i>
+              <i className="fa-solid fa-sitemap text-xs"></i>
               <span>트리 뷰</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('convert')}
-              className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'convert'
-                  ? 'bg-white text-amber-800 shadow-xs'
-                  : 'text-[#7A7369] hover:text-[#2D2A26]'
+                  ? 'bg-white text-amber-900 shadow-sm border border-[#DDD5C7] font-black'
+                  : 'text-[#5C5449] hover:text-[#201D1A] hover:bg-white/40 font-bold'
               }`}
             >
-              <i className="fa-solid fa-arrows-repeat text-[11px]"></i>
+              <i className="fa-solid fa-arrows-repeat text-xs"></i>
               <span>변환</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('faq')}
-              className={`flex-1 py-1.5 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-1 rounded-lg text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                 activeTab === 'faq'
-                  ? 'bg-white text-amber-800 shadow-xs'
-                  : 'text-[#7A7369] hover:text-[#2D2A26]'
+                  ? 'bg-white text-amber-900 shadow-sm border border-[#DDD5C7] font-black'
+                  : 'text-[#5C5449] hover:text-[#201D1A] hover:bg-white/40 font-bold'
               }`}
             >
-              <i className="fa-solid fa-book-open text-[11px]"></i>
+              <i className="fa-solid fa-book-open text-xs"></i>
               <span>문법•FAQ</span>
             </button>
           </nav>

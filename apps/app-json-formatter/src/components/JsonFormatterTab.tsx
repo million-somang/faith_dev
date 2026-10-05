@@ -57,34 +57,34 @@ export const JsonFormatterTab: React.FC<JsonFormatterTabProps> = ({
   return (
     <div className="space-y-2.5 flex flex-col h-full">
       {/* 1. Quick Presets & Indent controls */}
-      <div className="bg-white rounded-2xl p-2.5 border border-[#EBE6DD] shadow-2xs space-y-2 shrink-0">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-extrabold text-[#2D2A26] flex items-center gap-1.5">
+      <div className="bg-white rounded-2xl p-3 border border-[#E0D9CC] shadow-2xs space-y-2.5 shrink-0">
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-black text-[#2D2A26] flex items-center gap-1.5 text-xs">
             <i className="fas fa-magic text-amber-600"></i>
             샘플 프리셋 불러오기
           </span>
           {/* Indent switcher */}
-          <div className="flex items-center gap-1 bg-[#F5F2EB] p-0.5 rounded-lg border border-[#EBE6DD]">
+          <div className="flex items-center gap-1 bg-[#ECE5D8] p-0.5 rounded-lg border border-[#DDD5C7]">
             <button
               onClick={() => setCurrentIndent(2)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                currentIndent === 2 ? 'bg-white text-amber-800 shadow-2xs font-black' : 'text-[#7A7369]'
+              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                currentIndent === 2 ? 'bg-white text-amber-900 shadow-2xs font-black' : 'text-[#61594E] hover:text-[#2D2A26]'
               }`}
             >
               2칸
             </button>
             <button
               onClick={() => setCurrentIndent(4)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                currentIndent === 4 ? 'bg-white text-amber-800 shadow-2xs font-black' : 'text-[#7A7369]'
+              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                currentIndent === 4 ? 'bg-white text-amber-900 shadow-2xs font-black' : 'text-[#61594E] hover:text-[#2D2A26]'
               }`}
             >
               4칸
             </button>
             <button
               onClick={() => setCurrentIndent('tab')}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all cursor-pointer ${
-                currentIndent === 'tab' ? 'bg-white text-amber-800 shadow-2xs font-black' : 'text-[#7A7369]'
+              className={`px-2.5 py-0.5 rounded text-[11px] font-bold transition-all cursor-pointer ${
+                currentIndent === 'tab' ? 'bg-white text-amber-900 shadow-2xs font-black' : 'text-[#61594E] hover:text-[#2D2A26]'
               }`}
             >
               탭
@@ -98,7 +98,7 @@ export const JsonFormatterTab: React.FC<JsonFormatterTabProps> = ({
             <button
               key={name}
               onClick={() => onLoadPreset(name)}
-              className="px-2.5 py-1 bg-[#F5F2EB] hover:bg-[#EBE6DD] text-[#2D2A26] text-[10px] font-bold rounded-xl border border-[#EBE6DD] transition-all cursor-pointer shrink-0 active:scale-98"
+              className="px-2.5 py-1.5 bg-[#FAF8F5] hover:bg-[#F2ECE1] text-[#332F2A] text-[11px] font-bold rounded-xl border border-[#DFD8CB] transition-all cursor-pointer shrink-0 active:scale-98 shadow-2xs"
             >
               {name}
             </button>
