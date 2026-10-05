@@ -391,6 +391,18 @@ const APP_REGISTRY: Record<string, AppRegistryMeta> = {
         resultTitle: '독서 완료 · 다음 회차 감상',
         resultMetric: '누적 1,840 독자 · 별점 9.8',
         appUrl: '/app/novel/'
+    },
+    'vacation-planner': {
+        name: '베라 연차 극대화 플래너',
+        category: '생활도구 · 휴가 플래너',
+        color: '#4F46E5',
+        icon: '🌴',
+        description: '2026-2027 대체공휴일 및 주말을 자동 연산하여 최장 연속 황금연휴 루트를 시각화',
+        features: ['남은 연차별 최장 연속 휴가 탐색', '대체공휴일 & 주말 자동 연동 캘린더', '원클릭 연차 일정 텍스트 복사'],
+        actionLabel: '황금연휴 최적 루트 계산하기',
+        resultTitle: '연차 극대화 플랜 산출 완료',
+        resultMetric: '최대 9~10일 연속 휴식 달성',
+        appUrl: '/app/vacation-planner/'
     }
 };
 

@@ -92,6 +92,7 @@ export default function UtilityPage() {
             else if (app.app_url.includes('interest-calc')) baseUrl = 'http://localhost:5029/app/interest-calc/';
             else if (app.app_url.includes('customs-calc')) baseUrl = 'http://localhost:5035/app/customs-calc/';
             else if (app.app_url.includes('ocr')) baseUrl = 'http://localhost:5036/app/ocr/';
+            else if (app.app_url.includes('vacation-planner')) baseUrl = 'http://localhost:5039/app/vacation-planner/';
         }
         const separator = baseUrl.includes('?') ? '&' : '?';
         return baseUrl.includes('lang=') ? baseUrl : `${baseUrl}${separator}lang=${lang}`;
