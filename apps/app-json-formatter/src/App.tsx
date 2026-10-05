@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MiniAppLayout } from '@faithportal/mini-app-sdk';
 import '@faithportal/mini-app-sdk/src/mini-app.css';
 import '@fortawesome/fontawesome-free/css/all.css';
 
@@ -98,9 +97,9 @@ export default function App() {
   };
 
   return (
-    <MiniAppLayout title="Pro JSON Studio">
+    <div className="h-screen w-full bg-[#F5F2EB] flex justify-center items-center font-sans select-none overflow-hidden">
       <div 
-        className="w-full max-w-[450px] mx-auto h-[850px] max-h-[850px] flex flex-col bg-[#FAF8F5] text-[#2D2A26] relative overflow-hidden font-sans select-none"
+        className="w-full max-w-[450px] h-full max-h-[850px] bg-[#FAF8F5] text-[#2D2A26] flex flex-col justify-between overflow-hidden shadow-2xl relative"
         data-screenshot-app="json-formatter"
       >
         {/* ========================================================= */}
@@ -402,6 +401,6 @@ export default function App() {
           initialTab={policyInitialTab}
         />
       </div>
-    </MiniAppLayout>
+    </div>
   );
 }
