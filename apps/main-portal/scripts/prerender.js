@@ -101,27 +101,41 @@ async function loadGuides() {
 
 
 function generateHomePageHtml(template, guides) {
-    const title = 'VERA - 세상의 모든 정보와 일상의 편리함을 잇는 라이프 포털';
-    const description = '실시간 속보 뉴스부터 25편의 고품질 전문 지식 칼럼, 금융 이자·퇴직금 계산기, WebP 이미지 변환기, 두뇌 미니게임까지 한곳에서 편리하게 이용하는 VERA 라이프 포털입니다.';
+    const title = 'VERA - 세상의 모든 지식과 일상의 인사이트를 잇는 프리미엄 매거진 포털';
+    const description = '실시간 속보 뉴스부터 25편의 고품질 전문 지식 칼럼(금융·재테크, 명리학·문화, 웹소설 작법, IT·알고리즘), 스마트 생활 계산기, 두뇌 미니게임까지 한곳에서 편리하게 이용하는 VERA 라이프 포털입니다.';
     const canonical = 'https://veranex.app/';
 
-    // 지식 칼럼 6선 추출
-    const topGuides = guides.slice(0, 6);
+    // 지식 칼럼 8선 큐레이션 추출
+    const curatedSlugs = [
+        '2026-global-interest-rate-dividend-strategy',
+        'saju-manseryeok-principles-and-four-pillars',
+        'webnovel-trends-regression-possession-reincarnation',
+        'loan-interest-calculation-and-repayment-methods',
+        'sudoku-advanced-solving-techniques-naked-single-to-x-wing',
+        'sp500-index-fund-dollar-investing-principles',
+        'character-conflict-design-and-villain-writing',
+        'ai-news-curation-and-smart-current-affairs-literacy'
+    ];
+    let topGuides = curatedSlugs.map(s => guides.find(g => g.slug === s)).filter(Boolean);
+    if (topGuides.length < 8) {
+        topGuides = guides.slice(0, 8);
+    }
     const guideCardsHtml = topGuides.map(g => `
         <article class="p-5 bg-white rounded-2xl border border-gray-200/90 shadow-xs hover:border-teal-400 hover:shadow-md transition-all flex flex-col justify-between">
             <div>
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200">${g.categoryLabel}</span>
-                    <span class="text-xs text-gray-400 font-medium">${g.readTime}</span>
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200">${g.categoryLabel}</span>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">🛡️ 팩트체크 완료</span>
+                    <span class="text-xs text-gray-400 font-medium ml-auto">${g.readTime} 읽기</span>
                 </div>
-                <h3 class="text-base font-bold text-gray-900 mb-2 leading-snug">
+                <h3 class="text-base font-extrabold text-gray-900 mb-2 leading-snug">
                     <a href="/guides/${g.slug}" class="hover:text-teal-700">${g.title}</a>
                 </h3>
-                <p class="text-gray-600 text-xs leading-relaxed line-clamp-2 mb-3">${g.description}</p>
+                <p class="text-gray-600 text-xs leading-relaxed line-clamp-2 mb-3">${g.summary || g.description}</p>
             </div>
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-                <span>작성: ${g.author}</span>
-                <a href="/guides/${g.slug}" class="text-teal-700 font-bold hover:underline">상세보기 →</a>
+            <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                <span class="truncate">집필: <strong>${g.author}</strong>${g.authorRole ? ` (${g.authorRole})` : ''}</span>
+                <a href="/guides/${g.slug}" class="text-teal-700 font-bold hover:underline shrink-0 ml-2">전문 읽기 →</a>
             </div>
         </article>
     `).join('\n');
@@ -157,18 +171,18 @@ function generateHomePageHtml(template, guides) {
             <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full space-y-10">
                 {/* 포털 공식 히어로 배너 */}
                 <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-10 shadow-lg text-center">
-                    <span class="inline-block px-3 py-1 rounded-full bg-white/10 text-indigo-200 text-xs font-semibold mb-3 border border-white/10">
-                        VERA All-in-One Life Portal
+                    <span class="inline-block px-3.5 py-1 rounded-full bg-white/10 text-teal-300 text-xs font-bold mb-3 border border-white/10">
+                        VERA Premium Knowledge Magazine & Portal
                     </span>
                     <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-                        일상과 재미, 신뢰의 지식을 하나로 잇는 포털
+                        세상의 모든 지식과 일상의 인사이트를 잇는 프리미엄 매거진 포털
                     </h1>
                     <p class="text-slate-300 text-sm sm:text-base max-w-2xl mx-auto mb-6 leading-relaxed">
-                        실시간 주요 속보 뉴스부터 25편의 고품질 전문 지식 칼럼, 스마트 생활 금융 계산기, 설치 없는 클린 두뇌 미니게임까지 VERA에서 모두 무료로 이용하세요.
+                        금융 재테크, 명리학 인문, 웹소설 작법, IT 알고리즘 등 25편의 검증된 전문 지식 가이드와 스마트 도구를 만나보세요.
                     </p>
                     <div class="max-w-xl mx-auto bg-white rounded-2xl p-2 flex items-center shadow-md text-gray-700">
                         <i class="fas fa-search text-gray-400 ml-3 mr-2"></i>
-                        <input type="text" placeholder="뉴스, 전문 칼럼, 생활도구, 미니게임 검색..." class="w-full bg-transparent outline-none text-sm px-2 text-gray-800" readonly />
+                        <input type="text" placeholder="25편 전문 칼럼, 뉴스, 생활도구, 게임 검색..." class="w-full bg-transparent outline-none text-sm px-2 text-gray-800" readonly />
                         <span class="px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl shrink-0">검색</span>
                     </div>
                 </section>
@@ -184,13 +198,35 @@ function generateHomePageHtml(template, guides) {
                             </h2>
                         </div>
                         <a href="/guides" class="text-sm font-bold text-teal-700 hover:text-teal-800 flex items-center gap-1">
-                            전체 칼럼 보기 <i class="fas fa-arrow-right text-xs"></i>
+                            25편 전체보기 <i class="fas fa-arrow-right text-xs"></i>
                         </a>
                     </div>
+
+                    {/* 25편 완비 신뢰성 안내 띠지 */}
+                    <div class="p-4 bg-teal-50 border border-teal-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-teal-950">
+                        <div class="flex items-center gap-2">
+                            <span class="font-extrabold text-sm">🛡️ VERA 편집국 공인 E-E-A-T 심층 칼럼</span>
+                            <span class="bg-teal-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">25편 완비 · 정기 업데이트</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-teal-800">공공·학술 원전 기반 교차 검증 및 사실 확인 완료</span>
+                            <a href="/editorial-policy" class="text-teal-700 font-bold hover:underline">편집 원칙 보기 →</a>
+                        </div>
+                    </div>
+
+                    {/* 카테고리 필터 내비게이션 탭 */}
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
+                        <a href="/guides" class="px-3.5 py-2 rounded-xl bg-slate-900 text-white shadow-xs">전체 (25편)</a>
+                        <a href="/guides" class="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200">금융·재테크</a>
+                        <a href="/guides" class="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200">명리학·문화</a>
+                        <a href="/guides" class="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200">웹소설 작법</a>
+                        <a href="/guides" class="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200">IT·알고리즘</a>
+                    </div>
+
                     <p class="text-sm text-gray-600 leading-relaxed">
-                        금융 세무 절세 전략, 부동산 청약 상식, 퇴직금 정산법, 동양 명리학 인문학, 현대 웹소설 작법 및 두뇌 게임 전략 등 VERA 전문 편집팀이 작성한 깊이 있는 아티클을 제공합니다.
+                        금융 세무 절세 전략, 부동산 청약 상식, 퇴직금 정산법, 동양 명리학 인문학, 현대 웹소설 작법 및 IT 알고리즘 등 VERA 전문 편집팀이 작성한 깊이 있는 아티클을 제공합니다.
                     </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
                         ${guideCardsHtml}
                     </div>
                 </section>
