@@ -101,6 +101,8 @@ export const pool = {
 
 export const query = pool.query;
 
+export * from './utils/geo-parser.js';
+
 export default {
     query,
     pool,
