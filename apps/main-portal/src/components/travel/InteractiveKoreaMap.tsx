@@ -399,6 +399,88 @@ export default function InteractiveKoreaMap({
                                     })}
                                 </g>
 
+                                {/* 17개 광역시·도 SVG 벡터 연동 뱃지 레이어 (모바일 축소 시 1:1 비례 축소되어 절대 겹치지 않음) */}
+                                <g id="korea-province-badges" className="transition-all duration-300">
+                                    {(!selectedProvince || !isZoomed) && PROVINCES.map((prov) => {
+                                        const isSelected = selectedProvince === prov.name;
+                                        const isHovered = hoveredProvince === prov.name;
+                                        const count = provinceCounts[prov.name] || 0;
+                                        const posX = prov.centerX + (prov.badgeOffsetX || 0);
+                                        const posY = prov.centerY + (prov.badgeOffsetY || 0);
+
+                                        return (
+                                            <g
+                                                key={`svg-badge-${prov.id}`}
+                                                transform={`translate(${posX}, ${posY})`}
+                                                onClick={() => handleProvinceClick(prov)}
+                                                onMouseEnter={() => setHoveredProvince(prov.name)}
+                                                onMouseLeave={() => setHoveredProvince(null)}
+                                                className="cursor-pointer select-none transition-transform duration-200"
+                                                style={{
+                                                    filter: 'drop-shadow(0 3px 6px rgba(0,0,0,0.18))',
+                                                    transformOrigin: `${posX}px ${posY}px`,
+                                                }}
+                                            >
+                                                <g
+                                                    className="transition-transform duration-200"
+                                                    style={{
+                                                        transformOrigin: '0px 0px',
+                                                        transform: isHovered || isSelected ? 'scale(1.18)' : 'scale(1)',
+                                                    }}
+                                                >
+                                                    {/* 뱃지 배경 외곽선 캡슐 */}
+                                                    <rect
+                                                        x={count > 0 ? "-34" : "-24"}
+                                                        y="-14"
+                                                        width={count > 0 ? "68" : "48"}
+                                                        height="28"
+                                                        rx="14"
+                                                        fill={isSelected ? '#065f46' : isHovered ? '#047857' : '#ffffff'}
+                                                        stroke={isSelected ? '#ffffff' : count > 0 ? '#10b981' : '#cbd5e1'}
+                                                        strokeWidth={isSelected ? "2" : "1.5"}
+                                                    />
+                                                    {/* 지명 텍스트 */}
+                                                    <text
+                                                        x={count > 0 ? "-10" : "0"}
+                                                        y="4.5"
+                                                        textAnchor="middle"
+                                                        fontSize="12"
+                                                        fontWeight="900"
+                                                        fill={isSelected || isHovered ? '#ffffff' : '#1e293b'}
+                                                        style={{ pointerEvents: 'none' }}
+                                                    >
+                                                        {prov.shortName}
+                                                    </text>
+                                                    {/* 수량 알약 뱃지 (우측) */}
+                                                    {count > 0 && (
+                                                        <g transform="translate(13, 0)">
+                                                            <rect
+                                                                x={count > 99 ? "-12" : "-9"}
+                                                                y="-9"
+                                                                width={count > 99 ? "24" : "18"}
+                                                                height="18"
+                                                                rx="9"
+                                                                fill={isSelected || isHovered ? '#ffffff' : '#059669'}
+                                                            />
+                                                            <text
+                                                                x={count > 99 ? "0" : "0"}
+                                                                y="3.5"
+                                                                textAnchor="middle"
+                                                                fontSize="10"
+                                                                fontWeight="900"
+                                                                fill={isSelected || isHovered ? '#065f46' : '#ffffff'}
+                                                                style={{ pointerEvents: 'none' }}
+                                                            >
+                                                                {count > 999 ? '999+' : count}
+                                                            </text>
+                                                        </g>
+                                                    )}
+                                                </g>
+                                            </g>
+                                        );
+                                    })}
+                                </g>
+
                                 {/* 울릉도·독도 특별 주석 라벨 */}
                                 {(!selectedProvince || selectedProvince === '경상북도') && (
                                     <g transform="translate(635, 190)" className="pointer-events-none select-none">
@@ -463,53 +545,6 @@ export default function InteractiveKoreaMap({
                                                         }`}
                                                     >
                                                         {city.count}
-                                                    </span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-
-                                {/* 2. 전국 시점: 17개 광역시·도 대표 뱃지 (HTML 캡슐) */}
-                                {(!selectedProvince || !isZoomed) && PROVINCES.map((prov) => {
-                                    const count = provinceCounts[prov.name] || 0;
-                                    const isSelected = selectedProvince === prov.name;
-
-                                    const targetX = prov.centerX + (prov.badgeOffsetX || 0);
-                                    const targetY = prov.centerY + (prov.badgeOffsetY || 0);
-                                    const leftPct = ((targetX - vbX) / vbW) * 100;
-                                    const topPct = ((targetY - vbY) / vbH) * 100;
-
-                                    if (leftPct < 3 || leftPct > 97 || topPct < 3 || topPct > 97) return null;
-
-                                    return (
-                                        <div
-                                            key={`html-prov-${prov.id}`}
-                                            style={{ left: `${leftPct}%`, top: `${topPct}%` }}
-                                            onClick={() => handleProvinceClick(prov)}
-                                            onMouseEnter={() => setHoveredProvince(prov.name)}
-                                            onMouseLeave={() => setHoveredProvince(null)}
-                                            className={`absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer select-none transition-transform duration-150 origin-center scale-85 scale-[0.85] sm:scale-100 hover:scale-110 active:scale-95 ${
-                                                isSelected ? 'z-25 z-[25]' : 'z-15 z-[15] hover:z-30 hover:z-[30]'
-                                            }`}
-                                        >
-                                            <div
-                                                className={`flex items-center gap-1 sm:gap-1.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md text-[10px] sm:text-xs font-black border transition-all ${
-                                                    isSelected
-                                                        ? 'bg-emerald-800 text-white border-white shadow-emerald-800/30'
-                                                        : count > 0
-                                                        ? 'bg-white text-slate-800 border-emerald-400 hover:bg-emerald-600 hover:text-white'
-                                                        : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200'
-                                                }`}
-                                            >
-                                                <span>{prov.shortName}</span>
-                                                {count > 0 && (
-                                                    <span
-                                                        className={`px-1 py-0.2 sm:px-1.5 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-black ${
-                                                            isSelected ? 'bg-white text-emerald-800' : 'bg-emerald-600 text-white'
-                                                        }`}
-                                                    >
-                                                        {count > 999 ? '999+' : count}
                                                     </span>
                                                 )}
                                             </div>
