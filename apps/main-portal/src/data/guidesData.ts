@@ -7,7 +7,10 @@ export interface GuideArticle {
     categoryColor: string;
     readTime: string;
     publishedAt: string;
+    updatedAt?: string;
     author: string;
+    authorRole?: string;
+    factCheckedBy?: string;
     tags: string[];
     summary: string;
     tableOfContents: { id: string; title: string }[];
@@ -36,6 +39,9 @@ export const GUIDES_DATA: GuideArticle[] = [
         readTime: '6분',
         publishedAt: '2026-08-15',
         author: 'VERA 금융 리서치팀',
+        authorRole: '공인 금융 리서치 수석 애널리스트',
+        factCheckedBy: 'VERA 편집위원회 및 금융데이터 검증팀',
+        updatedAt: '2026-09-02',
         tags: ['미국주식', '배당투자', '포트폴리오', '금리인하', '재테크'],
         summary: '중앙은행들의 기준금리 인하 기조 속에서 예적금 금리 하락을 방어하고 인플레이션을 이겨내는 미국 배당성장주 투자 공식을 알아봅니다.',
         tableOfContents: [
@@ -109,6 +115,9 @@ export const GUIDES_DATA: GuideArticle[] = [
         readTime: '7분',
         publishedAt: '2026-08-16',
         author: 'VERA 금융 리서치팀',
+        authorRole: '국제금융 매크로 리서치 전문위원',
+        factCheckedBy: 'VERA 편집위원회 및 금융데이터 검증팀',
+        updatedAt: '2026-09-02',
         tags: ['환율', '외환투자', '달러', '거시경제', '환헤지'],
         summary: '미국 연준의 금리 결정, 한미 금리차, 무역수지가 환율에 미치는 역학 관계와 실전 환전·환헤지 투자 노하우를 정리합니다.',
         tableOfContents: [
@@ -178,6 +187,9 @@ export const GUIDES_DATA: GuideArticle[] = [
         readTime: '5분',
         publishedAt: '2026-08-17',
         author: 'VERA 금융 리서치팀',
+        authorRole: '자산배분 및 적립식 포트폴리오 전략가',
+        factCheckedBy: 'VERA 편집위원회 및 금융데이터 검증팀',
+        updatedAt: '2026-09-03',
         tags: ['복리', '적립식투자', '시드머니', '재테크기초', '재정계획'],
         summary: '알베르트 아인슈타인이 세계 8대 불가사의라 극찬한 복리 효과를 수치로 검증하고, 실패 없는 적립식 지수 투자 루틴을 알아봅니다.',
         tableOfContents: [
@@ -248,6 +260,9 @@ export const GUIDES_DATA: GuideArticle[] = [
         readTime: '6분',
         publishedAt: '2026-07-30',
         author: 'VERA 금융 리서치팀',
+        authorRole: '자산관리 및 금융수학 리서처',
+        factCheckedBy: 'VERA 편집위원회 및 금융데이터 검증팀',
+        updatedAt: '2026-09-03',
         tags: ['복리계산기', '1억만들기', '적금vs주식', '자산형성', '재테크시뮬레이션'],
         summary: '월 100만 원 저축 시 3% 예적금과 8% 지수 투자가 5년, 10년 후 만들어내는 자산 격차를 복리 계산 수식으로 검증합니다.',
         tableOfContents: [
@@ -315,6 +330,9 @@ export const GUIDES_DATA: GuideArticle[] = [
         readTime: '6분',
         publishedAt: '2026-07-24',
         author: 'VERA 금융 리서치팀',
+        authorRole: '글로벌 인덱스 펀드 분석가',
+        factCheckedBy: 'VERA 편집위원회 및 금융데이터 검증팀',
+        updatedAt: '2026-09-03',
         tags: ['SP500', '워런버핏', '인덱스펀드', '지수투자', '장기투자'],
         summary: '개별 종목 발굴 스트레스 없이 미국을 대표하는 500대 초우량 혁신 기업의 성장에 무임승차하는 인덱스 펀드의 승리 공식을 알아봅니다.',
         tableOfContents: [
@@ -379,6 +397,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '6분',
         publishedAt: '2026-08-14',
         author: 'VERA 인문학 연구팀',
+        authorRole: '동양학 고전 문헌 및 천문역법 연구위원',
+        factCheckedBy: 'VERA 전통문화 연구자문위원회',
+        updatedAt: '2026-09-04',
         tags: ['사주', '만세력', '사주팔자', '명리학', '10간12지'],
         summary: '동양의 오랜 통계학이자 자연 철학인 명리학의 4주(년·월·일·시)와 8글자가 개인의 고유한 기질을 어떻게 표현하는지 살펴봅니다.',
         tableOfContents: [
@@ -446,6 +467,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '6분',
         publishedAt: '2026-08-13',
         author: 'VERA 인문학 연구팀',
+        authorRole: '음양오행 철학 및 라이프밸런스 전문위원',
+        factCheckedBy: 'VERA 전통문화 연구자문위원회',
+        updatedAt: '2026-09-04',
         tags: ['음양오행', '상생상극', '개운법', '풍수', '멘탈케어'],
         summary: '내 사주에 부족하거나 과다한 오행 에너지를 찾아 색상, 방향, 취미, 음식 등으로 일상의 조화와 활력을 채우는 구체적인 가이드입니다.',
         tableOfContents: [
@@ -524,6 +548,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '7분',
         publishedAt: '2026-08-12',
         author: 'VERA 인문학 연구팀',
+        authorRole: '명리학 기반 성향진단 수석 연구위원',
+        factCheckedBy: 'VERA 전통문화 연구자문위원회',
+        updatedAt: '2026-09-04',
         tags: ['십신', '십성', '직업적성', '진로상담', '성격유형'],
         summary: '나(일간)를 기준으로 맺어지는 10가지 인간관계와 심리 유형론인 십신을 현대적인 직업 및 MBTI적 성향과 매칭하여 분석합니다.',
         tableOfContents: [
@@ -606,6 +633,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '6분',
         publishedAt: '2026-07-29',
         author: 'VERA 인문학 연구팀',
+        authorRole: '동양철학 및 명리운세 분석위원',
+        factCheckedBy: 'VERA 전통문화 연구자문위원회',
+        updatedAt: '2026-09-04',
         tags: ['신년운세', '대운', '세운', '사주해석', '운명관리'],
         summary: '사주팔자 원국이 자동차라면 대운은 도로 환경입니다. 비포장도로와 고속도로를 미리 알고 대비하는 명리학적 라이프 사이클 전략을 소개합니다.',
         tableOfContents: [
@@ -670,6 +700,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '6분',
         publishedAt: '2026-08-11',
         author: 'VERA 콘텐츠 트렌드팀',
+        authorRole: '스토리 작법 전문 기획위원',
+        factCheckedBy: 'VERA 디지털콘텐츠 검증팀',
+        updatedAt: '2026-09-05',
         tags: ['웹소설', '회빙환', '스토리텔링', '웹툰', '콘텐츠트렌드'],
         summary: '웹소설 독자들이 왜 아는 맛의 클리셰에 열광하는지, 그리고 성공적인 회빙환 작품들이 답답함 없이 시원함을 연출하는 비결을 짚어봅니다.',
         tableOfContents: [
@@ -738,6 +771,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '7분',
         publishedAt: '2026-08-10',
         author: 'VERA 콘텐츠 트렌드팀',
+        authorRole: '스토리 아키텍트 및 서사구조 분석가',
+        factCheckedBy: 'VERA 디지털콘텐츠 검증팀',
+        updatedAt: '2026-09-05',
         tags: ['작법', '웹소설작가', '플롯', '시나리오', '스토리텔링'],
         summary: '웹소설 지망생과 신인 작가를 위해 1화 5,500자의 밀도 높은 씬 구성 원칙과 200화 완결을 이끄는 장기 플롯 트리거를 공유합니다.',
         tableOfContents: [
@@ -812,6 +848,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '6분',
         publishedAt: '2026-07-28',
         author: 'VERA 콘텐츠 트렌드팀',
+        authorRole: '캐릭터 심리학 및 서사 극작 전문위원',
+        factCheckedBy: 'VERA 디지털콘텐츠 검증팀',
+        updatedAt: '2026-09-05',
         tags: ['빌런작법', '캐릭터설계', '웹소설', '스토리창작', '갈등구조'],
         summary: '주인공의 가치관과 정면으로 충돌하는 신념형 빌런의 매력적인 동기 부여와 참교육의 카타르시스를 배가시키는 악역 배치 테크닉을 정리합니다.',
         tableOfContents: [
@@ -874,6 +913,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '5분',
         publishedAt: '2026-08-09',
         author: 'VERA 생활경제팀',
+        authorRole: '부동산 공공데이터 및 면적계량 전문위원',
+        factCheckedBy: 'VERA 공공데이터 검증팀',
+        updatedAt: '2026-09-06',
         tags: ['평수계산', '제곱미터', '부동산', '전용면적', '아파트분양'],
         summary: '복잡한 아파트 면적 표기법을 명쾌하게 해설하고, 암산으로 3초 만에 ㎡를 평수로 변환하는 스마트한 계산 팁을 소개합니다.',
         tableOfContents: [
@@ -950,6 +992,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '5분',
         publishedAt: '2026-08-08',
         author: 'VERA 생활경제팀',
+        authorRole: '생활법률 및 공공행정 분석위원',
+        factCheckedBy: 'VERA 공공데이터 검증팀',
+        updatedAt: '2026-09-06',
         tags: ['만나이', '나이계산기', '생활법률', '만나이통일법', '행정상식'],
         summary: '세는 나이, 연 나이, 만 나이의 개념을 명확히 정리하고 생일 전후 만 나이 계산 공식과 실생활 변경 사항을 체크합니다.',
         tableOfContents: [
@@ -1022,6 +1067,9 @@ S&P 500 지수의 가장 위대한 힘은 '알아서 1등 기업을 채워 넣�
         readTime: '5분',
         publishedAt: '2026-08-07',
         author: 'VERA 자기계발 연구팀',
+        authorRole: '목표관리 시스템 및 생산성 코칭 수석연구원',
+        factCheckedBy: 'VERA 교육콘텐츠 검증팀',
+        updatedAt: '2026-09-06',
         tags: ['디데이', '시간관리', '목표달성', '생산성', '습관형성'],
         summary: '막연한 계획을 현실로 바꾸는 D-Day 디데이 계산 활용법과 파레토 법칙 및 포모도로 기법을 결합한 하루 몰입 전략을 소개합니다.',
         tableOfContents: [
@@ -1087,6 +1135,9 @@ D-Day(디데이)를 설정한다는 것은 무한한 시간의 흐름 속에 구
         readTime: '5분',
         publishedAt: '2026-07-27',
         author: 'VERA 생활경제팀',
+        authorRole: '금융상품 및 여신금융 이자계산 전문위원',
+        factCheckedBy: 'VERA 금융소비자정보 검증팀',
+        updatedAt: '2026-09-06',
         tags: ['대출이자계산기', '원리금균등', '원금균등', '주담대', '금융상식'],
         summary: '1억 대출 시 상환 방식에 따라 달라지는 월 납입금 추이와 총 이자 차이를 시뮬레이션하고 중도상환수수료 절약 팁을 제시합니다.',
         tableOfContents: [
@@ -1163,6 +1214,9 @@ D-Day(디데이)를 설정한다는 것은 무한한 시간의 흐름 속에 구
         readTime: '6분',
         publishedAt: '2026-08-02',
         author: 'VERA 기술 연구소',
+        authorRole: '알고리즘 수석 엔지니어',
+        factCheckedBy: 'VERA 웹기술표준 검증팀',
+        updatedAt: '2026-09-07',
         tags: ['JSON', '개발자도구', '웹개발', 'API통신', '문법검증'],
         summary: 'REST API 및 프론트엔드-백엔드 연동에서 필수적인 JSON 데이터의 유효성 검사 노하우와 트레일링 콤마, 따옴표 탈출 등 주요 오류 원인을 분석합니다.',
         tableOfContents: [
@@ -1231,6 +1285,9 @@ API 통신에서 JSON 포맷의 사소한 문법 불일치는 전체 프론트�
         readTime: '8분',
         publishedAt: '2026-08-20',
         author: 'VERA 두뇌전략 연구소',
+        authorRole: '퍼즐 알고리즘 및 조합논리학 수석연구원',
+        factCheckedBy: 'VERA 논리게임 검증팀',
+        updatedAt: '2026-09-08',
         tags: ['스도쿠', '퍼즐공략', '두뇌트레이닝', 'X-Wing', '후보수소거'],
         summary: '초보자 수준의 감에 의한 추측을 벗어나, 확실한 논리적 근거로 단 한 칸의 오차도 없이 스도쿠 고난도 퍼즐을 격파하는 체계적인 해법을 제시합니다.',
         tableOfContents: [
@@ -1310,6 +1367,9 @@ VERA의 무설치 [일일 스도쿠] 미니게임을 통해 초급부터 단계�
         readTime: '8분',
         publishedAt: '2026-08-20',
         author: 'VERA 두뇌전략 연구소',
+        authorRole: '카드 게임 이론 및 공간최적화 연구위원',
+        factCheckedBy: 'VERA 논리게임 검증팀',
+        updatedAt: '2026-09-08',
         tags: ['프리셀', '솔리테어', '카드게임', '공간활용', '두뇌퍼즐'],
         summary: '카드가 뒤집혀 있지 않고 52장이 모두 공개된 정통 프리셀에서 임시 저장소(FreeCell)와 빈 테이블 열(Column)을 복합 활용해 막힌 수를 뚫어내는 필승 공식을 안내합니다.',
         tableOfContents: [
@@ -1391,6 +1451,9 @@ $$\text{최대 이동 장수 } M = (1 + F) \times 2^E$$
         readTime: '7분',
         publishedAt: '2026-08-20',
         author: 'VERA 두뇌전략 연구소',
+        authorRole: '휴리스틱 게임 전략 및 수리퍼즐 분석위원',
+        factCheckedBy: 'VERA 논리게임 검증팀',
+        updatedAt: '2026-09-08',
         tags: ['2048', '퍼즐전략', '수학퍼즐', '코너공략', '두뇌게임'],
         summary: '무작위로 네 방향을 누르면 512에서 막힙니다. 4개 방향키 중 하나를 완전히 봉인하고 지그재그 체인을 형성해 2048 타일을 손쉽게 만드는 시스템을 소개합니다.',
         tableOfContents: [
@@ -1476,6 +1539,9 @@ $$\text{최대 이동 장수 } M = (1 + F) \times 2^E$$
         readTime: '8분',
         publishedAt: '2026-08-20',
         author: 'VERA 두뇌전략 연구소',
+        authorRole: '확률 통계 및 패턴인식 분석 수석연구원',
+        factCheckedBy: 'VERA 논리게임 검증팀',
+        updatedAt: '2026-09-08',
         tags: ['지뢰찾기', '확률론', '패턴공략', '두뇌게임', '클래식게임'],
         summary: '벽면에 인접한 1과 2의 조합만으로 지뢰의 위치를 100% 특정하는 필수 기하 패턴과 불가피한 50:50 확률 상황에서의 최적 의사결정 트리를 소개합니다.',
         tableOfContents: [
@@ -1554,6 +1620,9 @@ VERA [지뢰찾기 클래식]을 통해 오늘 당신의 집중력과 패턴 인
         readTime: '8분',
         publishedAt: '2026-08-20',
         author: 'VERA 게임문화 리서치팀',
+        authorRole: '게임 아키텍처 및 미디어 역사 연구위원',
+        factCheckedBy: 'VERA 문화콘텐츠 검증팀',
+        updatedAt: '2026-09-08',
         tags: ['레트로게임', '슈퍼패미컴', '게임디자인', '픽셀아트', '게임역사'],
         summary: '극도로 제한된 하드웨어 용량(수 메가바이트) 속에서 피어난 불멸의 예술. 현대 최신 3A급 게임들조차 여전히 계승하고 있는 16비트 명작들의 게임 메카닉을 심층 분석합니다.',
         tableOfContents: [
@@ -1626,6 +1695,9 @@ VERA [지뢰찾기 클래식]을 통해 오늘 당신의 집중력과 패턴 인
         readTime: '7분',
         publishedAt: '2026-08-20',
         author: 'VERA 테크 아키텍처팀',
+        authorRole: '웹 플랫폼 아키텍트 & 데이터 통신 수석 엔지니어',
+        factCheckedBy: 'VERA 웹기술표준 검증팀',
+        updatedAt: '2026-09-09',
         tags: ['Base64', '웹최적화', '네트워크', '인코딩', '프론트엔드'],
         summary: 'HTTP 요청 횟수를 줄이기 위한 Base64 인라인 기법이 브라우저 캐싱과 번들 크기에 미치는 영향을 벤치마크하고, 최적의 실무 적용 기준을 제시합니다.',
         tableOfContents: [
@@ -1714,6 +1786,9 @@ VERA 포털의 [Base64 변환기]를 활용하면 브라우저에서 안전하�
         readTime: '7분',
         publishedAt: '2026-08-20',
         author: 'VERA 테크 아키텍처팀',
+        authorRole: '프론트엔드 그래픽스 및 렌더링 최적화 전문위원',
+        factCheckedBy: 'VERA 웹기술표준 검증팀',
+        updatedAt: '2026-09-09',
         tags: ['SVG', '웹최적화', '벡터그래픽', '프론트엔드', '클린코드'],
         summary: '해상도 독립적인 차세대 벡터 표준 SVG를 웹 컴포넌트로 사용할 때 발생하는 성능 저하 요인을 짚어보고, 자동화 도구(SVGO)와 수작업 클린 코딩으로 초경량 에셋을 만드는 법을 다룹니다.',
         tableOfContents: [
@@ -1797,6 +1872,9 @@ SVG(Scalable Vector Graphics)는 픽셀의 격자로 이미지를 그리는 래�
         readTime: '8분',
         publishedAt: '2026-08-20',
         author: 'VERA 미디어분석팀',
+        authorRole: '생성형 AI 미디어 분석 및 정보신뢰도 수석연구원',
+        factCheckedBy: 'VERA 편집위원회 및 데이터 검증팀',
+        updatedAt: '2026-09-09',
         tags: ['AI뉴스', '미디어리터러시', '가짜뉴스', '팩트체크', '시사정보'],
         summary: '자극적인 클릭베이트 낚시성 기사와 편향된 알고리즘의 덫에서 벗어나, AI 요약 도구를 주도적으로 활용하며 비판적 사고력을 지키는 5대 실천 수칙을 안내합니다.',
         tableOfContents: [

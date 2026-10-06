@@ -70,7 +70,10 @@ async function loadGuides() {
         const categoryLabel = block.match(/categoryLabel:\s*'([^']+)'/)?.[1];
         const readTime = block.match(/readTime:\s*'([^']+)'/)?.[1];
         const publishedAt = block.match(/publishedAt:\s*'([^']+)'/)?.[1];
+        const updatedAt = block.match(/updatedAt:\s*'([^']+)'/)?.[1];
         const author = block.match(/author:\s*'([^']+)'/)?.[1];
+        const authorRole = block.match(/authorRole:\s*'([^']+)'/)?.[1];
+        const factCheckedBy = block.match(/factCheckedBy:\s*'([^']+)'/)?.[1];
         const summary = block.match(/summary:\s*'([^']+)'/)?.[1];
         const contentMatch = block.match(/content:\s*`([\s\S]*?)`/);
         const content = contentMatch ? contentMatch[1] : '';
@@ -83,7 +86,10 @@ async function loadGuides() {
                 categoryLabel,
                 readTime,
                 publishedAt,
+                updatedAt,
                 author,
+                authorRole,
+                factCheckedBy,
                 summary,
                 content
             });
@@ -459,16 +465,22 @@ function generateArticleHtml(template, guide, allGuides) {
 
     const jsonLd = {
         "@context": "https://schema.org",
-        "@type": "Article",
+        "@type": guide.category === 'tech' ? "TechArticle" : "Article",
         "headline": guide.title,
         "description": guide.description,
         "author": {
-            "@type": "Organization",
-            "name": guide.author || "VERA 편집팀"
+            "@type": "Person",
+            "name": guide.author || "VERA 편집팀",
+            ...(guide.authorRole ? { "jobTitle": guide.authorRole } : {}),
+            "worksFor": {
+                "@type": "Organization",
+                "name": "VERA",
+                "url": "https://veranex.app"
+            }
         },
         "publisher": {
             "@type": "Organization",
-            "name": "VERA (베라)",
+            "name": "VERA",
             "url": "https://veranex.app",
             "logo": {
                 "@type": "ImageObject",
@@ -476,7 +488,7 @@ function generateArticleHtml(template, guide, allGuides) {
             }
         },
         "datePublished": guide.publishedAt,
-        "dateModified": guide.publishedAt,
+        "dateModified": guide.updatedAt || guide.publishedAt,
         "mainEntityOfPage": {
             "@type": "WebPage",
             "@id": canonical
@@ -510,16 +522,20 @@ function generateArticleHtml(template, guide, allGuides) {
 
                 <!-- Article Header -->
                 <header class="mb-8 pb-8 border-b border-gray-200">
-                    <div class="flex items-center gap-2 mb-3">
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
                         <span class="px-2.5 py-0.5 rounded text-xs font-bold bg-teal-50 text-teal-700 border border-teal-200">${guide.categoryLabel}</span>
+                        <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <i class="fas fa-shield-alt text-emerald-600"></i> 🛡️ 팩트체크 완료 · ${guide.factCheckedBy || 'VERA 데이터 검증팀'}
+                        </span>
                         <span class="text-xs text-gray-500 font-medium">${guide.readTime} 소요</span>
                         <span class="text-xs text-gray-400">·</span>
-                        <time datetime="${guide.publishedAt}" class="text-xs text-gray-500 font-medium">${guide.publishedAt}</time>
+                        <time datetime="${guide.publishedAt}" class="text-xs text-gray-500 font-medium">발행: ${guide.publishedAt}</time>
+                        ${guide.updatedAt ? `<span class="text-xs text-gray-600 font-medium bg-gray-100 px-2 py-0.5 rounded">개정: ${guide.updatedAt}</span>` : ''}
                     </div>
                     <h1 class="text-3xl sm:text-4xl font-black text-gray-900 leading-tight mb-4" itemprop="headline">${guide.title}</h1>
                     <p class="text-lg text-gray-600 leading-relaxed font-normal" itemprop="description">${guide.description}</p>
                     <div class="mt-4 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                        <span>작성자: <span itemprop="author" class="font-medium text-gray-700">${guide.author}</span></span>
+                        <span>작성자: <span itemprop="author" class="font-medium text-gray-700">${guide.author}</span>${guide.authorRole ? ` (${guide.authorRole})` : ''}</span>
                         <span>·</span>
                         <span class="inline-flex items-center gap-1 text-emerald-700 font-medium">
                             <i class="fas fa-check-circle text-emerald-600"></i> 팩트체크 검증완료
@@ -552,21 +568,29 @@ function generateArticleHtml(template, guide, allGuides) {
                     </div>
                 </section>
 
-                <!-- Article Footer -->
+                <!-- Article Footer: Author Profile & E-E-A-T Commitment -->
                 <footer class="mt-8 pt-6 border-t border-gray-100 space-y-4">
-                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs text-gray-600 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                        <div>
-                            <p class="font-semibold text-gray-800">🛡️ VERA 신뢰 및 검증 정책 (E-E-A-T)</p>
-                            <p class="mt-0.5 text-gray-500">본 콘텐츠는 정부 공서 및 공신력 있는 공식 가이드라인을 토대로 VERA 전문 편집팀의 팩트체크를 거쳤습니다.</p>
+                    <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs text-gray-600 space-y-3">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-gray-200 pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-gray-900 text-sm">집필진: ${guide.author}</span>
+                                ${guide.authorRole ? `<span class="bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded text-[11px] border border-blue-200">${guide.authorRole}</span>` : ''}
+                            </div>
+                            <span class="text-emerald-700 font-bold">🛡️ 검증: ${guide.factCheckedBy || 'VERA 데이터 검증팀'}</span>
                         </div>
-                        <a href="/editorial-policy" class="shrink-0 text-teal-700 font-bold hover:underline">편집 정책 보기 →</a>
+                        <p class="text-gray-600 leading-relaxed">
+                            본 아티클은 정확하고 검증된 공공 및 학술 데이터를 기반으로 작성되었으며, 상업적 이해관계 없이 독립적으로 검수되었습니다. 사실관계 오류 제보는 <a href="/editorial-policy" class="text-teal-700 font-bold hover:underline">편집국 팩트체크 정책</a>에 따라 처리됩니다.
+                        </p>
+                        <p class="text-[11px] text-gray-400">
+                            ※ 본 가이드는 일반적인 지식 제공을 목적으로 하며 개별 법률·재무 상담을 대신할 수 없습니다.
+                        </p>
                     </div>
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <a href="/guides" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition-all">
                             ← 전체 가이드 목록으로 돌아가기
                         </a>
                         <div class="text-xs text-gray-400">
-                            최종 검수일: ${guide.publishedAt} · VERA 편집팀
+                            최종 개정일: ${guide.updatedAt || guide.publishedAt} · 검증: ${guide.factCheckedBy || 'VERA 데이터 검증팀'}
                         </div>
                     </div>
                 </footer>
