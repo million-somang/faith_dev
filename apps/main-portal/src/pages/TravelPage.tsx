@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
 import { BannerSlot } from '../components/BannerSlot';
-import InteractiveKoreaMap from '../components/travel/InteractiveKoreaMap';
+import InteractiveKoreaMap, { MapCountsData } from '../components/travel/InteractiveKoreaMap';
 
 const API_BASE_URL = '';
 
@@ -63,26 +63,26 @@ export default function TravelPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
     const [selectedCity, setSelectedCity] = useState<string | null>(null);
-    const [allMapArticles, setAllMapArticles] = useState<TravelArticle[]>([]);
+    const [mapCounts, setMapCounts] = useState<MapCountsData | null>(null);
     const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const limit = 12;
 
-    // 지도 렌더링용 전체 여행지 목록 1회 일괄 조회 (초경량 전국 명소 엔드포인트)
+    // 지도 렌더링용 전국 도/시별 사전 집계 수량 1회 일괄 조회 (초고속 GET /api/travel/map-counts)
     useEffect(() => {
-        const fetchMapSpots = async () => {
+        const fetchMapCounts = async () => {
             try {
-                const res = await axios.get(`${API_BASE_URL}/api/travel/map-spots`);
+                const res = await axios.get(`${API_BASE_URL}/api/travel/map-counts`);
                 if (res.data?.success) {
-                    setAllMapArticles(res.data.articles || []);
+                    setMapCounts(res.data);
                 }
             } catch (err) {
-                console.error('[Fetch Map Spots Error]', err);
+                console.error('[Fetch Map Counts Error]', err);
             }
         };
-        fetchMapSpots();
+        fetchMapCounts();
     }, []);
 
     useEffect(() => {
@@ -241,7 +241,7 @@ export default function TravelPage() {
 
                 {/* 2. 인터랙티브 대한민국 감성 여행 지도 탐색기 */}
                 <InteractiveKoreaMap
-                    articles={allMapArticles.length > 0 ? allMapArticles : articles}
+                    counts={mapCounts}
                     selectedProvince={selectedProvince}
                     selectedCity={selectedCity}
                     onSelectLocation={handleSelectLocation}

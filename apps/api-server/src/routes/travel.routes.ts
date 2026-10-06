@@ -2,8 +2,13 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pool } from '@faithportal/database';
+import { pool, parseKoreanLocation } from '@faithportal/database';
 import { optionalAuth, SessionUser } from '../middleware/auth.js';
+import {
+    getTravelMapCounts,
+    syncTravelMapCounts,
+    adjustTravelCount
+} from '../services/travel-counter.service.js';
 
 export const travelRoutes = new Hono<{ Variables: { user: SessionUser | null } }>();
 
@@ -210,13 +215,57 @@ travelRoutes.get('/api/travel', async (c) => {
     }
 });
 
+// 1-1. GET /api/travel/map-counts - 지도 전용 시도/시군구 사전 집계 수량 조회 (초고속 캐시 API)
+travelRoutes.get('/api/travel/map-counts', async (c) => {
+    try {
+        const counts = await getTravelMapCounts();
+        c.header('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+        return c.json(counts);
+    } catch (error: any) {
+        console.error('[Get Travel Map Counts Error]', error);
+        return c.json({ success: false, message: 'Failed to fetch map counts: ' + error.message }, 500);
+    }
+});
+
+// 1-2. POST /api/travel/sync-counts - 관리자/내부용 지도 카운터 전체 재동기화 API
+travelRoutes.post('/api/travel/sync-counts', async (c) => {
+    const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
+    const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
+    const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
+    const user = c.get('user');
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026' || apiKeyHeader === 'vera-news-api-key-2026')) || (user && user.role === 'admin');
+
+    if (!isAuthorized) {
+        return c.json({
+            success: false,
+            error: {
+                code: 401,
+                message: 'Unauthorized: Invalid or missing API Key. Please provide X-API-KEY header.'
+            }
+        }, 401);
+    }
+
+    try {
+        await syncTravelMapCounts();
+        invalidateTravelCache();
+        return c.json({
+            success: true,
+            message: '여행 지도 수량 카운터가 성공적으로 전체 동기화되었습니다.'
+        });
+    } catch (error: any) {
+        console.error('[Sync Travel Map Counts Error]', error);
+        return c.json({ success: false, message: 'Failed to sync map counts: ' + error.message }, 500);
+    }
+});
+
 export async function prewarmMapSpotsCache() {
     try {
         const query = `
-            SELECT id, title, destination, region, category, thumbnail, location_address
+            SELECT id, title, destination, region, category, thumbnail, location_address, province, city
             FROM travel_articles 
-            WHERE (hidden IS NULL OR hidden = 0)
-            ORDER BY id ASC
+            WHERE (hidden IS NULL OR hidden = 0) AND province NOT IN ('해외', '기타', '')
+            ORDER BY is_featured DESC, view_count DESC, published_at DESC
+            LIMIT 20
         `;
         const result = await pool.query(query);
         cachedMapSpots = {
@@ -225,7 +274,7 @@ export async function prewarmMapSpotsCache() {
             articles: result.rows
         };
         mapSpotsCacheTime = Date.now();
-        console.log(`[Travel Cache] Prewarmed ${result.rows.length} map spots into memory.`);
+        console.log(`[Travel Cache] Prewarmed ${result.rows.length} top map spots into memory.`);
     } catch (e) {
         console.error('[Travel Cache] Prewarm error:', e);
     }
@@ -236,37 +285,61 @@ setTimeout(() => {
     prewarmMapSpotsCache();
 }, 1000);
 
-// 1-1. GET /api/travel/map-spots - 인터랙티브 지도 전용 전국 명소 초경량 캐시 조회 (6.4MB -> 150KB, 47초 -> 0.01초)
+// 1-3. GET /api/travel/map-spots - 인터랙티브 지도 전용 명소 조회 (특정 지역 10개, 미지정 시 전국 추천 20개)
 travelRoutes.get('/api/travel/map-spots', async (c) => {
-    // 1. 메모리 캐시 유효 시 즉시 반환 (0ms)
+    const province = c.req.query('province');
+    const city = c.req.query('city');
+
+    const hasSpecificLocation = Boolean((province && province !== 'all') || (city && city !== 'all'));
+
+    // 1. 특정 지역 미지정 시 메모리 캐시 유효하면 즉시 반환 (전국 상위 20개)
     const now = Date.now();
-    if (cachedMapSpots && (now - mapSpotsCacheTime < MAP_SPOTS_CACHE_TTL)) {
+    if (!hasSpecificLocation && cachedMapSpots && (now - mapSpotsCacheTime < MAP_SPOTS_CACHE_TTL)) {
         c.header('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
         c.header('X-Cache', 'HIT');
         return c.json(cachedMapSpots);
     }
 
     try {
-        // 지도 표시에 꼭 필요한 경량 컬럼만 선택 (무거운 summary, ai_summary 배제하여 97% 압축)
-        const query = `
-            SELECT id, title, destination, region, category, thumbnail, location_address
+        // 지도 표시에 꼭 필요한 경량 컬럼만 선택
+        let query = `
+            SELECT id, title, destination, region, category, thumbnail, location_address, province, city
             FROM travel_articles 
             WHERE (hidden IS NULL OR hidden = 0)
-            ORDER BY id ASC
         `;
-        const result = await pool.query(query);
+        const params: any[] = [];
+
+        if (province && province !== 'all') {
+            query += ` AND province = $${params.length + 1}`;
+            params.push(province);
+        }
+
+        if (city && city !== 'all') {
+            query += ` AND city = $${params.length + 1}`;
+            params.push(city);
+        }
+
+        if (!hasSpecificLocation) {
+            query += ` AND province NOT IN ('해외', '기타', '')`;
+            query += ` ORDER BY is_featured DESC, view_count DESC, published_at DESC LIMIT 20`;
+        } else {
+            query += ` ORDER BY is_featured DESC, view_count DESC, published_at DESC LIMIT 10`;
+        }
+
+        const result = await pool.query(query, params);
         const responseData = {
             success: true,
             total: result.rows.length,
             articles: result.rows
         };
 
-        // 캐시 저장
-        cachedMapSpots = responseData;
-        mapSpotsCacheTime = now;
+        if (!hasSpecificLocation) {
+            cachedMapSpots = responseData;
+            mapSpotsCacheTime = now;
+            c.header('X-Cache', 'MISS');
+        }
 
         c.header('Cache-Control', 'public, max-age=1800, stale-while-revalidate=3600');
-        c.header('X-Cache', 'MISS');
         return c.json(responseData);
     } catch (error: any) {
         console.error('[Get Travel Map Spots Error]', error);
@@ -497,6 +570,12 @@ const handleCreateTravel = async (c: any) => {
         const finalDuration = duration || null;
         const finalCost = estimated_cost || estimatedCost || null;
         const finalAddress = location_address || locationAddress || null;
+
+        // 대한민국 17개 시도/시군구 정밀 파싱
+        const parsedLocation = parseKoreanLocation(finalAddress, destination.trim(), normalizedRegion);
+        const finalProvince = parsedLocation.province;
+        const finalCity = parsedLocation.city;
+
         const finalAuthor = author || 'RoofAI 여행 큐레이터';
         const finalSource = source || null;
         const finalSourceUrl = source_url || sourceUrl || null;
@@ -521,13 +600,13 @@ const handleCreateTravel = async (c: any) => {
             INSERT INTO travel_articles (
                 title, destination, region, category, summary, ai_summary, content,
                 travel_tips, thumbnail, gallery, best_season, duration, estimated_cost,
-                location_address, tags, author, source, source_url, is_featured, metadata,
+                location_address, province, city, tags, author, source, source_url, is_featured, metadata,
                 view_count, like_count, published_at, created_at, updated_at
             ) VALUES (
                 $1, $2, $3, $4, $5, $6, $7,
                 $8, $9, $10, $11, $12, $13,
-                $14, $15, $16, $17, $18, $19, $20,
-                0, 0, $21, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                $14, $15, $16, $17, $18, $19, $20, $21, $22,
+                0, 0, $23, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
             )
         `;
 
@@ -546,6 +625,8 @@ const handleCreateTravel = async (c: any) => {
             finalDuration,
             finalCost,
             finalAddress,
+            finalProvince,
+            finalCity,
             finalTags,
             finalAuthor,
             finalSource,
@@ -557,6 +638,14 @@ const handleCreateTravel = async (c: any) => {
 
         const insertRes = await pool.query(insertQuery, params);
         const newId = insertRes.lastInsertRowid;
+
+        // 신규 기사 등록 시 지도 카운터 실시간 원자적 반영 (+1) 및 캐시 무효화
+        try {
+            await adjustTravelCount(finalProvince, finalCity, 1);
+            invalidateTravelCache();
+        } catch (counterErr) {
+            console.error('[Adjust Travel Count Error]', counterErr);
+        }
 
         // 생성된 항목 조회
         let createdArticle: any = null;
@@ -573,6 +662,8 @@ const handleCreateTravel = async (c: any) => {
                 title: title.trim(),
                 destination: destination.trim(),
                 region: normalizedRegion,
+                province: finalProvince,
+                city: finalCity,
                 category: normalizedCategory,
                 published_at: finalPublishedAt
             },
