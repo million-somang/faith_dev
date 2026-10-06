@@ -804,6 +804,15 @@ app.notFound((c) => {
 });
 
 // Serve frontend SPA (Fallback for all non-API routes)
+app.use('*', async (c, next) => {
+    await next();
+    const reqPath = c.req.path;
+    if (reqPath === '/' || reqPath.endsWith('.html') || !reqPath.includes('.')) {
+        c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
+        c.header('Pragma', 'no-cache');
+        c.header('Expires', '0');
+    }
+});
 app.use('/*', serveStatic({ root: './apps/main-portal/dist' }));
 app.get('*', serveStatic({ path: './apps/main-portal/dist/index.html' }));
 
