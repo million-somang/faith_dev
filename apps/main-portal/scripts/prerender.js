@@ -142,7 +142,7 @@ function generateHomePageHtml(template, guides) {
 
     const prerenderBody = `
         <div class="min-h-screen bg-gray-50 flex flex-col font-sans text-gray-900">
-            {/* 1. 상단 공식 헤더 */}
+            <!-- 1. 상단 공식 헤더 -->
             <header class="bg-white border-b border-gray-200 py-3.5 px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
                 <div class="max-w-6xl mx-auto flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -167,9 +167,9 @@ function generateHomePageHtml(template, guides) {
                 </div>
             </header>
 
-            {/* 2. 메인 콘텐츠 */}
+            <!-- 2. 메인 콘텐츠 -->
             <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full space-y-10">
-                {/* 포털 공식 히어로 배너 */}
+                <!-- 포털 공식 히어로 배너 -->
                 <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-10 shadow-lg text-center">
                     <span class="inline-block px-3.5 py-1 rounded-full bg-white/10 text-teal-300 text-xs font-bold mb-3 border border-white/10">
                         VERA Premium Knowledge Magazine & Portal
@@ -187,7 +187,7 @@ function generateHomePageHtml(template, guides) {
                     </div>
                 </section>
 
-                {/* 지식 가이드 & 전문 칼럼 섹션 (AdSense 핵심 고가치 콘텐츠) */}
+                <!--  -->
                 <section class="space-y-4">
                     <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                         <div>
@@ -202,7 +202,7 @@ function generateHomePageHtml(template, guides) {
                         </a>
                     </div>
 
-                    {/* 25편 완비 신뢰성 안내 띠지 */}
+                    <!--  -->
                     <div class="p-4 bg-teal-50 border border-teal-200 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-teal-950">
                         <div class="flex items-center gap-2">
                             <span class="font-extrabold text-sm">🛡️ VERA 편집국 공인 E-E-A-T 심층 칼럼</span>
@@ -214,7 +214,7 @@ function generateHomePageHtml(template, guides) {
                         </div>
                     </div>
 
-                    {/* 카테고리 필터 내비게이션 탭 */}
+                    <!--  -->
                     <div class="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-bold">
                         <a href="/guides" class="px-3.5 py-2 rounded-xl bg-slate-900 text-white shadow-xs">전체 (25편)</a>
                         <a href="/guides" class="px-3.5 py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200">금융·재테크</a>
@@ -231,7 +231,7 @@ function generateHomePageHtml(template, guides) {
                     </div>
                 </section>
 
-                {/* 스마트 생활도구 & 계산기 유틸리티 센터 */}
+                <!--  -->
                 <section class="space-y-4 pt-4">
                     <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                         <div>
@@ -277,7 +277,7 @@ function generateHomePageHtml(template, guides) {
                     </div>
                 </section>
 
-                {/* 클린 브라우저 미니게임 라인업 */}
+                <!--  -->
                 <section class="space-y-4 pt-4">
                     <div class="flex items-center justify-between border-b border-gray-200 pb-3">
                         <div>
@@ -321,7 +321,7 @@ function generateHomePageHtml(template, guides) {
                 </section>
             </main>
 
-            {/* 3. E-E-A-T 준수 푸터 */}
+            <!--  -->
             <footer class="bg-white border-t border-gray-200 py-10 mt-12 text-gray-600">
                 <div class="max-w-6xl mx-auto px-4 space-y-6">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-100 pb-6">
