@@ -357,10 +357,10 @@ export function parseKoreanLocation(
     if (matchedProvince === '세종특별자치시') {
         matchedCity = '세종시';
     } else {
-        // (1) 정규표현식으로 `시/군/구` 추출
+        // (1) 정규표현식으로 `시/군/구` 추출 (1음절 방위 구명칭 '중/동/서/남/북구' 포함)
         // 도로명/지번 주소 우선 탐색, 없으면 목적지 텍스트 탐색
         const textForCity = addrText || destText;
-        const matches = [...textForCity.matchAll(/([가-힣]{2,6}(?:시|군|구))/g)].map(m => m[1]);
+        const matches = [...textForCity.matchAll(/([가-힣]{2,6}(?:시|군|구)|(?:중|동|서|남|북)구)/g)].map(m => m[1]);
 
         for (const candidate of matches) {
             // 특별시/광역시/특별자치도 등 도급 광역명칭 제외
