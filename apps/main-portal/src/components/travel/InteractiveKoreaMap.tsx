@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { PROVINCES, KOREA_MAP_VIEWBOX, ProvinceMeta } from './koreaMapData';
 
 export interface TravelSpot {
@@ -12,11 +13,19 @@ export interface TravelSpot {
     ai_summary?: string | null;
     thumbnail?: string | null;
     location_address?: string | null;
+    province?: string | null;
+    city?: string | null;
     metadata?: any;
 }
 
+export interface MapCountsData {
+    total: number;
+    provinces: Record<string, number>;
+    cities: Record<string, Record<string, number>>;
+}
+
 interface InteractiveKoreaMapProps {
-    articles: TravelSpot[];
+    counts: MapCountsData | null;
     selectedProvince: string | null;
     selectedCity: string | null;
     onSelectLocation: (province: string | null, city: string | null) => void;
@@ -34,7 +43,7 @@ const REGION_GROUPS = [
 ];
 
 export default function InteractiveKoreaMap({
-    articles,
+    counts,
     selectedProvince,
     selectedCity,
     onSelectLocation
@@ -44,68 +53,64 @@ export default function InteractiveKoreaMap({
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isZoomed, setIsZoomed] = useState(true);
 
-    // 기사 - 도 정밀 매칭 헬퍼 함수
-    const isArticleInProvince = (article: TravelSpot, prov: ProvinceMeta): boolean => {
-        // 1순위: 공식 도로명/지번 주소(location_address) 기준 정밀 매칭
-        const addr = article.location_address?.trim() || '';
-        if (addr) {
-            if (prov.id === 'gwangju') return addr.includes('광주광역시') || addr.includes('광주 ');
-            if (prov.id === 'jeonnam') return addr.includes('전라남도') || addr.includes('전남 ');
-            if (prov.id === 'jeonbuk') return addr.includes('전북특별자치도') || addr.includes('전라북도') || addr.includes('전북 ');
-            if (prov.id === 'gangwon') return addr.includes('강원특별자치도') || addr.includes('강원도') || addr.includes('강원 ');
-            if (prov.id === 'gyeonggi') return addr.includes('경기도') || addr.includes('경기 ');
-            if (prov.id === 'seoul') return addr.includes('서울특별시') || addr.includes('서울 ');
-            if (prov.id === 'incheon') return addr.includes('인천광역시') || addr.includes('인천 ');
-            if (prov.id === 'daejeon') return addr.includes('대전광역시') || addr.includes('대전 ');
-            if (prov.id === 'daegu') return addr.includes('대구광역시') || addr.includes('대구 ');
-            if (prov.id === 'busan') return addr.includes('부산광역시') || addr.includes('부산 ');
-            if (prov.id === 'ulsan') return addr.includes('울산광역시') || addr.includes('울산 ');
-            if (prov.id === 'sejong') return addr.includes('세종특별자치시') || addr.includes('세종 ');
-            if (prov.id === 'chungbuk') return addr.includes('충청북도') || addr.includes('충북 ');
-            if (prov.id === 'chungnam') return addr.includes('충청남도') || addr.includes('충남 ');
-            if (prov.id === 'gyeongbuk') return addr.includes('경상북도') || addr.includes('경북 ');
-            if (prov.id === 'gyeongnam') return addr.includes('경상남도') || addr.includes('경남 ');
-            if (prov.id === 'jeju') return addr.includes('제주특별자치도') || addr.includes('제주도') || addr.includes('제주 ');
-            return addr.includes(prov.name) || addr.startsWith(prov.shortName);
-        }
+    // 온디맨드 스팟 목록 (선택 지역 상위 5개 표시용)
+    const [spots, setSpots] = useState<TravelSpot[]>([]);
+    const [loadingSpots, setLoadingSpots] = useState(false);
 
-        // 2순위: 주소가 없는 경우 목적지(destination) 기준 매칭
-        const dest = article.destination?.trim() || '';
-        if (prov.id === 'gwangju') return dest.includes('광주광역시') || dest.includes('광주 ');
-        if (prov.id === 'jeonnam') return dest.includes('전라남도') || dest.includes('전남 ');
-        if (prov.id === 'jeonbuk') return dest.includes('전북특별자치도') || dest.includes('전라북도') || dest.includes('전북 ');
-        if (prov.id === 'gangwon') return dest.includes('강원특별자치도') || dest.includes('강원도') || dest.includes('강원 ');
-        if (prov.id === 'gyeonggi') return dest.includes('경기도') || dest.includes('경기 ');
-        if (prov.id === 'seoul') return dest.includes('서울특별시') || dest.includes('서울 ');
-        if (prov.id === 'incheon') return dest.includes('인천광역시') || dest.includes('인천 ');
-        if (prov.id === 'daejeon') return dest.includes('대전광역시') || dest.includes('대전 ');
-        if (prov.id === 'daegu') return dest.includes('대구광역시') || dest.includes('대구 ');
-        if (prov.id === 'busan') return dest.includes('부산광역시') || dest.includes('부산 ');
-        if (prov.id === 'ulsan') return dest.includes('울산광역시') || dest.includes('울산 ');
-        if (prov.id === 'sejong') return dest.includes('세종특별자치시') || dest.includes('세종 ');
-        if (prov.id === 'chungbuk') return dest.includes('충청북도') || dest.includes('충북 ');
-        if (prov.id === 'chungnam') return dest.includes('충청남도') || dest.includes('충남 ');
-        if (prov.id === 'gyeongbuk') return dest.includes('경상북도') || dest.includes('경북 ');
-        if (prov.id === 'gyeongnam') return dest.includes('경상남도') || dest.includes('경남 ');
-        if (prov.id === 'jeju') return dest.includes('제주특별자치도') || dest.includes('제주도') || dest.includes('제주 ');
-
-        return dest.includes(prov.name) || dest.startsWith(prov.shortName);
-    };
-
-    // 각 도별 등록된 실제 여행지 개수 계산
+    // 각 도별 등록된 실제 여행지 개수 (O(1) 사전 집계 데이터 매핑)
     const provinceCounts = useMemo(() => {
-        const counts: Record<string, number> = {};
-        for (const prov of PROVINCES) {
-            counts[prov.name] = articles.filter(a => isArticleInProvince(a, prov)).length;
-        }
-        return counts;
-    }, [articles]);
+        return counts?.provinces || {};
+    }, [counts]);
 
     // 현재 선택된 도 객체
     const activeProvinceMeta = useMemo(() => {
         if (!selectedProvince) return null;
         return PROVINCES.find(p => p.name === selectedProvince || p.shortName === selectedProvince) || null;
     }, [selectedProvince]);
+
+    // 현재 선택된 도/시 기준 총 명소 개수 (O(1) 산출)
+    const currentLocationCount = useMemo(() => {
+        if (!counts) return 0;
+        if (activeProvinceMeta) {
+            if (selectedCity && selectedCity !== 'all') {
+                return counts.cities?.[activeProvinceMeta.name]?.[selectedCity] ?? 0;
+            }
+            return counts.provinces?.[activeProvinceMeta.name] ?? 0;
+        }
+        return counts.total ?? 0;
+    }, [counts, activeProvinceMeta, selectedCity]);
+
+    // 선택된 지역 변경 시 온디맨드로 상위 5개 스팟 초경량 조회
+    useEffect(() => {
+        let isMounted = true;
+        const fetchSpots = async () => {
+            setLoadingSpots(true);
+            try {
+                const params: Record<string, string> = {};
+                if (selectedProvince && selectedProvince !== 'all') {
+                    params.province = selectedProvince;
+                }
+                if (selectedCity && selectedCity !== 'all') {
+                    params.city = selectedCity;
+                }
+                const res = await axios.get('/api/travel/map-spots', { params });
+                if (isMounted && res.data?.success) {
+                    setSpots(res.data.articles || []);
+                }
+            } catch (err) {
+                console.error('[Fetch Map Spots Error]', err);
+                if (isMounted) setSpots([]);
+            } finally {
+                if (isMounted) setLoadingSpots(false);
+            }
+        };
+
+        fetchSpots();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [selectedProvince, selectedCity]);
 
     // 동적 뷰박스 (각 시·도의 실제 지형 크기에 꼭 맞게 밀착 줌인)
     const activeViewBox = useMemo(() => {
@@ -142,46 +147,20 @@ export default function InteractiveKoreaMap({
         return [parts[0] || 0, parts[1] || 0, parts[2] || 800, parts[3] || 759];
     }, [activeViewBox]);
 
-    // 현재 선택된 도/시에 속한 여행지 목록
-    const filteredSpots = useMemo(() => {
-        if (!activeProvinceMeta) return articles;
-        return articles.filter(a => {
-            if (!isArticleInProvince(a, activeProvinceMeta)) return false;
-            if (selectedCity && selectedCity !== 'all') {
-                const addr = `${a.location_address || ''} ${a.destination || ''}`;
-                return addr.includes(selectedCity);
-            }
-            return true;
-        });
-    }, [articles, activeProvinceMeta, selectedCity]);
-
-    // 해당 도에 실제 데이터가 존재하는 시/군 목록 추출
+    // 해당 도에 실제 데이터가 존재하는 시/군 목록 결합 (O(1) 수량 매핑)
     const availableCitiesInProvince = useMemo(() => {
         if (!activeProvinceMeta) return [];
-        const cityCountMap: Record<string, number> = {};
+        const cityCounts = counts?.cities?.[activeProvinceMeta.name] || {};
 
-        articles.forEach(a => {
-            if (isArticleInProvince(a, activeProvinceMeta)) {
-                const addr = a.location_address || a.destination || '';
-                const parts = addr.split(' ');
-                if (parts.length >= 2) {
-                    const cityName = parts[1];
-                    if (cityName.endsWith('시') || cityName.endsWith('군') || cityName.endsWith('구')) {
-                        cityCountMap[cityName] = (cityCountMap[cityName] || 0) + 1;
-                    }
-                }
-            }
-        });
-
-        // 메타데이터에 등록된 기본 시/군 목록과 DB 실제 카운트 결합
+        // 1. 메타데이터에 등록된 기본 시/군 목록과 counts 결합
         const result = activeProvinceMeta.cities.map(c => ({
             ...c,
-            count: cityCountMap[c.name] || 0
+            count: cityCounts[c.name] || 0
         }));
 
-        // DB에만 존재하는 추가 시/군도 목록에 포함
-        Object.entries(cityCountMap).forEach(([cityName, count]) => {
-            if (!result.find(r => r.name === cityName)) {
+        // 2. counts에만 존재하는 추가 시/군도 목록에 포함
+        Object.entries(cityCounts).forEach(([cityName, count]) => {
+            if (!result.some(r => r.name === cityName)) {
                 result.push({
                     name: cityName,
                     icon: '📍',
@@ -193,7 +172,7 @@ export default function InteractiveKoreaMap({
         });
 
         return result.sort((a, b) => b.count - a.count);
-    }, [articles, activeProvinceMeta]);
+    }, [activeProvinceMeta, counts]);
 
     // 도 클릭 핸들러
     const handleProvinceClick = (prov: ProvinceMeta) => {
@@ -331,7 +310,7 @@ export default function InteractiveKoreaMap({
                                         )}
                                     </>
                                 ) : (
-                                    <span>전국 전체 (총 {articles.length}곳)</span>
+                                    <span>전국 전체 (총 {counts?.total ?? 0}곳)</span>
                                 )}
                             </span>
                         </div>
@@ -549,11 +528,11 @@ export default function InteractiveKoreaMap({
                                         <i className="fas fa-compass"></i> REGION EXPLORER
                                     </span>
                                     <h3 className="text-xl font-black text-white mt-1">
-                                        {selectedProvince || '전국 여행 명소 전체'}
+                                        {selectedCity ? `${selectedProvince} ${selectedCity}` : (selectedProvince || '전국 여행 명소 전체')}
                                     </h3>
                                 </div>
                                 <span className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs font-black border border-emerald-400/30">
-                                    총 {filteredSpots.length}곳
+                                    총 {currentLocationCount}곳
                                 </span>
                             </div>
 
@@ -573,7 +552,7 @@ export default function InteractiveKoreaMap({
                                                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
                                             }`}
                                         >
-                                            전체 ({filteredSpots.length})
+                                            전체 ({activeProvinceMeta ? (counts?.provinces?.[activeProvinceMeta.name] ?? 0) : (counts?.total ?? 0)})
                                         </button>
                                         {availableCitiesInProvince.map(city => (
                                             <button
@@ -597,8 +576,21 @@ export default function InteractiveKoreaMap({
 
                         {/* 추천 스팟 퀵 카드 리스트 */}
                         <div className="space-y-3 flex-1 overflow-y-auto max-h-[420px] pr-1 scrollbar-thin">
-                            {filteredSpots.length > 0 ? (
-                                filteredSpots.slice(0, 5).map(spot => (
+                            {loadingSpots ? (
+                                <div className="space-y-3">
+                                    {[1, 2, 3].map(n => (
+                                        <div key={n} className="p-3.5 rounded-2xl border border-slate-200 bg-white animate-pulse flex gap-3.5 items-center">
+                                            <div className="w-16 h-16 rounded-xl bg-slate-200 shrink-0"></div>
+                                            <div className="flex-1 space-y-2">
+                                                <div className="h-3 bg-slate-200 rounded w-1/3"></div>
+                                                <div className="h-4 bg-slate-200 rounded w-2/3"></div>
+                                                <div className="h-3 bg-slate-100 rounded w-full"></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : spots.length > 0 ? (
+                                spots.slice(0, 5).map(spot => (
                                     <div
                                         key={spot.id}
                                         onClick={() => setSelectedSpot(spot)}
@@ -621,7 +613,7 @@ export default function InteractiveKoreaMap({
                                         <div className="flex-1 min-w-0 space-y-1">
                                             <div className="flex items-center gap-1.5">
                                                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                                    📍 {spot.destination.split(' ').slice(0, 2).join(' ')}
+                                                    📍 {spot.destination ? spot.destination.split(' ').slice(0, 2).join(' ') : (spot.city || spot.province || '')}
                                                 </span>
                                             </div>
                                             <h4 className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
@@ -644,7 +636,7 @@ export default function InteractiveKoreaMap({
                                 <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
                                     <i className="fas fa-map-pin text-2xl text-slate-300"></i>
                                     <p className="text-xs font-bold text-slate-600">
-                                        지도의 도/시를 클릭해 보세요!
+                                        {selectedProvince ? '해당 지역에 등록된 명소가 없습니다' : '지도의 도/시를 클릭해 보세요!'}
                                     </p>
                                     <p className="text-[11px] text-slate-400">
                                         지역별 명소 핀과 추천 여행 코스를 바로 확인할 수 있습니다.
@@ -652,9 +644,9 @@ export default function InteractiveKoreaMap({
                                 </div>
                             )}
 
-                            {filteredSpots.length > 5 && (
+                            {!loadingSpots && currentLocationCount > 5 && (
                                 <p className="text-center text-[11px] text-slate-400 font-semibold py-1">
-                                    외 {filteredSpots.length - 5}개의 명소가 하단 리스트에 정렬되어 있습니다 ↓
+                                    외 {currentLocationCount - 5}개의 명소가 하단 리스트에 정렬되어 있습니다 ↓
                                 </p>
                             )}
                         </div>
