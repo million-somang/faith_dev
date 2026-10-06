@@ -64,12 +64,7 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           precedence="default"
         />
-        {/* Google AdSense Script (비동기 주입) */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9041638273592776"
-          crossOrigin="anonymous"
-        />
+
       </head>
       <body className="bg-[#f5f6f7] min-h-screen text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900">
         <div className="flex flex-col min-h-screen">
