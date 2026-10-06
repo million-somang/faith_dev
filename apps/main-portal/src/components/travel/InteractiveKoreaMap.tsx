@@ -413,7 +413,7 @@ export default function InteractiveKoreaMap({
                             {/* 고선명 HTML 오버레이 레이어 (어느 확대 비율에서도 12px 표준 가독성 완벽 보장) */}
                             <div className="absolute inset-0 pointer-events-none overflow-hidden">
                                 {/* 1. 도 선택 시: 해당 도의 세부 시·군 핀 (HTML 캡슐) */}
-                                {activeProvinceMeta && availableCitiesInProvince.map((city) => {
+                                {activeProvinceMeta && availableCitiesInProvince.map((city, idx) => {
                                     const isCitySelected = selectedCity === city.name;
                                     const hasSpots = city.count > 0;
 
@@ -422,15 +422,19 @@ export default function InteractiveKoreaMap({
 
                                     if (leftPct < 3 || leftPct > 97 || topPct < 3 || topPct > 97) return null;
 
+                                    const staggerY = idx % 2 === 0 ? -3 : 3;
+
                                     return (
                                         <div
                                             key={`html-city-${city.name}`}
-                                            style={{ left: `${leftPct}%`, top: `${topPct}%` }}
+                                            style={{ left: `${leftPct}%`, top: `${topPct}%`, marginTop: `${staggerY}px` }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleCityClick(city.name);
                                             }}
-                                            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group select-none transition-transform duration-150 hover:scale-110 active:scale-95 z-20 hover:z-30"
+                                            className={`absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group select-none transition-transform duration-150 origin-center scale-85 scale-[0.85] sm:scale-100 hover:scale-110 active:scale-95 ${
+                                                isCitySelected ? 'z-25 z-[25]' : 'z-20 hover:z-30 hover:z-[30]'
+                                            }`}
                                         >
                                             {/* 펄스 링 */}
                                             {hasSpots && (
@@ -438,7 +442,7 @@ export default function InteractiveKoreaMap({
                                             )}
 
                                             <div
-                                                className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-md text-xs font-black transition-all ${
+                                                className={`relative flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-md text-[10px] sm:text-xs font-black transition-all ${
                                                     isCitySelected
                                                         ? 'bg-slate-900 text-white ring-2 ring-emerald-400 shadow-emerald-500/20 shadow-lg'
                                                         : hasSpots
@@ -446,13 +450,13 @@ export default function InteractiveKoreaMap({
                                                         : 'bg-white/95 text-slate-600 hover:bg-slate-800 hover:text-white border border-slate-200/90 shadow-2xs'
                                                 }`}
                                             >
-                                                <span className="text-sm shrink-0 leading-none">{city.icon}</span>
+                                                <span className="text-xs sm:text-sm shrink-0 leading-none">{city.icon}</span>
                                                 <span className="whitespace-nowrap tracking-tight">
                                                     {city.name.replace(/(시|군|구)$/, '')}
                                                 </span>
                                                 {city.count > 0 && (
                                                     <span
-                                                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-black shrink-0 ${
+                                                        className={`px-1 py-0.2 sm:px-1.5 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-black shrink-0 ${
                                                             isCitySelected
                                                                 ? 'bg-emerald-500 text-slate-950'
                                                                 : 'bg-emerald-600 text-white group-hover:bg-white group-hover:text-emerald-800'
@@ -471,8 +475,10 @@ export default function InteractiveKoreaMap({
                                     const count = provinceCounts[prov.name] || 0;
                                     const isSelected = selectedProvince === prov.name;
 
-                                    const leftPct = ((prov.centerX - vbX) / vbW) * 100;
-                                    const topPct = ((prov.centerY - vbY) / vbH) * 100;
+                                    const targetX = prov.centerX + (prov.badgeOffsetX || 0);
+                                    const targetY = prov.centerY + (prov.badgeOffsetY || 0);
+                                    const leftPct = ((targetX - vbX) / vbW) * 100;
+                                    const topPct = ((targetY - vbY) / vbH) * 100;
 
                                     if (leftPct < 3 || leftPct > 97 || topPct < 3 || topPct > 97) return null;
 
@@ -483,10 +489,12 @@ export default function InteractiveKoreaMap({
                                             onClick={() => handleProvinceClick(prov)}
                                             onMouseEnter={() => setHoveredProvince(prov.name)}
                                             onMouseLeave={() => setHoveredProvince(null)}
-                                            className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer select-none transition-transform duration-150 hover:scale-110 active:scale-95 z-10 hover:z-25"
+                                            className={`absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer select-none transition-transform duration-150 origin-center scale-85 scale-[0.85] sm:scale-100 hover:scale-110 active:scale-95 ${
+                                                isSelected ? 'z-25 z-[25]' : 'z-15 z-[15] hover:z-30 hover:z-[30]'
+                                            }`}
                                         >
                                             <div
-                                                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full shadow-md text-xs font-black border transition-all ${
+                                                className={`flex items-center gap-1 sm:gap-1.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-full shadow-md text-[10px] sm:text-xs font-black border transition-all ${
                                                     isSelected
                                                         ? 'bg-emerald-800 text-white border-white shadow-emerald-800/30'
                                                         : count > 0
@@ -497,7 +505,7 @@ export default function InteractiveKoreaMap({
                                                 <span>{prov.shortName}</span>
                                                 {count > 0 && (
                                                     <span
-                                                        className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                        className={`px-1 py-0.2 sm:px-1.5 sm:py-0.2 rounded-full text-[9px] sm:text-[10px] font-black ${
                                                             isSelected ? 'bg-white text-emerald-800' : 'bg-emerald-600 text-white'
                                                         }`}
                                                     >
