@@ -3,6 +3,12 @@ import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
+export const isAdSenseAllowedRoute = () => {
+    if (typeof window === 'undefined') return false;
+    const p = window.location.pathname;
+    return p.startsWith('/guides') || p.startsWith('/blog');
+};
+
 interface Banner {
     id: number;
     title: string;
@@ -72,7 +78,7 @@ export function BannerSlot({
     const banner = banners[Math.min(idx, banners.length - 1)];
 
     useEffect(() => {
-        if (!banner || !banner.ad_code) return;
+        if (!banner || !banner.ad_code || !isAdSenseAllowedRoute()) return;
 
         // 1. 구글 에드센스 라이브러리 스크립트가 헤드에 없으면 동적 삽입
         const scriptId = 'adsense-main-script';
@@ -108,6 +114,11 @@ export function BannerSlot({
     }, [banner]);
 
     if (banners.length === 0) return null;
+
+    // AdSense 배너는 고가치 지식 가이드(/guides, /blog) 경로에서만 허용
+    if (banner.ad_code && !isAdSenseAllowedRoute()) {
+        return null;
+    }
 
     // 배너 본문 (구글 에드센스 또는 이미지 배너)
     const content = banner.ad_code ? (

@@ -4,7 +4,6 @@ import { Header, Footer } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
-import { BannerSlot } from '../components/BannerSlot';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
 
 const API_BASE_URL = '';
@@ -774,11 +773,6 @@ export default function TravelDetailPage() {
                         </div>
                     </section>
                 )}
-
-                {/* 11. 애드센스 배너 슬롯 */}
-                <div className="pt-6">
-                    <BannerSlot slotKey="travel-detail-bottom" label="SPONSORED AD" />
-                </div>
             </main>
 
             <Footer />

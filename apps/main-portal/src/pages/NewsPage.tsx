@@ -4,7 +4,6 @@ import { Header, Footer, Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
-import { BannerSlot } from '../components/BannerSlot';
 
 const API_BASE_URL = '';
 
@@ -264,9 +263,6 @@ export default function NewsPage() {
             <Header user={user} onLogout={logout} />
 
             <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full">
-                {/* 배너 슬롯: 뉴스 목록 상단 */}
-                <BannerSlot slotKey="news_list_top" className="mb-6" />
-
                 {/* Search & Categories */}
                 <div className="mb-8">
                     <form onSubmit={handleSearch} className="relative mb-6">

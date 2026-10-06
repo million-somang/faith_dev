@@ -6,7 +6,6 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 import EntertainmentSubMenu from '../components/EntertainmentSubMenu';
-import { BannerSlot } from '../components/BannerSlot';
 import InteractiveKoreaMap, { MapCountsData } from '../components/travel/InteractiveKoreaMap';
 
 const API_BASE_URL = '';
@@ -576,11 +575,6 @@ export default function TravelPage() {
                         </nav>
                     );
                 })()}
-
-                {/* 7. 하단 애드센스 배너 슬롯 */}
-                <div className="pt-4">
-                    <BannerSlot slotKey="travel-list-bottom" label="SPONSORED AD" />
-                </div>
             </main>
 
             <Footer />

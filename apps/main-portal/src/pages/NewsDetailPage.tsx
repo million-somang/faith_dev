@@ -6,7 +6,6 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { PageSEO } from '../components/PageSEO';
 import { NewsRelatedToolsWidget } from '../components/news/NewsRelatedToolsWidget';
-import { BannerSlot } from '../components/BannerSlot';
 import { useAppLauncher } from '../hooks/useAppLauncher';
 
 const API_BASE_URL = '';
@@ -382,14 +381,6 @@ export default function NewsDetailPage() {
                         category={String(news.category || '')}
                         content={news.content || news.summary || ''}
                         onOpenTool={handleOpenMiniApp}
-                    />
-
-                    {/* 본문 하단 스폰서/애드센스 슬롯 (배너/광고 데이터가 존재할 때만 안전하게 노출) */}
-                    <BannerSlot 
-                        slotKey="news_detail_bottom" 
-                        label="ADVERTISEMENT"
-                        wrapperClassName="w-full flex flex-col items-center justify-center bg-gray-50/80 rounded-2xl border border-gray-200/60 p-4 overflow-hidden my-4"
-                        className="min-h-[200px] w-full" 
                     />
 
                     {/* Interaction Bar */}
