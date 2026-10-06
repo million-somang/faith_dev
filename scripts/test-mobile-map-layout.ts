@@ -39,7 +39,7 @@ const VIEWPORTS: ViewportConfig[] = [
     { name: 'Mobile Standard (390px - iPhone 14/15)', width: 390, mapWidth: 390, isMobile: true },
     { name: 'Mobile Large (412px - Galaxy S23/S24)', width: 412, mapWidth: 412, isMobile: true },
     { name: 'Mobile Layout (360px nested container)', width: 360, mapWidth: 312, isMobile: true },
-    { name: 'Desktop Standard (800px)', width: 800, mapWidth: 620, isMobile: false }
+    { name: 'Desktop Standard (800px)', width: 800, mapWidth: 800, isMobile: false }
 ];
 
 // 2. 검증 대상 핵심 밀집 권역 쌍
@@ -54,21 +54,27 @@ const DENSE_FOCUS_PAIRS: Array<[string, string, string]> = [
 ];
 
 /**
- * 컴포넌트 실제 렌더링 스타일 기반 뱃지 바운딩 박스 계산 함수
- * - 모바일: scale-[0.85], px-1.5, text-[10px], count 뱃지 text-[9px] => 폭 약 48px, 높이 약 17px
- * - 데스크톱: scale-100, px-2.5, text-xs, count 뱃지 text-[10px] => 폭 약 72px, 높이 약 24px
+ * SVG 동기화 벡터 뱃지 기반 바운딩 박스 계산 함수
+ * - 뱃지가 SVG 내부 요소(<rect>, <text>)로 렌더링되므로, 화면 너비에 따라 scale = mapWidth / 800으로 정확히 비례 축소됨
+ * - SVG ViewBox(800 x 759) 기준 뱃지 크기 (카운트 뱃지 포함 최대 크기 기준):
+ *   - count > 0 (최대치): 폭 68, 높이 28
+ *   - count === 0: 폭 48, 높이 28
+ *   - 기본값으로 보수적인 폭 68(hasCount = true)을 적용하여 안전마진을 최대화
  */
-function getBadgeBoundingBox(prov: ProvinceMeta, mapWidth: number, isMobile: boolean): BoundingBox {
-    // 뱃지 크기 (카운트 뱃지 포함 시의 보수적 기준)
-    const badgeW = isMobile ? 48 : 72;
-    const badgeH = isMobile ? 17 : 24;
+function getBadgeBoundingBox(prov: ProvinceMeta, mapWidth: number, hasCount: boolean = true): BoundingBox {
+    const scale = mapWidth / 800;
+    const svgBadgeW = hasCount ? 68 : 48;
+    const svgBadgeH = 28;
+
+    const badgeW = svgBadgeW * scale;
+    const badgeH = svgBadgeH * scale;
 
     // SVG ViewBox (800 x 759) 기준 화면 픽셀 매핑
     const targetX = prov.centerX + (prov.badgeOffsetX || 0);
     const targetY = prov.centerY + (prov.badgeOffsetY || 0);
 
-    const pixelX = targetX * (mapWidth / 800);
-    const pixelY = targetY * (mapWidth / 800);
+    const pixelX = targetX * scale;
+    const pixelY = targetY * scale;
 
     return {
         x: pixelX,
@@ -154,8 +160,8 @@ async function runMobileLayoutTests() {
             const p1 = PROVINCES.find(p => p.name === name1)!;
             const p2 = PROVINCES.find(p => p.name === name2)!;
 
-            const b1 = getBadgeBoundingBox(p1, vp.mapWidth, vp.isMobile);
-            const b2 = getBadgeBoundingBox(p2, vp.mapWidth, vp.isMobile);
+            const b1 = getBadgeBoundingBox(p1, vp.mapWidth);
+            const b2 = getBadgeBoundingBox(p2, vp.mapWidth);
 
             const { collides, dx, dy, clearX, clearY } = checkCollision(b1, b2);
 
@@ -186,8 +192,7 @@ async function runMobileLayoutTests() {
     const testVpList = [360, 390, 412, 800];
 
     for (const w of testVpList) {
-        const isMobile = w < 640;
-        const mapW = isMobile ? w : 620;
+        const mapW = w;
         let collisionsInVp = 0;
 
         for (let i = 0; i < PROVINCES.length; i++) {
@@ -195,8 +200,8 @@ async function runMobileLayoutTests() {
                 totalTests++;
                 const p1 = PROVINCES[i];
                 const p2 = PROVINCES[j];
-                const b1 = getBadgeBoundingBox(p1, mapW, isMobile);
-                const b2 = getBadgeBoundingBox(p2, mapW, isMobile);
+                const b1 = getBadgeBoundingBox(p1, mapW);
+                const b2 = getBadgeBoundingBox(p2, mapW);
 
                 const { collides } = checkCollision(b1, b2);
                 if (collides) {
