@@ -76,14 +76,14 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
         const totalUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status != 'deleted'").first()
         const activeUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'").first()
         const suspendedUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'suspended'").first()
-        const todaySignups = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE DATE(created_at) = DATE('now')").first()
+        const todaySignups = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= date('now', 'start of day')").first()
         const levelDistribution = await DB.prepare("SELECT level, COUNT(*) as count FROM users WHERE status != 'deleted' GROUP BY level ORDER BY level").all()
         const recentUsers = await DB.prepare("SELECT id, email, name, level, created_at FROM users WHERE status != 'deleted' ORDER BY created_at DESC LIMIT 10").all()
 
         // 뉴스 및 여행 자동 발행 집계
-        const todayNews = await DB.prepare("SELECT COUNT(*) as count FROM news WHERE DATE(created_at) = DATE('now')").first()
+        const todayNews = await DB.prepare("SELECT COUNT(*) as count FROM news WHERE created_at >= date('now', 'start of day')").first()
         const totalNews = await DB.prepare("SELECT COUNT(*) as count FROM news").first()
-        const todayTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles WHERE DATE(created_at) = DATE('now')").first()
+        const todayTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles WHERE created_at >= date('now', 'start of day')").first()
         const totalTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles").first()
 
         // 오늘 방문자(UV) & 오늘 페이지뷰(PV) & 누적 방문자 집계
@@ -93,7 +93,7 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
 
         try {
             const todayPv = await DB.prepare(
-                "SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as visitors FROM page_views WHERE DATE(created_at) = DATE('now')"
+                "SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as visitors FROM page_views WHERE created_at >= date('now', 'start of day')"
             ).first() as Record<string, number> | null
 
             todayViews = todayPv?.total || 0
