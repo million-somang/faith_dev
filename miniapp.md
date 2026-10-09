@@ -40,10 +40,11 @@
     - **부동소수점 오차 방지 (Precision Math)**: 자바스크립트의 IEEE 754 부동소수점 오류(`0.1 + 0.2 !== 0.3`)로 인한 금융·세금 계산 왜곡을 정수 변환 및 반올림 유틸리티로 완벽히 방어합니다.
     - **React Error Boundary 필수 적용**: 런타임 예외 발생 시 전체 앱이 하얗게 뻗는 현상(White Screen of Death)을 방지하고 자동 복구 UI를 제공합니다.
     - **메모리 누수 제로 (Lifecycle Cleanup)**: `setInterval`, `setTimeout`, Web Audio API 오디오 컨텍스트, 윈도우 이벤트 리스너의 완벽한 언마운트 해제(`cleanup`)를 의무화합니다.
-12. **헤더 표준 규격 (VeraNex 홈 링크 좌측 + 미니앱 로고 우측 배치 & 음소거·도움말 제거)**:
-    - **헤더 좌측**: VeraNex 심볼/로고 + `https://veranex.app` 홈으로 이동하는 공식 링크(`<a href="https://veranex.app" target="_top">`)를 배치하여 포털 복귀 경험을 항상 제공합니다.
+12. **헤더 표준 규격 및 베라넥스 공식 로고 통일 의무 (Unified Official VeraNex Logo & Clean Header Standard)**:
+    - **공식 브랜드 로고 통일 (임의 변형 절대 금지)**: 개발자가 임의로 녹색 원형이나 단색 사각형에 알파벳 'V'를 적어 넣는 등 로고를 제멋대로 변경하는 행위를 엄격히 금지합니다. 모든 미니앱의 상단 헤더 및 스플래시 화면에는 **메인 포털과 100% 동일한 공식 기하학 테크 엠블럼 로고(`https://veranex.app/logo-192.png` 또는 `/logo-192.png`)와 공식 타이포그래피(`V<span className="text-indigo-600">ERANEX</span>`)**를 반드시 채택하여 전사 플랫폼 아이덴티티를 통일해야 합니다.
+    - **헤더 좌측**: 공식 `logo-192.png` 엠블럼 + `V<span className="text-indigo-600">ERANEX</span>` 로고타입 + `PORTAL HOME` 서브라벨 + `https://veranex.app` 홈으로 이동하는 공식 링크(`<a href="https://veranex.app" target="_top">`)를 배치하여 포털 복귀 경험을 항상 제공합니다.
     - **헤더 우측**: 해당 미니앱의 고유 로고 / 대표 아이콘을 배치합니다.
-    - **소리끄기(음소거) 및 도움말 아이콘 전면 영구 제거**: 상단 헤더에 음소거 버튼이나 도움말(i) 아이콘을 두지 않고, 좌측 VeraNex 홈 링크와 우측 미니앱 로고를 중심으로 심플하고 명확하게 정돈합니다.
+    - **소리끄기(음소거) 및 도움말 아이콘 전면 영구 제거**: 상단 헤더에 음소거 버튼이나 도움말(i) 아이콘을 두지 않고, 좌측 VeraNex 공식 홈 링크와 우측 미니앱 로고를 중심으로 심플하고 명확하게 정돈합니다.
 13. **스플래시 화면 100% 불투명 및 하단 광고 상시 노출 의무 (Zero Bleed-Through & Pinned AD)**:
     - 4초 스플래시 로딩 화면은 **100% 완전 불투명(Opaque) 옅은 베이지 배경(`bg-[#FAF8F5]`)**을 적용하여 **배경이나 다음 화면이 비치는 현상(Bleed-Through)을 완벽히 차단**해야 합니다.
     - 850px 팝업 창 안에서 **하단 스폰서 광고 슬롯(SPONSORED AD)이 잘리거나 숨겨지지 않고 한눈에 온전히 노출**되도록 높이 및 패딩을 완벽히 제어해야 합니다.
@@ -94,16 +95,31 @@
 <div className="w-full min-h-screen bg-[#FAF8F5] text-[#2D2A26] flex flex-col justify-between py-2 sm:py-6 px-3 sm:px-6">
   {/* 상단 통합 헤더 (모바일 450px ~ 태블릿 3xl ~ PC 5xl 자연 확장) */}
   <header className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto mb-3 shrink-0">
-    <div className="flex items-center justify-between p-3 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
-      <div className="flex items-center gap-2">
-        <a href="https://veranex.app" target="_top" className="text-xs font-black text-emerald-600 hover:underline">
-          VeraNex
-        </a>
-        <span className="text-[10px] text-slate-400">/</span>
-        <h1 className="text-xs font-bold text-slate-800">스마트 유틸리티</h1>
-      </div>
-      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-        FREE
+    <div className="flex items-center justify-between p-2.5 sm:p-3 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
+      {/* 좌측: VeraNex 공식 포털 홈 복귀 링크 (공식 logo-192.png + 타이포그래피) */}
+      <a
+        href="https://veranex.app"
+        target="_top"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 hover:opacity-85 transition-opacity cursor-pointer group"
+        title="VeraNex 포털 홈으로 이동"
+      >
+        <img
+          src="https://veranex.app/logo-192.png"
+          alt="VeraNex Logo"
+          className="w-7 h-7 rounded-lg object-contain drop-shadow-xs"
+        />
+        <div className="flex flex-col text-left">
+          <span className="font-black text-xs sm:text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-indigo-600 transition-colors">
+            V<span className="text-indigo-600">ERANEX</span>
+          </span>
+          <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
+            PORTAL HOME
+          </span>
+        </div>
+      </a>
+      <span className="text-[10px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+        OFFICIAL
       </span>
     </div>
   </header>
@@ -711,10 +727,10 @@ useEffect(() => {
       className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group"
       title="VeraNex 포털 홈으로 이동"
     >
-      <img src="https://veranex.app/logo-192.png" alt="VERA Logo" className="w-6 h-6 rounded-md object-contain drop-shadow-xs" />
-      <div className="flex flex-col">
-        <span className="font-black text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-amber-700 transition-colors">
-          V<span className="text-amber-600">ERANEX</span>
+      <img src="https://veranex.app/logo-192.png" alt="VeraNex Logo" className="w-7 h-7 rounded-lg object-contain drop-shadow-xs" />
+      <div className="flex flex-col text-left">
+        <span className="font-black text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-indigo-600 transition-colors">
+          V<span className="text-indigo-600">ERANEX</span>
         </span>
         <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
           PORTAL HOME

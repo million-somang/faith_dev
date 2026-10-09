@@ -23,15 +23,23 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHowTo, highScore }) => {
           <a
             href="https://veranex.app"
             target="_top"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F7F4EE] hover:bg-[#EBE6DD] border border-[#E0D9CD] transition group"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[#F7F4EE] hover:bg-[#EBE6DD] border border-[#E0D9CD] transition group"
             title="VeraNex 포털 홈으로 이동"
           >
-            <div className="w-5 h-5 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs">
-              V
+            <img
+              src="https://veranex.app/logo-192.png"
+              alt="VeraNex Logo"
+              className="w-6 h-6 rounded-md object-contain drop-shadow-xs"
+            />
+            <div className="flex flex-col text-left">
+              <span className="font-black text-xs sm:text-sm tracking-wider text-[#2D2A26] leading-none group-hover:text-indigo-600 transition-colors">
+                V<span className="text-indigo-600">ERANEX</span>
+              </span>
+              <span className="text-[8px] font-bold text-[#A39C90] leading-tight">
+                PORTAL HOME
+              </span>
             </div>
-            <span className="text-xs font-bold text-[#2D2A26] group-hover:text-emerald-700">
-              VeraNex
-            </span>
           </a>
 
           {/* 하이스코어 뱃지 */}

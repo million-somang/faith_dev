@@ -42,11 +42,13 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
       {/* 상단 브랜드 태그 */}
       <div className="w-full max-w-sm flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
-            V
-          </div>
-          <span className="text-xs font-bold text-[#7A756D] tracking-wide">
-            VeraNex Games
+          <img
+            src="https://veranex.app/logo-192.png"
+            alt="VeraNex Logo"
+            className="w-6 h-6 rounded-lg object-contain shadow-xs"
+          />
+          <span className="text-xs font-black text-[#2D2A26] tracking-wide">
+            V<span className="text-indigo-600">ERANEX</span>
           </span>
         </div>
         <div className="flex items-center gap-1 text-[11px] text-[#8A847A] font-medium bg-[#F7F4EE] px-2 py-0.5 rounded-full border border-[#EBE6DD]">
