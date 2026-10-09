@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 interface LiveStockWidgetProps {
     stockName: string;
@@ -14,7 +13,6 @@ interface StockData {
 }
 
 export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
-    const navigate = useNavigate();
     const [stock, setStock] = useState<StockData | null>(null);
 
     // 종목별 고정 모킹 데이터 (결정론적 생성)
@@ -88,7 +86,7 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
 
     const handleWidgetClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        navigate('/finance');
+        window.location.href = '/finance';
     };
 
     return (

@@ -1171,12 +1171,12 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     </div>
                                                 </div>
 
-                                                <Link
-                                                    to="/finance"
+                                                <a
+                                                    href="/finance"
                                                     className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-center text-xs rounded-xl shadow-sm block transition-all active:scale-98"
                                                 >
                                                     주식/금융 센터 바로가기
-                                                </Link>
+                                                </a>
                                             </div>
 
                                             {/* 우측 2: 사주팔자 오행 & 에너지 밸런스 위젯 */}
@@ -1952,7 +1952,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-calculator"></i></span>
                                                         <span className="text-xs font-bold text-slate-700">계산기 모음</span>
                                                     </Link>
-                                                    <Link to="/finance" className="p-3 bg-white hover:bg-green-50 rounded-xl border border-green-100 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                    <Link to="/finance/util" className="p-3 bg-white hover:bg-green-50 rounded-xl border border-green-100 flex items-center gap-2.5 transition-all group shadow-2xs">
                                                         <span className="w-8 h-8 rounded-lg bg-green-100 text-green-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-coins"></i></span>
                                                         <span className="text-xs font-bold text-slate-700">금융 계산기</span>
                                                     </Link>

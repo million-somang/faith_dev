@@ -134,7 +134,7 @@ export default function FinanceUtilPage() {
                 <div className="flex items-center gap-2 text-xs text-slate-500 font-bold mb-6">
                     <Link to="/" className="hover:text-blue-600">홈</Link>
                     <span>/</span>
-                    <Link to="/finance" className="hover:text-blue-600">금융</Link>
+                    <a href="/finance" className="hover:text-blue-600">금융</a>
                     <span>/</span>
                     <span className="text-amber-700 font-black">금융Util</span>
                 </div>

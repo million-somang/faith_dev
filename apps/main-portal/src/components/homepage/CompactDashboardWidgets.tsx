@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
@@ -225,13 +224,13 @@ export const CompactDashboardWidgets: React.FC = () => {
                         </div>
 
                         {/* 바로가기 화살표 링크 */}
-                        <Link 
-                            to="/finance" 
+                        <a 
+                            href="/finance" 
                             className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-white/90 px-2.5 py-1.5 rounded-xl border border-emerald-200/80 shadow-2xs hover:shadow-xs transition-all flex items-center gap-1 flex-shrink-0 ml-2"
                         >
                             <span>금융</span>
                             <i className="fas fa-chevron-right text-[9px]"></i>
-                        </Link>
+                        </a>
                     </>
                 )}
             </div>

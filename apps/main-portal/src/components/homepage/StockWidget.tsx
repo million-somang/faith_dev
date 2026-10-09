@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { t } from '@faithportal/ui';
 
@@ -103,9 +102,9 @@ export function StockWidget() {
                         ))}
                     </div>
 
-                    <Link to="/finance" className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-sm font-semibold text-gray-500 hover:text-green-600 transition-colors">
+                    <a href="/finance" className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100 text-sm font-semibold text-gray-500 hover:text-green-600 transition-colors">
                         {t('인기종목 더보기')} <i className="fas fa-chevron-right text-xs"></i>
-                    </Link>
+                    </a>
                 </>
             )}
             </div>

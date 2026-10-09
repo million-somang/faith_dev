@@ -206,23 +206,40 @@ app.get('/finance/util', (c) => {
     if (fs.existsSync(utilFilePath)) {
         return c.html(fs.readFileSync(utilFilePath, 'utf-8'));
     }
+    const financeDist = path.resolve('./apps/finance/dist/index.html');
+    if (fs.existsSync(financeDist)) {
+        return c.html(fs.readFileSync(financeDist, 'utf-8'));
+    }
     return c.redirect('/finance', 302);
 });
 app.get('/finance/util/', (c) => c.redirect('/finance/util', 301));
 
-// Finance app 및 메인 포털 Finance 라우트
+// Finance app 라우트 (/finance, /finance/) - 원본 금융 마이크로앱(apps/finance) 직접 서빙
 app.get('/finance', (c) => {
-    const mainPortalFinance = path.resolve('./apps/main-portal/dist/finance/index.html');
     const financeDist = path.resolve('./apps/finance/dist/index.html');
-    if (fs.existsSync(mainPortalFinance)) {
-        return c.html(fs.readFileSync(mainPortalFinance, 'utf-8'));
-    }
     if (fs.existsSync(financeDist)) {
         return c.html(fs.readFileSync(financeDist, 'utf-8'));
     }
     return c.redirect('/', 302);
 });
-app.get('/finance/', (c) => c.redirect('/finance', 301));
+app.get('/finance/', (c) => {
+    const financeDist = path.resolve('./apps/finance/dist/index.html');
+    if (fs.existsSync(financeDist)) {
+        return c.html(fs.readFileSync(financeDist, 'utf-8'));
+    }
+    return c.redirect('/', 302);
+});
+
+// Finance subroutes direct landing (/finance/stocks, /finance/exchange, /finance/banking, /finance/stock/:ticker)
+['/finance/stocks', '/finance/exchange', '/finance/banking', '/finance/stock/:ticker'].forEach(subPath => {
+    app.get(subPath, (c) => {
+        const financeDist = path.resolve('./apps/finance/dist/index.html');
+        if (fs.existsSync(financeDist)) {
+            return c.html(fs.readFileSync(financeDist, 'utf-8'));
+        }
+        return c.redirect('/finance', 302);
+    });
+});
 
 // Finance app 정적 파일 서빙
 app.use('/finance/*', serveStatic({
