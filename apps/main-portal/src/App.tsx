@@ -48,6 +48,7 @@ const GuidesHubPage = lazy(() => import('./pages/GuidesHubPage'));
 const GuideDetailPage = lazy(() => import('./pages/GuideDetailPage'));
 const EditorialPolicyPage = lazy(() => import('./pages/EditorialPolicyPage'));
 const ShoppingPage = lazy(() => import('./pages/ShoppingPage'));
+const ToolDetailPage = lazy(() => import('./pages/ToolDetailPage'));
 
 function PageFallback() {
     return (
@@ -183,6 +184,8 @@ function App() {
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/signup" element={<SignupPage />} />
                         <Route path="/lifestyle" element={<UtilityPage />} />
+                        <Route path="/tools/:slug" element={<ToolDetailPage />} />
+                        <Route path="/tools" element={<Navigate to="/lifestyle" replace />} />
                         <Route path="/finance" element={<FinancePage />} />
                         <Route path="/finance/util" element={<FinanceUtilPage />} />
                         <Route path="/finance-util" element={<FinanceUtilPage />} />

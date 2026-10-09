@@ -10,6 +10,22 @@ export interface ArticleMetadata {
     isTech?: boolean;
 }
 
+export interface ToolSchemaProps {
+    name: string;
+    description: string;
+    url: string;
+    category?: string;
+    directAnswer?: string;
+    howTo?: {
+        name: string;
+        steps: { name: string; text: string }[];
+    };
+    faqs?: {
+        question: string;
+        answer: string;
+    }[];
+}
+
 interface PageSEOProps {
     title: string;
     description: string;
@@ -19,6 +35,7 @@ interface PageSEOProps {
     robots?: string;
     jsonLd?: Record<string, unknown> | Record<string, unknown>[];
     article?: ArticleMetadata;
+    tool?: ToolSchemaProps;
 }
 
 const SITE_URL = 'https://veranex.app';
@@ -34,13 +51,87 @@ export function PageSEO({
     robots,
     jsonLd,
     article,
+    tool,
 }: PageSEOProps) {
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
     const url = `${SITE_URL}${path}`;
 
-    // Schema.org Article / TechArticle 자동 생성 및 보강
+    // Schema.org 자동 생성 및 보강
     let effectiveJsonLd = jsonLd;
-    if (!effectiveJsonLd && type === 'article' && article) {
+    if (!effectiveJsonLd && tool) {
+        const toolSchemas: Record<string, unknown>[] = [
+            {
+                '@type': 'WebApplication',
+                name: tool.name,
+                description: tool.description,
+                url: tool.url,
+                applicationCategory: tool.category || 'UtilityApplication',
+                operatingSystem: 'All',
+                browserRequirements: 'Requires JavaScript, HTML5, and CSS3.',
+                offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'KRW',
+                },
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    {
+                        '@type': 'ListItem',
+                        position: 1,
+                        name: '홈',
+                        item: SITE_URL,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        position: 2,
+                        name: '생활도구',
+                        item: `${SITE_URL}/lifestyle`,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        position: 3,
+                        name: tool.name,
+                        item: tool.url,
+                    },
+                ],
+            },
+        ];
+
+        if (tool.howTo && tool.howTo.steps && tool.howTo.steps.length > 0) {
+            toolSchemas.push({
+                '@type': 'HowTo',
+                name: tool.howTo.name,
+                step: tool.howTo.steps.map((s, idx) => ({
+                    '@type': 'HowToStep',
+                    position: idx + 1,
+                    name: s.name,
+                    text: s.text,
+                    url: tool.url,
+                })),
+            });
+        }
+
+        if (tool.faqs && tool.faqs.length > 0) {
+            toolSchemas.push({
+                '@type': 'FAQPage',
+                mainEntity: tool.faqs.map(faq => ({
+                    '@type': 'Question',
+                    name: faq.question,
+                    acceptedAnswer: {
+                        '@type': 'Answer',
+                        text: faq.answer,
+                    },
+                })),
+            });
+        }
+
+        effectiveJsonLd = {
+            '@context': 'https://schema.org',
+            '@graph': toolSchemas,
+        };
+    } else if (!effectiveJsonLd && type === 'article' && article) {
         effectiveJsonLd = {
             '@context': 'https://schema.org',
             '@type': article.isTech ? 'TechArticle' : 'Article',
