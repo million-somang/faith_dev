@@ -32,6 +32,18 @@ const EXPECTED_HUBS = [
   'https://veranex.app/lifestyle',
   'https://veranex.app/finance',
   'https://veranex.app/finance/util',
+  'https://veranex.app/game',
+];
+
+const EXPECTED_GAME_URLS = [
+  'https://veranex.app/game/janggi',
+  'https://veranex.app/game/omok',
+  'https://veranex.app/game/baseball',
+  'https://veranex.app/game/2048',
+  'https://veranex.app/game/sudoku',
+  'https://veranex.app/game/minesweeper',
+  'https://veranex.app/game/freecell',
+  'https://veranex.app/game/vera-pop',
 ];
 
 const AI_BOTS = [
@@ -135,9 +147,9 @@ function validateSitemap(filePath: string) {
 
   console.log(`[${filePath}] Found ${urls.length} URLs in sitemap`);
 
-  // Verify total count is exactly 48
-  if (urls.length !== 48) {
-    console.error(`FAIL [${filePath}]: Expected exactly 48 URLs, but found ${urls.length}`);
+  // Verify total count is exactly 57
+  if (urls.length !== 57) {
+    console.error(`FAIL [${filePath}]: Expected exactly 57 URLs, but found ${urls.length}`);
     hasError = true;
   }
 
@@ -215,6 +227,28 @@ function validateSitemap(filePath: string) {
     }
   }
 
+  // Verify all 8 core game URLs
+  for (const gameUrl of EXPECTED_GAME_URLS) {
+    const entry = urlMap.get(gameUrl);
+    if (!entry) {
+      console.error(`FAIL [${filePath}]: Missing game URL "${gameUrl}"`);
+      hasError = true;
+    } else {
+      if (entry.priority !== '0.85') {
+        console.error(`FAIL [${filePath}]: Game "${gameUrl}" priority expected 0.85, got "${entry.priority}"`);
+        hasError = true;
+      }
+      if (entry.changefreq !== 'weekly') {
+        console.error(`FAIL [${filePath}]: Game "${gameUrl}" changefreq expected weekly, got "${entry.changefreq}"`);
+        hasError = true;
+      }
+      if (entry.lastmod !== '2026-10-09') {
+        console.error(`FAIL [${filePath}]: Game "${gameUrl}" lastmod expected 2026-10-09, got "${entry.lastmod}"`);
+        hasError = true;
+      }
+    }
+  }
+
   // Verify core home & guides
   if (!urlMap.has('https://veranex.app/')) {
     console.error(`FAIL [${filePath}]: Missing home URL "https://veranex.app/"`);
@@ -284,7 +318,7 @@ function validateRobotsTxt(filePath: string) {
       continue;
     }
 
-    const requiredAllows = ['/', '/tools/', '/lifestyle', '/finance', '/finance/', '/finance/util', '/guides/'];
+    const requiredAllows = ['/', '/tools/', '/lifestyle', '/finance', '/finance/', '/finance/util', '/guides/', '/game', '/game/'];
     for (const reqAllow of requiredAllows) {
       if (!section.allows.includes(reqAllow)) {
         console.error(`FAIL [${filePath}]: Bot "${botName}" missing "Allow: ${reqAllow}"`);
@@ -301,7 +335,7 @@ function validateRobotsTxt(filePath: string) {
     }
   }
 
-  // Check AdSense bots disallow /tools and /tools/
+  // Check AdSense bots disallow /tools and /tools/, and /game and /game/
   for (const botName of ADSENSE_BOTS) {
     const section = sections.find(s => s.userAgent.toLowerCase() === botName.toLowerCase());
     if (!section) {
@@ -312,6 +346,11 @@ function validateRobotsTxt(filePath: string) {
 
     if (!section.disallows.includes('/tools/') || !section.disallows.includes('/tools')) {
       console.error(`FAIL [${filePath}]: AdSense bot "${botName}" must disallow /tools/ and /tools`);
+      hasError = true;
+    }
+
+    if (!section.disallows.includes('/game/') || !section.disallows.includes('/game')) {
+      console.error(`FAIL [${filePath}]: AdSense bot "${botName}" must disallow /game/ and /game`);
       hasError = true;
     }
   }

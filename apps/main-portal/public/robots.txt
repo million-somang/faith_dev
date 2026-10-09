@@ -166,6 +166,8 @@ Allow: /finance
 Allow: /finance/
 Allow: /finance/util
 Allow: /guides/
+Allow: /game
+Allow: /game/
 Disallow: /admin/
 Disallow: /api/
 
@@ -178,6 +180,8 @@ Allow: /finance
 Allow: /finance/
 Allow: /finance/util
 Allow: /guides/
+Allow: /game
+Allow: /game/
 Disallow: /admin/
 Disallow: /api/
 
@@ -190,6 +194,8 @@ Allow: /finance
 Allow: /finance/
 Allow: /finance/util
 Allow: /guides/
+Allow: /game
+Allow: /game/
 Disallow: /admin/
 Disallow: /api/
 
@@ -202,6 +208,8 @@ Allow: /finance
 Allow: /finance/
 Allow: /finance/util
 Allow: /guides/
+Allow: /game
+Allow: /game/
 Disallow: /admin/
 Disallow: /api/
 
@@ -214,6 +222,8 @@ Allow: /finance
 Allow: /finance/
 Allow: /finance/util
 Allow: /guides/
+Allow: /game
+Allow: /game/
 Disallow: /admin/
 Disallow: /api/
 
