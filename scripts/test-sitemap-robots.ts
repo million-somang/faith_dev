@@ -30,6 +30,7 @@ const EXPECTED_TOOL_SLUGS = [
 
 const EXPECTED_HUBS = [
   'https://veranex.app/lifestyle',
+  'https://veranex.app/finance',
   'https://veranex.app/finance/util',
 ];
 
@@ -134,9 +135,9 @@ function validateSitemap(filePath: string) {
 
   console.log(`[${filePath}] Found ${urls.length} URLs in sitemap`);
 
-  // Verify total count is exactly 47
-  if (urls.length !== 47) {
-    console.error(`FAIL [${filePath}]: Expected exactly 47 URLs, but found ${urls.length}`);
+  // Verify total count is exactly 48
+  if (urls.length !== 48) {
+    console.error(`FAIL [${filePath}]: Expected exactly 48 URLs, but found ${urls.length}`);
     hasError = true;
   }
 
@@ -283,7 +284,7 @@ function validateRobotsTxt(filePath: string) {
       continue;
     }
 
-    const requiredAllows = ['/', '/tools/', '/lifestyle', '/guides/'];
+    const requiredAllows = ['/', '/tools/', '/lifestyle', '/finance', '/finance/', '/finance/util', '/guides/'];
     for (const reqAllow of requiredAllows) {
       if (!section.allows.includes(reqAllow)) {
         console.error(`FAIL [${filePath}]: Bot "${botName}" missing "Allow: ${reqAllow}"`);
