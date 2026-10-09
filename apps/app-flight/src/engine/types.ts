@@ -28,6 +28,7 @@ export interface Player {
   highScore: number;
   kills: number;
   lastShotFrame: number;
+  hitFlashTimer?: number;
 }
 
 export interface Bullet {
@@ -63,6 +64,7 @@ export interface Enemy {
   lastShotFrame: number;
   shootInterval: number;
   turrets?: BossTurret[];
+  hitFlashTimer?: number;
 }
 
 export interface BossTurret {
@@ -145,4 +147,5 @@ export interface GameEngineState {
   screenShake: number;
   canvasWidth: number;
   canvasHeight: number;
+  assetsLoaded?: boolean;
 }

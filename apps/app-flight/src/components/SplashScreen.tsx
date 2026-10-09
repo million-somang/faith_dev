@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Plane, ShieldCheck, Zap } from 'lucide-react';
+import { ShieldCheck, Zap } from 'lucide-react';
 import { BannerSlot } from './BannerSlot';
+import { assetManager } from '../engine/assets';
 
 interface SplashScreenProps {
   onFinish: () => void;
@@ -10,6 +11,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [progress, setProgress] = useState<number>(1);
 
   useEffect(() => {
+    // 스프라이트 에셋 즉시 백그라운드 프리로드
+    assetManager.preloadAssets();
+
     const duration = 4000;
     const intervalTime = 40;
     const step = 100 / (duration / intervalTime);
@@ -31,6 +35,8 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
     return () => clearInterval(timer);
   }, [onFinish]);
 
+  const p38Src = `${(import.meta.env.BASE_URL || '/app/flight/').replace(/\/$/, '')}/assets/sprites/player_p38.png`;
+
   return (
     <div className="fixed inset-0 z-50 bg-[#FAF8F5] text-[#2D2A26] flex flex-col justify-between items-center p-4 sm:p-6 select-none overflow-hidden">
       {/* 상단 브랜드 태그 */}
@@ -51,13 +57,18 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
       {/* 중앙 메인 그래픽 & 프로그레스 */}
       <div className="w-full max-w-sm flex flex-col items-center text-center my-auto">
-        {/* 전투기 아이콘 펄스 */}
+        {/* 전투기 고화질 스프라이트 펄스 */}
         <div className="relative mb-6">
-          <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20 animate-soft-pulse">
-            <Plane className="w-12 h-12 text-white -rotate-45" />
+          <div className="w-28 h-28 rounded-3xl bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/25 p-3 relative overflow-hidden">
+            <div className="absolute inset-0 bg-radial from-white/20 to-transparent pointer-events-none" />
+            <img
+              src={p38Src}
+              alt="베라 플라이트 P-38 전투기"
+              className="w-20 h-20 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] animate-soft-pulse"
+            />
           </div>
-          <div className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-md bg-amber-400 text-[#2D2A26] font-black text-[10px] shadow-xs flex items-center gap-1">
-            <Zap className="w-3 h-3 fill-current" />
+          <div className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-md bg-amber-400 text-[#2D2A26] font-black text-[10px] shadow-xs flex items-center gap-1 border border-amber-300">
+            <Zap className="w-3 h-3 fill-current text-amber-900" />
             1942 REMAKE
           </div>
         </div>

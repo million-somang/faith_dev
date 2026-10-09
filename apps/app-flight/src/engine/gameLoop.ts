@@ -1,5 +1,3 @@
-// 1942 스타일 베라 플라이트 캔버스 게임 엔진
-
 import type {
   GameEngineState,
   Player,
@@ -9,6 +7,7 @@ import type {
   Island,
 } from './types';
 import { sound } from '../utils/sound';
+import { assetManager } from './assets';
 
 export type { GameEngineState };
 
@@ -19,6 +18,7 @@ export const CANVAS_HEIGHT = 600;
 let nextEntityId = 1;
 
 export function createInitialState(): GameEngineState {
+  assetManager.preloadAssets();
   let savedHighScore = 0;
   try {
     const s = localStorage.getItem('vera_flight_highscore');
@@ -577,6 +577,11 @@ export function updateGameEngine(
     p.isInvincible = p.isRolling;
   }
 
+  // 플레이어 피격 플래시 타이머 감소
+  if (p.hitFlashTimer && p.hitFlashTimer > 0) {
+    p.hitFlashTimer--;
+  }
+
   // 4. 플레이어 자동 사격
   if (inputs.shoot) {
     playerShoot(state);
@@ -628,6 +633,10 @@ export function updateGameEngine(
   // 7. 적기 업데이트
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
+
+    if (e.hitFlashTimer && e.hitFlashTimer > 0) {
+      e.hitFlashTimer--;
+    }
 
     // 이동 패턴
     if (e.type === 'scout') {
@@ -776,6 +785,7 @@ export function updateGameEngine(
       }
 
       if (hit) {
+        e.hitFlashTimer = 6;
         state.bullets.splice(bi, 1);
         createExplosion(state, b.x, b.y, 'small', 3);
 
@@ -948,6 +958,7 @@ function handlePlayerHit(state: GameEngineState) {
   p.lives--;
   p.hasEscorts = false; // 피격 시 호위기 소실
   p.weaponLevel = Math.max(1, p.weaponLevel - 1); // 무기 1단계 하향
+  p.hitFlashTimer = 12;
   createExplosion(state, p.x, p.y, 'medium', 25);
   state.screenShake = 18;
 
@@ -1010,103 +1021,130 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
   });
 
   // 2. 적기 렌더링
+  const sprites = assetManager.getSprites();
+
   state.enemies.forEach((e) => {
     ctx.save();
     ctx.translate(e.x, e.y);
 
+    const isHitFlash = (e.hitFlashTimer || 0) > 0;
+    if (isHitFlash) {
+      ctx.filter = 'brightness(2.2)';
+    }
+
     if (e.type === 'scout') {
-      // 정찰기
-      ctx.fillStyle = '#475569';
-      // 날개
-      ctx.beginPath();
-      ctx.moveTo(-13, 0);
-      ctx.lineTo(13, 0);
-      ctx.lineTo(0, -13);
-      ctx.closePath();
-      ctx.fill();
-      // 동체
-      ctx.fillStyle = '#1E293B';
-      ctx.fillRect(-3, -12, 6, 24);
-      // 프로펠러
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillRect(-6, -14, 12, 2);
+      if (sprites.enemyScout && sprites.enemyScout.complete && sprites.enemyScout.naturalWidth > 0) {
+        ctx.drawImage(sprites.enemyScout, -18, -18, 36, 36);
+      } else {
+        // 정찰기 벡터 폴백
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.moveTo(-13, 0);
+        ctx.lineTo(13, 0);
+        ctx.lineTo(0, -13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(-3, -12, 6, 24);
+        ctx.fillStyle = '#94A3B8';
+        ctx.fillRect(-6, -14, 12, 2);
+      }
     } else if (e.type === 'red-formation') {
-      // 붉은 정예 편대기
-      ctx.fillStyle = '#DC2626';
-      // 삼각형 델타 윙
-      ctx.beginPath();
-      ctx.moveTo(0, 14);
-      ctx.lineTo(-14, -8);
-      ctx.lineTo(14, -8);
-      ctx.closePath();
-      ctx.fill();
-      // 황금 캐노피
-      ctx.fillStyle = '#FBBF24';
-      ctx.beginPath();
-      ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
-      ctx.fill();
+      // 붉은 정예 편대기 - S자 선회 뱅킹 틸트(기울임) 각도 계산
+      const tilt = Math.sin((e.curveTimer || 0) * 0.08) * 0.35;
+      ctx.rotate(tilt);
+
+      if (sprites.enemyRed && sprites.enemyRed.complete && sprites.enemyRed.naturalWidth > 0) {
+        ctx.drawImage(sprites.enemyRed, -20, -20, 40, 40);
+      } else {
+        // 편대기 벡터 폴백
+        ctx.fillStyle = '#DC2626';
+        ctx.beginPath();
+        ctx.moveTo(0, 14);
+        ctx.lineTo(-14, -8);
+        ctx.lineTo(14, -8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#FBBF24';
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     } else if (e.type === 'bomber') {
-      // 중형 폭격기
-      ctx.fillStyle = '#15803D';
-      // 메인 날개
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 24, 8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // 동체
-      ctx.fillStyle = '#166534';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 8, 22, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // 좌우 쌍발 엔진
-      ctx.fillStyle = '#0F172A';
-      ctx.fillRect(-14, -6, 5, 12);
-      ctx.fillRect(9, -6, 5, 12);
+      if (sprites.enemyBomber && sprites.enemyBomber.complete && sprites.enemyBomber.naturalWidth > 0) {
+        ctx.drawImage(sprites.enemyBomber, -36, -34, 72, 68);
+      } else {
+        // 폭격기 벡터 폴백
+        ctx.fillStyle = '#15803D';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 24, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#166534';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 8, 22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0F172A';
+        ctx.fillRect(-14, -6, 5, 12);
+        ctx.fillRect(9, -6, 5, 12);
+      }
+      if (isHitFlash) ctx.filter = 'none';
+
       // 체력바
-      const hpPercent = e.hp / e.maxHp;
+      const hpPercent = Math.max(0, e.hp / e.maxHp);
       ctx.fillStyle = '#E2E8F0';
-      ctx.fillRect(-20, -28, 40, 4);
+      ctx.fillRect(-22, -42, 44, 4);
       ctx.fillStyle = '#22C55E';
-      ctx.fillRect(-20, -28, 40 * hpPercent, 4);
+      ctx.fillRect(-22, -42, 44 * hpPercent, 4);
     } else if (e.type === 'boss') {
-      // 거대 공중 전함
-      // 전함 동체
-      ctx.fillStyle = '#334155';
-      ctx.beginPath();
-      ctx.roundRect(-70, -45, 140, 90, 16);
-      ctx.fill();
+      if (sprites.enemyBoss && sprites.enemyBoss.complete && sprites.enemyBoss.naturalWidth > 0) {
+        ctx.drawImage(sprites.enemyBoss, -75, -55, 150, 110);
+      } else {
+        // 거대 공중 전함 본체 벡터 폴백
+        ctx.fillStyle = '#334155';
+        ctx.beginPath();
+        ctx.roundRect(-70, -45, 140, 90, 16);
+        ctx.fill();
+        ctx.fillStyle = '#1E293B';
+        ctx.fillRect(-50, -25, 100, 50);
+        ctx.fillStyle = '#DC2626';
+        ctx.beginPath();
+        ctx.arc(0, 5, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FEF08A';
+        ctx.beginPath();
+        ctx.arc(0, 5, 8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (isHitFlash) ctx.filter = 'none';
 
-      // 장갑판 디테일
-      ctx.fillStyle = '#1E293B';
-      ctx.fillRect(-50, -25, 100, 50);
-
-      // 메인 코어
-      ctx.fillStyle = '#DC2626';
-      ctx.beginPath();
-      ctx.arc(0, 5, 16, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#FEF08A';
-      ctx.beginPath();
-      ctx.arc(0, 5, 8, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 좌우 포탑
+      // 좌우 포탑 독립 렌더링
       if (e.turrets) {
         e.turrets.forEach((turret) => {
           ctx.save();
           ctx.translate(turret.relX, turret.relY);
           if (turret.hp > 0) {
-            ctx.fillStyle = '#64748B';
+            ctx.fillStyle = '#475569';
             ctx.beginPath();
-            ctx.arc(0, 0, 12, 0, Math.PI * 2);
+            ctx.arc(0, 0, 11, 0, Math.PI * 2);
             ctx.fill();
-            // 포구
+            ctx.strokeStyle = '#94A3B8';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // 플레이어 조준 포신 회전
+            const tAngle = Math.atan2(p.y - (e.y + turret.relY), p.x - (e.x + turret.relX));
+            ctx.rotate(tAngle);
             ctx.fillStyle = '#0F172A';
-            ctx.fillRect(-2.5, 4, 5, 12);
+            ctx.fillRect(0, -2.5, 14, 5);
           } else {
             // 파괴된 포탑 잔해
             ctx.fillStyle = '#1E293B';
             ctx.beginPath();
             ctx.arc(0, 0, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#DC2626';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
             ctx.fill();
           }
           ctx.restore();
@@ -1116,14 +1154,15 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
       // 보스 대형 체력바
       const hpRatio = Math.max(0, e.hp / e.maxHp);
       ctx.fillStyle = '#0F172A';
-      ctx.fillRect(-60, -55, 120, 7);
+      ctx.fillRect(-65, -68, 130, 8);
       ctx.fillStyle = hpRatio > 0.3 ? '#EF4444' : '#F97316';
-      ctx.fillRect(-60, -55, 120 * hpRatio, 7);
+      ctx.fillRect(-65, -68, 130 * hpRatio, 8);
       ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-60, -55, 120, 7);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-65, -68, 130, 8);
     }
 
+    if (isHitFlash) ctx.filter = 'none';
     ctx.restore();
   });
 
@@ -1187,45 +1226,61 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
       ctx.scale(1, Math.abs(cosA) > 0.05 ? cosA : 0.05);
 
       // 그림자 분리 효과 (고도 상승)
-      const altitude = Math.sin((p.rollProgress / p.rollDuration) * Math.PI) * 20;
+      const altitude = Math.sin((p.rollProgress / p.rollDuration) * Math.PI) * 24;
       ctx.save();
       ctx.translate(0, 15 + altitude);
       ctx.scale(0.8, 0.4);
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
       ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
 
-    // 아군 P-38 쌍발 날개
-    ctx.fillStyle = '#E2E8F0';
-    // 주익 날개
-    ctx.beginPath();
-    ctx.ellipse(0, 0, 20, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
+    const isPlayerHitFlash = (p.hitFlashTimer || 0) > 0;
+    if (isPlayerHitFlash) {
+      ctx.filter = 'brightness(2.2)';
+    }
 
-    // 좌우 엔진 붐 (Boom tails)
-    ctx.fillStyle = '#CBD5E1';
-    ctx.fillRect(-13, -12, 5, 26);
-    ctx.fillRect(8, -12, 5, 26);
+    if (sprites.playerP38 && sprites.playerP38.complete && sprites.playerP38.naturalWidth > 0) {
+      // P-38 고화질 스프라이트 렌더링
+      ctx.drawImage(sprites.playerP38, -25, -26, 50, 52);
 
-    // 수평 꼬리날개
-    ctx.fillStyle = '#94A3B8';
-    ctx.fillRect(-15, 12, 30, 4);
+      // 프로펠러 회전 블러 (좌우 엔진 팁)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      const propPhase = (state.currentFrame % 4) * 0.6;
+      ctx.fillRect(-17 + propPhase, -22, 10, 2);
+      ctx.fillRect(7 + propPhase, -22, 10, 2);
+    } else {
+      // 아군 P-38 벡터 폴백
+      ctx.fillStyle = '#E2E8F0';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 20, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
 
-    // 중앙 조종석 콕핏
-    ctx.fillStyle = '#0284C7';
-    ctx.beginPath();
-    ctx.ellipse(0, -4, 4, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
+      // 좌우 엔진 붐 (Boom tails)
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillRect(-13, -12, 5, 26);
+      ctx.fillRect(8, -12, 5, 26);
 
-    // 프로펠러 회전 블러 (좌우)
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    const propPhase = (state.currentFrame % 4) * 0.5;
-    ctx.fillRect(-15 + propPhase, -14, 9, 2);
-    ctx.fillRect(6 + propPhase, -14, 9, 2);
+      // 수평 꼬리날개
+      ctx.fillStyle = '#94A3B8';
+      ctx.fillRect(-15, 12, 30, 4);
 
+      // 중앙 조종석 콕핏
+      ctx.fillStyle = '#0284C7';
+      ctx.beginPath();
+      ctx.ellipse(0, -4, 4, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 프로펠러 회전 블러 (좌우)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+      const propPhase = (state.currentFrame % 4) * 0.5;
+      ctx.fillRect(-15 + propPhase, -14, 9, 2);
+      ctx.fillRect(6 + propPhase, -14, 9, 2);
+    }
+
+    if (isPlayerHitFlash) ctx.filter = 'none';
     ctx.restore();
 
     // 호위기(옵션 2기) 동반 비행
@@ -1233,12 +1288,16 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
       [-28, 28].forEach((offsetX) => {
         ctx.save();
         ctx.translate(p.x + offsetX, p.y + 8);
-        ctx.fillStyle = '#10B981';
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 8, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#065F46';
-        ctx.fillRect(-2, -6, 4, 12);
+        if (sprites.playerEscort && sprites.playerEscort.complete && sprites.playerEscort.naturalWidth > 0) {
+          ctx.drawImage(sprites.playerEscort, -13, -13, 26, 26);
+        } else {
+          ctx.fillStyle = '#10B981';
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 8, 3, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#065F46';
+          ctx.fillRect(-2, -6, 4, 12);
+        }
         ctx.restore();
       });
     }
