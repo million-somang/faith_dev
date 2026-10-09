@@ -7,6 +7,8 @@ import DividendTaxCalculator from '../components/finance/DividendTaxCalculator';
 import MortgageDsrCalculator from '../components/finance/MortgageDsrCalculator';
 import SeveranceCalculator from '../components/finance/SeveranceCalculator';
 import { SoftLockModal } from '../components/common/SoftLockModal';
+import { getFinanceSeoItem } from '../data/financeSeoData';
+import { getGuideBySlug } from '../data/guidesData';
 
 export default function FinanceUtilPage() {
     const { user, logout } = useAuth();
@@ -17,6 +19,7 @@ export default function FinanceUtilPage() {
     const [activeTab, setActiveTab] = useState<'dividend' | 'dsr' | 'severance'>(
         (tabParam === 'dsr' || tabParam === 'severance') ? tabParam : 'dividend'
     );
+    const [openFaqIndexes, setOpenFaqIndexes] = useState<number[]>([0]);
 
     useEffect(() => {
         if (tabParam === 'dividend' || tabParam === 'dsr' || tabParam === 'severance') {
@@ -24,10 +27,61 @@ export default function FinanceUtilPage() {
         }
     }, [tabParam]);
 
+    useEffect(() => {
+        setOpenFaqIndexes([0]);
+    }, [activeTab]);
+
     const handleTabChange = (tab: 'dividend' | 'dsr' | 'severance') => {
         setActiveTab(tab);
         setSearchParams({ tab });
     };
+
+    const toggleFaq = (index: number) => {
+        setOpenFaqIndexes(prev =>
+            prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+        );
+    };
+
+    const tabKeyMap: Record<'dividend' | 'dsr' | 'severance', string> = {
+        dividend: 'dividend-tax',
+        dsr: 'mortgage-dsr',
+        severance: 'severance-irp',
+    };
+
+    const seoData = getFinanceSeoItem(tabKeyMap[activeTab]);
+    const relatedGuide = seoData ? getGuideBySlug(seoData.relatedGuideSlug) : undefined;
+
+    const tabThemes: Record<'dividend' | 'dsr' | 'severance', {
+        calloutBg: string;
+        calloutIcon: string;
+        calloutBadge: string;
+        primaryColor: string;
+        stepBadge: string;
+    }> = {
+        dividend: {
+            calloutBg: 'bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border-amber-200/80',
+            calloutIcon: 'bg-amber-500',
+            calloutBadge: 'text-amber-800 bg-white/80 border-amber-200',
+            primaryColor: 'text-amber-600',
+            stepBadge: 'bg-gradient-to-r from-amber-500 to-orange-500',
+        },
+        dsr: {
+            calloutBg: 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border-blue-200/80',
+            calloutIcon: 'bg-blue-600',
+            calloutBadge: 'text-blue-800 bg-white/80 border-blue-200',
+            primaryColor: 'text-blue-600',
+            stepBadge: 'bg-gradient-to-r from-blue-600 to-indigo-600',
+        },
+        severance: {
+            calloutBg: 'bg-gradient-to-r from-teal-50/90 via-emerald-50/70 to-teal-50/90 border-teal-200/80',
+            calloutIcon: 'bg-teal-600',
+            calloutBadge: 'text-teal-800 bg-white/80 border-teal-200',
+            primaryColor: 'text-teal-600',
+            stepBadge: 'bg-gradient-to-r from-teal-600 to-emerald-600',
+        },
+    };
+
+    const currentTheme = tabThemes[activeTab];
 
     const tabConfig = {
         dividend: {
@@ -52,9 +106,26 @@ export default function FinanceUtilPage() {
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
             <PageSEO
-                title={currentSeo.title}
-                description={currentSeo.desc}
+                title={seoData ? seoData.title : currentSeo.title}
+                description={seoData ? seoData.description : currentSeo.desc}
                 path={currentSeo.path}
+                tool={seoData ? {
+                    name: seoData.shortTitle,
+                    description: seoData.description,
+                    url: `https://veranex.app${currentSeo.path}`,
+                    category: 'FinanceApplication',
+                    applicationCategory: 'FinanceApplication',
+                    breadcrumbParent: {
+                        name: '금융',
+                        item: 'https://veranex.app/finance',
+                    },
+                    directAnswer: seoData.directAnswer,
+                    howTo: {
+                        name: `${seoData.shortTitle} 이용 방법`,
+                        steps: seoData.howToSteps,
+                    },
+                    faqs: seoData.faqs,
+                } : undefined}
             />
             <Header user={user} onLogout={logout} />
 
@@ -116,6 +187,219 @@ export default function FinanceUtilPage() {
                     {activeTab === 'dsr' && <MortgageDsrCalculator />}
                     {activeTab === 'severance' && <SeveranceCalculator />}
                 </div>
+
+                {/* 🌟 AEO 구조화 콘텐츠 섹션 */}
+                {seoData && (
+                    <div className="mt-8 space-y-8 animate-fade-in">
+                        {/* 1. Direct Answer 콜아웃 박스 */}
+                        <section className={`${currentTheme.calloutBg} border rounded-3xl p-6 sm:p-7 shadow-sm`}>
+                            <div className="flex items-center justify-between gap-2 mb-3">
+                                <div className="flex items-center gap-2.5 text-slate-900 font-black text-sm sm:text-base">
+                                    <span className={`w-7 h-7 rounded-xl ${currentTheme.calloutIcon} text-white flex items-center justify-center text-xs shadow-xs`}>
+                                        <i className="fas fa-lightbulb"></i>
+                                    </span>
+                                    <span>💡 AI 핵심 답변 요약 (AEO Direct Answer)</span>
+                                </div>
+                                <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${currentTheme.calloutBadge}`}>
+                                    AEO 핵심 요약
+                                </span>
+                            </div>
+                            <p className="text-slate-800 text-sm sm:text-base font-medium leading-relaxed sm:pl-9">
+                                {seoData.directAnswer}
+                            </p>
+                        </section>
+
+                        {/* 2. 계산 공식 & 법정 산식 카드 */}
+                        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xs">
+                                    <i className="fas fa-square-root-alt"></i>
+                                </span>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                                    {seoData.formula.title}
+                                </h2>
+                            </div>
+
+                            <div className="bg-slate-950 text-emerald-400 font-mono text-sm sm:text-base p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto mb-4">
+                                <span className="text-xs text-slate-400 block mb-1 font-sans">📌 표준 법정 산정식</span>
+                                <code>{seoData.formula.expression}</code>
+                            </div>
+
+                            <p className="text-slate-700 text-sm sm:text-base leading-relaxed mb-6 font-normal">
+                                {seoData.formula.description}
+                            </p>
+
+                            {seoData.formula.variables.length > 0 && (
+                                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                                    <table className="w-full text-left text-xs sm:text-sm border-collapse">
+                                        <thead>
+                                            <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                                                <th className="py-3 px-4 w-1/3">산정 기준 변수</th>
+                                                <th className="py-3 px-4">세부 기준 및 적용 방법</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {seoData.formula.variables.map((v, i) => (
+                                                <tr key={i} className="hover:bg-slate-50/60 transition-colors">
+                                                    <td className="py-3 px-4 font-bold text-slate-900 bg-slate-50/40">
+                                                        {v.name}
+                                                    </td>
+                                                    <td className="py-3 px-4 text-slate-600 leading-relaxed">
+                                                        {v.description}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </section>
+
+                        {/* 3. 실제 계산 시뮬레이션 사례 */}
+                        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <span className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
+                                    <i className="fas fa-calculator"></i>
+                                </span>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                                    실제 계산 시뮬레이션 사례
+                                </h2>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                        📋 기준 시나리오
+                                    </span>
+                                    <p className="text-slate-800 text-sm sm:text-base font-medium leading-relaxed">
+                                        {seoData.example.scenario}
+                                    </p>
+                                </div>
+
+                                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                                        🔢 산출 과정
+                                    </span>
+                                    <p className="text-slate-700 text-sm leading-relaxed font-mono whitespace-pre-line">
+                                        {seoData.example.calculation}
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
+                                    <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1">
+                                        ✅ 최종 산출 결과
+                                    </span>
+                                    <p className="text-emerald-950 text-base sm:text-lg font-bold leading-relaxed">
+                                        {seoData.example.result}
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 4. 3단계 간편 이용 가이드 */}
+                        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                            <div className="flex items-center gap-2 mb-6">
+                                <span className="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xs">
+                                    <i className="fas fa-list-ol"></i>
+                                </span>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                                    3단계 간편 이용 가이드
+                                </h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {seoData.howToSteps.map((step, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="bg-slate-50 rounded-2xl p-5 border border-slate-200/70 flex flex-col justify-between"
+                                    >
+                                        <div>
+                                            <div className={`w-8 h-8 rounded-xl ${currentTheme.stepBadge} text-white font-black text-sm flex items-center justify-center mb-3 shadow-xs`}>
+                                                {idx + 1}
+                                            </div>
+                                            <h3 className="font-bold text-slate-900 text-base mb-2">
+                                                {step.name}
+                                            </h3>
+                                            <p className="text-slate-600 text-xs sm:text-sm leading-relaxed">
+                                                {step.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* 5. 자주 묻는 질문 FAQ */}
+                        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                            <div className="flex items-center gap-2 mb-6">
+                                <span className="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xs">
+                                    <i className="fas fa-question-circle"></i>
+                                </span>
+                                <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                                    자주 묻는 질문 (FAQ)
+                                </h2>
+                            </div>
+
+                            <div className="space-y-3">
+                                {seoData.faqs.map((faq, idx) => {
+                                    const isOpen = openFaqIndexes.includes(idx);
+                                    return (
+                                        <div
+                                            key={idx}
+                                            className="border border-slate-200/80 rounded-2xl overflow-hidden transition-colors"
+                                        >
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleFaq(idx)}
+                                                className="w-full text-left px-5 py-4 bg-slate-50/60 hover:bg-slate-50 flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-slate-900 transition-colors cursor-pointer"
+                                            >
+                                                <span className="flex items-center gap-3">
+                                                    <span className={`${currentTheme.primaryColor} font-black text-sm`}>Q.</span>
+                                                    <span>{faq.question}</span>
+                                                </span>
+                                                <i className={`fas fa-chevron-down text-slate-400 text-xs transition-transform duration-200 ${isOpen ? `rotate-180 ${currentTheme.primaryColor}` : ''}`}></i>
+                                            </button>
+                                            {isOpen && (
+                                                <div className="px-5 py-4 bg-white border-t border-slate-100 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                                                    <div className="flex gap-3">
+                                                        <span className="text-emerald-600 font-black text-sm flex-shrink-0">A.</span>
+                                                        <p>{faq.answer}</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </section>
+
+                        {/* 6. 연관 지식 가이드 추천 카드 */}
+                        {seoData.relatedGuideSlug && (
+                            <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+                                    <div className="space-y-1.5">
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                                            <i className="fas fa-book-open"></i> VERA 금융 리서치 심층 칼럼
+                                        </span>
+                                        <h3 className="text-base sm:text-lg font-bold text-white">
+                                            {relatedGuide ? relatedGuide.title : `${seoData.shortTitle} 심층 분석 가이드`}
+                                        </h3>
+                                        <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                                            {relatedGuide ? relatedGuide.description : '전문 애널리스트가 정리한 최신 금융 전략과 실제 사례를 확인해 보세요.'}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        to={`/guides/${seoData.relatedGuideSlug}`}
+                                        className="px-5 py-3 bg-white text-slate-950 hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-2"
+                                    >
+                                        <span>VERA 금융 편집국 심층 분석 칼럼 함께 읽기</span>
+                                        <i className="fas fa-arrow-right text-[11px]"></i>
+                                    </Link>
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                )}
 
                 {/* 🌟 소프트 락인 넛지 배너 */}
                 <div className="mt-12 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6 border border-slate-800">

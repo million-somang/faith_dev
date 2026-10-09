@@ -15,6 +15,8 @@ export interface ToolSchemaProps {
     description: string;
     url: string;
     category?: string;
+    applicationCategory?: string;
+    breadcrumbParent?: { name: string; item: string };
     directAnswer?: string;
     howTo?: {
         name: string;
@@ -65,7 +67,7 @@ export function PageSEO({
                 name: tool.name,
                 description: tool.description,
                 url: tool.url,
-                applicationCategory: tool.category || 'UtilityApplication',
+                applicationCategory: tool.applicationCategory || tool.category || 'UtilityApplication',
                 operatingSystem: 'All',
                 browserRequirements: 'Requires JavaScript, HTML5, and CSS3.',
                 offers: {
@@ -86,8 +88,8 @@ export function PageSEO({
                     {
                         '@type': 'ListItem',
                         position: 2,
-                        name: '생활도구',
-                        item: `${SITE_URL}/lifestyle`,
+                        name: tool.breadcrumbParent?.name || '생활도구',
+                        item: tool.breadcrumbParent?.item || `${SITE_URL}/lifestyle`,
                     },
                     {
                         '@type': 'ListItem',
