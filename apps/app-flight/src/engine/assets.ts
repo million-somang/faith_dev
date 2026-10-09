@@ -7,6 +7,8 @@ export interface GameSprites {
   enemyRed: HTMLImageElement | null;
   enemyBomber: HTMLImageElement | null;
   enemyBoss: HTMLImageElement | null;
+  explosionEnemy: HTMLImageElement | null;
+  explosionPlayer: HTMLImageElement | null;
 }
 
 class AssetManager {
@@ -17,6 +19,8 @@ class AssetManager {
     enemyRed: null,
     enemyBomber: null,
     enemyBoss: null,
+    explosionEnemy: null,
+    explosionPlayer: null,
   };
 
   private loaded = false;
@@ -43,6 +47,8 @@ class AssetManager {
         { key: 'enemyRed', url: `${base}assets/sprites/enemy_red.png` },
         { key: 'enemyBomber', url: `${base}assets/sprites/enemy_bomber.png` },
         { key: 'enemyBoss', url: `${base}assets/sprites/enemy_boss.png` },
+        { key: 'explosionEnemy', url: `${base}assets/sprites/explosion_enemy.png` },
+        { key: 'explosionPlayer', url: `${base}assets/sprites/explosion_player.png` },
       ];
 
       let loadedCount = 0;

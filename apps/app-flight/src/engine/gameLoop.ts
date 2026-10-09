@@ -68,6 +68,7 @@ export function createInitialState(): GameEngineState {
     player,
     bullets: [],
     enemies: [],
+    explosions: [],
     items: [],
     particles: [],
     floatingTexts: [],
@@ -332,7 +333,23 @@ export function playerShoot(state: GameEngineState) {
   }
 }
 
-// 폭발 이펙트 생성
+// 플레이어 격추 시 대폭발 애니메이션 생성
+export function triggerPlayerExplosion(state: GameEngineState, x: number, y: number) {
+  state.explosions.push({
+    id: nextEntityId++,
+    x,
+    y,
+    type: 'player',
+    frame: 0,
+    totalFrames: 6,
+    frameDuration: 4,
+    frameTimer: 0,
+    scale: 1.5,
+    rotation: 0,
+  });
+}
+
+// 폭발 이펙트 생성 (파티클 + 실제 비행기 폭파 애니메이션)
 export function createExplosion(
   state: GameEngineState,
   x: number,
@@ -346,6 +363,7 @@ export function createExplosion(
   const multiplier = scale === 'boss' ? 2.5 : scale === 'medium' ? 1.6 : 1;
   const particleCount = count * multiplier;
 
+  // 1. 파티클 불꽃 스파크 생성
   for (let i = 0; i < particleCount; i++) {
     const angle = Math.random() * Math.PI * 2;
     const spd = (1.5 + Math.random() * 4) * multiplier;
@@ -359,6 +377,46 @@ export function createExplosion(
       alpha: 1,
       decay: 0.02 + Math.random() * 0.025,
       sizeDecay: 0.04,
+    });
+  }
+
+  // 2. 비행기 폭파 애니메이션 시퀀스 생성
+  if (scale === 'boss') {
+    // 보스 전함 연속 다단 폭발 5회 시퀀스
+    const offsets = [
+      { dx: 0, dy: 0, delay: 0 },
+      { dx: -45, dy: -25, delay: 4 },
+      { dx: 45, dy: -25, delay: 8 },
+      { dx: -30, dy: 30, delay: 12 },
+      { dx: 30, dy: 30, delay: 16 },
+    ];
+    offsets.forEach(({ dx, dy, delay }) => {
+      state.explosions.push({
+        id: nextEntityId++,
+        x: x + dx,
+        y: y + dy,
+        type: 'boss',
+        frame: 0,
+        totalFrames: 6,
+        frameDuration: 4,
+        frameTimer: -delay,
+        scale: 1.8,
+        rotation: Math.random() * Math.PI * 2,
+      });
+    });
+  } else {
+    // 일반 적기 / 중형 폭격기 폭발
+    state.explosions.push({
+      id: nextEntityId++,
+      x,
+      y,
+      type: 'enemy',
+      frame: 0,
+      totalFrames: 6,
+      frameDuration: scale === 'medium' ? 4 : 3,
+      frameTimer: 0,
+      scale: scale === 'medium' ? 1.5 : 1.0,
+      rotation: Math.random() * Math.PI * 2,
     });
   }
 }
@@ -805,6 +863,19 @@ export function updateGameEngine(
     }
   }
 
+  // 8.5 비행기 폭발 애니메이션 엔티티 업데이트
+  for (let i = state.explosions.length - 1; i >= 0; i--) {
+    const exp = state.explosions[i];
+    exp.frameTimer++;
+    if (exp.frameTimer >= exp.frameDuration) {
+      exp.frameTimer = 0;
+      exp.frame++;
+      if (exp.frame >= exp.totalFrames) {
+        state.explosions.splice(i, 1);
+      }
+    }
+  }
+
   // 9. 파티클 업데이트
   for (let i = state.particles.length - 1; i >= 0; i--) {
     const pt = state.particles[i];
@@ -942,6 +1013,7 @@ function handlePlayerHit(state: GameEngineState) {
   p.hasEscorts = false; // 피격 시 호위기 소실
   p.weaponLevel = Math.max(1, p.weaponLevel - 1); // 무기 1단계 하향
   p.hitFlashTimer = 12;
+  triggerPlayerExplosion(state, p.x, p.y);
   createExplosion(state, p.x, p.y, 'medium', 25);
   state.screenShake = 18;
 
@@ -1268,6 +1340,41 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
       });
     }
   }
+
+  // 5.5 비행기 공중 폭발 애니메이션 렌더링 (Enemy & Player Explosion Sprite Sheet)
+  state.explosions.forEach((exp) => {
+    if (exp.frameTimer < 0) return; // 지연 스폰 대기 중인 경우 생략
+    const img = exp.type === 'player' ? sprites.explosionPlayer : sprites.explosionEnemy;
+
+    if (img && img.complete && img.naturalWidth > 0) {
+      const fw = img.naturalWidth / exp.totalFrames;
+      const fh = img.naturalHeight;
+      const targetSize = (exp.type === 'player' ? 76 : 56) * exp.scale;
+
+      ctx.save();
+      ctx.translate(exp.x, exp.y);
+      if (exp.type !== 'player') {
+        ctx.rotate(exp.rotation);
+      }
+
+      // 초기 화구 충격파 링 효과 (0~2프레임)
+      if (exp.frame <= 2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(0, 0, (targetSize / 2) * (0.6 + exp.frame * 0.25), 0, Math.PI * 2);
+        ctx.fillStyle = exp.type === 'player' ? 'rgba(254, 240, 138, 0.4)' : 'rgba(249, 115, 22, 0.35)';
+        ctx.fill();
+        ctx.restore();
+      }
+
+      ctx.drawImage(
+        img,
+        exp.frame * fw, 0, fw, fh,
+        -targetSize / 2, -targetSize / 2, targetSize, targetSize
+      );
+      ctx.restore();
+    }
+  });
 
   // 6. 파티클 렌더링
   state.particles.forEach((pt) => {

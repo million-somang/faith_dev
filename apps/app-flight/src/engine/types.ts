@@ -129,11 +129,25 @@ export interface Island {
   color: string;
 }
 
+export interface Explosion {
+  id: number;
+  x: number;
+  y: number;
+  type: 'enemy' | 'player' | 'boss';
+  frame: number;
+  totalFrames: number;
+  frameDuration: number;
+  frameTimer: number;
+  scale: number;
+  rotation: number;
+}
+
 export interface GameEngineState {
   status: GameStatus;
   player: Player;
   bullets: Bullet[];
   enemies: Enemy[];
+  explosions: Explosion[];
   items: Item[];
   particles: Particle[];
   floatingTexts: FloatingText[];
