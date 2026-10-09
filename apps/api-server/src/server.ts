@@ -211,12 +211,16 @@ app.use('/_next/static/*', serveStatic({
     rewriteRequestPath: (path) => path.replace(/^\/_next\/static/, '')
 }));
 
-// Next.js Tools 개별 SSG 페이지 서빙 (/tools/:slug)
+// VERA 생활도구 개별 SSG 정적 페이지 서빙 (/tools/:slug)
 app.get('/tools/:slug', (c) => {
     const slug = c.req.param('slug');
-    const staticFilePath = path.resolve(`./apps/next-portal/.next/server/app/tools/${slug}.html`);
-    if (fs.existsSync(staticFilePath)) {
-        return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
+    const portalFilePath = path.resolve(`./apps/main-portal/dist/tools/${slug}/index.html`);
+    const nextFilePath = path.resolve(`./apps/next-portal/.next/server/app/tools/${slug}.html`);
+    if (fs.existsSync(portalFilePath)) {
+        return c.html(fs.readFileSync(portalFilePath, 'utf-8'));
+    }
+    if (fs.existsSync(nextFilePath)) {
+        return c.html(fs.readFileSync(nextFilePath, 'utf-8'));
     }
     return c.redirect('/lifestyle', 302);
 });

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateRssFeed } from './generate-rss.js';
+import { TOOLS_DATA } from '../src/data/toolsData.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +13,21 @@ const templateHtmlPath = path.resolve(distDir, 'index.html');
 if (!fs.existsSync(templateHtmlPath)) {
     console.error('❌ dist/index.html not found. Run vite build first.');
     process.exit(1);
+}
+
+// 템플릿 HTML에서 이전 렌더링 결과가 있을 경우 <div id="root"></div> 깨끗이 비우기
+function getCleanTemplate(rawHtml) {
+    let result = rawHtml;
+    if (!result.includes('<div id="root"></div>')) {
+        const rootStart = result.indexOf('<div id="root">');
+        if (rootStart !== -1) {
+            const scriptStart = result.indexOf('<script', rootStart);
+            if (scriptStart !== -1) {
+                result = result.substring(0, rootStart) + '<div id="root"></div>\n  ' + result.substring(scriptStart);
+            }
+        }
+    }
+    return result;
 }
 
 // Markdown to simple semantic HTML converter
@@ -367,7 +383,8 @@ function generateHomePageHtml(template, guides) {
 async function prerender() {
     console.log('🚀 Starting Enhanced Static HTML Prerendering (SEO & Indexing Optimizer)...');
 
-    const templateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
+    const rawTemplateHtml = fs.readFileSync(templateHtmlPath, 'utf8');
+    const templateHtml = getCleanTemplate(rawTemplateHtml);
     const guides = await loadGuides();
 
     console.log(`📚 Found ${guides.length} guides for static HTML generation.`);
@@ -401,10 +418,13 @@ async function prerender() {
     // 7. Generate static page for Saju Pro
     generateSajuPage(templateHtml);
 
-    // 8. Generate RSS 2.0 Feed
+    // 8. Generate static landing pages for all 13 Life & Finance Tools
+    generateToolsPages(templateHtml);
+
+    // 9. Generate RSS 2.0 Feed
     await generateRssFeed();
 
-    console.log('✅ Static Prerendering completed successfully! All core sections, guides, and SEO structures generated.');
+    console.log('✅ Static Prerendering completed successfully! All core sections, guides, tools, and SEO structures generated.');
 }
 
 function writeHtmlFile(filePath, content) {
@@ -823,48 +843,134 @@ function generatePortalSectionPages(template) {
         },
         {
             route: 'lifestyle',
-            title: '스마트 생활 계산기 & 일상 유틸리티 허브 | VERA',
-            description: '만 나이 계산기, 평수 ↔ ㎡ 면적 변환기, D-Day 기념일 계산기, 대출이자 계산기, JSON 포맷터 등 일상에 꼭 필요한 도구 모음입니다.',
-            heading: '스마트 생활 유틸리티 센터',
+            title: '스마트 생활 편의 도구 센터 - 만 나이, 부동산 평수, D-Day, 퇴직금 등 13대 도구 | VERA',
+            description: '2026 대한민국 최신 법령과 공식에 기반한 스마트 생활 금융 도구 모음. 퇴직금·실업급여, 만 나이, 부동산 평수, 대출 이자, D-Day, 해외직구 관부가세, 글자수 세기, JSON 포맷터, OCR, DSR 계산기 등 13대 필수 도구를 무료로 제공합니다.',
+            heading: '스마트 생활 편의 도구 & 금융 계산기 센터',
             content: `
-                <div class="space-y-6 text-gray-800">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 생활도구 센터는 일상생활과 직장 업무에서 매일 마주치는 계산과 변환 작업을 한곳에서 가장 빠르고 정확하게 처리할 수 있도록 돕는 실용 도구 모음입니다.
-                    </p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-indigo-900 text-base mb-2">1. 대한민국 만 나이 계산기</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                2023년 6월 28일부터 시행된 법제처 행정기본법 기준에 따라, 생일 도래 여부를 정밀 계산하여 법률·행정·금융 계약상 유효한 만 나이와 다음 생일까지 남은 일수를 제공합니다.
-                            </p>
+                <div class="space-y-8 text-gray-800">
+                    <div>
+                        <p class="text-gray-700 leading-relaxed text-base sm:text-lg mb-3">
+                            VERA 생활도구 센터는 일상생활과 직장 업무, 자산 관리에서 매일 마주치는 계산과 변환 작업을 한곳에서 가장 빠르고 정확하게 처리할 수 있도록 돕는 실용 도구 모음입니다.
+                        </p>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            2026년 개정 근로기준법 및 퇴직소득세법, 행정기본법 만 나이 통일법, 계량에 관한 법률 등 대한민국 최신 법정 산식에 맞춰 설계되었으며, 설치 없이 브라우저에서 100% 무료로 이용하실 수 있습니다.
+                        </p>
+                    </div>
+
+                    <!-- 13대 생활 금융 도구 그리드 -->
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                            <span>🛠️ 13대 스마트 생활 & 금융 도구 전체 목록</span>
+                        </h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${TOOLS_DATA.map(tool => `
+                                <article class="p-5 bg-slate-50/70 rounded-2xl border border-slate-200 hover:border-blue-400 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${tool.iconBg} ${tool.iconColor} border border-slate-200/60">
+                                                <i class="${tool.icon}"></i>
+                                                <span>${tool.categoryLabel}</span>
+                                            </span>
+                                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                2026 검증
+                                            </span>
+                                        </div>
+                                        <h3 class="text-base font-extrabold text-slate-900 mb-2 leading-snug">
+                                            <a href="/tools/${tool.slug}" class="hover:text-blue-600 transition-colors">${tool.name}</a>
+                                        </h3>
+                                        <p class="text-slate-600 text-xs leading-relaxed line-clamp-2 mb-3">${tool.directAnswer}</p>
+                                    </div>
+                                    <div class="pt-3 border-t border-slate-200/80 flex items-center justify-between text-xs">
+                                        <span class="text-slate-400 font-mono text-[11px]">${tool.formula?.title ? '법정 산식 검증' : '무료 즉시 실행'}</span>
+                                        <a href="/tools/${tool.slug}" class="text-blue-600 font-bold hover:underline flex items-center gap-1">
+                                            <span>도구 열기</span>
+                                            <span>→</span>
+                                        </a>
+                                    </div>
+                                </article>
+                            `).join('\n')}
                         </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-emerald-900 text-base mb-2">2. 부동산 평수 ↔ ㎡ 정밀 변환기</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                계량에 관한 법률상 법정단위인 1평 = 3.305785㎡ 정밀 환산 공식을 적용하며, 아파트 분양 시 혼동하기 쉬운 전용면적, 주거공용면적, 공급면적의 차이를 명쾌하게 해설합니다.
-                            </p>
-                        </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-amber-900 text-base mb-2">3. D-Day 카운트다운 & 타임 매니지먼트</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                수능, 자격증 시험, 프로젝트 마감, 결혼기념일 등 소중한 목표일까지 남은 일수와 경과일수를 오차 없이 계산하여 체계적인 일정 관리와 동기 부여를 지원합니다.
-                            </p>
-                        </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
-                            <h3 class="font-bold text-blue-900 text-base mb-2">4. 개발자용 JSON 포맷터 & 문법 검증기</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                들여쓰기가 깨진 JSON 텍스트를 보기 좋게 정렬하고 구문 에러(Syntax Error) 줄 번호를 실시간 감지하여 웹 프론트엔드/백엔드 개발 실무 속도를 극대화합니다.
-                            </p>
-                        </div>
-                        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2">
-                            <h3 class="font-bold text-purple-900 text-base mb-2">5. 퇴직금 & 연차수당 법정 계산 공식</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">
-                                근로기준법상 1년 이상 계속 근로한 근로자에게 지급되는 퇴직금을 퇴직 전 3개월간의 평균임금 및 1일 평균임금 기준으로 산정하는 원리와 세금 공제 기준을 안내합니다.
-                            </p>
+                    </div>
+
+                    <!-- 생활도구 센터 자주 묻는 질문 (FAQ) -->
+                    <div class="pt-6 border-t border-slate-200">
+                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                            <span>❓ 생활도구 센터 자주 묻는 질문 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. VERA 생활도구 센터의 모든 계산기는 무료인가요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">네, VERA의 모든 계산기와 변환 도구는 별도의 회원가입이나 과금 결제 없이 PC와 모바일 브라우저에서 100% 무료로 이용하실 수 있습니다.</p>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. 2026년 최신 개정 법령이 적용되어 있나요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">네, 2026년 개정 근속연수 퇴직소득세 공제율, 최신 고용노동부 실업급여 상·하한액(66,000원 / 64,192원), 행정기본법 만 나이 통일법, 법정 단위 평수 변환식 등 최신 공식 기준을 정확히 반영하고 있습니다.</p>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. 입력한 개인 급여나 금융 정보가 외부 서버에 전송되나요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">전혀 전송되지 않습니다. 모든 연산과 데이터 가공은 사용자의 기기(Client-side) 브라우저 메모리 안에서만 안전하게 실행되며, 서버로 일체 전송되거나 기록되지 않아 안심하고 사용하실 수 있습니다.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            `
+            `,
+            jsonLd: {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "CollectionPage",
+                        "name": "VERA 스마트 생활도구 및 금융 계산기 센터",
+                        "description": "2026 대한민국 최신 법령과 공식에 기반한 스마트 생활 금융 도구 모음. 퇴직금, 만 나이, 평수 변환 등 13대 필수 도구를 무료로 제공합니다.",
+                        "url": "https://veranex.app/lifestyle"
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "홈",
+                                "item": "https://veranex.app/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "생활도구",
+                                "item": "https://veranex.app/lifestyle"
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "FAQPage",
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": "VERA 생활도구 센터의 모든 계산기는 무료인가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "네, VERA의 모든 계산기와 변환 도구는 별도의 회원가입이나 과금 결제 없이 PC와 모바일 브라우저에서 100% 무료로 이용하실 수 있습니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "2026년 최신 개정 법령이 적용되어 있나요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "네, 2026년 개정 근속연수 퇴직소득세 공제율, 최신 고용노동부 실업급여 상·하한액(66,000원 / 64,192원), 행정기본법 만 나이 통일법, 법정 단위 평수 변환식 등 최신 공식 기준을 정확히 반영하고 있습니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "입력한 개인 급여나 금융 정보가 외부 서버에 전송되나요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "전혀 전송되지 않습니다. 모든 연산과 데이터 가공은 사용자의 기기(Client-side) 브라우저 메모리 안에서만 안전하게 실행되며, 서버로 일체 전송되거나 기록되지 않아 안심하고 사용하실 수 있습니다."
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
         },
         {
             route: 'finance',
@@ -1028,6 +1134,7 @@ function generatePortalSectionPages(template) {
             description: sec.description,
             canonical,
             ogType: 'website',
+            jsonLd: sec.jsonLd,
             bodyHtml: prerenderBody
         });
 
@@ -1456,8 +1563,383 @@ function generateSajuPage(template) {
     writeHtmlFile(path.resolve(distDir, `${route}/index.html`), html);
 }
 
+// 13대 생활·금융 도구 개별 상세 페이지 정적 HTML 사전 렌더링 (AEO & SEO 최적화)
+function generateToolsPages(template) {
+    console.log(`🛠️ Prerendering ${TOOLS_DATA.length} tool detail landing pages...`);
+
+    for (const tool of TOOLS_DATA) {
+        const canonical = `https://veranex.app/tools/${tool.slug}`;
+
+        // 관련 추천 도구 (동일 카테고리 우선, 총 4개)
+        const sameCategory = TOOLS_DATA.filter(t => t.slug !== tool.slug && t.category === tool.category);
+        const otherCategory = TOOLS_DATA.filter(t => t.slug !== tool.slug && t.category !== tool.category);
+        const relatedTools = [...sameCategory, ...otherCategory].slice(0, 4);
+
+        // 키워드 태그 HTML
+        const keywordsHtml = tool.keywords.map(kw => `
+            <span class="text-[11px] font-medium bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">#${kw}</span>
+        `).join('\n');
+
+        // 산식 변수 표 HTML
+        const variablesHtml = tool.formula.variables && tool.formula.variables.length > 0 ? `
+            <div class="overflow-x-auto rounded-2xl border border-slate-200 mt-4">
+                <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
+                            <th class="py-3 px-4 w-1/3">산정 기준 변수</th>
+                            <th class="py-3 px-4">세부 기준 및 적용 방법</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${tool.formula.variables.map(v => `
+                            <tr class="hover:bg-slate-50/60 transition-colors">
+                                <td class="py-3 px-4 font-bold text-slate-900 bg-slate-50/40">${v.name}</td>
+                                <td class="py-3 px-4 text-slate-600 leading-relaxed">${v.desc}</td>
+                            </tr>
+                        `).join('\n')}
+                    </tbody>
+                </table>
+            </div>
+        ` : '';
+
+        // 3단계 가이드 HTML
+        const howToStepsHtml = tool.howToSteps.map((step, idx) => `
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/70 flex flex-col justify-between">
+                <div>
+                    <div class="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-sm flex items-center justify-center mb-3 shadow-xs">
+                        ${idx + 1}
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-base mb-2">${step.name}</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">${step.text}</p>
+                </div>
+            </div>
+        `).join('\n');
+
+        // FAQ 목록 HTML
+        const faqsHtml = tool.faqs.map(faq => `
+            <div class="border border-slate-200/80 rounded-2xl overflow-hidden bg-white mb-3">
+                <div class="px-5 py-4 bg-slate-50/60 flex items-center gap-3 font-bold text-sm sm:text-base text-slate-900 border-b border-slate-100">
+                    <span class="text-blue-600 font-black text-sm">Q.</span>
+                    <span>${faq.question}</span>
+                </div>
+                <div class="px-5 py-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-white">
+                    <div class="flex gap-3">
+                        <span class="text-emerald-600 font-black text-sm flex-shrink-0">A.</span>
+                        <p>${faq.answer}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('\n');
+
+        // 관련 도구 카드 HTML
+        const relatedToolsHtml = relatedTools.map(rTool => `
+            <a href="/tools/${rTool.slug}" class="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-blue-300 hover:shadow-md transition-all group flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 rounded-xl ${rTool.iconBg} ${rTool.iconColor} flex items-center justify-center text-lg shadow-2xs">
+                            <i class="${rTool.icon}"></i>
+                        </div>
+                        <span class="text-[11px] font-bold text-slate-400">${rTool.categoryLabel}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm group-hover:text-blue-600 transition-colors mb-2 line-clamp-2">${rTool.name}</h3>
+                    <p class="text-slate-500 text-xs line-clamp-2 leading-relaxed">${rTool.directAnswer}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-bold text-blue-600">
+                    <span>도구 실행하기</span>
+                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+            </a>
+        `).join('\n');
+
+        const prerenderBody = `
+            <div class="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
+                <!-- 상단 공식 헤더 -->
+                <header class="bg-white border-b border-gray-200 py-3.5 px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+                    <div class="max-w-6xl mx-auto flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <a href="/" class="flex items-center gap-2 text-2xl font-black text-gray-900">
+                                <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-white flex items-center justify-center text-sm font-black shadow-xs">V</span>
+                                <span class="tracking-tight text-xl">VERA</span>
+                            </a>
+                            <span class="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">생활도구</span>
+                        </div>
+                        <nav class="flex items-center gap-4 text-xs sm:text-sm font-bold text-gray-600">
+                            <a href="/" class="hover:text-blue-600">홈</a>
+                            <a href="/lifestyle" class="text-blue-600 hover:text-blue-700">생활도구</a>
+                            <a href="/guides" class="hover:text-blue-600">지식 가이드</a>
+                            <a href="/finance" class="hover:text-blue-600">금융</a>
+                            <a href="/game" class="hover:text-blue-600">게임</a>
+                        </nav>
+                    </div>
+                </header>
+
+                <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+                    <!-- 1. 상단 브레드크럼 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <nav class="flex items-center gap-2 text-xs font-semibold text-slate-400 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
+                            <a href="/" class="hover:text-slate-700 transition-colors">홈</a>
+                            <span class="text-slate-300">/</span>
+                            <a href="/lifestyle" class="hover:text-slate-700 transition-colors">생활도구</a>
+                            <span class="text-slate-300">/</span>
+                            <span class="text-slate-700 font-bold">${tool.name}</span>
+                        </nav>
+                        <a href="/lifestyle" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold hover:bg-blue-100 transition-colors self-start sm:self-auto">
+                            <span>전체 13개 도구 보기</span>
+                            <span>→</span>
+                        </a>
+                    </div>
+
+                    <!-- 2. 히어로 헤더 & 단일 H1 -->
+                    <header class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${tool.iconBg} ${tool.iconColor} border border-slate-200/60">
+                                <i class="${tool.icon}"></i>
+                                <span>${tool.categoryLabel}</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
+                                <i class="fas fa-check-circle text-emerald-600"></i>
+                                <span>2026 최신 법정 산식 검증</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                                <i class="fas fa-bolt text-amber-500"></i>
+                                <span>설치 없이 즉시 실행</span>
+                            </span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug mb-3">
+                            ${tool.title}
+                        </h1>
+                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-4xl mb-4 font-normal">
+                            ${tool.description}
+                        </p>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-3 border-t border-slate-100">
+                            ${keywordsHtml}
+                        </div>
+                    </header>
+
+                    <!-- 3. AEO 핵심 요약 박스 (AI Direct Answer Box) -->
+                    <section class="bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border border-blue-200/80 rounded-3xl p-6 sm:p-7 shadow-sm mb-6">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2 text-blue-900 font-black text-sm sm:text-base">
+                                <span class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs font-bold">
+                                    <i class="fas fa-lightbulb"></i>
+                                </span>
+                                <span>핵심 요약 (AI Direct Answer)</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-blue-700 bg-white/80 px-2.5 py-0.5 rounded-full border border-blue-200">
+                                AEO 검색 요약
+                            </span>
+                        </div>
+                        <p class="text-slate-800 text-sm sm:text-base font-medium leading-relaxed sm:pl-9">
+                            ${tool.directAnswer}
+                        </p>
+                    </section>
+
+                    <!-- 4. 인터랙티브 도구 실행 컨테이너 -->
+                    <section class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden mb-8">
+                        <div class="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white text-xs border-b border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span class="font-bold tracking-wide">${tool.name}</span>
+                                <span class="hidden sm:inline text-slate-400 font-mono text-[11px]">| 실시간 브라우저 실행</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="${tool.appUrl}" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors flex items-center gap-1 font-semibold text-xs shadow-xs">
+                                    <i class="fas fa-external-link-alt text-[10px]"></i>
+                                    <span>새 창으로 열기</span>
+                                </a>
+                            </div>
+                        </div>
+                        <div class="w-full min-h-[580px] h-[640px] sm:h-[720px] bg-slate-50">
+                            <iframe src="${tool.appUrl}" title="${tool.name}" class="w-full h-full border-0 bg-white" allow="clipboard-read; clipboard-write; microphone; camera" loading="eager"></iframe>
+                        </div>
+                    </section>
+
+                    <!-- 5. 계산 공식 & 법정 산식 (Formula Card) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-square-root-alt"></i>
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                ${tool.formula.title}
+                            </h2>
+                        </div>
+                        <div class="bg-slate-950 text-emerald-400 font-mono text-sm sm:text-base p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto mb-4">
+                            <span class="text-xs text-slate-400 block mb-1 font-sans">📌 표준 법정 산정식</span>
+                            <code>${tool.formula.expression}</code>
+                        </div>
+                        <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-6 font-normal">
+                            ${tool.formula.explanation}
+                        </p>
+                        ${variablesHtml}
+                    </section>
+
+                    <!-- 6. 실제 계산 시뮬레이션 사례 (Example Case Card) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-calculator"></i>
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                실제 계산 시뮬레이션 사례
+                            </h2>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">📋 기준 시나리오</span>
+                                <p class="text-slate-800 text-sm sm:text-base font-medium leading-relaxed">${tool.example.scenario}</p>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                                <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">🔢 산출 과정</span>
+                                <p class="text-slate-700 text-sm leading-relaxed font-mono">${tool.example.calculation}</p>
+                            </div>
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
+                                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1">✅ 최종 산출 결과</span>
+                                <p class="text-emerald-950 text-base sm:text-lg font-bold leading-relaxed">${tool.example.result}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- 7. 단계별 사용 가이드 (How-To 3 Steps) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-6">
+                            <span class="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-list-ol"></i>
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                3단계 간편 사용 가이드
+                            </h2>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${howToStepsHtml}
+                        </div>
+                    </section>
+
+                    <!-- 8. 자주 묻는 질문 (FAQ Accordion / List) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-8">
+                        <div class="flex items-center gap-2 mb-6">
+                            <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-question-circle"></i>
+                            </span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                자주 묻는 질문 (FAQ)
+                            </h2>
+                        </div>
+                        <div class="space-y-3">
+                            ${faqsHtml}
+                        </div>
+                    </section>
+
+                    <!-- 9. 관련 유용한 도구 추천 -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-layer-group"></i>
+                                </span>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                    관련 추천 생활 & 금융 도구
+                                </h2>
+                            </div>
+                            <a href="/lifestyle" class="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                                전체 13개 도구 보기 →
+                            </a>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${relatedToolsHtml}
+                        </div>
+                    </section>
+                </main>
+
+                <!-- 공식 푸터 -->
+                <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500 mt-12">
+                    <p>© 2026 VERA (베라) - 세상의 모든 정보를 하나로 묶는 라이프 포털</p>
+                </footer>
+            </div>
+        `;
+
+        // 4대 Schema.org JSON-LD (WebApplication, HowTo, FAQPage, BreadcrumbList)
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": "WebApplication",
+                    "name": tool.name,
+                    "description": tool.description,
+                    "url": canonical,
+                    "applicationCategory": tool.category === 'finance' ? 'FinanceApplication' : 'UtilityApplication',
+                    "operatingSystem": "All",
+                    "browserRequirements": "Requires JavaScript, HTML5, and CSS3.",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "KRW"
+                    }
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "홈",
+                            "item": "https://veranex.app/"
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "생활도구",
+                            "item": "https://veranex.app/lifestyle"
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": tool.name,
+                            "item": canonical
+                        }
+                    ]
+                },
+                {
+                    "@type": "HowTo",
+                    "name": `${tool.name} 이용 가이드`,
+                    "description": `${tool.name} 단계별 사용 방법 안내`,
+                    "step": tool.howToSteps.map((s, idx) => ({
+                        "@type": "HowToStep",
+                        "position": idx + 1,
+                        "name": s.name,
+                        "text": s.text,
+                        "url": canonical
+                    }))
+                },
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": tool.faqs.map(faq => ({
+                        "@type": "Question",
+                        "name": faq.question,
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": faq.answer
+                        }
+                    }))
+                }
+            ]
+        };
+
+        const html = replaceMetaTags(template, {
+            title: tool.title,
+            description: tool.description,
+            canonical,
+            ogType: 'website',
+            jsonLd,
+            bodyHtml: prerenderBody
+        });
+
+        writeHtmlFile(path.resolve(distDir, `tools/${tool.slug}/index.html`), html);
+    }
+}
+
 function replaceMetaTags(template, { title, description, canonical, ogType, jsonLd, bodyHtml }) {
-    let result = template;
+    let result = getCleanTemplate(template);
 
     // Title
     result = result.replace(/<title>[\s\S]*?<\/title>/i, `<title>${title}</title>`);
@@ -1480,12 +1962,17 @@ function replaceMetaTags(template, { title, description, canonical, ogType, json
 
     // Append JSON-LD if provided
     if (jsonLd) {
-        const jsonLdTag = `\n  <script type="application/ld+json">\n  ${JSON.stringify(jsonLd, null, 2)}\n  </script>`;
-        result = result.replace('</head>', `${jsonLdTag}\n</head>`);
+        if (Array.isArray(jsonLd)) {
+            const jsonLdTags = jsonLd.map(item => `\n  <script type="application/ld+json">\n  ${JSON.stringify(item, null, 2)}\n  </script>`).join('');
+            result = result.replace('</head>', `${jsonLdTags}\n</head>`);
+        } else {
+            const jsonLdTag = `\n  <script type="application/ld+json">\n  ${JSON.stringify(jsonLd, null, 2)}\n  </script>`;
+            result = result.replace('</head>', `${jsonLdTag}\n</head>`);
+        }
     }
 
     // Insert Prerendered HTML inside <div id="root">
-    result = result.replace('<div id="root"></div>', `<div id="root">${bodyHtml}</div>`);
+    result = result.replace('<div id="root"></div>', () => `<div id="root">${bodyHtml}</div>`);
 
     return result;
 }
