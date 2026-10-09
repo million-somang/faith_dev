@@ -39,15 +39,6 @@ export function createInitialState(): GameEngineState {
   }
 
   const islands: Island[] = [];
-  for (let i = 0; i < 3; i++) {
-    islands.push({
-      x: 60 + Math.random() * (CANVAS_WIDTH - 120),
-      y: Math.random() * CANVAS_HEIGHT,
-      radius: 25 + Math.random() * 35,
-      speed: 0.5,
-      color: Math.random() > 0.5 ? '#86EFAC' : '#6EE7B7',
-    });
-  }
 
   const player: Player = {
     x: CANVAS_WIDTH / 2,
@@ -523,14 +514,6 @@ export function updateGameEngine(
     }
   });
 
-  state.islands.forEach((isl) => {
-    isl.y += isl.speed;
-    if (isl.y > CANVAS_HEIGHT + isl.radius * 2) {
-      isl.y = -isl.radius * 2;
-      isl.x = 40 + Math.random() * (CANVAS_WIDTH - 80);
-    }
-  });
-
   const p = state.player;
 
   // 2. 플레이어 이동 및 경계 체크
@@ -990,23 +973,6 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
   oceanGrad.addColorStop(1, '#0284C7'); // 깊은 에메랄드 블루
   ctx.fillStyle = oceanGrad;
   ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-  // 섬 렌더링
-  state.islands.forEach((isl) => {
-    ctx.save();
-    // 백사장 모래사장 테두리
-    ctx.beginPath();
-    ctx.arc(isl.x, isl.y, isl.radius + 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#FEF08A';
-    ctx.fill();
-
-    // 열대 섬
-    ctx.beginPath();
-    ctx.arc(isl.x, isl.y, isl.radius, 0, Math.PI * 2);
-    ctx.fillStyle = isl.color;
-    ctx.fill();
-    ctx.restore();
-  });
 
   // 구름 렌더링
   state.clouds.forEach((c) => {
