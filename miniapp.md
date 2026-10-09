@@ -2,7 +2,7 @@
 
 > **문서 버전**: 3.0 (애드센스 독립 도메인 단독 승인 & 엔터프라이즈 보안 및 코드 무결성 통합 에디션)  
 > **적용 대상**: 전체 미니앱 (`apps/app-*`)  
-> **디자인 원칙**: 100% 밝은 배경의 프리미엄 클린 뉴모피즘 + 680px 이내 1화면 완결(Zero-Scroll) 고밀도 컴팩트 최적화 + 850px 전 영역 균등 분할 풀 하이트 레이아웃 + 최고급 그래픽 & 인터랙티브 모션 애니메이션  
+> **디자인 원칙**: 100% 밝은 배경의 프리미엄 클린 뉴모피즘 + 모바일 퍼스트 680px 이내 1화면 완결(Zero-Scroll) 기본 + 태블릿·PC 브라우저 확장 시 와이드 멀티컬럼 자동 반응형(Responsive Auto-Expansion) + 850px 전 영역 균등 분할 풀 하이트 레이아웃 + 최고급 그래픽 & 인터랙티브 모션 애니메이션  
 > **기준 모델**: 베라 숫자야구 (`app-baseball`), 베라오목 (`app-omok`), 베라 팝 (`app-vera-pop`), 예·적금 계산기 (`app-interest-calc`), Base64 변환기 (`app-base64-converter`), 퇴직금 계산기 (`app-severance-calc`)
 
 이 문서는 VeraNex 통합 플랫폼 내부에서 구동되는 모든 신규 미니앱(금융 도구, 유틸리티, 계산기, 미니게임 등)을 기획, 설계, 개발 및 배포할 때 반드시 준수해야 하는 **아키텍처, 팝업 규격, 화면 전체 활용 표준, 마케팅 자동 캡처, 검색엔진(SEO) 및 인공지능(GEO/AIO) 최적화, 100% 밝은 프리미엄 UX/UI 디자인 시스템, 구글 애드센스 독립 도메인 승인 규격, 엔터프라이즈 보안 및 코드 무결성 안정화 표준**을 망라한 단일 공식 표준 가이드입니다.
@@ -11,13 +11,15 @@
 
 ## 📌 핵심 원칙 요약 (Golden Rules)
 
-1. **팝업 고정 규격 (450px × 850px)**: 모든 미니앱은 가로 **450px**, 세로 **850px** 크기의 독립된 팝업 뷰포트에 최적화되어 렌더링됩니다.
+1. **모바일 퍼스트 기본 뷰포트 & 태블릿·PC 반응형 자동 확장 (Mobile-First & Responsive Auto-Expansion)**:
+   - **기본 뷰포트 (Default Mobile View)**: 모바일 환경 및 기본 포털 팝업에서는 가로 **450px**, 세로 **850px** 크기의 컴팩트 뷰포트(680px 이내 1화면 완결 Zero-Scroll)를 기본으로 동작합니다.
+   - **태블릿 및 PC 화면 반응형 확장 (Responsive Auto-Expansion)**: 사용자가 브라우저 창을 키우거나, 최대화(Maximize) 버튼을 누르거나, 태블릿(`md: 768px~1023px`) 및 PC/데스크톱(`lg: 1024px+`, `xl: 1280px+`) 디바이스에서 접근했을 때, 450px 고정에 갇혀 좌우가 휑한 공백(Letterbox)으로 버려지지 않고, **화면 너비에 맞춰 2열(입력+결과 대등 분할) 또는 3열(컨트롤+작업창+통계툴바) 그리드 대시보드로 시원하고 유연하게 자동 확장(Fluid Responsive Expansion)**되도록 설계합니다.
 2. **화면 전체 균등 배치 (상단 쏠림 및 하단 공백 영구 금지 의무)**:
    - 컨텐츠 양이 적다고 화면 위쪽에만 옹기종기 몰아넣고 **아래쪽 30~50%를 텅 빈 공백(Dead Space)으로 방치하는 것을 엄격히 금지**합니다.
    - 고정된 작은 높이(`h-28`, `h-32` 등)로 입력창/출력창을 묶어두는 안티패턴을 배제하고, `flex-1 min-h-[130px]` 형태의 **가변 세로 확장(Dynamic Flexible Workspace)**을 적용합니다.
    - 도구형/유틸리티 앱이라도 850px 전체 높이에 걸쳐 **[상단 퀵 프리셋] ➔ [가변 입력창] ➔ [액션 컨트롤러] ➔ [가변 결과창] ➔ [실시간 분석 메트릭 & 툴바] ➔ [하단 보안 푸터]**의 밸런스 있는 다단 배치를 필수로 완성해야 합니다.
 3. **680px 이내 1화면 완결(Zero-Scroll) 컴팩트 최적화 의무 (동적 스크롤 발생 영구 금지)**:
-   - 데스크톱 브라우저 팝업의 실제 가용 내부 높이(주소창, 제목줄, 윈도우 작업표시줄 제외 약 680~750px)를 고려하여, **핵심 플레이 및 인터랙션 조작 화면(게임판, 계산기 키패드, 입력폼+액션버튼)은 순수 세로 680px 이내에 100% 온전히 배치**되어야 합니다.
+   - **모바일 세로 완결 vs 대화면 확장**: 모바일 세로 화면에서는 데스크톱 브라우저 팝업의 실제 가용 내부 높이(약 680~750px)를 고려하여, **핵심 플레이 및 인터랙션 조작 화면(게임판, 계산기 키패드, 입력폼+액션버튼)은 순수 세로 680px 이내에 100% 온전히 배치**되어야 합니다. 반면 태블릿/PC로 창을 넓혔을 때는 확장된 가로폭을 활용해 좌우 2열(`md:grid-cols-2`)로 배치하여 세로 스크롤 압박 없이 넓고 쾌적한 대화면 데스크톱 UX를 제공합니다.
    - **조작 중 세로 스크롤 영구 금지**: 버튼을 누르기 위해 아래로 스크롤하거나 결과를 보려고 위로 스크롤해야 하는 안티패턴은 엄격히 금지됩니다.
    - **인터랙션 중 동적 세로 팽창 차단 (Zero Dynamic Layout Shift)**: 회차/이닝 진행, 히스토리 누적, 계산 로그 추가 시 부모 컨테이너가 아래로 길어져 하단 키패드나 버튼을 밀어내는 현상을 원천 차단합니다. 가변 리스트는 **고정 높이(Fixed-Height Container) + 2열 그리드(Grid) + 내부 스크롤**로 제한합니다.
    - **중복 UI 요소 과감한 일원화**: 상단 캔버스/전광판과 하단 키패드에 동일한 입력값/선택 박스가 2중으로 존재하는 등의 세로 공간 낭비를 단호히 제거합니다.
@@ -50,55 +52,115 @@
 
 ## 제1장. 플랫폼 아키텍처 및 화면 공간 최적화 규격
 
-### 1.1 팝업 규격 및 전체 화면(850px) 균등 분할(Full-Height Balanced Layout) 표준
-- 미니앱은 메인 포털에서 독립된 팝업 형태로 실행됩니다.
-- **너비**: `450px` 고정
-- **높이**: `850px` 고정
-- **상단 쏠림(Top-Heavy Clustering) 방지 및 균등 분할 의무 규격**: 
-  - 450px × 850px 팝업 창 안에서 **컨텐츠가 상단 50%에만 다닥다닥 몰려있고 아래 40% 이상이 휑하게 비어 있는 UI는 즉시 불합격 처리**됩니다.
-  - 최상위 컨테이너 `main`에 `flex-1 flex flex-col justify-between`을 부여하고, 내부 컴포넌트 또한 세로 축 공간을 균형 있게 나눠 갖도록 설계합니다.
-  - **입력 폼/텍스트 도구의 가변 확장 원칙**:
-    - 입력창(textarea)이나 캔버스를 `h-28`, `h-32` 등의 고정 픽셀로 작게 고정하지 말고, `flex-1 min-h-[130px]`로 지정하여 화면 세로 비율에 맞추어 시원하게 늘어나도록 합니다.
-  - **하단 필수 보조 패널 구성 원칙 (Value-Add Sections)**:
-    - 텍스트/데이터 변환기, 유틸리티 도구는 하단 빈 공간에 반드시 **[실시간 데이터 분석 & 메트릭 통계 패널 (Bytes, Ratio, Lines)]**, **[스마트 퀵 툴즈 (Download, Clean, Format)]**, **[보안 및 표준 규격 보증 배지]**를 결합하여 850px 전 영역에 걸쳐 시각적 밀도와 전문성을 완성합니다.
+### 1.1 모바일 퍼스트 뷰포트(450px 기본) 및 태블릿·PC 반응형 자동 확장(Responsive Auto-Expansion) 표준
 
-### 1.1.1 [필수 표준] '징검다리(Stepping-Stone)' 부유 레이아웃 엄격 금지 및 상단 밀착 그룹화 + 가변 워크스페이스 패턴
-- **안티패턴 경고: `justify-between` 남용으로 인한 징검다리 현상 영구 금지**:
-  - 부모 컨테이너에 무비판적으로 `justify-between`을 지정하여 프로필, 입력창, 액션 버튼, 목록 박스들 사이에 거대한 공백(80~100px)이 강제로 벌어져 요소들이 섬처럼 둥둥 떠다니는 현상은 **절대 금지**합니다.
-  - 조작 요소 간의 거리가 지나치게 멀어지면 시각적 응집도(Gestalt Proximity)가 붕괴되고 완성도가 현저히 떨어져 보입니다.
-- **공식 표준 아키텍처 (Top-Anchored Control Group + Flexible Workspace)**:
-  1. **Zone 1: 상단 밀착 조작부 그룹 (Top-Anchored Group)**
-     - 프로필 카드, 모드 선택 탭, CTA 버튼, 옵션 셀렉터 등 상단 조작 UI는 `<div className="space-y-2 shrink-0">` (또는 `gap-2`)로 묶어 **상단에 쫀쫀하게 밀착 배치**합니다.
-  2. **Zone 2: 메인 가변 워크스페이스 (Flexible Workspace)**
-     - 하단에 생성되는 컨텐츠(대결방 목록, 채팅 로그, 계산 히스토리, 그래픽 캔버스 등)를 담는 카드는 반드시 **`flex-1 min-h-0 flex flex-col`**을 부여하여 남은 세로 공간을 100% 흡수하도록 설계합니다.
-     - `max-h-[200px]` 등으로 인위적 높이 상한을 걸어 아래에 빈 공백을 남기는 행위를 금지합니다.
-     - 방이나 데이터가 없을 때(`length === 0`)는 전용 **Empty State 비주얼(아이콘 + 안내 문구)**을 중앙에 풍성하게 채워 넣습니다.
-  3. **Zone 3: 하단 도킹 푸터 (Pinned Footer)**
-     - 보안 푸터 및 저작권 표기는 `<footer className="shrink-0 pt-2 text-center ...">`로 최하단에 안정감 있게 도킹합니다.
+모든 미니앱은 기본적으로 스마트폰 및 팝업 환경에 최적화된 **모바일 퍼스트(Mobile-First)**를 베이스로 설계하되, 사용자가 창을 키우거나 태블릿/PC 환경에서 접속했을 때 넓어진 가로폭에 맞춰 **시원한 멀티컬럼 대시보드로 자동 반응형 확장(Responsive Auto-Expansion)**되어야 합니다.
+
+#### 1) 디바이스별 반응형 브레이크포인트 규격
+- **모바일 기본 뷰포트 (Mobile / Popup Default, < 768px)**:
+  - **너비**: `w-full max-w-[450px] mx-auto`
+  - **높이**: 세로 `680px` 이내 핵심 인터랙션 완결 (최대 `850px` 풀 하이트 균등 분할)
+  - **레이아웃**: 세로 1열 스택 (Top Controls ➔ Flexible Workspace ➔ Docked Footer)
+  - **상단 쏠림 금지**: 450px × 850px 팝업 창 안에서 컨텐츠가 상단 50%에만 다닥다닥 몰려있고 아래쪽이 텅 빈 공백(Dead Space)으로 방치되는 UI는 엄격히 금지됩니다.
+- **태블릿 화면 확장 (Tablet View, `md`: 768px ~ 1023px)**:
+  - **컨테이너**: `md:max-w-3xl lg:max-w-4xl mx-auto`
+  - **레이아웃**: **좌우 2분할 대등 그리드 (`md:grid md:grid-cols-2 md:gap-5 md:items-start`)**
+  - **공간 분할**: 
+    - **좌측 컬럼**: 입력 폼 & 퀵 프리셋 칩 & 인터랙티브 조작 액션 버튼
+    - **우측 컬럼**: 실시간 연산 결과 리포트 & 그래프 차트 & 스마트 분석 툴바
+    - 세로 스크롤 없이 가로 공간을 시원하게 활용하여 입력과 결과를 한눈에 동시 비교할 수 있습니다.
+- **PC / 데스크톱 화면 확장 (Desktop View, `lg`: 1024px ~ `xl`: 1280px+)**:
+  - **컨테이너**: `lg:max-w-5xl xl:max-w-6xl mx-auto`
+  - **레이아웃**: **프로페셔널 와이드 대시보드 (`lg:grid lg:grid-cols-12 lg:gap-6`)**
+  - **배치 원칙 (2단 또는 3단 최적화)**:
+    - **도구/계산기형 (2단 황금 분할)**: 좌측 입력/컨트롤(`lg:col-span-5`) + 우측 와이드 종합 결과 리포트 & 시각화 차트(`lg:col-span-7`)
+    - **게임/복합 유틸리티형 (3단 분할)**: 좌측 프리셋/옵션 패널(3컬럼) + 중앙 메인 게임판/작업 캔버스(6컬럼) + 우측 실시간 통계·전광판·히스토리 로그(3컬럼)
+- **엄격 금지 안티패턴**:
+  - ❌ **데스크톱 레터박스 방치**: 24인치 모니터 전체화면에서도 `w-[450px]` 고정폭으로 못박아 양옆 80%를 텅 빈 회색/검은색 여백으로 버려두는 행위.
+  - ❌ **모바일 미대응**: PC 대화면만 염두에 두고 가로폭을 넓게 잡았다가 스마트폰이나 450px 팝업에서 가로 스크롤이 터지거나 깨지는 행위.
+
+---
+
+### 1.1.1 [필수 표준] 모바일 퍼스트 ➔ 태블릿·PC 반응형 확장 아키텍처 템플릿
+- **상단 밀착 조작부 그룹 (Top-Anchored Control Group)**:
+  - 모바일에서는 세로 1단 상단에 쫀쫀하게 밀착 배치되며, 태블릿/PC에서는 좌측 메인 컨트롤 컬럼으로 자연스럽게 전환됩니다.
+- **메인 가변 워크스페이스 (Flexible Workspace)**:
+  - 모바일에서는 세로 남은 공간을 100% 흡수(`flex-1 min-h-0`)하고, 태블릿/PC에서는 우측 메인 결과/캔버스 카드로 나란히 배치되어 가로폭을 시원하게 채웁니다.
+- **하단 도킹 푸터 (Pinned Footer)**:
+  - 화면 최하단에 도킹되어 공인 표준 엔진 및 저작권 정보를 안정감 있게 표기합니다.
 
 ```tsx
-/* 🏆 미니앱 표준 3단 레이아웃 템플릿 (징검다리 제로 보장) */
-<div className="flex-1 flex flex-col p-3 overflow-hidden bg-[#f7f4ed]">
-  {/* Zone 1: 상단 밀착 조작부 그룹 (공백 없이 쫀쫀하게 결합) */}
-  <div className="space-y-2 shrink-0">
-    <ProfileCard />
-    <ActionButtons />
-    <SubControls />
-  </div>
-
-  {/* Zone 2: 메인 가변 워크스페이스 (남은 세로 공간 100% 흡수) */}
-  <div className="flex-1 min-h-0 mt-2.5 bg-white rounded-2xl p-3 border border-[#e8e1d5] flex flex-col overflow-hidden">
-    <div className="flex items-center justify-between mb-2 shrink-0">
-      <h3 className="text-xs font-black">실시간 목록</h3>
+/* 🏆 모바일 퍼스트 ➔ 태블릿·PC 반응형 자동 확장 공식 표준 레이아웃 템플릿 */
+<div className="w-full min-h-screen bg-[#FAF8F5] text-[#2D2A26] flex flex-col justify-between py-2 sm:py-6 px-3 sm:px-6">
+  {/* 상단 통합 헤더 (모바일 450px ~ 태블릿 3xl ~ PC 5xl 자연 확장) */}
+  <header className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto mb-3 shrink-0">
+    <div className="flex items-center justify-between p-3 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
+      <div className="flex items-center gap-2">
+        <a href="https://veranex.app" target="_top" className="text-xs font-black text-emerald-600 hover:underline">
+          VeraNex
+        </a>
+        <span className="text-[10px] text-slate-400">/</span>
+        <h1 className="text-xs font-bold text-slate-800">스마트 유틸리티</h1>
+      </div>
+      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+        FREE
+      </span>
     </div>
-    <div className="flex-1 min-h-0 overflow-y-auto space-y-1.5">
-      {items.length === 0 ? <EmptyState /> : items.map(renderItem)}
-    </div>
-  </div>
+  </header>
 
-  {/* Zone 3: 하단 도킹 푸터 */}
-  <footer className="shrink-0 pt-2 text-center text-[10px] text-slate-500">
-    <span>공인 표준 엔진 • © 2026 VeraNex</span>
+  {/* 메인 반응형 워크스페이스: 모바일 1열 세로 스택 ➔ 태블릿/PC 2열 그리드 자동 확장 */}
+  <main className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto flex-1 flex flex-col md:grid md:grid-cols-2 md:gap-6 min-h-0">
+    {/* 좌측 영역: 입력 폼 & 조작 컨트롤 (모바일에서는 상단에 쫀쫀하게 배치) */}
+    <section className="flex flex-col space-y-3 shrink-0 md:shrink">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#EBE6DD] shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+            <span>⚙️</span>
+            <span>입력 및 설정</span>
+          </h2>
+          <span className="text-[10px] text-slate-400 font-medium">실시간 반영</span>
+        </div>
+        {/* 퀵 프리셋 칩 바 */}
+        <QuickPresetChips />
+        {/* 메인 입력창 */}
+        <InputField />
+        {/* 액션 실행 버튼 */}
+        <ActionButton />
+      </div>
+
+      {/* 부가 메트릭/가이드 (PC에서는 좌측 하단에 배치) */}
+      <div className="hidden md:block bg-white rounded-2xl p-4 border border-[#EBE6DD] shadow-2xs">
+        <QuickTipPanel />
+      </div>
+    </section>
+
+    {/* 우측 영역: 실시간 결과 리포트 & 가변 캔버스 (모바일에서는 하단 공간 100% 흡수) */}
+    <section className="flex-1 flex flex-col mt-3 md:mt-0 min-h-0 bg-white rounded-3xl p-4 sm:p-6 border border-[#EBE6DD] shadow-sm">
+      <div className="flex items-center justify-between mb-3 shrink-0">
+        <h2 className="text-xs sm:text-sm font-black text-slate-900 flex items-center gap-1.5">
+          <span>📊</span>
+          <span>분석 결과 리포트</span>
+        </h2>
+        <CopyResultButton />
+      </div>
+      
+      {/* 스크롤 가능한 가변 결과 영역 */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
+        <ResultReportCard />
+        <DetailMetricGrid />
+      </div>
+
+      {/* 하단 단축 툴바 */}
+      <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+        <MetricSummary />
+        <ShareButton />
+      </div>
+    </section>
+  </main>
+
+  {/* 공통 하단 도킹 푸터 */}
+  <footer className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto mt-3 shrink-0 text-center py-2 text-[10px] text-slate-400">
+    <p>© 2026 VeraNex. All rights reserved. • 실시간 무결성 보증 엔진</p>
   </footer>
 </div>
 ```
@@ -166,8 +228,8 @@ function App() {
 
     return (
         <MiniAppLayout title="스마트 유틸리티">
-            {/* max-w-md mx-auto w-full로 450px 팝업을 좌우 꽉 채움 */}
-            <div className="max-w-md mx-auto min-h-screen bg-slate-50 flex flex-col justify-between p-4">
+            {/* 기본 모바일(max-w-[450px]) 및 태블릿(md:max-w-3xl)·PC(lg:max-w-5xl) 반응형 컨테이너 */}
+            <div className="w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl mx-auto min-h-screen bg-[#FAF8F5] flex flex-col justify-between p-3 sm:p-6 transition-all">
                 <div className="space-y-4">
                     <h2>환영합니다, {user.name}님!</h2>
                     <button onClick={handleMissionComplete}>미션 완료 (포털에 알림)</button>
@@ -283,8 +345,8 @@ export function useViewMode() {
 }
 ```
 
-- **임베드/팝업 모드 (`isEmbed: true`)**: 450px × 850px 뷰포트 잠금 및 680px 1화면 완결 Zero-Scroll 인터랙션 적용.
-- **독립 도메인 모드 (`isStandalone: true`)**: 데스크톱에서는 중앙 집중형 프리미엄 반응형 컨테이너(`max-w-xl sm:max-w-2xl mx-auto py-8 sm:py-12`), 모바일에서는 100vw 전체화면으로 매끄럽게 확장되며, 상단 글로벌 내비게이션과 하단 애드센스 E-E-A-T 법적 푸터를 완전히 렌더링합니다.
+- **임베드/팝업 모드 (`isEmbed: true`)**: 450px × 850px 뷰포트 기준 680px 1화면 완결 Zero-Scroll 인터랙션 적용.
+- **독립 도메인 및 브라우저 확장 모드 (`isStandalone: true`)**: 모바일에서는 100vw 전체화면(450px 콤팩트 뷰), 태블릿(`md:max-w-3xl`)에서는 좌우 2열 분할, PC(`lg:max-w-5xl`)에서는 프로페셔널 와이드 대시보드로 매끄럽게 자동 반응형 확장되며, 상단 글로벌 내비게이션과 하단 애드센스 E-E-A-T 법적 푸터를 완전히 렌더링합니다.
 
 #### 2) 독립 도메인 Vite 빌드 환경 분리 (`vite.config.ts`)
 ```ts
@@ -1227,7 +1289,7 @@ useEffect(() => {
 
 | 단계 | 적용 항목 | 설명 |
 |:---:|---|---|
-| [ ] | **450px × 850px 팝업 규격** | 독립된 팝업 내부에서 스크롤 튕김 없이 완벽하게 작동하는지 검증 |
+| [ ] | **모바일 450px 기본 & 태블릿/PC 반응형 확장** | 450px 모바일 뷰포트에서 스크롤 튕김 없이 완벽 동작하며, 창을 키우거나 태블릿(md:) 및 PC(lg:) 접속 시 2열/3열 대시보드로 매끄럽게 자동 확장되는지 검증 |
 | [ ] | **680px 1화면 완결 (Zero-Scroll)** | 게임 진행 및 계산 입력 중 하단 키패드나 액션 버튼이 잘리지 않고 680px 뷰포트 내에 100% 한눈에 들어오는지 검증 |
 | [ ] | **동적 세로 팽창 원천 차단** | 이닝/회차/계산 히스토리 누적 시 부모 높이가 늘어나지 않고 고정 높이(76px) 2열 그리드 및 내부 스크롤로 유지되는지 검증 |
 | [ ] | **화면 전체 100% 활용 (빈칸 제로)** | 컨텐츠가 위쪽에만 반만 남지 않고, 850px 높이 전체를 꽉 채우는 풀 하이트 레이아웃 구성 |
@@ -1548,9 +1610,9 @@ server {
 
 ---
 
-### 6.1 독립 도메인 vs 포털 팝업 듀얼 모드 반응형 레이아웃 설계
+### 6.1 독립 도메인 vs 포털 팝업 듀얼 모드 및 대화면 반응형 레이아웃 설계
 
-독립 도메인 접속 시에는 450px 팝업 틀에 갇히지 않고, 데스크톱 사용자에게 알맞은 **중앙 정렬 반응형 카드 컨테이너(`max-w-xl sm:max-w-2xl mx-auto`)**로 렌더링되며, 상단 브랜드 바와 하단 E-E-A-T 푸터가 완벽히 출력됩니다.
+독립 도메인 접속이나 브라우저 창 확대 시에는 450px 모바일 팝업 틀에 갇히지 않고, 태블릿(`md:max-w-3xl`) 및 데스크톱(`lg:max-w-5xl`) 화면에 알맞은 **좌우 2열 그리드 및 와이드 대시보드 컨테이너**로 유연하게 렌더링되며, 상단 브랜드 바와 하단 E-E-A-T 푸터가 완벽히 출력됩니다.
 
 ```tsx
 // App.tsx
@@ -1563,17 +1625,28 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen bg-slate-50 text-slate-800 ${isStandalone ? 'w-full py-6 sm:py-10 px-4' : 'w-full'}`}>
-        <div className={`mx-auto flex flex-col justify-between ${isStandalone ? 'max-w-xl bg-white border border-slate-200/90 rounded-3xl shadow-sm overflow-hidden min-h-[850px]' : 'h-screen max-h-[850px] overflow-hidden'}`}>
+      <div className={`min-h-screen bg-[#FAF8F5] text-[#2D2A26] ${isStandalone ? 'w-full py-4 sm:py-8 px-3 sm:px-6' : 'w-full'}`}>
+        <div className={`mx-auto flex flex-col justify-between ${
+          isStandalone 
+            ? 'w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl bg-white border border-[#EBE6DD] rounded-3xl shadow-sm overflow-hidden min-h-[850px]' 
+            : 'w-full max-w-[450px] md:max-w-3xl lg:max-w-5xl h-screen max-h-[850px] overflow-hidden'
+        }`}>
           {/* 상단 헤더 & 알약 탭 */}
           <AppHeader isStandalone={isStandalone} />
 
-          {/* 메인 콘텐츠 작업 영역 */}
-          <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
-            <CalculatorCore />
-            
-            {/* 애드센스 자동 슬롯 (승인 전 빈 박스 숨김) */}
-            <BannerSlot slotKey="tool-bottom-ad" label="SPONSORED AD" />
+          {/* 메인 콘텐츠 작업 영역: 모바일 1열 ➔ 태블릿/PC 2열 그리드 자동 확장 */}
+          <main className="flex-1 p-3 sm:p-6 overflow-y-auto flex flex-col md:grid md:grid-cols-2 md:gap-6">
+            {/* 좌측: 입력 컨트롤 */}
+            <div className="space-y-3">
+              <CalculatorInputForm />
+            </div>
+
+            {/* 우측: 실시간 결과 리포트 & 배너 */}
+            <div className="space-y-3 mt-3 md:mt-0 flex flex-col justify-between">
+              <CalculatorResultCard />
+              {/* 애드센스 자동 슬롯 (승인 전 빈 박스 숨김) */}
+              <BannerSlot slotKey="tool-bottom-ad" label="SPONSORED AD" />
+            </div>
           </main>
 
           {/* 하단 푸터 (독립 도메인 접속 시 E-E-A-T 링크 필수 노출) */}
@@ -1694,9 +1767,10 @@ Sitemap: https://calc.veranex.app/sitemap.xml
 Next.js/Vite, React, Tailwind CSS 및 모바일 유틸리티 웹 전문 시니어 프론트엔드 엔지니어입니다.
 
 # Global Requirements (VeraNex Mini-App Master Standard)
-1. 팝업 규격 & 독립 도메인 듀얼 모드:
-   - 팝업/임베드 시: 450px × 850px 독립 뷰포트 내부에서 1화면 완결 동작.
-   - 독립 도메인 접속 시: max-w-xl 반응형 데스크톱 확장 및 E-E-A-T 법적 푸터(About, Privacy, Terms, Contact) 노출.
+1. 모바일 퍼스트(450px 기본) & 태블릿·PC 반응형 자동 확장:
+   - 모바일/팝업 환경: w-full max-w-[450px] 컴팩트 뷰포트 내부에서 680px 이내 1화면 완결 Zero-Scroll 동작.
+   - 태블릿/PC 환경 확장: 창 확대 또는 대화면 접속 시 450px 고정에 갇히지 않고, md:max-w-3xl(좌우 2열 분할) 및 lg:max-w-5xl(와이드 대시보드)로 시원하게 자동 확장되어 입력부와 결과 리포트가 나란히 배치.
+   - 독립 도메인 배포 시: E-E-A-T 법적 푸터(About, Privacy, Terms, Contact) 필수 노출.
 2. 680px 이내 1화면 완결 (Zero-Scroll) 컴팩트 최적화:
    - 핵심 조작 모드(게임판, 계산기 키패드, 입력폼+액션버튼)는 순수 680px 이내에 100% 배치.
    - 조작 중 세로 스크롤 영구 금지: 스크롤을 위아래로 올렸다 내리는 안티패턴을 허용하지 않습니다.
