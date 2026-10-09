@@ -157,6 +157,51 @@ Allow: /
 User-agent: Daumoa
 Allow: /
 
+# OpenAI ChatGPT Search & Bot
+User-agent: GPTBot
+Allow: /
+Allow: /tools/
+Allow: /lifestyle
+Allow: /guides/
+Disallow: /admin/
+Disallow: /api/
+
+# Perplexity AI Search
+User-agent: PerplexityBot
+Allow: /
+Allow: /tools/
+Allow: /lifestyle
+Allow: /guides/
+Disallow: /admin/
+Disallow: /api/
+
+# Anthropic Claude
+User-agent: ClaudeBot
+Allow: /
+Allow: /tools/
+Allow: /lifestyle
+Allow: /guides/
+Disallow: /admin/
+Disallow: /api/
+
+# Google Gemini & AI Overviews
+User-agent: Google-Extended
+Allow: /
+Allow: /tools/
+Allow: /lifestyle
+Allow: /guides/
+Disallow: /admin/
+Disallow: /api/
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+Allow: /tools/
+Allow: /lifestyle
+Allow: /guides/
+Disallow: /admin/
+Disallow: /api/
+
 # Sitemap & Feeds
 Sitemap: https://veranex.app/sitemap.xml
 # RSS 2.0 Feed
