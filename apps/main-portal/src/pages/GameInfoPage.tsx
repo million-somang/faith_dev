@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Header, Footer } from '@faithportal/ui';
 import { useAuth } from '../context/AuthContext';
 import { useAppLauncher } from '../hooks/useAppLauncher';
 import { PageSEO } from '../components/PageSEO';
 import GameLeaderboard from '../components/games/GameLeaderboard';
+import { getGameSeoData } from '../data/gamesSeoData';
+import { GUIDES_DATA } from '../data/guidesData';
 
 interface GameConfig {
     label: string;
@@ -208,7 +210,17 @@ export default function GameInfoPage() {
     const navigate = useNavigate();
     const { gameId } = useParams<{ gameId: string }>();
 
+    const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+    const toggleFaq = (idx: number) => {
+        setOpenFaqIndex((prev) => (prev === idx ? null : idx));
+    };
+
     const config = gameId ? GAME_CONFIGS[gameId] : undefined;
+    const seoData = gameId ? getGameSeoData(gameId) : undefined;
+    const relatedGuide = seoData?.relatedGuideSlug
+        ? GUIDES_DATA.find((g) => g.slug === seoData.relatedGuideSlug)
+        : undefined;
 
     // 알 수 없는 게임이면 게임 목록으로 돌려보냄
     useEffect(() => {
@@ -219,22 +231,32 @@ export default function GameInfoPage() {
 
     if (!config) return null;
 
-    const jsonLd = {
-        '@context': 'https://schema.org',
-        '@type': 'Game',
-        name: config.label,
-        description: config.description,
-        url: `https://veranex.app/game/${gameId}`,
-        genre: 'Puzzle',
-    };
+    const gameSchema = seoData
+        ? {
+              name: seoData.shortTitle,
+              description: seoData.description,
+              url: `https://veranex.app/game/${gameId}`,
+              genre: seoData.genre,
+              howTo: {
+                  name: `${seoData.shortTitle} 3단계 플레이 가이드`,
+                  steps: seoData.howToSteps,
+              },
+              faqs: seoData.faqs,
+          }
+        : {
+              name: config.label,
+              description: config.description,
+              url: `https://veranex.app/game/${gameId}`,
+              genre: 'Web Game',
+          };
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
             <PageSEO
-                title={`${config.label} - 게임 정보 및 랭킹`}
-                description={`${config.label} 게임 정보와 명예의 전당 랭킹을 확인하고, 게임 시작 버튼으로 바로 플레이하세요.`}
+                title={seoData?.title || `${config.label} - 무료 웹 게임`}
+                description={seoData?.description || config.description}
                 path={`/game/${gameId}`}
-                jsonLd={jsonLd}
+                game={gameSchema}
             />
             <Header user={user} onLogout={logout} />
 
@@ -250,7 +272,7 @@ export default function GameInfoPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    {/* 왼쪽: 게임 정보 + 게임 시작 */}
+                    {/* 왼쪽: 게임 정보 + 게임 시작 + AEO 가이드 */}
                     <div className="lg:col-span-2 flex flex-col gap-6">
                         {/* 히어로 정보 카드 */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-7 relative overflow-hidden">
@@ -287,11 +309,121 @@ export default function GameInfoPage() {
                             </p>
                         </div>
 
-                        {/* 조작법 카드 */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-7">
+                        {seoData && (
+                            <>
+                                {/* 1. Direct Answer Callout Box (AI 핵심 직답 요약) */}
+                                <div className="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-150 p-6 sm:p-7 shadow-sm relative overflow-hidden">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-sm">
+                                            <i className="fas fa-sparkles text-[11px]"></i>
+                                            AI 핵심 요약 (AEO Direct Answer)
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                                            인공지능 검색 인용 최적화 답변
+                                        </span>
+                                    </div>
+                                    <blockquote className="text-slate-700 text-sm sm:text-base leading-relaxed font-medium pl-3.5 border-l-4 border-indigo-500 my-1">
+                                        {seoData.directAnswer}
+                                    </blockquote>
+                                </div>
+
+                                {/* 2. 핵심 룰 & 전략 공식 카드 */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7">
+                                    <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                                        <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
+                                            <i className="fas fa-chess-board text-indigo-500"></i>
+                                            {seoData.strategyRules.title}
+                                        </h2>
+                                        <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                            승률 극대화 공식
+                                        </span>
+                                    </div>
+
+                                    <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                        {seoData.strategyRules.description}
+                                    </p>
+
+                                    {/* 공식 디스플레이 바 */}
+                                    <div className="mb-6 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs sm:text-sm shadow-inner flex items-center justify-between gap-3 overflow-x-auto">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                                FORMULA
+                                            </span>
+                                            <span className="font-semibold text-white">
+                                                {seoData.strategyRules.formulaOrPrinciple}
+                                            </span>
+                                        </div>
+                                        <i className="fas fa-calculator text-slate-500 shrink-0"></i>
+                                    </div>
+
+                                    {/* 전술 카드 그리드 */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                                        {seoData.strategyRules.tactics.map((tactic, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 hover:border-indigo-200 hover:bg-indigo-50/20 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className="w-5 h-5 rounded-md bg-indigo-100 text-indigo-700 text-xs font-extrabold flex items-center justify-center shrink-0">
+                                                        {idx + 1}
+                                                    </span>
+                                                    <h3 className="font-bold text-sm text-slate-800">
+                                                        {tactic.name}
+                                                    </h3>
+                                                </div>
+                                                <p className="text-xs text-slate-600 leading-relaxed pl-7">
+                                                    {tactic.desc}
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 3. 3단계 입문 및 마스터 가이드 */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7">
+                                    <h2 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2.5">
+                                        <i className="fas fa-graduation-cap text-amber-500"></i>
+                                        3단계 입문 & 마스터 가이드
+                                    </h2>
+                                    <p className="text-xs text-slate-500 mb-5">
+                                        초보자부터 랭커까지 단계별 필승 워크플로우
+                                    </p>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {seoData.howToSteps.map((step, idx) => (
+                                            <div
+                                                key={idx}
+                                                className="p-4 rounded-xl bg-gradient-to-b from-slate-50 to-white border border-slate-200 flex flex-col justify-between shadow-xs"
+                                            >
+                                                <div>
+                                                    <div className="flex items-center gap-2 mb-2.5">
+                                                        <span className="w-6 h-6 rounded-full bg-gradient-to-tr from-amber-500 to-amber-400 text-white font-extrabold text-xs flex items-center justify-center shadow-xs">
+                                                            {idx + 1}
+                                                        </span>
+                                                        <h3 className="font-bold text-sm text-slate-800">
+                                                            {step.name}
+                                                        </h3>
+                                                    </div>
+                                                    <p className="text-xs text-slate-600 leading-relaxed">
+                                                        {step.text}
+                                                    </p>
+                                                </div>
+                                                <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                                                    <span>STEP 0{idx + 1}</span>
+                                                    <i className="fas fa-check-circle text-emerald-500 text-xs"></i>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
+
+                        {/* 조작법 카드 (기존 플레이 방법 가이드 보존) */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7">
                             <h2 className="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2.5">
                                 <i className="fas fa-gamepad text-slate-400"></i>
-                                플레이 방법
+                                플레이 방법 및 조작 가이드
                             </h2>
                             <div className="flex flex-col gap-3">
                                 {config.controls.map((c) => (
@@ -304,10 +436,97 @@ export default function GameInfoPage() {
                                 ))}
                             </div>
                         </div>
+
+                        {seoData && seoData.faqs.length > 0 && (
+                            /* 4. 자주 묻는 질문 (FAQ Interactive Accordion) */
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7">
+                                <h2 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2.5">
+                                    <i className="fas fa-circle-question text-blue-500"></i>
+                                    자주 묻는 질문 (FAQ)
+                                </h2>
+                                <p className="text-xs text-slate-500 mb-5">
+                                    규칙, 판정, 공략 팁에 관해 이용자분들이 가장 자주 묻는 질문입니다.
+                                </p>
+
+                                <div className="flex flex-col gap-2.5">
+                                    {seoData.faqs.map((faq, idx) => {
+                                        const isOpen = openFaqIndex === idx;
+                                        return (
+                                            <div
+                                                key={idx}
+                                                className="border border-slate-200 rounded-xl overflow-hidden transition-all duration-200 bg-white"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleFaq(idx)}
+                                                    className="w-full text-left px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
+                                                    aria-expanded={isOpen}
+                                                >
+                                                    <span className="font-bold text-sm text-slate-800 flex items-center gap-2">
+                                                        <span className="text-blue-600 font-extrabold text-sm">Q.</span>
+                                                        {faq.question}
+                                                    </span>
+                                                    <i
+                                                        className={`fas fa-chevron-down text-slate-400 text-xs transition-transform duration-200 ${
+                                                            isOpen ? 'rotate-180 text-blue-600' : ''
+                                                        }`}
+                                                    />
+                                                </button>
+                                                {isOpen && (
+                                                    <div className="px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-slate-50/50">
+                                                        <div className="flex items-start gap-2 pt-1">
+                                                            <span className="text-emerald-600 font-bold shrink-0">A.</span>
+                                                            <div>{faq.answer}</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {relatedGuide && (
+                            /* 5. 관련 지식 칼럼 추천 카드 */
+                            <div className="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 sm:p-7 text-white shadow-md relative overflow-hidden">
+                                <div className="absolute top-0 right-0 -mr-8 -mt-8 w-44 h-44 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                                <div className="relative">
+                                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200 text-[11px] font-semibold border border-indigo-400/30">
+                                            <i className="fas fa-book-bookmark text-[10px]"></i>
+                                            관련 전문가 지식 가이드
+                                        </span>
+                                        <span className="text-xs text-slate-400 font-medium">
+                                            {relatedGuide.readTime} 소요
+                                        </span>
+                                    </div>
+                                    <h3 className="text-base sm:text-lg font-bold text-white mb-2 leading-snug">
+                                        {relatedGuide.title}
+                                    </h3>
+                                    <p className="text-slate-300 text-xs leading-relaxed line-clamp-2 mb-4">
+                                        {relatedGuide.description}
+                                    </p>
+                                    <div className="flex items-center justify-between pt-3 border-t border-slate-700/60 flex-wrap gap-2">
+                                        <div className="flex items-center gap-2 text-xs text-slate-400">
+                                            <i className="fas fa-user-pen text-slate-400"></i>
+                                            <span>{relatedGuide.author}</span>
+                                        </div>
+                                        <Link
+                                            to={`/guides/${relatedGuide.slug}`}
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm"
+                                        >
+                                            공략 전문 읽기
+                                            <i className="fas fa-arrow-right text-[10px]"></i>
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* 오른쪽: 점수(명예의 전당) */}
-                    <div className="lg:col-span-1 flex flex-col items-center lg:items-stretch">
+                    <div className="lg:col-span-1 flex flex-col items-center lg:items-stretch lg:sticky lg:top-6">
                         {(gameId === 'comboy' || gameId === 'sfc') ? (
                             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 w-full">
                                 <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2">

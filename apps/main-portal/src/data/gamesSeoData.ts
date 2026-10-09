@@ -627,6 +627,9 @@ export function getGameSeoItem(key: string): GameSeoItem | undefined {
     return (GAMES_SEO_DATA as Record<string, GameSeoItem>)[key];
 }
 
+export const getGameSeoData = getGameSeoItem;
+
 export function getAllGameSeoItems(): GameSeoItem[] {
     return Object.values(GAMES_SEO_DATA);
 }
+

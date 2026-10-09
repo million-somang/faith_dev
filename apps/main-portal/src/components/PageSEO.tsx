@@ -28,6 +28,22 @@ export interface ToolSchemaProps {
     }[];
 }
 
+export interface GameSchemaProps {
+    name: string;
+    description: string;
+    url: string;
+    genre?: string;
+    numberOfPlayers?: string;
+    howTo?: {
+        name: string;
+        steps: { name: string; text: string }[];
+    };
+    faqs?: {
+        question: string;
+        answer: string;
+    }[];
+}
+
 interface PageSEOProps {
     title: string;
     description: string;
@@ -38,6 +54,7 @@ interface PageSEOProps {
     jsonLd?: Record<string, unknown> | Record<string, unknown>[];
     article?: ArticleMetadata;
     tool?: ToolSchemaProps;
+    game?: GameSchemaProps;
 }
 
 const SITE_URL = 'https://veranex.app';
@@ -54,6 +71,7 @@ export function PageSEO({
     jsonLd,
     article,
     tool,
+    game,
 }: PageSEOProps) {
     const fullTitle = title.includes(SITE_NAME) ? title : `${title} | ${SITE_NAME}`;
     const url = `${SITE_URL}${path}`;
@@ -132,6 +150,81 @@ export function PageSEO({
         effectiveJsonLd = {
             '@context': 'https://schema.org',
             '@graph': toolSchemas,
+        };
+    } else if (!effectiveJsonLd && game) {
+        const gameSchemas: Record<string, unknown>[] = [
+            {
+                '@type': ['SoftwareApplication', 'Game'],
+                name: game.name,
+                description: game.description,
+                url: game.url,
+                applicationCategory: 'GameApplication',
+                genre: game.genre || 'Web Game',
+                operatingSystem: 'All',
+                browserRequirements: 'Requires JavaScript, HTML5, and CSS3.',
+                offers: {
+                    '@type': 'Offer',
+                    price: '0',
+                    priceCurrency: 'KRW',
+                },
+                ...(game.numberOfPlayers ? { numberOfPlayers: game.numberOfPlayers } : {}),
+            },
+            {
+                '@type': 'BreadcrumbList',
+                itemListElement: [
+                    {
+                        '@type': 'ListItem',
+                        position: 1,
+                        name: '홈',
+                        item: SITE_URL,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        position: 2,
+                        name: '게임센터',
+                        item: `${SITE_URL}/game`,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        position: 3,
+                        name: game.name,
+                        item: game.url,
+                    },
+                ],
+            },
+        ];
+
+        if (game.howTo && game.howTo.steps && game.howTo.steps.length > 0) {
+            gameSchemas.push({
+                '@type': 'HowTo',
+                name: game.howTo.name,
+                step: game.howTo.steps.map((s, idx) => ({
+                    '@type': 'HowToStep',
+                    position: idx + 1,
+                    name: s.name,
+                    text: s.text,
+                    url: game.url,
+                })),
+            });
+        }
+
+        if (game.faqs && game.faqs.length > 0) {
+            gameSchemas.push({
+                '@type': 'FAQPage',
+                mainEntity: game.faqs.map(faq => ({
+                    '@type': 'Question',
+                    name: faq.question,
+                    acceptedAnswer: {
+                        '@type': 'Answer',
+                        text: faq.answer,
+                    },
+                })),
+            });
+        }
+
+        effectiveJsonLd = {
+            '@context': 'https://schema.org',
+            '@graph': gameSchemas,
         };
     } else if (!effectiveJsonLd && type === 'article' && article) {
         effectiveJsonLd = {
