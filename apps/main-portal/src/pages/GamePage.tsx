@@ -666,19 +666,44 @@ export default function GamePage() {
                     {activeGenre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             {/* 🌟 0. 베라 플라이트 (Vera Flight) - 1942 스타일 레트로 비행 슈팅 */}
-                            <button onClick={() => navigate('/game/flight')} className="bg-white border-2 text-left border-sky-300 rounded-2xl overflow-hidden hover:border-sky-500 hover:shadow-xl transition-all group relative">
+                            <div
+                                onClick={() => launchApp('/app/flight/', 'app-flight')}
+                                className="bg-white border-2 text-left border-sky-300 rounded-2xl overflow-hidden hover:border-sky-500 hover:shadow-xl transition-all group relative cursor-pointer"
+                            >
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
                                     1942 REMAKE
                                 </div>
                                 <div className="overflow-hidden bg-[#0284c7]"><FlightThumb /></div>
                                 <div className="p-5">
-                                    <h3 className="font-black text-xl text-sky-800 mb-1 group-hover:text-sky-900 transition-colors flex items-center gap-2">
-                                        <span>Vera Flight (베라 플라이트)</span>
-                                        <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 슈팅</span>
-                                    </h3>
-                                    <p className="text-slate-500 text-xs leading-relaxed">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <h3 className="font-black text-xl text-sky-800 group-hover:text-sky-900 transition-colors flex items-center gap-2">
+                                            <span>Vera Flight (베라 플라이트)</span>
+                                            <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 슈팅</span>
+                                        </h3>
+                                        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 text-white text-xs font-black shadow-xs hover:from-sky-700 hover:to-indigo-700">
+                                            <i className="fas fa-play text-[10px]"></i>
+                                            게임 시작
+                                        </span>
+                                    </div>
+                                    <p className="text-slate-500 text-xs leading-relaxed mb-3">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
+                                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-sky-600 font-bold">
+                                        <span className="flex items-center gap-1 text-slate-400 font-normal text-[11px]">
+                                            <i className="fas fa-window-restore text-sky-500"></i>
+                                            클릭 시 450px 팝업 실행
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigate('/game/flight');
+                                            }}
+                                            className="hover:underline flex items-center gap-1 text-slate-500 hover:text-sky-700 font-semibold"
+                                        >
+                                            공략 & 전략 보기 →
+                                        </button>
+                                    </div>
                                 </div>
-                            </button>
+                            </div>
 
                             {/* 🌟 1. 베라장기 (Vera Janggi) - 9×10 정통 한국 장기 & 1일 1외통수 */}
                             <button onClick={() => navigate('/game/janggi')} className="bg-white border-2 text-left border-cyan-200 rounded-2xl overflow-hidden hover:border-cyan-400 hover:shadow-xl transition-all group relative">
