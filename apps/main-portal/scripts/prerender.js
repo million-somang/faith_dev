@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { generateRssFeed } from './generate-rss.js';
 import { TOOLS_DATA } from '../src/data/toolsData.ts';
+import { FINANCE_SEO_DATA } from '../src/data/financeSeoData.ts';
+import { GUIDES_DATA } from '../src/data/guidesData.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -978,10 +980,32 @@ function generatePortalSectionPages(template) {
             description: '국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요.',
             heading: '글로벌 금융 시장 & 자산 관리',
             content: `
-                <div class="space-y-6 text-gray-800">
+                <div class="space-y-8 text-gray-800">
                     <p class="text-gray-700 leading-relaxed text-base">
                         VERA 금융 센터는 국내외 주요 증시 지표와 실시간 환율, 그리고 복리 적금 및 대출이자 상환 플랜을 체계적으로 수립할 수 있는 종합 금융 인텔리전스 허브입니다.
                     </p>
+
+                    <!-- AEO 금융 계산기 및 유틸리티 바로가기 배너 -->
+                    <div class="bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 p-6 rounded-3xl border border-blue-200 space-y-4">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div>
+                                <span class="text-xs font-extrabold text-blue-700 bg-blue-100/80 px-2.5 py-0.5 rounded-full border border-blue-200">AEO 스마트 금융 계산기 허브</span>
+                                <h3 class="text-xl font-black text-slate-900 mt-1">💡 VERA 금융 계산기 & 모의 시뮬레이터</h3>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="/finance/util" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
+                                    <span>VERA 금융Util 센터 바로가기</span> →
+                                </a>
+                                <a href="/tools/finance-dsr" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5">
+                                    <span>2026 스트레스 DSR 단독 도구</span> →
+                                </a>
+                            </div>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                            미국 배당주 원천징수 세금(15%) 및 월배당 캘린더, 2026 스트레스 DSR 2단계 대출 한도 규제, 법정 퇴직금 및 IRP 30% 감면 계산기를 별도 가입 없이 100% 무료로 이용하실 수 있습니다.
+                        </p>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
                             <h3 class="font-bold text-slate-900 text-base mb-2">💵 글로벌 환율 및 통화 흐름</h3>
@@ -1008,8 +1032,136 @@ function generatePortalSectionPages(template) {
                             </p>
                         </div>
                     </div>
+
+                    <!-- 5대 심층 금융 리서치 가이드 칼럼 링크 -->
+                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-book-open text-emerald-600"></i>
+                                <span>📚 VERA 금융 추천 지식 칼럼 (5대 심층 리서치)</span>
+                            </h3>
+                            <a href="/guides" class="text-xs font-bold text-emerald-700 hover:underline">칼럼 전체보기 →</a>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <a href="/guides/2026-global-interest-rate-dividend-strategy" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-colors block">
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 mb-1">2026 금리 인하기 배당주 전략</h4>
+                                <p class="text-[11px] text-slate-600 line-clamp-2">SCHD, JEPI 등 월배당 ETF를 활용한 배당소득세(15.4%) 절세 및 현금흐름 구축법</p>
+                            </a>
+                            <a href="/guides/foreign-exchange-rate-and-macro-investment" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-colors block">
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 mb-1">원/달러 환율과 외환 리스크 관리</h4>
+                                <p class="text-[11px] text-slate-600 line-clamp-2">환율 결정 메커니즘, 환헤지 vs 환노출 선택 기준 및 달러 자산 분할 매수법</p>
+                            </a>
+                            <a href="/guides/magic-of-compound-interest-and-dollar-cost-averaging" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-colors block">
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 mb-1">복리의 마법과 정액적립식(DCA) 투자</h4>
+                                <p class="text-[11px] text-slate-600 line-clamp-2">72의 법칙, 시간 가치, 주가 변동성을 이기는 분할 매수 적립식 자산 축적 공식</p>
+                            </a>
+                            <a href="/guides/compound-interest-calculator-guide-and-wealth-building" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-colors block">
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 mb-1">복리 계산기 활용 & 1억 시뮬레이션</h4>
+                                <p class="text-[11px] text-slate-600 line-clamp-2">5년 적금 vs ETF 투자 비교와 비과세 계좌(ISA/IRP) 복리 극대화 노하우</p>
+                            </a>
+                            <a href="/guides/sp500-index-fund-dollar-investing-principles" class="p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-emerald-300 transition-colors block">
+                                <h4 class="font-bold text-xs sm:text-sm text-slate-900 mb-1">S&P 500 인덱스 펀드 투자의 역사</h4>
+                                <p class="text-[11px] text-slate-600 line-clamp-2">워런 버핏의 인덱스 철학과 100년 미국 주식 연평균 수익률 및 장기 보유 효과</p>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- 핵심 금융 FAQ 4개 섹션 -->
+                    <div class="space-y-4 pt-4 border-t border-slate-200">
+                        <h3 class="text-base sm:text-lg font-black text-slate-900">
+                            ❓ 자주 묻는 금융 핵심 질문 (FAQ)
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">Q. 미국 배당주 수령 시 세금(배당소득세)은 어떻게 부과되며 금융소득종합과세 기준은 무엇인가요?</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">미국 주식 배당금은 한미 조세조약에 따라 미국 현지에서 15%가 원천징수되며, 국내 기본 배당소득세율(15.4%)과 조율되어 15.4% 분리과세로 종결됩니다. 단, 연간 이자 및 배당소득 합계가 2,000만 원을 초과하면 초과분이 아닌 전체 금융소득이 타 종합소득과 합산되어 6%~45% 누진세율이 적용되고 건강보험료 피부양자 자격이 상실됩니다.</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">Q. 2026년 스트레스 DSR 2단계가 주택담보대출 한도에 미치는 영향은 무엇인가요?</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">스트레스 DSR 2단계는 향후 금리 인상 위험을 심사에 반영하여 수도권 주택담보대출에 +1.20%p, 비수도권에 +0.75%p의 스트레스 가산금리를 적용합니다. 제1금융권 DSR 40% 한도 내에서 상환 능력이 엄격하게 재산정되어, 동일 연봉 기준 대출 한도가 기존 대비 약 8%~15% 축소됩니다.</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">Q. 실시간 환율 조회와 은행별 환전 수수료 우대(Spread)는 어떻게 활용하나요?</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">매매기준율은 기준 가격이며, 실제 현찰을 살 때나 해외 송금 시에는 은행별 환전 수수료율(스프레드 약 1.5%~1.75%)이 가산됩니다. 주요 은행의 모바일 환전 우대율(최대 90% 우대)을 적용받으면 매매기준율에 근접한 유리한 환율로 달러(USD)나 엔화(JPY)를 환전할 수 있습니다.</p>
+                            </div>
+                            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h4 class="font-bold text-slate-900 text-xs sm:text-sm mb-1">Q. 단리 상품과 복리 적금의 수익률 차이와 적금 풍차돌리기 전략은 무엇인가요?</h4>
+                                <p class="text-xs text-slate-600 leading-relaxed">단리는 최초 원금에만 이자가 붙지만, 복리는 매월 발생한 이자가 원금에 합산되어 재투자되므로 기간이 길어질수록 수익 격차가 기하급수적으로 커집니다. 매월 1년 만기 정기적금을 새로 개설하는 '적금 풍차돌리기'를 활용하면 유동성을 확보하면서도 복리 효과와 이자소득세(15.4%) 절감 혜택을 극대화할 수 있습니다.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `
+            `,
+            jsonLd: {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "FinancialService",
+                        "name": "글로벌 금융 시장 & 자산 관리 센터 | VERA",
+                        "description": "국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요.",
+                        "url": "https://veranex.app/finance",
+                        "provider": {
+                            "@type": "Organization",
+                            "name": "VERA",
+                            "url": "https://veranex.app"
+                        }
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "홈",
+                                "item": "https://veranex.app/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "금융",
+                                "item": "https://veranex.app/finance"
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "FAQPage",
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": "미국 배당주 수령 시 세금(배당소득세)은 어떻게 부과되며 금융소득종합과세 기준은 무엇인가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "미국 주식 배당금은 한미 조세조약에 따라 미국 현지에서 15%가 원천징수되며, 국내 기본 배당소득세율(15.4%)과 조율되어 15.4% 분리과세로 종결됩니다. 단, 연간 이자 및 배당소득 합계가 2,000만 원을 초과하면 초과분이 아닌 전체 금융소득이 타 종합소득과 합산되어 6%~45% 누진세율이 적용되고 건강보험료 피부양자 자격이 상실됩니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "2026년 스트레스 DSR 2단계가 주택담보대출 한도에 미치는 영향은 무엇인가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "스트레스 DSR 2단계는 향후 금리 인상 위험을 심사에 반영하여 수도권 주택담보대출에 +1.20%p, 비수도권에 +0.75%p의 스트레스 가산금리를 적용합니다. 제1금융권 DSR 40% 한도 내에서 상환 능력이 엄격하게 재산정되어, 동일 연봉 기준 대출 한도가 기존 대비 약 8%~15% 축소됩니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "실시간 환율 조회와 은행별 환전 수수료 우대(Spread)는 어떻게 활용하나요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "매매기준율은 기준 가격이며, 실제 현찰을 살 때나 해외 송금 시에는 은행별 환전 수수료율(스프레드 약 1.5%~1.75%)이 가산됩니다. 주요 은행의 모바일 환전 우대율(최대 90% 우대)을 적용받으면 매매기준율에 근접한 유리한 환율로 달러(USD)나 엔화(JPY)를 환전할 수 있습니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "단리 상품과 복리 적금의 수익률 차이와 적금 풍차돌리기 전략은 무엇인가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "단리는 최초 원금에만 이자가 붙지만, 복리는 매월 발생한 이자가 원금에 합산되어 재투자되므로 기간이 길어질수록 수익 격차가 기하급수적으로 커집니다. 매월 1년 만기 정기적금을 새로 개설하는 '적금 풍차돌리기'를 활용하면 유동성을 확보하면서도 복리 효과와 이자소득세(15.4%) 절감 혜택을 극대화할 수 있습니다."
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
         },
         {
             route: 'entertainment',
@@ -1362,118 +1514,433 @@ function generateLegalPages(template) {
 }
 
 function generateFinanceUtilPages(template) {
-    const pages = [
-        {
-            route: 'finance/util',
-            title: 'VERA 금융Util - 미국 배당주 세금, 주담대 DSR/LTV, 퇴직금 계산기',
-            description: '미국 배당주 배당소득세(15.4%) 및 월배당 캘린더, 주택담보대출 스트레스 DSR 한도, 퇴직금 및 2026 실업급여 실수령액 시뮬레이터와 상세 설명서를 무료로 제공합니다.',
-            heading: 'VERA 금융Util (스마트 금융 계산기 & 완벽 가이드)',
-            faqJson: {
-                "@context": "https://schema.org",
-                "@type": "FAQPage",
-                "mainEntity": [
+    const canonical = 'https://veranex.app/finance/util';
+    const calcKeys = ['dividend-tax', 'mortgage-dsr', 'severance-irp'];
+    const calculators = calcKeys.map(k => FINANCE_SEO_DATA[k]);
+
+    // Guide lookup helper
+    function getGuideInfo(slug) {
+        const guide = GUIDES_DATA.find(g => g.slug === slug);
+        if (guide) {
+            return {
+                title: guide.title,
+                description: guide.description,
+            };
+        }
+        return {
+            title: 'VERA 금융 리서치 심층 분석 칼럼',
+            description: '전문 애널리스트가 정리한 최신 금융 전략과 실제 사례를 확인해 보세요.',
+        };
+    }
+
+    // 1. Schema.org @graph 정의
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "FinancialService",
+                "name": "VERA 금융 계산기 및 스마트 자산 관리 센터",
+                "description": "2026 대한민국 최신 세법 및 금융 규제를 반영한 미국 배당주 세금 계산기, 주택담보대출 스트레스 DSR 2단계 한도 계산기, 법정 퇴직금 및 IRP 절세 시뮬레이터.",
+                "url": canonical,
+                "provider": {
+                    "@type": "Organization",
+                    "name": "VERA",
+                    "url": "https://veranex.app"
+                }
+            },
+            {
+                "@type": "BreadcrumbList",
+                "itemListElement": [
                     {
-                        "@type": "Question",
-                        "name": "미국 배당주 배당금에 부과되는 세금은 얼마인가요?",
-                        "acceptedAnswer": {
-                            "@type": "Answer",
-                            "text": "미국 주식 배당금은 한미 조세조약에 따라 미국 국세청(IRS)에서 15%를 원천징수하며, 한국 기본 배당세율(15.4%)과 조율되어 15.4% 분리과세로 종결됩니다. 단, 연간 금융소득이 2,000만 원을 초과하면 종합과세 대상이 됩니다."
-                        }
+                        "@type": "ListItem",
+                        "position": 1,
+                        "name": "홈",
+                        "item": "https://veranex.app/"
                     },
                     {
-                        "@type": "Question",
-                        "name": "스트레스 DSR 2단계가 주택담보대출 한도에 미치는 영향은 무엇인가요?",
-                        "acceptedAnswer": {
-                            "@type": "Answer",
-                            "text": "스트레스 DSR은 향후 금리 인상 위험을 고려해 약정금리에 가산금리(수도권 +1.20%p, 비수도권 +0.75%p)를 더해 DSR을 산정하므로, 실제 빌릴 수 있는 최대 대출 원금 한도가 축소됩니다."
-                        }
+                        "@type": "ListItem",
+                        "position": 2,
+                        "name": "금융",
+                        "item": "https://veranex.app/finance"
                     },
                     {
-                        "@type": "Question",
-                        "name": "퇴직금을 IRP 계좌로 수령하면 어떤 절세 혜택이 있나요?",
-                        "acceptedAnswer": {
-                            "@type": "Answer",
-                            "text": "퇴직금을 IRP(개인형 퇴직연금)로 이전한 뒤 55세 이후 연금으로 수령하면 퇴직소득세의 30%(10년 초과 수령 시 40%)를 감면받으며 과세이연 복리 효과를 누릴 수 있습니다."
-                        }
+                        "@type": "ListItem",
+                        "position": 3,
+                        "name": "금융Util",
+                        "item": canonical
                     }
                 ]
             },
-            content: `
-                <div class="space-y-8">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 금융Util은 일상생활 및 자산 관리에 직결되는 3대 핵심 금융 시뮬레이터와 상세 이용 설명서를 100% 무료로 제공합니다.
-                        미국 배당주 세후 실수령액, 주택담보대출 DSR/LTV 한도, 법정 퇴직금 및 실업급여를 정밀하게 계산하고 금융 절세 전략을 확인하세요.
-                    </p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="p-6 bg-amber-50 rounded-2xl border border-amber-200 space-y-3">
-                            <h3 class="font-bold text-amber-900 text-lg">💵 미국 배당주 세금 & 월배당</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">SCHD, JEPI 등 인기 ETF 배당소득세(15.4%) 공제, 12개월 입금 캘린더, 금융소득종합과세 2,000만원 한도 체크 및 ISA/IRP 절세 가이드</p>
-                            <a href="/finance/util?tab=dividend" class="inline-block text-xs font-bold text-amber-700 hover:underline">계산기 & 설명서 보기 →</a>
-                        </div>
-                        <div class="p-6 bg-blue-50 rounded-2xl border border-blue-200 space-y-3">
-                            <h3 class="font-bold text-blue-900 text-lg">🏠 주택담보대출 DSR / LTV</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">2026 스트레스 DSR 2단계(수도권 +1.20%p) 적용 최대 대출 한도, 원리금/원금/만기일시 3대 상환방식별 월 납입금 및 총이자 비교</p>
-                            <a href="/finance/util?tab=dsr" class="inline-block text-xs font-bold text-blue-700 hover:underline">계산기 & 설명서 보기 →</a>
-                        </div>
-                        <div class="p-6 bg-teal-50 rounded-2xl border border-teal-200 space-y-3">
-                            <h3 class="font-bold text-teal-900 text-lg">💼 퇴직금 & 실업급여</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">근속연수/통상임금 기준 법정 퇴직금 및 IRP 30% 감면 혜택, 2026 고용보험 실업급여(구직급여) 연령/가입기간별 지급일수(120~270일) 시뮬레이션</p>
-                            <a href="/finance/util?tab=severance" class="inline-block text-xs font-bold text-teal-700 hover:underline">계산기 & 설명서 보기 →</a>
-                        </div>
-                    </div>
+            {
+                "@type": "WebApplication",
+                "name": "VERA 스마트 금융 계산기 센터",
+                "description": "미국 배당주 세금, 2026 스트레스 DSR 2단계 주택담보대출 한도, 법정 퇴직금 및 IRP 30% 감면 계산기",
+                "url": canonical,
+                "applicationCategory": "FinanceApplication",
+                "operatingSystem": "All",
+                "browserRequirements": "Requires JavaScript, HTML5, and CSS3.",
+                "offers": {
+                    "@type": "Offer",
+                    "price": "0",
+                    "priceCurrency": "KRW"
+                }
+            },
+            ...calculators.map(calc => ({
+                "@type": "HowTo",
+                "name": `${calc.shortTitle} 이용 가이드`,
+                "description": `${calc.shortTitle} 단계별 계산 및 활용 방법 안내`,
+                "step": calc.howToSteps.map((s, idx) => ({
+                    "@type": "HowToStep",
+                    "position": idx + 1,
+                    "name": s.name,
+                    "text": s.text,
+                    "url": `${canonical}#calc-${calc.key}`
+                }))
+            })),
+            {
+                "@type": "FAQPage",
+                "mainEntity": calculators.flatMap(c => c.faqs).map(faq => ({
+                    "@type": "Question",
+                    "name": faq.question,
+                    "acceptedAnswer": {
+                        "@type": "Answer",
+                        "text": faq.answer
+                    }
+                }))
+            }
+        ]
+    };
 
-                    <div class="bg-gray-50 p-6 rounded-2xl border border-gray-200 text-xs text-gray-700 space-y-4">
-                        <h4 class="font-bold text-sm text-gray-900">💡 VERA 금융 계산기 3대 핵심 요약</h4>
-                        <ul class="list-disc pl-5 space-y-1.5 leading-relaxed">
-                            <li><strong>미국 배당주 세금:</strong> 원천징수 15%와 금융소득종합과세 2,000만원 기준선을 한눈에 게이지로 파악할 수 있습니다.</li>
-                            <li><strong>주택담보대출 한도:</strong> 담보가치(LTV)와 소득기준(DSR) 중 어떤 규제가 대출을 제한하는지 실시간 분석합니다.</li>
-                            <li><strong>퇴직금 및 구직급여:</strong> 1일 평균임금 기반 법정 퇴직금과 고용보험 비과세 실업급여 총수령액을 동시 비교합니다.</li>
-                        </ul>
+    const tabThemeMap = {
+        'dividend-tax': {
+            tabParam: 'dividend',
+            icon: 'fa-coins',
+            iconBg: 'bg-amber-500',
+            buttonBg: 'bg-amber-600 hover:bg-amber-700',
+            stepBadge: 'bg-amber-500',
+            primaryText: 'text-amber-600',
+            calloutBg: 'bg-gradient-to-r from-amber-50/90 via-orange-50/70 to-amber-50/90 border-amber-200/80',
+            calloutBadge: 'text-amber-800 bg-white/90 border-amber-200',
+        },
+        'mortgage-dsr': {
+            tabParam: 'dsr',
+            icon: 'fa-home',
+            iconBg: 'bg-blue-600',
+            buttonBg: 'bg-blue-600 hover:bg-blue-700',
+            stepBadge: 'bg-blue-600',
+            primaryText: 'text-blue-600',
+            calloutBg: 'bg-gradient-to-r from-blue-50/90 via-indigo-50/70 to-blue-50/90 border-blue-200/80',
+            calloutBadge: 'text-blue-800 bg-white/90 border-blue-200',
+        },
+        'severance-irp': {
+            tabParam: 'severance',
+            icon: 'fa-briefcase',
+            iconBg: 'bg-teal-600',
+            buttonBg: 'bg-teal-600 hover:bg-teal-700',
+            stepBadge: 'bg-teal-600',
+            primaryText: 'text-teal-600',
+            calloutBg: 'bg-gradient-to-r from-teal-50/90 via-emerald-50/70 to-teal-50/90 border-teal-200/80',
+            calloutBadge: 'text-teal-800 bg-white/90 border-teal-200',
+        }
+    };
+
+    const calculatorSectionsHtml = calculators.map(calc => {
+        const theme = tabThemeMap[calc.key];
+        const guide = getGuideInfo(calc.relatedGuideSlug);
+
+        const variablesRows = calc.formula.variables.map(v => `
+            <tr class="border-b border-slate-100 hover:bg-slate-50/60 transition-colors">
+                <td class="py-3 px-4 font-bold text-slate-900 bg-slate-50/40 text-xs sm:text-sm">${v.name}</td>
+                <td class="py-3 px-4 text-slate-600 text-xs sm:text-sm leading-relaxed">${v.description}</td>
+            </tr>
+        `).join('');
+
+        const howToCols = calc.howToSteps.map((step, idx) => `
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/70 flex flex-col justify-between">
+                <div>
+                    <div class="w-8 h-8 rounded-xl ${theme.stepBadge} text-white font-black text-sm flex items-center justify-center mb-3 shadow-xs">
+                        ${idx + 1}
+                    </div>
+                    <h4 class="font-bold text-slate-900 text-base mb-2">${step.name}</h4>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">${step.text}</p>
+                </div>
+            </div>
+        `).join('');
+
+        const faqsRows = calc.faqs.map(faq => `
+            <div class="border border-slate-200/80 rounded-2xl overflow-hidden bg-white mb-3 shadow-2xs">
+                <div class="px-5 py-4 bg-slate-50/70 border-b border-slate-100 font-bold text-sm sm:text-base text-slate-900 flex items-center gap-3">
+                    <span class="${theme.primaryText} font-black text-sm sm:text-base">Q.</span>
+                    <span>${faq.question}</span>
+                </div>
+                <div class="px-5 py-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-white flex gap-3">
+                    <span class="text-emerald-600 font-black text-sm sm:text-base flex-shrink-0">A.</span>
+                    <p>${faq.answer}</p>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+        <article id="calc-${calc.key}" class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 lg:p-10 mb-12 scroll-mt-20">
+            <!-- 1. 계산기 헤더 -->
+            <header class="border-b border-slate-100 pb-6 mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="w-9 h-9 rounded-2xl ${theme.iconBg} text-white flex items-center justify-center text-sm shadow-xs font-bold">
+                            <i class="fas ${theme.icon}"></i>
+                        </span>
+                        <span class="text-xs font-bold ${theme.primaryText} uppercase tracking-wider bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                            2026 최신 법정 산식 검증
+                        </span>
+                    </div>
+                    <a href="/finance/util?tab=${theme.tabParam}" class="px-4 py-2 rounded-xl ${theme.buttonBg} text-white text-xs font-bold shadow-xs hover:opacity-95 transition-opacity inline-flex items-center gap-1.5">
+                        <i class="fas fa-play text-[10px]"></i>
+                        <span>인터랙티브 계산기 실행하기</span>
+                    </a>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mb-3">
+                    ${calc.title}
+                </h2>
+                <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
+                    ${calc.description}
+                </p>
+            </header>
+
+            <!-- 2. AI 핵심 답변 요약 (AEO Direct Answer Box) -->
+            <section class="${theme.calloutBg} border rounded-2xl p-5 sm:p-6 mb-8 shadow-xs">
+                <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <div class="flex items-center gap-2 text-slate-900 font-black text-sm sm:text-base">
+                        <span class="w-6 h-6 rounded-lg ${theme.iconBg} text-white flex items-center justify-center text-xs shadow-xs font-bold">
+                            <i class="fas fa-lightbulb"></i>
+                        </span>
+                        <span>AI 핵심 답변 요약 (AEO Direct Answer)</span>
+                    </div>
+                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${theme.calloutBadge}">
+                        AEO 검색 요약
+                    </span>
+                </div>
+                <p class="text-slate-800 text-sm sm:text-base font-medium leading-relaxed sm:pl-8">
+                    ${calc.directAnswer}
+                </p>
+            </section>
+
+            <!-- 3. 계산 공식 & 변수 표 -->
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">
+                        <i class="fas fa-square-root-alt"></i>
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900">
+                        ${calc.formula.title}
+                    </h3>
+                </div>
+                <div class="bg-slate-950 text-emerald-400 font-mono text-sm sm:text-base p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto mb-4">
+                    <span class="text-xs text-slate-400 block mb-1 font-sans">📌 표준 법정 산정식</span>
+                    <code>${calc.formula.expression}</code>
+                </div>
+                <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-4">
+                    ${calc.formula.description}
+                </p>
+                <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold text-xs sm:text-sm">
+                                <th class="py-3 px-4 w-1/3">산정 기준 변수</th>
+                                <th class="py-3 px-4">세부 기준 및 적용 방법</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${variablesRows}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 4. 실제 계산 시뮬레이션 사례 -->
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-4">
+                    <span class="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold">
+                        <i class="fas fa-calculator"></i>
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900">
+                        실제 계산 시뮬레이션 사례
+                    </h3>
+                </div>
+                <div class="space-y-3.5">
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">📋 기준 시나리오</span>
+                        <p class="text-slate-800 text-sm sm:text-base font-medium leading-relaxed">${calc.example.scenario}</p>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 sm:p-5">
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">🔢 산출 과정</span>
+                        <p class="text-slate-700 text-sm leading-relaxed font-mono whitespace-pre-line">${calc.example.calculation}</p>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 sm:p-5">
+                        <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider block mb-1">✅ 최종 산출 결과</span>
+                        <p class="text-emerald-950 text-base sm:text-lg font-bold leading-relaxed">${calc.example.result}</p>
                     </div>
                 </div>
-            `
-        }
-    ];
+            </section>
 
-    for (const page of pages) {
-        const canonical = `https://veranex.app/${page.route}`;
-        const prerenderBody = `
-            <div class="min-h-screen bg-slate-50 font-sans">
-                <header class="bg-white border-b border-gray-200 py-4 px-6">
-                    <div class="max-w-5xl mx-auto flex items-center justify-between">
-                        <a href="/" class="text-2xl font-black text-amber-600">VERA</a>
-                        <nav class="flex gap-4 text-sm font-medium text-gray-600">
-                            <a href="/" class="hover:text-amber-600">홈</a>
-                            <a href="/finance" class="hover:text-amber-600">금융</a>
-                            <a href="/finance/util" class="text-amber-600 font-bold">금융Util</a>
-                            <a href="/guides" class="hover:text-amber-600">지식 가이드</a>
-                        </nav>
+            <!-- 5. 3단계 간편 이용 가이드 -->
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-5">
+                    <span class="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                        <i class="fas fa-list-ol"></i>
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900">
+                        3단계 간편 이용 가이드
+                    </h3>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    ${howToCols}
+                </div>
+            </section>
+
+            <!-- 6. 자주 묻는 질문 FAQ -->
+            <section class="mb-8">
+                <div class="flex items-center gap-2 mb-5">
+                    <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">
+                        <i class="fas fa-question-circle"></i>
+                    </span>
+                    <h3 class="text-lg sm:text-xl font-black text-slate-900">
+                        자주 묻는 질문 (FAQ)
+                    </h3>
+                </div>
+                <div class="space-y-3">
+                    ${faqsRows}
+                </div>
+            </section>
+
+            <!-- 7. 관련 가이드 아티클 링크 -->
+            <footer class="pt-4 border-t border-slate-100">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white">
+                    <div class="space-y-1">
+                        <span class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+                            <i class="fas fa-book-open"></i> VERA 금융 리서치 심층 칼럼
+                        </span>
+                        <h4 class="text-base sm:text-lg font-bold text-white">
+                            ${guide.title}
+                        </h4>
+                        <p class="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                            ${guide.description}
+                        </p>
                     </div>
-                </header>
-                <main class="max-w-5xl mx-auto px-4 py-12">
-                    <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-6">${page.heading}</h1>
-                    <div class="bg-white p-8 rounded-3xl border border-gray-200 shadow-sm leading-relaxed text-gray-800">
-                        ${page.content}
-                    </div>
-                </main>
-                <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500">
-                    <p>© 2026 VERA - All rights reserved.</p>
-                </footer>
-            </div>
+                    <a href="/guides/${calc.relatedGuideSlug}" class="px-5 py-3 bg-white text-slate-950 hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow transition-all whitespace-nowrap shrink-0 flex items-center gap-2">
+                        <span>전문 분석 칼럼 읽기</span>
+                        <i class="fas fa-arrow-right text-[11px]"></i>
+                    </a>
+                </div>
+            </footer>
+        </article>
         `;
+    }).join('\n');
 
-        const html = replaceMetaTags(template, {
-            title: page.title,
-            description: page.description,
-            canonical,
-            ogType: 'website',
-            jsonLd: page.faqJson,
-            bodyHtml: prerenderBody
-        });
+    const prerenderBody = `
+        <div class="min-h-screen bg-slate-50 font-sans">
+            <header class="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-30 shadow-2xs">
+                <div class="max-w-5xl mx-auto flex items-center justify-between">
+                    <a href="/" class="text-2xl font-black text-amber-600">VERA</a>
+                    <nav class="flex gap-4 text-sm font-medium text-gray-600">
+                        <a href="/" class="hover:text-amber-600">홈</a>
+                        <a href="/finance" class="hover:text-amber-600">금융</a>
+                        <a href="/finance/util" class="text-amber-600 font-bold">금융Util</a>
+                        <a href="/guides" class="hover:text-amber-600">지식 가이드</a>
+                        <a href="/lifestyle" class="hover:text-amber-600">생활도구</a>
+                    </nav>
+                </div>
+            </header>
+            <main class="max-w-5xl mx-auto px-4 py-10">
+                <!-- 상단 브레드크럼 -->
+                <nav class="flex items-center gap-2 text-xs text-slate-500 font-bold mb-4" aria-label="Breadcrumb">
+                    <a href="/" class="hover:text-amber-600">홈</a>
+                    <span>/</span>
+                    <a href="/finance" class="hover:text-amber-600">금융</a>
+                    <span>/</span>
+                    <span class="text-amber-700 font-black">금융Util</span>
+                </nav>
 
-        writeHtmlFile(path.resolve(distDir, `${page.route}/index.html`), html);
-    }
+                <header class="mb-8">
+                    <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mb-3">
+                        VERA 금융Util - 스마트 금융 계산기 & 핵심 가이드
+                    </h1>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-3xl">
+                        2026 대한민국 최신 세법 및 금융 규제를 완벽 반영한 미국 배당주 세금 계산기, 주택담보대출 스트레스 DSR 2단계 한도 계산기, 법정 퇴직금 및 IRP 절세 시뮬레이터입니다.
+                    </p>
+                </header>
+
+                <!-- 3대 계산기 퀵점프 내비게이션 -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-10">
+                    <a href="#calc-dividend-tax" class="p-4 bg-white rounded-2xl border border-amber-200/80 hover:border-amber-400 shadow-xs flex items-center gap-3 transition-colors">
+                        <span class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm">
+                            <i class="fas fa-coins"></i>
+                        </span>
+                        <div>
+                            <span class="block text-xs font-bold text-amber-700">원천징수 15% & 종합과세</span>
+                            <strong class="text-sm font-extrabold text-slate-900">미국 배당주 & 세금</strong>
+                        </div>
+                    </a>
+                    <a href="#calc-mortgage-dsr" class="p-4 bg-white rounded-2xl border border-blue-200/80 hover:border-blue-400 shadow-xs flex items-center gap-3 transition-colors">
+                        <span class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                            <i class="fas fa-home"></i>
+                        </span>
+                        <div>
+                            <span class="block text-xs font-bold text-blue-700">2026 스트레스 DSR 2단계</span>
+                            <strong class="text-sm font-extrabold text-slate-900">주담대 DSR / LTV</strong>
+                        </div>
+                    </a>
+                    <a href="#calc-severance-irp" class="p-4 bg-white rounded-2xl border border-teal-200/80 hover:border-teal-400 shadow-xs flex items-center gap-3 transition-colors">
+                        <span class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-sm">
+                            <i class="fas fa-briefcase"></i>
+                        </span>
+                        <div>
+                            <span class="block text-xs font-bold text-teal-700">1일 평균임금 & IRP 30% 감면</span>
+                            <strong class="text-sm font-extrabold text-slate-900">퇴직금 & IRP 절세</strong>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- 3대 계산기 상세 본문 (Direct Answer, Formula, Example, HowTo, FAQs, Guide Link) -->
+                ${calculatorSectionsHtml}
+
+                <!-- 추가 관련 금융 서비스 링크 -->
+                <section class="bg-slate-100 rounded-3xl p-6 sm:p-8 border border-slate-200">
+                    <h3 class="text-lg font-extrabold text-slate-900 mb-4">🔗 관련 금융 서비스 및 리서치 허브</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                        <a href="/finance" class="p-3.5 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 hover:text-amber-600 hover:border-amber-300 transition-colors">
+                            🏢 VERA 금융 시장 허브 →
+                        </a>
+                        <a href="/tools/finance-dsr" class="p-3.5 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 hover:text-blue-600 hover:border-blue-300 transition-colors">
+                            📊 스트레스 DSR 단독 계산기 →
+                        </a>
+                        <a href="/guides" class="p-3.5 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 hover:text-emerald-600 hover:border-emerald-300 transition-colors">
+                            📚 VERA 금융 심층 칼럼 전편 →
+                        </a>
+                        <a href="/lifestyle" class="p-3.5 bg-white rounded-xl border border-slate-200 font-bold text-slate-800 hover:text-indigo-600 hover:border-indigo-300 transition-colors">
+                            🛠️ VERA 스마트 생활도구 13종 →
+                        </a>
+                    </div>
+                </section>
+            </main>
+            <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500">
+                <p>© 2026 VERA - All rights reserved. 대한민국 법정 산식 및 2026 세법 개정안 검증 완료.</p>
+            </footer>
+        </div>
+    `;
+
+    const title = 'VERA 금융Util - 미국 배당주 세금, 주담대 DSR/LTV, 퇴직금 계산기';
+    const description = '미국 배당주 배당소득세(15.4%) 및 월배당 캘린더, 주택담보대출 스트레스 DSR 한도, 퇴직금 및 2026 실업급여 실수령액 시뮬레이터와 상세 설명서를 무료로 제공합니다.';
+
+    const html = replaceMetaTags(template, {
+        title,
+        description,
+        canonical,
+        ogType: 'website',
+        jsonLd,
+        bodyHtml: prerenderBody
+    });
+
+    writeHtmlFile(path.resolve(distDir, 'finance/util/index.html'), html);
 }
 
 function generateSajuPage(template) {

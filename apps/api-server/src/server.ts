@@ -6,6 +6,8 @@ import { pool } from '@faithportal/database';
 import { errorHandler } from './middleware/errors.js';
 import { optionalAuth, checkSession } from './middleware/auth.js';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -198,12 +200,35 @@ onlineGames.forEach(gameName => {
     app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
+// Finance Util SSG 라우트 (/finance/util)
+app.get('/finance/util', (c) => {
+    const utilFilePath = path.resolve('./apps/main-portal/dist/finance/util/index.html');
+    if (fs.existsSync(utilFilePath)) {
+        return c.html(fs.readFileSync(utilFilePath, 'utf-8'));
+    }
+    return c.redirect('/finance', 302);
+});
+app.get('/finance/util/', (c) => c.redirect('/finance/util', 301));
+
+// Finance app 및 메인 포털 Finance 라우트
+app.get('/finance', (c) => {
+    const mainPortalFinance = path.resolve('./apps/main-portal/dist/finance/index.html');
+    const financeDist = path.resolve('./apps/finance/dist/index.html');
+    if (fs.existsSync(mainPortalFinance)) {
+        return c.html(fs.readFileSync(mainPortalFinance, 'utf-8'));
+    }
+    if (fs.existsSync(financeDist)) {
+        return c.html(fs.readFileSync(financeDist, 'utf-8'));
+    }
+    return c.redirect('/', 302);
+});
+app.get('/finance/', (c) => c.redirect('/finance', 301));
+
 // Finance app 정적 파일 서빙
 app.use('/finance/*', serveStatic({
     root: './apps/finance/dist',
     rewriteRequestPath: (path) => path.replace(/^\/finance/, '')
 }));
-app.get('/finance', serveStatic({ path: './apps/finance/dist/index.html' }));
 
 // Next.js 정적 리소스 서빙 (_next/static/*)
 app.use('/_next/static/*', serveStatic({
@@ -375,9 +400,6 @@ ${staticPages.map(p => `  <url>
 });
 
 // 뉴스 상세 페이지: 서버사이드 메타 태그 주입 (SSR 없이 OG 태그 제공)
-import fs from 'fs';
-import path from 'path';
-
 app.get('/news/:id', async (c) => {
     const newsId = c.req.param('id');
     

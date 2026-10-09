@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <!-- SEO 기본 -->
-  <title>금융 - 환율·대출·예적금 계산기 | VERA</title>
-  <meta name="description" content="실시간 환율, 대출 이자 계산기, 예금·적금 계산기와 국내외 증시 정보를 한 곳에서. VERA 금융 포털." />
-  <meta name="keywords" content="환율,대출계산기,예금계산기,적금계산기,이자계산기,금융,증시,주가,코스피" />
+  <title>글로벌 금융 시장 & 자산 관리 센터 | VERA</title>
+  <meta name="description" content="국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요." />
+  <meta name="keywords" content="환율,대출계산기,예금계산기,적금계산기,이자계산기,금융,증시,주가,코스피,DSR계산기,배당소득세,퇴직금계산기" />
   <meta name="author" content="VERA" />
   <meta name="theme-color" content="#7c3aed" />
   <link rel="canonical" href="https://veranex.app/finance" />
@@ -16,8 +16,8 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="VERA" />
-  <meta property="og:title" content="금융 - 환율·대출·예적금 계산기 | VERA" />
-  <meta property="og:description" content="실시간 환율, 대출·예금·적금 계산기와 국내외 증시 정보를 한 곳에서." />
+  <meta property="og:title" content="글로벌 금융 시장 & 자산 관리 센터 | VERA" />
+  <meta property="og:description" content="국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요." />
   <meta property="og:url" content="https://veranex.app/finance" />
   <meta property="og:locale" content="ko_KR" />
   <meta property="og:image" content="https://veranex.app/logo-512.png" />
@@ -26,19 +26,81 @@
   <meta name="google-site-verification" content="nRmVAkJwTuYV7_y9MRTl4pAJQSPPe1Mws852he0q_Ec" />
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="금융 - 환율·대출·예적금 계산기 | VERA" />
-  <meta name="twitter:description" content="실시간 환율, 대출·예금·적금 계산기와 국내외 증시 정보를 한 곳에서." />
+  <meta name="twitter:title" content="글로벌 금융 시장 & 자산 관리 센터 | VERA" />
+  <meta name="twitter:description" content="국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요." />
   <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
 
-  <!-- JSON-LD 구조화 데이터 -->
+  <!-- Schema.org @graph JSON-LD 구조화 데이터 (FinancialService, BreadcrumbList, FAQPage) -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebPage",
-    "name": "VERA 금융",
-    "url": "https://veranex.app/finance",
-    "description": "실시간 환율, 대출·예금·적금 계산기와 국내외 증시 정보",
-    "inLanguage": "ko"
+    "@graph": [
+      {
+        "@type": "FinancialService",
+        "name": "글로벌 금융 시장 & 자산 관리 센터 | VERA",
+        "description": "국내외 증시 지수(KOSPI, S&P500, NASDAQ), 실시간 환율, 미국 배당주 세금 계산기, 주택담보대출 DSR 계산기를 한눈에 확인하세요.",
+        "url": "https://veranex.app/finance",
+        "provider": {
+          "@type": "Organization",
+          "name": "VERA",
+          "url": "https://veranex.app"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "홈",
+            "item": "https://veranex.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "금융",
+            "item": "https://veranex.app/finance"
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "미국 배당주 수령 시 세금(배당소득세)은 어떻게 부과되며 금융소득종합과세 기준은 무엇인가요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "미국 주식 배당금은 한미 조세조약에 따라 미국 현지에서 15%가 원천징수되며, 국내 기본 배당소득세율(15.4%)과 조율되어 15.4% 분리과세로 종결됩니다. 단, 연간 이자 및 배당소득 합계가 2,000만 원을 초과하면 초과분이 아닌 전체 금융소득이 타 종합소득과 합산되어 6%~45% 누진세율이 적용되고 건강보험료 피부양자 자격이 상실됩니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "2026년 스트레스 DSR 2단계가 주택담보대출 한도에 미치는 영향은 무엇인가요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "스트레스 DSR 2단계는 향후 금리 인상 위험을 심사에 반영하여 수도권 주택담보대출에 +1.20%p, 비수도권에 +0.75%p의 스트레스 가산금리를 적용합니다. 제1금융권 DSR 40% 한도 내에서 상환 능력이 엄격하게 재산정되어, 동일 연봉 기준 대출 한도가 기존 대비 약 8%~15% 축소됩니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "실시간 환율 조회와 은행별 환전 수수료 우대(Spread)는 어떻게 활용하나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "매매기준율은 기준 가격이며, 실제 현찰을 살 때나 해외 송금 시에는 은행별 환전 수수료율(스프레드 약 1.5%~1.75%)이 가산됩니다. 주요 은행의 모바일 환전 우대율(최대 90% 우대)을 적용받으면 매매기준율에 근접한 유리한 환율로 달러(USD)나 엔화(JPY)를 환전할 수 있습니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "단리 상품과 복리 적금의 수익률 차이와 적금 풍차돌리기 전략은 무엇인가요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "단리는 최초 원금에만 이자가 붙지만, 복리는 매월 발생한 이자가 원금에 합산되어 재투자되므로 기간이 길어질수록 수익 격차가 기하급수적으로 커집니다. 매월 1년 만기 정기적금을 새로 개설하는 '적금 풍차돌리기'를 활용하면 유동성을 확보하면서도 복리 효과와 이자소득세(15.4%) 절감 혜택을 극대화할 수 있습니다."
+            }
+          }
+        ]
+      }
+    ]
   }
   </script>
 
@@ -139,22 +201,51 @@
           </article>
         </section>
 
+        <!-- VERA 금융 계산기 바로가기 배너 -->
+        <section style="background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); padding: 24px; border-radius: 20px; border: 1px solid #bfdbfe; margin-bottom: 32px; display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <span style="font-size: 11px; font-weight: 800; color: #2563eb; background: #dbeafe; padding: 4px 10px; rounded-full; border-radius: 9999px;">AEO 금융 계산기 센터</span>
+              <h2 style="font-size: 20px; font-weight: 800; color: #1e3a8a; margin-top: 6px;">💡 스마트 금융 시뮬레이터 & DSR 계산기</h2>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <a href="/finance/util" style="padding: 10px 18px; background: #2563eb; color: #ffffff; font-weight: 700; font-size: 13px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <span>VERA 금융Util 허브 바로가기</span> →
+              </a>
+              <a href="/tools/finance-dsr" style="padding: 10px 18px; background: #0f172a; color: #ffffff; font-weight: 700; font-size: 13px; border-radius: 12px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <span>2026 스트레스 DSR 단독 계산기</span> →
+              </a>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">
+            미국 배당주 원천징수 세금(15%) 및 월배당 캘린더, 2026 스트레스 DSR 2단계 대출 한도 규제, 법정 퇴직금 및 IRP 30% 감면 계산기를 100% 무료로 이용하실 수 있습니다.
+          </p>
+        </section>
+
         <section style="background: #ffffff; padding: 28px; border-radius: 20px; border: 1px solid #e2e8f0; margin-bottom: 32px;">
           <h2 style="font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 16px;">
-            📚 VERA 금융 추천 지식 칼럼 (인사이트)
+            📚 VERA 금융 추천 지식 칼럼 (5대 심층 리서치)
           </h2>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
             <a href="/guides/2026-global-interest-rate-dividend-strategy" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
               <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">2026 글로벌 금리 인하기 미국 배당주 전략</h3>
               <p style="font-size: 12px; color: #64748b; line-height: 1.5;">SCHD, JEPI 등 월배당 ETF를 활용한 배당소득세(15.4%) 절세 및 현금흐름 구축법</p>
+            </a>
+            <a href="/guides/foreign-exchange-rate-and-macro-investment" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
+              <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">원/달러 환율 변동 원리와 외환 리스크 관리</h3>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">환율 결정 메커니즘, 환헤지 vs 환노출 선택 기준 및 달러 자산 분할 매수법</p>
             </a>
             <a href="/guides/magic-of-compound-interest-and-dollar-cost-averaging" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
               <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">복리의 마법과 정액적립식(DCA) 투자 원칙</h3>
               <p style="font-size: 12px; color: #64748b; line-height: 1.5;">72의 법칙, 시간 가치, 주가 변동성을 이기는 분할 매수 적립식 자산 축적 공식</p>
             </a>
-            <a href="/guides/loan-interest-calculation-and-repayment-methods" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
-              <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">대출이자 계산법과 3대 상환 방식 비교</h3>
-              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">원리금·원금균등 및 만기일시상환에 따른 총 이자 차이와 스트레스 DSR 대응 전략</p>
+            <a href="/guides/compound-interest-calculator-guide-and-wealth-building" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
+              <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">복리 계산기 200% 활용법 & 1억 시뮬레이션</h3>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">5년 적금 vs ETF 투자 비교와 비과세 계좌(ISA/IRP) 복리 극대화 노하우</p>
+            </a>
+            <a href="/guides/sp500-index-fund-dollar-investing-principles" style="display: block; padding: 16px; border: 1px solid #f1f5f9; border-radius: 12px; text-decoration: none; background: #f8fafc;">
+              <h3 style="font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 4px;">S&P 500 인덱스 펀드 적립식 투자의 역사</h3>
+              <p style="font-size: 12px; color: #64748b; line-height: 1.5;">워런 버핏의 인덱스 철학과 100년 미국 주식 연평균 수익률 및 장기 보유 효과</p>
             </a>
           </div>
         </section>
