@@ -44,6 +44,7 @@ const EXPECTED_GAME_URLS = [
   'https://veranex.app/game/minesweeper',
   'https://veranex.app/game/freecell',
   'https://veranex.app/game/vera-pop',
+  'https://veranex.app/game/flight',
 ];
 
 const AI_BOTS = [
@@ -147,9 +148,9 @@ function validateSitemap(filePath: string) {
 
   console.log(`[${filePath}] Found ${urls.length} URLs in sitemap`);
 
-  // Verify total count is exactly 57
-  if (urls.length !== 57) {
-    console.error(`FAIL [${filePath}]: Expected exactly 57 URLs, but found ${urls.length}`);
+  // Verify total count is exactly 58
+  if (urls.length !== 58) {
+    console.error(`FAIL [${filePath}]: Expected exactly 58 URLs, but found ${urls.length}`);
     hasError = true;
   }
 

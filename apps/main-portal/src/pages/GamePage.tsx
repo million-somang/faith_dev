@@ -527,6 +527,73 @@ function FfRpgThumb() {
     );
 }
 
+// 🌟 1942 오마주 베라 플라이트: 태평양 상공 P-38 전투기 & 편대 비행
+function FlightThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="flightSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#38bdf8" />
+                    <stop offset="100%" stopColor="#0284c7" />
+                </linearGradient>
+                <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#ffffff" stopOpacity="0.8" />
+                    <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+                </radialGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#flightSky)" />
+
+            {/* 태양 광원 & 구름 */}
+            <circle cx="270" cy="25" r="40" fill="url(#sunGlow)" />
+            <path d="M20,40 Q35,30 50,40 Q65,30 80,40 Q75,55 25,55 Z" fill="#ffffff" opacity="0.35" />
+            <path d="M220,70 Q240,58 260,70 Q280,58 300,70 Q290,85 230,85 Z" fill="#ffffff" opacity="0.3" />
+
+            {/* 적기 빨간 편대 (우측 상단 S자 선회) */}
+            <g transform="translate(230, 25)">
+                <polygon points="0,0 -8,-10 8,-10" fill="#ef4444" />
+                <polygon points="18,12 10,2 26,2" fill="#ef4444" />
+                <polygon points="36,24 28,14 44,14" fill="#ef4444" />
+            </g>
+
+            {/* 아군 전투기 기관총 탄막 */}
+            <g stroke="#fde047" strokeWidth="2.5" strokeLinecap="round" opacity="0.9">
+                <line x1="154" y1="42" x2="154" y2="12" />
+                <line x1="166" y1="42" x2="166" y2="12" />
+                <line x1="140" y1="56" x2="135" y2="28" stroke="#10b981" />
+                <line x1="180" y1="56" x2="185" y2="28" stroke="#10b981" />
+            </g>
+
+            {/* 호위기 2기 (녹색 날개) */}
+            <g transform="translate(132, 68)">
+                <ellipse cx="0" cy="0" rx="8" ry="3" fill="#10b981" />
+                <rect x="-2" y="-5" width="4" height="10" fill="#065f46" rx="1" />
+            </g>
+            <g transform="translate(188, 68)">
+                <ellipse cx="0" cy="0" rx="8" ry="3" fill="#10b981" />
+                <rect x="-2" y="-5" width="4" height="10" fill="#065f46" rx="1" />
+            </g>
+
+            {/* 주력 아군기: P-38 라이트닝 쌍발 전투기 */}
+            <g transform="translate(160, 60)">
+                {/* 주익 */}
+                <ellipse cx="0" cy="0" rx="26" ry="6.5" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1" />
+                {/* 좌우 쌍발 붐 테일 */}
+                <rect x="-16" y="-12" width="6" height="32" rx="2" fill="#94a3b8" />
+                <rect x="10" y="-12" width="6" height="32" rx="2" fill="#94a3b8" />
+                {/* 꼬리 날개 */}
+                <rect x="-18" y="16" width="36" height="4" rx="1" fill="#64748b" />
+                {/* 중앙 콕핏 */}
+                <ellipse cx="0" cy="-4" rx="4.5" ry="13" fill="#0284c7" />
+                <ellipse cx="0" cy="-6" rx="2.5" ry="5" fill="#bae6fd" />
+                {/* 회전 프로펠러 효과 */}
+                <ellipse cx="-13" cy="-14" rx="7" ry="1.5" fill="#ffffff" opacity="0.8" />
+                <ellipse cx="13" cy="-14" rx="7" ry="1.5" fill="#ffffff" opacity="0.8" />
+            </g>
+        </svg>
+    );
+}
+
+
 export default function GamePage() {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -598,6 +665,21 @@ export default function GamePage() {
 
                     {activeGenre === 'mini' ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            {/* 🌟 0. 베라 플라이트 (Vera Flight) - 1942 스타일 레트로 비행 슈팅 */}
+                            <button onClick={() => navigate('/game/flight')} className="bg-white border-2 text-left border-sky-300 rounded-2xl overflow-hidden hover:border-sky-500 hover:shadow-xl transition-all group relative">
+                                <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                    1942 REMAKE
+                                </div>
+                                <div className="overflow-hidden bg-[#0284c7]"><FlightThumb /></div>
+                                <div className="p-5">
+                                    <h3 className="font-black text-xl text-sky-800 mb-1 group-hover:text-sky-900 transition-colors flex items-center gap-2">
+                                        <span>Vera Flight (베라 플라이트)</span>
+                                        <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 슈팅</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
+                                </div>
+                            </button>
+
                             {/* 🌟 1. 베라장기 (Vera Janggi) - 9×10 정통 한국 장기 & 1일 1외통수 */}
                             <button onClick={() => navigate('/game/janggi')} className="bg-white border-2 text-left border-cyan-200 rounded-2xl overflow-hidden hover:border-cyan-400 hover:shadow-xl transition-all group relative">
                                 <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
