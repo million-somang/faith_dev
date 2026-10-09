@@ -608,8 +608,8 @@ const ROUTE_META: Record<string, { title: string; description: string; jsonLd?: 
         }
     },
     '/game': {
-        title: '무료 미니게임 - 베라오목·베라팝·프리셀·스도쿠·2048·지뢰찾기 | VERA',
-        description: '설치 없이 브라우저에서 바로 즐기는 무료 미니게임. 15×15 정통 베라오목(AI 3단계 대전), 베라팝, 클래식 프리셀, 스도쿠, 2048, 지뢰찾기를 플레이하고 랭킹에 도전하세요.',
+        title: '무료 두뇌 미니게임 센터 - 베라장기·베라오목·숫자야구·2048·스도쿠·지뢰찾기·프리셀·베라팝 | VERA',
+        description: '설치 없이 브라우저에서 바로 즐기는 8대 고품격 무료 두뇌 미니게임. 베라장기(9×10 한국장기 & 묘수풀이), 베라오목(AI 3단계), 숫자야구, 2048, 일일 스도쿠, 클래식 지뢰찾기, 프리셀, 60초 베라팝을 무료로 플레이하세요.',
         jsonLd: {
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
@@ -761,31 +761,32 @@ for (const [routePath, meta] of Object.entries(ROUTE_META)) {
 
 app.get('/game/:id', (c) => {
     const id = c.req.param('id');
+    const staticFile = path.resolve(`./apps/main-portal/dist/game/${id}/index.html`);
+    if (fs.existsSync(staticFile)) {
+        return c.html(fs.readFileSync(staticFile, 'utf-8'));
+    }
     const nextGameFile = path.resolve(`./apps/next-portal/.next/server/app/game/${id}.html`);
     if (fs.existsSync(nextGameFile)) {
         return c.html(fs.readFileSync(nextGameFile, 'utf-8'));
     }
-    const meta = GAME_META[id];
-    try {
-        if (meta) {
-            const jsonLd = {
-                '@context': 'https://schema.org',
-                '@type': 'SoftwareApplication',
-                name: meta.title.split(' - ')[0],
-                description: meta.description,
-                url: `${SITE_URL}/game/${id}`,
-                applicationCategory: 'GameApplication',
-                operatingSystem: 'Web Browser',
-                offers: { '@type': 'Offer', price: '0', priceCurrency: 'KRW' },
-            };
-            return c.html(renderSpaWithMeta(buildMetaBlock({ ...meta, path: `/game/${id}`, jsonLd })));
-        }
-        // 알 수 없는 게임 id는 게임 목록 메타로 폴백
-        return c.html(renderSpaWithMeta(buildMetaBlock({ ...ROUTE_META['/game'], path: `/game/${id}` })));
-    } catch (e) {
-        console.error('[SEO] game meta injection error:', id, e);
-        return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
+    const portalIndex = path.resolve('./apps/main-portal/dist/index.html');
+    if (fs.existsSync(portalIndex)) {
+        return c.html(fs.readFileSync(portalIndex, 'utf-8'));
     }
+    return c.text('Not Found', 404);
+});
+
+app.get('/game/:id/', (c) => {
+    const id = c.req.param('id');
+    const staticFile = path.resolve(`./apps/main-portal/dist/game/${id}/index.html`);
+    if (fs.existsSync(staticFile)) {
+        return c.html(fs.readFileSync(staticFile, 'utf-8'));
+    }
+    const portalIndex = path.resolve('./apps/main-portal/dist/index.html');
+    if (fs.existsSync(portalIndex)) {
+        return c.html(fs.readFileSync(portalIndex, 'utf-8'));
+    }
+    return c.text('Not Found', 404);
 });
 
 // /guides/:slug 아티클 서빙 및 미존재 시 명시적 HTTP 404 반환 (Soft 404 방지)

@@ -5,6 +5,7 @@ import { generateRssFeed } from './generate-rss.js';
 import { TOOLS_DATA } from '../src/data/toolsData.ts';
 import { FINANCE_SEO_DATA } from '../src/data/financeSeoData.ts';
 import { GUIDES_DATA } from '../src/data/guidesData.ts';
+import { GAMES_SEO_DATA, getAllGameSeoItems } from '../src/data/gamesSeoData.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -411,6 +412,9 @@ async function prerender() {
     // 4. Generate static pages for Core Portal Sections (Game, News, Lifestyle, Finance, Lounge, B2B)
     generatePortalSectionPages(templateHtml);
 
+    // 4-1. Generate static landing pages for all 8 Core Mini Games (AEO & SEO 최적화)
+    generateGameDetailPages(templateHtml);
+
     // 5. Generate static pages for Core Legal & Info pages
     generateLegalPages(templateHtml);
 
@@ -700,97 +704,140 @@ function generatePortalSectionPages(template) {
     const sections = [
         {
             route: 'game',
-            title: '무료 두뇌 미니게임 센터 - 베라오목, 베라 팝, 스도쿠, 2048, 지뢰찾기, 프리셀 | VERA',
-            description: '설치 없이 브라우저에서 바로 즐기는 무료 두뇌 미니게임. 15×15 정통 베라오목(AI 3단계 대전), 베라 팝, 넘버 퍼즐 2048, 일일 스도쿠, 지뢰찾기, 정통 프리셀 카드게임을 제공합니다.',
+            title: '무료 두뇌 미니게임 센터 - 베라장기·베라오목·숫자야구·2048·스도쿠·지뢰찾기·프리셀·베라팝 | VERA',
+            description: '설치 없이 브라우저에서 바로 즐기는 8대 고품격 무료 두뇌 미니게임. 베라장기(9×10 한국장기 & 묘수풀이), 베라오목(AI 3단계), 숫자야구, 2048, 일일 스도쿠, 클래식 지뢰찾기, 프리셀, 60초 베라팝을 무료로 플레이하세요.',
             heading: 'VERA 두뇌 미니게임 센터',
             content: `
-                <div class="space-y-6">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        VERA 게임 센터는 회원가입이나 복잡한 설치 없이 브라우저에서 즉시 즐길 수 있는 6대 고품질 두뇌 퍼즐 및 아케이드 게임을 제공합니다.
-                    </p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
-                            <h3 class="font-bold text-amber-900 text-lg mb-1">⚪⚫ 베라오목 (Vera Omok)</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">15×15 정통 오목 격자에서 펼쳐지는 3단계 인공지능(초급/중급/고급) 대전입니다. 실시간 형세 분석과 3D 입체 바둑돌의 타격감, 열린 3목 및 양수겸장(포크) 필승 전략을 웹에서 무료로 즐겨보세요.</p>
+                <div class="space-y-8">
+                    <div>
+                        <p class="text-gray-700 leading-relaxed text-base sm:text-lg mb-3">
+                            VERA 게임센터는 별도의 앱 설치나 복잡한 회원가입 없이 브라우저에서 즉시 실행되는 8대 고품격 두뇌 퍼즐 및 전략 보드게임을 제공합니다.
+                        </p>
+                        <p class="text-gray-600 leading-relaxed text-sm">
+                            정통 한국 장기(4대 상차림 & 덤 1.5점 점수제), 15×15 바둑판 AI 오목, 3자리 숫자야구 추리 게임, 수학적 공간 퍼즐 2048, 일일 스도쿠, 확률 지뢰찾기, 99.9% 클리어 정통 프리셀, 네온 젬 매치-3 베라 팝까지 모든 게임의 공식 규칙과 승률 극대화 공략을 함께 수록하고 있습니다.
+                        </p>
+                    </div>
+
+                    <!-- 8대 핵심 미니게임 카드 그리드 -->
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                                <span>🎮 8대 두뇌 미니게임 전체 라인업</span>
+                            </h2>
+                            <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-200">
+                                무설치 무료 실행
+                            </span>
                         </div>
-                        <div class="p-5 bg-purple-50 rounded-2xl border border-purple-200">
-                            <h3 class="font-bold text-purple-900 text-lg mb-1">🎮 베라 팝 (Vera Pop)</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">스피드 매치-3 퍼즐과 하이퍼 피버 콤보로 최고 기록에 도전하세요. 4매칭 관통 레이저와 5매칭 하이퍼 노바 폭탄으로 연쇄 폭발의 쾌감을 선사합니다.</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${getAllGameSeoItems().map(game => `
+                                <article class="p-5 bg-white rounded-2xl border border-gray-200 hover:border-indigo-400 hover:shadow-md transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                ${game.genre}
+                                            </span>
+                                            <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                규칙 검증
+                                            </span>
+                                        </div>
+                                        <h3 class="text-base font-extrabold text-gray-900 mb-2 leading-snug">
+                                            <a href="/game/${game.key}" class="hover:text-indigo-600 transition-colors">${game.shortTitle}</a>
+                                        </h3>
+                                        <p class="text-gray-600 text-xs leading-relaxed line-clamp-3 mb-3">${game.directAnswer}</p>
+                                    </div>
+                                    <div class="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-bold">
+                                        <a href="/game/${game.key}" class="text-slate-600 hover:text-indigo-600 flex items-center gap-1">
+                                            <span>공략 & 룰</span>
+                                            <span>→</span>
+                                        </a>
+                                        <a href="/app/${game.key}/" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center gap-1 shadow-xs">
+                                            <span>게임 시작</span>
+                                        </a>
+                                    </div>
+                                </article>
+                            `).join('\n')}
                         </div>
-                        <div class="p-5 bg-amber-50 rounded-2xl border border-amber-200">
-                            <h3 class="font-bold text-amber-900 text-lg mb-1">🔢 2048 숫자 퍼즐</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">상하좌우 타일을 합쳐 2048 타일을 만드는 중독성 강한 두뇌 게임입니다. 가장 큰 숫자를 코너에 고정하고 순차적으로 체인을 엮는 전략이 핵심입니다.</p>
-                        </div>
-                        <div class="p-5 bg-blue-50 rounded-2xl border border-blue-200">
-                            <h3 class="font-bold text-blue-900 text-lg mb-1">🧩 매일 새로운 스도쿠</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">초급부터 고급까지 논리적 추론으로 9x9 격자를 채워보세요. 단일 후보수(Naked Single)와 블록 소거법을 활용해 뇌의 집중력을 훈련할 수 있습니다.</p>
-                        </div>
-                        <div class="p-5 bg-emerald-50 rounded-2xl border border-emerald-200">
-                            <h3 class="font-bold text-emerald-900 text-lg mb-1">🃏 정통 프리셀 (FreeCell)</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">자유 이동 모드와 윈도우 정통 룰을 지원하는 솔리테어 카드 전략 게임입니다. 4개의 임시 보관소(FreeCell)를 전략적으로 비워두며 에이스부터 킹까지 수집하세요.</p>
-                        </div>
-                        <div class="p-5 bg-rose-50 rounded-2xl border border-rose-200">
-                            <h3 class="font-bold text-rose-900 text-lg mb-1">💣 지뢰찾기 클래식</h3>
-                            <p class="text-xs text-gray-600 leading-relaxed">확률과 패턴 분석을 통해 안전한 칸을 찾아내는 명작 퍼즐입니다. 1-2-1 대칭 패턴과 모서리 1 판별법을 활용해 최고 기록을 단축해 보세요.</p>
+                    </div>
+
+                    <!-- 게임센터 자주 묻는 질문 (FAQ) -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h2 class="text-xl sm:text-2xl font-black text-gray-900 mb-4 flex items-center gap-2">
+                            <span>❓ 게임센터 자주 묻는 질문 (FAQ)</span>
+                        </h2>
+                        <div class="space-y-3">
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. VERA 게임센터의 모든 미니게임은 무료인가요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">네, VERA의 8대 미니게임은 별도의 결제나 과금 없이 브라우저에서 100% 무료로 무제한 플레이하실 수 있습니다.</p>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. 별도의 프로그램이나 앱 다운로드가 필요한가요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">전혀 필요하지 않습니다. 모바일과 PC 최신 웹 브라우저(Chrome, Safari, Edge 등)에서 웹 표준 기술로 즉시 구동됩니다.</p>
+                            </div>
+                            <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200">
+                                <h3 class="font-bold text-slate-900 text-sm sm:text-base mb-1">Q. 게임 점수 및 주간 랭킹 등록은 어떻게 하나요?</h3>
+                                <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">비회원도 자유롭게 플레이할 수 있으며, VERA 무료 회원으로 로그인 후 플레이하시면 최고 기록이 실시간 명예의 전당 주간 랭킹에 자동 등록됩니다.</p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            `
-        },
-        {
-            route: 'game/janggi',
-            title: '베라장기 - 정통 9×10 한국 장기 & 1일1외통수 묘수풀이 | VERA 미니게임',
-            description: '설치 없이 브라우저에서 즐기는 고품격 한국 장기. 4대 정통 상차림(마상상마, 상마상마, 원앙마, 양귀마), 공식 73.5점 덤 규정, 1일 1외통수 데일리 묘수풀이, 3분 7×7 미니장기, 특수 스킬 배틀 장기를 제공합니다.',
-            heading: '베라장기 (Vera Janggi) - 정통 9×10 한국 장기',
-            content: `
-                <div class="space-y-6">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        베라장기는 9×10 정통 장기판에서 초(楚)와 한(漢)의 군사를 지휘하여 적의 궁(왕)을 외통수에 빠뜨리는 대한민국의 대표 민속 두뇌 보드게임입니다.
-                    </p>
-                    <div class="p-6 bg-cyan-50/80 rounded-2xl border border-cyan-200 space-y-3">
-                        <h3 class="font-bold text-cyan-950 text-lg">⚔️ 베라장기 5대 핵심 모드</h3>
-                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1.5 leading-relaxed">
-                            <li><strong>정통 9×10 장기:</strong> 마상상마, 상마상마, 원앙마, 양귀마 4대 상차림 및 공식 73.5점(덤 1.5점) 점수제 규칙 100% 준수.</li>
-                            <li><strong>1일 1외통수 (오늘의 묘수풀이):</strong> 매일 자정에 갱신되는 3~5수 승부 묘수풀이로 스트릭을 쌓고 두뇌를 단련.</li>
-                            <li><strong>3분 7×7 미니 장기:</strong> 15초 초읽기와 함께 펼쳐지는 초스피드 박진감 장기.</li>
-                            <li><strong>특수 스킬 배틀 장기:</strong> 차 부스터, 포 포격, 궁-사 위치 교환 등 도파민 넘치는 전략 스킬 대국.</li>
-                            <li><strong>사주 오행 결합 장기:</strong> 오늘의 만세력 오행(목·화·토·금·수)에 따라 특정 기물에 특별 버프 부여.</li>
-                        </ul>
-                        <div class="pt-4">
-                            <a href="/app/janggi/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm shadow-md transition-all">
-                                🚀 베라장기 게임 플레이 시작하기
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `
-        },
-        {
-            route: 'game/omok',
-            title: '베라오목 - 15×15 브라우저 AI 5목 대전 | VERA 미니게임',
-            description: '설치 없이 브라우저에서 바로 즐기는 프리미엄 AI 오목 게임. 3단계 컴퓨터 난이도(초급/중급/고급), 3D 입체 바둑돌과 청명한 착수음, 실시간 형세 분석을 제공합니다.',
-            heading: '베라오목 (Vera Omok) - AI 5목 대전',
-            content: `
-                <div class="space-y-6">
-                    <p class="text-gray-700 leading-relaxed text-base">
-                        베라오목은 15×15 정통 격자 바둑판에서 흑돌과 백돌을 번갈아 놓으며 가로, 세로, 대각선 중 5개의 돌을 먼저 연결하면 승리하는 브레인 전략 보드게임입니다.
-                    </p>
-                    <div class="p-6 bg-amber-50/80 rounded-2xl border border-amber-200 space-y-3">
-                        <h3 class="font-bold text-amber-900 text-lg">🎮 게임 주요 특징</h3>
-                        <ul class="list-disc list-inside text-sm text-gray-700 space-y-1.5 leading-relaxed">
-                            <li><strong>3단계 AI 난이도:</strong> 입문자를 위한 초급, 공수 균형 중급, Minimax 콤보 설계 고급(마스터).</li>
-                            <li><strong>3D 입체 그래픽 & 사운드:</strong> 단풍나무 온목재 텍스처, 3D 흑·백돌 착수 바운스 및 Web Audio API 기반의 청명한 바둑판 타격음.</li>
-                            <li><strong>실시간 형세 분석:</strong> 매 수마다 흑돌과 백돌의 유리도를 백분율(%)로 계산하는 어드밴티지 게이지 지원.</li>
-                            <li><strong>편의 기능:</strong> 흑돌 선공 / 백돌 후공 진영 선택, 한 수 무르기, 대국 타이머 및 전적 기록.</li>
-                        </ul>
-                        <div class="pt-4">
-                            <a href="/app/omok/" target="_blank" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md transition-all">
-                                🚀 베라오목 게임 플레이 시작하기
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            `
+            `,
+            jsonLd: {
+                "@context": "https://schema.org",
+                "@graph": [
+                    {
+                        "@type": "CollectionPage",
+                        "name": "VERA 두뇌 미니게임 센터",
+                        "description": "설치 없이 브라우저에서 바로 즐기는 8대 고품격 무료 두뇌 미니게임. 베라장기, 베라오목, 숫자야구, 2048, 일일 스도쿠, 지뢰찾기, 프리셀, 베라팝을 무료로 제공합니다.",
+                        "url": "https://veranex.app/game"
+                    },
+                    {
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "홈",
+                                "item": "https://veranex.app/"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": "게임센터",
+                                "item": "https://veranex.app/game"
+                            }
+                        ]
+                    },
+                    {
+                        "@type": "FAQPage",
+                        "mainEntity": [
+                            {
+                                "@type": "Question",
+                                "name": "VERA 게임센터의 모든 미니게임은 무료인가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "네, VERA의 8대 미니게임은 별도의 결제나 과금 없이 브라우저에서 100% 무료로 무제한 플레이하실 수 있습니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "별도의 프로그램이나 앱 다운로드가 필요한가요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "전혀 필요하지 않습니다. 모바일과 PC 최신 웹 브라우저(Chrome, Safari, Edge 등)에서 웹 표준 기술로 즉시 구동됩니다."
+                                }
+                            },
+                            {
+                                "@type": "Question",
+                                "name": "게임 점수 및 주간 랭킹 등록은 어떻게 하나요?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "비회원도 자유롭게 플레이할 수 있으며, VERA 무료 회원으로 로그인 후 플레이하시면 최고 기록이 실시간 명예의 전당 주간 랭킹에 자동 등록됩니다."
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
         },
         {
             route: 'news',
@@ -2402,6 +2449,388 @@ function generateToolsPages(template) {
         });
 
         writeHtmlFile(path.resolve(distDir, `tools/${tool.slug}/index.html`), html);
+    }
+}
+
+// 8대 핵심 두뇌 미니게임 개별 상세 페이지 정적 HTML 사전 렌더링 (AEO & SEO 최적화)
+function generateGameDetailPages(template) {
+    const allGames = getAllGameSeoItems();
+    console.log(`🎮 Prerendering ${allGames.length} core game detail landing pages...`);
+
+    for (const game of allGames) {
+        const canonical = `https://veranex.app/game/${game.key}`;
+        const relatedGuide = game.relatedGuideSlug ? GUIDES_DATA.find(g => g.slug === game.relatedGuideSlug) : undefined;
+        const otherGames = allGames.filter(g => g.key !== game.key).slice(0, 4);
+
+        // 키워드 태그 HTML
+        const keywordsHtml = game.keywords.map(kw => `
+            <span class="text-[11px] font-medium bg-slate-50 text-slate-600 px-2.5 py-1 rounded-md border border-slate-200/60">#${kw}</span>
+        `).join('\n');
+
+        // 전술 카드 HTML
+        const tacticsHtml = game.strategyRules.tactics.map((tactic, idx) => `
+            <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 hover:border-indigo-300 hover:bg-white hover:shadow-sm transition-all flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-extrabold flex items-center justify-center shrink-0">
+                            ${idx + 1}
+                        </span>
+                        <h3 class="font-bold text-sm text-slate-900">${tactic.name}</h3>
+                    </div>
+                    <p class="text-xs text-slate-600 leading-relaxed pl-8">${tactic.desc}</p>
+                </div>
+            </div>
+        `).join('\n');
+
+        // 3단계 플레이 가이드 HTML
+        const howToStepsHtml = game.howToSteps.map((step, idx) => `
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 flex flex-col justify-between">
+                <div>
+                    <div class="w-8 h-8 rounded-xl bg-amber-500 text-white font-black text-sm flex items-center justify-center mb-3 shadow-xs">
+                        ${idx + 1}
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-base mb-2">${step.name}</h3>
+                    <p class="text-slate-600 text-xs sm:text-sm leading-relaxed">${step.text}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                    <span>STEP 0${idx + 1}</span>
+                    <i class="fas fa-check-circle text-emerald-500 text-xs"></i>
+                </div>
+            </div>
+        `).join('\n');
+
+        // FAQ 목록 HTML
+        const faqsHtml = game.faqs.map(faq => `
+            <div class="border border-slate-200/80 rounded-2xl overflow-hidden bg-white mb-3">
+                <div class="px-5 py-4 bg-slate-50/70 flex items-center gap-3 font-bold text-sm sm:text-base text-slate-900 border-b border-slate-100">
+                    <span class="text-indigo-600 font-black text-sm">Q.</span>
+                    <span>${faq.question}</span>
+                </div>
+                <div class="px-5 py-4 text-xs sm:text-sm text-slate-700 leading-relaxed bg-white">
+                    <div class="flex gap-3">
+                        <span class="text-emerald-600 font-black text-sm flex-shrink-0">A.</span>
+                        <p>${faq.answer}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('\n');
+
+        // 관련 다른 게임 카드 HTML
+        const otherGamesHtml = otherGames.map(oGame => `
+            <a href="/game/${oGame.key}" class="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-indigo-300 hover:shadow-md transition-all group flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[11px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">${oGame.genre}</span>
+                        <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">무료</span>
+                    </div>
+                    <h3 class="font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors mb-2 line-clamp-2">${oGame.shortTitle}</h3>
+                    <p class="text-slate-500 text-xs line-clamp-2 leading-relaxed">${oGame.directAnswer}</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs font-bold text-indigo-600">
+                    <span>공략 및 플레이</span>
+                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+            </a>
+        `).join('\n');
+
+        const prerenderBody = `
+            <div class="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
+                <!-- 상단 공식 헤더 -->
+                <header class="bg-white border-b border-gray-200 py-3.5 px-4 sm:px-6 sticky top-0 z-30 shadow-xs">
+                    <div class="max-w-6xl mx-auto flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <a href="/" class="flex items-center gap-2 text-2xl font-black text-gray-900">
+                                <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-teal-500 text-white flex items-center justify-center text-sm font-black shadow-xs">V</span>
+                                <span class="tracking-tight text-xl">VERA</span>
+                            </a>
+                            <span class="hidden sm:inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">게임센터</span>
+                        </div>
+                        <nav class="flex items-center gap-4 text-xs sm:text-sm font-bold text-gray-600">
+                            <a href="/" class="hover:text-indigo-600">홈</a>
+                            <a href="/game" class="text-indigo-600 hover:text-indigo-700">게임센터</a>
+                            <a href="/guides" class="hover:text-indigo-600">지식 가이드</a>
+                            <a href="/lifestyle" class="hover:text-indigo-600">생활도구</a>
+                            <a href="/finance" class="hover:text-indigo-600">금융</a>
+                        </nav>
+                    </div>
+                </header>
+
+                <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+                    <!-- 1. 상단 브레드크럼 -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <nav class="flex items-center gap-2 text-xs font-semibold text-slate-400 overflow-x-auto whitespace-nowrap" aria-label="Breadcrumb">
+                            <a href="/" class="hover:text-slate-700 transition-colors">홈</a>
+                            <span class="text-slate-300">/</span>
+                            <a href="/game" class="hover:text-slate-700 transition-colors">게임센터</a>
+                            <span class="text-slate-300">/</span>
+                            <span class="text-slate-700 font-bold">${game.shortTitle}</span>
+                        </nav>
+                        <a href="/game" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold hover:bg-indigo-100 transition-colors self-start sm:self-auto">
+                            <span>← 게임센터 전체 목록</span>
+                        </a>
+                    </div>
+
+                    <!-- 2. 히어로 헤더 & 단일 H1 -->
+                    <header class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex flex-wrap items-center gap-2 mb-3">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                🎮 ${game.genre}
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200 shadow-2xs">
+                                <i class="fas fa-check-circle text-emerald-600"></i>
+                                <span>정통 규칙 및 승률 공식 검증</span>
+                            </span>
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-medium">
+                                <i class="fas fa-bolt text-amber-500"></i>
+                                <span>설치 없이 즉시 플레이</span>
+                            </span>
+                        </div>
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-snug mb-3">
+                            ${game.title}
+                        </h1>
+                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed max-w-4xl mb-6 font-normal">
+                            ${game.description}
+                        </p>
+
+                        <!-- Action buttons -->
+                        <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-100 mb-4">
+                            <a href="/app/${game.key}/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm sm:text-base shadow-md transition-all">
+                                <i class="fas fa-play"></i>
+                                <span>${game.shortTitle} 게임 플레이 시작하기</span>
+                                <span>→</span>
+                            </a>
+                            ${relatedGuide ? `
+                            <a href="/guides/${game.relatedGuideSlug}" class="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm border border-slate-200 transition-all">
+                                <i class="fas fa-book-open text-indigo-600"></i>
+                                <span>관련 전략 칼럼 읽기</span>
+                            </a>
+                            ` : ''}
+                        </div>
+
+                        <!-- Keywords -->
+                        <div class="flex flex-wrap items-center gap-1.5 pt-2">
+                            ${keywordsHtml}
+                        </div>
+                    </header>
+
+                    <!-- 3. AEO 핵심 요약 박스 (AI Direct Answer Box) -->
+                    <section class="bg-gradient-to-r from-indigo-50/90 via-purple-50/70 to-blue-50/90 border border-indigo-200/80 rounded-3xl p-6 sm:p-7 shadow-sm mb-6">
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <div class="flex items-center gap-2 text-indigo-950 font-black text-sm sm:text-base">
+                                <span class="w-7 h-7 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs shadow-xs font-bold">
+                                    <i class="fas fa-lightbulb"></i>
+                                </span>
+                                <span>핵심 요약 (AI Direct Answer)</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-indigo-700 bg-white/90 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                                AEO 인공지능 검색 인용 최적화
+                            </span>
+                        </div>
+                        <blockquote class="text-slate-800 text-sm sm:text-base font-medium leading-relaxed sm:pl-9 border-l-4 border-indigo-500 pl-3 my-2">
+                            ${game.directAnswer}
+                        </blockquote>
+                    </section>
+
+                    <!-- 4. 게임 룰 & 공식 카드 (Strategy Rules & Tactics) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center justify-between gap-2 mb-4 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-chess-board"></i>
+                                </span>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                    ${game.strategyRules.title}
+                                </h2>
+                            </div>
+                            <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                승률 극대화 핵심 공식
+                            </span>
+                        </div>
+                        <div class="bg-slate-950 text-emerald-400 font-mono text-sm sm:text-base p-4 sm:p-5 rounded-2xl border border-slate-800 shadow-inner overflow-x-auto mb-4 flex items-center justify-between gap-3">
+                            <div>
+                                <span class="text-xs text-slate-400 block mb-1 font-sans">📌 게임 원칙 및 산정 공식</span>
+                                <code>${game.strategyRules.formulaOrPrinciple}</code>
+                            </div>
+                            <i class="fas fa-calculator text-slate-600 shrink-0 text-xl hidden sm:block"></i>
+                        </div>
+                        <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-6 font-normal">
+                            ${game.strategyRules.description}
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${tacticsHtml}
+                        </div>
+                    </section>
+
+                    <!-- 5. 3단계 사용 및 플레이 가이드 (HowTo 3 Steps) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-6">
+                            <span class="w-7 h-7 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-list-ol"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                    ${game.shortTitle} 3단계 플레이 및 승리 가이드
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-0.5">초보자부터 랭커까지 단계별 필승 워크플로우</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            ${howToStepsHtml}
+                        </div>
+                    </section>
+
+                    <!-- 6. 자주 묻는 질문 (FAQ) -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm mb-6">
+                        <div class="flex items-center gap-2 mb-6">
+                            <span class="w-7 h-7 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                                <i class="fas fa-question-circle"></i>
+                            </span>
+                            <div>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                    자주 묻는 질문 (FAQ)
+                                </h2>
+                                <p class="text-xs text-slate-500 mt-0.5">규칙, 판정, 공략 팁에 관해 이용자분들이 가장 자주 묻는 질문입니다.</p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            ${faqsHtml}
+                        </div>
+                    </section>
+
+                    <!-- 7. 관련 지식 칼럼 추천 (존재할 경우) -->
+                    ${relatedGuide ? `
+                    <section class="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-md mb-6 relative overflow-hidden">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/30 text-indigo-200 text-xs font-bold border border-indigo-400/30">
+                                <i class="fas fa-book-bookmark text-xs"></i>
+                                관련 전문가 지식 칼럼
+                            </span>
+                            <span class="text-xs text-slate-400">${relatedGuide.readTime} 소요</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-black text-white mb-2 leading-snug">
+                            ${relatedGuide.title}
+                        </h3>
+                        <p class="text-slate-300 text-xs sm:text-sm leading-relaxed line-clamp-2 mb-6">
+                            ${relatedGuide.description}
+                        </p>
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-800 flex-wrap gap-2">
+                            <div class="text-xs text-slate-400">
+                                집필: <span class="text-white font-bold">${relatedGuide.author}</span>
+                            </div>
+                            <a href="/guides/${relatedGuide.slug}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-sm">
+                                <span>공략 전문 칼럼 읽기</span>
+                                <i class="fas fa-arrow-right text-xs"></i>
+                            </a>
+                        </div>
+                    </section>
+                    ` : ''}
+
+                    <!-- 8. 다른 인기 두뇌 미니게임 추천 -->
+                    <section class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="w-7 h-7 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-gamepad"></i>
+                                </span>
+                                <h2 class="text-xl sm:text-2xl font-black text-slate-900">
+                                    다른 인기 두뇌 미니게임
+                                </h2>
+                            </div>
+                            <a href="/game" class="text-xs font-bold text-indigo-600 hover:underline">
+                                전체 8개 게임 보기 →
+                            </a>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${otherGamesHtml}
+                        </div>
+                    </section>
+                </main>
+
+                <!-- 공식 푸터 -->
+                <footer class="bg-white border-t border-gray-200 py-8 px-6 text-center text-xs text-gray-500 mt-12">
+                    <p>© 2026 VERA (베라) - 세상의 모든 정보를 하나로 묶는 라이프 포털</p>
+                </footer>
+            </div>
+        `;
+
+        const jsonLd = {
+            "@context": "https://schema.org",
+            "@graph": [
+                {
+                    "@type": ["SoftwareApplication", "Game"],
+                    "name": game.title,
+                    "alternateName": game.shortTitle,
+                    "description": game.description,
+                    "url": canonical,
+                    "applicationCategory": "GameApplication",
+                    "genre": game.genre,
+                    "operatingSystem": "All",
+                    "browserRequirements": "Requires JavaScript, HTML5, and CSS3.",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "KRW"
+                    }
+                },
+                {
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        {
+                            "@type": "ListItem",
+                            "position": 1,
+                            "name": "홈",
+                            "item": "https://veranex.app/"
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 2,
+                            "name": "게임센터",
+                            "item": "https://veranex.app/game"
+                        },
+                        {
+                            "@type": "ListItem",
+                            "position": 3,
+                            "name": game.shortTitle,
+                            "item": canonical
+                        }
+                    ]
+                },
+                {
+                    "@type": "HowTo",
+                    "name": `${game.shortTitle} 3단계 플레이 및 승리 가이드`,
+                    "description": `${game.shortTitle} 단계별 플레이 방법 안내`,
+                    "step": game.howToSteps.map((s, idx) => ({
+                        "@type": "HowToStep",
+                        "position": idx + 1,
+                        "name": s.name,
+                        "text": s.text,
+                        "url": canonical
+                    }))
+                },
+                {
+                    "@type": "FAQPage",
+                    "mainEntity": game.faqs.map(faq => ({
+                        "@type": "Question",
+                        "name": faq.question,
+                        "acceptedAnswer": {
+                            "@type": "Answer",
+                            "text": faq.answer
+                        }
+                    }))
+                }
+            ]
+        };
+
+        const html = replaceMetaTags(template, {
+            title: game.title,
+            description: game.description,
+            canonical,
+            ogType: 'website',
+            jsonLd,
+            bodyHtml: prerenderBody
+        });
+
+        writeHtmlFile(path.resolve(distDir, `game/${game.key}/index.html`), html);
     }
 }
 
