@@ -48,6 +48,11 @@
 13. **스플래시 화면 100% 불투명 및 하단 광고 상시 노출 의무 (Zero Bleed-Through & Pinned AD)**:
     - 4초 스플래시 로딩 화면은 **100% 완전 불투명(Opaque) 옅은 베이지 배경(`bg-[#FAF8F5]`)**을 적용하여 **배경이나 다음 화면이 비치는 현상(Bleed-Through)을 완벽히 차단**해야 합니다.
     - 850px 팝업 창 안에서 **하단 스폰서 광고 슬롯(SPONSORED AD)이 잘리거나 숨겨지지 않고 한눈에 온전히 노출**되도록 높이 및 패딩을 완벽히 제어해야 합니다.
+14. **포털 카드 클릭 시 상세 안내/전략 페이지 선행 이동 원칙 (Detail Page Precedence & Direct Popups Prohibited)**:
+    - **팝업 직접 실행(Direct Popup) 절대 금지**: 메인 포털 홈, 게임 센터(`/game`), 생활 허브(`/lifestyle`), 금융 허브(`/finance`)의 모든 미니앱 및 게임 카드 클릭 이벤트에 450px 팝업(`launchApp`)을 직접 바인딩하는 것을 엄격히 금지합니다.
+    - **상세 안내 및 전략 페이지(`/game/:gameId` 또는 `/tools/:slug`) 선행 이동 의무**: 사용자가 포털 카드를 클릭하면 **반드시 해당 게임/도구의 상세 소개 및 SEO/AEO 랜딩 페이지로 먼저 이동(`navigate('/game/:id')` 또는 `navigate('/tools/:slug')`)**해야 합니다.
+    - **2단계 진입 시퀀스(Two-Step Launch Flow) 100% 준수**: 상세 페이지에서 시맨틱 HTML과 Schema.org로 구조화된 게임 규칙, 필승 전략 공식, 3단계 이용 가이드, FAQ, 조작 단축키 안내를 사용자가 충분히 숙지한 후, 화면의 **[게임 시작하기] 또는 [도구 실행하기] 액션 버튼을 클릭했을 때 비로소 450px 모바일 규격 팝업 창이 실행**되는 플로우를 전사 표준으로 엄수합니다.
+    - **핵심 이유**: ① 구글/네이버 검색봇 및 AI 답변 엔진(ChatGPT, Perplexity, Gemini) 100% 색인 보장, ② 게임 룰/조작법 미인지로 인한 조기 이탈 방지, ③ 전사 서비스 탐색 UX 일관성 유지.
 
 ---
 
@@ -379,6 +384,58 @@ export default defineConfig(({ mode }) => {
 });
 ```
 
+### 1.6 포털 허브 연동 및 상세 안내/전략 페이지 선행 이동 원칙 (Portal Integration & Detail Precedence)
+
+메인 포털 및 카테고리 허브(게임, 금융, 생활)에서 미니앱을 연동할 때 지켜야 할 **진입 라우팅 아키텍처**입니다.
+
+```
+[포털 허브 카드 클릭] 
+       │ 
+       ▼ (1단계: navigate - 포털 내 페이지 이동)
+[상세 안내/전략 페이지 (/game/:id 또는 /tools/:slug)] 
+ ├── 구글/네이버/AI(AEO) 100% 색인 (Direct Answer, 수식/규칙, FAQ, HowTo)
+ ├── 사용자의 조작법 숙지 (키보드 단축키, 무적 롤, 특수 폭탄, 계산 공식 등)
+ └── [게임 시작하기 / 도구 실행] 대형 액션 버튼 제공
+       │ 
+       ▼ (2단계: launchApp 클릭)
+[450px × 850px 모바일 규격 팝업 창 또는 모달 실행]
+```
+
+#### 1) 포털 카드 컴포넌트 표준 작성 규격
+```tsx
+// ❌ 엄격히 금지된 안티패턴: 포털 카드 클릭 시 팝업을 직접 호출하여 상세 페이지를 건너뛰는 행위
+<div onClick={() => launchApp('/app/flight/', 'app-flight')} className="...">
+    <h3>베라 플라이트</h3>
+    <button>게임 시작</button> {/* 팝업 즉시 실행 -> 검색엔진 인덱싱 및 룰 사전 안내 기회 영구 상실! */}
+</div>
+
+// ✅ 올바른 표준 패턴: 상세 소개 페이지로 먼저 라우팅
+<button
+    onClick={() => navigate('/game/flight')}
+    className="bg-white border-2 text-left border-sky-200 rounded-2xl overflow-hidden hover:border-sky-400 hover:shadow-xl transition-all group relative"
+>
+    <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+        1942 REMAKE
+    </div>
+    <div className="overflow-hidden bg-[#0284c7]"><FlightThumb /></div>
+    <div className="p-5">
+        <h3 className="font-black text-xl text-sky-800 mb-1 group-hover:text-sky-900 transition-colors flex items-center gap-2">
+            <span>Vera Flight (베라 플라이트)</span>
+            <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 비행 슈팅</span>
+        </h3>
+        <p className="text-slate-500 text-xs leading-relaxed mb-3">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-sky-600 font-bold">
+            <span>규칙 및 공략 가이드 →</span>
+            <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+        </div>
+    </div>
+</button>
+```
+
+#### 2) 상세 안내 페이지(`GameInfoPage.tsx` / `ToolDetailPage.tsx`)의 표준 역할
+- `GAME_CONFIGS` 객체에 해당 미니앱의 `appUrl`, `appName`, `controls`, `tagline`, `description` 완비.
+- `GAMES_SEO_DATA` 및 Schema.org JSON-LD(`['SoftwareApplication', 'Game']`, `BreadcrumbList`, `HowTo`, `FAQPage`)를 결합하여 검색엔진에 완전한 장문 정적 페이지 제공.
+- 상세 페이지 본문 상단 및 하단의 `[게임 시작하기]` 버튼을 누를 때에만 `launchApp(config.appUrl, config.appName)`을 호출하여 팝업을 구동합니다.
 
 ---
 
