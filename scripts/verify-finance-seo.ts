@@ -100,7 +100,7 @@ assert(fs.existsSync(sitemapPath), `File exists: ${sitemapPath}`);
 if (fs.existsSync(sitemapPath)) {
     const sitemap = fs.readFileSync(sitemapPath, 'utf-8');
     const urlMatches = [...sitemap.matchAll(/<url>[\s\S]*?<\/url>/g)];
-    assert(urlMatches.length === 48, `sitemap.xml contains exactly 48 URLs (found ${urlMatches.length})`);
+    assert(urlMatches.length === 57, `sitemap.xml contains exactly 57 URLs (found ${urlMatches.length})`);
     assert(sitemap.includes('<loc>https://veranex.app/finance</loc>'), 'sitemap contains /finance');
     assert(sitemap.includes('<loc>https://veranex.app/finance/util</loc>'), 'sitemap contains /finance/util');
     assert(sitemap.includes('<loc>https://veranex.app/lifestyle</loc>'), 'sitemap contains /lifestyle');
