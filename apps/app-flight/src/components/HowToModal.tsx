@@ -51,7 +51,7 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
               <div>
                 <span className="font-semibold block text-[#7A756D]">모바일 터치</span>
                 <p className="mt-0.5 text-[#2D2A26]">
-                  • 이동: 화면 손가락 드래그<br />
+                  • 이동: 화면 어디든 터치 후 드래그 (상대 조작 방식, 손가락이 기체를 가리지 않음)<br />
                   • 사격: 터치 시 자동 사격<br />
                   • 롤(무적): 화면 하단 롤 버튼<br />
                   • 폭탄: 화면 하단 폭탄 버튼

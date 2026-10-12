@@ -347,7 +347,10 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             </h2>
             <p className="text-xs text-sky-100 leading-relaxed mb-5 max-w-xs drop-shadow">
               화면을 터치하거나 Space 키를 눌러 출격하세요!<br />
-              360° 공중제비(Z)와 메가 폭탄(X)으로 전장을 지배하세요.
+              화면 어디든 드래그하여 기체를 자유롭게 조작할 수 있습니다.<br />
+              <span className="text-[11px] text-sky-200">
+                (손가락이 기체를 가리지 않는 상대 터치 조작)
+              </span>
             </p>
             <button
               onClick={handleStartGame}
