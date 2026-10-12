@@ -9,7 +9,7 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '../engine/gameLoop';
-import { Heart, Bomb, RotateCw, Zap, Play } from 'lucide-react';
+import { Heart, Bomb, RotateCw, Zap, Play, Gauge } from 'lucide-react';
 
 interface FlightCanvasProps {
   onGameOver: (score: number, kills: number, highScore: number) => void;
@@ -25,7 +25,22 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
   bombTriggerRequested = 0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const stateRef = useRef<GameEngineState>(createInitialState());
+
+  // 저장된 게임 속도 로드 (기본값: 1.0)
+  const [gameSpeed, setGameSpeed] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem('vera_flight_game_speed');
+      if (s) {
+        const val = parseFloat(s);
+        if (val === 0.7 || val === 1.0 || val === 1.3) return val;
+      }
+    } catch {
+      // ignore
+    }
+    return 1.0;
+  });
+
+  const stateRef = useRef<GameEngineState>(createInitialState(gameSpeed));
   const keysRef = useRef<{
     left: boolean;
     right: boolean;
@@ -82,11 +97,47 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     status: 'ready',
   });
 
+  // 속도 변경 핸들러
+  const handleSelectSpeed = useCallback((newSpeed: number) => {
+    setGameSpeed(newSpeed);
+    stateRef.current.gameSpeed = newSpeed;
+    try {
+      localStorage.setItem('vera_flight_game_speed', String(newSpeed));
+    } catch {
+      // ignore
+    }
+
+    if (stateRef.current.status === 'playing') {
+      const label =
+        newSpeed === 0.7
+          ? '속도 0.7x (초보자 모드)'
+          : newSpeed === 1.3
+          ? '속도 1.3x (고속 모드)'
+          : '속도 1.0x (표준 모드)';
+      const color = newSpeed === 0.7 ? '#10B981' : newSpeed === 1.3 ? '#EF4444' : '#0284C7';
+      stateRef.current.floatingTexts.push({
+        id: Date.now(),
+        text: label,
+        x: stateRef.current.player.x,
+        y: stateRef.current.player.y - 35,
+        color,
+        alpha: 1,
+        vy: -1.2,
+      });
+    }
+  }, []);
+
+  // 상단 바 클릭 시 0.7x ➔ 1.0x ➔ 1.3x 순환 변경
+  const handleCycleSpeed = useCallback(() => {
+    const next = gameSpeed === 0.7 ? 1.0 : gameSpeed === 1.0 ? 1.3 : 0.7;
+    handleSelectSpeed(next);
+  }, [gameSpeed, handleSelectSpeed]);
+
   // 게임 시작 트리거
   const handleStartGame = useCallback(() => {
     const s = stateRef.current;
     if (s.status === 'ready' || s.status === 'gameover') {
-      stateRef.current = createInitialState();
+      stateRef.current = createInitialState(gameSpeed);
       stateRef.current.status = 'playing';
       setHudState({
         score: 0,
@@ -99,7 +150,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
         status: 'playing',
       });
     }
-  }, []);
+  }, [gameSpeed]);
 
   // 외부(버튼 등)에서 롤 요청 처리
   useEffect(() => {
@@ -241,6 +292,26 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           ))}
         </div>
 
+        {/* 속도 조절 퀵 토글 버튼 */}
+        <button
+          type="button"
+          onClick={handleCycleSpeed}
+          title="게임 속도 변경 (클릭 시 0.7x 느림 ➔ 1.0x 보통 ➔ 1.3x 빠름 순환)"
+          className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-black transition active:scale-95 cursor-pointer ${
+            gameSpeed === 0.7
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100'
+              : gameSpeed === 1.3
+              ? 'bg-rose-50 border-rose-300 text-rose-800 hover:bg-rose-100'
+              : 'bg-sky-50 border-sky-300 text-sky-800 hover:bg-sky-100'
+          }`}
+        >
+          <Gauge className="w-3 h-3" />
+          <span>{gameSpeed}x</span>
+          <span className="text-[9px] font-bold opacity-80">
+            {gameSpeed === 0.7 ? '느림' : gameSpeed === 1.3 ? '빠름' : '보통'}
+          </span>
+        </button>
+
         {/* 무기 레벨 */}
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800">
           <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
@@ -345,17 +416,73 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             <h2 className="text-xl font-black mb-1 drop-shadow">
               베라 플라이트 1942
             </h2>
-            <p className="text-xs text-sky-100 leading-relaxed mb-5 max-w-xs drop-shadow">
+            <p className="text-xs text-sky-100 leading-relaxed mb-4 max-w-xs drop-shadow">
               화면을 터치하거나 Space 키를 눌러 출격하세요!<br />
               화면 어디든 드래그하여 기체를 자유롭게 조작할 수 있습니다.<br />
               <span className="text-[11px] text-sky-200">
                 (손가락이 기체를 가리지 않는 상대 터치 조작)
               </span>
             </p>
+
+            {/* 난이도 / 속도 선택 세그먼트 */}
+            <div className="w-full max-w-[280px] mb-5">
+              <div className="flex items-center justify-between text-[11px] text-sky-100 font-bold mb-1.5 px-0.5">
+                <span className="flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-amber-300" />
+                  게임 속도 선택:
+                </span>
+                <span className="text-[10px] text-amber-300 font-semibold">
+                  {gameSpeed === 0.7
+                    ? '초보자 추천 (30% 감속)'
+                    : gameSpeed === 1.3
+                    ? '고수 전용 (30% 가속)'
+                    : '1942 표준 아케이드'}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-black/40 backdrop-blur-xs rounded-xl border border-white/20">
+                <button
+                  type="button"
+                  onClick={() => handleSelectSpeed(0.7)}
+                  className={`py-1.5 px-2 rounded-lg font-bold text-xs flex flex-col items-center transition cursor-pointer ${
+                    gameSpeed === 0.7
+                      ? 'bg-emerald-500 text-white shadow-xs font-black'
+                      : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  }`}
+                >
+                  <span>0.7x</span>
+                  <span className="text-[9px] font-normal opacity-90">느림 (초보)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSpeed(1.0)}
+                  className={`py-1.5 px-2 rounded-lg font-bold text-xs flex flex-col items-center transition cursor-pointer ${
+                    gameSpeed === 1.0
+                      ? 'bg-sky-500 text-white shadow-xs font-black'
+                      : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  }`}
+                >
+                  <span>1.0x</span>
+                  <span className="text-[9px] font-normal opacity-90">보통 (표준)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectSpeed(1.3)}
+                  className={`py-1.5 px-2 rounded-lg font-bold text-xs flex flex-col items-center transition cursor-pointer ${
+                    gameSpeed === 1.3
+                      ? 'bg-rose-500 text-white shadow-xs font-black'
+                      : 'bg-white/10 text-white/80 hover:bg-white/20'
+                  }`}
+                >
+                  <span>1.3x</span>
+                  <span className="text-[9px] font-normal opacity-90">빠름 (도전)</span>
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={handleStartGame}
               data-screenshot-click="action"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-stone-900 font-extrabold text-sm shadow-lg transition active:scale-95"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-stone-900 font-extrabold text-sm shadow-lg transition active:scale-95 cursor-pointer"
             >
               전투기 출격 시작
             </button>
@@ -370,6 +497,20 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               <RotateCw className="w-3.5 h-3.5 text-sky-400" />
               <span>롤(Z):</span>
               <span className="font-mono text-sky-300 font-black">{hudState.rolls}</span>
+            </div>
+
+            {/* 현재 게임 속도 인디케이터 */}
+            <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-black/50 backdrop-blur-xs text-white text-[11px] font-bold">
+              <Gauge
+                className={`w-3.5 h-3.5 ${
+                  gameSpeed === 0.7
+                    ? 'text-emerald-400'
+                    : gameSpeed === 1.3
+                    ? 'text-rose-400'
+                    : 'text-sky-300'
+                }`}
+              />
+              <span className="font-mono text-[10px]">{gameSpeed}x</span>
             </div>
 
             {/* 메가 폭탄 잔여 발수 */}

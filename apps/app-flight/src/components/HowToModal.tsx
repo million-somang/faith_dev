@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, RotateCw, Bomb, Zap, Layers, ShieldCheck, Target } from 'lucide-react';
+import { X, RotateCw, Bomb, Zap, Layers, ShieldCheck, Target, Gauge } from 'lucide-react';
 
 interface HowToModalProps {
   onClose: () => void;
@@ -112,6 +112,19 @@ export const HowToModal: React.FC<HowToModalProps> = ({ onClose }) => {
                 </span>
                 <p className="text-[11px] text-emerald-800 leading-relaxed mt-0.5">
                   L 아이템을 획득하면 아군 전투기 양옆에 2기의 호위기가 배치되어 2배의 화력으로 함께 지원 사격을 가합니다.
+                </p>
+              </div>
+            </div>
+
+            {/* 5. 게임 속도 조절 옵션 (초보자 지원) */}
+            <div className="p-2.5 bg-indigo-50/70 rounded-xl border border-indigo-200 flex items-start gap-2.5">
+              <Gauge className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-indigo-900 block">
+                  게임 속도 조절 옵션 (초보자 지원 모드)
+                </span>
+                <p className="text-[11px] text-indigo-800 leading-relaxed mt-0.5">
+                  슈팅 게임 탄막이 부담스러우신 분은 상단 HUD의 <strong>⚡ 0.7x (느림)</strong> 모드를 선택해 보세요! 적기와 탄환 속도가 30% 감속되어 탄막을 여유롭게 보고 피할 수 있습니다. (출격 전 또는 게임 중 언제든 변경 가능)
                 </p>
               </div>
             </div>

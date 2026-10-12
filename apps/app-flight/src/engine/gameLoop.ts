@@ -17,7 +17,7 @@ export const CANVAS_HEIGHT = 600;
 
 let nextEntityId = 1;
 
-export function createInitialState(): GameEngineState {
+export function createInitialState(gameSpeed = 1.0): GameEngineState {
   assetManager.preloadAssets();
   let savedHighScore = 0;
   try {
@@ -82,6 +82,7 @@ export function createInitialState(): GameEngineState {
     screenShake: 0,
     canvasWidth: CANVAS_WIDTH,
     canvasHeight: CANVAS_HEIGHT,
+    gameSpeed: gameSpeed || 1.0,
   };
 }
 
@@ -558,6 +559,8 @@ export function updateGameEngine(
   if (state.status !== 'playing') return;
   state.currentFrame++;
 
+  const gameSpeed = state.gameSpeed || 1.0;
+
   if (state.screenShake > 0) {
     state.screenShake *= 0.9;
     if (state.screenShake < 0.5) state.screenShake = 0;
@@ -565,7 +568,7 @@ export function updateGameEngine(
 
   // 1. 배경 애니메이션 (구름 & 섬)
   state.clouds.forEach((c) => {
-    c.y += c.speed;
+    c.y += c.speed * gameSpeed;
     if (c.y > CANVAS_HEIGHT + c.size) {
       c.y = -c.size;
       c.x = Math.random() * CANVAS_WIDTH;
@@ -628,18 +631,21 @@ export function updateGameEngine(
     playerShoot(state);
   }
 
-  // 5. 적기 생성 스폰 로직
+  // 5. 적기 생성 스폰 로직 (gameSpeed 반영)
   if (!state.bossActive && state.player.score >= 4000 && state.enemies.length === 0) {
     spawnBoss(state);
   } else if (!state.bossActive) {
-    // 일반 스폰
-    if (state.currentFrame % 70 === 0) {
+    const scoutInterval = Math.max(30, Math.round(70 / gameSpeed));
+    const redInterval = Math.max(100, Math.round(260 / gameSpeed));
+    const bomberInterval = Math.max(150, Math.round(380 / gameSpeed));
+
+    if (state.currentFrame % scoutInterval === 0) {
       spawnScout(state);
     }
-    if (state.currentFrame % 260 === 0) {
+    if (state.currentFrame % redInterval === 0) {
       spawnRedFormation(state);
     }
-    if (state.currentFrame % 380 === 0) {
+    if (state.currentFrame % bomberInterval === 0) {
       spawnBomber(state);
     }
   }
@@ -648,11 +654,12 @@ export function updateGameEngine(
     state.bossWarningTimer--;
   }
 
-  // 6. 탄환 업데이트
+  // 6. 탄환 업데이트 (적 탄환은 gameSpeed 반영, 플레이어 탄환은 1.0 유지)
   for (let i = state.bullets.length - 1; i >= 0; i--) {
     const b = state.bullets[i];
-    b.x += b.vx;
-    b.y += b.vy;
+    const bSpeed = b.isPlayer ? 1.0 : gameSpeed;
+    b.x += b.vx * bSpeed;
+    b.y += b.vy * bSpeed;
 
     // 화면 밖 제거
     if (b.y < -30 || b.y > CANVAS_HEIGHT + 30 || b.x < -30 || b.x > CANVAS_WIDTH + 30) {
@@ -680,13 +687,15 @@ export function updateGameEngine(
     }
 
     // 이동 패턴
+    const effectiveShootInterval = Math.round(e.shootInterval / gameSpeed);
+
     if (e.type === 'scout') {
-      e.x += e.vx;
-      e.y += e.vy;
+      e.x += e.vx * gameSpeed;
+      e.y += e.vy * gameSpeed;
       if (e.x < 20 || e.x > CANVAS_WIDTH - 20) e.vx = -e.vx;
 
       // 조준 사격
-      if (state.currentFrame - e.lastShotFrame > e.shootInterval && e.y > 20 && e.y < CANVAS_HEIGHT - 100) {
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 20 && e.y < CANVAS_HEIGHT - 100) {
         e.lastShotFrame = state.currentFrame;
         const angle = Math.atan2(p.y - e.y, p.x - e.x);
         state.bullets.push({
@@ -702,21 +711,21 @@ export function updateGameEngine(
         });
       }
     } else if (e.type === 'red-formation') {
-      e.curveTimer = (e.curveTimer || 0) + 1;
+      e.curveTimer = (e.curveTimer || 0) + gameSpeed;
       if (e.curveTimer > 0) {
         // S자 선회 루프
-        e.x += Math.sin(e.curveTimer * 0.05) * 3.2;
-        e.y += e.vy;
+        e.x += Math.sin(e.curveTimer * 0.05) * 3.2 * gameSpeed;
+        e.y += e.vy * gameSpeed;
       } else {
-        e.y += e.vy;
+        e.y += e.vy * gameSpeed;
       }
     } else if (e.type === 'bomber') {
-      e.x += e.vx;
-      e.y += e.vy;
+      e.x += e.vx * gameSpeed;
+      e.y += e.vy * gameSpeed;
       if (e.x < 40 || e.x > CANVAS_WIDTH - 40) e.vx = -e.vx;
 
       // 3-way 부채꼴 탄환
-      if (state.currentFrame - e.lastShotFrame > e.shootInterval && e.y > 40 && e.y < CANVAS_HEIGHT - 120) {
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 40 && e.y < CANVAS_HEIGHT - 120) {
         e.lastShotFrame = state.currentFrame;
         for (let a = -0.4; a <= 0.4; a += 0.4) {
           state.bullets.push({
@@ -735,14 +744,14 @@ export function updateGameEngine(
     } else if (e.type === 'boss') {
       // 보스 진입 및 좌우 순항
       if (e.y < 90) {
-        e.y += e.vy;
+        e.y += e.vy * gameSpeed;
       } else {
-        e.x += e.vx;
+        e.x += e.vx * gameSpeed;
         if (e.x < 110 || e.x > CANVAS_WIDTH - 110) e.vx = -e.vx;
       }
 
       // 보스 주포 사격
-      if (state.currentFrame - e.lastShotFrame > e.shootInterval && e.y >= 85) {
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y >= 85) {
         e.lastShotFrame = state.currentFrame;
         // 5-way 원형 방사탄
         for (let a = -0.6; a <= 0.6; a += 0.3) {
@@ -762,8 +771,9 @@ export function updateGameEngine(
 
       // 보스 포탑 독립 사격
       if (e.turrets) {
+        const turretInterval = Math.round(70 / gameSpeed);
         e.turrets.forEach((turret) => {
-          if (turret.hp > 0 && state.currentFrame - turret.lastShot > 70) {
+          if (turret.hp > 0 && state.currentFrame - turret.lastShot > turretInterval) {
             turret.lastShot = state.currentFrame;
             const tX = e.x + turret.relX;
             const tY = e.y + turret.relY;
@@ -845,10 +855,10 @@ export function updateGameEngine(
     }
   }
 
-  // 8. 아이템 업데이트 및 획득 판정
+  // 8. 아이템 업데이트 및 획득 판정 (gameSpeed 반영)
   for (let i = state.items.length - 1; i >= 0; i--) {
     const item = state.items[i];
-    item.y += item.vy;
+    item.y += item.vy * gameSpeed;
 
     // 플레이어 획득 판정
     const dist = Math.hypot(item.x - p.x, item.y - p.y);

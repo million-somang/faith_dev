@@ -162,4 +162,7 @@ export interface GameEngineState {
   canvasWidth: number;
   canvasHeight: number;
   assetsLoaded?: boolean;
+  gameSpeed: number; // 속도 배율 (0.7: 느림/초보, 1.0: 보통, 1.3: 빠름)
 }
+
+export type GameSpeedOption = 0.7 | 1.0 | 1.3;
