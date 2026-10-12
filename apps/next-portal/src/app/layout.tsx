@@ -3,6 +3,8 @@ import "./globals.css";
 import React from "react";
 import { PortalNavbar } from "@/components/layout/PortalNavbar";
 import { PortalFooter } from "@/components/layout/PortalFooter";
+import { AuthProvider } from "@/context/AuthContext";
+import { UserPreferenceProvider } from "@/context/UserPreferenceContext";
 
 export const viewport: Viewport = {
   themeColor: "#2563eb",
@@ -68,13 +70,17 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#f5f6f7] min-h-screen text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900 flex flex-col">
-        <PortalNavbar />
-        <div className="flex-1 flex flex-col">
-          {children}
-        </div>
-        <PortalFooter />
-        {/* Next.js Intercepting Modal Layer for Hybrid Popups */}
-        {modal}
+        <AuthProvider>
+          <UserPreferenceProvider>
+            <PortalNavbar />
+            <div className="flex-1 flex flex-col">
+              {children}
+            </div>
+            <PortalFooter />
+            {/* Next.js Intercepting Modal Layer for Hybrid Popups */}
+            {modal}
+          </UserPreferenceProvider>
+        </AuthProvider>
       </body>
     </html>
   );

@@ -1,1 +1,1 @@
-export { default, metadata } from '../utility/page';
+export { default } from '../utility/page';
