@@ -754,6 +754,68 @@ export const TOOLS_DATA: ToolDetailItem[] = [
             }
         ],
         appUrl: '/finance/util?tab=dsr'
+    },
+
+    // 14. 이미지 크기 조정 & 일괄 변환기
+    {
+        slug: 'image-resizer',
+        name: '이미지 크기 조정 & 일괄 변환기',
+        title: '이미지 리사이즈 & 크기 변환기 - 픽셀·비율·SNS 규격 일괄 압축 | VERA',
+        description: '네이버 블로그, 유튜브, 인스타그램, 카카오톡 등 SNS 권장 규격 및 픽셀(px), 백분율(%), 긴 변, 목표 용량(KB) 단위로 사진 해상도를 정밀 조절합니다. 최대 50장 다중 이미지 일괄 처리, 무손실 WebP/JPG/PNG 변환, ZIP 압축 다운로드를 100% 클라이언트 로컬 보안으로 제공합니다.',
+        keywords: [
+            '이미지 리사이즈',
+            '사진 크기 조절',
+            '이미지 일괄 변환',
+            '사진 용량 줄이기',
+            '네이버 블로그 사진 크기',
+            '인스타 썸네일 규격',
+            '유튜브 썸네일 1280 720',
+            'WebP 일괄 변환',
+            '사진 해상도 변경'
+        ],
+        category: 'dev',
+        categoryLabel: '개발 도구',
+        icon: 'fas fa-images',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
+        directAnswer: '최대 50장의 이미지를 픽셀, 비율, 긴 변, 목표 KB 단위 및 네이버·유튜브·인스타 SNS 규격으로 일괄 리사이즈하고 WebP/JPG/PNG 변환 후 ZIP 압축으로 다운로드하는 100% 브라우저 로컬 유틸리티입니다.',
+        formula: {
+            title: '종횡비 보존 및 스케일링 보간 공식',
+            expression: 'Target Width = (Original Width × Target Height) ÷ Original Height (Cover / Contain / Stretch)',
+            explanation: 'HTML5 2D Canvas의 쌍선형 보간(Bi-linear Interpolation) 알고리즘을 사용하여 원본 픽셀 그리드를 목표 해상도로 재구성합니다. Cover(중앙 크롭), Contain(비율 유지), Stretch(강제 맞춤) 옵션과 이분 탐색(Binary Search) 기반 목표 KB 수렴 엔진을 지원합니다.',
+            variables: [
+                { name: '종횡비 (Aspect Ratio)', desc: '원본 가로 세로 비율 유지 (W / H)' },
+                { name: 'Cover (중앙 크롭)', desc: '지정 영역을 빈틈없이 꽉 채우며 초과 영역은 중앙 기준 트리밍' },
+                { name: 'Contain (비율 유지)', desc: '잘림 없이 전체 이미지를 지정 박스 내에 온전히 수용' },
+                { name: '목표 용량 이분 탐색', desc: '지정된 KB 이하로 화질 계수(Quality)와 스케일을 자동 수렴' }
+            ]
+        },
+        example: {
+            scenario: '스마트폰으로 촬영한 4032×3024 (8.5MB) 원본 사진을 블로그 업로드용 1200×630 WebP 포맷(300KB 이하)으로 일괄 압축하는 경우',
+            calculation: '4032×3024 -> Cover 맞춤 1200×630 리샘플링 -> WebP Q85 인코딩 -> 185KB로 97.8% 용량 대폭 절감',
+            result: '고해상도 선명도를 유지하면서 로딩 속도를 극대화한 최적화 WebP 이미지 생성'
+        },
+        howToSteps: [
+            { name: '이미지 업로드 또는 샘플 불러오기', text: '최대 50장의 이미지 파일을 드래그 앤 드롭하거나 탐색기에서 선택합니다.' },
+            { name: '리사이즈 단위 및 프리셋 지정', text: '픽셀, 백분율, 긴 변 또는 네이버 블로그/유튜브/인스타그램 SNS 프리셋을 선택합니다.' },
+            { name: '출력 포맷 및 품질 설정', text: 'WebP, JPG, PNG 또는 원본 포맷을 지정하고 압축 품질(10%~100%)을 조절합니다.' },
+            { name: '리사이즈 시작 및 ZIP 일괄 다운로드', text: '리사이즈 시작 버튼 클릭 후 개별 다운로드하거나 ZIP 파일로 한 번에 저장합니다.' }
+        ],
+        faqs: [
+            {
+                question: '한 번에 몇 장까지 일괄 변환이 가능한가요?',
+                answer: '최대 50장의 이미지를 동시에 등록할 수 있으며, 장당 최대 30MB까지 지원합니다. 모든 변환이 완료되면 "ZIP 일괄 다운로드"로 한 번에 다운로드받을 수 있습니다.'
+            },
+            {
+                question: '업로드한 이미지가 외부 서버에 저장되거나 유출될 위험은 없나요?',
+                answer: '100% 브라우저 클라이언트 사이드 메모리에서만 연산이 이루어집니다. 이미지가 어떤 서버로도 전송되지 않으므로 사생활 및 민감한 사진도 완전히 안전합니다.'
+            },
+            {
+                question: '작은 이미지를 리사이즈할 때 화질이 깨지지 않게 하려면 어떻게 하나요?',
+                answer: '옵션 설정에서 "[v] 원본보다 크게 확대 금지"를 활성화하면 원본보다 큰 치수로 지정하더라도 강제 업스케일링 없이 원본 선명도를 유지합니다.'
+            }
+        ],
+        appUrl: '/app/image-resizer/'
     }
 ];
 
