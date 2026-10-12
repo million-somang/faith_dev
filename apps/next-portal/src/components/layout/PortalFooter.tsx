@@ -153,9 +153,7 @@ export const PortalFooter: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between gap-8 mb-8">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl font-black bg-blue-600 text-white px-2 py-0.5 rounded-lg shadow-sm">
-                VERA
-              </span>
+              <img src="/logo-192.png" alt="VERA Logo" className="w-7 h-7 rounded-md object-contain" />
               <h2 className="text-xl font-black text-gray-900">VERA</h2>
             </div>
             <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
