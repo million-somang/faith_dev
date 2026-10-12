@@ -9,7 +9,8 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '../engine/gameLoop';
-import { Heart, Bomb, RotateCw, Zap, Play, Gauge } from 'lucide-react';
+import { DifficultyRank } from '../engine/types';
+import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert } from 'lucide-react';
 
 interface FlightCanvasProps {
   onGameOver: (score: number, kills: number, highScore: number) => void;
@@ -90,6 +91,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     hasEscorts: boolean;
     kills: number;
     status: string;
+    difficultyRank: DifficultyRank;
   }>({
     score: 0,
     lives: 3,
@@ -99,6 +101,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     hasEscorts: false,
     kills: 0,
     status: 'ready',
+    difficultyRank: 'NORMAL',
   });
 
   // 속도 변경 핸들러
@@ -283,6 +286,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               hasEscorts: state.player.hasEscorts,
               kills: state.player.kills,
               status: state.status,
+              difficultyRank: state.difficultyRank || 'NORMAL',
             });
             if (onStateUpdate) {
               onStateUpdate(state);
@@ -346,6 +350,25 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             {gameSpeed === 0.7 ? '느림' : gameSpeed === 1.3 ? '빠름' : '보통'}
           </span>
         </button>
+
+        {/* 위험도 랭크 뱃지 */}
+        <div
+          title={`현재 위험도 랭크: ${hudState.difficultyRank}`}
+          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[10px] font-black tracking-tight ${
+            hudState.difficultyRank === 'HELL'
+              ? 'bg-red-100 border-red-400 text-red-700 animate-pulse'
+              : hudState.difficultyRank === 'EXPERT'
+              ? 'bg-orange-50 border-orange-300 text-orange-700'
+              : hudState.difficultyRank === 'HARD'
+              ? 'bg-amber-50 border-amber-300 text-amber-700'
+              : hudState.difficultyRank === 'NORMAL+'
+              ? 'bg-sky-50 border-sky-300 text-sky-700'
+              : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+          }`}
+        >
+          <ShieldAlert className="w-3 h-3" />
+          <span>{hudState.difficultyRank}</span>
+        </div>
 
         {/* 무기 레벨 */}
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800">

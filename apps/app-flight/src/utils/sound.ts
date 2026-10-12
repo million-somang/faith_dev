@@ -262,6 +262,41 @@ class SoundEngine {
       // ignore
     }
   }
+
+  // 난이도 상승 경보음 (Dramatic Danger Level Escalation)
+  public playRankUpSound() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const notes = [330, 392, 493.88, 659.25, 880]; // E4, G4, B4, E5, A5
+      notes.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime + idx * 0.07;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(0.16, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
+  public playPowerUpSound() {
+    this.playRankUpSound();
+  }
 }
 
 export const sound = new SoundEngine();

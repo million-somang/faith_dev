@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameEngineState } from '../engine/types';
+import { getDifficultyScale } from '../engine/gameLoop';
 import {
   Trophy,
   Zap,
@@ -10,6 +11,8 @@ import {
   Layers,
   Keyboard,
   Info,
+  ShieldAlert,
+  Flame,
 } from 'lucide-react';
 
 interface DashboardSidebarProps {
@@ -24,6 +27,26 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
   const hasEscorts = state?.player.hasEscorts || false;
   const rolls = state?.player.rolls || 0;
   const bombs = state?.player.bombs || 0;
+
+  const diff = getDifficultyScale(score);
+
+  const getNextRankMilestone = (currentScore: number) => {
+    if (currentScore < 2500) {
+      return { target: 2500, label: 'RANK 2 [NORMAL+] 진입', diffScore: 2500 - currentScore };
+    }
+    if (currentScore < 6000) {
+      return { target: 6000, label: 'RANK 3 [HARD] 진입 (폭격기 4-way)', diffScore: 6000 - currentScore };
+    }
+    if (currentScore < 12000) {
+      return { target: 12000, label: 'RANK 4 [EXPERT] 진입 (정찰기 2연사)', diffScore: 12000 - currentScore };
+    }
+    if (currentScore < 20000) {
+      return { target: 20000, label: 'RANK 5 [HELL] 극한 탄막 모드', diffScore: 20000 - currentScore };
+    }
+    return { target: 20000, label: '최고 난이도 도달! 극한의 탄막을 돌파하세요!', diffScore: 0 };
+  };
+
+  const nextMilestone = getNextRankMilestone(score);
 
   const weaponTiers = [
     { level: 1, name: '단발 기관총', desc: '전방 단발 고속 탄환' },
@@ -58,6 +81,72 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
               {highScore.toLocaleString()}
             </span>
           </div>
+        </div>
+      </div>
+
+      {/* 1.5. 실시간 전황 위험도 & 난이도 배율 (Dynamic Difficulty Scaling) */}
+      <div className="p-3.5 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-xs font-bold text-[#2D2A26] flex items-center gap-1.5">
+            <ShieldAlert className="w-4 h-4 text-red-500" />
+            전황 위험도 & 난이도 배율
+          </span>
+          <span
+            className={`text-[11px] font-black px-2 py-0.5 rounded-full border ${
+              diff.rank === 'HELL'
+                ? 'bg-red-50 border-red-400 text-red-700 animate-pulse'
+                : diff.rank === 'EXPERT'
+                ? 'bg-orange-50 border-orange-300 text-orange-700'
+                : diff.rank === 'HARD'
+                ? 'bg-amber-50 border-amber-300 text-amber-700'
+                : diff.rank === 'NORMAL+'
+                ? 'bg-sky-50 border-sky-300 text-sky-700'
+                : 'bg-emerald-50 border-emerald-300 text-emerald-700'
+            }`}
+          >
+            RANK {diff.rankLevel} [{diff.rank}]
+          </span>
+        </div>
+
+        {/* 4대 배율 매트릭스 */}
+        <div className="grid grid-cols-2 gap-1.5 text-center mb-2">
+          <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#EBE6DD]">
+            <span className="text-[10px] text-[#8A847A] block font-medium">적 스폰 빈도</span>
+            <span className="text-sm font-black font-mono text-red-600">
+              {diff.spawnRateMultiplier.toFixed(2)}x
+            </span>
+          </div>
+          <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#EBE6DD]">
+            <span className="text-[10px] text-[#8A847A] block font-medium">적 탄환 속도</span>
+            <span className="text-sm font-black font-mono text-orange-600">
+              {diff.bulletSpeedMultiplier.toFixed(2)}x
+            </span>
+          </div>
+          <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#EBE6DD]">
+            <span className="text-[10px] text-[#8A847A] block font-medium">적 사격 주기</span>
+            <span className="text-sm font-black font-mono text-amber-600">
+              {diff.shootRateMultiplier.toFixed(2)}x
+            </span>
+          </div>
+          <div className="p-2 rounded-xl bg-[#FAF8F5] border border-[#EBE6DD]">
+            <span className="text-[10px] text-[#8A847A] block font-medium">적 내구도(HP)</span>
+            <span className="text-sm font-black font-mono text-indigo-600">
+              {diff.enemyHpMultiplier.toFixed(2)}x
+            </span>
+          </div>
+        </div>
+
+        {/* 승급 진행 가이드 */}
+        <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD] flex items-center justify-between text-[11px]">
+          <span className="text-[#7A756D] font-medium flex items-center gap-1">
+            <Flame className="w-3.5 h-3.5 text-amber-500" />
+            {nextMilestone.label}
+          </span>
+          {nextMilestone.diffScore > 0 && (
+            <span className="font-mono font-bold text-sky-700">
+              +{nextMilestone.diffScore.toLocaleString()}점 남음
+            </span>
+          )}
         </div>
       </div>
 

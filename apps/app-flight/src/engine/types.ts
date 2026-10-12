@@ -142,6 +142,18 @@ export interface Explosion {
   rotation: number;
 }
 
+export type DifficultyRank = 'NORMAL' | 'NORMAL+' | 'HARD' | 'EXPERT' | 'HELL';
+
+export interface DifficultyScale {
+  rank: DifficultyRank;
+  rankLevel: number; // 1 ~ 5
+  spawnRateMultiplier: number; // 1.0 ~ 1.75
+  shootRateMultiplier: number; // 1.0 ~ 1.6
+  bulletSpeedMultiplier: number; // 1.0 ~ 1.4
+  enemyHpMultiplier: number; // 1.0 ~ 1.6
+  color: string;
+}
+
 export interface GameEngineState {
   status: GameStatus;
   player: Player;
@@ -158,6 +170,9 @@ export interface GameEngineState {
   bossActive: boolean;
   bossWarningTimer: number; // 보스 경보 사이렌 카운트다운
   nextBossScore?: number; // 다음 보스 출현 목표 점수
+  bossEncounterCount: number; // 격파한 보스 횟수
+  difficultyRank: DifficultyRank; // 현재 위험도 랭크
+  lastAnnouncedRank?: DifficultyRank; // 최근 경고 출력된 랭크
   redFormations: Map<number, { total: number; destroyed: number }>; // 편대 전멸 추적
   screenShake: number;
   canvasWidth: number;
@@ -167,3 +182,4 @@ export interface GameEngineState {
 }
 
 export type GameSpeedOption = 0.7 | 1.0 | 1.3;
+

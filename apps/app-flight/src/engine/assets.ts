@@ -35,6 +35,7 @@ class AssetManager {
   }
 
   public async preloadAssets(): Promise<GameSprites> {
+    if (typeof window === 'undefined' || typeof Image === 'undefined') return this.sprites;
     if (this.loaded) return this.sprites;
     if (this.loadPromise) return this.loadPromise;
 
