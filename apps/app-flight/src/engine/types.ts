@@ -157,6 +157,7 @@ export interface GameEngineState {
   stage: number;
   bossActive: boolean;
   bossWarningTimer: number; // 보스 경보 사이렌 카운트다운
+  nextBossScore?: number; // 다음 보스 출현 목표 점수
   redFormations: Map<number, { total: number; destroyed: number }>; // 편대 전멸 추적
   screenShake: number;
   canvasWidth: number;

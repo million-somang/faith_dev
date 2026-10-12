@@ -16,6 +16,7 @@ interface FlightCanvasProps {
   onStateUpdate?: (state: GameEngineState) => void;
   rollTriggerRequested?: number;
   bombTriggerRequested?: number;
+  restartTriggerRequested?: number;
 }
 
 export const FlightCanvas: React.FC<FlightCanvasProps> = ({
@@ -23,8 +24,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
   onStateUpdate,
   rollTriggerRequested = 0,
   bombTriggerRequested = 0,
+  restartTriggerRequested = 0,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const gameOverReportedRef = useRef<boolean>(false);
+  const prevRestartRef = useRef<number>(restartTriggerRequested);
 
   // 저장된 게임 속도 로드 (기본값: 1.0)
   const [gameSpeed, setGameSpeed] = useState<number>(() => {
@@ -135,8 +139,29 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
   // 게임 시작 트리거
   const handleStartGame = useCallback(() => {
-    const s = stateRef.current;
-    if (s.status === 'ready' || s.status === 'gameover') {
+    gameOverReportedRef.current = false;
+    stateRef.current = createInitialState(gameSpeed);
+    stateRef.current.status = 'playing';
+    setHudState({
+      score: 0,
+      lives: 3,
+      bombs: 2,
+      rolls: 3,
+      weaponLevel: 1,
+      hasEscorts: false,
+      kills: 0,
+      status: 'playing',
+    });
+    if (onStateUpdate) {
+      onStateUpdate(stateRef.current);
+    }
+  }, [gameSpeed, onStateUpdate]);
+
+  // 외부(게임오버 모달 등)에서 재시작 요청 처리
+  useEffect(() => {
+    if (restartTriggerRequested > 0 && restartTriggerRequested !== prevRestartRef.current) {
+      prevRestartRef.current = restartTriggerRequested;
+      gameOverReportedRef.current = false;
       stateRef.current = createInitialState(gameSpeed);
       stateRef.current.status = 'playing';
       setHudState({
@@ -149,8 +174,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
         kills: 0,
         status: 'playing',
       });
+      if (onStateUpdate) {
+        onStateUpdate(stateRef.current);
+      }
     }
-  }, [gameSpeed]);
+  }, [restartTriggerRequested, gameSpeed, onStateUpdate]);
 
   // 외부(버튼 등)에서 롤 요청 처리
   useEffect(() => {
@@ -237,32 +265,39 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
       const state = stateRef.current;
 
       if (canvas && ctx) {
-        // 엔진 프레임 업데이트
-        updateGameEngine(state, keysRef.current);
+        try {
+          // 엔진 프레임 업데이트
+          updateGameEngine(state, keysRef.current);
 
-        // 렌더링
-        renderGameEngine(ctx, state);
+          // 렌더링
+          renderGameEngine(ctx, state);
 
-        // 주기적 HUD 및 상태 동기화 (매 3프레임마다)
-        if (state.currentFrame % 3 === 0) {
-          setHudState({
-            score: state.player.score,
-            lives: state.player.lives,
-            bombs: state.player.bombs,
-            rolls: state.player.rolls,
-            weaponLevel: state.player.weaponLevel,
-            hasEscorts: state.player.hasEscorts,
-            kills: state.player.kills,
-            status: state.status,
-          });
-          if (onStateUpdate) {
-            onStateUpdate(state);
+          // 주기적 HUD 및 상태 동기화 (매 3프레임마다)
+          if (state.currentFrame % 3 === 0) {
+            setHudState({
+              score: state.player.score,
+              lives: state.player.lives,
+              bombs: state.player.bombs,
+              rolls: state.player.rolls,
+              weaponLevel: state.player.weaponLevel,
+              hasEscorts: state.player.hasEscorts,
+              kills: state.player.kills,
+              status: state.status,
+            });
+            if (onStateUpdate) {
+              onStateUpdate(state);
+            }
           }
-        }
 
-        // 게임오버 감지
-        if (state.status === 'gameover') {
-          onGameOver(state.player.score, state.player.kills, state.player.highScore);
+          // 게임오버 감지 (단 1회만 발동되도록 가드)
+          if (state.status === 'gameover') {
+            if (!gameOverReportedRef.current) {
+              gameOverReportedRef.current = true;
+              onGameOver(state.player.score, state.player.kills, state.player.highScore);
+            }
+          }
+        } catch (err) {
+          console.error('[Vera Flight Canvas Loop Error]', err);
         }
       }
 

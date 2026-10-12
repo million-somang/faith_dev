@@ -12,6 +12,32 @@ import { assetManager } from './assets';
 export type { GameEngineState };
 
 
+// 캔버스 크로스 브라우징 roundRect 헬퍼 (구형 브라우저 및 인앱 웹뷰 폴백)
+function safeRoundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number
+) {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, w, h, radius);
+  } else {
+    const r = Math.min(radius, w / 2, h / 2);
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+}
+
 export const CANVAS_WIDTH = 450;
 export const CANVAS_HEIGHT = 600;
 
@@ -78,6 +104,7 @@ export function createInitialState(gameSpeed = 1.0): GameEngineState {
     stage: 1,
     bossActive: false,
     bossWarningTimer: 0,
+    nextBossScore: 4000,
     redFormations: new Map(),
     screenShake: 0,
     canvasWidth: CANVAS_WIDTH,
@@ -527,16 +554,16 @@ function spawnBomber(state: GameEngineState) {
 // 거대 보스 전함 스폰
 function spawnBoss(state: GameEngineState) {
   state.bossActive = true;
-  state.bossWarningTimer = 180; // 3초간 경보 사이렌
+  state.bossWarningTimer = 120; // 2초간 경보 사이렌
   sound.playBossAlertSound();
 
   state.enemies.push({
     id: nextEntityId++,
     type: 'boss',
     x: CANVAS_WIDTH / 2,
-    y: -120, // 위에서 서서히 진입
-    vx: 1.1,
-    vy: 0.6,
+    y: -60, // 화면 바로 위에서 신속하게 진입 시작
+    vx: 1.2,
+    vy: 1.6, // 부드럽고 신속하게 화면에 안착
     width: 140,
     height: 100,
     hp: 750,
@@ -545,8 +572,8 @@ function spawnBoss(state: GameEngineState) {
     lastShotFrame: state.currentFrame,
     shootInterval: 45,
     turrets: [
-      { id: 'left', relX: -45, relY: -15, hp: 160, maxHp: 160, lastShot: 0 },
-      { id: 'right', relX: 45, relY: -15, hp: 160, maxHp: 160, lastShot: 0 },
+      { id: 'left', relX: -45, relY: -15, hp: 160, maxHp: 160, lastShot: state.currentFrame },
+      { id: 'right', relX: 45, relY: -15, hp: 160, maxHp: 160, lastShot: state.currentFrame },
     ],
   });
 }
@@ -632,7 +659,8 @@ export function updateGameEngine(
   }
 
   // 5. 적기 생성 스폰 로직 (gameSpeed 반영)
-  if (!state.bossActive && state.player.score >= 4000 && state.enemies.length === 0) {
+  const nextBossScore = state.nextBossScore || 4000;
+  if (!state.bossActive && state.player.score >= nextBossScore && state.enemies.length === 0) {
     spawnBoss(state);
   } else if (!state.bossActive) {
     const scoutInterval = Math.max(30, Math.round(70 / gameSpeed));
@@ -769,8 +797,8 @@ export function updateGameEngine(
         }
       }
 
-      // 보스 포탑 독립 사격
-      if (e.turrets) {
+      // 보스 포탑 독립 사격 (화면 안착 후 사격)
+      if (e.turrets && e.y >= 50) {
         const turretInterval = Math.round(70 / gameSpeed);
         e.turrets.forEach((turret) => {
           if (turret.hp > 0 && state.currentFrame - turret.lastShot > turretInterval) {
@@ -930,6 +958,7 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
     createExplosion(state, e.x, e.y, 'boss', 40);
     state.screenShake = 35;
     state.bossActive = false;
+    state.nextBossScore = state.player.score + 5000; // 다음 보스는 5,000점 뒤에 출현
     state.floatingTexts.push({
       id: nextEntityId++,
       text: 'STAGE CLEAR! +5,000',
@@ -1150,7 +1179,7 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
         // 거대 공중 전함 본체 벡터 폴백
         ctx.fillStyle = '#334155';
         ctx.beginPath();
-        ctx.roundRect(-70, -45, 140, 90, 16);
+        safeRoundRect(ctx, -70, -45, 140, 90, 16);
         ctx.fill();
         ctx.fillStyle = '#1E293B';
         ctx.fillRect(-50, -25, 100, 50);
@@ -1228,7 +1257,7 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
 
     ctx.fillStyle = item.color;
     ctx.beginPath();
-    ctx.roundRect(-11, -11, 22, 22, 5);
+    safeRoundRect(ctx, -11, -11, 22, 22, 5);
     ctx.fill();
 
     // 텍스트 (P, L, B, S)

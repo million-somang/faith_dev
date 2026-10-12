@@ -28,6 +28,7 @@ export default function App() {
   const [engineState, setEngineState] = useState<GameEngineState | null>(null);
   const [rollTriggerCount, setRollTriggerCount] = useState<number>(0);
   const [bombTriggerCount, setBombTriggerCount] = useState<number>(0);
+  const [restartTriggerCount, setRestartTriggerCount] = useState<number>(0);
 
   // 게임오버 콜백
   const handleGameOver = useCallback((score: number, kills: number, hs: number) => {
@@ -40,6 +41,7 @@ export default function App() {
   // 재시작 콜백
   const handleRestart = useCallback(() => {
     setIsGameOver(false);
+    setRestartTriggerCount((c) => c + 1);
   }, []);
 
   // 터치/버튼 롤 트리거
@@ -71,6 +73,7 @@ export default function App() {
                 onStateUpdate={setEngineState}
                 rollTriggerRequested={rollTriggerCount}
                 bombTriggerRequested={bombTriggerCount}
+                restartTriggerRequested={restartTriggerCount}
               />
 
               {/* 모바일/태블릿 하단 퀵 액션 버튼 (360° 롤 & 메가 폭탄) */}
