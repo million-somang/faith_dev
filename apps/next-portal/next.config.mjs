@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const backendUrl = process.env.API_SERVER_URL || 'http://localhost:4200';
+
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
@@ -18,11 +20,35 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: process.env.API_SERVER_URL || 'http://localhost:4200/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
       {
         source: '/uploads/:path*',
-        destination: process.env.API_SERVER_URL ? `${process.env.API_SERVER_URL}/uploads/:path*` : 'http://localhost:4200/uploads/:path*',
+        destination: `${backendUrl}/uploads/:path*`,
+      },
+      {
+        source: '/app/:path*',
+        destination: `${backendUrl}/app/:path*`,
+      },
+      {
+        source: '/onlinegame/:path*',
+        destination: `${backendUrl}/onlinegame/:path*`,
+      },
+      {
+        source: '/finance',
+        destination: `${backendUrl}/finance`,
+      },
+      {
+        source: '/finance/:path*',
+        destination: `${backendUrl}/finance/:path*`,
+      },
+      {
+        source: '/admin',
+        destination: `${backendUrl}/admin`,
+      },
+      {
+        source: '/admin/:path*',
+        destination: `${backendUrl}/admin/:path*`,
       },
     ];
   },

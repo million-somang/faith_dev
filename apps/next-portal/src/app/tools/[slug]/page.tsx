@@ -2,7 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { TOOLS_DATA } from '@/data/toolsData';
+import { TOOLS_DATA, getToolBySlug } from '@/data/toolsData';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { ToolViewer } from '@/components/tools/ToolViewer';
 import { AdSlot } from '@/components/adsense/AdSlot';
@@ -15,12 +15,12 @@ interface ToolPageProps {
 
 // 1. 빌드 타임 정적 페이지 생성 (SSG)
 export async function generateStaticParams() {
-  return Object.keys(TOOLS_DATA).map((slug) => ({ slug }));
+  return TOOLS_DATA.map((tool) => ({ slug: tool.slug }));
 }
 
 // 2. 동적 SEO 메타데이터 생성 (구글봇 완벽 대응)
 export async function generateMetadata({ params }: ToolPageProps): Promise<Metadata> {
-  const tool = TOOLS_DATA[params.slug];
+  const tool = getToolBySlug(params.slug);
   if (!tool) return {};
 
   const pageUrl = `https://veranex.app/tools/${tool.slug}`;
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
     },
     openGraph: {
       title: `${tool.name} | VERA 스마트 도구`,
-      description: tool.summary,
+      description: tool.summary || tool.description,
       url: pageUrl,
       type: 'website',
       images: [
@@ -49,13 +49,13 @@ export async function generateMetadata({ params }: ToolPageProps): Promise<Metad
     twitter: {
       card: 'summary_large_image',
       title: `${tool.name} | VERA`,
-      description: tool.summary,
+      description: tool.summary || tool.description,
     },
   };
 }
 
 export default function ToolPage({ params }: ToolPageProps) {
-  const tool = TOOLS_DATA[params.slug];
+  const tool = getToolBySlug(params.slug);
   if (!tool) notFound();
 
   const pageUrl = `https://veranex.app/tools/${tool.slug}`;
@@ -99,7 +99,7 @@ export default function ToolPage({ params }: ToolPageProps) {
             {tool.name}
           </h1>
           <p className="mt-2 text-sm text-gray-600 max-w-xl mx-auto">
-            {tool.summary}
+            {tool.summary || tool.description}
           </p>
         </header>
 

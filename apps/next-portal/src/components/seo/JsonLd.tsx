@@ -8,8 +8,9 @@ interface JsonLdProps {
 }
 
 export function JsonLd({ item, url }: JsonLdProps) {
-  const isGame = 'category' in item ? item.category === 'game' : true;
+  const isGame = !('category' in item);
   const appType = isGame ? 'GameApplication' : 'WebApplication';
+  const summaryText = item.summary || item.description;
 
   const webAppSchema = {
     '@context': 'https://schema.org',
@@ -31,7 +32,7 @@ export function JsonLd({ item, url }: JsonLdProps) {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
     name: `${item.name} 사용 방법`,
-    description: item.summary,
+    description: summaryText,
     step: item.howToSteps.map((step, idx) => ({
       '@type': 'HowToStep',
       position: idx + 1,

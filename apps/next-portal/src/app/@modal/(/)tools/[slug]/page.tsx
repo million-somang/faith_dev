@@ -1,6 +1,6 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
-import { TOOLS_DATA } from '@/data/toolsData';
+import { getToolBySlug } from '@/data/toolsData';
 import { ModalContainer } from '@/components/modal/ModalContainer';
 import { ToolViewer } from '@/components/tools/ToolViewer';
 
@@ -11,7 +11,7 @@ interface ToolModalProps {
 }
 
 export default function ToolModal({ params }: ToolModalProps) {
-  const tool = TOOLS_DATA[params.slug];
+  const tool = getToolBySlug(params.slug);
   if (!tool) notFound();
 
   return (

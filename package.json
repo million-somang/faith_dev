@@ -11,6 +11,8 @@
     "scripts": {
       "build": "turbo run build",
       "start:prod": "tsx apps/api-server/src/server.ts",
+      "start:api": "tsx apps/api-server/src/server.ts",
+      "start:next": "npm run start --workspace=@faithportal/next-portal",
       "capture:app": "node scripts/capture-single-miniapp.cjs",
       "capture:all": "node scripts/batch-capture-live-miniapps.cjs",
       "dev": "turbo run dev --concurrency 35",
