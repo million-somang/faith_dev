@@ -40,10 +40,26 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     shoot: true, // 자동 사격 기본 활성화
   });
 
-  const touchPosRef = useRef<{ active: boolean; x: number; y: number }>({
+  const touchDragRef = useRef<{
+    active: boolean;
+    touchId: number | null;
+    lastX: number;
+    lastY: number;
+  }>({
     active: false,
-    x: 0,
-    y: 0,
+    touchId: null,
+    lastX: 0,
+    lastY: 0,
+  });
+
+  const mouseDragRef = useRef<{
+    active: boolean;
+    lastX: number;
+    lastY: number;
+  }>({
+    active: false,
+    lastX: 0,
+    lastY: 0,
   });
 
   const [hudState, setHudState] = useState<{
@@ -135,19 +151,29 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     };
   }, [handleStartGame]);
 
-  // 마우스 및 터치 드래그 위치 추적
-  const updateTouchTarget = (clientX: number, clientY: number) => {
+  // 상대 드래그 이동 적용 헬퍼
+  const applyRelativeMove = (screenDeltaX: number, screenDeltaY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
     const scaleX = CANVAS_WIDTH / rect.width;
     const scaleY = CANVAS_HEIGHT / rect.height;
 
-    touchPosRef.current = {
-      active: true,
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
-    };
+    const state = stateRef.current;
+    if (state.status !== 'playing') return;
+
+    const p = state.player;
+    p.x += screenDeltaX * scaleX;
+    p.y += screenDeltaY * scaleY;
+
+    // 캔버스 화면 경계 클램핑
+    const halfW = p.width / 2;
+    const halfH = p.height / 2;
+    if (p.x < halfW + 10) p.x = halfW + 10;
+    if (p.x > CANVAS_WIDTH - halfW - 10) p.x = CANVAS_WIDTH - halfW - 10;
+    if (p.y < halfH + 20) p.y = halfH + 20;
+    if (p.y > CANVAS_HEIGHT - halfH - 15) p.y = CANVAS_HEIGHT - halfH - 15;
   };
 
   // 메인 애니메이션 루프 (60fps)
@@ -160,21 +186,6 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
       const state = stateRef.current;
 
       if (canvas && ctx) {
-        // 터치 드래그 위치로 부드럽게 기체 이동
-        if (touchPosRef.current.active && state.status === 'playing') {
-          const targetX = touchPosRef.current.x;
-          const targetY = touchPosRef.current.y;
-          const dx = targetX - state.player.x;
-          const dy = targetY - state.player.y;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist > 4) {
-            const step = Math.min(dist, state.player.speed * 1.5);
-            state.player.x += (dx / dist) * step;
-            state.player.y += (dy / dist) * step;
-          }
-        }
-
         // 엔진 프레임 업데이트
         updateGameEngine(state, keysRef.current);
 
@@ -256,27 +267,72 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           className="w-full h-full block cursor-crosshair touch-none"
           onMouseDown={(e) => {
             if (stateRef.current.status === 'ready') handleStartGame();
-            updateTouchTarget(e.clientX, e.clientY);
+            mouseDragRef.current = {
+              active: true,
+              lastX: e.clientX,
+              lastY: e.clientY,
+            };
           }}
           onMouseMove={(e) => {
-            if (e.buttons > 0) updateTouchTarget(e.clientX, e.clientY);
+            if (mouseDragRef.current.active && e.buttons > 0) {
+              const dx = e.clientX - mouseDragRef.current.lastX;
+              const dy = e.clientY - mouseDragRef.current.lastY;
+              applyRelativeMove(dx, dy);
+              mouseDragRef.current.lastX = e.clientX;
+              mouseDragRef.current.lastY = e.clientY;
+            }
           }}
           onMouseUp={() => {
-            touchPosRef.current.active = false;
+            mouseDragRef.current.active = false;
+          }}
+          onMouseLeave={() => {
+            mouseDragRef.current.active = false;
           }}
           onTouchStart={(e) => {
             if (stateRef.current.status === 'ready') handleStartGame();
-            if (e.touches.length > 0) {
-              updateTouchTarget(e.touches[0].clientX, e.touches[0].clientY);
+            if (!touchDragRef.current.active && e.changedTouches.length > 0) {
+              const touch = e.changedTouches[0];
+              touchDragRef.current = {
+                active: true,
+                touchId: touch.identifier,
+                lastX: touch.clientX,
+                lastY: touch.clientY,
+              };
             }
           }}
           onTouchMove={(e) => {
-            if (e.touches.length > 0) {
-              updateTouchTarget(e.touches[0].clientX, e.touches[0].clientY);
+            if (!touchDragRef.current.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              const touch = e.changedTouches[i];
+              if (touch.identifier === touchDragRef.current.touchId) {
+                const dx = touch.clientX - touchDragRef.current.lastX;
+                const dy = touch.clientY - touchDragRef.current.lastY;
+                applyRelativeMove(dx, dy);
+                touchDragRef.current.lastX = touch.clientX;
+                touchDragRef.current.lastY = touch.clientY;
+                break;
+              }
             }
           }}
-          onTouchEnd={() => {
-            touchPosRef.current.active = false;
+          onTouchEnd={(e) => {
+            if (!touchDragRef.current.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              if (e.changedTouches[i].identifier === touchDragRef.current.touchId) {
+                touchDragRef.current.active = false;
+                touchDragRef.current.touchId = null;
+                break;
+              }
+            }
+          }}
+          onTouchCancel={(e) => {
+            if (!touchDragRef.current.active) return;
+            for (let i = 0; i < e.changedTouches.length; i++) {
+              if (e.changedTouches[i].identifier === touchDragRef.current.touchId) {
+                touchDragRef.current.active = false;
+                touchDragRef.current.touchId = null;
+                break;
+              }
+            }
           }}
         />
 
