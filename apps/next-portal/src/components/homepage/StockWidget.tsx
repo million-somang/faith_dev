@@ -71,6 +71,12 @@ export const StockWidget: React.FC = () => {
   return (
     <>
       {/* 모바일 컴팩트 칩 (대표 종목 + 환율) */}
+      {loading && !firstStock && !usd && (
+        <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 min-w-[110px] flex items-center gap-2 text-xs text-gray-400">
+          <i className="fas fa-chart-line text-green-500"></i>
+          <span>증시 로딩 중...</span>
+        </div>
+      )}
       {firstStock && (
         <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 min-w-[130px]">
           <div className="font-bold text-gray-900 text-sm whitespace-nowrap">

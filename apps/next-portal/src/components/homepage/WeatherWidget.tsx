@@ -138,28 +138,29 @@ export const WeatherWidget: React.FC = () => {
             <i className={`fas ${ci.icon} text-2xl`}></i>
           </>
         ) : (
-          <span className="mx-auto text-gray-300">
-            <i className="fas fa-circle-notch fa-spin"></i>
-          </span>
+          <div className="flex items-center gap-2 text-xs text-gray-400 py-1">
+            <i className="fas fa-cloud-sun text-blue-400"></i>
+            <span>날씨 로딩 중...</span>
+          </div>
         )}
       </div>
 
       {/* PC 카드 */}
       <div className="hidden sm:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+            <i className="fas fa-cloud-sun text-blue-400"></i> 날씨
+          </h3>
+          <span
+            className="text-xs font-semibold text-gray-400 truncate max-w-[45%]"
+            title={data?.location || '서울'}
+          >
+            {data?.location || '서울'}
+          </span>
+        </div>
+
         {data && ci ? (
           <>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <i className="fas fa-cloud-sun text-blue-400"></i> 날씨
-              </h3>
-              <span
-                className="text-xs font-semibold text-gray-400 truncate max-w-[45%]"
-                title={data.location}
-              >
-                {data.location}
-              </span>
-            </div>
-
             <div className="flex items-center gap-4">
               <i className={`fas ${ci.icon} text-4xl`}></i>
               <div className="flex-1">
