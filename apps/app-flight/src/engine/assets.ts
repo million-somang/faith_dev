@@ -39,7 +39,7 @@ class AssetManager {
     if (this.loadPromise) return this.loadPromise;
 
     this.loadPromise = new Promise<GameSprites>((resolve) => {
-      const base = (import.meta.env.BASE_URL || '/app/flight/').replace(/\/$/, '') + '/';
+      const base = ((typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/app/flight/').replace(/\/$/, '') + '/';
       const assetList: { key: keyof GameSprites; url: string }[] = [
         { key: 'playerP38', url: `${base}assets/sprites/player_p38.png` },
         { key: 'playerEscort', url: `${base}assets/sprites/player_escort.png` },

@@ -1069,6 +1069,7 @@ function handlePlayerHit(state: GameEngineState) {
 
 // 캔버스 2D 렌더링 함수
 export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngineState) {
+  const p = state.player;
   ctx.save();
 
   // 화면 흔들림 효과
@@ -1289,7 +1290,6 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
   });
 
   // 5. 플레이어 전투기 렌더링 (P-38 Lightning 스타일)
-  const p = state.player;
   const isBlinking = p.isInvincible && Math.floor(state.currentFrame / 4) % 2 === 0;
 
   if (!isBlinking) {
