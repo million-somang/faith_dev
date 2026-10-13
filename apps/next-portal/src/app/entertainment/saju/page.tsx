@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAppLauncher } from '@/hooks/useAppLauncher';
@@ -26,6 +27,20 @@ export default function SajuInfoPage() {
         }
     };
 
+    const handleShare = () => {
+        const shareUrl = typeof window !== 'undefined' ? window.location.href : 'https://veranex.app/entertainment/saju';
+        if (typeof navigator !== 'undefined' && navigator.share) {
+            navigator.share({
+                title: '베라 만세력 & 사주 풀이 - 내 사주와 오행의 조화',
+                url: shareUrl,
+            }).catch(err => console.error(err));
+        } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(shareUrl)
+                .then(() => alert('사주 서비스 주소가 복사되었습니다.'))
+                .catch(() => alert('주소창의 URL을 복사해 주세요.'));
+        }
+    };
+
     const faqItems = [
         {
             q: '태어난 시간을 정확히 모르면 어떻게 하나요?',
@@ -42,111 +57,322 @@ export default function SajuInfoPage() {
         {
             q: '입력한 생년월일 정보가 서버에 저장되나요?',
             a: '아닙니다. 입력하신 모든 정보는 이용자의 브라우저 내에서 1회성으로 연산된 후 즉시 소멸되며, 데이터베이스에 저장되지 않아 안심하고 이용하실 수 있습니다.'
+        },
+        {
+            q: '사주에서 나오는 재물운과 직업운은 어떻게 활용하나요?',
+            a: '타고난 사주 원국의 식상(표현·창의), 재성(결과·자산), 관성(조직·명예), 인성(지혜·학습) 구조를 토대로 본인에게 잘 맞는 비즈니스 스타일과 투자 성향을 점검해보는 객관적인 지표로 활용하실 수 있습니다.'
         }
     ];
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': faqItems.map(item => ({
+            '@type': 'Question',
+            'name': item.q,
+            'acceptedAnswer': {
+                '@type': 'Answer',
+                'text': item.a
+            }
+        }))
+    };
+
     return (
-        <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
+        <div className="flex flex-col min-h-screen bg-[#FAF9F6] text-stone-800 font-sans antialiased">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <EntertainmentSubMenu />
 
-            <main className="flex-1 max-w-4xl mx-auto px-4 py-8 w-full space-y-8">
-                {/* 1. 히어로 섹션 */}
-                <section className="bg-gradient-to-br from-violet-900 via-indigo-900 to-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-xl relative overflow-hidden">
-                    <div className="relative z-10 max-w-xl space-y-4">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-xs font-bold text-violet-200">
-                            <i className="fas fa-yin-yang"></i> 정통 명리학 기반 무료 만세력
-                        </span>
-                        <h1 className="text-2xl sm:text-3xl font-black leading-tight">
-                            생년월일로 푸는 나의 본질,<br />
-                            베라 정통 사주팔자 & 궁합
+            <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-12 w-full space-y-16">
+                
+                {/* 1. 단아한 한국형 히어로 소개 섹션 */}
+                <section className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-14 shadow-sm relative overflow-hidden">
+                    <div className="max-w-2xl relative z-10 space-y-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-100 text-stone-600 text-xs font-semibold tracking-wide">
+                            <span className="w-1.5 h-1.5 rounded-full bg-stone-500"></span>
+                            정통 만세력 & 사주명리
+                        </div>
+
+                        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 leading-tight tracking-tight">
+                            나를 온전히 마주하는 시간,<br />
+                            <span className="text-stone-700">생년월일에 담긴 오행의 지혜</span>
                         </h1>
-                        <p className="text-violet-100 text-xs sm:text-sm leading-relaxed">
-                            사주 8글자와 오행(목·화·토·금·수)의 조화를 통해 타고난 기질과 관계의 지혜를 발견하세요.
+
+                        <p className="text-stone-600 text-sm sm:text-base leading-relaxed font-normal">
+                            사주팔자는 정해진 운명을 단정 짓는 것이 아니라, 내가 타고난 기질과 에너지의 지도를 읽는 지혜입니다. 
+                            24절기 천문역법을 기반으로 사주 8글자의 조화와 나에게 필요한 오행(木·火·土·金·水)의 기운을 차분히 짚어드립니다.
                         </p>
-                        <div className="pt-2 flex flex-wrap gap-3">
+
+                        <div className="pt-2 flex flex-wrap items-center gap-3.5">
                             <button
                                 onClick={handleStartSaju}
-                                className="px-6 py-3.5 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 text-white font-black text-sm rounded-2xl shadow-lg transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                                className="px-8 py-4 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-sm sm:text-base font-semibold shadow-sm hover:shadow transition-all duration-200 flex items-center gap-2.5 active:scale-[0.99] cursor-pointer"
                             >
-                                <i className="fas fa-sparkles"></i>
-                                <span>지금 바로 사주 분석 시작</span>
+                                <span>만세력 및 사주 풀이 시작하기</span>
+                                <i className="fas fa-arrow-right text-xs text-stone-400"></i>
                             </button>
+                            
+                            <button
+                                onClick={handleNudgeClick}
+                                className="px-6 py-4 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-800 text-sm font-semibold border border-purple-200/80 transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                                <i className="fas fa-bell text-purple-600"></i>
+                                <span>매일 아침 운세 알림 받기</span>
+                            </button>
+
+                            <button
+                                onClick={handleShare}
+                                className="px-5 py-4 rounded-xl bg-stone-100 hover:bg-stone-200/70 text-stone-700 text-sm font-medium transition-colors cursor-pointer"
+                            >
+                                <i className="fas fa-share-nodes mr-1.5 text-stone-500"></i>
+                                공유하기
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 우측 MZ 앱도사 프리뷰 카드 */}
+                    <div className="hidden lg:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col items-center p-6 bg-slate-50/90 border border-indigo-100 rounded-3xl shadow-sm text-center max-w-[260px]">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 via-sky-500 to-amber-400 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-500/20 mb-3 border-2 border-white">
+                            <i className="fas fa-yin-yang"></i>
+                        </div>
+                        <span className="text-[10px] font-black tracking-wider text-indigo-600 uppercase bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 mb-1">
+                            VERANEX APP-DOSA
+                        </span>
+                        <h4 className="text-sm font-black text-slate-900 mb-1">베라 앱도사의 사이다 요약</h4>
+                        <p className="text-[11px] text-slate-500 leading-relaxed mb-3">
+                            8글자 3D 카드 플립과 오늘의 명쾌한 한 줄 사이다 풀이
+                        </p>
+                        <button
+                            onClick={handleStartSaju}
+                            className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+                        >
+                            앱도사 만나러 가기
+                        </button>
+                    </div>
+                </section>
+
+                {/* 2. 네 가지 깊이 있는 풀이 영역 (정갈한 그리드) */}
+                <section className="space-y-6">
+                    <div className="border-b border-stone-200 pb-4 flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+                        <div>
+                            <span className="text-xs font-semibold text-stone-500 tracking-wider uppercase">Analysis Pillars</span>
+                            <h2 className="text-2xl font-serif font-bold text-stone-900 mt-1">베라 사주가 전하는 네 가지 풀이</h2>
+                        </div>
+                        <p className="text-xs text-stone-500">객관적이고 실용적인 명리학 데이터를 통해 일상을 조망합니다.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        {/* 1. 만세력과 오행 */}
+                        <div className="bg-white p-7 rounded-2xl border border-stone-200/80 shadow-sm space-y-3.5 hover:border-stone-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md">사주 원국</span>
+                                <span className="text-xs text-stone-400 font-serif">四柱八字</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-stone-900">정통 만세력과 5대 오행 균형</h3>
+                            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+                                년·월·일·시의 8글자 천간지지와 십신, 지장간을 고유의 색상 카드로 단정하게 펼쳐 보여드립니다. 5각 오행 레이더 차트를 통해 나에게 넘치거나 부족한 기운(용신)을 한눈에 점검할 수 있습니다.
+                            </p>
+                        </div>
+
+                        {/* 2. 직업과 자산 */}
+                        <div className="bg-white p-7 rounded-2xl border border-stone-200/80 shadow-sm space-y-3.5 hover:border-stone-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-2.5 py-1 rounded-md">진로 및 재물</span>
+                                <span className="text-xs text-stone-400 font-serif">事業·財運</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-stone-900">비즈니스 기질과 투자 성향</h3>
+                            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+                                창의적이고 자율적인 사업가형 기질인지, 안정적인 리더십의 전문직형 기질인지 명리 지표로 짚어봅니다. 내 오행에 어울리는 산업 분야와 금융 포털(<Link href="/finance" className="text-stone-800 underline font-medium hover:text-stone-950">/finance</Link>) 연계 지표를 확인하실 수 있습니다.
+                            </p>
+                        </div>
+
+                        {/* 3. 인연과 궁합 */}
+                        <div className="bg-white p-7 rounded-2xl border border-stone-200/80 shadow-sm space-y-3.5 hover:border-stone-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-rose-800 bg-rose-50 px-2.5 py-1 rounded-md">인연과 화합</span>
+                                <span className="text-xs text-stone-400 font-serif">宮合·相生</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-stone-900">2인 정밀 사주 궁합과 매력 신살</h3>
+                            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+                                상대방과의 사주 오행 상호 보완도(%)와 일간의 화합을 분석하여 정갈한 관계 조언을 드립니다. 내가 가진 도화살, 홍염살, 화개살 등 매력 신살의 긍정적 발현법도 함께 살펴봅니다.
+                            </p>
+                        </div>
+
+                        {/* 4. 오늘의 흐름 */}
+                        <div className="bg-white p-7 rounded-2xl border border-stone-200/80 shadow-sm space-y-3.5 hover:border-stone-300 transition-colors">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold text-sky-800 bg-sky-50 px-2.5 py-1 rounded-md">일상의 지혜</span>
+                                <span className="text-xs text-stone-400 font-serif">時辰·運勢</span>
+                            </div>
+                            <h3 className="text-lg font-bold text-stone-900">12시진 시간대별 흐름과 생활 조언</h3>
+                            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+                                하루를 12시진(자시~해시)으로 나누어 에너지가 최고조에 달하는 집중 시간대를 알려드립니다. 오늘의 행운 색상, 방향, 메뉴 추천과 마음을 다잡는 조언을 매일 새롭게 확인해 보세요.
+                            </p>
                         </div>
                     </div>
                 </section>
 
-                {/* 2. 사주 원리 탭 */}
-                <section className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-                    <div className="flex gap-2 border-b border-slate-100 pb-3">
+                {/* 🌟 소프트 락인 (Soft Lock-In) 넛지 배너 카드 */}
+                <section className="bg-gradient-to-br from-purple-900 via-indigo-900 to-slate-900 text-white rounded-3xl p-8 sm:p-10 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="space-y-3 text-center md:text-left">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-purple-200 border border-white/10">
+                                <i className="fas fa-sparkles text-amber-300"></i> 회원 전용 스마트 락인 혜택
+                            </span>
+                            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+                                내 사주 정보 저장하고 매일 아침 맞춤 운세 받기
+                            </h2>
+                            <p className="text-purple-200/80 text-xs sm:text-sm max-w-xl leading-relaxed">
+                                번거롭게 매번 생년월일을 입력하지 마세요. 사주 정보를 안전하게 보관하고, 매일 아침 오늘의 행운 컬러와 조언을 마이페이지에서 한눈에 확인하세요.
+                            </p>
+                        </div>
                         <button
-                            onClick={() => setActiveTab('pillars')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'pillars' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600'}`}
+                            onClick={handleNudgeClick}
+                            className="px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-purple-500/25 transition-all text-sm shrink-0 flex items-center gap-2 cursor-pointer active:scale-95"
                         >
-                            사주 4기둥의 의미
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('elements')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'elements' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                        >
-                            음양오행의 균형
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('faq')}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === 'faq' ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600'}`}
-                        >
-                            자주 묻는 질문
+                            <i className="fas fa-bookmark"></i>
+                            <span>{user ? '마이페이지 사주 관리 가기' : '1초 만에 사주 정보 저장하기'}</span>
                         </button>
                     </div>
+                </section>
 
+                {/* 3. 명리학 이야기 & 기초 상식 (에디토리얼 탭) */}
+                <section className="bg-white rounded-3xl border border-stone-200/80 p-8 sm:p-10 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-5">
+                        <div>
+                            <h2 className="text-xl font-serif font-bold text-stone-900">명리학으로 읽는 삶의 원리</h2>
+                            <p className="text-xs text-stone-500 mt-0.5">사주를 이해하는 데 유용한 기초 지식과 자주 묻는 질문들입니다.</p>
+                        </div>
+
+                        <div className="inline-flex p-1 bg-stone-100 rounded-xl gap-1 self-start sm:self-auto">
+                            <button
+                                onClick={() => setActiveTab('pillars')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'pillars' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                            >
+                                사주 4대 기둥
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('elements')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'elements' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                            >
+                                오행의 특성
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('faq')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${activeTab === 'faq' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'}`}
+                            >
+                                자주 묻는 질문
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* 탭 내용 1: 사주 4대 기둥 */}
                     {activeTab === 'pillars' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600">
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h3 className="font-bold text-slate-900 text-sm mb-1">년주(年柱) — 뿌리와 조상운</h3>
-                                <p>내가 태어난 해의 기운으로, 가문의 내력, 유년기 환경, 사회적인 대외 이미지를 나타냅니다.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+                            <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/60 space-y-1.5">
+                                <span className="font-bold text-stone-800 text-sm block">년주 (年柱) · 근(根)</span>
+                                <span className="text-stone-400 text-[11px] block">0세 ~ 19세 (초년운)</span>
+                                <p className="text-stone-600 leading-relaxed pt-1">
+                                    가문의 내력과 성장기의 토대를 의미하며, 타고난 기질의 뿌리를 상징합니다.
+                                </p>
                             </div>
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h3 className="font-bold text-slate-900 text-sm mb-1">월주(月柱) — 줄기와 사회운</h3>
-                                <p>내가 태어난 달의 기운으로, 부모·형제운과 청년기 환경, 직업적성 및 사회적 활동성을 좌우합니다.</p>
+                            <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/60 space-y-1.5">
+                                <span className="font-bold text-stone-800 text-sm block">월주 (月柱) · 묘(苗)</span>
+                                <span className="text-stone-400 text-[11px] block">20세 ~ 39세 (청년운)</span>
+                                <p className="text-stone-600 leading-relaxed pt-1">
+                                    부모 형제와의 관계 및 사회적 활동, 직업적 재능과 커리어의 핵심을 나타냅니다.
+                                </p>
                             </div>
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h3 className="font-bold text-slate-900 text-sm mb-1">일주(日柱) — 꽃과 나 자신</h3>
-                                <p>내가 태어난 날의 기운으로, 사주에서 가장 중요하며 본인의 핵심 성향과 배우자궁을 상징합니다.</p>
+                            <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/70 space-y-1.5">
+                                <span className="font-bold text-amber-900 text-sm block">일주 (日柱) · 화(花) ⭐</span>
+                                <span className="text-amber-700/80 text-[11px] block">40세 ~ 59세 (중년운)</span>
+                                <p className="text-amber-900 leading-relaxed pt-1">
+                                    나 자신의 본질적인 자아와 배우자운을 뜻하며, 사주 해석의 가장 중요한 기준이 됩니다.
+                                </p>
                             </div>
-                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <h3 className="font-bold text-slate-900 text-sm mb-1">시주(時柱) — 열매와 미래운</h3>
-                                <p>내가 태어난 시간의 기운으로, 자녀운, 말년의 삶과 내면의 깊은 심리 상태를 나타냅니다.</p>
+                            <div className="p-4 rounded-xl bg-stone-50 border border-stone-200/60 space-y-1.5">
+                                <span className="font-bold text-stone-800 text-sm block">시주 (時柱) · 실(實)</span>
+                                <span className="text-stone-400 text-[11px] block">60세 이후 (말년운)</span>
+                                <p className="text-stone-600 leading-relaxed pt-1">
+                                    자녀와의 인연, 내면의 깊은 이상, 그리고 인생 후반부의 결실과 평온을 상징합니다.
+                                </p>
                             </div>
                         </div>
                     )}
 
+                    {/* 탭 내용 2: 오행의 특성 */}
                     {activeTab === 'elements' && (
-                        <div className="space-y-3 text-xs text-slate-600">
-                            <p className="leading-relaxed">
-                                사주명리학에서 오행(木, 火, 土, 金, 水)은 우주 만물의 순환 원리입니다. 어느 한 기운이 과도하거나 부족하지 않도록 상생(相生)과 상극(相剋)의 조화를 이루는 것이 운명 개선(개운)의 핵심입니다.
-                            </p>
-                            <div className="grid grid-cols-5 gap-2 text-center pt-2">
-                                <div className="p-3 bg-emerald-50 rounded-xl text-emerald-800 font-bold">木 (나무)</div>
-                                <div className="p-3 bg-rose-50 rounded-xl text-rose-800 font-bold">火 (불)</div>
-                                <div className="p-3 bg-amber-50 rounded-xl text-amber-800 font-bold">土 (흙)</div>
-                                <div className="p-3 bg-slate-100 rounded-xl text-slate-800 font-bold">金 (쇠)</div>
-                                <div className="p-3 bg-sky-50 rounded-xl text-sky-800 font-bold">水 (물)</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-xs">
+                            <div className="p-4 rounded-xl bg-[#F4F8F5] border border-emerald-200 space-y-1.5">
+                                <span className="font-bold text-emerald-900 text-sm block">木 (목 · 푸른 나무)</span>
+                                <p className="text-emerald-800 leading-relaxed">
+                                    성장과 추진력, 인자함을 상징합니다. 시작하는 힘이 강하며 기획과 교육 분야에 어울립니다.
+                                </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-[#FDF5F5] border border-rose-200 space-y-1.5">
+                                <span className="font-bold text-rose-900 text-sm block">火 (화 · 붉은 불꽃)</span>
+                                <p className="text-rose-800 leading-relaxed">
+                                    열정과 확산, 예의와 표현력을 뜻합니다. 밝고 활달하며 IT, 미디어, 예술 분야에 유리합니다.
+                                </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-[#FAF6EE] border border-amber-200 space-y-1.5">
+                                <span className="font-bold text-amber-900 text-sm block">土 (토 · 기름진 흙)</span>
+                                <p className="text-amber-800 leading-relaxed">
+                                    신용과 포용력, 중심을 잡는 힘입니다. 다른 오행을 조율하며 부동산, 플랫폼, 중개에 능합니다.
+                                </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-[#F6F8FA] border border-slate-300 space-y-1.5">
+                                <span className="font-bold text-slate-800 text-sm block">金 (금 · 단단한 쇠)</span>
+                                <p className="text-slate-700 leading-relaxed">
+                                    결단력과 절제, 의리를 나타냅니다. 맺고 끊음이 분명하며 금융, 법률, 정밀 기술에 강합니다.
+                                </p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-[#F3F7FC] border border-sky-200 space-y-1.5">
+                                <span className="font-bold text-sky-900 text-sm block">水 (수 · 깊은 물)</span>
+                                <p className="text-sky-800 leading-relaxed">
+                                    지혜와 유연함, 통찰력을 의미합니다. 환경에 맞추어 흐르며 유통, 데이터, 무역에 적합합니다.
+                                </p>
                             </div>
                         </div>
                     )}
 
+                    {/* 탭 내용 3: FAQ */}
                     {activeTab === 'faq' && (
-                        <div className="space-y-4">
+                        <div className="space-y-3.5 text-xs">
                             {faqItems.map((item, idx) => (
-                                <div key={idx} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                    <h4 className="font-bold text-slate-900 text-xs sm:text-sm mb-1">Q. {item.q}</h4>
-                                    <p className="text-xs text-slate-600 leading-relaxed">A. {item.a}</p>
+                                <div key={idx} className="p-4 rounded-xl bg-stone-50 border border-stone-200/70 space-y-1">
+                                    <strong className="text-stone-900 text-sm font-semibold block">Q. {item.q}</strong>
+                                    <p className="text-stone-600 leading-relaxed pt-0.5">{item.a}</p>
                                 </div>
                             ))}
                         </div>
                     )}
                 </section>
+
+                {/* 4. 하단 정갈한 배너 */}
+                <section className="bg-stone-900 text-white rounded-3xl p-8 sm:p-10 text-center space-y-4">
+                    <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-100">
+                        나의 사주팔자와 오행 균형을 확인해보세요
+                    </h2>
+                    <p className="text-stone-400 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
+                        개인정보 저장 없이 무료로 이용하실 수 있습니다. 지금 바로 만세력 원국과 운세 리포트를 열어보세요.
+                    </p>
+                    <div className="pt-2">
+                        <button
+                            onClick={handleStartSaju}
+                            className="px-8 py-3.5 bg-white text-stone-900 hover:bg-stone-100 font-semibold text-sm rounded-xl shadow-sm transition-all cursor-pointer"
+                        >
+                            사주 분석 창 열기
+                        </button>
+                    </div>
+                </section>
+
             </main>
 
+            {/* 소프트 락인 모달 */}
             <SoftLockModal
                 isOpen={showSoftLock}
                 onClose={() => setShowSoftLock(false)}

@@ -113,12 +113,7 @@ export default function EntertainmentPage() {
                             {/* 슬롯 2: 웹소설 연재관 */}
                             <button
                                 onClick={() => {
-                                    if (!user) {
-                                        alert('웹소설 연재관은 로그인 후 이용하실 수 있습니다. 로그인 페이지로 이동합니다.');
-                                        router.push('/login?redirect=/entertainment');
-                                    } else {
-                                        router.push('/entertainment/novel');
-                                    }
+                                    router.push('/entertainment/novel');
                                 }}
                                 className="group relative h-48 rounded-2xl overflow-hidden text-left bg-gradient-to-br from-indigo-900 to-slate-800 text-white shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
                             >
