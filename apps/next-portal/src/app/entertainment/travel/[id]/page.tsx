@@ -1,0 +1,739 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import axios from 'axios';
+import EntertainmentSubMenu from '@/components/entertainment/EntertainmentSubMenu';
+
+const API_BASE_URL = '';
+
+interface TravelArticle {
+    id: number;
+    title: string;
+    destination: string;
+    region: string;
+    category: string;
+    summary: string | null;
+    ai_summary: string | null;
+    content: string;
+    travel_tips: string | null;
+    thumbnail: string | null;
+    gallery: string | null;
+    best_season: string | null;
+    duration: string | null;
+    estimated_cost: string | null;
+    location_address: string | null;
+    tags: string | null;
+    author: string | null;
+    source: string | null;
+    source_url: string | null;
+    view_count: number;
+    like_count: number;
+    published_at: string;
+    metadata?: any;
+}
+
+export default function TravelDetailPage() {
+    const params = useParams();
+    const id = params?.id as string;
+    const [article, setArticle] = useState<TravelArticle | null>(null);
+    const [related, setRelated] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(0);
+    const [copied, setCopied] = useState(false);
+
+    useEffect(() => {
+        if (id) {
+            fetchArticleDetail(id);
+        }
+    }, [id]);
+
+    const fetchArticleDetail = async (articleId: string) => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`${API_BASE_URL}/api/travel/${articleId}`);
+            if (res.data?.success && res.data.article) {
+                const data: TravelArticle = res.data.article;
+                setArticle(data);
+                setLikeCount(data.like_count || 0);
+                setRelated(res.data.related || []);
+            }
+        } catch (error) {
+            console.error('[Fetch Travel Detail Error]', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleLike = async () => {
+        if (!article || liked) return;
+        try {
+            setLiked(true);
+            setLikeCount(prev => prev + 1);
+            await axios.post(`${API_BASE_URL}/api/travel/${article.id}/like`);
+        } catch (error) {
+            console.error('[Like Error]', error);
+        }
+    };
+
+    const handleShare = () => {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        }
+    };
+
+    const getThreeKeyPoints = (): string[] => {
+        if (article?.ai_summary) {
+            const lines = article.ai_summary
+                .split('\n')
+                .map(line => line.replace(/^[•\-\*0-9\.\s]+/, '').trim())
+                .filter(line => line.length > 0);
+            if (lines.length > 0) return lines.slice(0, 3);
+        }
+        if (article?.summary) {
+            return [article.summary];
+        }
+        return [article?.title || ''];
+    };
+
+    const getFactSheetData = () => {
+        if (!article) return null;
+        if (article.metadata) {
+            const meta = typeof article.metadata === 'string' 
+                ? (() => { try { return JSON.parse(article.metadata); } catch { return null; } })()
+                : article.metadata;
+            if (meta && typeof meta === 'object') return meta;
+        }
+
+        if (article.content) {
+            const telMatch = article.content.match(/•\s*(?:문의\s*전화|문의|전화번호)\s*:\s*([^\n]+)/);
+            const hoursMatch = article.content.match(/•\s*(?:운영\s*시간|영업\s*시간)\s*:\s*([^\n]+)/);
+            const closingMatch = article.content.match(/•\s*(?:쉬는\s*날|정기\s*휴무|휴무)\s*:\s*([^\n]+)/);
+            const parkingMatch = article.content.match(/•\s*주차\s*(?:시설)?\s*:\s*([^\n]+)/);
+            const feeMatch = article.content.match(/•\s*(?:이용\s*요금|입장료)\s*:\s*([^\n]+)/);
+            const webMatch = article.content.match(/•\s*공식\s*채널\s*:\s*(https?:\/\/[^\s\n]+)/);
+
+            if (telMatch || hoursMatch || parkingMatch) {
+                return {
+                    title: article.destination || article.title,
+                    tel: telMatch ? telMatch[1].trim() : null,
+                    roadAddress: article.location_address,
+                    businessHours: hoursMatch ? hoursMatch[1].trim() : null,
+                    closingDays: closingMatch ? closingMatch[1].trim() : null,
+                    parking: parkingMatch ? parkingMatch[1].trim() : null,
+                    admissionFee: feeMatch ? feeMatch[1].trim() : null,
+                    websiteUrl: webMatch ? webMatch[1].trim() : null,
+                };
+            }
+        }
+        return null;
+    };
+
+    const formatParagraphs = (rawContent: string): string[] => {
+        if (!rawContent) return [];
+        let formatted = rawContent
+            .replace(/<br\s*[\/]?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n\n');
+
+        formatted = formatted.replace(/(\d+\.\s*(?:🔗|👉)?\s*\[)/g, '\n\n$1');
+        formatted = formatted.replace(/(\[후기\s*\d+\])/g, '\n\n$1');
+        formatted = formatted.replace(/(###\s*)/g, '\n\n$1');
+
+        return formatted
+            .split(/\n{2,}|\r\n\r\n/)
+            .map(p => p.trim())
+            .filter(p => p.length > 0);
+    };
+
+    const renderRichParagraph = (para: string, idx: number) => {
+        if (para.includes('실제 여행자 생생 방문 후기') || para.includes('추천 블로그 (BEST 10)')) {
+            const cleanHeader = para.replace(/^#+\s*/, '').replace(/방문\s*전.*/, '').trim();
+            return (
+                <div key={idx} className="mt-8 mb-4 p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200">
+                    <h4 className="text-base font-black text-teal-950 flex items-center gap-2">
+                        <span className="text-xl">📝</span>
+                        <span>{cleanHeader || '실제 여행자 생생 방문 후기 & 추천 블로그 (BEST 10)'}</span>
+                    </h4>
+                    <p className="text-xs text-teal-800 mt-1">
+                        방문 전 실제 여행자들의 생생한 내돈내산 후기와 현장 분위기를 확인해 보세요.
+                    </p>
+                </div>
+            );
+        }
+
+        const blogRegex = new RegExp('^(?:(\\d+)\\.\\s*(?:🔗|👉)?\\s*|\\[후기\\s*(\\d+)\\]\\s*)(?:\\[([^\\]]+)\\]\\((https?:\\/\\/[^\\)]+)\\)|([^\\n]+)(?:\\n\\s*(?:👉|링크|URL)?\\s*(https?:\\/\\/[^\\s\\n]+))?)', 'i');
+        const blogMatch = para.match(blogRegex);
+
+        if (blogMatch) {
+            const reviewNum = blogMatch[1] || blogMatch[2] || String(idx + 1);
+            const title = (blogMatch[3] || blogMatch[5] || '').trim().replace(/^🔗\s*/, '');
+            const url = (blogMatch[4] || blogMatch[6] || '').trim();
+
+            return (
+                <div key={idx} className="my-2.5 p-3.5 sm:p-4 rounded-2xl bg-slate-50 hover:bg-teal-50/60 border border-slate-200/90 hover:border-teal-300 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        <span className="px-2 py-0.5 rounded-lg bg-teal-600 text-white text-[11px] font-black shrink-0 mt-0.5">
+                            후기 {reviewNum}
+                        </span>
+                        {url ? (
+                            <a
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-bold text-slate-800 hover:text-teal-700 hover:underline leading-snug break-words transition-colors"
+                            >
+                                {title}
+                            </a>
+                        ) : (
+                            <span className="text-sm font-bold text-slate-800 leading-snug break-words">
+                                {title}
+                            </span>
+                        )}
+                    </div>
+                    {url && (
+                        <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-black shrink-0 transition-colors shadow-xs"
+                        >
+                            <span>블로그 보기</span>
+                            <i className="fas fa-external-link-alt text-[10px]"></i>
+                        </a>
+                    )}
+                </div>
+            );
+        }
+
+        const linkRegex = new RegExp('\\[(.*?)\\]\\((https?:\\/\\/[^\\)]+)\\)|(https?:\\/\\/[^\\s\\)]+)', 'g');
+        const parts: any[] = [];
+        let lastIndex = 0;
+        let match: RegExpExecArray | null;
+
+        while ((match = linkRegex.exec(para)) !== null) {
+            if (match.index > lastIndex) {
+                parts.push(para.substring(lastIndex, match.index));
+            }
+            if (match[1] && match[2]) {
+                parts.push(
+                    <a
+                        key={'l-' + idx + '-' + match.index}
+                        href={match[2]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-800 font-bold hover:underline inline-flex items-center gap-0.5"
+                    >
+                        <span>{match[1]}</span>
+                        <i className="fas fa-external-link-alt text-[9px] ml-0.5"></i>
+                    </a>
+                );
+            } else if (match[3]) {
+                parts.push(
+                    <a
+                        key={'u-' + idx + '-' + match.index}
+                        href={match[3]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-600 hover:text-teal-800 font-bold hover:underline break-all"
+                    >
+                        {match[3]}
+                    </a>
+                );
+            }
+            lastIndex = linkRegex.lastIndex;
+        }
+
+        if (lastIndex < para.length) {
+            parts.push(para.substring(lastIndex));
+        }
+
+        return (
+            <p key={idx} className="text-sm sm:text-base text-slate-700 leading-loose whitespace-pre-line">
+                {parts.length > 0 ? parts : para}
+            </p>
+        );
+    };
+
+    const getGalleryImages = (): string[] => {
+        if (!article?.gallery) return [];
+        try {
+            const parsed = JSON.parse(article.gallery);
+            if (Array.isArray(parsed)) return parsed.filter(url => typeof url === 'string');
+        } catch {
+            return article.gallery.split(',').map(s => s.trim()).filter(Boolean);
+        }
+        return [];
+    };
+
+    const getRegionName = (reg: string) => {
+        switch (reg) {
+            case 'domestic': return '국내 여행';
+            case 'asia': return '일본·아시아';
+            case 'europe': return '유럽 낭만';
+            case 'americas': return '미주·대양주';
+            default: return '해외 여행';
+        }
+    };
+
+    const getCategoryName = (cat: string) => {
+        switch (cat) {
+            case 'healing': return '🌿 힐링·휴양';
+            case 'food': return '🍜 미식·맛집';
+            case 'culture': return '🏛️ 문화·역사';
+            case 'nature': return '🌊 자연·액티비티';
+            case 'city': return '🏙️ 도시·쇼핑';
+            case 'camping': return '⛺ 캠핑·차박';
+            default: return '✈️ 테마 여행';
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
+                <EntertainmentSubMenu />
+                <div className="max-w-6xl mx-auto px-4 py-16 flex flex-col items-center justify-center space-y-4">
+                    <div className="w-12 h-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin"></div>
+                    <p className="text-xs font-bold text-slate-500">여행기를 불러오는 중입니다...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!article) {
+        return (
+            <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
+                <EntertainmentSubMenu />
+                <div className="max-w-md mx-auto px-4 py-20 text-center space-y-4">
+                    <div className="text-4xl">🏝️</div>
+                    <h2 className="text-lg font-black text-slate-800">여행기를 찾을 수 없습니다</h2>
+                    <p className="text-xs text-slate-500">존재하지 않거나 비공개 처리된 여행기입니다.</p>
+                    <Link
+                        href="/entertainment/travel"
+                        className="inline-block px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-all shadow-xs"
+                    >
+                        여행 목록으로 돌아가기
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    const keyPoints = getThreeKeyPoints();
+    const paragraphs = formatParagraphs(article.content);
+    const galleryImages = getGalleryImages();
+    const factData = getFactSheetData();
+
+    return (
+        <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-800">
+            <EntertainmentSubMenu />
+
+            <main className="flex-1 max-w-6xl mx-auto px-4 py-6 sm:py-8 w-full space-y-6">
+                {/* 1. 상단 네비게이션 브레드크럼 */}
+                <nav className="flex items-center gap-1.5 text-xs font-bold text-slate-400">
+                    <Link href="/" className="hover:text-slate-600">홈</Link>
+                    <i className="fas fa-chevron-right text-[9px]"></i>
+                    <Link href="/entertainment" className="hover:text-slate-600">재미</Link>
+                    <i className="fas fa-chevron-right text-[9px]"></i>
+                    <Link href="/entertainment/travel" className="hover:text-emerald-600">여행</Link>
+                    <i className="fas fa-chevron-right text-[9px]"></i>
+                    <span className="text-slate-600 font-extrabold truncate max-w-[180px]">{article.destination}</span>
+                </nav>
+
+                {/* 2. 대형 대표 커버 비주얼 */}
+                <div className="relative aspect-[16/9] sm:aspect-[21/9] rounded-3xl overflow-hidden shadow-md">
+                    <img
+                        src={article.thumbnail || 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80'}
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent"></div>
+                    
+                    <div className="absolute bottom-4 sm:bottom-6 left-4 sm:left-6 right-4 sm:right-6 text-white space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-black shadow-xs">
+                                📍 {article.destination}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-black border border-white/30">
+                                {getRegionName(article.region)}
+                            </span>
+                            <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[11px] font-black border border-white/30">
+                                {getCategoryName(article.category)}
+                            </span>
+                        </div>
+                        <h1 className="text-xl sm:text-3xl font-black leading-tight drop-shadow-md">
+                            {article.title}
+                        </h1>
+                    </div>
+                </div>
+
+                {/* 3. 여행 메타 정보 바 */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex flex-wrap items-center justify-between gap-4 text-xs">
+                    <div className="flex flex-wrap items-center gap-4 text-slate-600 font-bold">
+                        {article.duration && (
+                            <div className="flex items-center gap-1.5">
+                                <i className="fas fa-clock text-emerald-600"></i>
+                                <span>추천 일정: <strong className="text-slate-900">{article.duration}</strong></span>
+                            </div>
+                        )}
+                        {article.best_season && (
+                            <div className="flex items-center gap-1.5">
+                                <i className="fas fa-calendar-check text-emerald-600"></i>
+                                <span>베스트 시즌: <strong className="text-slate-900">{article.best_season}</strong></span>
+                            </div>
+                        )}
+                        {article.estimated_cost && (
+                            <div className="flex items-center gap-1.5">
+                                <i className="fas fa-coins text-emerald-600"></i>
+                                <span>예상 예산: <strong className="text-slate-900">{article.estimated_cost}</strong></span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-3 text-slate-400 text-[11px]">
+                        <span>에디터: <strong className="text-slate-600">{article.author || 'RoofAI 큐레이터'}</strong></span>
+                        <span>·</span>
+                        <span>조회수: {article.view_count.toLocaleString()}</span>
+                    </div>
+                </div>
+
+                {/* 4. AI 추천 핵심 포인트 3가지 */}
+                {keyPoints.length > 0 && (
+                    <section className="bg-gradient-to-br from-emerald-50 via-teal-50/50 to-white rounded-3xl p-5 sm:p-7 border border-emerald-200/90 shadow-xs space-y-3.5">
+                        <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                <i className="fas fa-sparkles"></i>
+                            </div>
+                            <h2 className="text-sm sm:text-base font-black text-emerald-950">
+                                AI가 짚어주는 이 여행지의 3대 매력 포인트
+                            </h2>
+                        </div>
+                        <div className="space-y-2 pt-1">
+                            {keyPoints.map((point, index) => (
+                                <div key={index} className="flex items-start gap-2.5 bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-emerald-100 shadow-2xs">
+                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white text-[11px] font-black shrink-0 mt-0.5">
+                                        {index + 1}
+                                    </span>
+                                    <p className="text-xs sm:text-sm font-semibold text-slate-800 leading-relaxed">
+                                        {point}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* 5. 추가 갤러리 이미지 */}
+                {galleryImages.length > 0 && (
+                    <section className="space-y-3">
+                        <h3 className="text-xs font-black text-slate-700 flex items-center gap-1.5">
+                            <i className="fas fa-camera text-emerald-600"></i>
+                            <span>현장 갤러리</span>
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {galleryImages.map((imgUrl, idx) => (
+                                <div key={idx} className="rounded-2xl overflow-hidden aspect-[4/3] shadow-xs">
+                                    <img
+                                        src={imgUrl}
+                                        alt={`여행 사진 ${idx + 1}`}
+                                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
+                {/* 🏛️ 여행지 표준 운영 명세서 (Fact Sheet Table) */}
+                {factData && (
+                    <section className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <span className="text-emerald-600 text-sm">
+                                <i className="fas fa-award"></i>
+                            </span>
+                            <h3 className="text-sm font-black text-slate-900">
+                                🏛️ 여행지 표준 운영 명세서 (Fact Sheet)
+                            </h3>
+                            <span className="text-[11px] text-slate-400 font-medium">한국관광공사 실측 기준</span>
+                        </div>
+
+                        <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-xs">
+                            <table className="w-full text-xs text-left border-collapse">
+                                <tbody>
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600 w-28 sm:w-36">
+                                            정식 명칭
+                                        </th>
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                            {factData.title || article.title}
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-phone text-emerald-600"></i>
+                                                <span>전화번호 / 안내</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                            {factData.tel ? (
+                                                <a
+                                                    href={`tel:${factData.tel}`}
+                                                    className="text-emerald-600 hover:underline font-mono inline-flex items-center gap-1"
+                                                >
+                                                    <span>{factData.tel}</span>
+                                                    <span className="text-[10px] text-slate-400 font-normal">(통화 연결)</span>
+                                                </a>
+                                            ) : (
+                                                <span className="text-slate-400">안내센터 등록 정보 없음</span>
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-map-marker-alt text-emerald-600"></i>
+                                                <span>주소 정보</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4 text-slate-800">
+                                            <div className="font-bold">
+                                                {factData.roadAddress || article.location_address}
+                                            </div>
+                                            {factData.jibunAddress && (
+                                                <div className="text-[11px] text-slate-400 mt-0.5">
+                                                    지번: {factData.jibunAddress}
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-clock text-emerald-600"></i>
+                                                <span>영업 / 이용시간</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                            {factData.businessHours || '현장 및 유선 문의 권장'}
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-calendar-alt text-emerald-600"></i>
+                                                <span>쉬는 날 (휴무)</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4">
+                                            <span
+                                                className={`font-black px-2 py-0.5 rounded text-[11px] ${
+                                                    factData.closingDays?.includes('연중무휴') || !factData.closingDays
+                                                        ? 'bg-emerald-100 text-emerald-800'
+                                                        : 'bg-rose-100 text-rose-800'
+                                                }`}
+                                            >
+                                                {factData.closingDays || '연중무휴'}
+                                            </span>
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-car text-emerald-600"></i>
+                                                <span>주차 시설 / 요금</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4 text-slate-800">
+                                            <span className="font-bold">
+                                                {factData.parking || '주차 가능 여부 현장 확인'}
+                                            </span>
+                                            {factData.parkingFee && (
+                                                <span className="text-slate-500 ml-2">
+                                                    (요금: {factData.parkingFee})
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+
+                                    <tr className="border-b border-slate-100">
+                                        <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                            <div className="flex items-center gap-1.5">
+                                                <i className="fas fa-ticket-alt text-emerald-600"></i>
+                                                <span>입장료 / 요금</span>
+                                            </div>
+                                        </th>
+                                        <td className="py-3 px-4 font-bold text-slate-900">
+                                            {factData.admissionFee || '무료 또는 시설 내 이용료 별도'}
+                                        </td>
+                                    </tr>
+
+                                    {factData.coordinates && (factData.coordinates.lat || factData.coordinates.lng) && (
+                                        <tr className="border-b border-slate-100">
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-compass text-emerald-600"></i>
+                                                    <span>지도 좌표</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4 text-slate-600 font-mono text-[11px]">
+                                                위도(Lat): {factData.coordinates.lat?.toFixed(6) || '-'}, 경도(Lng): {factData.coordinates.lng?.toFixed(6) || '-'}
+                                            </td>
+                                        </tr>
+                                    )}
+
+                                    {factData.websiteUrl && (
+                                        <tr>
+                                            <th className="py-3 px-4 bg-slate-50/80 font-black text-slate-600">
+                                                <div className="flex items-center gap-1.5">
+                                                    <i className="fas fa-globe text-emerald-600"></i>
+                                                    <span>공식 채널</span>
+                                                </div>
+                                            </th>
+                                            <td className="py-3 px-4">
+                                                <a
+                                                    href={factData.websiteUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-emerald-600 hover:underline font-bold inline-flex items-center gap-1.5 break-all"
+                                                >
+                                                    <span>{factData.websiteUrl}</span>
+                                                    <i className="fas fa-external-link-alt text-[10px]"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {factData.overview && (
+                            <div className="p-4 bg-slate-50/80 rounded-2xl border border-slate-200/70 text-xs text-slate-600 leading-relaxed space-y-1">
+                                <div className="font-bold text-slate-700 flex items-center gap-1.5">
+                                    <i className="fas fa-info-circle text-slate-400"></i>
+                                    <span>한국관광공사 공식 상세 개요</span>
+                                </div>
+                                <p className="text-slate-600 whitespace-pre-line pl-5">
+                                    {factData.overview}
+                                </p>
+                            </div>
+                        )}
+                    </section>
+                )}
+
+                {/* 6. 상세 여행 스토리 본문 */}
+                <article className="bg-white rounded-3xl p-6 sm:p-9 border border-slate-200/90 shadow-xs space-y-5">
+                    <div className="prose prose-slate max-w-none">
+                        {paragraphs.map((para, idx) => renderRichParagraph(para, idx))}
+                    </div>
+
+                    {article.source && (
+                        <div className="pt-4 border-t border-slate-100 text-xs text-slate-400">
+                            출처: {article.source} {article.source_url && (
+                                <a href={article.source_url} target="_blank" rel="noopener noreferrer" className="text-emerald-600 hover:underline ml-1">
+                                    [원문 바로가기]
+                                </a>
+                            )}
+                        </div>
+                    )}
+                </article>
+
+                {/* 7. 💡 여행 꿀팁 & 주의사항 */}
+                {article.travel_tips && (
+                    <section className="bg-amber-50/70 rounded-3xl p-5 sm:p-7 border border-amber-200/80 shadow-xs space-y-2.5">
+                        <div className="flex items-center gap-2 text-amber-900 font-black text-sm">
+                            <i className="fas fa-lightbulb text-amber-600 text-base"></i>
+                            <span>여행 꿀팁 & 실전 방문 가이드</span>
+                        </div>
+                        <div className="text-xs sm:text-sm text-amber-950/80 leading-relaxed whitespace-pre-line pl-1">
+                            {article.travel_tips}
+                        </div>
+                    </section>
+                )}
+
+                {/* 8. 상세 위치 안내 */}
+                {article.location_address && (
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-xs flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-slate-700">
+                            <i className="fas fa-location-dot text-rose-500 text-sm"></i>
+                            <span>위치 안내: <strong className="text-slate-900">{article.location_address}</strong></span>
+                        </div>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(article.location_address || '');
+                                alert('주소가 클립보드에 복사되었습니다.');
+                            }}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all cursor-pointer shrink-0"
+                        >
+                            주소 복사
+                        </button>
+                    </div>
+                )}
+
+                {/* 9. 좋아요 & 공유 액션 독 */}
+                <div className="flex items-center justify-center gap-3 py-4">
+                    <button
+                        onClick={handleLike}
+                        disabled={liked}
+                        className={`px-6 py-3 rounded-2xl font-black text-xs transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95 ${
+                            liked
+                                ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600'
+                        }`}
+                    >
+                        <i className={`fas fa-heart ${liked ? 'text-rose-500' : 'text-slate-400'}`}></i>
+                        <span>추천해요 {likeCount}</span>
+                    </button>
+
+                    <button
+                        onClick={handleShare}
+                        className="px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 hover:border-emerald-300 hover:text-emerald-600 font-black text-xs transition-all flex items-center gap-2 shadow-xs cursor-pointer active:scale-95"
+                    >
+                        <i className="fas fa-share-nodes text-slate-400"></i>
+                        <span>{copied ? '링크 복사됨! ✨' : '여행기 공유하기'}</span>
+                    </button>
+                </div>
+
+                {/* 10. 관련 추천 여행지 (3선) */}
+                {related.length > 0 && (
+                    <section className="space-y-4 pt-4">
+                        <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                            <i className="fas fa-compass text-emerald-600"></i>
+                            <span>함께 둘러보기 좋은 {getRegionName(article.region)} 명소</span>
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            {related.map(item => (
+                                <Link
+                                    key={item.id}
+                                    href={`/entertainment/travel/${item.id}`}
+                                    className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-xs hover:border-emerald-300 hover:shadow-sm transition-all group"
+                                >
+                                    <div className="aspect-[16/10] overflow-hidden">
+                                        <img
+                                            src={item.thumbnail || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80'}
+                                            alt={item.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        />
+                                    </div>
+                                    <div className="p-3.5 space-y-1">
+                                        <span className="text-[10px] font-bold text-emerald-600">📍 {item.destination}</span>
+                                        <h4 className="text-xs font-bold text-slate-800 line-clamp-2 leading-snug group-hover:text-emerald-600">
+                                            {item.title}
+                                        </h4>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                )}
+            </main>
+        </div>
+    );
+}

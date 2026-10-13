@@ -52,6 +52,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: '/travel',
+        destination: '/entertainment/travel',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
