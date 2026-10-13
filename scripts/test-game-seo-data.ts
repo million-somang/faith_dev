@@ -4,7 +4,7 @@ import {
     getAllGameSeoItems,
     GameSeoItem,
     GameSeoKey,
-} from '../apps/main-portal/src/data/gamesSeoData';
+} from '../apps/next-portal/src/data/gamesSeoData';
 
 const EXPECTED_KEYS: GameSeoKey[] = [
     'janggi',

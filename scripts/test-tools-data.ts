@@ -1,4 +1,4 @@
-import { TOOLS_DATA, getToolBySlug, ToolDetailItem } from '../apps/main-portal/src/data/toolsData';
+import { TOOLS_DATA, getToolBySlug, ToolDetailItem } from '../apps/next-portal/src/data/toolsData';
 
 const EXPECTED_SLUGS = [
     'severance-calc',

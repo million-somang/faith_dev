@@ -361,10 +361,10 @@ function validateRobotsTxt(filePath: string) {
 console.log('=== Starting sitemap.xml & robots.txt validation ===');
 
 const projectRoot = path.resolve(__dirname, '..');
-const publicSitemap = path.join(projectRoot, 'apps/main-portal/public/sitemap.xml');
-const distSitemap = path.join(projectRoot, 'apps/main-portal/dist/sitemap.xml');
-const publicRobots = path.join(projectRoot, 'apps/main-portal/public/robots.txt');
-const distRobots = path.join(projectRoot, 'apps/main-portal/dist/robots.txt');
+const publicSitemap = path.join(projectRoot, 'apps/next-portal/public/sitemap.xml');
+const distSitemap = path.join(projectRoot, 'apps/next-portal/public/sitemap.xml');
+const publicRobots = path.join(projectRoot, 'apps/next-portal/public/robots.txt');
+const distRobots = path.join(projectRoot, 'apps/next-portal/public/robots.txt');
 
 // Test sitemaps
 validateSitemap(publicSitemap);

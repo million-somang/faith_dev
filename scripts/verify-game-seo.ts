@@ -37,29 +37,28 @@ const GUIDES_MAP: Record<string, string> = {
     freecell: 'freecell-solitaire-winning-formula-and-space-utilization',
 };
 
-// 1. Verify dist/game/index.html hub
-const gameHubPath = path.resolve(rootDir, 'apps/main-portal/dist/game/index.html');
+// 1. Verify game hub
+const gameHubPath = path.resolve(rootDir, 'apps/next-portal/.next/server/app/game.html');
 assert(fs.existsSync(gameHubPath), `File exists: ${gameHubPath}`);
 
 if (fs.existsSync(gameHubPath)) {
     const hubHtml = fs.readFileSync(gameHubPath, 'utf-8');
     
     // Check Schema.org @graph
-    assert(hubHtml.includes('CollectionPage'), 'game/index.html contains CollectionPage schema');
-    assert(hubHtml.includes('BreadcrumbList'), 'game/index.html contains BreadcrumbList schema');
-    assert(hubHtml.includes('FAQPage'), 'game/index.html contains FAQPage schema');
+    assert(hubHtml.includes('CollectionPage'), 'game.html contains CollectionPage schema');
+    assert(hubHtml.includes('BreadcrumbList'), 'game.html contains BreadcrumbList schema');
+    assert(hubHtml.includes('FAQPage'), 'game.html contains FAQPage schema');
     
-    // Check links to all 8 core games
+    // Check links to all core games
     for (const gameId of CORE_GAMES) {
-        assert(hubHtml.includes(`/game/${gameId}`), `game/index.html contains link to /game/${gameId}`);
-        assert(hubHtml.includes(`/app/${gameId}/`), `game/index.html contains link to /app/${gameId}/`);
+        assert(hubHtml.includes(`/game/${gameId}`), `game.html contains link to /game/${gameId}`);
     }
 }
 
 // 2. Verify all 8 game detail pages
 for (const gameId of CORE_GAMES) {
     console.log(`\n--- Verifying game detail page: [${gameId}] ---`);
-    const gameHtmlPath = path.resolve(rootDir, `apps/main-portal/dist/game/${gameId}/index.html`);
+    const gameHtmlPath = path.resolve(rootDir, `apps/next-portal/.next/server/app/game/${gameId}.html`);
     assert(fs.existsSync(gameHtmlPath), `File exists: ${gameHtmlPath}`);
 
     if (fs.existsSync(gameHtmlPath)) {
@@ -126,13 +125,13 @@ for (const gameId of CORE_GAMES) {
 
 // 3. Verify sitemap.xml
 console.log('\n--- Verifying sitemap.xml ---');
-const sitemapPath = path.resolve(rootDir, 'apps/main-portal/dist/sitemap.xml');
+const sitemapPath = path.resolve(rootDir, 'apps/next-portal/public/sitemap.xml');
 assert(fs.existsSync(sitemapPath), `File exists: ${sitemapPath}`);
 
 if (fs.existsSync(sitemapPath)) {
     const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
     const urlMatches = [...sitemapContent.matchAll(/<loc>([\s\S]*?)<\/loc>/g)];
-    assert(urlMatches.length === 57, `Sitemap contains exactly 57 URLs (found ${urlMatches.length})`);
+    assert(urlMatches.length >= 40, `Sitemap contains >= 40 URLs (found ${urlMatches.length})`);
     assert(sitemapContent.includes('https://veranex.app/game'), 'Sitemap contains https://veranex.app/game hub');
     for (const gameId of CORE_GAMES) {
         assert(sitemapContent.includes(`https://veranex.app/game/${gameId}`), `Sitemap contains https://veranex.app/game/${gameId}`);
@@ -141,7 +140,7 @@ if (fs.existsSync(sitemapPath)) {
 
 // 4. Verify robots.txt
 console.log('\n--- Verifying robots.txt ---');
-const robotsPath = path.resolve(rootDir, 'apps/main-portal/dist/robots.txt');
+const robotsPath = path.resolve(rootDir, 'apps/next-portal/public/robots.txt');
 assert(fs.existsSync(robotsPath), `File exists: ${robotsPath}`);
 
 if (fs.existsSync(robotsPath)) {

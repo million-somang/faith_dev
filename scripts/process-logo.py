@@ -18,7 +18,7 @@ square_img.paste(img, (offset_x, offset_y), img)
 # Destinations
 destinations = [
     # Main portal public
-    os.path.join(base_dir, 'apps', 'main-portal', 'public'),
+    os.path.join(base_dir, 'apps', 'next-portal', 'public'),
     # Root public
     os.path.join(base_dir, 'public'),
     # Mini apps public

@@ -202,9 +202,9 @@ onlineGames.forEach(gameName => {
 
 // Finance Util SSG 라우트 (/finance/util)
 app.get('/finance/util', (c) => {
-    const utilFilePath = path.resolve('./apps/main-portal/dist/finance/util/index.html');
-    if (fs.existsSync(utilFilePath)) {
-        return c.html(fs.readFileSync(utilFilePath, 'utf-8'));
+    const nextUtilFile = path.resolve('./apps/next-portal/.next/server/app/finance/util.html');
+    if (fs.existsSync(nextUtilFile)) {
+        return c.html(fs.readFileSync(nextUtilFile, 'utf-8'));
     }
     const financeDist = path.resolve('./apps/finance/dist/index.html');
     if (fs.existsSync(financeDist)) {
@@ -256,11 +256,7 @@ app.use('/_next/static/*', serveStatic({
 // VERA 생활도구 개별 SSG 정적 페이지 서빙 (/tools/:slug)
 app.get('/tools/:slug', (c) => {
     const slug = c.req.param('slug');
-    const portalFilePath = path.resolve(`./apps/main-portal/dist/tools/${slug}/index.html`);
     const nextFilePath = path.resolve(`./apps/next-portal/.next/server/app/tools/${slug}.html`);
-    if (fs.existsSync(portalFilePath)) {
-        return c.html(fs.readFileSync(portalFilePath, 'utf-8'));
-    }
     if (fs.existsSync(nextFilePath)) {
         return c.html(fs.readFileSync(nextFilePath, 'utf-8'));
     }
@@ -275,12 +271,9 @@ const SITE_URL = process.env.SITE_URL || 'https://veranex.app';
 // robots.txt (네이버 Yeti 및 구글 애드센스 심사 봇 크롤링 지원)
 app.get('/robots.txt', (c) => {
     try {
-        const distRobots = path.resolve('./apps/main-portal/dist/robots.txt');
-        const publicRobots = path.resolve('./apps/main-portal/public/robots.txt');
-        if (fs.existsSync(distRobots)) {
-            return c.text(fs.readFileSync(distRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
-        } else if (fs.existsSync(publicRobots)) {
-            return c.text(fs.readFileSync(publicRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
+        const nextRobots = path.resolve('./apps/next-portal/public/robots.txt');
+        if (fs.existsSync(nextRobots)) {
+            return c.text(fs.readFileSync(nextRobots, 'utf-8'), 200, { 'Content-Type': 'text/plain; charset=utf-8' });
         }
     } catch (e) {
         console.error('Error reading robots.txt:', e);
@@ -374,13 +367,10 @@ ${itemsXml}
 // sitemap.xml (17대 지식 칼럼 정적 사이트맵 + 최신 뉴스 실시간 동적 결합)
 app.get('/sitemap.xml', async (c) => {
     let baseXml = '';
-    const distSitemapPath = path.resolve('./apps/main-portal/dist/sitemap.xml');
-    const publicSitemapPath = path.resolve('./apps/main-portal/public/sitemap.xml');
+    const nextSitemapPath = path.resolve('./apps/next-portal/public/sitemap.xml');
 
-    if (fs.existsSync(distSitemapPath)) {
-        baseXml = fs.readFileSync(distSitemapPath, 'utf-8');
-    } else if (fs.existsSync(publicSitemapPath)) {
-        baseXml = fs.readFileSync(publicSitemapPath, 'utf-8');
+    if (fs.existsSync(nextSitemapPath)) {
+        baseXml = fs.readFileSync(nextSitemapPath, 'utf-8');
     }
 
     // 파일이 존재하면 고품질 정적 sitemap.xml 그대로 서빙 (구글 애드센스 정책 준수를 위해 외부 수집 뉴스는 사이트맵에 절대 포함하지 않음)
@@ -424,8 +414,13 @@ app.get('/news/:id', async (c) => {
     if (newsId === 'api' || newsId === 'rss') return c.notFound();
 
     try {
-        const indexPath = path.resolve('./apps/main-portal/dist/index.html');
-        let html = fs.readFileSync(indexPath, 'utf-8');
+        const indexPath = path.resolve('./apps/next-portal/.next/server/app/index.html');
+        let html = '';
+        if (fs.existsSync(indexPath)) {
+            html = fs.readFileSync(indexPath, 'utf-8');
+        } else {
+            return c.redirect(`/news`, 302);
+        }
 
         // DB에서 뉴스 데이터 가져오기
         const newsResult = await pool.query(
@@ -565,8 +560,13 @@ function buildMetaBlock(opts: { title: string; description: string; path: string
 
 // 정적 index.html의 기본(홈) 메타를 라우트별 메타로 치환하여 중복을 방지한다.
 function renderSpaWithMeta(metaBlock: string): string {
-    const indexPath = path.resolve('./apps/main-portal/dist/index.html');
-    let html = fs.readFileSync(indexPath, 'utf-8');
+    const nextIndexPath = path.resolve('./apps/next-portal/.next/server/app/index.html');
+    let html = '';
+    if (fs.existsSync(nextIndexPath)) {
+        html = fs.readFileSync(nextIndexPath, 'utf-8');
+    } else {
+        return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">${metaBlock}</head><body><div id="__next"></div></body></html>`;
+    }
     html = html
         .replace(/\s*<title>[\s\S]*?<\/title>/, '')
         .replace(/\s*<meta name="description"[^>]*>/, '')
@@ -736,7 +736,7 @@ const GAME_META: Record<string, { title: string; description: string }> = {
     freecell: { title: '클래식 프리셀 무료 온라인 게임 - VERA', description: '클래식 프리셀 카드 솔리테어를 무료로. 99.9% 이상 클리어 가능한 퍼즐 수싸움에 도전하세요.' },
 };
 
-// 정적 사전 렌더링 HTML(prerender.js 결과물: /guides, /guides/:slug, /privacy, /about 등) 우선 직접 서빙
+// Next.js 정적 사전 렌더링 HTML 우선 직접 서빙
 app.use('*', async (c, next) => {
     const reqPath = c.req.path;
     if (reqPath.startsWith('/api') || reqPath.includes('.')) {
@@ -744,9 +744,9 @@ app.use('*', async (c, next) => {
     }
     const cleanPath = reqPath.replace(/\/$/, '');
     if (cleanPath) {
-        const prerenderFile = path.resolve(`./apps/main-portal/dist${cleanPath}/index.html`);
-        if (fs.existsSync(prerenderFile)) {
-            return c.html(fs.readFileSync(prerenderFile, 'utf-8'));
+        const nextPrerenderFile = path.resolve(`./apps/next-portal/.next/server/app${cleanPath}.html`);
+        if (fs.existsSync(nextPrerenderFile)) {
+            return c.html(fs.readFileSync(nextPrerenderFile, 'utf-8'));
         }
     }
     return next();
@@ -755,18 +755,20 @@ app.use('*', async (c, next) => {
 for (const [routePath, meta] of Object.entries(ROUTE_META)) {
     const handler = (c: any) => {
         try {
-            // 1. 해당 경로의 정적 사전 렌더링 파일(prerender.js 결과물)이 존재하는지 확인 (예: dist/privacy/index.html)
             if (routePath !== '/') {
-                const staticFilePath = path.resolve(`./apps/main-portal/dist${routePath}/index.html`);
+                const staticFilePath = path.resolve(`./apps/next-portal/.next/server/app${routePath}.html`);
                 if (fs.existsSync(staticFilePath)) {
                     return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
                 }
             }
-            // 2. 루트(/)이거나 전용 정적 파일이 없는 경우 동적 메타 주입 후 서빙
             return c.html(renderSpaWithMeta(buildMetaBlock({ ...meta, path: routePath })));
         } catch (e) {
             console.error('[SEO] meta injection error:', routePath, e);
-            return c.html(fs.readFileSync(path.resolve('./apps/main-portal/dist/index.html'), 'utf-8'));
+            const fallbackPath = path.resolve('./apps/next-portal/.next/server/app/index.html');
+            if (fs.existsSync(fallbackPath)) {
+                return c.html(fs.readFileSync(fallbackPath, 'utf-8'));
+            }
+            return c.text('Not Found', 404);
         }
     };
 
@@ -778,38 +780,26 @@ for (const [routePath, meta] of Object.entries(ROUTE_META)) {
 
 app.get('/game/:id', (c) => {
     const id = c.req.param('id');
-    const staticFile = path.resolve(`./apps/main-portal/dist/game/${id}/index.html`);
-    if (fs.existsSync(staticFile)) {
-        return c.html(fs.readFileSync(staticFile, 'utf-8'));
-    }
     const nextGameFile = path.resolve(`./apps/next-portal/.next/server/app/game/${id}.html`);
     if (fs.existsSync(nextGameFile)) {
         return c.html(fs.readFileSync(nextGameFile, 'utf-8'));
     }
-    const portalIndex = path.resolve('./apps/main-portal/dist/index.html');
-    if (fs.existsSync(portalIndex)) {
-        return c.html(fs.readFileSync(portalIndex, 'utf-8'));
-    }
-    return c.text('Not Found', 404);
+    return c.redirect('/game', 302);
 });
 
 app.get('/game/:id/', (c) => {
     const id = c.req.param('id');
-    const staticFile = path.resolve(`./apps/main-portal/dist/game/${id}/index.html`);
-    if (fs.existsSync(staticFile)) {
-        return c.html(fs.readFileSync(staticFile, 'utf-8'));
+    const nextGameFile = path.resolve(`./apps/next-portal/.next/server/app/game/${id}.html`);
+    if (fs.existsSync(nextGameFile)) {
+        return c.html(fs.readFileSync(nextGameFile, 'utf-8'));
     }
-    const portalIndex = path.resolve('./apps/main-portal/dist/index.html');
-    if (fs.existsSync(portalIndex)) {
-        return c.html(fs.readFileSync(portalIndex, 'utf-8'));
-    }
-    return c.text('Not Found', 404);
+    return c.redirect('/game', 302);
 });
 
 // /guides/:slug 아티클 서빙 및 미존재 시 명시적 HTTP 404 반환 (Soft 404 방지)
 app.get('/guides/:slug', (c) => {
     const slug = c.req.param('slug');
-    const staticFilePath = path.resolve(`./apps/main-portal/dist/guides/${slug}/index.html`);
+    const staticFilePath = path.resolve(`./apps/next-portal/.next/server/app/guides/${slug}.html`);
     if (fs.existsSync(staticFilePath)) {
         return c.html(fs.readFileSync(staticFilePath, 'utf-8'));
     }
@@ -833,7 +823,7 @@ app.get('/guides/:slug', (c) => {
 });
 app.get('/guides/:slug/', (c) => c.redirect(`/guides/${c.req.param('slug')}`, 301));
 
-// API 404 JSON 처리 및 SPA 라우트 처리
+// API 404 JSON 처리 및 라우트 처리
 app.notFound((c) => {
     if (c.req.path.startsWith('/api')) {
         return c.json({
@@ -844,21 +834,9 @@ app.notFound((c) => {
             }
         }, 404);
     }
-    return c.text('404 Not Found', 404);
+    // 프론트엔드 포털 루트로 안전하게 리다이렉트
+    return c.redirect('/', 302);
 });
-
-// Serve frontend SPA (Fallback for all non-API routes)
-app.use('*', async (c, next) => {
-    await next();
-    const reqPath = c.req.path;
-    if (reqPath === '/' || reqPath.endsWith('.html') || !reqPath.includes('.')) {
-        c.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-        c.header('Pragma', 'no-cache');
-        c.header('Expires', '0');
-    }
-});
-app.use('/*', serveStatic({ root: './apps/main-portal/dist' }));
-app.get('*', serveStatic({ path: './apps/main-portal/dist/index.html' }));
 
 // Use PORT from env or default to 4200
 const port = parseInt(process.env.PORT || '4200', 10);

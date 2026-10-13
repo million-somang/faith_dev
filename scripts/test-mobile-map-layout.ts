@@ -13,7 +13,7 @@
  * 3. 결과 표 및 통과 여부 출력 (0 failures)
  */
 
-import { PROVINCES, KOREA_MAP_VIEWBOX, type ProvinceMeta } from '../apps/main-portal/src/components/travel/koreaMapData.js';
+import { PROVINCES, KOREA_MAP_VIEWBOX, type ProvinceMeta } from '../apps/next-portal/src/components/travel/koreaMapData.js';
 
 interface BoundingBox {
     x: number;

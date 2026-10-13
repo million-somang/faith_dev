@@ -1,4 +1,4 @@
-import { FINANCE_SEO_DATA, getFinanceSeoItem, FinanceSeoItem } from '../apps/main-portal/src/data/financeSeoData';
+import { FINANCE_SEO_DATA, getFinanceSeoItem, FinanceSeoItem } from '../apps/next-portal/src/data/financeSeoData';
 
 const EXPECTED_KEYS: Array<FinanceSeoItem['key']> = [
     'dividend-tax',
