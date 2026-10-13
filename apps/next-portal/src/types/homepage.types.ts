@@ -83,17 +83,19 @@ export const ALL_QUICK_MENU_ITEMS: QuickMenuItem[] = [
     { id: 'entertainment', label: '엔터', icon: 'fa-film', href: '/entertainment', color: 'text-red-600', bg: 'bg-red-50' },
 ];
 
-// 모바일 하단 탭에 선택 가능한 후보 (전체메뉴 버튼은 항상 마지막에 고정)
+// 모바일 하단 탭 전체 목록 (가로 스크롤 네비게이션)
 export const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
     { id: 'home', label: '홈', icon: 'fas fa-home', path: '/', color: '#2563eb' },
     { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news', color: '#0ea5e9' },
-    { id: 'guides', label: '가이드', icon: 'fas fa-book-open-reader', path: '/guides', color: '#0d9488' },
-    { id: 'lifestyle', label: '도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
-    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
-    { id: 'finance', label: '금융', icon: 'fas fa-chart-line', path: '/finance', color: '#f97316' },
+    { id: 'guides', label: '지식가이드', icon: 'fas fa-book-open-reader', path: '/guides', color: '#0d9488' },
+    { id: 'lifestyle', label: '생활도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
+    { id: 'finance', label: '금융', icon: 'fas fa-won-sign', path: '/finance', color: '#f97316' },
     { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
+    { id: 'entertainment', label: '재미', icon: 'fas fa-masks-theater', path: '/entertainment', color: '#e11d48' },
     { id: 'lounge', label: '라운지', icon: 'fas fa-comments', path: '/lounge', color: '#8b5cf6' },
+    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
     { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
+    { id: 'b2b', label: '제작문의', icon: 'fas fa-magic', path: '/b2b', color: '#059669' },
 ];
 
 // API 응답 타입

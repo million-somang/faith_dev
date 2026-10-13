@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
-const FULL_MENU_ITEMS = [
+export const FULL_MENU_ITEMS = [
   { label: '홈', icon: 'fa-home', bg: 'bg-blue-50', color: 'text-blue-600', path: '/' },
   { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-sky-50', color: 'text-sky-600', path: '/news' },
   { label: '생활도구', icon: 'fa-screwdriver-wrench', bg: 'bg-green-50', color: 'text-green-600', path: '/lifestyle' },
@@ -43,7 +43,7 @@ export const LanguageSwitcher = () => {
   return (
     <button
       onClick={toggleLanguage}
-      className="flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-700 hover:bg-slate-200 transition-all cursor-pointer shadow-sm"
+      className="flex items-center gap-1 text-[10px] sm:text-xs font-black px-2 sm:px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-slate-700 hover:bg-slate-200 transition-all cursor-pointer shadow-xs"
       title={lang === 'ko' ? 'English로 변경' : '한국어로 변경'}
     >
       <span>{lang === 'ko' ? '🇰🇷 KO' : '🇺🇸 EN'}</span>
@@ -53,7 +53,6 @@ export const LanguageSwitcher = () => {
 
 export const PortalNavbar: React.FC = () => {
   const { user, logout } = useAuth();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<'general' | 'lounge'>('general');
   const pathname = usePathname();
 
@@ -68,6 +67,7 @@ export const PortalNavbar: React.FC = () => {
   }, [pathname]);
 
   const handleModeSwitch = (mode: 'general' | 'lounge') => {
+    if (activeMode === mode) return;
     setActiveMode(mode);
     if (typeof window !== 'undefined') {
       localStorage.setItem('vera_portal_mode', mode);
@@ -83,226 +83,132 @@ export const PortalNavbar: React.FC = () => {
   const modeBg = activeMode === 'lounge' ? 'hover:bg-fuchsia-50 hover:text-fuchsia-600' : 'hover:bg-violet-50 hover:text-violet-600';
 
   return (
-    <>
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
-        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14 relative">
-          <div className="flex items-center gap-3 sm:gap-6">
-            {/* 모바일/태블릿 전체메뉴 햄버거 (좌측 상단: md 미만 상시 표출) */}
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="md:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-              aria-label="전체메뉴 열기"
-            >
-              <i className="fas fa-bars text-lg"></i>
-            </button>
-            <Link
-              href="/"
-              className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 md:static md:left-auto md:translate-x-0"
-            >
-              <img
-                src="/logo-192.png"
-                alt="VERA Logo"
-                className="w-8 h-8 rounded-lg object-contain drop-shadow-xs"
-              />
-              <span className="font-black text-xl tracking-wider text-gray-900">
-                V<span className={modeColor}>ERA</span>
-              </span>
-            </Link>
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 flex justify-between items-center h-14">
+        {/* 좌측: 로고 (모바일 좌측 정렬, 햄버거 메뉴 제거) 및 데스크탑 네비게이션 */}
+        <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0"
+            aria-label="VERA 홈으로 이동"
+          >
+            <img
+              src="/logo-192.png"
+              alt="VERA Logo"
+              className="w-8 h-8 rounded-lg object-contain drop-shadow-xs"
+            />
+            <span className="font-black text-xl tracking-wider text-gray-900 select-none">
+              V<span className={modeColor}>ERA</span>
+            </span>
+          </Link>
 
-            {/* 데스크탑/태블릿 모드 스위처 */}
-            <div className="hidden lg:flex items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[10px] font-black text-slate-500 gap-0.5 ml-2 shadow-inner">
-              {activeMode !== 'general' && (
-                <button
-                  onClick={() => handleModeSwitch('general')}
-                  className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
-                >
-                  일반 포털
-                </button>
-              )}
-              {activeMode !== 'lounge' && (
-                <button
-                  onClick={() => handleModeSwitch('lounge')}
-                  className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
-                >
-                  라운지
-                </button>
-              )}
-            </div>
-
-            {/* 모바일 모드 스위처 */}
-            <div className="flex lg:hidden items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[9px] font-extrabold text-slate-500 gap-0.5 ml-1 absolute right-4 md:static">
-              {activeMode !== 'general' && (
-                <button
-                  onClick={() => handleModeSwitch('general')}
-                  className="px-2 py-0.5 rounded-full transition-all"
-                >
-                  포털
-                </button>
-              )}
-              {activeMode !== 'lounge' && (
-                <button
-                  onClick={() => handleModeSwitch('lounge')}
-                  className="px-2 py-0.5 rounded-full transition-all"
-                >
-                  라운지
-                </button>
-              )}
-            </div>
-
-            {activeMode === 'general' && (
-              <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
-                <Link
-                  href="/guides"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}
-                >
-                  지식 가이드
-                </Link>
-                <Link
-                  href="/news"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
-                >
-                  뉴스
-                </Link>
-                <Link
-                  href="/lifestyle"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
-                >
-                  생활도구
-                </Link>
-                <Link
-                  href="/finance"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
-                >
-                  금융
-                </Link>
-                <Link
-                  href="/game"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
-                >
-                  게임
-                </Link>
-                <Link
-                  href="/entertainment"
-                  className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
-                >
-                  재미
-                </Link>
-              </nav>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <LanguageSwitcher />
-            {user ? (
-              <>
-                <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
-                <Link
-                  href="/mypage"
-                  className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}
-                >
-                  마이페이지
-                </Link>
-                <button
-                  onClick={logout}
-                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-                >
-                  로그아웃
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/login"
-                  className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  로그인
-                </Link>
-                <Link
-                  href="/signup"
-                  className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  회원가입
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* 모바일/태블릿 전체메뉴 드로어 (왼쪽 슬라이드: md 미만 상시 가능) */}
-      {menuOpen && (
-        <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="전체메뉴">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)}></div>
-          <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
-              <span className="font-black text-lg text-gray-900">전체메뉴</span>
-              <div className="flex items-center gap-2">
-                <LanguageSwitcher />
-                <button
-                  onClick={() => setMenuOpen(false)}
-                  className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
-                  aria-label="메뉴 닫기"
-                >
-                  <i className="fas fa-times text-lg"></i>
-                </button>
-              </div>
-            </div>
-            <nav className="flex-1 overflow-y-auto p-3">
-              {FULL_MENU_ITEMS.filter((m) => {
-                if (m.path === '/reward' && user?.email !== 'sukman@naver.com') return false;
-                if (activeMode === 'lounge') return false;
-                return m.path !== '/b2b' && m.path !== '/lounge';
-              }).map((m) => {
-                const isMyPageItem = m.path === '/mypage';
-                const itemLabel = isMyPageItem ? (user ? '마이페이지' : '로그인') : m.label;
-                const itemPath = isMyPageItem ? (user ? '/mypage' : '/login') : m.path;
-                const itemIcon = isMyPageItem ? (user ? 'fa-user' : 'fa-sign-in-alt') : m.icon;
-                const itemBg = isMyPageItem ? (user ? 'bg-purple-50' : 'bg-blue-50') : m.bg;
-                const itemColor = isMyPageItem ? (user ? 'text-purple-600' : 'text-blue-600') : m.color;
-
-                return (
-                  <Link
-                    key={m.path}
-                    href={itemPath}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`w-9 h-9 rounded-lg ${itemBg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}
-                      >
-                        <i className={`fas ${itemIcon} ${itemColor}`}></i>
-                      </span>
-                      <span className="font-bold text-gray-800">{itemLabel}</span>
-                    </div>
-                    {m.label === '라운지' && (
-                      <span className="text-[9px] bg-violet-100 text-violet-600 font-extrabold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-0.5">
-                        HOT <i className="fas fa-fire text-[8px] text-violet-500"></i>
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-              {user && (
-                <div className="pt-2 mt-2 border-t border-gray-100">
-                  <button
-                    onClick={() => {
-                      logout();
-                      setMenuOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-red-50 text-red-600 font-bold transition-colors"
-                  >
-                    <span className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                      <i className="fas fa-sign-out-alt text-red-600"></i>
-                    </span>
-                    <span>로그아웃 ({user.name}님)</span>
-                  </button>
-                </div>
-              )}
+          {/* 데스크탑 네비게이션 메뉴 */}
+          {activeMode === 'general' && (
+            <nav className="hidden md:flex items-center gap-1 text-sm font-bold text-gray-600">
+              <Link
+                href="/guides"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}
+              >
+                지식 가이드
+              </Link>
+              <Link
+                href="/news"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
+              >
+                뉴스
+              </Link>
+              <Link
+                href="/lifestyle"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
+              >
+                생활도구
+              </Link>
+              <Link
+                href="/finance"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
+              >
+                금융
+              </Link>
+              <Link
+                href="/game"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
+              >
+                게임
+              </Link>
+              <Link
+                href="/entertainment"
+                className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}
+              >
+                재미
+              </Link>
             </nav>
-          </div>
+          )}
         </div>
-      )}
-    </>
+
+        {/* 우측: 모드 스위처 + 언어 설정 + 인증 (Flex로 나란히 배치하여 겹침 근본 방지) */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+          {/* 포털 / 라운지 스위처 */}
+          <div className="flex items-center p-0.5 bg-slate-100 border border-slate-200/60 rounded-full text-[10px] sm:text-xs font-black text-slate-500 shadow-inner">
+            <button
+              onClick={() => handleModeSwitch('general')}
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all cursor-pointer ${
+                activeMode === 'general'
+                  ? 'bg-white text-blue-600 shadow-xs font-extrabold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              포털
+            </button>
+            <button
+              onClick={() => handleModeSwitch('lounge')}
+              className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all cursor-pointer ${
+                activeMode === 'lounge'
+                  ? 'bg-white text-fuchsia-600 shadow-xs font-extrabold'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              라운지
+            </button>
+          </div>
+
+          {/* 언어 변경 */}
+          <LanguageSwitcher />
+
+          {/* 로그인 / 회원가입 / 마이페이지 / 로그아웃 */}
+          {user ? (
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
+              <Link
+                href="/mypage"
+                className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}
+              >
+                마이페이지
+              </Link>
+              <button
+                onClick={logout}
+                className="text-xs font-bold px-2.5 sm:px-3 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                로그아웃
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Link
+                href="/login"
+                className="text-xs font-bold px-2 sm:px-2.5 py-1 text-gray-600 hover:text-blue-600 transition-colors"
+              >
+                로그인
+              </Link>
+              <Link
+                href="/signup"
+                className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+              >
+                회원가입
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
   );
 };

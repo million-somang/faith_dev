@@ -1,25 +1,52 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { useAuth } from '@/context/AuthContext';
-import { ALL_MOBILE_TAB_ITEMS, DEFAULT_HOMEPAGE_CONFIG, MAX_MOBILE_TABS, MobileTabItem } from '@/types/homepage.types';
+import { ALL_MOBILE_TAB_ITEMS, MobileTabItem } from '@/types/homepage.types';
 
 export function MobileTabBar() {
     const pathname = usePathname();
     const { config } = useUserPreferenceContext();
     const { user } = useAuth();
+    const activeTabRef = useRef<HTMLAnchorElement | null>(null);
 
-    const tabMap = new Map<string, MobileTabItem>(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
-    const selectedTabIds = config.mobileTabs && config.mobileTabs.length > 0
-        ? config.mobileTabs
-        : DEFAULT_HOMEPAGE_CONFIG.mobileTabs;
-    const tabItems: MobileTabItem[] = selectedTabIds
-        .map(id => tabMap.get(id))
-        .filter((t): t is MobileTabItem => !!t && (t.id !== 'reward' || user?.email === 'sukman@naver.com'))
-        .slice(0, MAX_MOBILE_TABS);
+    // 전체 11개 메뉴를 기본으로 하되, 커스텀 설정이 있을 경우 우선 반영
+    const isDefaultOrOldConfig = !config.mobileTabs || config.mobileTabs.length <= 5;
+    const tabItems: MobileTabItem[] = isDefaultOrOldConfig
+        ? ALL_MOBILE_TAB_ITEMS
+        : (() => {
+            const tabMap = new Map(ALL_MOBILE_TAB_ITEMS.map(t => [t.id, t]));
+            const items: MobileTabItem[] = [];
+            const seen = new Set<string>();
+            for (const id of config.mobileTabs) {
+                const item = tabMap.get(id);
+                if (item && !seen.has(id)) {
+                    items.push(item);
+                    seen.add(id);
+                }
+            }
+            for (const item of ALL_MOBILE_TAB_ITEMS) {
+                if (!seen.has(item.id)) {
+                    items.push(item);
+                    seen.add(item.id);
+                }
+            }
+            return items;
+        })();
+
+    // 현재 활성화된 탭이 화면 밖이나 끝에 있을 때 자동으로 화면 중앙으로 스크롤 이동
+    useEffect(() => {
+        if (activeTabRef.current) {
+            activeTabRef.current.scrollIntoView({
+                behavior: 'smooth',
+                inline: 'center',
+                block: 'nearest',
+            });
+        }
+    }, [pathname]);
 
     return (
         <nav className="mobile-tab-bar" role="navigation" aria-label="하단 네비게이션 바">
@@ -28,11 +55,14 @@ export function MobileTabBar() {
                 const label = isMyPageItem && !user ? '로그인' : item.label;
                 const path = isMyPageItem && !user ? '/login' : item.path;
                 const icon = isMyPageItem && !user ? 'fas fa-sign-in-alt' : item.icon;
-                const isActive = pathname === path;
+                const isActive = item.path === '/'
+                    ? pathname === '/'
+                    : pathname === path || pathname.startsWith(path + '/');
 
                 return (
                     <Link
                         key={item.id}
+                        ref={isActive ? activeTabRef : undefined}
                         href={path}
                         className={`mobile-tab-item ${isActive ? 'active' : ''}`}
                         aria-label={`${label} 페이지로 이동`}
