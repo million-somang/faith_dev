@@ -7,7 +7,7 @@ import { WeatherWidget } from '@/components/homepage/WeatherWidget';
 import { StockWidget } from '@/components/homepage/StockWidget';
 import { SidebarGuidesWidget } from '@/components/homepage/SidebarGuidesWidget';
 import { CoreServicesShowcase } from '@/components/homepage/CoreServicesShowcase';
-import { AdSlot } from '@/components/adsense/AdSlot';
+import { BannerSlot } from '@/components/BannerSlot';
 
 export const metadata = {
   title: 'VERA - 세상의 모든 지식과 일상의 인사이트를 잇는 프리미엄 매거진 포털',
@@ -17,27 +17,24 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-6 w-full space-y-8">
+    <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full font-sans">
       {/* 1. VERA Lounge 실시간 핫 토론 띠배너 */}
       <LoungeBanner />
 
       {/* 2. 대형 히어로 섹션 (그라데이션 + 타이틀 + 실시간 통합 검색창) */}
       <HeroSearchSection />
 
-      {/* 상단 Zero-CLS 광고 슬롯 */}
-      <AdSlot format="horizontal" />
-
-      {/* 3. 2-Column Responsive Layout (12열 반응형 그리드) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-        {/* Left Column (8열): 지식 가이드 쇼케이스 (5개 탭) & 실시간 뉴스 */}
+      {/* 3. 2-Column Responsive Layout (12열 반응형 그리드 - Vite 원본 비율 일치) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+        {/* Left Column (8열): 지식 가이드 쇼케이스 (5개 탭) & 쿠팡 배너 & 실시간 뉴스 */}
         <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* 지식 가이드 & 전문 칼럼 쇼케이스 */}
+          {/* 지식 가이드 & 전문 칼럼 쇼케이스 (25편 완비) */}
           <GuidesShowcase />
 
-          {/* 중간 스폰서드 배너 슬롯 */}
-          <AdSlot format="horizontal" />
+          {/* 쿠팡 파트너스 공식 다이내믹 메인 배너 슬롯 */}
+          <BannerSlot slotKey="home_main_top" />
 
-          {/* 실시간 뉴스 & AI 팩트 브리핑 */}
+          {/* 실시간 뉴스 & AI 팩트 브리핑 (Vite 원본 NewsCard 스펙) */}
           <LiveNewsSection />
         </div>
 
@@ -51,14 +48,14 @@ export default function HomePage() {
 
           {/* 주간 추천 칼럼 TOP 4 & 스마트 계산기 도구 위젯 */}
           <SidebarGuidesWidget />
+
+          {/* 사이드바 쿠팡 배너 슬롯 */}
+          <BannerSlot slotKey="home_sidebar" fallbackSlotKey="home_main_top" />
         </div>
       </div>
 
       {/* 4. 포털 3대 핵심 서비스 쇼케이스 (스마트 생활도구, 미니게임존, 사주/엔터테인먼트) */}
       <CoreServicesShowcase />
-
-      {/* 하단 Zero-CLS 광고 슬롯 */}
-      <AdSlot format="rectangle" />
     </main>
   );
 }

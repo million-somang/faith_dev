@@ -1,169 +1,140 @@
-import { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+'use client';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+import React, { useEffect, useState, useRef } from 'react';
 
-export const isAdSenseAllowedRoute = () => {
-    if (typeof window === 'undefined') return false;
-    const p = window.location.pathname;
-    return p.startsWith('/guides') || p.startsWith('/blog');
-};
-
-interface Banner {
-    id: number;
-    title: string;
-    image_url: string;
-    link_url?: string | null;
-    open_new_tab?: number;
-    ad_code?: string | null;
+export interface Banner {
+  id: number;
+  title: string;
+  image_url: string;
+  link_url?: string | null;
+  open_new_tab?: number;
+  ad_code?: string | null;
 }
 
-/**
- * 배너 슬롯 컴포넌트
- * - slotKey에 등록된 활성 배너를 API에서 불러와 표시
- * - 구글 에드센스 스크립트 및 HTML (ad_code) 렌더링 지원
- * - 여러 개면 일정 간격으로 로테이션
- * - 배너가 없으면 영역 자체를 렌더링하지 않음
- */
-export function BannerSlot({ 
-    slotKey, 
-    fallbackSlotKey, 
-    className = '', 
-    rotateMs = 8000,
-    label,
-    wrapperClassName = ''
+// 쿠팡 파트너스 공식 배너 (API 응답 전에도 즉시 표출되어 깜빡임 없는 fallback)
+const DEFAULT_COUPANG_BANNER: Banner = {
+  id: 1,
+  title: '쿠팡 파트너스 배너',
+  image_url:
+    'https://ads-partners.coupang.com/banners/959332?subId=&traceId=V0-301-879dd1202e5c73b2-I959332&w=728&h=90',
+  link_url: 'https://link.coupang.com/a/g0xNo8o8fk',
+  open_new_tab: 1,
+  ad_code: null,
+};
+
+export function BannerSlot({
+  slotKey,
+  fallbackSlotKey,
+  className = '',
+  rotateMs = 8000,
+  label,
+  wrapperClassName = '',
 }: {
-    slotKey: string;
-    fallbackSlotKey?: string;
-    className?: string;
-    rotateMs?: number;
-    label?: string;
-    wrapperClassName?: string;
+  slotKey: string;
+  fallbackSlotKey?: string;
+  className?: string;
+  rotateMs?: number;
+  label?: string;
+  wrapperClassName?: string;
 }) {
-    const [banners, setBanners] = useState<Banner[]>([]);
-    const [idx, setIdx] = useState(0);
-    const adRef = useRef<HTMLDivElement>(null);
+  const [banners, setBanners] = useState<Banner[]>(() => {
+    return slotKey === 'home_main_top' ? [DEFAULT_COUPANG_BANNER] : [];
+  });
+  const [idx, setIdx] = useState(0);
+  const adRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${slotKey}`)
-            .then(res => {
-                if (res.data?.success && res.data.banners && res.data.banners.length > 0) {
-                    setBanners(res.data.banners);
-                } else if (fallbackSlotKey) {
-                    axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${fallbackSlotKey}`)
-                        .then(fallbackRes => {
-                            if (fallbackRes.data?.success) setBanners(fallbackRes.data.banners || []);
-                        })
-                        .catch(() => {});
-                }
+  useEffect(() => {
+    let active = true;
+
+    fetch(`/api/banners/${slotKey}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!active) return;
+        if (data?.success && data.banners && data.banners.length > 0) {
+          setBanners(data.banners);
+        } else if (fallbackSlotKey) {
+          fetch(`/api/banners/${fallbackSlotKey}`)
+            .then((r) => r.json())
+            .then((fb) => {
+              if (active && fb?.success && fb.banners && fb.banners.length > 0) {
+                setBanners(fb.banners);
+              }
             })
-            .catch(e => {
-                console.error(`배너 로드 실패 (${slotKey}):`, e);
-                if (fallbackSlotKey) {
-                    axios.get<{ success: boolean; banners: Banner[] }>(`${API_BASE_URL}/api/banners/${fallbackSlotKey}`)
-                        .then(fallbackRes => {
-                            if (fallbackRes.data?.success) setBanners(fallbackRes.data.banners || []);
-                        })
-                        .catch(() => {});
-                }
-            });
-    }, [slotKey, fallbackSlotKey]);
-
-    useEffect(() => {
-        if (banners.length < 2) return;
-        const timer = setInterval(() => setIdx(i => (i + 1) % banners.length), rotateMs);
-        return () => clearInterval(timer);
-    }, [banners.length, rotateMs]);
-
-    const banner = banners[Math.min(idx, banners.length - 1)];
-
-    useEffect(() => {
-        if (!banner || !banner.ad_code || !isAdSenseAllowedRoute()) return;
-
-        // 1. 구글 에드센스 라이브러리 스크립트가 헤드에 없으면 동적 삽입
-        const scriptId = 'adsense-main-script';
-        if (!document.getElementById(scriptId)) {
-            const script = document.createElement('script');
-            script.id = scriptId;
-            script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js';
-            script.async = true;
-            script.crossOrigin = 'anonymous';
-            
-            // 광고 코드에서 client ID를 파싱해 쿼리 파라미터로 붙임
-            const clientMatch = banner.ad_code.match(/data-ad-client="([^"]+)"/);
-            if (clientMatch && clientMatch[1]) {
-                script.src += `?client=${clientMatch[1]}`;
-            }
-            
-            document.head.appendChild(script);
+            .catch(() => {});
         }
+      })
+      .catch((err) => {
+        console.warn(`[BannerSlot] 배너 로드 실패 (${slotKey}):`, err);
+        if (slotKey === 'home_main_top' && banners.length === 0) {
+          setBanners([DEFAULT_COUPANG_BANNER]);
+        }
+      });
 
-        // 2. DOM 렌더링이 완료된 후 adsbygoogle.push를 안전하게 1회 호출
-        const timer = setTimeout(() => {
-            try {
-                const adsbygoogle = (window as any).adsbygoogle;
-                if (adRef.current && adRef.current.querySelector('.adsbygoogle')) {
-                    (adsbygoogle || []).push({});
-                }
-            } catch (e) {
-                console.error('Adsense push error:', e);
-            }
-        }, 100);
+    return () => {
+      active = false;
+    };
+  }, [slotKey, fallbackSlotKey]);
 
-        return () => clearTimeout(timer);
-    }, [banner]);
+  useEffect(() => {
+    if (banners.length < 2) return;
+    const timer = setInterval(() => setIdx((i) => (i + 1) % banners.length), rotateMs);
+    return () => clearInterval(timer);
+  }, [banners.length, rotateMs]);
 
-    if (banners.length === 0) return null;
+  if (banners.length === 0) return null;
 
-    // AdSense 배너는 고가치 지식 가이드(/guides, /blog) 경로에서만 허용
-    if (banner.ad_code && !isAdSenseAllowedRoute()) {
-        return null;
-    }
+  const banner = banners[Math.min(idx, banners.length - 1)];
 
-    // 배너 본문 (구글 에드센스 또는 이미지 배너)
-    const content = banner.ad_code ? (
-        <div 
-            ref={adRef}
-            className={`w-full flex justify-center overflow-hidden ${className}`}
-            dangerouslySetInnerHTML={{ __html: banner.ad_code }}
+  const content = banner.ad_code ? (
+    <div
+      ref={adRef}
+      className={`w-full flex justify-center overflow-hidden ${className}`}
+      dangerouslySetInnerHTML={{ __html: banner.ad_code }}
+    />
+  ) : (
+    <div className={`w-full flex justify-center ${className}`}>
+      {banner.link_url ? (
+        <a
+          href={banner.link_url}
+          target={banner.open_new_tab ? '_blank' : undefined}
+          rel="noopener noreferrer"
+          referrerPolicy="unsafe-url"
+          className="block hover:shadow-md transition-shadow rounded-2xl overflow-hidden group max-w-full"
+        >
+          <img
+            src={banner.image_url}
+            alt={banner.title}
+            className="max-w-full h-auto rounded-2xl shadow-xs group-hover:opacity-95 transition-opacity"
+          />
+        </a>
+      ) : (
+        <img
+          src={banner.image_url}
+          alt={banner.title}
+          className="max-w-full h-auto rounded-2xl shadow-xs"
         />
-    ) : (
-        <div className={`w-full flex justify-center ${className}`}>
-            {banner.link_url ? (
-                <a
-                    href={banner.link_url}
-                    target={banner.open_new_tab ? '_blank' : undefined}
-                    rel="noopener noreferrer"
-                    referrerPolicy="unsafe-url"
-                    className="block hover:shadow-md transition-shadow rounded-xl overflow-hidden"
-                >
-                    <img
-                        src={banner.image_url}
-                        alt={banner.title}
-                        className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
-                    />
-                </a>
-            ) : (
-                <img
-                    src={banner.image_url}
-                    alt={banner.title}
-                    className="max-w-full rounded-xl shadow-xs hover:opacity-90 transition-opacity"
-                />
-            )}
-        </div>
+      )}
+    </div>
+  );
+
+  if (label) {
+    return (
+      <aside
+        className={
+          wrapperClassName ||
+          'w-full flex flex-col items-center justify-center p-4 overflow-hidden'
+        }
+        aria-label={label}
+      >
+        <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-2 uppercase">
+          {label}
+        </span>
+        {content}
+      </aside>
     );
+  }
 
-    // 라벨이 지정된 경우, 배너가 존재할 때만 래퍼와 라벨을 함께 렌더링
-    if (label) {
-        return (
-            <aside className={wrapperClassName || "w-full flex flex-col items-center justify-center p-4 overflow-hidden"} aria-label={label}>
-                <span className="text-[9px] font-bold text-gray-400 tracking-wider mb-2 uppercase">{label}</span>
-                {content}
-            </aside>
-        );
-    }
-
-    return content;
+  return content;
 }
 
 export default BannerSlot;
