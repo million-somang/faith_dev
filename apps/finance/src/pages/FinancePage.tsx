@@ -355,59 +355,60 @@ export default function FinancePage() {
                         </div>
                     </div>
 
-                    {/* 선택된 국가의 지수 카드 그리드 */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    {/* 선택된 국가의 지수 카드 그리드 (모바일 2열 최적화) */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
                         {loading && filteredIndices.length === 0 ? (
                             Array.from({ length: 4 }).map((_, i) => (
-                                <div key={i} className="p-4 sm:p-5 border border-slate-200/90 bg-white rounded-2xl animate-pulse space-y-3">
+                                <div key={i} className="p-2.5 sm:p-5 border border-slate-200/90 bg-white rounded-xl sm:rounded-2xl animate-pulse space-y-2 sm:space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <div className="h-4 bg-slate-200 rounded w-24"></div>
-                                        <div className="h-4 bg-slate-100 rounded w-12"></div>
+                                        <div className="h-3.5 sm:h-4 bg-slate-200 rounded w-16 sm:w-24"></div>
+                                        <div className="h-3.5 sm:h-4 bg-slate-100 rounded w-8 sm:w-12"></div>
                                     </div>
-                                    <div className="h-7 bg-slate-200 rounded w-32"></div>
-                                    <div className="h-3 bg-slate-100 rounded w-20"></div>
+                                    <div className="h-5 sm:h-7 bg-slate-200 rounded w-20 sm:w-32"></div>
+                                    <div className="h-2.5 sm:h-3 bg-slate-100 rounded w-14 sm:w-20"></div>
                                 </div>
                             ))
                         ) : (
                             filteredIndices.map(index => (
                             <div 
                                 key={index.symbol || index.name} 
-                                className={`p-4 sm:p-5 hover:shadow-md transition-all duration-300 border bg-gradient-to-b from-white to-slate-50/50 rounded-2xl ${
+                                className={`p-2.5 sm:p-5 hover:shadow-md transition-all duration-300 border bg-gradient-to-b from-white to-slate-50/50 rounded-xl sm:rounded-2xl ${
                                     flashHighlight 
                                         ? 'border-emerald-400/90 shadow-sm ring-2 ring-emerald-300/40' 
                                         : 'border-slate-200/90'
                                 } ${loading ? 'animate-pulse' : ''}`}
                             >
-                                <div className="flex items-start justify-between mb-2 gap-2">
+                                <div className="flex items-start justify-between mb-1 sm:mb-2 gap-1 sm:gap-2">
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1.5">
-                                            {index.flag && <span className="text-base shrink-0">{index.flag}</span>}
-                                            <h3 className="text-sm font-bold text-gray-900 truncate" title={index.name}>{index.name}</h3>
+                                        <div className="flex items-center gap-1 sm:gap-1.5">
+                                            {index.flag && <span className="text-xs sm:text-base shrink-0">{index.flag}</span>}
+                                            <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate" title={index.name}>{index.name}</h3>
                                         </div>
                                         {index.description && (
-                                            <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1">{index.description}</p>
+                                            <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1 hidden sm:block">{index.description}</p>
                                         )}
                                     </div>
-                                    <span className={`text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
+                                    <span className={`text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
                                         index.status === 'up' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                                     }`}>
-                                        {index.status === 'up' ? '▲ 상승' : '▼ 하락'}
+                                        {index.status === 'up' ? '▲' : '▼'}
+                                        <span className="hidden sm:inline"> {index.status === 'up' ? '상승' : '하락'}</span>
                                     </span>
                                 </div>
 
-                                <div className="stock-number text-xl sm:text-2xl font-black text-gray-900 my-1 whitespace-nowrap">
+                                <div className="stock-number text-base sm:text-xl lg:text-2xl font-black text-gray-900 my-0.5 sm:my-1 whitespace-nowrap tracking-tight">
                                     {index.value.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     {index.currency && (
-                                        <span className="text-xs font-bold text-gray-400 ml-1">{index.currency}</span>
+                                        <span className="text-[10px] sm:text-xs font-bold text-gray-400 ml-0.5 sm:ml-1">{index.currency}</span>
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                                    <div className="flex items-center gap-1.5 whitespace-nowrap">
+                                <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 text-[11px] sm:text-xs">
+                                    <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap">
                                         <span className={`stock-number font-extrabold ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
                                             {index.status === 'up' ? '+' : ''}{index.change.toLocaleString('ko-KR', { minimumFractionDigits: 2 })}
                                         </span>
-                                        <span className={`stock-number font-bold text-[11px] ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
+                                        <span className={`stock-number font-bold text-[10px] sm:text-[11px] ${index.status === 'up' ? 'text-red-600' : 'text-blue-600'}`}>
                                             ({index.rate > 0 ? '+' : ''}{index.rate.toFixed(2)}%)
                                         </span>
                                     </div>
