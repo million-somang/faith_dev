@@ -84,6 +84,30 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
+        // 이미지 크기 조정 & 일괄 변환기(image-resizer)가 DB에 없으면 자동 시딩
+        const hasImageResizer = apps.results.some((a: any) => a.slug === 'image-resizer');
+        if (!hasImageResizer) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    '이미지 크기 조정 & 일괄 변환기',
+                    'image-resizer',
+                    'fas fa-images',
+                    'SNS 권장 규격 및 픽셀, 비율, 용량(KB) 단위 최대 50장 다중 이미지 일괄 리사이즈 & WebP/JPG/PNG 변환기',
+                    '/app/image-resizer/',
+                    0,
+                    2,
+                    'calc',
+                    'active'
+                ).run();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+            } catch (seedErr) {
+                console.error('Failed to auto-seed image-resizer:', seedErr);
+            }
+        }
+
         // ocr 이름이 긴 경우('브라우저 OCR (이미지 글자 추출기)') 간결화('이미지 글자 추출기') 자동 마이그레이션
         const ocrApp = apps.results.find((a: any) => a.slug === 'ocr' && a.name !== '이미지 글자 추출기');
         if (ocrApp) {

@@ -108,6 +108,17 @@ export const SidebarGuidesWidget: React.FC = () => {
             <span className="text-[10px] text-slate-400">법정 3개월 평균</span>
           </Link>
           <Link
+            href="/tools/image-resizer"
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-100 hover:border-indigo-200 transition-all flex flex-col group"
+          >
+            <i className="fas fa-images text-indigo-600 text-sm mb-1 group-hover:scale-110 transition-transform"></i>
+            <span className="font-bold text-xs text-slate-800 group-hover:text-indigo-600 flex items-center gap-1">
+              이미지 리사이즈
+              <span className="text-[9px] font-black text-rose-500 bg-rose-50 px-1 rounded">HOT</span>
+            </span>
+            <span className="text-[10px] text-slate-400">SNS 규격·일괄 압축</span>
+          </Link>
+          <Link
             href="/tools/webp-converter"
             className="p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-100 hover:border-indigo-200 transition-all flex flex-col group"
           >
@@ -116,6 +127,16 @@ export const SidebarGuidesWidget: React.FC = () => {
               WebP 변환기
             </span>
             <span className="text-[10px] text-slate-400">최대 80% 압축</span>
+          </Link>
+          <Link
+            href="/tools/customs-calc"
+            className="p-2.5 rounded-xl bg-slate-50 hover:bg-teal-50/60 border border-slate-100 hover:border-teal-200 transition-all flex flex-col group"
+          >
+            <i className="fas fa-plane-arrival text-teal-600 text-sm mb-1 group-hover:scale-110 transition-transform"></i>
+            <span className="font-bold text-xs text-slate-800 group-hover:text-teal-600">
+              해외직구 관세
+            </span>
+            <span className="text-[10px] text-slate-400">면세·실시간 환율</span>
           </Link>
           <Link
             href="/tools/dday-calc"

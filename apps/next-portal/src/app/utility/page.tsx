@@ -39,6 +39,19 @@ const GUIDE_CATEGORIES: CategoryInfo[] = [
     { key: 'dev', label: '개발 도구', icon: 'fas fa-code' },
 ];
 
+const ESSENTIAL_APPS: MiniApp[] = [
+    {
+        id: 991,
+        name: '이미지 크기 조정 & 변환',
+        slug: 'image-resizer',
+        icon_url: 'fas fa-images',
+        description: 'SNS 규격 및 픽셀, 비율, 용량(KB) 단위 최대 50장 다중 이미지 일괄 리사이즈 & WebP/JPG/PNG 변환기',
+        app_url: '/app/image-resizer/',
+        require_auth: 0,
+        category: 'calc'
+    }
+];
+
 export default function UtilityPage() {
     const { user } = useAuth();
     const [apps, setApps] = useState<MiniApp[]>([]);
@@ -51,21 +64,40 @@ export default function UtilityPage() {
     const loadFrequentApps = () => {
         axios.get('/api/mini-apps/frequent')
             .then(res => {
-                if (res.data && res.data.success && res.data.apps) {
-                    setFrequentApps(res.data.apps.filter((app: MiniApp) => app.category !== 'game'));
+                if (res.data && res.data.success && Array.isArray(res.data.apps) && res.data.apps.length > 0) {
+                    const filtered = res.data.apps.filter((app: MiniApp) => app.category !== 'game');
+                    // image-resizer가 없으면 추천 목록 앞단에 보장
+                    if (!filtered.some((a: MiniApp) => a.slug === 'image-resizer')) {
+                        filtered.unshift(ESSENTIAL_APPS[0]);
+                    }
+                    setFrequentApps(filtered.slice(0, 5));
+                } else {
+                    setFrequentApps(ESSENTIAL_APPS);
                 }
             })
-            .catch(() => {});
+            .catch(() => {
+                setFrequentApps(ESSENTIAL_APPS);
+            });
     };
 
     useEffect(() => {
         axios.get('/api/mini-apps')
             .then(res => {
-                if (res.data && res.data.success && res.data.apps) {
-                    setApps(res.data.apps.filter((a: any) => a.status === 'active'));
+                let list: MiniApp[] = [];
+                if (res.data && res.data.success && Array.isArray(res.data.apps)) {
+                    list = res.data.apps.filter((a: any) => a.status === 'active');
                 }
+                // 필수 앱(image-resizer)이 API 결과에 없으면 추가
+                ESSENTIAL_APPS.forEach(essential => {
+                    if (!list.some(a => a.slug === essential.slug)) {
+                        list.unshift(essential);
+                    }
+                });
+                setApps(list);
             })
-            .catch(() => {})
+            .catch(() => {
+                setApps(ESSENTIAL_APPS);
+            })
             .finally(() => setLoading(false));
 
         loadFrequentApps();
