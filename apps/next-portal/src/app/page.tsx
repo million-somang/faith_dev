@@ -17,31 +17,50 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full font-sans">
+    <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-4 sm:py-8 w-full font-sans">
       {/* 1. VERA Lounge 실시간 핫 토론 띠배너 */}
       <LoungeBanner />
 
-      {/* 2. 대형 히어로 섹션 (그라데이션 + 타이틀 + 실시간 통합 검색창) */}
-      <HeroSearchSection />
+      {/* 2. 대형 히어로 섹션 (데스크탑 상단 기본 표출) */}
+      <div className="hidden lg:block mb-8">
+        <HeroSearchSection />
+      </div>
 
-      {/* 3. 2-Column Responsive Layout (12열 반응형 그리드 - Vite 원본 비율 일치) */}
+      {/* 3. 2-Column Responsive Layout (모바일: 쿠팡배너/뉴스 최상단 우선 노출, 데스크탑: 12열 2컬럼 레이아웃) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
-        {/* Left Column (8열): 지식 가이드 쇼케이스 (5개 탭) & 쿠팡 배너 & 실시간 뉴스 */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          {/* 지식 가이드 & 전문 칼럼 쇼케이스 (25편 완비) */}
-          <GuidesShowcase />
+        {/* Left Column (8열): 모바일에서는 flex-col 내부 순서로 쿠팡배너 & 뉴스가 최상단으로 올라감 */}
+        <div className="lg:col-span-8 flex flex-col gap-5 sm:gap-6">
+          {/* [모바일 1순위 / PC 2순위] 쿠팡 파트너스 공식 다이내믹 메인 배너 */}
+          <div className="order-1 lg:order-2">
+            <BannerSlot slotKey="home_main_top" />
+          </div>
 
-          {/* 쿠팡 파트너스 공식 다이내믹 메인 배너 슬롯 */}
-          <BannerSlot slotKey="home_main_top" />
+          {/* [모바일 2순위 / PC 3순위] 실시간 뉴스 & AI 팩트 브리핑 (Vite 원본 NewsCard 스펙) */}
+          <div className="order-2 lg:order-3">
+            <LiveNewsSection />
+          </div>
 
-          {/* 실시간 뉴스 & AI 팩트 브리핑 (Vite 원본 NewsCard 스펙) */}
-          <LiveNewsSection />
+          {/* [모바일 3순위 전용] 1/5 크기 초소형 날씨·증시 마이크로 티커 바 */}
+          <div className="order-3 lg:hidden flex flex-row items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
+            <WeatherWidget />
+            <StockWidget />
+          </div>
+
+          {/* [모바일 4순위 전용] 컴팩트 검색창 */}
+          <div className="order-4 lg:hidden">
+            <HeroSearchSection />
+          </div>
+
+          {/* [모바일 5순위 / PC 1순위] 지식 가이드 & 전문 칼럼 쇼케이스 (25편 완비) */}
+          <div className="order-5 lg:order-1">
+            <GuidesShowcase />
+          </div>
         </div>
 
-        {/* Right Column (4열): 날씨 · 증시 · 추천 칼럼 TOP 4 & 스마트 계산기 위젯 */}
-        <div className="lg:col-span-4 flex flex-col gap-4 order-first lg:order-none">
-          {/* 날씨 · 증시: 모바일 컴팩트 가로 칩 / PC 큰 카드 */}
-          <div className="flex flex-row gap-2 overflow-x-auto hide-scrollbar pb-1 sm:flex-col sm:gap-4 sm:overflow-x-visible sm:pb-0">
+        {/* Right Column (4열): 데스크탑 우측 사이드바 위젯 */}
+        <div className="lg:col-span-4 flex flex-col gap-4">
+          {/* 데스크탑 날씨 · 증시 카드 (모바일에서는 위의 마이크로 칩으로 렌더링되므로 데스크탑 카드만 노출) */}
+          <div className="hidden lg:flex flex-col gap-4">
             <WeatherWidget />
             <StockWidget />
           </div>

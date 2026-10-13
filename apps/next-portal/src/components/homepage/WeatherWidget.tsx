@@ -125,30 +125,27 @@ export const WeatherWidget: React.FC = () => {
 
   return (
     <>
-      {/* 모바일 컴팩트 칩 */}
-      <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 flex items-center gap-3 min-w-[150px]">
+      {/* 모바일 1/5 크기 초소형 마이크로 위젯 (초슬림 원라인 칩) */}
+      <div className="lg:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-2xs rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-xs text-gray-800">
         {data && ci ? (
           <>
-            <div className="flex-1 min-w-0">
-              <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
-                {ci.label} {data.temp.toFixed(1)}°
-              </div>
-              <div className="text-xs text-gray-400 truncate">{data.location}</div>
-            </div>
-            <i className={`fas ${ci.icon} text-2xl`}></i>
+            <i className={`fas ${ci.icon} text-xs`}></i>
+            <span className="font-extrabold text-gray-900">{data.temp.toFixed(1)}°</span>
+            <span className="text-[11px] text-gray-600 font-medium">{ci.label}</span>
+            <span className="text-[10px] text-gray-400 truncate max-w-[42px]">({data.location})</span>
           </>
         ) : (
-          <div className="flex items-center gap-2 text-xs text-gray-400 py-1">
+          <span className="text-[11px] text-gray-400 flex items-center gap-1">
             <i className="fas fa-cloud-sun text-blue-400"></i>
-            <span>날씨 로딩 중...</span>
-          </div>
+            날씨 로딩
+          </span>
         )}
       </div>
 
-      {/* PC 카드 */}
-      <div className="hidden sm:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+      {/* PC 카드 (데스크탑: 슬림하고 정돈된 카드) */}
+      <div className="hidden lg:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-5">
+        <div className="flex items-center justify-between mb-3.5">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
             <i className="fas fa-cloud-sun text-blue-400"></i> 날씨
           </h3>
           <span

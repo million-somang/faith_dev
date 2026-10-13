@@ -70,41 +70,37 @@ export const StockWidget: React.FC = () => {
 
   return (
     <>
-      {/* 모바일 컴팩트 칩 (대표 종목 + 환율) */}
-      {loading && !firstStock && !usd && (
-        <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 min-w-[110px] flex items-center gap-2 text-xs text-gray-400">
-          <i className="fas fa-chart-line text-green-500"></i>
-          <span>증시 로딩 중...</span>
+      {/* 모바일 1/5 크기 초소형 마이크로 위젯 (초슬림 원라인 칩) */}
+      {usd && (
+        <div className="lg:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-2xs rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-xs text-gray-800">
+          <span className="text-[10px] font-black text-slate-500">USD</span>
+          <span className="font-extrabold text-gray-900 text-xs">
+            {usd.price.toLocaleString(undefined, {
+              minimumFractionDigits: 1,
+              maximumFractionDigits: 1,
+            })}
+          </span>
+          <span className={`text-[10px] font-bold ${color(usd.status)}`}>
+            <i className={`fas ${arrow(usd.status)}`}></i>
+            {Math.abs(usd.rate).toFixed(1)}%
+          </span>
         </div>
       )}
       {firstStock && (
-        <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 min-w-[130px]">
-          <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
-            {firstStock.price.toLocaleString()}{' '}
-            <span className={`text-xs ${color(firstStock.status)}`}>
-              <i className={`fas ${arrow(firstStock.status)}`}></i>
-              {Math.abs(firstStock.rate).toFixed(2)}%
-            </span>
-          </div>
-          <div className="text-xs text-gray-400 truncate">{firstStock.name}</div>
-        </div>
-      )}
-      {usd && (
-        <div className="sm:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-sm rounded-2xl px-4 py-3 min-w-[110px]">
-          <div className="font-bold text-gray-900 text-sm whitespace-nowrap">
-            {usd.price.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </div>
-          <div className="text-xs text-gray-400">미국USD</div>
+        <div className="lg:hidden flex-shrink-0 bg-white border border-slate-200/90 shadow-2xs rounded-xl px-2.5 py-1 flex items-center gap-1.5 text-xs text-gray-800">
+          <span className="text-[10px] font-bold text-slate-600 truncate max-w-[50px]">{firstStock.name}</span>
+          <span className="font-extrabold text-gray-900 text-xs">{firstStock.price.toLocaleString()}</span>
+          <span className={`text-[10px] font-bold ${color(firstStock.status)}`}>
+            <i className={`fas ${arrow(firstStock.status)}`}></i>
+            {Math.abs(firstStock.rate).toFixed(1)}%
+          </span>
         </div>
       )}
 
-      {/* PC 카드 */}
-      <div className="hidden sm:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+      {/* PC 카드 (데스크탑: 슬림하고 정돈된 카드) */}
+      <div className="hidden lg:block bg-white border border-slate-200/90 shadow-sm rounded-3xl p-5">
+        <div className="flex items-center justify-between mb-3.5">
+          <h3 className="font-bold text-gray-900 flex items-center gap-2 text-sm">
             <i className="fas fa-chart-line text-green-500"></i> 증시
           </h3>
           {updatedAt && <span className="text-xs text-gray-400">{updatedAt}</span>}
