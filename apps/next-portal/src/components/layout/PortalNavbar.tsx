@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 const FULL_MENU_ITEMS = [
   { label: '홈', icon: 'fa-home', bg: 'bg-blue-50', color: 'text-blue-600', path: '/' },
@@ -51,6 +52,7 @@ export const LanguageSwitcher = () => {
 };
 
 export const PortalNavbar: React.FC = () => {
+  const { user, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<'general' | 'lounge'>('general');
   const pathname = usePathname();
@@ -191,18 +193,38 @@ export const PortalNavbar: React.FC = () => {
 
           <div className="flex items-center gap-2 sm:gap-3">
             <LanguageSwitcher />
-            <Link
-              href="/login"
-              className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              로그인
-            </Link>
-            <Link
-              href="/signup"
-              className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
-            >
-              회원가입
-            </Link>
+            {user ? (
+              <>
+                <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}님</span>
+                <Link
+                  href="/mypage"
+                  className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}
+                >
+                  마이페이지
+                </Link>
+                <button
+                  onClick={logout}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors"
+                >
+                  로그인
+                </Link>
+                <Link
+                  href="/signup"
+                  className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                  회원가입
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -227,16 +249,16 @@ export const PortalNavbar: React.FC = () => {
             </div>
             <nav className="flex-1 overflow-y-auto p-3">
               {FULL_MENU_ITEMS.filter((m) => {
-                if (m.path === '/reward') return false;
+                if (m.path === '/reward' && user?.email !== 'sukman@naver.com') return false;
                 if (activeMode === 'lounge') return false;
                 return m.path !== '/b2b' && m.path !== '/lounge';
               }).map((m) => {
                 const isMyPageItem = m.path === '/mypage';
-                const itemLabel = isMyPageItem ? '로그인' : m.label;
-                const itemPath = isMyPageItem ? '/login' : m.path;
-                const itemIcon = isMyPageItem ? 'fa-sign-in-alt' : m.icon;
-                const itemBg = isMyPageItem ? 'bg-blue-50' : m.bg;
-                const itemColor = isMyPageItem ? 'text-blue-600' : m.color;
+                const itemLabel = isMyPageItem ? (user ? '마이페이지' : '로그인') : m.label;
+                const itemPath = isMyPageItem ? (user ? '/mypage' : '/login') : m.path;
+                const itemIcon = isMyPageItem ? (user ? 'fa-user' : 'fa-sign-in-alt') : m.icon;
+                const itemBg = isMyPageItem ? (user ? 'bg-purple-50' : 'bg-blue-50') : m.bg;
+                const itemColor = isMyPageItem ? (user ? 'text-purple-600' : 'text-blue-600') : m.color;
 
                 return (
                   <Link
@@ -261,6 +283,22 @@ export const PortalNavbar: React.FC = () => {
                   </Link>
                 );
               })}
+              {user && (
+                <div className="pt-2 mt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left hover:bg-red-50 text-red-600 font-bold transition-colors"
+                  >
+                    <span className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
+                      <i className="fas fa-sign-out-alt text-red-600"></i>
+                    </span>
+                    <span>로그아웃 ({user.name}님)</span>
+                  </button>
+                </div>
+              )}
             </nav>
           </div>
         </div>

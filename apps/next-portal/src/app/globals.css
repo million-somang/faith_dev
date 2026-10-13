@@ -57,3 +57,132 @@ body {
     box-shadow: 0 2px 12px rgba(37, 99, 235, 0.2);
   }
 }
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ========================================
+   모바일 하단 플로팅 탭 바 (크리스탈 에메랄드/블루)
+   ======================================== */
+.mobile-tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: none;
+  border-top: 1px solid rgba(37, 99, 235, 0.25);
+  box-shadow: 0 -4px 20px rgba(37, 99, 235, 0.08);
+  z-index: 50;
+  display: none; /* 기본 숨김, 모바일 전용 */
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 12px;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  box-sizing: border-box;
+}
+
+/* 모바일 및 태블릿 뷰포트에서 노출 */
+@media (max-width: 1024px) {
+  .mobile-tab-bar {
+    display: flex;
+  }
+  
+  /* 탭 바 활성화 시 아래쪽 컨텐츠가 탭 바에 가려지지 않도록 body 패딩 추가 */
+  body {
+    padding-bottom: 80px !important;
+  }
+}
+
+/* 스마트 하이딩: 미니앱 모달이 열렸을 때 탭 바 숨김 */
+body.miniapp-modal-open .mobile-tab-bar {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobile-tab-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  color: #9ca3af;
+  text-decoration: none;
+  font-size: 0.7rem;
+  font-weight: 500;
+  gap: 4px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab-item i {
+  font-size: 1.25rem;
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* 활성 탭 스타일 (브랜드 블루) */
+.mobile-tab-item.active {
+  color: #2563eb;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(37, 99, 235, 0.2);
+}
+
+.mobile-tab-item.active i {
+  color: #2563eb;
+  transform: scale(1.15) translateY(-2px);
+}
+
+/* 탭 전환 인디케이터 도트 (브랜드 블루) */
+.mobile-tab-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  width: 4px;
+  height: 4px;
+  background: #2563eb;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #2563eb;
+  animation: activeIndicatorDot 0.25s ease-out;
+}
+
+@keyframes activeIndicatorDot {
+  from { transform: scale(0); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* 터치 피드백 마이크로 스프링 모션 */
+.mobile-tab-item:active i {
+  transform: scale(0.85);
+}
+
+/* ========================================
+   모바일(≤639px) 글자 크기 1.2배
+   - 텍스트 유틸리티(text-xs~5xl)와 기본 본문 글자만 확대
+   - line-height는 덮어쓰지 않아 leading-* / 줄간격 설정 유지
+   - 여백·카드 등 레이아웃(rem 기반)은 그대로
+   ======================================== */
+@media (max-width: 639px) {
+  body       { font-size: 1.2rem; }
+  .text-xs   { font-size: 0.9rem; }
+  .text-sm   { font-size: 1.05rem; }
+  .text-base { font-size: 1.2rem; }
+  .text-lg   { font-size: 1.35rem; }
+  .text-xl   { font-size: 1.5rem; }
+  .text-2xl  { font-size: 1.8rem; }
+  .text-3xl  { font-size: 2.25rem; }
+  .text-4xl  { font-size: 2.7rem; }
+  .text-5xl  { font-size: 3.6rem; }
+}
