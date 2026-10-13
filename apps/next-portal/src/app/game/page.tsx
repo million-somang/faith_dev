@@ -326,6 +326,44 @@ function FlightThumb() {
     );
 }
 
+function VeraPopThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="vpBg" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stopColor="#312e81" />
+                    <stop offset="50" stopColor="#4c1d95" />
+                    <stop offset="100" stopColor="#831843" />
+                </linearGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#vpBg)" />
+            <g opacity="0.15" stroke="#ffffff" strokeWidth="1">
+                <path d="M0 30H320M0 60H320M0 90H320M40 0V120M80 0V120M120 0V120M160 0V120M200 0V120M240 0V120M280 0V120" />
+            </g>
+            <g transform="translate(45, 60)">
+                <rect x="-18" y="-18" width="36" height="36" rx="6" fill="#3b82f6" transform="rotate(45)" />
+                <circle cx="0" cy="0" r="8" fill="#93c5fd" />
+            </g>
+            <g transform="translate(105, 60)">
+                <rect x="-18" y="-18" width="36" height="36" rx="10" fill="#10b981" />
+                <rect x="-8" y="-8" width="16" height="16" rx="4" fill="#a7f3d0" />
+            </g>
+            <g transform="translate(160, 60)">
+                <circle cx="0" cy="0" r="20" fill="#8b5cf6" />
+                <circle cx="0" cy="0" r="10" fill="#ddd6fe" />
+            </g>
+            <g transform="translate(215, 60)">
+                <polygon points="0,-22 20,16 -20,16" fill="#f59e0b" />
+                <circle cx="0" cy="4" r="6" fill="#fef3c7" />
+            </g>
+            <g transform="translate(270, 60)">
+                <rect x="-16" y="-16" width="32" height="32" rx="6" fill="#ef4444" transform="rotate(15)" />
+                <circle cx="0" cy="0" r="7" fill="#fecaca" />
+            </g>
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -359,7 +397,7 @@ export default function GamePage() {
                             ? '소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행'
                             : activeGenre === 'online'
                             ? '베라오목 온라인 — 실시간 매칭과 대기실 기능으로 다른 플레이어와 1:1 두뇌 승부를 펼쳐보세요'
-                            : '베라 플라이트 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 · 오목 · 장기 — 설치 없이 브라우저에서 바로 플레이하세요'}
+                            : '베라 플라이트 · 베라장기 · 숫자야구 · 베라오목 · 베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 팝업 창에서 자유롭게 플레이하세요'}
                     </p>
                 </div>
             </section>
@@ -386,141 +424,463 @@ export default function GamePage() {
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    {/* 0. 베라 플라이트 */}
-                    <button onClick={() => router.push('/game/flight')} className="bg-white border-2 text-left border-sky-200 rounded-2xl overflow-hidden hover:border-sky-400 hover:shadow-xl transition-all group relative cursor-pointer">
-                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
-                            1942 REMAKE
-                        </div>
-                        <div className="overflow-hidden bg-[#0284c7]"><FlightThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-black text-xl text-sky-800 mb-1 group-hover:text-sky-900 transition-colors flex items-center gap-2">
-                                <span>Vera Flight (베라 플라이트)</span>
-                                <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 슈팅</span>
-                            </h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-sky-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                {activeGenre === 'mini' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* 0. 베라 플라이트 */}
+                        <div
+                            onClick={() => router.push('/game/flight')}
+                            className="bg-white border-2 text-left border-sky-200 rounded-2xl overflow-hidden hover:border-sky-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-sky-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                1942 REMAKE
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#0284c7]"><FlightThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-sky-800 mb-1 group-hover:text-sky-900 transition-colors flex items-center gap-2">
+                                        <span>Vera Flight (베라 플라이트)</span>
+                                        <span className="text-xs bg-sky-100 text-sky-800 px-2 py-0.5 rounded-md font-bold">1942 슈팅</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">360° 공중제비 롤링(1.5초 무적)과 메가 폭탄, 빨간 편대 격추와 4단계 무기 업그레이드로 거대 보스 전함을 격파하세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/flight/', 'app-flight');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-sky-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 1. 베라장기 */}
-                    <button onClick={() => router.push('/game/janggi')} className="bg-white border-2 text-left border-cyan-200 rounded-2xl overflow-hidden hover:border-cyan-400 hover:shadow-xl transition-all group relative cursor-pointer">
-                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
-                            HOT NEW
-                        </div>
-                        <div className="overflow-hidden bg-[#f4e4cb]"><JanggiThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-black text-xl text-cyan-800 mb-1 group-hover:text-cyan-900 transition-colors flex items-center gap-2">
-                                <span>Vera Janggi (베라장기)</span>
-                                <span className="text-xs bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-md font-bold">정통 9×10</span>
-                            </h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">4대 상차림(마상상마/원앙마 등), 공식 73.5점 덤 규정, 1일 1외통수 매일 묘수풀이 및 특수 스킬 배틀을 즐겨보세요.</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-cyan-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 1. 베라장기 */}
+                        <div
+                            onClick={() => router.push('/game/janggi')}
+                            className="bg-white border-2 text-left border-cyan-200 rounded-2xl overflow-hidden hover:border-cyan-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                HOT NEW
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#f4e4cb]"><JanggiThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-cyan-800 mb-1 group-hover:text-cyan-900 transition-colors flex items-center gap-2">
+                                        <span>Vera Janggi (베라장기)</span>
+                                        <span className="text-xs bg-cyan-100 text-cyan-800 px-2 py-0.5 rounded-md font-bold">정통 9×10</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">4대 상차림(마상상마/원앙마 등), 공식 73.5점 덤 규정, 1일 1외통수 매일 묘수풀이 및 특수 스킬 배틀을 즐겨보세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/janggi/', 'app-janggi');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-cyan-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 2. 베라 숫자야구 */}
-                    <button onClick={() => router.push('/game/baseball')} className="bg-white border-2 text-left border-red-200 rounded-2xl overflow-hidden hover:border-red-400 hover:shadow-xl transition-all group relative cursor-pointer">
-                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
-                            9 INNINGS
-                        </div>
-                        <div className="overflow-hidden bg-[#047857]"><BaseballThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-black text-xl text-red-700 mb-1 group-hover:text-red-800 transition-colors flex items-center gap-2">
-                                <span>Vera Baseball (베라 숫자야구)</span>
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">정규 9이닝 리그</span>
-                            </h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">서로 다른 3자리 숫자를 9회말 이내에 추리! 완봉승(3이닝 이내)과 퀄리티 스타트에 도전하세요.</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-red-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 2. 베라 숫자야구 */}
+                        <div
+                            onClick={() => router.push('/game/baseball')}
+                            className="bg-white border-2 text-left border-red-200 rounded-2xl overflow-hidden hover:border-red-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-red-500 to-rose-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                9 INNINGS
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#047857]"><BaseballThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-red-700 mb-1 group-hover:text-red-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Baseball (베라 숫자야구)</span>
+                                        <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-md font-bold">정규 9이닝 리그</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">서로 다른 3자리 숫자를 9회말 이내에 추리! 완봉승(3이닝 이내)과 퀄리티 스타트에 도전하세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/baseball/', 'app-baseball');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-red-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 3. 베라오목 */}
-                    <button onClick={() => router.push('/game/omok')} className="bg-white border-2 text-left border-amber-200 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all group relative cursor-pointer">
-                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
-                            NEW AI
-                        </div>
-                        <div className="overflow-hidden bg-[#dfb170]"><OmokThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-black text-xl text-amber-700 mb-1 group-hover:text-amber-800 transition-colors flex items-center gap-2">
-                                <span>Vera Omok (베라오목)</span>
-                                <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">15×15 정통 5목</span>
-                            </h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">초급·중급·고급(마스터) 3단계 인공지능과 대결하며 실시간 형세 분석과 청명한 바둑돌 손맛을 느껴보세요.</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-amber-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 3. 베라오목 */}
+                        <div
+                            onClick={() => router.push('/game/omok')}
+                            className="bg-white border-2 text-left border-amber-200 rounded-2xl overflow-hidden hover:border-amber-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-500 to-yellow-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                NEW AI
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#dfb170]"><OmokThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-amber-700 mb-1 group-hover:text-amber-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Omok (베라오목)</span>
+                                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">15×15 정통 5목</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">초급·중급·고급(마스터) 3단계 인공지능과 대결하며 실시간 형세 분석과 청명한 바둑돌 손맛을 느껴보세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/omok/', 'app-omok');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-amber-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 4. 클래식 프리셀 */}
-                    <button onClick={() => router.push('/game/freecell')} className="bg-white border-2 text-left border-emerald-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-xl transition-all group relative cursor-pointer">
-                        <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md">
-                            CLASSIC
-                        </div>
-                        <div className="overflow-hidden bg-[#064e3b]"><FreeCellThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-black text-xl text-emerald-700 mb-1 group-hover:text-emerald-800 transition-colors flex items-center gap-2">
-                                <span>클래식 프리셀 (FreeCell)</span>
-                                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">정통 솔리테어</span>
-                            </h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">4개의 프리셀을 전략적으로 활용해 52장 카드를 홈셀로 완벽 수집하세요!</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-emerald-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 4. 베라 팝 */}
+                        <div
+                            onClick={() => router.push('/game/vera-pop')}
+                            className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                60s FEVER
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#312e81]"><VeraPopThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-indigo-700 mb-1 group-hover:text-indigo-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Pop (베라 팝)</span>
+                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">스피드 매치-3</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">60초 안에 목표 점수를 돌파하면 시간 충전! 라인 레이저와 5초간 2배 점수 하이퍼 피버에 도전하세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/vera-pop/', 'app-vera-pop');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-indigo-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 5. 스도쿠 */}
-                    <button onClick={() => router.push('/game/sudoku')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg transition-all group cursor-pointer">
-                        <div className="overflow-hidden bg-[#ddd6fe]"><SudokuThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-extrabold text-xl text-violet-700 mb-1 group-hover:text-violet-800 transition-colors">스도쿠</h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">빈 칸에 숫자를 채워 9×9 퍼즐을 완성하세요!</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-violet-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 5. 클래식 프리셀 */}
+                        <div
+                            onClick={() => router.push('/game/freecell')}
+                            className="bg-white border-2 text-left border-emerald-200 rounded-2xl overflow-hidden hover:border-emerald-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md">
+                                CLASSIC
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#064e3b]"><FreeCellThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-emerald-700 mb-1 group-hover:text-emerald-800 transition-colors flex items-center gap-2">
+                                        <span>클래식 프리셀 (FreeCell)</span>
+                                        <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">정통 솔리테어</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">4개의 프리셀을 전략적으로 활용해 52장 카드를 홈셀로 완벽 수집하세요!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/freecell/', 'app-freecell');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-emerald-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 6. 2048 */}
-                    <button onClick={() => router.push('/game/2048')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-cyan-300 hover:shadow-lg transition-all group cursor-pointer">
-                        <div className="overflow-hidden bg-[#f3ebd9]"><Game2048Thumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-extrabold text-xl text-cyan-700 mb-1 group-hover:text-cyan-800 transition-colors">2048 챌린지</h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">같은 숫자를 합쳐 2048 타일을 만들어보세요!</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-cyan-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 6. 스도쿠 */}
+                        <div
+                            onClick={() => router.push('/game/sudoku')}
+                            className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-violet-300 hover:shadow-lg transition-all group cursor-pointer flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="overflow-hidden bg-[#ddd6fe]"><SudokuThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-extrabold text-xl text-violet-700 mb-1 group-hover:text-violet-800 transition-colors">스도쿠</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">빈 칸에 숫자를 채워 9×9 퍼즐을 완성하세요!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/sudoku/', 'app-sudoku');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-violet-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
 
-                    {/* 7. 지뢰찾기 */}
-                    <button onClick={() => router.push('/game/minesweeper')} className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-red-300 hover:shadow-lg transition-all group cursor-pointer">
-                        <div className="overflow-hidden bg-[#e2e8f0]"><MinesweeperThumb /></div>
-                        <div className="p-5">
-                            <h3 className="font-extrabold text-xl text-red-600 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
-                            <p className="text-slate-500 text-xs leading-relaxed mb-3">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-red-600 font-bold">
-                                <span>게임 시작 →</span>
-                                <span className="text-slate-400 font-normal">웹 무료 플레이</span>
+                        {/* 7. 2048 */}
+                        <div
+                            onClick={() => router.push('/game/2048')}
+                            className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-cyan-300 hover:shadow-lg transition-all group cursor-pointer flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="overflow-hidden bg-[#f3ebd9]"><Game2048Thumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-extrabold text-xl text-cyan-700 mb-1 group-hover:text-cyan-800 transition-colors">2048 챌린지</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">같은 숫자를 합쳐 2048 타일을 만들어보세요!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/2048/', 'app-2048');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-cyan-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                    </button>
-                </div>
+
+                        {/* 8. 지뢰찾기 */}
+                        <div
+                            onClick={() => router.push('/game/minesweeper')}
+                            className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-red-300 hover:shadow-lg transition-all group cursor-pointer flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="overflow-hidden bg-[#e2e8f0]"><MinesweeperThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-extrabold text-xl text-red-600 mb-1 group-hover:text-red-700 transition-colors">스피드 지뢰찾기</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">지뢰를 피해 모든 칸을 최대한 빨리 열어보세요!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/minesweeper/', 'app-minesweeper');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-red-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : activeGenre === 'emulator' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div
+                            onClick={() => router.push('/game/comboy')}
+                            className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group cursor-pointer flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="h-28 bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
+                                    <i className="fas fa-gamepad mr-2"></i> Vera Comboy
+                                </div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-extrabold text-xl text-slate-700 mb-1 group-hover:text-slate-800 transition-colors">베라 컴보이 아케이드</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">추억의 8비트 패미콤 게임 에뮬레이터. 개인 소장 ROM 파일을 로드해 플레이해 보세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/comboy/', 'app-comboy');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        실행 (팝업)
+                                    </button>
+                                    <span className="text-slate-600 font-bold hover:underline flex items-center gap-1">
+                                        안내 & 보안정책 →
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            onClick={() => router.push('/game/sfc')}
+                            className="bg-white border text-left border-slate-200 rounded-2xl overflow-hidden hover:border-slate-400 hover:shadow-lg transition-all group cursor-pointer flex flex-col justify-between"
+                        >
+                            <div>
+                                <div className="h-28 bg-gradient-to-r from-indigo-600 to-indigo-700 flex items-center justify-center text-white text-3xl transition-transform duration-500 group-hover:scale-105">
+                                    <i className="fas fa-gamepad mr-2"></i> Super Comboy
+                                </div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-extrabold text-xl text-indigo-600 mb-1 group-hover:text-indigo-700 transition-colors">베라 슈퍼컴보이</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">추억의 16비트 슈퍼패미콤 게임 에뮬레이터. 개인 소장 SNES ROM을 로드해 플레이해 보세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/sfc/', 'app-sfc');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        실행 (팝업)
+                                    </button>
+                                    <span className="text-indigo-600 font-bold hover:underline flex items-center gap-1">
+                                        안내 & 보안정책 →
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : activeGenre === 'online' ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div
+                            onClick={() => launchApp('/onlinegame/ffrpg/', 'ffrpg')}
+                            className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                ONLINE RPG
+                            </div>
+                            <div>
+                                <div className="h-28 bg-[#312e81] flex items-center justify-center text-white text-3xl">
+                                    <i className="fas fa-dungeon text-indigo-300"></i>
+                                </div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-indigo-700 mb-1 group-hover:text-indigo-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Fantasy RPG (베라 판타지)</span>
+                                        <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">실시간 턴제 RPG</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">전사·마법사·도적 등 직업을 육성하고 온라인 파티를 결성해 고대 던전과 보스를 공략하는 정통 레트로 턴제 RPG!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white font-bold shadow-sm">
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 실행 (팝업)
+                                    </span>
+                                    <span className="text-slate-400">웹 실시간 플레이</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div
+                            onClick={() => launchApp('/onlinegame/omok-pvp/', 'omok-pvp')}
+                            className="bg-white border-2 text-left border-blue-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                LIVE 1:1
+                            </div>
+                            <div>
+                                <div className="h-28 bg-[#1e3a8a] flex items-center justify-center text-white text-3xl">
+                                    <i className="fas fa-chess-board text-blue-300"></i>
+                                </div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-blue-700 mb-1 group-hover:text-blue-800 transition-colors flex items-center gap-2">
+                                        <span>Vera Omok Online (베라오목 온라인)</span>
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">1:1 실시간 대전</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">대기실에서 상대를 찾아 실시간 1:1 오목 대국을 즐기세요. 30초 턴 제한, 관전 및 실시간 이모지 채팅 지원!</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold shadow-sm">
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        대기실 입장 (팝업)
+                                    </span>
+                                    <span className="text-slate-400">웹 실시간 대전</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
             </div>
 
             {/* 미니게임 전용 가이드 & 규칙 */}
