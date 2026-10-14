@@ -19,6 +19,10 @@
    - (3) **3단계 결과 포인트**: 결과 산출 버튼, 리포트 영역, 또는 모달 트리거에 `data-screenshot-point="result"` 또는 `data-screenshot-click="result"` 지정
    - ※ 상세 작성법은 `MINI_APP_GUIDE.md`를 필독하여 준수할 것.
 
+### 7. 앞으로 만드는 모든 페이지(신규 및 수정 페이지 전체)의 최상위 본문 컨테이너 가로 폭(width) 및 좌우 패딩은 상단 헤더(`PortalNavbar.tsx`: `max-w-6xl mx-auto px-3 sm:px-4 w-full`)와 1px의 오차 없이 동일하게 맞추어 제작해줘. (`max-w-4xl`, `max-w-5xl` 또는 `sm:px-6`, `lg:px-8` 등 헤더와 좌우 끝선이 어긋나는 컨테이너 폭/패딩 임의 지정 절대 금지!)
+
+### 8. 플랜(`/plan`) 수립 및 검토 시에는 반드시 최우선으로 이 `rule.md` 파일을 읽고, 본 문서의 모든 규칙(헤더-본문 가로 폭 `max-w-6xl` 일치 규칙 포함)이 플랜에 반영되었는지 검증해줘.
+
 
 
 # CRITICAL SAFETY RULES (최고 수준 안전/보안 규칙) 🚨

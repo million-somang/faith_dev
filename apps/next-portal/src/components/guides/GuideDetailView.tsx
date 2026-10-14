@@ -228,7 +228,7 @@ export function GuideDetailView({ article, relatedArticles }: GuideDetailViewPro
   };
 
   return (
-    <main className="flex-1 max-w-5xl mx-auto px-4 py-8 w-full">
+    <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-6 overflow-x-auto whitespace-nowrap">
         <Link href="/" className="hover:text-slate-700 transition-colors">

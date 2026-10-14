@@ -46,7 +46,7 @@ function FinanceUtilContent() {
     const relatedGuide = seoData ? getGuideBySlug(seoData.relatedGuideSlug) : undefined;
 
     return (
-        <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8">
+        <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-8 sm:py-12 space-y-8">
             {/* 상단 네비게이션 브레드크럼 */}
             <div className="flex items-center gap-2 text-xs text-slate-500 font-bold mb-2">
                 <Link href="/" className="hover:text-blue-600">홈</Link>

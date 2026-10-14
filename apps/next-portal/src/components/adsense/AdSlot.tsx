@@ -34,7 +34,7 @@ export function AdSlot({
         ADVERTISEMENT
       </span>
       <div
-        className={`w-full max-w-4xl bg-gray-50 border border-gray-100 rounded-xl overflow-hidden flex items-center justify-center ${minHeightClass}`}
+        className={`w-full max-w-6xl bg-gray-50 border border-gray-100 rounded-xl overflow-hidden flex items-center justify-center ${minHeightClass}`}
       >
         <ins
           className="adsbygoogle"

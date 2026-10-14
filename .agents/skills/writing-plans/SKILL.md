@@ -5,6 +5,13 @@ description: Use when you have a spec or requirements for a multi-step task, bef
 
 # Writing Plans
 
+## Mandatory Pre-Planning Step (`rule.md` Review)
+
+Before writing or reviewing ANY implementation plan (including `/plan` requests), you **MUST** first read `d:\project\faithportal\rule.md` and verify that your plan complies with all project rules — especially:
+- **Header & Page Width Alignment**: Every page container in `apps/next-portal` must match the header (`PortalNavbar`) width and horizontal padding (`max-w-6xl mx-auto px-3 sm:px-4 w-full`).
+- **Korean Language**: All plans and explanations must be written in Korean.
+- **Google SEO & AdSense Optimization**: Semantic HTML, single `<h1>`, JSON-LD schemas, and Zero-CLS ad slots.
+
 ## Overview
 
 Write comprehensive implementation plans assuming the engineer has zero context for our codebase and questionable taste. Document everything they need to know: which files to touch for each task, code, testing, docs they might need to check, how to test it. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.

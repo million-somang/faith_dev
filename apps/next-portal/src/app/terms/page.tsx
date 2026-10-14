@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <main className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full">
+    <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-12 w-full">
       <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-slate-200">
         <h1 className="text-3xl font-black text-slate-900 mb-2">서비스 이용약관</h1>
         <p className="text-sm text-slate-500 mb-8 border-b border-slate-100 pb-4">

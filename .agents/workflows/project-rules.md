@@ -10,10 +10,11 @@ description: 프로젝트 규칙 및 코딩 표준 참조
 
 ## 규칙 확인 단계
 
-1. 작업 시작 전 `c:\project\faithportal\rule.md` 파일을 읽어서 규칙을 확인합니다.
+1. 작업 및 모든 플랜(`/plan`) 수립·검토 시작 전 반드시 `d:\project\faithportal\rule.md` 파일을 읽어서 규칙을 확인합니다.
 
 2. 다음 핵심 규칙을 항상 준수합니다:
-   - main-portal은 포트 5000, API 서버는 포트 4200에서 실행 (start-server 워크플로우 참조)
+   - 메인 포털(`apps/next-portal`)은 포트 3000, API 서버(`apps/api-server`)는 포트 4200에서 실행 (start-server 워크플로우 참조)
+   - **모든 페이지의 최상위 본문 컨테이너 가로 폭(width) 및 좌우 패딩은 상단 헤더(`PortalNavbar`: `max-w-6xl mx-auto px-3 sm:px-4 w-full`)와 1px의 오차 없이 동일하게 맞출 것 (`max-w-4xl`, `max-w-5xl` 등 상이한 폭 지정 금지)**
    - 모든 플랜과 설명은 한글로 작성
    - DB를 초기화하거나 삭제하는 일이 절대 없도록 함
    - 지시한 것 이외의 코드는 절대 수정하거나 삭제하지 않음

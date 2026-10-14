@@ -61,11 +61,11 @@ export default function ToolPage({ params }: ToolPageProps) {
   const pageUrl = `https://veranex.app/tools/${tool.slug}`;
 
   return (
-    <main className="min-h-screen bg-[#f5f6f7] flex flex-col items-center py-6 px-4 sm:px-6">
+    <main className="min-h-screen bg-[#f5f6f7] flex flex-col items-center py-6 w-full">
       {/* 구조화 데이터 주입 (AEO & Rich Snippet) */}
       <JsonLd item={tool} url={pageUrl} />
 
-      <div className="w-full max-w-4xl flex flex-col items-center">
+      <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 flex flex-col items-center">
         {/* 상단 브레드크럼 & 뒤로가기 네비게이션 */}
         <nav aria-label="Breadcrumb" className="w-full flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-xs text-gray-500">

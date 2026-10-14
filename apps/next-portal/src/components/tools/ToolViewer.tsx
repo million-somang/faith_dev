@@ -81,7 +81,7 @@ export function ToolViewer({ item, isStandalone = false }: ToolViewerProps) {
       </div>
 
       {/* 2. 사용방법 및 공식/사례 탭 (구글 크롤러 및 AEO 필수 - SSR DOM 상시 포함) */}
-      <div className={activeTab === 'howto' ? 'w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
+      <div className={activeTab === 'howto' ? 'w-full max-w-6xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
         <div>
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
             <i className="fas fa-book-open text-blue-600"></i>
@@ -130,7 +130,7 @@ export function ToolViewer({ item, isStandalone = false }: ToolViewerProps) {
       </div>
 
       {/* 3. 자주 묻는 질문(FAQ) 탭 (SSR DOM 상시 포함) */}
-      <div className={activeTab === 'faq' ? 'w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
+      <div className={activeTab === 'faq' ? 'w-full max-w-6xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
         <div>
           <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
             <i className="fas fa-lightbulb text-amber-500"></i>

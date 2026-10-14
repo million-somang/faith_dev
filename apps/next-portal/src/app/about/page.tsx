@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="flex-1 max-w-4xl mx-auto px-4 py-12 w-full">
+    <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-12 w-full">
       <div className="bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-slate-200">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-violet-100 text-violet-700 text-xs font-bold mb-4">
           <i className="fas fa-compass"></i> ABOUT VERA

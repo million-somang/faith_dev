@@ -259,7 +259,7 @@ export default function NewsDetailClient({ newsId, initialNews }: NewsDetailClie
 
     if (loading) {
         return (
-            <div className="max-w-4xl mx-auto px-4 py-8 animate-pulse">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full animate-pulse">
                 <div className="h-6 w-32 bg-slate-200 rounded-lg mb-4"></div>
                 <div className="h-10 w-3/4 bg-slate-200 rounded-xl mb-6"></div>
                 <div className="h-5 w-48 bg-slate-200 rounded-lg mb-8"></div>
@@ -275,7 +275,7 @@ export default function NewsDetailClient({ newsId, initialNews }: NewsDetailClie
 
     if (error || !news) {
         return (
-            <div className="max-w-4xl mx-auto px-4 py-16 text-center">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 py-16 w-full text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center text-2xl border border-rose-100">
                     <i className="fas fa-triangle-exclamation"></i>
                 </div>
@@ -300,7 +300,7 @@ export default function NewsDetailClient({ newsId, initialNews }: NewsDetailClie
 
     return (
         <div className="min-h-screen bg-slate-50/60 pb-16">
-            <main className="max-w-4xl mx-auto px-3.5 sm:px-6 pt-5 sm:pt-8">
+            <main className="max-w-6xl mx-auto px-3 sm:px-4 pt-5 sm:pt-8 w-full">
                 {/* 1. 상단 경로 (Breadcrumb) */}
                 <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500 mb-4" aria-label="브레드크럼">
                     <Link href="/" className="hover:text-blue-600 transition-colors">홈</Link>
