@@ -1,4 +1,5 @@
-import { TOOLS_DATA, getToolBySlug, ToolDetailItem } from '../apps/next-portal/src/data/toolsData';
+import * as toolsDataMod from '../apps/next-portal/src/data/toolsData';
+const { TOOLS_DATA, getToolBySlug } = ((toolsDataMod as any).default || toolsDataMod) as typeof import('../apps/next-portal/src/data/toolsData');
 
 const EXPECTED_SLUGS = [
     'severance-calc',
@@ -14,6 +15,7 @@ const EXPECTED_SLUGS = [
     'base64-converter',
     'svg-converter',
     'finance-dsr',
+    'image-resizer',
 ];
 
 const VALID_CATEGORIES = ['calc', 'finance', 'text', 'dev'];

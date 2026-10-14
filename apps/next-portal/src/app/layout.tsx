@@ -55,10 +55,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  modal,
 }: {
   children: React.ReactNode;
-  modal: React.ReactNode;
 }) {
   return (
     <html lang="ko">
@@ -79,8 +77,6 @@ export default function RootLayout({
             </div>
             <PortalFooter />
             <MobileTabBar />
-            {/* Next.js Intercepting Modal Layer for Hybrid Popups */}
-            {modal}
           </UserPreferenceProvider>
         </AuthProvider>
       </body>

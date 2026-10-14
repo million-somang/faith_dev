@@ -61,93 +61,106 @@ export function ToolViewer({ item, isStandalone = false }: ToolViewerProps) {
       </nav>
 
       {/* 1. 핵심 기능 탭 */}
-      {activeTab === 'main' && (
-        <div className="w-full flex flex-col items-center">
-          <div
-            className={`w-full bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 ${
-              isStandalone ? 'max-w-xl h-[680px]' : 'h-[620px]'
-            }`}
-          >
-            <iframe
-              src={item.legacyAppUrl}
-              title={item.name}
-              className="mini-app-modal-iframe w-full h-full border-0"
-              loading="lazy"
-              allow="clipboard-write; clipboard-read"
-            />
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2 text-center">
-            * 키보드 타건 및 모바일 터치를 완벽히 지원하며, 모든 연산은 사용자 기기 내에서만 처리됩니다.
+      <div className={activeTab === 'main' ? 'w-full flex flex-col items-center' : 'hidden'}>
+        <div
+          className={`w-full bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 ${
+            isStandalone ? 'max-w-xl h-[680px]' : 'h-[620px]'
+          }`}
+        >
+          <iframe
+            src={item.legacyAppUrl || ('appUrl' in item ? item.appUrl : '')}
+            title={item.name}
+            className="mini-app-modal-iframe w-full h-full border-0"
+            loading="lazy"
+            allow="clipboard-write; clipboard-read"
+          />
+        </div>
+        <p className="text-[11px] text-gray-400 mt-2 text-center">
+          * 키보드 타건 및 모바일 터치를 완벽히 지원하며, 모든 연산은 사용자 기기 내에서만 처리됩니다.
+        </p>
+      </div>
+
+      {/* 2. 사용방법 및 공식/사례 탭 (구글 크롤러 및 AEO 필수 - SSR DOM 상시 포함) */}
+      <div className={activeTab === 'howto' ? 'w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
+            <i className="fas fa-book-open text-blue-600"></i>
+            {item.name} 공식 이용 가이드
+          </h3>
+          <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+            {'directAnswer' in item && item.directAnswer ? item.directAnswer : item.summary}
           </p>
         </div>
-      )}
 
-      {/* 2. 사용방법 탭 (구글 크롤러 및 AEO 필수) */}
-      {activeTab === 'howto' && (
-        <div className="w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
-              <i className="fas fa-book-open text-blue-600"></i>
-              {item.name} 공식 이용 가이드
-            </h3>
-            <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-              {item.summary}
+        {'formula' in item && item.formula && (
+          <div className="bg-blue-50/60 p-4 rounded-xl border border-blue-100 space-y-2">
+            <h4 className="text-sm font-bold text-blue-900">{item.formula.title} (핵심 공식)</h4>
+            <p className="text-xs sm:text-sm font-mono font-bold text-blue-800 bg-white px-3 py-2 rounded-lg border border-blue-100">
+              {item.formula.expression}
             </p>
+            <p className="text-xs text-gray-700 leading-relaxed">{item.formula.explanation}</p>
           </div>
+        )}
 
-          <div className="space-y-4">
-            {item.howToSteps.map((step, idx) => (
-              <div
-                key={idx}
-                className="bg-slate-50 p-4 rounded-xl border border-gray-100 flex gap-3.5 items-start"
-              >
-                <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                  {idx + 1}
-                </span>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-gray-800">{step.name}</h4>
-                  <p className="text-xs text-gray-600 leading-relaxed">{step.text}</p>
-                </div>
+        {'example' in item && item.example && (
+          <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-100 space-y-1.5">
+            <h4 className="text-sm font-bold text-emerald-900">실전 계산 사례</h4>
+            <p className="text-xs text-gray-700"><strong>시나리오:</strong> {item.example.scenario}</p>
+            <p className="text-xs text-gray-700"><strong>계산 과정:</strong> {item.example.calculation}</p>
+            <p className="text-xs font-bold text-emerald-800"><strong>결과:</strong> {item.example.result}</p>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {item.howToSteps.map((step, idx) => (
+            <div
+              key={idx}
+              className="bg-slate-50 p-4 rounded-xl border border-gray-100 flex gap-3.5 items-start"
+            >
+              <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                {idx + 1}
+              </span>
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-gray-800">{step.name}</h4>
+                <p className="text-xs text-gray-600 leading-relaxed">{step.text}</p>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* 3. 자주 묻는 질문(FAQ) 탭 */}
-      {activeTab === 'faq' && (
-        <div className="w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
-              <i className="fas fa-lightbulb text-amber-500"></i>
-              자주 묻는 질문 (FAQ)
-            </h3>
-            <p className="text-gray-600 text-xs sm:text-sm">
-              이용 중 궁금한 점과 핵심 기준을 정리했습니다.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {item.faqs.map((faq, idx) => (
-              <details
-                key={idx}
-                className="group bg-gray-50 border border-gray-100 rounded-xl p-4 open:bg-blue-50/40 transition-colors"
-              >
-                <summary className="font-bold text-xs sm:text-sm text-gray-800 cursor-pointer flex items-center justify-between list-none">
-                  <span className="flex items-center gap-2">
-                    <span className="text-blue-600 font-bold">Q.</span>
-                    {faq.question}
-                  </span>
-                  <i className="fas fa-chevron-down text-xs text-gray-400 group-open:rotate-180 transition-transform"></i>
-                </summary>
-                <p className="mt-2.5 text-xs text-gray-600 leading-relaxed pl-5 border-t border-gray-100 pt-2.5">
-                  <strong className="text-gray-700">A. </strong> {faq.answer}
-                </p>
-              </details>
-            ))}
-          </div>
+      {/* 3. 자주 묻는 질문(FAQ) 탭 (SSR DOM 상시 포함) */}
+      <div className={activeTab === 'faq' ? 'w-full max-w-2xl bg-white rounded-2xl p-5 sm:p-7 shadow-sm border border-gray-100 space-y-6 text-left' : 'hidden'}>
+        <div>
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
+            <i className="fas fa-lightbulb text-amber-500"></i>
+            자주 묻는 질문 (FAQ)
+          </h3>
+          <p className="text-gray-600 text-xs sm:text-sm">
+            이용 중 궁금한 점과 핵심 기준을 정리했습니다.
+          </p>
         </div>
-      )}
+
+        <div className="space-y-3">
+          {item.faqs.map((faq, idx) => (
+            <details
+              key={idx}
+              className="group bg-gray-50 border border-gray-100 rounded-xl p-4 open:bg-blue-50/40 transition-colors"
+            >
+              <summary className="font-bold text-xs sm:text-sm text-gray-800 cursor-pointer flex items-center justify-between list-none">
+                <span className="flex items-center gap-2">
+                  <span className="text-blue-600 font-bold">Q.</span>
+                  {faq.question}
+                </span>
+                <i className="fas fa-chevron-down text-xs text-gray-400 group-open:rotate-180 transition-transform"></i>
+              </summary>
+              <p className="mt-2.5 text-xs text-gray-600 leading-relaxed pl-5 border-t border-gray-100 pt-2.5">
+                <strong className="text-gray-700">A. </strong> {faq.answer}
+              </p>
+            </details>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

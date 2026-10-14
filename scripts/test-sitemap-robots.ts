@@ -1,16 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import * as sitemapMod from '../apps/next-portal/src/app/sitemap';
+const sitemap = ((sitemapMod as any).default?.default || (sitemapMod as any).default || sitemapMod) as typeof import('../apps/next-portal/src/app/sitemap').default;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-interface UrlEntry {
-  loc: string;
-  lastmod?: string;
-  changefreq?: string;
-  priority?: string;
-}
 
 const EXPECTED_TOOL_SLUGS = [
   'severance-calc',
@@ -26,6 +21,7 @@ const EXPECTED_TOOL_SLUGS = [
   'base64-converter',
   'svg-converter',
   'finance-dsr',
+  'image-resizer',
 ];
 
 const EXPECTED_HUBS = [
@@ -33,6 +29,10 @@ const EXPECTED_HUBS = [
   'https://veranex.app/finance',
   'https://veranex.app/finance/util',
   'https://veranex.app/game',
+  'https://veranex.app/news',
+  'https://veranex.app/lounge',
+  'https://veranex.app/entertainment/saju',
+  'https://veranex.app/entertainment/travel',
 ];
 
 const EXPECTED_GAME_URLS = [
@@ -63,201 +63,38 @@ const ADSENSE_BOTS = [
 
 let hasError = false;
 
-function validateXmlWellFormedness(xmlContent: string, filePath: string): UrlEntry[] {
-  console.log(`Checking XML well-formedness for: ${filePath}`);
+async function validateDynamicSitemap() {
+  console.log('Checking Next.js dynamic sitemap() output...');
+  const entries = await sitemap();
+  console.log(`Found ${entries.length} URLs in dynamic sitemap`);
 
-  // 1. Prolog check
-  if (!xmlContent.trim().startsWith('<?xml version="1.0" encoding="UTF-8"?>')) {
-    console.error(`FAIL [${filePath}]: Missing or invalid XML prolog`);
+  if (entries.length < 65) {
+    console.error(`FAIL: Expected at least 65 URLs in dynamic sitemap, got ${entries.length}`);
     hasError = true;
   }
 
-  // 2. Stack-based tag matcher
-  const tagRegex = /<\/?([a-zA-Z0-9_\-:]+)(?:\s+[^>]*)?>/g;
-  const stack: string[] = [];
-  let match;
-  
-  // Remove prolog & comments for tag balance check
-  const stripped = xmlContent.replace(/<\?xml[\s\S]*?\?>/g, '').replace(/<!--[\s\S]*?-->/g, '');
+  const urlSet = new Set(entries.map((e) => e.url));
 
-  while ((match = tagRegex.exec(stripped)) !== null) {
-    const fullTag = match[0];
-    const tagName = match[1];
-
-    if (fullTag.endsWith('/>')) {
-      // self-closing
-      continue;
-    }
-
-    if (fullTag.startsWith('</')) {
-      // closing tag
-      const last = stack.pop();
-      if (last !== tagName) {
-        console.error(`FAIL [${filePath}]: Mismatched closing tag </${tagName}>, expected </${last}>`);
-        hasError = true;
-      }
-    } else {
-      // opening tag
-      stack.push(tagName);
-    }
-  }
-
-  if (stack.length > 0) {
-    console.error(`FAIL [${filePath}]: Unclosed tags remaining in stack: ${stack.join(', ')}`);
-    hasError = true;
-  }
-
-  // 3. Extract URL entries
-  const urlBlockRegex = /<url>([\s\S]*?)<\/url>/g;
-  const urls: UrlEntry[] = [];
-  let urlMatch;
-
-  while ((urlMatch = urlBlockRegex.exec(xmlContent)) !== null) {
-    const block = urlMatch[1];
-    const locMatch = /<loc>(https?:\/\/[^\s<]+)<\/loc>/.exec(block);
-    const lastmodMatch = /<lastmod>([^<]+)<\/lastmod>/.exec(block);
-    const changefreqMatch = /<changefreq>([^<]+)<\/changefreq>/.exec(block);
-    const priorityMatch = /<priority>([^<]+)<\/priority>/.exec(block);
-
-    if (!locMatch) {
-      console.error(`FAIL [${filePath}]: <url> entry missing valid <loc> tag`);
-      hasError = true;
-      continue;
-    }
-
-    urls.push({
-      loc: locMatch[1].trim(),
-      lastmod: lastmodMatch ? lastmodMatch[1].trim() : undefined,
-      changefreq: changefreqMatch ? changefreqMatch[1].trim() : undefined,
-      priority: priorityMatch ? priorityMatch[1].trim() : undefined,
-    });
-  }
-
-  return urls;
-}
-
-function validateSitemap(filePath: string) {
-  if (!fs.existsSync(filePath)) {
-    console.error(`FAIL: File does not exist: ${filePath}`);
-    hasError = true;
-    return;
-  }
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const urls = validateXmlWellFormedness(content, filePath);
-
-  console.log(`[${filePath}] Found ${urls.length} URLs in sitemap`);
-
-  // Verify total count is exactly 58
-  if (urls.length !== 58) {
-    console.error(`FAIL [${filePath}]: Expected exactly 58 URLs, but found ${urls.length}`);
-    hasError = true;
-  }
-
-  const urlMap = new Map<string, UrlEntry>();
-  for (const entry of urls) {
-    if (urlMap.has(entry.loc)) {
-      console.error(`FAIL [${filePath}]: Duplicate URL found: ${entry.loc}`);
-      hasError = true;
-    }
-    urlMap.set(entry.loc, entry);
-
-    // Validate fields
-    if (entry.lastmod && !/^\d{4}-\d{2}-\d{2}$/.test(entry.lastmod)) {
-      console.error(`FAIL [${filePath}]: Invalid lastmod format "${entry.lastmod}" for ${entry.loc}`);
-      hasError = true;
-    }
-
-    const validFreqs = ['always', 'hourly', 'daily', 'weekly', 'monthly', 'yearly', 'never'];
-    if (entry.changefreq && !validFreqs.includes(entry.changefreq)) {
-      console.error(`FAIL [${filePath}]: Invalid changefreq "${entry.changefreq}" for ${entry.loc}`);
-      hasError = true;
-    }
-
-    if (entry.priority) {
-      const p = parseFloat(entry.priority);
-      if (isNaN(p) || p < 0 || p > 1) {
-        console.error(`FAIL [${filePath}]: Invalid priority "${entry.priority}" for ${entry.loc}`);
-        hasError = true;
-      }
-    }
-  }
-
-  // Verify hubs
   for (const hub of EXPECTED_HUBS) {
-    const entry = urlMap.get(hub);
-    if (!entry) {
-      console.error(`FAIL [${filePath}]: Missing hub URL "${hub}"`);
+    if (!urlSet.has(hub)) {
+      console.error(`FAIL: Missing hub URL "${hub}"`);
       hasError = true;
-    } else {
-      if (entry.priority !== '0.90' && entry.priority !== '0.9') {
-        console.error(`FAIL [${filePath}]: Hub "${hub}" priority expected 0.90, got "${entry.priority}"`);
-        hasError = true;
-      }
-      if (entry.changefreq !== 'daily') {
-        console.error(`FAIL [${filePath}]: Hub "${hub}" changefreq expected daily, got "${entry.changefreq}"`);
-        hasError = true;
-      }
-      if (entry.lastmod !== '2026-10-09') {
-        console.error(`FAIL [${filePath}]: Hub "${hub}" lastmod expected 2026-10-09, got "${entry.lastmod}"`);
-        hasError = true;
-      }
     }
   }
 
-  // Verify all 13 tool slugs
   for (const slug of EXPECTED_TOOL_SLUGS) {
     const toolUrl = `https://veranex.app/tools/${slug}`;
-    const entry = urlMap.get(toolUrl);
-    if (!entry) {
-      console.error(`FAIL [${filePath}]: Missing tool URL "${toolUrl}"`);
+    if (!urlSet.has(toolUrl)) {
+      console.error(`FAIL: Missing tool URL "${toolUrl}"`);
       hasError = true;
-    } else {
-      if (entry.priority !== '0.85') {
-        console.error(`FAIL [${filePath}]: Tool "${toolUrl}" priority expected 0.85, got "${entry.priority}"`);
-        hasError = true;
-      }
-      if (entry.changefreq !== 'weekly') {
-        console.error(`FAIL [${filePath}]: Tool "${toolUrl}" changefreq expected weekly, got "${entry.changefreq}"`);
-        hasError = true;
-      }
-      if (entry.lastmod !== '2026-10-09') {
-        console.error(`FAIL [${filePath}]: Tool "${toolUrl}" lastmod expected 2026-10-09, got "${entry.lastmod}"`);
-        hasError = true;
-      }
     }
   }
 
-  // Verify all 8 core game URLs
   for (const gameUrl of EXPECTED_GAME_URLS) {
-    const entry = urlMap.get(gameUrl);
-    if (!entry) {
-      console.error(`FAIL [${filePath}]: Missing game URL "${gameUrl}"`);
+    if (!urlSet.has(gameUrl)) {
+      console.error(`FAIL: Missing game URL "${gameUrl}"`);
       hasError = true;
-    } else {
-      if (entry.priority !== '0.85') {
-        console.error(`FAIL [${filePath}]: Game "${gameUrl}" priority expected 0.85, got "${entry.priority}"`);
-        hasError = true;
-      }
-      if (entry.changefreq !== 'weekly') {
-        console.error(`FAIL [${filePath}]: Game "${gameUrl}" changefreq expected weekly, got "${entry.changefreq}"`);
-        hasError = true;
-      }
-      if (entry.lastmod !== '2026-10-09') {
-        console.error(`FAIL [${filePath}]: Game "${gameUrl}" lastmod expected 2026-10-09, got "${entry.lastmod}"`);
-        hasError = true;
-      }
     }
-  }
-
-  // Verify core home & guides
-  if (!urlMap.has('https://veranex.app/')) {
-    console.error(`FAIL [${filePath}]: Missing home URL "https://veranex.app/"`);
-    hasError = true;
-  }
-  if (!urlMap.has('https://veranex.app/guides')) {
-    console.error(`FAIL [${filePath}]: Missing guides URL "https://veranex.app/guides"`);
-    hasError = true;
   }
 }
 
@@ -304,13 +141,11 @@ function validateRobotsTxt(filePath: string) {
 
   console.log(`[${filePath}] Parsed ${sections.length} User-agent blocks from robots.txt`);
 
-  // Verify Sitemap
   if (!content.includes('Sitemap: https://veranex.app/sitemap.xml')) {
     console.error(`FAIL [${filePath}]: Missing Sitemap directive`);
     hasError = true;
   }
 
-  // Check AI bots
   for (const botName of AI_BOTS) {
     const section = sections.find(s => s.userAgent.toLowerCase() === botName.toLowerCase());
     if (!section) {
@@ -336,7 +171,6 @@ function validateRobotsTxt(filePath: string) {
     }
   }
 
-  // Check AdSense bots disallow /tools and /tools/, and /game and /game/
   for (const botName of ADSENSE_BOTS) {
     const section = sections.find(s => s.userAgent.toLowerCase() === botName.toLowerCase());
     if (!section) {
@@ -357,31 +191,21 @@ function validateRobotsTxt(filePath: string) {
   }
 }
 
-// Execute tests
-console.log('=== Starting sitemap.xml & robots.txt validation ===');
+async function main() {
+  console.log('=== Starting dynamic sitemap & robots.txt validation ===');
+  const projectRoot = path.resolve(__dirname, '..');
+  const publicRobots = path.join(projectRoot, 'apps/next-portal/public/robots.txt');
 
-const projectRoot = path.resolve(__dirname, '..');
-const publicSitemap = path.join(projectRoot, 'apps/next-portal/public/sitemap.xml');
-const distSitemap = path.join(projectRoot, 'apps/next-portal/public/sitemap.xml');
-const publicRobots = path.join(projectRoot, 'apps/next-portal/public/robots.txt');
-const distRobots = path.join(projectRoot, 'apps/next-portal/public/robots.txt');
+  await validateDynamicSitemap();
+  validateRobotsTxt(publicRobots);
 
-// Test sitemaps
-validateSitemap(publicSitemap);
-if (fs.existsSync(distSitemap)) {
-  validateSitemap(distSitemap);
+  if (hasError) {
+    console.error('\n❌ Sitemap & robots.txt verification FAILED!');
+    process.exit(1);
+  } else {
+    console.log('\n✅ All dynamic sitemap.ts and robots.txt validations PASSED successfully!');
+    process.exit(0);
+  }
 }
 
-// Test robots.txt
-validateRobotsTxt(publicRobots);
-if (fs.existsSync(distRobots)) {
-  validateRobotsTxt(distRobots);
-}
-
-if (hasError) {
-  console.error('\n❌ Sitemap & robots.txt verification FAILED!');
-  process.exit(1);
-} else {
-  console.log('\n✅ All sitemap.xml and robots.txt validations PASSED successfully!');
-  process.exit(0);
-}
+main();

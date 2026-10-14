@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card } from '@faithportal/ui';
 import { useAuth } from '@/context/AuthContext';
 import { MiniAppButton } from '@/components/common/MiniAppButton';
@@ -116,6 +117,7 @@ export default function UtilityPage() {
     // 이용 가이드 데이터 정의 (카테고리별 분류)
     const GUIDE_CARDS = [
         {
+            slug: 'interest-calc',
             category: 'finance',
             icon: 'fas fa-piggy-bank',
             iconColor: 'text-cyan-500',
@@ -123,6 +125,7 @@ export default function UtilityPage() {
             desc: '정기예금(거치식)과 정기적금(적립식)의 단리/월복리 이자를 정밀 산출합니다. 일반과세(15.4%), 세금우대(9.5%), 비과세(0%) 적용에 따른 최종 실수령액과 비과세 절세 차액을 원클릭 비교 차트로 확인하세요.'
         },
         {
+            slug: 'severance-calc',
             category: 'finance',
             icon: 'fas fa-file-invoice-dollar',
             iconColor: 'text-blue-600',
@@ -130,6 +133,15 @@ export default function UtilityPage() {
             desc: '고용노동부 최신 법정 산식에 맞춰 입사/퇴사일 및 최근 3개월 급여(상여금·연차수당 3/12 가산)로 1일 평균임금과 통상임금을 비교 산출합니다. 2026년 개정 소득세법 근속연수 공제가 반영된 세후 실수령 퇴직금과 함께, 연령·가입기간별 실업급여 소정급여일수(120~270일)와 2026년 상한액(66,000원)/하한액(64,192원)을 즉시 계산합니다.'
         },
         {
+            slug: 'finance-dsr',
+            category: 'finance',
+            icon: 'fas fa-landmark',
+            iconColor: 'text-indigo-600',
+            title: '스트레스 DSR 대출 한도 & 원리금 계산기 활용법',
+            desc: '연소득 대비 총부채원리금상환비율(DSR 40% 규제) 및 스트레스 금리 가산을 반영하여 최대 주택담보대출·신용대출 가능 한도와 월별 상환액을 정밀 시뮬레이션합니다.'
+        },
+        {
+            slug: 'age-calc',
             category: 'calc',
             icon: 'fas fa-birthday-cake',
             iconColor: 'text-pink-500',
@@ -137,6 +149,7 @@ export default function UtilityPage() {
             desc: '대한민국 행정·사법 기준인 \'만 나이\'는 태어난 날을 0세로 시작하여 매 생일마다 1살씩 더해집니다. 현재 연도에서 출생 연도를 뺀 후, 올해 생일이 지났다면 그 수치가 만 나이가 되며, 생일이 지나지 않았다면 1살을 더 차감하여 정확한 법적 나이를 산출합니다.'
         },
         {
+            slug: 'pyeong-calc',
             category: 'calc',
             icon: 'fas fa-vector-square',
             iconColor: 'text-emerald-500',
@@ -144,6 +157,7 @@ export default function UtilityPage() {
             desc: '1평은 약 3.305785㎡입니다. 제곱미터(㎡) 값을 평수로 변환할 때는 ㎡ ÷ 3.3058을 적용하며, 평수를 제곱미터로 바꿀 때는 평수 × 3.3058을 곱합니다. 아파트 분양 시 전용면적과 공급면적을 구분하여 계산하시면 더욱 정확합니다.'
         },
         {
+            slug: 'dday-calc',
             category: 'calc',
             icon: 'fas fa-calendar-alt',
             iconColor: 'text-purple-500',
@@ -151,6 +165,7 @@ export default function UtilityPage() {
             desc: 'D-Day 계산기는 시험, 연애 기념일, 출산 예정일, 군 전역일 등 중요한 날짜까지 남은 일수(D-) 또는 지난 일수(D+)를 계산합니다. 시작일 당일을 1일로 포함하는 기준과 포함하지 않는 기준을 모두 지원하여 상황에 맞게 정확한 일수를 확인할 수 있습니다.'
         },
         {
+            slug: 'customs-calc',
             category: 'calc',
             icon: 'fas fa-plane-arrival',
             iconColor: 'text-indigo-600',
@@ -158,6 +173,7 @@ export default function UtilityPage() {
             desc: '미국 직구 목록통관 $200 이하, 일반국가(일본·유럽·중국) $150 이하 면세 기준을 실시간 외환 환율과 연계하여 즉시 판별합니다. 전자기기(0%), 의류(13%), 영양제(8%·일반통관 $150 강제) 등 11대 카테고리별 예상 관세와 부가세 10%를 원스톱 계산하세요.'
         },
         {
+            slug: 'image-resizer',
             category: 'calc',
             icon: 'fas fa-crop-simple',
             iconColor: 'text-blue-500',
@@ -165,6 +181,7 @@ export default function UtilityPage() {
             desc: '고화질 사진과 캡처 이미지를 원하는 해상도(px, %)로 빠르고 손실 없이 리사이징하고, WebP, PNG, JPEG 형식으로 즉시 압축 변환합니다. 모든 처리가 브라우저 로컬에서 안전하게 수행되어 개인정보 유출 걱정 없이 이용할 수 있습니다.'
         },
         {
+            slug: 'calculator',
             category: 'calc',
             icon: 'fas fa-calculator',
             iconColor: 'text-indigo-500',
@@ -172,6 +189,7 @@ export default function UtilityPage() {
             desc: '일상적인 사칙연산뿐만 아니라 할인율(세일가) 계산, 백분율(%), 부가세(VAT), 비만도(BMI)까지 원스톱으로 지원합니다. 직관적인 키패드와 계산 기록 히스토리 저장 기능을 제공하여 복잡한 영수증 정산이나 쇼핑 시 유용하게 사용할 수 있습니다.'
         },
         {
+            slug: 'text-checker',
             category: 'text',
             icon: 'fas fa-spell-check',
             iconColor: 'text-blue-500',
@@ -179,6 +197,7 @@ export default function UtilityPage() {
             desc: '자기소개서 및 공문서 작성 시 공백 포함 글자수와 공백 제외 글자수, 바이트(Byte) 수가 다르게 정해집니다. 한글은 1자당 2~3Byte, 영문·숫자·공백은 1자당 1Byte로 처리되므로 자소서 제출 전 VERA 글자수 검사기로 한도를 확인하세요.'
         },
         {
+            slug: 'ocr',
             category: 'text',
             icon: 'fas fa-file-alt',
             iconColor: 'text-indigo-600',
@@ -186,6 +205,7 @@ export default function UtilityPage() {
             desc: 'Tesseract.js WebAssembly를 통해 서버 전송 없이 100% 브라우저 로컬에서 사진·캡처 이미지 속 한글과 영어를 즉시 인식하여 텍스트 복사 및 .txt 다운로드를 지원합니다. 캡처 즉시 Ctrl+V로 붙여넣어 신속하게 변환하세요.'
         },
         {
+            slug: 'json-formatter',
             category: 'dev',
             icon: 'fas fa-code',
             iconColor: 'text-cyan-600',
@@ -193,6 +213,7 @@ export default function UtilityPage() {
             desc: '들여쓰기가 깨진 복잡한 JSON 데이터를 2스페이스/4스페이스로 깔끔하게 포매팅(Prettify)하고 문법 에러 위치를 실시간 검출합니다. 또한 공백을 제거하는 압축(Minify) 기능과 YAML, XML, CSV 상호 변환을 지원하여 개발 생산성을 높입니다.'
         },
         {
+            slug: 'base64-converter',
             category: 'dev',
             icon: 'fas fa-exchange-alt',
             iconColor: 'text-amber-500',
@@ -200,6 +221,7 @@ export default function UtilityPage() {
             desc: '문자열 텍스트 및 이미지 파일을 안전하게 Base64 형식으로 인코딩하거나 역으로 디코딩합니다. 웹 개발 시 자주 사용되는 JWT(JSON Web Token) 페이로드 파싱 및 Base64 이미지 미리보기 기능을 100% 클라이언트 브라우저에서 안전하게 처리합니다.'
         },
         {
+            slug: 'svg-converter',
             category: 'dev',
             icon: 'fas fa-bezier-curve',
             iconColor: 'text-rose-500',
@@ -207,6 +229,45 @@ export default function UtilityPage() {
             desc: '픽셀이 깨지는 비트맵 이미지(PNG, JPG, WEBP)를 확대해도 깨지지 않는 깨끗한 SVG 벡터 그래픽으로 실시간 변환합니다. 로고, 아이콘, 서명 이미지의 배경을 투명화하고 최적화된 SVG 코드 및 Data URI를 다운로드할 수 있습니다.'
         }
     ];
+
+    const faqJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: [
+            {
+                '@type': 'Question',
+                name: '예·적금 단리/복리 및 비과세 혜택 비교는 어떻게 되나요?',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '정기예금(거치식)과 정기적금(적립식)의 단리/월복리 이자 산식을 지원하며, 일반과세(15.4%), 세금우대(9.5%), 비과세(0%) 적용에 따른 최종 실수령액과 비과세 절세 차액을 원클릭으로 비교해 드립니다.'
+                }
+            },
+            {
+                '@type': 'Question',
+                name: '퇴직금 및 실업급여 계산은 최신 법령 기준인가요?',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '네, 고용노동부 최신 근로기준법 및 고용보험법, 2026년 개정 소득세법 근속연수 공제율과 2026년 실업급여 1일 상한액(66,000원)·하한액(64,192원) 기준을 100% 실시간 적용하여 산출합니다.'
+                }
+            },
+            {
+                '@type': 'Question',
+                name: '모든 생활 유틸리티 도구 이용료는 무료인가요?',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: '네, VERA에서 제공하는 계산기, 변환기, 글자수 세기 등 모든 유틸리티는 100% 무료이며 회원가입 없이 이용 가능합니다.'
+                }
+            },
+            {
+                '@type': 'Question',
+                name: '모바일 스마트폰이나 태블릿에서도 사용 가능한가요?',
+                acceptedAnswer: {
+                    '@type': 'Answer',
+                    text: 'VERA의 모든 도구는 반응형 웹(Responsive Web)으로 디자인되어 PC, 스마트폰, 태블릿 모든 기기 화면에 맞춤 지원됩니다.'
+                }
+            }
+        ]
+    };
 
     const filteredGuides = selectedGuideCategory === 'all'
         ? GUIDE_CARDS
@@ -241,6 +302,10 @@ export default function UtilityPage() {
 
     return (
         <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full space-y-8">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
             <Card className="p-6 sm:p-8 bg-white border border-gray-100 rounded-3xl shadow-sm">
                 <div className="flex items-center gap-4 mb-8 border-b border-gray-100 pb-5">
                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shadow-xs">
@@ -341,18 +406,28 @@ export default function UtilityPage() {
                     </p>
                 </div>
 
-                {/* 카테고리 필터가 적용된 가이드 카드 그리드 */}
+                {/* 카테고리 필터가 적용된 가이드 카드 그리드 (SSR 크롤러를 위해 전체 카드 상시 DOM 렌더링 후 비활성 카테고리만 hidden 처리) */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredGuides.map((guide, idx) => (
-                        <div key={idx} className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
-                            <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                                <i className={`${guide.icon} ${guide.iconColor}`}></i> {guide.title}
-                            </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                                {guide.desc}
-                            </p>
-                        </div>
-                    ))}
+                    {GUIDE_CARDS.map((guide, idx) => {
+                        const isVisible = selectedGuideCategory === 'all' || guide.category === selectedGuideCategory;
+                        return (
+                            <Link
+                                key={idx}
+                                href={`/tools/${guide.slug}`}
+                                className={`${isVisible ? 'block' : 'hidden'} bg-slate-50 hover:bg-blue-50/50 p-5 rounded-2xl border border-slate-200/80 hover:border-blue-200 transition-all space-y-2 group`}
+                            >
+                                <h3 className="font-bold text-slate-900 group-hover:text-blue-600 text-sm sm:text-base flex items-center justify-between gap-2 transition-colors">
+                                    <span className="flex items-center gap-2">
+                                        <i className={`${guide.icon} ${guide.iconColor}`}></i> {guide.title}
+                                    </span>
+                                    <i className="fas fa-arrow-right text-xs text-slate-400 group-hover:text-blue-600 transition-colors"></i>
+                                </h3>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    {guide.desc}
+                                </p>
+                            </Link>
+                        );
+                    })}
                 </div>
 
                 <div className="border-t border-slate-100 pt-6">

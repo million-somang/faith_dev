@@ -36,12 +36,26 @@ function sanitizeParams(params?: Record<string, any>): Record<string, any> {
     return sanitized;
 }
 
+function getDefaultGaId(): string {
+    try {
+        if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_GA_ID) {
+            return process.env.NEXT_PUBLIC_GA_ID;
+        }
+    } catch {}
+    try {
+        if (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_GA_ID) {
+            return (import.meta as any).env.VITE_GA_ID;
+        }
+    } catch {}
+    return 'G-J62JHHDLRY';
+}
+
 /**
  * GA4 스크립트 동적 초기화
  */
 export function initGA(measurementId?: string): void {
     if (typeof window === 'undefined') return;
-    const gaId = measurementId || (import.meta as any).env?.VITE_GA_ID || 'G-J62JHHDLRY';
+    const gaId = measurementId || getDefaultGaId();
     if (!gaId) return;
 
     // 이미 로드되었는지 확인
@@ -81,7 +95,7 @@ export function trackPageView(path: string, title?: string): void {
     const cleanPath = maskPII(path);
     const cleanTitle = title ? maskPII(title) : document.title;
 
-    const gaId = (import.meta as any).env?.VITE_GA_ID || 'G-J62JHHDLRY';
+    const gaId = getDefaultGaId();
     (window as any).gtag('event', 'page_view', {
         page_path: cleanPath,
         page_title: cleanTitle,

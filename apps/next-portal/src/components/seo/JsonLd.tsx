@@ -55,11 +55,40 @@ export function JsonLd({ item, url }: JsonLdProps) {
     })),
   } : null;
 
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '홈',
+        item: 'https://veranex.app',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: isGame ? '게임' : '생활도구',
+        item: isGame ? 'https://veranex.app/game' : 'https://veranex.app/lifestyle',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: item.name,
+        item: url,
+      },
+    ],
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(webAppSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       {howToSchema && (
         <script

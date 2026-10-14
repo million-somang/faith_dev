@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { PageSEO } from '@/components/PageSEO';
 import { SmartTagParser } from '@/components/lounge/SmartTagParser';
 import { CustomLadderBuilderModal, CustomLadderData } from '@/components/lounge/CustomLadderBuilderModal';
 import { CustomLadderWidget } from '@/components/lounge/CustomLadderWidget';
@@ -562,12 +561,6 @@ export default function LoungePage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans">
-            <PageSEO
-                title="VERA Lounge - 베라 마이크로 커뮤니티"
-                description="VERA 메가 포털 회원들의 핫 이슈, 실시간 주식 토론, 사다리타기 미니게임이 글 속에서 바로 실행되는 커뮤니티 피드 공간"
-                path="/lounge"
-            />
-
             <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-8 w-full">
                 {/* VERA Lounge Hero Banner */}
                 <div className="relative mb-8 rounded-3xl overflow-hidden bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl border border-indigo-500/30">

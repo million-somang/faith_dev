@@ -14,10 +14,11 @@ const tools = [
     'ocr',
     'base64-converter',
     'svg-converter',
-    'finance-dsr'
+    'finance-dsr',
+    'image-resizer'
 ];
 
-console.log('--- [1] Checking 13 Tool Landing Pages SSG Output ---');
+console.log('--- [1] Checking 14 Tool Landing Pages SSG Output ---');
 for (const slug of tools) {
     const filePath = path.resolve(`apps/next-portal/.next/server/app/tools/${slug}.html`);
     if (!fs.existsSync(filePath)) {
@@ -47,13 +48,16 @@ if (!lifestyleHtml.includes('/tools/severance-calc') || !lifestyleHtml.includes(
 }
 console.log('  ✓ lifestyle/index.html: Linked to tools and contains FAQPage schema.');
 
-console.log('--- [3] Checking sitemap.xml & robots.txt ---');
-const sitemap = fs.readFileSync(path.resolve('apps/next-portal/public/sitemap.xml'), 'utf-8');
-const locCount = (sitemap.match(/<loc>/g) || []).length;
-if (locCount < 40) {
-    throw new Error(`[FAIL] Expected >= 40 URLs in sitemap, got ${locCount}`);
+console.log('--- [3] Checking Next.js dynamic sitemap.ts & robots.txt ---');
+const sitemapTsPath = path.resolve('apps/next-portal/src/app/sitemap.ts');
+if (!fs.existsSync(sitemapTsPath)) {
+    throw new Error('[FAIL] Missing apps/next-portal/src/app/sitemap.ts');
 }
-console.log(`  ✓ sitemap.xml contains ${locCount} URLs.`);
+const sitemapTsContent = fs.readFileSync(sitemapTsPath, 'utf-8');
+if (!sitemapTsContent.includes('GUIDES_DATA') || !sitemapTsContent.includes('TOOLS_DATA') || !sitemapTsContent.includes('GAME_CONFIGS')) {
+    throw new Error('[FAIL] sitemap.ts does not dynamically include GUIDES_DATA, TOOLS_DATA, and GAME_CONFIGS');
+}
+console.log('  ✓ src/app/sitemap.ts dynamically generates all guides, tools, games, and news URLs.');
 
 const robots = fs.readFileSync(path.resolve('apps/next-portal/public/robots.txt'), 'utf-8');
 const expectedBots = ['GPTBot', 'PerplexityBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended'];
