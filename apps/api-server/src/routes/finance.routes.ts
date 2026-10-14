@@ -2,12 +2,27 @@ import { Hono } from 'hono';
 
 const financeRoutes = new Hono();
 
-// 종목별 및 차트별 인메모리 캐시 (60초 TTL) - Yahoo 차단 방지 및 고속 응답
+// 종목별 및 차트별 인메모리 캐시 (3분 TTL) - Yahoo 차단 방지 및 초고속 응답
 const quotesCache = new Map<string, { data: any; expiresAt: number }>();
 const chartCache = new Map<string, { data: any; expiresAt: number }>();
-const QUOTE_CACHE_TTL = 60 * 1000;
+const stockCardCache = new Map<string, { data: any; expiresAt: number }>();
+const naverDetailCache = new Map<string, { data: any; expiresAt: number }>();
+const usSuffixCache = new Map<string, string>();
+const QUOTE_CACHE_TTL = 3 * 60 * 1000;
 
-// Yahoo Finance 비공식 API로 시세 데이터 병렬 가져오기 (인메모리 캐시 적용)
+const DEFAULT_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+};
+
+// 외부 API 무한 대기(UND_ERR_SOCKET) 원천 차단용 타임아웃 fetch 래퍼
+async function fetchWithTimeout(url: string, timeoutMs = 3500): Promise<Response> {
+    return fetch(url, {
+        headers: DEFAULT_HEADERS,
+        signal: AbortSignal.timeout(timeoutMs),
+    });
+}
+
+// Yahoo Finance 비공식 API로 시세 데이터 병렬 가져오기 (인메모리 캐시 + 타임아웃 적용)
 async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
     const now = Date.now();
     const results: any[] = [];
@@ -28,14 +43,12 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
 
     const promises = missingSymbols.map(async (symbol) => {
         try {
-            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1y`;
-            const res = await fetch(url, {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-            });
+            const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`;
+            const res = await fetchWithTimeout(url, 3500);
             
-            if (!res.ok) return null;
+            if (!res.ok) {
+                return quotesCache.get(symbol)?.data || null;
+            }
             
             const data = await res.json();
             const meta = data?.chart?.result?.[0]?.meta;
@@ -58,10 +71,12 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
                 quotesCache.set(symbol, { data: quote, expiresAt: now + QUOTE_CACHE_TTL });
                 return quote;
             }
-            return null;
+            return quotesCache.get(symbol)?.data || null;
 
         } catch (e) {
-            console.error(`Failed to fetch ${symbol}:`, e);
+            // 타임아웃/소켓 에러 시 기존 캐시가 있으면 즉시 폴백 반환
+            const stale = quotesCache.get(symbol);
+            if (stale) return stale.data;
             return null;
         }
     });
@@ -74,7 +89,7 @@ async function fetchYahooQuotes(symbols: string[]): Promise<any[]> {
     return [...results, ...fetched];
 }
 
-// 차트 데이터 가져오기 (기간별 다중 타임프레임 지원, 인메모리 캐시 적용)
+// 차트 데이터 가져오기 (기간별 다중 타임프레임 지원, 인메모리 캐시 + 타임아웃 적용)
 async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
     const cacheKey = `${symbol}_${range}`;
     const now = Date.now();
@@ -107,17 +122,13 @@ async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
         }
 
         const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=${interval}&range=${yahooRange}`;
-        const res = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-        });
+        const res = await fetchWithTimeout(url, 3500);
         
-        if (!res.ok) return null;
+        if (!res.ok) return cached?.data || null;
         
         const data = await res.json();
         const result = data?.chart?.result?.[0];
-        if (!result) return null;
+        if (!result) return cached?.data || null;
         
         const timestamps = result.timestamp || [];
         const closes = result.indicators?.quote?.[0]?.close || [];
@@ -140,8 +151,7 @@ async function fetchYahooChart(symbol: string, range = '1mo'): Promise<any> {
         chartCache.set(cacheKey, { data: chartData, expiresAt: now + QUOTE_CACHE_TTL });
         return chartData;
     } catch (e) {
-        console.error(`Failed to fetch chart for ${symbol}:`, e);
-        return null;
+        return cached?.data || null;
     }
 }
 
@@ -152,6 +162,8 @@ const CACHE_TTL = 5 * 60 * 1000; // 5분
 
 // 한국 증시 실시간 지수 전용 캐시 (개장 중 8초, 마감 후 10분)
 let krIndicesCache: { data: any[]; timestamp: number } | null = null;
+let isRefreshingKrIndices = false;
+let isRefreshingAllIndices = false;
 
 // 대한민국 정규 증권 시장 개장 여부 확인 (월~금 09:00 ~ 15:30 KST)
 function isKoreanMarketOpen(): boolean {
@@ -196,18 +208,10 @@ function formatLocalTradedAt(isoString?: string): string {
 async function fetchNaverIndices(): Promise<any[]> {
     try {
         const [kospiRes, kosdaqRes, kpi200Res, usdkrwRes] = await Promise.allSettled([
-            fetch('https://m.stock.naver.com/api/index/KOSPI/basic', { 
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
-            }),
-            fetch('https://m.stock.naver.com/api/index/KOSDAQ/basic', { 
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
-            }),
-            fetch('https://m.stock.naver.com/api/index/KPI200/basic', { 
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
-            }),
-            fetch('https://api.stock.naver.com/marketindex/exchange/FX_USDKRW', { 
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' } 
-            }),
+            fetchWithTimeout('https://m.stock.naver.com/api/index/KOSPI/basic', 3000),
+            fetchWithTimeout('https://m.stock.naver.com/api/index/KOSDAQ/basic', 3000),
+            fetchWithTimeout('https://m.stock.naver.com/api/index/KPI200/basic', 3000),
+            fetchWithTimeout('https://api.stock.naver.com/marketindex/exchange/FX_USDKRW', 3000),
         ]);
 
         const results: any[] = [];
@@ -349,17 +353,89 @@ const COUNTRY_INDICES: CountryIndexConfig[] = [
     { symbol: '^STOXX50E', name: '유로 스톡스 50', country: 'fr', currency: '€', flag: '🇪🇺', description: '유로존 50대 블루칩 지수' },
 ];
 
-// 주요 지수(국가별 탭 지원: us, cn, jp, fr, kr, all)
+async function refreshAllIndicesData(): Promise<any[]> {
+    const now = Date.now();
+    const overseasSymbols = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(i => i.symbol);
+    const [freshKr, quotes] = await Promise.all([
+        fetchNaverIndices(),
+        fetchYahooQuotes(overseasSymbols)
+    ]);
+
+    if (freshKr.length > 0) {
+        krIndicesCache = { data: freshKr, timestamp: now };
+    }
+
+    const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
+
+    const overseasIndices = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(cfg => {
+        const q = quoteMap.get(cfg.symbol);
+        if (q && q.price) {
+            const change = q.price - q.previousClose;
+            const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
+            return {
+                symbol: cfg.symbol,
+                name: cfg.name,
+                country: cfg.country,
+                currency: cfg.currency,
+                flag: cfg.flag,
+                description: cfg.description,
+                value: Math.round(q.price * 100) / 100,
+                change: Math.round(change * 100) / 100,
+                rate: Math.round(rate * 100) / 100,
+                status: change >= 0 ? 'up' : 'down',
+                updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
+            };
+        }
+        // 기존 캐시에 해당 해외 지수가 있으면 유지
+        const prevItem = indicesCache?.data?.find((item: any) => item.symbol === cfg.symbol);
+        if (prevItem && prevItem.value > 0) return prevItem;
+
+        return {
+            symbol: cfg.symbol,
+            name: cfg.name,
+            country: cfg.country,
+            currency: cfg.currency,
+            flag: cfg.flag,
+            description: cfg.description,
+            value: 0,
+            change: 0,
+            rate: 0,
+            status: 'up',
+            updatedAt: '',
+        };
+    }).filter(item => item.value > 0);
+
+    const finalKr = (freshKr.length > 0) ? freshKr : (krIndicesCache?.data || []);
+    const allIndices = [...finalKr, ...overseasIndices];
+
+    if (allIndices.length > 0) {
+        indicesCache = { data: allIndices, timestamp: now };
+    }
+    return allIndices;
+}
+
+// 주요 지수(국가별 탭 지원: us, cn, jp, fr, kr, all) — SWR 적용
 financeRoutes.get('/api/finance/indices', async (c) => {
     const now = Date.now();
     const countryParam = c.req.query('country')?.toLowerCase();
 
-    // 1. 한국 지수 요청 시: 네이버 증권 실시간 API + 8초 스마트 캐시 적용
+    // 1. 한국 지수 요청 시: 네이버 증권 실시간 API + 8초 스마트 캐시 + SWR 적용
     if (countryParam === 'kr') {
         const isMarketOpen = isKoreanMarketOpen();
         const krCacheTtl = isMarketOpen ? 8 * 1000 : 10 * 60 * 1000; // 개장 중 8초, 마감 후 10분
 
-        if (krIndicesCache && (now - krIndicesCache.timestamp) < krCacheTtl) {
+        if (krIndicesCache) {
+            if ((now - krIndicesCache.timestamp) >= krCacheTtl && !isRefreshingKrIndices) {
+                isRefreshingKrIndices = true;
+                fetchNaverIndices()
+                    .then((freshKr) => {
+                        if (freshKr.length > 0) {
+                            krIndicesCache = { data: freshKr, timestamp: Date.now() };
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => { isRefreshingKrIndices = false; });
+            }
             return c.json(krIndicesCache.data);
         }
 
@@ -368,73 +444,21 @@ financeRoutes.get('/api/finance/indices', async (c) => {
             krIndicesCache = { data: freshKr, timestamp: now };
             return c.json(freshKr);
         }
-
-        // 실패 시 이전 캐시 반환
-        if (krIndicesCache) {
-            return c.json(krIndicesCache.data);
-        }
+        return c.json([]);
     }
 
-    // 2. 전체 또는 타 국가 지수 요청 시
+    // 2. 전체 또는 타 국가 지수 요청 시 (SWR 적용)
     let allIndices = indicesCache ? indicesCache.data : null;
 
-    if (!allIndices || (now - (indicesCache?.timestamp || 0)) >= CACHE_TTL) {
-        // 해외 지수 심볼만 Yahoo에서 가져오기
-        const overseasSymbols = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(i => i.symbol);
-        
-        // KR 지수와 해외 지수를 병렬로 획득
-        const [freshKr, quotes] = await Promise.all([
-            fetchNaverIndices(),
-            fetchYahooQuotes(overseasSymbols)
-        ]);
-
-        if (freshKr.length > 0) {
-            krIndicesCache = { data: freshKr, timestamp: now };
+    if (allIndices) {
+        if ((now - (indicesCache?.timestamp || 0)) >= CACHE_TTL && !isRefreshingAllIndices) {
+            isRefreshingAllIndices = true;
+            refreshAllIndicesData()
+                .catch(() => {})
+                .finally(() => { isRefreshingAllIndices = false; });
         }
-
-        const quoteMap = new Map(quotes.map(q => [q.symbol, q]));
-
-        const overseasIndices = COUNTRY_INDICES.filter(i => i.country !== 'kr').map(cfg => {
-            const q = quoteMap.get(cfg.symbol);
-            if (q && q.price) {
-                const change = q.price - q.previousClose;
-                const rate = q.previousClose ? (change / q.previousClose) * 100 : 0;
-                return {
-                    symbol: cfg.symbol,
-                    name: cfg.name,
-                    country: cfg.country,
-                    currency: cfg.currency,
-                    flag: cfg.flag,
-                    description: cfg.description,
-                    value: Math.round(q.price * 100) / 100,
-                    change: Math.round(change * 100) / 100,
-                    rate: Math.round(rate * 100) / 100,
-                    status: change >= 0 ? 'up' : 'down',
-                    updatedAt: formatMarketTime(q.regularMarketTime, q.timezone),
-                };
-            }
-            return {
-                symbol: cfg.symbol,
-                name: cfg.name,
-                country: cfg.country,
-                currency: cfg.currency,
-                flag: cfg.flag,
-                description: cfg.description,
-                value: 0,
-                change: 0,
-                rate: 0,
-                status: 'up',
-                updatedAt: '',
-            };
-        }).filter(item => item.value > 0);
-
-        // KR 지수(네이버 실시간) + 해외 지수(Yahoo) 통합
-        const finalKr = (freshKr.length > 0) ? freshKr : (krIndicesCache?.data || []);
-        allIndices = [...finalKr, ...overseasIndices];
-
-        if (allIndices.length > 0) {
-            indicesCache = { data: allIndices, timestamp: now };
-        }
+    } else {
+        allIndices = await refreshAllIndicesData();
     }
 
     if (countryParam && countryParam !== 'all') {
@@ -760,19 +784,10 @@ const MACRO_INDICATOR_CONFIG: MacroConfigItem[] = [
 
 // 거시 경제 지표 (농산물, 에너지, 귀금속, 환율/채권금리, 가상자산)
 let macroCache: { data: any; timestamp: number } | null = null;
+let isRefreshingMacro = false;
 
-financeRoutes.get('/api/finance/macro', async (c) => {
+async function refreshMacroData(): Promise<any[]> {
     const now = Date.now();
-    const categoryParam = c.req.query('category');
-
-    if (macroCache && (now - macroCache.timestamp) < CACHE_TTL) {
-        let cached = macroCache.data;
-        if (categoryParam && categoryParam !== 'all') {
-            cached = cached.filter((item: any) => item.category === categoryParam);
-        }
-        return c.json(cached);
-    }
-    
     const symbols = MACRO_INDICATOR_CONFIG.map(item => item.symbol);
     const quotes = await fetchYahooQuotes(symbols);
     const quoteMap = new Map<string, any>();
@@ -817,25 +832,38 @@ financeRoutes.get('/api/finance/macro', async (c) => {
     });
     
     if (macro.length > 0) macroCache = { data: macro, timestamp: now };
+    return macro;
+}
 
-    if (categoryParam && categoryParam !== 'all') {
-        const filtered = macro.filter(item => item.category === categoryParam);
-        return c.json(filtered);
+financeRoutes.get('/api/finance/macro', async (c) => {
+    const now = Date.now();
+    const categoryParam = c.req.query('category');
+
+    let data = macroCache ? macroCache.data : null;
+    if (data) {
+        if ((now - (macroCache?.timestamp || 0)) >= CACHE_TTL && !isRefreshingMacro) {
+            isRefreshingMacro = true;
+            refreshMacroData()
+                .catch(() => {})
+                .finally(() => { isRefreshingMacro = false; });
+        }
+    } else {
+        data = await refreshMacroData();
     }
 
-    return c.json(macro);
+    if (categoryParam && categoryParam !== 'all') {
+        return c.json((data || []).filter((item: any) => item.category === categoryParam));
+    }
+
+    return c.json(data || []);
 });
 
 // 주요 통화 환율 (원화 기준)
 let exchangeCache: { data: any; timestamp: number } | null = null;
+let isRefreshingExchange = false;
 
-financeRoutes.get('/api/finance/exchange', async (c) => {
+async function refreshExchangeData(): Promise<any[]> {
     const now = Date.now();
-    if (exchangeCache && (now - exchangeCache.timestamp) < CACHE_TTL) {
-        return c.json(exchangeCache.data);
-    }
-
-    // KRW=X = USD/KRW, 나머지는 <통화>KRW=X. JPY는 관례상 100엔 기준 표시(unit=100).
     const symbols = ['KRW=X', 'EURKRW=X', 'JPYKRW=X', 'CNYKRW=X', 'GBPKRW=X', 'AUDKRW=X', 'CADKRW=X', 'CHFKRW=X'];
     const config: Record<string, { code: string; name: string; flag: string; unit: number }> = {
         'KRW=X': { code: 'USD', name: '미국 달러', flag: '🇺🇸', unit: 1 },
@@ -879,6 +907,22 @@ financeRoutes.get('/api/finance/exchange', async (c) => {
     });
 
     if (rates.length > 0) exchangeCache = { data: rates, timestamp: now };
+    return rates;
+}
+
+financeRoutes.get('/api/finance/exchange', async (c) => {
+    const now = Date.now();
+    if (exchangeCache) {
+        if ((now - exchangeCache.timestamp) >= CACHE_TTL && !isRefreshingExchange) {
+            isRefreshingExchange = true;
+            refreshExchangeData()
+                .catch(() => {})
+                .finally(() => { isRefreshingExchange = false; });
+        }
+        return c.json(exchangeCache.data);
+    }
+
+    const rates = await refreshExchangeData();
     return c.json(rates);
 });
 
@@ -948,23 +992,24 @@ function currencyFromCode(code?: string): string {
     }
 }
 
-// 국내 대표 기업 + 미국 빅테크 (미니 차트 포함)
-// currencySymbol 미지정 시 Yahoo meta.currency로 종목별 자동 판별(관심종목 등 혼합 목록용)
+// 국내 대표 기업 + 미국 빅테크 (미니 차트 포함) — Promise.all 병렬화 + 종목별 캐시 적용
 async function fetchStockCards(symbols: string[], nameMap: Record<string, string>, tickerMap: Record<string, string>, currencySymbol?: string) {
-    const results: any[] = [];
-    
-    for (const symbol of symbols) {
+    const now = Date.now();
+    const promises = symbols.map(async (symbol) => {
+        const cached = stockCardCache.get(symbol);
+        if (cached && cached.expiresAt > now) {
+            return cached.data;
+        }
+
         try {
             const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`;
-            const res = await fetch(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            });
+            const res = await fetchWithTimeout(url, 3500);
             
-            if (!res.ok) continue;
+            if (!res.ok) return cached?.data || null;
             
             const data = await res.json();
             const result = data?.chart?.result?.[0];
-            if (!result) continue;
+            if (!result) return cached?.data || null;
             
             const meta = result.meta;
             const timestamps = result.timestamp || [];
@@ -984,7 +1029,7 @@ async function fetchStockCards(symbols: string[], nameMap: Record<string, string
             const cleanTicker = (tickerMap[symbol] || symbol).replace(/\.(KS|KQ)$/i, '');
             const resolvedName = nameMap[symbol] || nameMap[cleanTicker] || resolveStockKoreanName(cleanTicker) || meta.shortName || cleanTicker;
             
-            results.push({
+            const card = {
                 ticker: tickerMap[symbol] || cleanTicker,
                 name: resolvedName,
                 price: Math.round(price * 100) / 100,
@@ -993,26 +1038,26 @@ async function fetchStockCards(symbols: string[], nameMap: Record<string, string
                 status: change >= 0 ? 'up' : 'down',
                 currency: currencySymbol ?? currencyFromCode(meta.currency),
                 sparkline,
-            });
+            };
+            stockCardCache.set(symbol, { data: card, expiresAt: now + QUOTE_CACHE_TTL });
+            return card;
         } catch (e) {
-            console.error(`Failed to fetch ${symbol}:`, e);
+            return cached?.data || null;
         }
-    }
-    
-    return results;
+    });
+
+    const settled = await Promise.all(promises);
+    return settled.filter(Boolean);
 }
 
 // 캐시
 let krStocksCache: { data: any; timestamp: number } | null = null;
 let usStocksCache: { data: any; timestamp: number } | null = null;
+let isRefreshingKrStocks = false;
+let isRefreshingUsStocks = false;
 
-// 국내 대표기업
-financeRoutes.get('/api/finance/kr-stocks', async (c) => {
+async function refreshKrStocksData(): Promise<any[]> {
     const now = Date.now();
-    if (krStocksCache && (now - krStocksCache.timestamp) < CACHE_TTL) {
-        return c.json(krStocksCache.data);
-    }
-    
     const symbols = ['005930.KS', '000660.KS', '373220.KS', '035420.KS'];
     const nameMap: Record<string, string> = {
         '005930.KS': '삼성전자', '000660.KS': 'SK하이닉스',
@@ -1022,31 +1067,58 @@ financeRoutes.get('/api/finance/kr-stocks', async (c) => {
         '005930.KS': '005930', '000660.KS': '000660',
         '373220.KS': '373220', '035420.KS': '035420',
     };
-    
     const stocks = await fetchStockCards(symbols, nameMap, tickerMap, '₩');
     if (stocks.length > 0) krStocksCache = { data: stocks, timestamp: now };
-    return c.json(stocks);
-});
+    return stocks;
+}
 
-// 미국 빅테크 4대장
-financeRoutes.get('/api/finance/us-stocks', async (c) => {
+async function refreshUsStocksData(): Promise<any[]> {
     const now = Date.now();
-    if (usStocksCache && (now - usStocksCache.timestamp) < CACHE_TTL) {
-        return c.json(usStocksCache.data);
-    }
-    
     const symbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT'];
     const nameMap: Record<string, string> = {
         'AAPL': '애플', 'TSLA': '테슬라',
         'NVDA': '엔비디아', 'MSFT': '마이크로소프트',
     };
-    
     const stocks = await fetchStockCards(symbols, nameMap, symbols.reduce((a, s) => ({ ...a, [s]: s }), {} as Record<string, string>), '$');
     if (stocks.length > 0) usStocksCache = { data: stocks, timestamp: now };
+    return stocks;
+}
+
+// 국내 대표기업 (SWR 적용)
+financeRoutes.get('/api/finance/kr-stocks', async (c) => {
+    const now = Date.now();
+    if (krStocksCache) {
+        if ((now - krStocksCache.timestamp) >= CACHE_TTL && !isRefreshingKrStocks) {
+            isRefreshingKrStocks = true;
+            refreshKrStocksData()
+                .catch(() => {})
+                .finally(() => { isRefreshingKrStocks = false; });
+        }
+        return c.json(krStocksCache.data);
+    }
+    
+    const stocks = await refreshKrStocksData();
     return c.json(stocks);
 });
 
-// 임의 다종목 카드 일괄 조회 (관심종목 등) — symbols=AAPL,005930,TSLA
+// 미국 빅테크 4대장 (SWR 적용)
+financeRoutes.get('/api/finance/us-stocks', async (c) => {
+    const now = Date.now();
+    if (usStocksCache) {
+        if ((now - usStocksCache.timestamp) >= CACHE_TTL && !isRefreshingUsStocks) {
+            isRefreshingUsStocks = true;
+            refreshUsStocksData()
+                .catch(() => {})
+                .finally(() => { isRefreshingUsStocks = false; });
+        }
+        return c.json(usStocksCache.data);
+    }
+    
+    const stocks = await refreshUsStocksData();
+    return c.json(stocks);
+});
+
+// 임의 다종목 카드 일괄 조회 (관심종목 등) — symbols=AAPL,005930,TSLA (병렬 처리)
 financeRoutes.get('/api/finance/stocks', async (c) => {
     const raw = c.req.query('symbols') || '';
     const tickers = raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 30);
@@ -1071,35 +1143,43 @@ financeRoutes.get('/api/finance/stocks', async (c) => {
         }
     }
 
-    // 1. Yahoo Finance 기반 미니차트 포함 시세 카드 조회
-    let stocks = await fetchStockCards(symbols, nameMap, tickerMap);
+    // 1. Yahoo Finance 기반 미니차트 포함 시세 카드 병렬 조회
+    const stocks = await fetchStockCards(symbols, nameMap, tickerMap);
 
-    // 2. 조회에 실패했거나 누락된 종목 (특히 한국 종목) 네이버 증권 API 실시간 보강
+    // 2. 조회에 실패했거나 누락된 종목 (특히 한국 종목) 네이버 증권 API 실시간 병렬 보강
     const fetchedCleanTickers = new Set(stocks.map(s => s.ticker.toUpperCase().replace(/\.(KS|KQ)$/i, '')));
-    for (const rawTicker of tickers) {
-        const cleanTicker = rawTicker.replace(/\.(KS|KQ)$/i, '');
-        if (!fetchedCleanTickers.has(cleanTicker)) {
-            try {
-                const naver = await fetchNaverStockDetail(cleanTicker);
-                const isKorean = /^\d+$/.test(cleanTicker);
-                const resolvedName = nameMap[cleanTicker] || naver?.name || resolveStockKoreanName(cleanTicker) || cleanTicker;
-                const price = naver?.price || 0;
-                const change = naver?.change !== undefined ? naver.change : 0;
-                const rate = naver?.rate !== undefined ? naver.rate : 0;
-                stocks.push({
-                    ticker: cleanTicker,
-                    name: resolvedName,
-                    price: Math.round(price * 100) / 100,
-                    change: Math.round(change * 100) / 100,
-                    rate: Math.round(rate * 100) / 100,
-                    status: change >= 0 ? 'up' : 'down',
-                    currency: isKorean ? '₩' : '$',
-                    sparkline: naver?.previousClose ? [naver.previousClose, price] : [price],
-                });
-            } catch (err) {
-                console.warn(`Fallback fetch failed for ${cleanTicker}:`, err);
-            }
-        }
+    const missingCleanTickers = tickers
+        .map(t => t.replace(/\.(KS|KQ)$/i, ''))
+        .filter(cleanTicker => !fetchedCleanTickers.has(cleanTicker));
+
+    if (missingCleanTickers.length > 0) {
+        const fallbackResults = await Promise.all(
+            missingCleanTickers.map(async (cleanTicker) => {
+                try {
+                    const naver = await fetchNaverStockDetail(cleanTicker);
+                    const isKorean = /^\d+$/.test(cleanTicker);
+                    const resolvedName = nameMap[cleanTicker] || naver?.name || resolveStockKoreanName(cleanTicker) || cleanTicker;
+                    const price = naver?.price || 0;
+                    const change = naver?.change !== undefined ? naver.change : 0;
+                    const rate = naver?.rate !== undefined ? naver.rate : 0;
+                    return {
+                        ticker: cleanTicker,
+                        name: resolvedName,
+                        price: Math.round(price * 100) / 100,
+                        change: Math.round(change * 100) / 100,
+                        rate: Math.round(rate * 100) / 100,
+                        status: change >= 0 ? 'up' : 'down',
+                        currency: isKorean ? '₩' : '$',
+                        sparkline: naver?.previousClose ? [naver.previousClose, price] : [price],
+                    };
+                } catch {
+                    return null;
+                }
+            })
+        );
+        fallbackResults.forEach(item => {
+            if (item) stocks.push(item);
+        });
     }
 
     // 3. 최종 정규화: ticker는 항상 cleanTicker, name은 한국어 최우선 보장
@@ -1117,36 +1197,40 @@ financeRoutes.get('/api/finance/stocks', async (c) => {
 });
 
 // =========================================================================
-// 🚀 네이버 증권 실시간 기업 데이터 조회 (52주 고/저, 실제 시총, 외인소진율 공식 데이터)
+// 🚀 네이버 증권 실시간 기업 데이터 조회 (Promise.all 병렬화 + 인메모리 캐시)
 // =========================================================================
 async function fetchNaverStockDetail(ticker: string): Promise<any> {
+    const now = Date.now();
+    const cached = naverDetailCache.get(ticker);
+    if (cached && cached.expiresAt > now) {
+        return cached.data;
+    }
+
     try {
         if (/^\d+$/.test(ticker)) {
-            // 대한민국 KOSPI/KOSDAQ 주식
-            const url = `https://m.stock.naver.com/api/stock/${ticker}/integration`;
-            const res = await fetch(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            });
-            if (!res.ok) return null;
-            const data = await res.json();
+            // 대한민국 KOSPI/KOSDAQ 주식: /integration과 /basic을 병렬 호출
+            const [integRes, basicData] = await Promise.all([
+                fetchWithTimeout(`https://m.stock.naver.com/api/stock/${ticker}/integration`, 3000),
+                fetchWithTimeout(`https://m.stock.naver.com/api/stock/${ticker}/basic`, 3000)
+                    .then(r => r.ok ? r.json() : null)
+                    .catch(() => null),
+            ]);
+            if (!integRes.ok) return cached?.data || null;
+            const data = await integRes.json();
             const map: Record<string, string> = {};
             (data.totalInfos || []).forEach((item: any) => {
                 map[item.code] = item.value;
             });
 
-            const basicRes = await fetch(`https://m.stock.naver.com/api/stock/${ticker}/basic`, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-            }).then(r => r.ok ? r.json() : null).catch(() => null);
-
-            const priceNum = Number(String(basicRes?.closePrice || map.lastClosePrice || '0').replace(/,/g, ''));
-            const prevNum = Number(String(map.lastClosePrice || basicRes?.closePrice || '0').replace(/,/g, ''));
+            const priceNum = Number(String(basicData?.closePrice || map.lastClosePrice || '0').replace(/,/g, ''));
+            const prevNum = Number(String(map.lastClosePrice || basicData?.closePrice || '0').replace(/,/g, ''));
             const high52Num = Number(String(map.highPriceOf52Weeks || '0').replace(/,/g, ''));
             const low52Num = Number(String(map.lowPriceOf52Weeks || '0').replace(/,/g, ''));
-            const changeNum = Number(String(basicRes?.compareToPreviousClosePrice || '0').replace(/,/g, ''));
-            const rateNum = Number(String(basicRes?.fluctuationsRatio || '0').replace(/,/g, ''));
+            const changeNum = Number(String(basicData?.compareToPreviousClosePrice || '0').replace(/,/g, ''));
+            const rateNum = Number(String(basicData?.fluctuationsRatio || '0').replace(/,/g, ''));
 
-            return {
-                name: data.stockName || basicRes?.stockName,
+            const result = {
+                name: data.stockName || basicData?.stockName,
                 price: priceNum || prevNum,
                 previousClose: prevNum || priceNum,
                 change: changeNum,
@@ -1168,60 +1252,75 @@ async function fetchNaverStockDetail(ticker: string): Promise<any> {
                 dividendYield: map.dividendYieldRatio ? parseFloat(map.dividendYieldRatio) : undefined,
                 dividendPerShare: map.dividend ? Number(map.dividend.replace(/[^\d.-]/g, '')) : undefined,
             };
+            naverDetailCache.set(ticker, { data: result, expiresAt: now + 60 * 1000 });
+            return result;
         } else {
-            // 미국/해외 주식 (나스닥, NYSE, NYSE Arca ETF)
-            for (const sfx of ['.O', '.N', '.K', '']) {
-                try {
-                    const res = await fetch(`https://api.stock.naver.com/stock/${ticker}${sfx}/basic`, {
-                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-                    });
-                    if (res.ok) {
+            // 미국/해외 주식: 캐시된 접미사가 있으면 우선 시도, 없으면 병렬 조회
+            const knownSuffix = usSuffixCache.get(ticker);
+            const suffixes = knownSuffix !== undefined ? [knownSuffix] : ['.O', '.N', '.K', ''];
+
+            const responses = await Promise.all(
+                suffixes.map(async (sfx) => {
+                    try {
+                        const res = await fetchWithTimeout(`https://api.stock.naver.com/stock/${ticker}${sfx}/basic`, 3000);
+                        if (!res.ok) return null;
                         const data = await res.json();
                         if (data && data.stockName && data.closePrice) {
-                            const map: Record<string, string> = {};
-                            (data.stockItemTotalInfos || []).forEach((item: any) => {
-                                map[item.code] = item.value;
-                            });
-                            const priceNum = Number(String(data.closePrice || '0').replace(/,/g, ''));
-                            const prevNum = Number(String(map.basePrice || data.closePrice || '0').replace(/,/g, ''));
-                            const changeNum = Number(String(data.compareToPreviousClosePriceRaw || '0'));
-                            const rateNum = Number(String(data.fluctuationsRatioRaw || '0'));
-                            const high52Num = Number(String(map.highPriceOf52Weeks || '0').replace(/,/g, ''));
-                            const low52Num = Number(String(map.lowPriceOf52Weeks || '0').replace(/,/g, ''));
-
-                            return {
-                                name: data.stockName,
-                                englishName: data.stockNameEng,
-                                price: priceNum,
-                                previousClose: prevNum,
-                                change: changeNum,
-                                rate: rateNum,
-                                status: changeNum >= 0 ? 'up' : 'down',
-                                open: Number(String(map.openPrice || '0').replace(/,/g, '')) || priceNum,
-                                high: Number(String(map.highPrice || '0').replace(/,/g, '')) || priceNum,
-                                low: Number(String(map.lowPrice || '0').replace(/,/g, '')) || priceNum,
-                                volume: map.accumulatedTradingVolume ? `${map.accumulatedTradingVolume} 주` : undefined,
-                                tradingValue: map.accumulatedTradingValue,
-                                marketCap: map.marketValue ? (map.marketValue.includes('USD') ? map.marketValue : `${map.marketValue} USD`) : undefined,
-                                foreignRate: '글로벌 유동',
-                                high52: high52Num || undefined,
-                                low52: low52Num || undefined,
-                                per: map.per && map.per !== 'N/A' ? parseFloat(map.per) : undefined,
-                                pbr: map.pbr && map.pbr !== 'N/A' ? parseFloat(map.pbr) : undefined,
-                                eps: map.eps && map.eps !== 'N/A' ? parseFloat(map.eps) : undefined,
-                                bps: map.bps && map.bps !== 'N/A' ? parseFloat(map.bps) : undefined,
-                                dividendYield: map.dividendYieldRatio && map.dividendYieldRatio !== 'N/A' ? parseFloat(map.dividendYieldRatio) : undefined,
-                                dividendPerShare: map.dividend && map.dividend !== 'N/A' ? parseFloat(map.dividend) : undefined,
-                            };
+                            return { sfx, data };
                         }
+                        return null;
+                    } catch {
+                        return null;
                     }
-                } catch (_) {}
+                })
+            );
+
+            const found = responses.find(Boolean);
+            if (found) {
+                usSuffixCache.set(ticker, found.sfx);
+                const data = found.data;
+                const map: Record<string, string> = {};
+                (data.stockItemTotalInfos || []).forEach((item: any) => {
+                    map[item.code] = item.value;
+                });
+                const priceNum = Number(String(data.closePrice || '0').replace(/,/g, ''));
+                const prevNum = Number(String(map.basePrice || data.closePrice || '0').replace(/,/g, ''));
+                const changeNum = Number(String(data.compareToPreviousClosePriceRaw || '0'));
+                const rateNum = Number(String(data.fluctuationsRatioRaw || '0'));
+                const high52Num = Number(String(map.highPriceOf52Weeks || '0').replace(/,/g, ''));
+                const low52Num = Number(String(map.lowPriceOf52Weeks || '0').replace(/,/g, ''));
+
+                const result = {
+                    name: data.stockName,
+                    englishName: data.stockNameEng,
+                    price: priceNum,
+                    previousClose: prevNum,
+                    change: changeNum,
+                    rate: rateNum,
+                    status: changeNum >= 0 ? 'up' : 'down',
+                    open: Number(String(map.openPrice || '0').replace(/,/g, '')) || priceNum,
+                    high: Number(String(map.highPrice || '0').replace(/,/g, '')) || priceNum,
+                    low: Number(String(map.lowPrice || '0').replace(/,/g, '')) || priceNum,
+                    volume: map.accumulatedTradingVolume ? `${map.accumulatedTradingVolume} 주` : undefined,
+                    tradingValue: map.accumulatedTradingValue,
+                    marketCap: map.marketValue ? (map.marketValue.includes('USD') ? map.marketValue : `${map.marketValue} USD`) : undefined,
+                    foreignRate: '글로벌 유동',
+                    high52: high52Num || undefined,
+                    low52: low52Num || undefined,
+                    per: map.per && map.per !== 'N/A' ? parseFloat(map.per) : undefined,
+                    pbr: map.pbr && map.pbr !== 'N/A' ? parseFloat(map.pbr) : undefined,
+                    eps: map.eps && map.eps !== 'N/A' ? parseFloat(map.eps) : undefined,
+                    bps: map.bps && map.bps !== 'N/A' ? parseFloat(map.bps) : undefined,
+                    dividendYield: map.dividendYieldRatio && map.dividendYieldRatio !== 'N/A' ? parseFloat(map.dividendYieldRatio) : undefined,
+                    dividendPerShare: map.dividend && map.dividend !== 'N/A' ? parseFloat(map.dividend) : undefined,
+                };
+                naverDetailCache.set(ticker, { data: result, expiresAt: now + 60 * 1000 });
+                return result;
             }
         }
-        return null;
+        return cached?.data || null;
     } catch (e) {
-        console.warn('fetchNaverStockDetail failed:', e);
-        return null;
+        return cached?.data || null;
     }
 }
 
@@ -1230,9 +1329,7 @@ async function fetchNaverStockDetail(ticker: string): Promise<any> {
 async function fetchNaverRanking(category: string, pageSize = 10): Promise<any[]> {
     try {
         const url = `https://m.stock.naver.com/api/stocks/${category}/KOSPI?page=1&pageSize=${pageSize}`;
-        const res = await fetch(url, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
-        });
+        const res = await fetchWithTimeout(url, 3000);
         if (!res.ok) return [];
         const data = await res.json();
         const stocks = data?.stocks || [];
@@ -1294,7 +1391,6 @@ async function fetchNaverRanking(category: string, pageSize = 10): Promise<any[]
             };
         });
     } catch (e) {
-        console.error(`fetchNaverRanking failed for ${category}:`, e);
         return [];
     }
 }
@@ -1327,30 +1423,24 @@ const MARKET_LEADERS_CONFIG: Record<string, LeaderConfigItem[]> = {
 };
 
 let leadersCache: { [key: string]: { data: any; timestamp: number } } = {};
+const refreshingLeaders = new Set<string>();
 
-financeRoutes.get('/api/finance/market-leaders', async (c) => {
-    const rawType = (c.req.query('type') || 'price_top') as string;
+async function refreshMarketLeadersData(rawType: string): Promise<any[]> {
     const now = Date.now();
-
-    if (leadersCache[rawType] && (now - leadersCache[rawType].timestamp) < CACHE_TTL) {
-        return c.json(leadersCache[rawType].data);
-    }
-
     let leaders: any[] = [];
 
-    // 네이버 공식 실시간 랭킹 API 카테고리 매핑
     const naverCategoryMap: Record<string, string> = {
-        'price_top': 'priceTop',     // 거래대금 상위
+        'price_top': 'priceTop',
         'trade_value': 'priceTop',
-        'popular': 'searchTop',      // 인기 종목
+        'popular': 'searchTop',
         'search_top': 'searchTop',
-        'gainers': 'up',             // 상승
+        'gainers': 'up',
         'up': 'up',
-        'losers': 'down',            // 하락
+        'losers': 'down',
         'down': 'down',
-        'market_cap': 'marketValue', // 시가총액
+        'market_cap': 'marketValue',
         'market_value': 'marketValue',
-        'volume': 'quantTop',        // 거래량 상위
+        'volume': 'quantTop',
         'quant_top': 'quantTop',
     };
 
@@ -1359,7 +1449,6 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
         leaders = await fetchNaverRanking(naverCat, 10);
     }
 
-    // fallback 또는 고배당(dividend) 탭
     if (leaders.length === 0) {
         const configList = MARKET_LEADERS_CONFIG[rawType] || MARKET_LEADERS_CONFIG.dividend;
         if (configList) {
@@ -1430,7 +1519,24 @@ financeRoutes.get('/api/finance/market-leaders', async (c) => {
     if (leaders.length > 0) {
         leadersCache[rawType] = { data: leaders, timestamp: now };
     }
+    return leaders;
+}
 
+financeRoutes.get('/api/finance/market-leaders', async (c) => {
+    const rawType = (c.req.query('type') || 'price_top') as string;
+    const now = Date.now();
+
+    if (leadersCache[rawType]) {
+        if ((now - leadersCache[rawType].timestamp) >= CACHE_TTL && !refreshingLeaders.has(rawType)) {
+            refreshingLeaders.add(rawType);
+            refreshMarketLeadersData(rawType)
+                .catch(() => {})
+                .finally(() => { refreshingLeaders.delete(rawType); });
+        }
+        return c.json(leadersCache[rawType].data);
+    }
+
+    const leaders = await refreshMarketLeadersData(rawType);
     return c.json(leaders);
 });
 
@@ -1535,18 +1641,10 @@ const THEMES_CONFIG: ThemeConfig[] = [
 ];
 
 let themesCache: { data: any; timestamp: number } | null = null;
+let isRefreshingThemes = false;
 
-financeRoutes.get('/api/finance/themes', async (c) => {
-    const category = c.req.query('category');
+async function refreshThemesData(): Promise<any[]> {
     const now = Date.now();
-
-    if (themesCache && (now - themesCache.timestamp) < CACHE_TTL) {
-        if (category && category !== 'all') {
-            return c.json(themesCache.data.filter((t: any) => t.key === category));
-        }
-        return c.json(themesCache.data);
-    }
-
     const allSymbols: string[] = [];
     THEMES_CONFIG.forEach(t => t.stocks.forEach(s => allSymbols.push(s.symbol)));
     const quotes = await fetchYahooQuotes(allSymbols);
@@ -1586,12 +1684,30 @@ financeRoutes.get('/api/finance/themes', async (c) => {
     }));
 
     themesCache = { data: themes, timestamp: now };
+    return themes;
+}
 
-    if (category && category !== 'all') {
-        return c.json(themes.filter(t => t.key === category));
+financeRoutes.get('/api/finance/themes', async (c) => {
+    const category = c.req.query('category');
+    const now = Date.now();
+
+    let themes = themesCache ? themesCache.data : null;
+    if (themes) {
+        if ((now - (themesCache?.timestamp || 0)) >= CACHE_TTL && !isRefreshingThemes) {
+            isRefreshingThemes = true;
+            refreshThemesData()
+                .catch(() => {})
+                .finally(() => { isRefreshingThemes = false; });
+        }
+    } else {
+        themes = await refreshThemesData();
     }
 
-    return c.json(themes);
+    if (category && category !== 'all') {
+        return c.json((themes || []).filter((t: any) => t.key === category));
+    }
+
+    return c.json(themes || []);
 });
 
 // =========================================================================
@@ -2099,10 +2215,8 @@ financeRoutes.get('/api/finance/stock-detail/:symbol', async (c) => {
     const isKorean = /^\d+$/.test(ticker);
     const yahooSymbol = isKorean ? `${ticker}.KS` : ticker;
 
-    // 1. 네이버 증권 1차 실시간 공식 데이터 조회
-    const naver = await fetchNaverStockDetail(ticker);
-
-    // 2. 야후 파이낸스 보조 데이터 조회 (실패 대비)
+    // 1. 네이버 증권 1차 실시간 데이터 조회 + 야후 파이낸스 보조 조회 (필요시 병렬)
+    let naver = await fetchNaverStockDetail(ticker);
     let q: any = null;
     if (!naver || !naver.price) {
         const quotes = await fetchYahooQuotes([yahooSymbol]);
@@ -2321,7 +2435,43 @@ financeRoutes.get('/api/finance/chart/:symbol', async (c) => {
     return c.json(chartResult);
 });
 
+// =========================================================================
+// 🔥 백그라운드 캐시 프리워머 (Cold Start 원천 차단)
+// 서버 기동 직후 및 4분 주기로 주요 금융 지표를 단계별(Staggered)로 예열하여
+// 첫 방문자도 항상 < 15ms 내 즉시 캐시 응답을 받도록 보장합니다.
+// =========================================================================
+async function warmFinanceCaches() {
+    try {
+        // 1단계: 가장 먼저 화면 상단에 노출되는 지수 & 대표 종목 예열
+        const krIdx = await fetchNaverIndices().catch(() => []);
+        if (krIdx.length > 0) {
+            krIndicesCache = { data: krIdx, timestamp: Date.now() };
+        }
+        await Promise.allSettled([
+            refreshAllIndicesData(),
+            refreshKrStocksData(),
+            refreshUsStocksData(),
+        ]);
+
+        // 2단계: 환율 및 거시경제 지표 예열
+        await Promise.allSettled([
+            refreshExchangeData(),
+            refreshMacroData(),
+        ]);
+
+        // 3단계: 주식 랭킹 및 테마 허브 예열
+        await Promise.allSettled([
+            refreshMarketLeadersData('price_top'),
+            refreshThemesData(),
+        ]);
+    } catch (e) {
+        console.error('[FinanceWarmer] Cache warm error:', e);
+    }
+}
+
+setTimeout(() => {
+    warmFinanceCaches();
+    setInterval(warmFinanceCaches, 4 * 60 * 1000);
+}, 1500);
+
 export { financeRoutes };
-
-
-

@@ -114,12 +114,12 @@ export default function FinancePage() {
     useEffect(() => {
         let intervalId: NodeJS.Timeout | null = null;
 
-        const updateIndices = async () => {
+        const updateIndices = async (isPeriodic = false) => {
             const openNow = isKoreanMarketOpen();
             setIsMarketOpen(openNow);
 
-            // 한국 탭이면서 장마감(09:00 전, 15:30 후, 주말)인 경우 10초 폴링 미실시
-            if (selectedCountry === 'kr' && !openNow) {
+            // 주기적 폴링일 때 한국 탭이면서 장마감인 경우 폴링 생략
+            if (isPeriodic && selectedCountry === 'kr' && !openNow) {
                 return;
             }
 
@@ -132,10 +132,13 @@ export default function FinancePage() {
                             const others = prev.filter(i => i.country !== selectedCountry);
                             return [...others, ...data];
                         });
+                        setLoading(false);
                         const now = new Date();
                         setLastUpdatedTime(now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-                        setFlashHighlight(true);
-                        setTimeout(() => setFlashHighlight(false), 900);
+                        if (isPeriodic) {
+                            setFlashHighlight(true);
+                            setTimeout(() => setFlashHighlight(false), 900);
+                        }
                     }
                 }
             } catch (e) {
@@ -143,13 +146,13 @@ export default function FinancePage() {
             }
         };
 
-        // 탭 전환 시 즉시 1회 최신 데이터 요청
-        updateIndices();
+        // 탭 전환 또는 초기 진입 시 즉시 해당 국가 지수 요청
+        updateIndices(false);
 
         // 한국 탭이고 개장 시간일 때만 10초 주기 타이머 실행
         const openNow = isKoreanMarketOpen();
         if (selectedCountry === 'kr' && openNow) {
-            intervalId = setInterval(updateIndices, 10000);
+            intervalId = setInterval(() => updateIndices(true), 10000);
         }
 
         return () => {
@@ -158,52 +161,51 @@ export default function FinancePage() {
     }, [selectedCountry, isMarketOpen]);
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [indicesRes, krRes, usRes, macroRes, newsRes] = await Promise.all([
-                    fetch(`${API_BASE}/api/finance/indices`),
-                    fetch(`${API_BASE}/api/finance/kr-stocks`),
-                    fetch(`${API_BASE}/api/finance/us-stocks`),
-                    fetch(`${API_BASE}/api/finance/macro`),
-                    fetch(`${API_BASE}/api/news?category=stock&limit=6`),
-                ]);
-                
-                if (indicesRes.ok) {
-                    const data = await indicesRes.json();
-                    if (Array.isArray(data) && data.length > 0) setIndices(data);
-                }
-                if (krRes.ok) {
-                    const data = await krRes.json();
-                    if (data.length > 0) setKrStocks(data);
-                }
-                if (usRes.ok) {
-                    const data = await usRes.json();
-                    if (data.length > 0) setUsStocks(data);
-                }
-                if (macroRes.ok) {
-                    const data = await macroRes.json();
-                    if (data.length > 0) setMacro(data);
-                }
-                if (newsRes.ok) {
-                    const newsData = await newsRes.json();
-                    if (newsData.success && Array.isArray(newsData.news) && newsData.news.length > 0) {
-                        setStockNews(newsData.news.slice(0, 4));
-                    } else {
-                        // fallback: economy 뉴스 조회
-                        const fallbackRes = await fetch(`${API_BASE}/api/news?category=economy&limit=4`);
-                        if (fallbackRes.ok) {
-                            const fallbackData = await fallbackRes.json();
-                            if (fallbackData.success && Array.isArray(fallbackData.news) && fallbackData.news.length > 0) {
-                                setStockNews(fallbackData.news.slice(0, 4));
-                            }
-                        }
+        const fetchData = () => {
+            // 1. 전체 국가 지수 백그라운드 로드 (완료 즉시 스켈레톤 해제)
+            fetch(`${API_BASE}/api/finance/indices`)
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        setIndices(data);
                     }
-                }
-            } catch (e) {
-                console.warn('실시간 데이터 로드 실패:', e);
-            } finally {
-                setLoading(false);
-            }
+                })
+                .catch(e => console.warn('지수 로드 실패:', e))
+                .finally(() => setLoading(false));
+
+            // 2. 국내 대표 주식 독립 로드
+            fetch(`${API_BASE}/api/finance/kr-stocks`)
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) setKrStocks(data);
+                })
+                .catch(e => console.warn('국내 주식 로드 실패:', e));
+
+            // 3. 미국 빅테크 주식 독립 로드
+            fetch(`${API_BASE}/api/finance/us-stocks`)
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) setUsStocks(data);
+                })
+                .catch(e => console.warn('미국 주식 로드 실패:', e));
+
+            // 4. 거시경제 지표 독립 로드
+            fetch(`${API_BASE}/api/finance/macro`)
+                .then(res => (res.ok ? res.json() : null))
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) setMacro(data);
+                })
+                .catch(e => console.warn('거시경제 지표 로드 실패:', e));
+
+            // 5. 경제/증시 뉴스 단일 직접 조회 (불필요한 2단계 워터폴 제거)
+            fetch(`${API_BASE}/api/news?category=economy&limit=4`)
+                .then(res => (res.ok ? res.json() : null))
+                .then(newsData => {
+                    if (newsData?.success && Array.isArray(newsData.news) && newsData.news.length > 0) {
+                        setStockNews(newsData.news.slice(0, 4));
+                    }
+                })
+                .catch(e => console.warn('뉴스 로드 실패:', e));
         };
         
         fetchData();
@@ -279,7 +281,7 @@ export default function FinancePage() {
 
             {/* 브레드크럼 */}
             <div className="bg-white border-b border-gray-100">
-                <div className="max-w-6xl mx-auto px-4 py-2">
+                <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 w-full">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Link to="/" className="hover:text-green-600 transition-colors">홈</Link>
                         <i className="fas fa-chevron-right text-xs text-gray-300"></i>

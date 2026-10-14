@@ -141,7 +141,7 @@ export default function ExchangePage() {
 
             {/* 상단 브레드크럼 & 실시간 고시 상태 */}
             <div className="border-b border-slate-200/60 bg-[#eef3f8]/80 backdrop-blur-xs">
-                <div className="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between text-xs text-slate-500">
+                <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2.5 w-full flex items-center justify-between text-xs text-slate-500">
                     <div className="flex items-center gap-2">
                         <Link to="/" className="hover:text-indigo-600 transition-colors">홈</Link>
                         <i className="fas fa-chevron-right text-[10px] text-slate-300"></i>
@@ -169,7 +169,7 @@ export default function ExchangePage() {
                 </div>
             </div>
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-6 sm:py-10 w-full space-y-8 sm:space-y-12">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10 w-full space-y-8 sm:space-y-12">
                 
                 {/* 1. 페이지 헤더 타이틀 */}
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">

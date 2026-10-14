@@ -324,7 +324,7 @@ export default function StocksPage() {
 
             {/* 브레드크럼 */}
             <div className="bg-white border-b border-gray-100">
-                <div className="max-w-6xl mx-auto px-4 py-2">
+                <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 w-full">
                     <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Link to="/" className="hover:text-blue-600 transition-colors">홈</Link>
                         <i className="fas fa-chevron-right text-xs text-gray-300"></i>
