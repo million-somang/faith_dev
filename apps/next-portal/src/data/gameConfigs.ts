@@ -15,8 +15,8 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     janggi: {
         label: '베라장기 (Vera Janggi)',
         icon: 'fas fa-chess-knight',
-        gradient: 'from-cyan-900 via-slate-900 to-rose-950',
-        buttonGradient: 'from-cyan-600 via-blue-600 to-rose-600 hover:from-cyan-500 hover:to-rose-500',
+        gradient: 'from-cyan-950 via-slate-900 to-rose-950',
+        buttonGradient: 'from-blue-600 via-indigo-600 to-rose-600 hover:from-blue-500 hover:to-rose-500',
         tagline: '9×10 정통 한국 장기 & 1일 1외통수 데일리 묘수풀이!',
         description: '설치 없이 웹 브라우저에서 바로 즐기는 프리미엄 한국 장기. 마상상마·상마상마·원앙마·양귀마 4대 정통 상차림, 한국 공식 73.5점 점수제 덤 규정, 3단계 인공지능(AI), 1일 1외통수 묘수풀이, 3분 7×7 미니장기, 특수 스킬 배틀 장기를 제공합니다.',
         controls: [
@@ -50,8 +50,8 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
     omok: {
         label: '베라오목 (Vera Omok)',
         icon: 'fas fa-circle-dot',
-        gradient: 'from-amber-600 via-amber-700 to-yellow-800',
-        buttonGradient: 'from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800',
+        gradient: 'from-amber-800 via-yellow-900 to-stone-950',
+        buttonGradient: 'from-amber-600 via-orange-600 to-amber-700 hover:from-amber-500 hover:to-orange-500',
         tagline: '15×15 정통 바둑판에서 펼쳐지는 3단계 인공지능 오목 대전!',
         description: '웹 브라우저에서 설치 없이 즉시 즐기는 프리미엄 AI 오목 게임입니다. 초급, 중급, 고급(마스터) 3단계 인공지능과 대결하며 실시간 형세 분석과 3D 입체 바둑돌의 손맛을 느껴보세요.',
         controls: [

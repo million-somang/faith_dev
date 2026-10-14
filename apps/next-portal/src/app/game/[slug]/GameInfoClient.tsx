@@ -40,13 +40,49 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
 
     if (!config) return null;
 
+    const getFallbackBg = (gameSlug: string) => {
+        switch (gameSlug) {
+            case 'janggi':
+                return 'bg-blue-600';
+            case 'omok':
+                return 'bg-amber-600';
+            case 'baseball':
+                return 'bg-amber-600';
+            case 'flight':
+                return 'bg-sky-600';
+            case 'vera-pop':
+                return 'bg-indigo-600';
+            case 'sudoku':
+                return 'bg-violet-600';
+            case '2048':
+                return 'bg-cyan-600';
+            case 'minesweeper':
+                return 'bg-red-600';
+            case 'freecell':
+                return 'bg-emerald-600';
+            default:
+                return 'bg-blue-600';
+        }
+    };
+
+    const getFallbackInlineStyle = (gameSlug: string) => {
+        switch (gameSlug) {
+            case 'janggi':
+                return { background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 50%, #e11d48 100%)' };
+            case 'omok':
+                return { background: 'linear-gradient(135deg, #d97706 0%, #ea580c 50%, #b45309 100%)' };
+            default:
+                return undefined;
+        }
+    };
+
     return (
         <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full">
             {/* 상단: 뒤로가기 네비게이션 */}
             <div className="mb-6 flex items-center justify-between">
                 <button
                     onClick={() => router.push('/game')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm shadow-sm cursor-pointer"
                 >
                     <i className="fas fa-arrow-left"></i> 게임 목록으로
                 </button>
@@ -67,7 +103,10 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-7 sm:p-8 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-44 h-44 bg-slate-500/5 rounded-full -translate-y-1/3 translate-x-1/4 pointer-events-none"></div>
                         <div className="relative flex items-start gap-4 mb-5">
-                            <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${config.gradient} flex items-center justify-center shrink-0 shadow-md`}>
+                            <div
+                                style={getFallbackInlineStyle(slug)}
+                                className={`w-14 h-14 rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-br ${config.gradient} flex items-center justify-center shrink-0 shadow-md`}
+                            >
                                 <i className={`${config.icon} text-white text-2xl`}></i>
                             </div>
                             <div>
@@ -85,17 +124,20 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                             )}
                         </p>
 
-                        {/* 🚀 게임 시작 버튼 (450x850 팝업 실행 방식) */}
+                        {/* 🚀 게임 시작 버튼 (450x850 팝업 실행 방식) - 고대비 선명화 */}
                         <div className="pt-2">
                             <button
                                 onClick={() => launchApp(config.appUrl, config.appName)}
-                                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl bg-gradient-to-r ${config.buttonGradient} text-white font-black text-lg shadow-lg hover:shadow-xl active:scale-95 transition-all cursor-pointer`}
+                                style={getFallbackInlineStyle(slug)}
+                                className={`w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-r ${config.buttonGradient} text-white font-black text-lg sm:text-xl shadow-lg hover:shadow-2xl active:scale-95 transition-all cursor-pointer ring-4 ring-slate-100 hover:ring-slate-200`}
                             >
-                                <i className="fas fa-play"></i>
-                                게임 시작
+                                <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                                    <i className="fas fa-play text-xs text-white"></i>
+                                </span>
+                                <span className="tracking-wide">지금 바로 게임 시작 (팝업)</span>
                             </button>
-                            <p className="text-xs text-slate-400 mt-2 flex items-center gap-1.5">
-                                <i className="fas fa-info-circle text-indigo-400"></i>
+                            <p className="text-xs text-slate-400 mt-2.5 flex items-center gap-1.5">
+                                <i className="fas fa-info-circle text-indigo-500"></i>
                                 게임 시작을 누르면 새 팝업 창에서 게임이 열립니다. (팝업 차단을 해제해 주세요)
                             </p>
                         </div>
