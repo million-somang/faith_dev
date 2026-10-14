@@ -70,20 +70,83 @@ export default function GamePage({ params }: GamePageProps) {
   const seoData = getGameSeoData(slug);
   const pageUrl = `https://veranex.app/game/${slug}`;
   const label = config?.label || legacyGame?.name || slug;
+  const description = seoData?.description || config?.description || legacyGame?.description || '';
+  const howToSteps = seoData?.howToSteps || legacyGame?.howToSteps || [];
+  const faqs = seoData?.faqs || legacyGame?.faqs || [];
+
+  const graphItems: Record<string, any>[] = [
+    {
+      '@type': 'SoftwareApplication',
+      name: label,
+      applicationCategory: 'GameApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires HTML5 and JavaScript',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'KRW',
+      },
+      url: pageUrl,
+      description,
+      inLanguage: 'ko-KR',
+    },
+    {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: '홈',
+          item: 'https://veranex.app',
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: '게임',
+          item: 'https://veranex.app/game',
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: label,
+          item: pageUrl,
+        },
+      ],
+    },
+  ];
+
+  if (howToSteps.length > 0) {
+    graphItems.push({
+      '@type': 'HowTo',
+      name: `${label} 플레이 방법 및 승리 가이드`,
+      description,
+      step: howToSteps.map((step, idx) => ({
+        '@type': 'HowToStep',
+        position: idx + 1,
+        name: step.name,
+        text: step.text,
+        url: pageUrl,
+      })),
+    });
+  }
+
+  if (faqs.length > 0) {
+    graphItems.push({
+      '@type': 'FAQPage',
+      mainEntity: faqs.map((faq) => ({
+        '@type': 'Question',
+        name: faq.question,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: faq.answer,
+        },
+      })),
+    });
+  }
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: label,
-    applicationCategory: 'GameApplication',
-    operatingSystem: 'Any',
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'KRW',
-    },
-    url: pageUrl,
-    description: seoData?.description || config?.description || legacyGame?.description,
+    '@graph': graphItems,
   };
 
   return (

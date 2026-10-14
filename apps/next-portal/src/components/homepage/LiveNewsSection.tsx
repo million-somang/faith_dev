@@ -9,7 +9,7 @@ import {
   decodeHtmlEntities,
 } from '@faithportal/core-utils';
 
-interface NewsItem {
+export interface HomeNewsItem {
   id: number;
   news_id?: number;
   title: string;
@@ -24,11 +24,17 @@ interface NewsItem {
   relatedStocks?: { name: string }[];
 }
 
-export const LiveNewsSection: React.FC = () => {
-  const [news, setNews] = useState<NewsItem[]>([]);
-  const [loading, setLoading] = useState(true);
+interface LiveNewsSectionProps {
+  initialNews?: HomeNewsItem[];
+}
+
+export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews }) => {
+  const hasInitial = Array.isArray(initialNews) && initialNews.length > 0;
+  const [news, setNews] = useState<HomeNewsItem[]>(hasInitial ? initialNews : []);
+  const [loading, setLoading] = useState(!hasInitial);
 
   useEffect(() => {
+    if (hasInitial) return;
     let active = true;
     fetch('/api/news')
       .then((res) => res.json())
@@ -48,7 +54,7 @@ export const LiveNewsSection: React.FC = () => {
     return () => {
       active = false;
     };
-  }, []);
+  }, [hasInitial]);
 
   return (
     <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm">
