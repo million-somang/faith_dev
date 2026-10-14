@@ -21,38 +21,33 @@ export default function HomePage() {
       {/* 1. VERA Lounge 실시간 핫 토론 띠배너 */}
       <LoungeBanner />
 
-      {/* 2. 대형 히어로 섹션 (데스크탑 상단 기본 표출) */}
-      <div className="hidden lg:block mb-8">
-        <HeroSearchSection />
-      </div>
-
-      {/* 3. 2-Column Responsive Layout (모바일: 쿠팡배너/뉴스 최상단 우선 노출, 데스크탑: 12열 2컬럼 레이아웃) */}
+      {/* 2. 2-Column Responsive Layout (모바일: 쿠팡배너 -> 마이크로 날씨/증시 -> 뉴스, PC: 쿠팡배너 -> 뉴스 최상단 우선 노출) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
-        {/* Left Column (8열): 모바일에서는 flex-col 내부 순서로 쿠팡배너 & 뉴스가 최상단으로 올라감 */}
+        {/* Left Column (8열): 모바일과 PC 모두 쿠팡배너 & 실시간 뉴스가 최상단으로 올라감 */}
         <div className="lg:col-span-8 flex flex-col gap-5 sm:gap-6">
-          {/* [모바일 1순위 / PC 2순위] 쿠팡 파트너스 공식 다이내믹 메인 배너 */}
-          <div className="order-1 lg:order-2">
+          {/* [모바일 1순위 / PC 1순위] 쿠팡 파트너스 공식 다이내믹 메인 배너 */}
+          <div className="order-1">
             <BannerSlot slotKey="home_main_top" />
           </div>
 
-          {/* [모바일 2순위 / PC 3순위] 실시간 뉴스 & AI 팩트 브리핑 (Vite 원본 NewsCard 스펙) */}
-          <div className="order-2 lg:order-3">
-            <LiveNewsSection />
-          </div>
-
-          {/* [모바일 3순위 전용] 1/5 크기 초소형 날씨·증시 마이크로 티커 바 */}
-          <div className="order-3 lg:hidden flex flex-row items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
+          {/* [모바일 2순위 전용] 1/5 크기 초소형 날씨·증시 마이크로 티커 바 */}
+          <div className="order-2 lg:hidden flex flex-row items-center gap-1.5 overflow-x-auto hide-scrollbar py-0.5">
             <WeatherWidget />
             <StockWidget />
           </div>
 
-          {/* [모바일 4순위 전용] 컴팩트 검색창 */}
-          <div className="order-4 lg:hidden">
+          {/* [모바일 3순위 / PC 2순위] 실시간 뉴스 & AI 팩트 브리핑 */}
+          <div className="order-3">
+            <LiveNewsSection />
+          </div>
+
+          {/* [모바일 4순위 / PC 3순위] 통합 검색 히어로 섹션 */}
+          <div className="order-4">
             <HeroSearchSection />
           </div>
 
-          {/* [모바일 5순위 / PC 1순위] 지식 가이드 & 전문 칼럼 쇼케이스 (25편 완비) */}
-          <div className="order-5 lg:order-1">
+          {/* [모바일 5순위 / PC 4순위] 지식 가이드 & 전문 칼럼 쇼케이스 (25편 완비) */}
+          <div className="order-5">
             <GuidesShowcase />
           </div>
         </div>

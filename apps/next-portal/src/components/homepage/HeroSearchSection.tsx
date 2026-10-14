@@ -16,7 +16,7 @@ export const HeroSearchSection: React.FC = () => {
   };
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-9 sm:py-12 mb-8 shadow-xl">
+    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white px-6 sm:px-12 py-9 sm:py-12 shadow-xl">
       <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-teal-500/10 pointer-events-none blur-3xl"></div>
       <div className="absolute -bottom-28 -left-16 w-80 h-80 rounded-full bg-purple-500/10 pointer-events-none blur-3xl"></div>
 
