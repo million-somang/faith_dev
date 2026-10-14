@@ -1,10 +1,12 @@
 import React from 'react';
-import { RotateCcw, Trophy, Home, Crosshair, Award } from 'lucide-react';
+import { RotateCcw, Trophy, Home, Crosshair, Award, CheckCircle2 } from 'lucide-react';
 
 interface GameOverModalProps {
   score: number;
   kills: number;
   highScore: number;
+  isLoggedIn?: boolean;
+  isScoreSaved?: boolean;
   onRestart: () => void;
 }
 
@@ -12,6 +14,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   score,
   kills,
   highScore,
+  isLoggedIn = false,
+  isScoreSaved = false,
   onRestart,
 }) => {
   const isNewHighScore = score >= highScore && score > 0;
@@ -31,11 +35,33 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         <h3 className="text-xl font-black text-[#1E293B] mb-1">
           {isNewHighScore ? '🎉 신기록 달성!' : '작전 종료 (GAME OVER)'}
         </h3>
-        <p className="text-xs text-[#7A756D] mb-5">
+        <p className="text-xs text-[#7A756D] mb-4">
           {isNewHighScore
             ? '역대 최고 기록을 경신했습니다!'
             : '태평양 상공에서 용맹하게 교전했습니다.'}
         </p>
+
+        {/* 명예의 전당 랭킹 저장 상태 안내 */}
+        {score > 0 && (
+          <div
+            className={`mb-4 px-3 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 border ${
+              isScoreSaved
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : isLoggedIn
+                ? 'bg-sky-50 border-sky-200 text-sky-700'
+                : 'bg-amber-50 border-amber-200 text-amber-800'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span>
+              {isScoreSaved
+                ? '명예의 전당 랭킹에 점수가 기록되었습니다!'
+                : isLoggedIn
+                ? '명예의 전당 랭킹에 점수를 동기화 중입니다...'
+                : '로그인 후 플레이하면 명예의 전당 랭킹에 기록됩니다.'}
+            </span>
+          </div>
+        )}
 
         {/* 결과 통계 카드 */}
         <div className="bg-[#FAF8F5] rounded-2xl p-4 border border-[#EBE6DD] mb-6 space-y-3">
@@ -88,3 +114,4 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
     </div>
   );
 };
+

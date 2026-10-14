@@ -33,14 +33,19 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
     const [loading, setLoading] = useState(true);
 
     const isBaseball = gameId === 'baseball';
+    const targetUrl = apiUrl || (gameId ? `/api/games/${gameId}/leaderboard` : '');
 
     useEffect(() => {
         let cancelled = false;
+        if (!targetUrl) {
+            setLoading(false);
+            return;
+        }
         setLoading(true);
         const fetchLeaderboard = async () => {
             try {
-                const res = await axios.get(apiUrl);
-                if (!cancelled && res.data.success) {
+                const res = await axios.get(targetUrl);
+                if (!cancelled && res.data?.success) {
                     setLeaderboard(res.data.leaderboard || res.data.data || res.data.scores || []);
                 }
             } catch (err) {
@@ -62,7 +67,7 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
             cancelled = true;
             window.removeEventListener('message', handleScoreUpdate);
         };
-    }, [apiUrl]);
+    }, [targetUrl]);
 
     return (
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-md w-full max-w-sm">

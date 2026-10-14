@@ -42,10 +42,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenHowTo, highScore }) => {
             </div>
           </a>
 
-          {/* 하이스코어 뱃지 */}
-          <div className="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
-            <Trophy className="w-3.5 h-3.5 text-amber-600" />
-            <span>최고: {highScore.toLocaleString()}</span>
+          {/* 하이스코어 뱃지 (모바일/팝업 포함 상시 노출) */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] sm:text-xs font-bold">
+            <Trophy className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="font-mono">BEST {highScore.toLocaleString()}</span>
           </div>
         </div>
 

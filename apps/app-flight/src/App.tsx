@@ -1,4 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
+import axios from 'axios';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SplashScreen } from './components/SplashScreen';
 import { Header } from './components/Header';
@@ -11,11 +13,15 @@ import { BannerSlot } from './components/BannerSlot';
 import { GameEngineState } from './engine/types';
 
 export default function App() {
+  const { user } = useAuth();
+  const { sendToPortal } = usePortalMessenger();
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [showHowTo, setShowHowTo] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
   const [finalScore, setFinalScore] = useState<number>(0);
   const [finalKills, setFinalKills] = useState<number>(0);
+  const [isScoreSaved, setIsScoreSaved] = useState<boolean>(false);
   const [highScore, setHighScore] = useState<number>(() => {
     try {
       const s = localStorage.getItem('vera_flight_highscore');
@@ -30,17 +36,85 @@ export default function App() {
   const [bombTriggerCount, setBombTriggerCount] = useState<number>(0);
   const [restartTriggerCount, setRestartTriggerCount] = useState<number>(0);
 
-  // 게임오버 콜백
-  const handleGameOver = useCallback((score: number, kills: number, hs: number) => {
-    setFinalScore(score);
-    setFinalKills(kills);
-    setHighScore(hs);
-    setIsGameOver(true);
-  }, []);
+  // 로그인 유저의 서버 최고 기록 동기화
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+    axios
+      .get<{ success: boolean; highScore?: number }>(`/api/games/flight/highscore/${user.id}`, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        const serverHs = res.data?.highScore || 0;
+        if (!cancelled && serverHs > 0) {
+          setHighScore((prev) => {
+            const next = Math.max(prev, serverHs);
+            try {
+              localStorage.setItem('vera_flight_highscore', String(next));
+            } catch {
+              // ignore
+            }
+            return next;
+          });
+        }
+      })
+      .catch(() => {
+        // ignore
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // 게임오버 콜백 및 서버 점수 저장
+  const handleGameOver = useCallback(
+    async (score: number, kills: number, hs: number) => {
+      const best = Math.max(highScore, hs, score);
+      setFinalScore(score);
+      setFinalKills(kills);
+      setHighScore(best);
+      setIsScoreSaved(false);
+      setIsGameOver(true);
+
+      try {
+        localStorage.setItem('vera_flight_highscore', String(best));
+      } catch {
+        // ignore
+      }
+
+      if (score > 0 && user) {
+        try {
+          const earnedPoints = Math.min(50, Math.max(5, Math.floor(score / 500)));
+          await axios.post(
+            '/api/games/flight/score',
+            {
+              score,
+              metadata: { kills, earnedPoints },
+            },
+            { withCredentials: true }
+          );
+          setIsScoreSaved(true);
+          sendToPortal('MISSION_CLEAR');
+          const targetWindow =
+            window.opener || (window.parent !== window ? window.parent : null);
+          if (targetWindow) {
+            targetWindow.postMessage(
+              { type: 'GAME_SCORE_UPDATED', gameId: 'flight', score },
+              '*'
+            );
+          }
+        } catch (err) {
+          console.warn('[Vera Flight] 점수 저장 실패:', err);
+        }
+      }
+    },
+    [highScore, user, sendToPortal]
+  );
 
   // 재시작 콜백
   const handleRestart = useCallback(() => {
     setIsGameOver(false);
+    setIsScoreSaved(false);
     setRestartTriggerCount((c) => c + 1);
   }, []);
 
@@ -71,6 +145,7 @@ export default function App() {
               <FlightCanvas
                 onGameOver={handleGameOver}
                 onStateUpdate={setEngineState}
+                highScore={highScore}
                 rollTriggerRequested={rollTriggerCount}
                 bombTriggerRequested={bombTriggerCount}
                 restartTriggerRequested={restartTriggerCount}
@@ -109,6 +184,8 @@ export default function App() {
             score={finalScore}
             kills={finalKills}
             highScore={highScore}
+            isLoggedIn={!!user}
+            isScoreSaved={isScoreSaved}
             onRestart={handleRestart}
           />
         )}
@@ -119,3 +196,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+

@@ -374,7 +374,7 @@ export default function GamePage() {
     const activeGenre = user ? genre : 'mini';
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full space-y-8">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full space-y-8">
             {/* 게임 테마 히어로 배너 */}
             <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 text-white px-6 sm:px-10 py-8 shadow-xl">
                 <div className="absolute -top-14 -right-10 w-52 h-52 rounded-full bg-white/10 pointer-events-none"></div>

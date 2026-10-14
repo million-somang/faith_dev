@@ -77,7 +77,7 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
     };
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
             {/* 상단: 뒤로가기 네비게이션 */}
             <div className="mb-6 flex items-center justify-between">
                 <button

@@ -98,7 +98,7 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
         ],
         appUrl: '/app/flight/',
         appName: 'app-flight',
-        leaderboardUrl: '',
+        leaderboardUrl: '/api/games/flight/leaderboard',
     },
     sudoku: {
         label: '스도쿠 (Sudoku)',

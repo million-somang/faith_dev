@@ -15,6 +15,7 @@ import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert } from 'lucide-rea
 interface FlightCanvasProps {
   onGameOver: (score: number, kills: number, highScore: number) => void;
   onStateUpdate?: (state: GameEngineState) => void;
+  highScore?: number;
   rollTriggerRequested?: number;
   bombTriggerRequested?: number;
   restartTriggerRequested?: number;
@@ -23,6 +24,7 @@ interface FlightCanvasProps {
 export const FlightCanvas: React.FC<FlightCanvasProps> = ({
   onGameOver,
   onStateUpdate,
+  highScore = 0,
   rollTriggerRequested = 0,
   bombTriggerRequested = 0,
   restartTriggerRequested = 0,
@@ -144,6 +146,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
   const handleStartGame = useCallback(() => {
     gameOverReportedRef.current = false;
     stateRef.current = createInitialState(gameSpeed);
+    stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
     stateRef.current.status = 'playing';
     setHudState({
       score: 0,
@@ -154,11 +157,12 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
       hasEscorts: false,
       kills: 0,
       status: 'playing',
+      difficultyRank: 'NORMAL',
     });
     if (onStateUpdate) {
       onStateUpdate(stateRef.current);
     }
-  }, [gameSpeed, onStateUpdate]);
+  }, [gameSpeed, highScore, onStateUpdate]);
 
   // 외부(게임오버 모달 등)에서 재시작 요청 처리
   useEffect(() => {
@@ -166,6 +170,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
       prevRestartRef.current = restartTriggerRequested;
       gameOverReportedRef.current = false;
       stateRef.current = createInitialState(gameSpeed);
+      stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
       stateRef.current.status = 'playing';
       setHudState({
         score: 0,
@@ -176,12 +181,13 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
         hasEscorts: false,
         kills: 0,
         status: 'playing',
+        difficultyRank: 'NORMAL',
       });
       if (onStateUpdate) {
         onStateUpdate(stateRef.current);
       }
     }
-  }, [restartTriggerRequested, gameSpeed, onStateUpdate]);
+  }, [restartTriggerRequested, gameSpeed, highScore, onStateUpdate]);
 
   // 외부(버튼 등)에서 롤 요청 처리
   useEffect(() => {
@@ -312,9 +318,33 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     return () => cancelAnimationFrame(animId);
   }, [onGameOver, onStateUpdate]);
 
+  const liveBestScore = Math.max(highScore, hudState.score);
+
   return (
     <div className="relative w-full max-w-[450px] mx-auto flex flex-col items-center select-none">
-      {/* HUD 상단 바 */}
+      {/* 🌟 상단 스코어 전광판 바 (모바일/450px 팝업에서도 현재 점수·최고 기록·격추 수가 선명하게 표시됨) */}
+      <div className="w-full grid grid-cols-3 gap-1.5 mb-1.5">
+        <div className="bg-white rounded-xl px-3 py-1.5 border border-sky-200 shadow-2xs flex items-center justify-between">
+          <span className="text-[10px] font-extrabold text-sky-600 uppercase tracking-wider">SCORE</span>
+          <span className="font-mono text-sm sm:text-base font-black text-sky-700">
+            {hudState.score.toLocaleString()}
+          </span>
+        </div>
+        <div className="bg-white rounded-xl px-3 py-1.5 border border-amber-200 shadow-2xs flex items-center justify-between">
+          <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">BEST</span>
+          <span className="font-mono text-sm sm:text-base font-black text-amber-600">
+            {liveBestScore.toLocaleString()}
+          </span>
+        </div>
+        <div className="bg-white rounded-xl px-3 py-1.5 border border-rose-200 shadow-2xs flex items-center justify-between">
+          <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wider">KILLS</span>
+          <span className="font-mono text-sm sm:text-base font-black text-rose-600">
+            {hudState.kills.toLocaleString()}기
+          </span>
+        </div>
+      </div>
+
+      {/* HUD 전술 상태 바 */}
       <div className="w-full flex items-center justify-between px-3 py-1.5 mb-1.5 bg-white rounded-xl border border-[#EBE6DD] shadow-2xs text-xs font-bold">
         {/* 잔여 기체 (라이프) */}
         <div className="flex items-center gap-1">
@@ -379,11 +409,6 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               +호위기
             </span>
           )}
-        </div>
-
-        {/* 실시간 스코어 */}
-        <div className="font-mono text-sm font-black text-sky-700 tracking-wider">
-          {hudState.score.toLocaleString()}
         </div>
       </div>
 

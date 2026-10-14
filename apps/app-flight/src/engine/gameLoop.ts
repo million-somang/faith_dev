@@ -1589,5 +1589,30 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     }
   }
 
+  // 9. 인캔버스 상단 아케이드 스코어 오버레이 (비행 중 시선 이동 없이 실시간 점수 확인)
+  if (state.status === 'playing') {
+    ctx.save();
+    ctx.font = '900 13px monospace';
+    ctx.textBaseline = 'top';
+
+    // 좌상단: 1UP SCORE
+    ctx.textAlign = 'left';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.lineWidth = 3;
+    const scoreText = `SCORE ${p.score.toLocaleString()}`;
+    ctx.strokeText(scoreText, 12, 10);
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(scoreText, 12, 10);
+
+    // 우상단: HIGH SCORE
+    ctx.textAlign = 'right';
+    const bestVal = Math.max(p.highScore, p.score);
+    const bestText = `HI ${bestVal.toLocaleString()}`;
+    ctx.strokeText(bestText, CANVAS_WIDTH - 12, 10);
+    ctx.fillStyle = '#FDE047';
+    ctx.fillText(bestText, CANVAS_WIDTH - 12, 10);
+    ctx.restore();
+  }
+
   ctx.restore();
 }
