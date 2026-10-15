@@ -530,30 +530,45 @@ export function resolvePageTitle(path: string): { title: string; category: strin
     
     if (path.startsWith('/news')) {
         if (path === '/news') return { title: '뉴스 메인', category: '뉴스', icon: 'fa-newspaper' };
-        if (path.includes('/detail/')) return { title: '뉴스 기사 상세', category: '뉴스', icon: 'fa-file-alt' };
+        if (path.includes('/detail/') || /^\/news\/\d+/.test(path)) return { title: '뉴스 기사 상세', category: '뉴스', icon: 'fa-file-alt' };
         if (path.includes('/source/')) return { title: '언론사별 뉴스', category: '뉴스', icon: 'fa-building' };
         return { title: '뉴스 센터', category: '뉴스', icon: 'fa-newspaper' };
     }
     if (path.startsWith('/game')) {
+        if (path.includes('/flight')) return { title: '베라 플라이트', category: '게임', icon: 'fa-fighter-jet' };
         if (path.includes('/omok')) return { title: '베라 오목', category: '게임', icon: 'fa-circle' };
         if (path.includes('/janggi')) return { title: '베라 장기', category: '게임', icon: 'fa-chess' };
         if (path.includes('/2048')) return { title: '2048 퍼즐', category: '게임', icon: 'fa-th' };
         if (path.includes('/minesweeper')) return { title: '지뢰찾기', category: '게임', icon: 'fa-bomb' };
         if (path.includes('/freecell')) return { title: '프리셀', category: '게임', icon: 'fa-clone' };
+        if (path.includes('/sudoku')) return { title: '스도쿠', category: '게임', icon: 'fa-border-all' };
         if (path.includes('/vera-pop')) return { title: '베라 팝', category: '게임', icon: 'fa-gem' };
+        if (path.includes('/baseball')) return { title: '프로야구 매니저', category: '게임', icon: 'fa-baseball-ball' };
         return { title: '웹게임 라운지', category: '게임', icon: 'fa-gamepad' };
     }
-    if (path.startsWith('/travel')) {
-        if (path.includes('/detail')) return { title: '여행지 상세', category: '여행', icon: 'fa-map-pin' };
-        return { title: '전국 여행 지도', category: '여행', icon: 'fa-map-marked-alt' };
+    if (path.startsWith('/travel') || path.startsWith('/entertainment/travel')) {
+        if (path.includes('/detail') || /\/travel\/\d+/.test(path)) return { title: '여행지 상세', category: '여행', icon: 'fa-map-pin' };
+        return { title: '전국 여행 큐레이션', category: '여행', icon: 'fa-map-marked-alt' };
     }
     if (path.startsWith('/saju') || path.startsWith('/entertainment/saju')) {
         return { title: '정통 사주 만세력', category: '운세', icon: 'fa-yin-yang' };
     }
-    if (path.startsWith('/utility')) return { title: '스마트 유틸 도구함', category: '도구', icon: 'fa-tools' };
-    if (path.startsWith('/finance')) return { title: '금융 & 대출이자 계산기', category: '금융', icon: 'fa-calculator' };
+    if (path.startsWith('/entertainment/novel') || path.startsWith('/novel')) {
+        return { title: '웹소설 연구실', category: '문화', icon: 'fa-book-open' };
+    }
+    if (path.startsWith('/entertainment')) {
+        return { title: '문화 · 엔터테인먼트', category: '문화', icon: 'fa-compass' };
+    }
+    if (path.startsWith('/utility') || path.startsWith('/lifestyle') || path.startsWith('/tools')) {
+        return { title: '스마트 생활도구', category: '도구', icon: 'fa-tools' };
+    }
+    if (path.startsWith('/finance')) {
+        if (path.startsWith('/finance/stocks') || path.startsWith('/finance/stock/')) return { title: '국내·해외 주식 시세', category: '금융', icon: 'fa-chart-line' };
+        if (path.startsWith('/finance/exchange')) return { title: '실시간 환율 센터', category: '금융', icon: 'fa-exchange-alt' };
+        if (path.startsWith('/finance/banking')) return { title: '예적금 · 금리 비교', category: '금융', icon: 'fa-university' };
+        return { title: '금융 & 재테크 라운지', category: '금융', icon: 'fa-chart-pie' };
+    }
     if (path.startsWith('/reward')) return { title: '리워드 & 출석체크 센터', category: '리워드', icon: 'fa-gift' };
-    if (path.startsWith('/novel')) return { title: '웹소설 연구실', category: '문화', icon: 'fa-book-open' };
     if (path.startsWith('/shopping')) return { title: '핫딜 쇼핑몰', category: '쇼핑', icon: 'fa-shopping-bag' };
     if (path.startsWith('/lounge')) return { title: '커뮤니티 라운지', category: '커뮤니티', icon: 'fa-comments' };
     if (path.startsWith('/mypage')) return { title: '마이페이지', category: '회원', icon: 'fa-user' };
@@ -627,6 +642,8 @@ const GUIDE_TITLES: Record<string, string> = {
 };
 
 const GAME_NAMES: Record<string, string> = {
+    'flight': '베라 플라이트 (슈팅 아케이드)',
+    'baseball': '프로야구 구단 매니저',
     'janggi': '베라 장기 (전통 장기)',
     'omok': '베라 오목 (렌주룰)',
     'vera-pop': '베라 팝 (버블 슈터)',
@@ -1464,9 +1481,10 @@ analyticsRoutes.get('/api/admin/analytics/export', requireAdmin, async (c) => {
         if (type === 'visitors') {
             csv += '날짜,페이지뷰,순방문자\n'
             const data = await DB.prepare(
-                `SELECT DATE(created_at) as date, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors
-                 FROM page_views WHERE created_at >= DATE('now', '-${days} days')
-                 GROUP BY DATE(created_at) ORDER BY date`
+                `SELECT DATE(created_at, '+9 hours') as date, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors
+                 FROM page_views WHERE ${getKstDateCondition(days)}
+                 ${BOT_SQL_FILTER}
+                 GROUP BY DATE(created_at, '+9 hours') ORDER BY date`
             ).all()
             for (const row of (data.results as Array<{ date: string; views: number; visitors: number }>)) {
                 csv += `${row.date},${row.views},${row.visitors}\n`
@@ -1476,7 +1494,8 @@ analyticsRoutes.get('/api/admin/analytics/export', requireAdmin, async (c) => {
             const data = await DB.prepare(
                 `SELECT path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors,
                  ROUND(AVG(CASE WHEN duration_ms > 0 THEN duration_ms END) / 1000.0, 1) as avg_sec
-                 FROM page_views WHERE created_at >= DATE('now', '-${days} days')
+                 FROM page_views WHERE ${getKstDateCondition(days)}
+                 ${BOT_SQL_FILTER}
                  GROUP BY path ORDER BY views DESC`
             ).all()
             for (const row of (data.results as Array<{ path: string; views: number; visitors: number; avg_sec: number }>)) {
@@ -1486,7 +1505,8 @@ analyticsRoutes.get('/api/admin/analytics/export', requireAdmin, async (c) => {
             csv += '유입출처,채널,상세URL,랜딩페이지,유입수,순방문자,최근유입일시\n'
             const data = await DB.prepare(
                 `SELECT referrer, user_agent, path, COUNT(*) as views, COUNT(DISTINCT session_id) as visitors, MAX(created_at) as last_seen
-                 FROM page_views WHERE created_at >= DATE('now', '-${days} days')
+                 FROM page_views WHERE ${getKstDateCondition(days)}
+                 ${BOT_SQL_FILTER}
                  GROUP BY referrer, user_agent, path ORDER BY views DESC`
             ).all()
             for (const row of (data.results as any[])) {
@@ -1500,7 +1520,7 @@ analyticsRoutes.get('/api/admin/analytics/export', requireAdmin, async (c) => {
                        MIN(created_at) as first_seen, MAX(created_at) as last_seen, COUNT(*) as page_count,
                        SUM(COALESCE(duration_ms, 0)) as total_duration_ms
                 FROM page_views
-                WHERE created_at >= DATE('now', '-${days} days')
+                WHERE ${getKstDateCondition(days)}
                 ${BOT_SQL_FILTER}
                 GROUP BY session_id
                 ORDER BY last_seen DESC

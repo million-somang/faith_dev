@@ -70,37 +70,52 @@ async function createNotification(db: any, type: string, title: string, message:
 }
 
 // ==================== API: 관리자 통계 ====================
+const ADMIN_BOT_SQL_FILTER = `
+    AND NOT (
+        user_agent LIKE '%bot%' OR user_agent LIKE '%crawl%' OR user_agent LIKE '%spider%' 
+        OR user_agent LIKE '%slurp%' OR user_agent LIKE '%Ahrefs%' OR user_agent LIKE '%Yandex%'
+        OR user_agent LIKE '%Scanner%' OR user_agent LIKE '%Dataprovider%' OR user_agent LIKE '%python%'
+        OR user_agent LIKE '%curl%' OR user_agent LIKE '%headless%' OR user_agent LIKE '%Semrush%'
+        OR user_agent LIKE '%Bytespider%' OR user_agent LIKE '%wget%'
+    )
+`;
+
 adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
     const DB = getDB(c)
     try {
         const totalUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status != 'deleted'").first()
         const activeUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'active'").first()
         const suspendedUsers = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE status = 'suspended'").first()
-        const todaySignups = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE created_at >= date('now', 'start of day')").first()
+        const todaySignups = await DB.prepare("SELECT COUNT(*) as count FROM users WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours') AND status != 'deleted'").first()
         const levelDistribution = await DB.prepare("SELECT level, COUNT(*) as count FROM users WHERE status != 'deleted' GROUP BY level ORDER BY level").all()
         const recentUsers = await DB.prepare("SELECT id, email, name, level, created_at FROM users WHERE status != 'deleted' ORDER BY created_at DESC LIMIT 10").all()
 
-        // 뉴스 및 여행 자동 발행 집계
-        const todayNews = await DB.prepare("SELECT COUNT(*) as count FROM news WHERE created_at >= date('now', 'start of day')").first()
+        // 뉴스 및 여행 자동 발행 집계 (KST 기준)
+        const todayNews = await DB.prepare("SELECT COUNT(*) as count FROM news WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')").first()
         const totalNews = await DB.prepare("SELECT COUNT(*) as count FROM news").first()
-        const todayTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles WHERE created_at >= date('now', 'start of day')").first()
+        const todayTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')").first()
         const totalTravel = await DB.prepare("SELECT COUNT(*) as count FROM travel_articles").first()
 
-        // 오늘 방문자(UV) & 오늘 페이지뷰(PV) & 누적 방문자 집계
+        // 오늘 방문자(UV) & 오늘 페이지뷰(PV) & 누적 방문자 집계 (KST 자정 기준, 봇 제외)
         let todayVisitors = 0
         let todayViews = 0
         let totalVisitors = 0
 
         try {
             const todayPv = await DB.prepare(
-                "SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as visitors FROM page_views WHERE created_at >= date('now', 'start of day')"
+                `SELECT COUNT(*) as total, COUNT(DISTINCT session_id) as visitors
+                 FROM page_views
+                 WHERE DATE(created_at, '+9 hours') = DATE('now', '+9 hours')
+                 ${ADMIN_BOT_SQL_FILTER}`
             ).first() as Record<string, number> | null
 
             todayViews = todayPv?.total || 0
             todayVisitors = todayPv?.visitors || 0
 
             const allPvRaw = await DB.prepare(
-                "SELECT COUNT(DISTINCT session_id) as visitors FROM page_views"
+                `SELECT COUNT(DISTINCT session_id) as visitors
+                 FROM page_views
+                 WHERE 1=1 ${ADMIN_BOT_SQL_FILTER}`
             ).first() as Record<string, number> | null
 
             const allPvDaily = await DB.prepare(
@@ -217,10 +232,10 @@ adminRoutes.delete('/api/admin/users/:id', requireAdmin, async (c) => {
 adminRoutes.get('/api/admin/stats/trends', requireAdmin, async (c) => {
     const DB = getDB(c)
     try {
-        const dailySignups = await DB.prepare("SELECT DATE(created_at) as date, COUNT(*) as count FROM users WHERE created_at >= DATE('now', '-30 days') GROUP BY DATE(created_at) ORDER BY date").all()
-        const monthlySignups = await DB.prepare("SELECT strftime('%Y-%m', created_at) as month, COUNT(*) as count FROM users WHERE created_at >= DATE('now', '-12 months') GROUP BY strftime('%Y-%m', created_at) ORDER BY month").all()
-        const dailyLogins = await DB.prepare("SELECT DATE(created_at) as date, COUNT(*) as count FROM activity_logs WHERE action = 'login' AND created_at >= DATE('now', '-30 days') GROUP BY DATE(created_at) ORDER BY date").all()
-        const levelActivity = await DB.prepare("SELECT u.level, COUNT(al.id) as activity_count FROM users u LEFT JOIN activity_logs al ON u.id = al.user_id AND al.created_at >= DATE('now', '-30 days') WHERE u.status = 'active' GROUP BY u.level ORDER BY u.level").all()
+        const dailySignups = await DB.prepare("SELECT DATE(created_at, '+9 hours') as date, COUNT(*) as count FROM users WHERE DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-30 days') GROUP BY DATE(created_at, '+9 hours') ORDER BY date").all()
+        const monthlySignups = await DB.prepare("SELECT strftime('%Y-%m', created_at, '+9 hours') as month, COUNT(*) as count FROM users WHERE DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-12 months') GROUP BY strftime('%Y-%m', created_at, '+9 hours') ORDER BY month").all()
+        const dailyLogins = await DB.prepare("SELECT DATE(created_at, '+9 hours') as date, COUNT(*) as count FROM activity_logs WHERE action = 'login' AND DATE(created_at, '+9 hours') >= DATE('now', '+9 hours', '-30 days') GROUP BY DATE(created_at, '+9 hours') ORDER BY date").all()
+        const levelActivity = await DB.prepare("SELECT u.level, COUNT(al.id) as activity_count FROM users u LEFT JOIN activity_logs al ON u.id = al.user_id AND DATE(al.created_at, '+9 hours') >= DATE('now', '+9 hours', '-30 days') WHERE u.status = 'active' GROUP BY u.level ORDER BY u.level").all()
         return c.json({ success: true, dailySignups: dailySignups.results, monthlySignups: monthlySignups.results, dailyLogins: dailyLogins.results, levelActivity: levelActivity.results })
     } catch (error) { return c.json({ success: false, message: '서버 오류' }, 500) }
 })

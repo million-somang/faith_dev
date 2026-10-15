@@ -93,23 +93,29 @@ adminStatsUi.get('/admin/stats', async (c) => {
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="kpi-card bg-white rounded-xl shadow p-5">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-gray-500 font-medium">방문자</span>
+                        <span class="text-sm text-gray-500 font-medium">방문자 (UV)</span>
                         <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
                             <i class="fas fa-users text-blue-600"></i>
                         </div>
                     </div>
                     <p id="kpi-visitors" class="text-2xl lg:text-3xl font-bold text-gray-800">-</p>
-                    <p id="kpi-visitors-change" class="text-sm mt-1">-</p>
+                    <div class="flex items-center justify-between mt-1.5 gap-1 flex-wrap">
+                        <p id="kpi-visitors-change" class="text-xs text-gray-500">-</p>
+                        <span id="kpi-today-visitors" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">오늘: 0명</span>
+                    </div>
                 </div>
                 <div class="kpi-card bg-white rounded-xl shadow p-5">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm text-gray-500 font-medium">페이지뷰</span>
+                        <span class="text-sm text-gray-500 font-medium">페이지뷰 (PV)</span>
                         <div class="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
                             <i class="fas fa-eye text-green-600"></i>
                         </div>
                     </div>
                     <p id="kpi-views" class="text-2xl lg:text-3xl font-bold text-gray-800">-</p>
-                    <p id="kpi-views-change" class="text-sm mt-1">-</p>
+                    <div class="flex items-center justify-between mt-1.5 gap-1 flex-wrap">
+                        <p id="kpi-views-change" class="text-xs text-gray-500">-</p>
+                        <span id="kpi-today-views" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">오늘: 0뷰</span>
+                    </div>
                 </div>
                 <div class="kpi-card bg-white rounded-xl shadow p-5">
                     <div class="flex items-center justify-between mb-2">
@@ -630,6 +636,10 @@ adminStatsUi.get('/admin/stats', async (c) => {
                     changeText('kpi-visitors', d.period.visitors, d.period.visitorsChange);
                     changeText('kpi-views', d.period.views, d.period.viewsChange);
                     changeText('kpi-signups', d.signups.count, d.signups.change);
+                    const todayVisEl = document.getElementById('kpi-today-visitors');
+                    if (todayVisEl && d.today) todayVisEl.textContent = '오늘: ' + Number(d.today.visitors || 0).toLocaleString() + '명';
+                    const todayVwEl = document.getElementById('kpi-today-views');
+                    if (todayVwEl && d.today) todayVwEl.textContent = '오늘: ' + Number(d.today.views || 0).toLocaleString() + '뷰';
                     document.getElementById('kpi-duration').textContent = formatDuration(d.avgDuration.ms);
                     const durEl = document.getElementById('kpi-duration-change');
                     if (d.avgDuration.change !== 0) {
@@ -1418,17 +1428,59 @@ adminStatsUi.get('/admin/stats', async (c) => {
             async function initAuthAndLoad() {
                 try {
                     let token = localStorage.getItem('auth_token');
-                    if (!token || token === 'true') {
-                        const res = await fetch('/api/auth/me', { credentials: 'include' });
-                        const data = await res.json();
-                        if (data.loggedIn && data.user) {
-                            token = btoa(data.user.id + ':faith');
-                            localStorage.setItem('auth_token', token);
-                            localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role || 'user');
-                            localStorage.setItem('user_level', String(data.user.level || 0));
+                    let userId = null;
+                    const res = await fetch('/api/auth/me', { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.loggedIn && data.user) {
+                        userId = data.user.id;
+                        token = btoa(data.user.id + ':faith');
+                        localStorage.setItem('auth_token', token);
+                        localStorage.setItem('user_id', String(data.user.id));
+                        localStorage.setItem('user_email', data.user.email);
+                        localStorage.setItem('user_role', data.user.role || 'user');
+                        localStorage.setItem('user_level', String(data.user.level || 0));
+                    }
+
+                    // 당일 세션이 아직 기록되지 않은 상태로 /admin/stats에 바로 진입한 경우 1회 동기화
+                    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+                    const today = kst.toISOString().slice(0, 10);
+                    if (sessionStorage.getItem('fl_pv_synced') !== today) {
+                        let sessionId = sessionStorage.getItem('fl_session_id');
+                        const savedDate = localStorage.getItem('fl_session_date');
+                        const savedLocalId = localStorage.getItem('fl_session_id');
+                        if (!sessionId) {
+                            if (savedDate === today && savedLocalId) {
+                                sessionId = savedLocalId;
+                            } else {
+                                sessionId = (window.crypto && window.crypto.randomUUID)
+                                    ? window.crypto.randomUUID()
+                                    : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                        const r = (Math.random() * 16) | 0;
+                                        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                                        return v.toString(16);
+                                    });
+                            }
+                            sessionStorage.setItem('fl_session_id', sessionId);
+                        }
+                        localStorage.setItem('fl_session_id', sessionId);
+                        localStorage.setItem('fl_session_date', today);
+                        sessionStorage.setItem('fl_pv_synced', today);
+
+                        if (savedDate !== today) {
+                            await fetch('/api/analytics/pageview', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    sessionId: sessionId,
+                                    path: '/',
+                                    referrer: document.referrer || '',
+                                    screenWidth: window.innerWidth || 1280,
+                                    userId: userId || undefined
+                                })
+                            });
                         }
                     }
+
                     const adminNameEl = document.getElementById('admin-name');
                     if (adminNameEl) {
                         adminNameEl.textContent = localStorage.getItem('user_email') || '관리자';

@@ -774,24 +774,72 @@ adminUi.get('/admin', async (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script>
-            // 인증 정보 동기화 (서버사이드에서 이미 인증 완료)
-            const authToken = localStorage.getItem('auth_token');
-            if (!authToken || authToken === 'true') {
-                fetch('/api/auth/me', { credentials: 'include' })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.loggedIn) {
-                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
-                            localStorage.setItem('user_email', data.user.email);
-                            localStorage.setItem('user_role', data.user.role || 'user');
-                            localStorage.setItem('user_level', String(data.user.level || 0));
-                            document.getElementById('admin-name').textContent = data.user.email;
+            axios.defaults.withCredentials = true;
+
+            async function ensureTodaySessionTracked(userId) {
+                try {
+                    const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+                    const today = kst.toISOString().slice(0, 10);
+                    if (sessionStorage.getItem('fl_pv_synced') === today) return;
+
+                    let sessionId = sessionStorage.getItem('fl_session_id');
+                    const savedDate = localStorage.getItem('fl_session_date');
+                    const savedLocalId = localStorage.getItem('fl_session_id');
+                    if (!sessionId) {
+                        if (savedDate === today && savedLocalId) {
+                            sessionId = savedLocalId;
+                        } else {
+                            sessionId = (window.crypto && window.crypto.randomUUID)
+                                ? window.crypto.randomUUID()
+                                : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                                    const r = (Math.random() * 16) | 0;
+                                    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+                                    return v.toString(16);
+                                });
                         }
-                    }).catch(() => {});
+                        sessionStorage.setItem('fl_session_id', sessionId);
+                    }
+                    localStorage.setItem('fl_session_id', sessionId);
+                    localStorage.setItem('fl_session_date', today);
+                    sessionStorage.setItem('fl_pv_synced', today);
+
+                    if (savedDate !== today) {
+                        await fetch('/api/analytics/pageview', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: sessionId,
+                                path: '/',
+                                referrer: document.referrer || '',
+                                screenWidth: window.innerWidth || 1280,
+                                userId: userId || undefined
+                            })
+                        });
+                    }
+                } catch (_e) {}
             }
 
-            // 관리자 정보 표시
-            document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+            async function ensureAdminAuth() {
+                let authToken = localStorage.getItem('auth_token');
+                let userId = null;
+                try {
+                    const res = await fetch('/api/auth/me', { credentials: 'include' });
+                    const data = await res.json();
+                    if (data.loggedIn && data.user) {
+                        userId = data.user.id;
+                        authToken = btoa(data.user.id + ':faith');
+                        localStorage.setItem('auth_token', authToken);
+                        localStorage.setItem('user_id', String(data.user.id));
+                        localStorage.setItem('user_email', data.user.email);
+                        localStorage.setItem('user_role', data.user.role || 'user');
+                        localStorage.setItem('user_level', String(data.user.level || 0));
+                        document.getElementById('admin-name').textContent = data.user.email;
+                    }
+                } catch (_e) {}
+                await ensureTodaySessionTracked(userId);
+                document.getElementById('admin-name').textContent = localStorage.getItem('user_email') || '';
+                return localStorage.getItem('auth_token');
+            }
 
             // 등급명 반환 함수
             function getLevelName(level) {
@@ -806,8 +854,13 @@ adminUi.get('/admin', async (c) => {
             // 통계 데이터 로드
             async function loadStats() {
                 try {
+                    const token = await ensureAdminAuth();
+                    const headers = (token && token !== 'true' && token !== 'null')
+                        ? { 'Authorization': 'Bearer ' + token }
+                        : {};
                     const response = await axios.get('/api/admin/stats', {
-                        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('auth_token') }
+                        headers,
+                        withCredentials: true
                     });
                     
                     const data = response.data;
