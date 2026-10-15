@@ -196,7 +196,7 @@ export default function NewsPage() {
         if (!hasMore && !isReset) return;
         setLoading(true);
         try {
-            const limit = 20;
+            const limit = 10;
             const offset = (pageNum - 1) * limit;
 
             let url = '/api/news';
@@ -233,7 +233,7 @@ export default function NewsPage() {
 
     const fetchHotNews = async () => {
         try {
-            const res = await axios.get('/api/news/hot');
+            const res = await axios.get('/api/news/hot?limit=10');
             if (res.data.success) {
                 setHotNews(res.data.news);
             }
@@ -251,7 +251,7 @@ export default function NewsPage() {
     };
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-8 w-full">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
             {/* Search & Categories */}
             <div className="mb-8">
                 <form onSubmit={handleSearch} className="relative mb-6">

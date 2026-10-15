@@ -36,7 +36,7 @@ export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews })
   useEffect(() => {
     if (hasInitial) return;
     let active = true;
-    fetch('/api/news')
+    fetch('/api/news?limit=6')
       .then((res) => res.json())
       .then((data) => {
         if (!active) return;

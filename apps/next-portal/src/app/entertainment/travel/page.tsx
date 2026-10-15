@@ -181,7 +181,7 @@ export default function TravelPage() {
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans text-slate-800">
             <EntertainmentSubMenu />
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-6 sm:py-8 w-full space-y-8">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full space-y-8">
                 {/* 1. 상단 히어로 배너 & 검색 바 */}
                 <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white p-6 sm:p-10 shadow-lg">
                     <div className="relative z-10 max-w-2xl space-y-3">

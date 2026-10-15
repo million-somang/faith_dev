@@ -95,7 +95,7 @@ export async function getTravelMapCounts(): Promise<TravelMapCountsResponse> {
 export async function syncTravelMapCounts(): Promise<void> {
     // 1. 혹시라도 province가 비어있는 기사 소급 파싱
     const unparsed = await pool.query(
-        "SELECT id, location_address, destination, region FROM travel_articles WHERE (province IS NULL OR province = '') AND (hidden IS NULL OR hidden = 0)"
+        "SELECT id, location_address, destination, region FROM travel_articles WHERE hidden = 0 AND (province IS NULL OR province = '')"
     );
     for (const art of unparsed.rows) {
         const { province, city } = parseKoreanLocation(art.location_address, art.destination, art.region);
@@ -108,11 +108,11 @@ export async function syncTravelMapCounts(): Promise<void> {
     // 2. travel_map_counts 테이블 초기화
     await pool.query('DELETE FROM travel_map_counts');
 
-    // 3. 국내 기사 기준 도별(city='') 집계
+    // 3. 국내 기사 기준 도별(city='') 집계 (커버링 인덱스 활용)
     const provCountsRes = await pool.query(`
         SELECT province, count(*) as cnt 
         FROM travel_articles 
-        WHERE (hidden IS NULL OR hidden = 0) AND province NOT IN ('해외', '기타', '') 
+        WHERE hidden = 0 AND province NOT IN ('해외', '기타', '') 
         GROUP BY province
     `);
     const provMap: Record<string, number> = {};
@@ -130,11 +130,11 @@ export async function syncTravelMapCounts(): Promise<void> {
         );
     }
 
-    // 4. 시·군·구별(city!='') 세부 집계
+    // 4. 시·군·구별(city!='') 세부 집계 (커버링 인덱스 활용)
     const cityCountsRes = await pool.query(`
         SELECT province, city, count(*) as cnt 
         FROM travel_articles 
-        WHERE (hidden IS NULL OR hidden = 0) AND province NOT IN ('해외', '기타', '') AND city != '' AND city IS NOT NULL
+        WHERE hidden = 0 AND province NOT IN ('해외', '기타', '') AND city != '' AND city IS NOT NULL
         GROUP BY province, city
     `);
     for (const r of cityCountsRes.rows) {

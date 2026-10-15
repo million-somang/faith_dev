@@ -104,7 +104,7 @@ export default async function HomePage() {
   };
 
   return (
-    <main className="flex-1 max-w-6xl mx-auto px-1 sm:px-4 py-4 sm:py-8 w-full font-sans">
+    <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 w-full font-sans">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }}

@@ -23,44 +23,74 @@ const NEWS_LIST_FIELDS = `
 
 let cachedHotNews: { data: any[]; timestamp: number } | null = null;
 const HOT_NEWS_CACHE_TTL = 120 * 1000; // 2 minutes
+const newsListCache = new Map<string, { data: any; ts: number }>();
+const NEWS_LIST_CACHE_TTL = 30 * 1000; // 30 seconds
 
 export function invalidateNewsCache() {
     cachedHotNews = null;
+    newsListCache.clear();
 }
 
-// GET /api/news - Get news list
+// GET /api/news - Get news list (화면에 보이는 개수 ID만 커버링 인덱스에서 먼저 뽑는 Deferred Join)
 news.get('/api/news', async (c) => {
     const category = c.req.query('category');
-    const limit = parseInt(c.req.query('limit') || '20');
-    const offset = parseInt(c.req.query('offset') || '0');
+    const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '12'), 1), 50);
+    const offset = Math.max(parseInt(c.req.query('offset') || '0'), 0);
     const includeStocks = c.req.query('includeStocks') === 'true';
+    const publisher = c.req.query('publisher');
+
+    const now = Date.now();
+    const cacheKey = `${category || 'all'}|${publisher || ''}|${limit}|${offset}|${includeStocks ? '1' : '0'}`;
+    const cached = newsListCache.get(cacheKey);
+    if (cached && now - cached.ts < NEWS_LIST_CACHE_TTL) {
+        c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        c.header('X-Cache', 'HIT');
+        return c.json(cached.data);
+    }
 
     try {
-        let query = `SELECT ${NEWS_LIST_FIELDS} FROM news WHERE (hidden IS NULL OR hidden = 0)`;
+        let whereClause = 'WHERE hidden = 0';
         const params: any[] = [];
 
         if (category && category !== 'all') {
-            // 다중 카테고리 지원: category 컬럼이 'stock,general' 형태일 수 있음
-            query += ` AND (',' || category || ',') LIKE $${params.length + 1}`;
-            params.push(`%,${category},%`);
+            // 단일 정확 일치 또는 다중 카테고리(',' 포함) 모두 매칭하되 최신순 인덱스 순회 활용
+            whereClause += ` AND (category = $${params.length + 1} OR (',' || category || ',') LIKE $${params.length + 2})`;
+            params.push(category, `%,${category},%`);
         }
 
-        // 언론사별 필터: 제목 끝의 " - 언론사" 접미사로 매칭 (목록 화면 표기와 동일 기준)
-        const publisher = c.req.query('publisher');
         if (publisher) {
             const escaped = publisher.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            query += ` AND title LIKE $${params.length + 1} ESCAPE '\\'`;
+            whereClause += ` AND title LIKE $${params.length + 1} ESCAPE '\\'`;
             params.push(`% - ${escaped}`);
         }
 
-        query += ` ORDER BY COALESCE(created_at, published_at) DESC, published_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-        params.push(limit, offset);
+        // [1단계] idx_news_latest (hidden, created_at DESC, id DESC) 인덱스를 순회하며 화면에 보일 limit 개의 ID만 즉시 추출
+        const idQuery = `
+            SELECT id FROM news
+            ${whereClause}
+            ORDER BY created_at DESC, id DESC
+            LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+        `;
+        const idRes = await pool.query(idQuery, [...params, limit, offset]);
+        const targetIds: number[] = idRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
 
-        const result = await pool.query(query, params);
-        const newsItems = result.rows;
+        // [2단계] 추출된 소수의 ID에 대해서만 목록 필드 조회 (본문 content 제외)
+        let newsItems: any[] = [];
+        if (targetIds.length > 0) {
+            const placeholders = targetIds.map((_, idx) => `$${idx + 1}`).join(', ');
+            const detailRes = await pool.query(
+                `SELECT ${NEWS_LIST_FIELDS} FROM news WHERE id IN (${placeholders})`,
+                targetIds
+            );
+            const rowMap = new Map<number, any>();
+            for (const r of detailRes.rows) {
+                rowMap.set(Number(r.id), r);
+            }
+            newsItems = targetIds.map(id => rowMap.get(id)).filter(Boolean);
+        }
 
-        if (includeStocks) {
-            // N+1 문제 해결: 전체 뉴스의 고유 티커를 취합하여 1회 일괄(Batch) 조회
+        let finalItems = newsItems;
+        if (includeStocks && newsItems.length > 0) {
             const newsTickerMap = new Map<number, string[]>();
             const allTickersSet = new Set<string>();
 
@@ -82,33 +112,34 @@ news.get('/api/news', async (c) => {
                 if (s && s.ticker) stockMap.set(s.ticker, s);
             }
 
-            const newsWithStocks = newsItems.map((n: any) => {
+            finalItems = newsItems.map((n: any) => {
                 const tickers = newsTickerMap.get(n.id) || [];
                 const relatedStocks = tickers.map(t => stockMap.get(t)).filter(Boolean);
                 return { ...n, relatedStocks };
             });
-
-            return c.json({
-                success: true,
-                news: newsWithStocks,
-                count: newsWithStocks.length
-            });
         }
 
-        return c.json({
+        const payload = {
             success: true,
-            news: newsItems,
-            count: newsItems.length
-        });
+            news: finalItems,
+            count: finalItems.length
+        };
+
+        if (newsListCache.size > 200) newsListCache.clear();
+        newsListCache.set(cacheKey, { data: payload, ts: now });
+
+        c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
+        c.header('X-Cache', 'MISS');
+        return c.json(payload);
     } catch (error) {
         console.error('Fetch news error:', error);
         return c.json({ success: false, message: 'Failed to fetch news' }, 500);
     }
 });
 
-// GET /api/news/hot - Get hot news
+// GET /api/news/hot - Get hot news (화면에 보이는 상위 항목만 경량 조회)
 news.get('/api/news/hot', async (c) => {
-    const limit = parseInt(c.req.query('limit') || '10');
+    const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '10'), 1), 20);
     try {
         const now = Date.now();
         if (cachedHotNews && (now - cachedHotNews.timestamp < HOT_NEWS_CACHE_TTL)) {
@@ -119,15 +150,26 @@ news.get('/api/news/hot', async (c) => {
             });
         }
 
-        const result = await pool.query(`
-            SELECT ${NEWS_LIST_FIELDS} FROM news
-            WHERE created_at >= NOW() - INTERVAL '7 days'
-              AND (hidden IS NULL OR hidden = 0)
+        const idRes = await pool.query(`
+            SELECT id FROM news
+            WHERE hidden = 0
+              AND created_at >= NOW() - INTERVAL '7 days'
             ORDER BY popularity_score DESC, created_at DESC
-            LIMIT 50
+            LIMIT 20
         `);
+        const ids: number[] = idRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
+        let rows: any[] = [];
+        if (ids.length > 0) {
+            const placeholders = ids.map((_, idx) => `$${idx + 1}`).join(', ');
+            const detailRes = await pool.query(
+                `SELECT id, title, category, source, published_at, created_at, view_count, popularity_score, thumbnail FROM news WHERE id IN (${placeholders})`,
+                ids
+            );
+            const rowMap = new Map<number, any>();
+            for (const r of detailRes.rows) rowMap.set(Number(r.id), r);
+            rows = ids.map(id => rowMap.get(id)).filter(Boolean);
+        }
 
-        const rows = result.rows || [];
         cachedHotNews = { data: rows, timestamp: now };
         c.header('Cache-Control', 'public, max-age=120');
 
@@ -144,27 +186,24 @@ news.get('/api/news/hot', async (c) => {
 // GET /api/news/search - Search news
 news.get('/api/news/search', async (c) => {
     const q = c.req.query('q');
-    const limit = parseInt(c.req.query('limit') || '20');
-    const offset = parseInt(c.req.query('offset') || '0');
+    const limit = Math.min(Math.max(parseInt(c.req.query('limit') || '12'), 1), 50);
+    const offset = Math.max(parseInt(c.req.query('offset') || '0'), 0);
 
     if (!q) {
         return c.json({ success: false, message: 'Query required' }, 400);
     }
 
     try {
-        // Enclose query in double quotes for exact word match if spaces exist, or just use it raw.
-        // For basic FTS5, we can just pass the raw string if we want it to search tokens.
-        // Let's replace spaces with AND for strict match or just leave it. We will use simple query.
-        const ftsQuery = q.trim().split(' ').map(w => `"${w}"`).join(' AND ');
+        const ftsQuery = q.trim().split(/\s+/).map(w => `"${w.replace(/"/g, '')}"`).join(' AND ');
 
         const result = await pool.query(`
-            SELECT * FROM news
+            SELECT ${NEWS_LIST_FIELDS} FROM news
             WHERE id IN (
                 SELECT rowid FROM news_fts
                 WHERE news_fts MATCH $1
             )
-              AND (hidden IS NULL OR hidden = 0)
-            ORDER BY COALESCE(created_at, published_at) DESC, published_at DESC
+              AND hidden = 0
+            ORDER BY created_at DESC, id DESC
             LIMIT $2 OFFSET $3
         `, [ftsQuery, limit, offset]);
 
@@ -180,8 +219,6 @@ news.get('/api/news/search', async (c) => {
 });
 
 // GET /api/news/sources - 언론사 목록(제목 접미사 기준) + 기사 수
-// 제목의 마지막 " - 언론사" 접미사가 실제 언론사명(목록 카드 표기와 동일). source 컬럼은 최신
-// 데이터가 '구글 뉴스'로 채워져 신뢰할 수 없어 사용하지 않는다.
 let sourcesCache: { data: { publisher: string; count: number }[]; ts: number } | null = null;
 const SOURCES_CACHE_TTL = 10 * 60 * 1000; // 10분
 
@@ -191,12 +228,16 @@ news.get('/api/news/sources', async (c) => {
             return c.json({ success: true, sources: sourcesCache.data });
         }
 
-        const result = await pool.query('SELECT title FROM news WHERE (hidden IS NULL OR hidden = 0)');
+        const result = await pool.query(`
+            SELECT title FROM news
+            WHERE id IN (
+                SELECT id FROM news WHERE hidden = 0 ORDER BY created_at DESC, id DESC LIMIT 2000
+            )
+        `);
         const counts = new Map<string, number>();
         for (const row of result.rows) {
             const title = String(row.title || '');
             const sepIdx = title.lastIndexOf(' - ');
-            // NewsCard와 동일 규칙: 접미사 길이 25자 이하만 언론사로 인정
             if (sepIdx > 0 && title.length - sepIdx - 3 <= 25) {
                 const publisher = title.slice(sepIdx + 3).trim();
                 if (publisher) counts.set(publisher, (counts.get(publisher) || 0) + 1);
@@ -650,9 +691,9 @@ const handleCreateNewsApi = async (c: any) => {
         const result = await pool.query(`
             INSERT INTO news (
                 title, summary, content, category, thumbnail, link, source, 
-                ai_summary, sentiment, tags, popularity_score, ai_processed, published_at, created_at
+                ai_summary, sentiment, tags, hidden, popularity_score, ai_processed, published_at, created_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 100, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 0, 100, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             RETURNING id, title, category, created_at
         `, [
             title.trim(),
@@ -666,6 +707,8 @@ const handleCreateNewsApi = async (c: any) => {
             sentiment,
             finalTags
         ]);
+
+        invalidateNewsCache();
 
         const newNews = (result.rows && result.rows[0]) ? result.rows[0] : null;
         const insertedId = newNews?.id || (result as any).lastInsertRowid || (result as any).insertId || Date.now();
@@ -799,6 +842,8 @@ const handleUpdateNewsApi = async (c: any) => {
             targetTags,
             id
         ]);
+
+        invalidateNewsCache();
 
         return c.json({
             success: true,
