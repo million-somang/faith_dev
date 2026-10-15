@@ -151,7 +151,7 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     );
 };
 
-const FULL_MENU_ITEMS = [
+export const FULL_MENU_ITEMS = [
     { label: '홈', icon: 'fa-home', bg: 'bg-blue-50', color: 'text-blue-600', path: '/' },
     { label: '뉴스', icon: 'fa-newspaper', bg: 'bg-sky-50', color: 'text-sky-600', path: '/news' },
     { label: '생활도구', icon: 'fa-screwdriver-wrench', bg: 'bg-green-50', color: 'text-green-600', path: '/lifestyle' },
@@ -195,7 +195,6 @@ export const LanguageSwitcher = () => {
 
 export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?: () => void, baseUrl?: string } = {}) => {
     const currentLang = getLang();
-    const [menuOpen, setMenuOpen] = React.useState(false);
     const [activeMode, setActiveMode] = React.useState<'general' | 'lounge'>(() => {
         if (typeof window !== 'undefined') {
             const path = window.location.pathname;
@@ -215,6 +214,7 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
     }, []);
 
     const handleModeSwitch = (mode: 'general' | 'lounge') => {
+        if (activeMode === mode) return;
         setActiveMode(mode);
         localStorage.setItem('vera_portal_mode', mode);
         if (typeof window !== 'undefined') {
@@ -226,156 +226,77 @@ export const Header = ({ user, onLogout, baseUrl = '' }: { user?: any, onLogout?
         }
     };
 
-    let modeColor = 'text-violet-600';
-    let modeBg = 'hover:bg-violet-50 hover:text-violet-600';
-
-    if (activeMode === 'lounge') {
-        modeColor = 'text-fuchsia-600';
-        modeBg = 'hover:bg-fuchsia-50 hover:text-fuchsia-600';
-    }
+    const modeColor = activeMode === 'lounge' ? 'text-fuchsia-600' : 'text-violet-600';
+    const modeBg = activeMode === 'lounge' ? 'hover:bg-fuchsia-50 hover:text-fuchsia-600' : 'hover:bg-violet-50 hover:text-violet-600';
 
     return (
-    <>
-        <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
-            <div className="max-w-6xl mx-auto px-4 flex justify-between items-center h-14 relative">
-                <div className="flex items-center gap-3 sm:gap-6">
-                    {/* 모바일/태블릿 전체메뉴 햄버거 (좌측 상단: md 미만 상시 표출) */}
-                    <button onClick={() => setMenuOpen(true)} className="md:hidden w-9 h-9 -ml-1 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 transition-colors" aria-label="전체메뉴 열기">
-                        <i className="fas fa-bars text-lg"></i>
-                    </button>
-                    <a href={`${baseUrl}/`} className="flex items-center gap-2 hover:opacity-90 transition-opacity absolute left-1/2 -translate-x-1/2 md:static md:left-auto md:translate-x-0">
+        <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-[0_1px_8px_rgba(15,30,80,0.06)]">
+            <div className="max-w-6xl mx-auto px-3 sm:px-4 flex justify-between items-center h-14">
+                {/* 좌측: 로고 (모바일 좌측 정렬, 햄버거 메뉴 제거) 및 데스크탑 네비게이션 */}
+                <div className="flex items-center gap-2 sm:gap-6 min-w-0">
+                    <a
+                        href={`${baseUrl}/`}
+                        className="flex items-center gap-2 hover:opacity-90 transition-opacity flex-shrink-0"
+                        aria-label="VERA 홈으로 이동"
+                    >
                         <img src={`${baseUrl}/logo-192.png`} alt="VERA Logo" className="w-8 h-8 rounded-lg object-contain drop-shadow-xs" />
-                        <span className="font-black text-xl tracking-wider text-gray-900">V<span className={modeColor}>ERA</span></span>
+                        <span className="font-black text-xl tracking-wider text-gray-900 select-none">V<span className={modeColor}>ERA</span></span>
                     </a>
 
-                    {/* 데스크탑/태블릿 모드 스위처 */}
-                    <div className="hidden lg:flex items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[10px] font-black text-slate-500 gap-0.5 ml-2 shadow-inner">
-                        {activeMode !== 'general' && (
-                            <button 
-                                onClick={() => handleModeSwitch('general')} 
-                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
-                            >
-                                {tr('일반 포털', currentLang)}
-                            </button>
-                        )}
-                        {activeMode !== 'lounge' && (
-                            <button 
-                                onClick={() => handleModeSwitch('lounge')} 
-                                className="px-3 py-1 rounded-full transition-all cursor-pointer hover:text-slate-800"
-                            >
-                                {tr('라운지', currentLang)}
-                            </button>
-                        )}
-                    </div>
-
-                    {/* 모바일 모드 스위처 */}
-                    <div className="flex lg:hidden items-center p-0.5 bg-slate-100 border border-slate-200/50 rounded-full text-[9px] font-extrabold text-slate-500 gap-0.5 ml-1 absolute right-4 md:static">
-                        {activeMode !== 'general' && (
-                            <button 
-                                onClick={() => handleModeSwitch('general')} 
-                                className="px-2 py-0.5 rounded-full transition-all"
-                            >
-                                {tr('포털', currentLang)}
-                            </button>
-                        )}
-                        {activeMode !== 'lounge' && (
-                            <button 
-                                onClick={() => handleModeSwitch('lounge')} 
-                                className="px-2 py-0.5 rounded-full transition-all"
-                            >
-                                {tr('라운지', currentLang)}
-                            </button>
-                        )}
-                    </div>
-
                     {activeMode === 'general' && (
-                        <nav className="hidden md:flex gap-1 text-sm font-bold text-gray-600">
+                        <nav className="hidden md:flex items-center gap-1 text-sm font-bold text-gray-600">
                             <a href={`${baseUrl}/guides`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-teal-700 font-extrabold`}>{tr('지식 가이드', currentLang)}</a>
                             <a href={`${baseUrl}/news`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('뉴스', currentLang)}</a>
                             <a href={`${baseUrl}/lifestyle`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('생활도구', currentLang)}</a>
                             <a href={`${baseUrl}/finance`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('금융', currentLang)}</a>
                             <a href={`${baseUrl}/game`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('게임', currentLang)}</a>
                             <a href={`${baseUrl}/entertainment`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('재미', currentLang)}</a>
-                            {/* <a href={`${baseUrl}/shopping`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors text-pink-600 font-extrabold`}>{tr('쇼핑', currentLang)}</a> */}
-                            {user?.email === 'sukman@naver.com' && (
-                                <a href={`${baseUrl}/reward`} className={`px-2.5 lg:px-3 py-1.5 rounded-lg ${modeBg} transition-colors`}>{tr('리워드', currentLang)}</a>
-                            )}
                         </nav>
                     )}
-
-                    {activeMode === 'lounge' && null}
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3">
+
+                {/* 우측: 모드 스위처 + 언어 설정 + 인증 (Flex로 나란히 배치하여 겹침 근본 방지) */}
+                <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+                    <div className="flex items-center p-0.5 bg-slate-100 border border-slate-200/60 rounded-full text-[10px] sm:text-xs font-black text-slate-500 shadow-inner">
+                        <button
+                            onClick={() => handleModeSwitch('general')}
+                            className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all cursor-pointer ${
+                                activeMode === 'general'
+                                    ? 'bg-white text-blue-600 shadow-xs font-extrabold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            {tr('포털', currentLang)}
+                        </button>
+                        <button
+                            onClick={() => handleModeSwitch('lounge')}
+                            className={`px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full transition-all cursor-pointer ${
+                                activeMode === 'lounge'
+                                    ? 'bg-white text-fuchsia-600 shadow-xs font-extrabold'
+                                    : 'text-slate-500 hover:text-slate-800'
+                            }`}
+                        >
+                            {tr('라운지', currentLang)}
+                        </button>
+                    </div>
+
                     <LanguageSwitcher />
+
                     {user ? (
-                        <>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
                             <span className="hidden md:inline text-xs font-bold text-gray-500">{user.name}{tr('님', currentLang)}</span>
-                            <a href={`${baseUrl}/mypage`} className={`hidden md:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>{tr('마이페이지', currentLang)}</a>
-                            <button onClick={onLogout} className="text-xs font-bold px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors">{tr('로그아웃', currentLang)}</button>
-                        </>
+                            <a href={`${baseUrl}/mypage`} className={`hidden sm:inline-block text-xs font-bold text-gray-600 ${modeColor} transition-colors`}>{tr('마이페이지', currentLang)}</a>
+                            <button onClick={onLogout} className="text-xs font-bold px-2.5 sm:px-3 py-1 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors cursor-pointer">{tr('로그아웃', currentLang)}</button>
+                        </div>
                     ) : (
-                        <>
-                            <a href={`${baseUrl}/login`} className="text-xs font-bold text-gray-600 hover:text-blue-600 transition-colors">{tr('로그인', currentLang)}</a>
-                            <a href={`${baseUrl}/signup`} className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-sm">{tr('회원가입', currentLang)}</a>
-                        </>
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                            <a href={`${baseUrl}/login`} className="text-xs font-bold px-2 sm:px-2.5 py-1 text-gray-600 hover:text-blue-600 transition-colors">{tr('로그인', currentLang)}</a>
+                            <a href={`${baseUrl}/signup`} className="hidden md:inline-block text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs">{tr('회원가입', currentLang)}</a>
+                        </div>
                     )}
                 </div>
             </div>
         </header>
-
-        {/* 모바일/태블릿 전체메뉴 드로어 (왼쪽 슬라이드: md 미만 상시 가능) */}
-        {menuOpen && (
-            <div className="md:hidden fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="전체메뉴">
-                <div className="absolute inset-0 bg-black/40" onClick={() => setMenuOpen(false)}></div>
-                <div className="absolute top-0 left-0 h-full w-72 max-w-[80%] bg-white shadow-2xl flex flex-col">
-                    <div className="flex items-center justify-between px-5 h-14 border-b border-gray-100 flex-shrink-0">
-                        <span className="font-black text-lg text-gray-900">{tr('전체메뉴', currentLang)}</span>
-                        <div className="flex items-center gap-2">
-                            <LanguageSwitcher />
-                            <button onClick={() => setMenuOpen(false)} className="w-9 h-9 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors" aria-label="메뉴 닫기">
-                                <i className="fas fa-times text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <nav className="flex-1 overflow-y-auto p-3">
-                        {FULL_MENU_ITEMS.filter((m) => {
-                            if (m.path === '/reward' && user?.email !== 'sukman@naver.com') {
-                                return false;
-                            }
-                            if (activeMode === 'lounge') {
-                                return false;
-                            }
-                            return m.path !== '/b2b' && m.path !== '/lounge';
-                        }).map((m) => {
-                            const isMyPageItem = m.path === '/mypage';
-                            const rawLabel = isMyPageItem && !user ? '로그인' : m.label;
-                            const itemLabel = tr(rawLabel, currentLang);
-                            const itemPath = isMyPageItem && !user ? '/login' : m.path;
-                            const itemIcon = isMyPageItem && !user ? 'fa-sign-in-alt' : m.icon;
-                            const itemBg = isMyPageItem && !user ? 'bg-blue-50' : m.bg;
-                            const itemColor = isMyPageItem && !user ? 'text-blue-600' : m.color;
-
-                            return (
-                                <a key={m.path} href={`${baseUrl}${itemPath}`} className="flex items-center justify-between px-4 py-3 rounded-xl hover:bg-blue-50 transition-colors group">
-                                    <div className="flex items-center gap-3">
-                                        <span className={`w-9 h-9 rounded-lg ${itemBg} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}>
-                                            <i className={`fas ${itemIcon} ${itemColor}`}></i>
-                                        </span>
-                                        <span className="font-bold text-gray-800">{itemLabel}</span>
-                                    </div>
-                                    {m.label === '라운지' && (
-                                        <span className="text-[9px] bg-violet-100 text-violet-600 font-extrabold px-2 py-0.5 rounded-full animate-pulse flex items-center gap-0.5">
-                                            HOT <i className="fas fa-fire text-[8px] text-violet-500"></i>
-                                        </span>
-                                    )}
-                                </a>
-                            );
-                        })}
-                    </nav>
-                </div>
-            </div>
-        )}
-    </>
     );
 };
 

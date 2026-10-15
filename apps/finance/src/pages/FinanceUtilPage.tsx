@@ -34,7 +34,7 @@ export default function FinanceUtilPage() {
             <Header baseUrl={MAIN_PORTAL_URL} user={user} onLogout={logout} />
             <FinanceSubMenu />
 
-            <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 w-full py-8 sm:py-10">
                 {/* 상단 네비게이션 브레드크럼 */}
                 <div className="flex items-center gap-2 text-xs text-slate-500 font-bold mb-6">
                     <a href={MAIN_PORTAL_URL || '/'} className="hover:text-blue-600">홈</a>
