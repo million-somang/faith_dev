@@ -47,6 +47,8 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     return 1.0;
   });
 
+  const gameSpeedRef = useRef<number>(gameSpeed);
+  const lastTouchTimeRef = useRef<number>(0);
   const stateRef = useRef<GameEngineState>(createInitialState(gameSpeed));
   const keysRef = useRef<{
     left: boolean;
@@ -108,6 +110,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
   // 속도 변경 핸들러
   const handleSelectSpeed = useCallback((newSpeed: number) => {
+    gameSpeedRef.current = newSpeed;
     setGameSpeed(newSpeed);
     stateRef.current.gameSpeed = newSpeed;
     try {
@@ -138,14 +141,17 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
   // 상단 바 클릭 시 0.7x ➔ 1.0x ➔ 1.3x 순환 변경
   const handleCycleSpeed = useCallback(() => {
-    const next = gameSpeed === 0.7 ? 1.0 : gameSpeed === 1.0 ? 1.3 : 0.7;
+    const current = gameSpeedRef.current;
+    const next = current === 0.7 ? 1.0 : current === 1.0 ? 1.3 : 0.7;
     handleSelectSpeed(next);
-  }, [gameSpeed, handleSelectSpeed]);
+  }, [handleSelectSpeed]);
 
   // 게임 시작 트리거
   const handleStartGame = useCallback(() => {
+    const activeSpeed = gameSpeedRef.current;
     gameOverReportedRef.current = false;
-    stateRef.current = createInitialState(gameSpeed);
+    stateRef.current = createInitialState(activeSpeed);
+    stateRef.current.gameSpeed = activeSpeed;
     stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
     stateRef.current.status = 'playing';
     setHudState({
@@ -162,14 +168,16 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     if (onStateUpdate) {
       onStateUpdate(stateRef.current);
     }
-  }, [gameSpeed, highScore, onStateUpdate]);
+  }, [highScore, onStateUpdate]);
 
   // 외부(게임오버 모달 등)에서 재시작 요청 처리
   useEffect(() => {
     if (restartTriggerRequested > 0 && restartTriggerRequested !== prevRestartRef.current) {
+      const activeSpeed = gameSpeedRef.current;
       prevRestartRef.current = restartTriggerRequested;
       gameOverReportedRef.current = false;
-      stateRef.current = createInitialState(gameSpeed);
+      stateRef.current = createInitialState(activeSpeed);
+      stateRef.current.gameSpeed = activeSpeed;
       stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
       stateRef.current.status = 'playing';
       setHudState({
@@ -187,7 +195,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
         onStateUpdate(stateRef.current);
       }
     }
-  }, [restartTriggerRequested, gameSpeed, highScore, onStateUpdate]);
+  }, [restartTriggerRequested, highScore, onStateUpdate]);
 
   // 외부(버튼 등)에서 롤 요청 처리
   useEffect(() => {
@@ -239,7 +247,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     };
   }, [handleStartGame]);
 
-  // 상대 드래그 이동 적용 헬퍼
+  // 상대 드래그 이동 적용 헬퍼 (선택된 gameSpeed 배율 반영)
   const applyRelativeMove = (screenDeltaX: number, screenDeltaY: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -251,9 +259,10 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     const state = stateRef.current;
     if (state.status !== 'playing') return;
 
+    const speedFactor = gameSpeedRef.current || state.gameSpeed || 1.0;
     const p = state.player;
-    p.x += screenDeltaX * scaleX;
-    p.y += screenDeltaY * scaleY;
+    p.x += screenDeltaX * scaleX * speedFactor;
+    p.y += screenDeltaY * scaleY * speedFactor;
 
     // 캔버스 화면 경계 클램핑
     const halfW = p.width / 2;
@@ -264,25 +273,40 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     if (p.y > CANVAS_HEIGHT - halfH - 15) p.y = CANVAS_HEIGHT - halfH - 15;
   };
 
-  // 메인 애니메이션 루프 (60fps)
+  // 메인 애니메이션 루프 (60FPS 고정 타임스텝 — 모바일 120Hz 터치 부스트 시 2배 가속 완벽 차단)
   useEffect(() => {
     let animId: number;
+    const TARGET_FRAME_MS = 1000 / 60;
+    let lastTime = performance.now();
+    let accumulator = 0;
 
-    const loop = () => {
+    const loop = (now: number) => {
       const canvas = canvasRef.current;
       const ctx = canvas?.getContext('2d');
       const state = stateRef.current;
 
+      // 항상 최신 선택 속도 동기화 유지
+      state.gameSpeed = gameSpeedRef.current;
+
+      let delta = now - lastTime;
+      lastTime = now;
+      if (delta > 100) delta = TARGET_FRAME_MS;
+      accumulator += delta;
+
       if (canvas && ctx) {
         try {
-          // 엔진 프레임 업데이트
-          updateGameEngine(state, keysRef.current);
+          let stepRun = false;
+          while (accumulator >= TARGET_FRAME_MS) {
+            updateGameEngine(state, keysRef.current);
+            accumulator -= TARGET_FRAME_MS;
+            stepRun = true;
+          }
 
           // 렌더링
           renderGameEngine(ctx, state);
 
-          // 주기적 HUD 및 상태 동기화 (매 3프레임마다)
-          if (state.currentFrame % 3 === 0) {
+          // 주기적 HUD 및 상태 동기화 (물리 프레임 진행 시 매 3프레임마다)
+          if (stepRun && state.currentFrame % 3 === 0) {
             setHudState({
               score: state.player.score,
               lives: state.player.lives,
@@ -420,6 +444,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           height={CANVAS_HEIGHT}
           className="w-full h-full block cursor-crosshair touch-none"
           onMouseDown={(e) => {
+            if (Date.now() - lastTouchTimeRef.current < 800) return;
             if (stateRef.current.status === 'ready') handleStartGame();
             mouseDragRef.current = {
               active: true,
@@ -428,6 +453,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             };
           }}
           onMouseMove={(e) => {
+            if (Date.now() - lastTouchTimeRef.current < 800) return;
             if (mouseDragRef.current.active && e.buttons > 0) {
               const dx = e.clientX - mouseDragRef.current.lastX;
               const dy = e.clientY - mouseDragRef.current.lastY;
@@ -443,6 +469,8 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             mouseDragRef.current.active = false;
           }}
           onTouchStart={(e) => {
+            lastTouchTimeRef.current = Date.now();
+            mouseDragRef.current.active = false;
             if (stateRef.current.status === 'ready') handleStartGame();
             if (!touchDragRef.current.active && e.changedTouches.length > 0) {
               const touch = e.changedTouches[0];
@@ -455,6 +483,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             }
           }}
           onTouchMove={(e) => {
+            lastTouchTimeRef.current = Date.now();
             if (!touchDragRef.current.active) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
               const touch = e.changedTouches[i];
@@ -469,6 +498,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             }
           }}
           onTouchEnd={(e) => {
+            lastTouchTimeRef.current = Date.now();
             if (!touchDragRef.current.active) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
               if (e.changedTouches[i].identifier === touchDragRef.current.touchId) {
@@ -479,6 +509,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
             }
           }}
           onTouchCancel={(e) => {
+            lastTouchTimeRef.current = Date.now();
             if (!touchDragRef.current.active) return;
             for (let i = 0; i < e.changedTouches.length; i++) {
               if (e.changedTouches[i].identifier === touchDragRef.current.touchId) {

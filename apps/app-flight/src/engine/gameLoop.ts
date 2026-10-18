@@ -260,7 +260,9 @@ export function triggerPlayerBomb(state: GameEngineState): boolean {
 export function playerShoot(state: GameEngineState) {
   if (state.status !== 'playing') return;
   if (state.player.isRolling) return; // 롤 중에는 사격 중단
-  if (state.currentFrame - state.player.lastShotFrame < 9) return; // 연사 딜레이
+  const gameSpeed = state.gameSpeed || 1.0;
+  const shotInterval = Math.max(7, Math.round(9 / gameSpeed));
+  if (state.currentFrame - state.player.lastShotFrame < shotInterval) return; // 연사 딜레이
 
   state.player.lastShotFrame = state.currentFrame;
   sound.playGunSound();
@@ -712,8 +714,8 @@ export function updateGameEngine(
     moveY *= 0.7071;
   }
 
-  p.x += moveX * p.speed;
-  p.y += moveY * p.speed;
+  p.x += moveX * p.speed * gameSpeed;
+  p.y += moveY * p.speed * gameSpeed;
 
   // 캔버스 화면 가두기
   const halfW = p.width / 2;
@@ -725,7 +727,7 @@ export function updateGameEngine(
 
   // 3. 360도 공중제비 롤링 진행
   if (p.isRolling) {
-    p.rollProgress++;
+    p.rollProgress += gameSpeed;
     p.rollAngle = (p.rollProgress / p.rollDuration) * 360;
 
     if (p.rollProgress >= p.rollDuration) {
@@ -777,10 +779,10 @@ export function updateGameEngine(
     state.bossWarningTimer--;
   }
 
-  // 6. 탄환 업데이트 (적 탄환은 gameSpeed 반영, 플레이어 탄환은 1.0 유지)
+  // 6. 탄환 업데이트 (gameSpeed 배율 일관 적용)
   for (let i = state.bullets.length - 1; i >= 0; i--) {
     const b = state.bullets[i];
-    const bSpeed = b.isPlayer ? 1.0 : gameSpeed;
+    const bSpeed = b.isPlayer ? Math.max(0.8, gameSpeed) : gameSpeed;
     b.x += b.vx * bSpeed;
     b.y += b.vy * bSpeed;
 
