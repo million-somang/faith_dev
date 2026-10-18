@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Trophy, Frown, RotateCcw, Clock, Hash, Zap, Award, CheckCircle2 } from 'lucide-react';
+import { Trophy, Frown, RotateCcw, Clock, Hash, Zap, Award, CheckCircle2, Eye, X } from 'lucide-react';
 import { Difficulty, GameScoreDetails, GameStatus, Player } from '../types/omok';
 
-interface VictoryModalProps {
+export interface VictoryModalProps {
+  isOpen: boolean;
   status: GameStatus;
   difficulty: Difficulty;
   timeElapsed: number;
@@ -13,10 +14,12 @@ interface VictoryModalProps {
   saveMessage?: string | null;
   isLoggedIn?: boolean;
   humanPlayer: Player;
+  onClose: () => void;
   onRestart: () => void;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
+  isOpen,
   status,
   difficulty,
   timeElapsed,
@@ -26,10 +29,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   saveMessage = null,
   isLoggedIn = false,
   humanPlayer,
+  onClose,
   onRestart,
 }) => {
   useEffect(() => {
-    if (status === 'WIN') {
+    if (isOpen && status === 'WIN') {
       // 콘페티 축포 발사
       try {
         confetti({
@@ -42,9 +46,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         // ignore
       }
     }
-  }, [status]);
+  }, [isOpen, status]);
 
-  if (status === 'PLAYING') return null;
+  if (status === 'PLAYING' || !isOpen) return null;
 
   const isWin = status === 'WIN';
   const isDraw = status === 'DRAW';
@@ -66,7 +70,17 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       data-screenshot-result
       className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
     >
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-xs w-full p-5 text-center flex flex-col items-center space-y-3">
+      <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-w-xs w-full p-5 text-center flex flex-col items-center space-y-3">
+        {/* 우측 상단 닫기 (판 확인하기) 버튼 */}
+        <button
+          type="button"
+          onClick={onClose}
+          title="결과창 닫고 바둑판 확인하기"
+          className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 flex items-center justify-center transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         {/* 아이콘 */}
         <div
           className={`w-13 h-13 rounded-2xl flex items-center justify-center shadow-md ${
@@ -174,14 +188,26 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           </div>
         </div>
 
-        {/* 다시 하기 버튼 */}
-        <button
-          onClick={onRestart}
-          className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-        >
-          <RotateCcw className="w-4 h-4" />
-          <span>새 대국 시작하기</span>
-        </button>
+        {/* 바둑판 확인하기 & 다시 하기 버튼 그룹 */}
+        <div className="w-full space-y-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs border border-slate-200 transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+          >
+            <Eye className="w-3.5 h-3.5 text-slate-600" />
+            <span>바둑판 확인하기 (마지막 수 보기)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onRestart}
+            className="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>새 대국 시작하기</span>
+          </button>
+        </div>
       </div>
     </div>
   );

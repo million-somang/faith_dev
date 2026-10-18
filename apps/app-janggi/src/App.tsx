@@ -122,6 +122,7 @@ export function App() {
   // 7. 모달 상태
   const [isSetupOpen, setIsSetupOpen] = useState<boolean>(false);
   const [isRuleOpen, setIsRuleOpen] = useState<boolean>(false);
+  const [isVictoryModalOpen, setIsVictoryModalOpen] = useState<boolean>(false);
 
   // 점수 계산 (73.5점 공식)
   const score: ScoreBreakdown = calculateJanggiScore(board, cols, rows);
@@ -138,6 +139,7 @@ export function App() {
     setBoardHashes([]);
     setIsCheckState(false);
     setWinner(null);
+    setIsVictoryModalOpen(false);
     setWinReason('');
     setMoveCount(0);
     setCapturedByCho([]);
@@ -167,6 +169,18 @@ export function App() {
       setCurrentTurn('cho');
     }
   }, [gameMode, choSetup, hanSetup]);
+
+  // 대국 종료 시 마지막 수 확인을 위해 1.8초 딜레이 후 결과 모달 표시
+  useEffect(() => {
+    if (winner) {
+      const timer = setTimeout(() => {
+        setIsVictoryModalOpen(true);
+      }, 1800);
+      return () => clearTimeout(timer);
+    } else {
+      setIsVictoryModalOpen(false);
+    }
+  }, [winner]);
 
   // 대국 종료 시 종합 점수 산출 및 서버 DB/포털 리더보드 연동
   useEffect(() => {
@@ -700,7 +714,9 @@ export function App() {
         {/* 상시 고정 대국 상태 브리핑 바 (Zero Layout Shift - 화면 덜컹거림 100% 방지) */}
         <div
           className={`w-full h-10 min-h-[40px] max-h-[40px] px-2.5 rounded-xl border flex items-center justify-between transition-colors duration-200 select-none shadow-xs box-border overflow-hidden ${
-            !isGameStarted
+            winner
+              ? 'bg-amber-100/95 border-amber-400 text-amber-950'
+              : !isGameStarted
               ? 'bg-amber-50/90 border-amber-300 text-amber-950'
               : isCheckState
               ? 'bg-rose-50/95 border-rose-300 text-rose-900'
@@ -713,43 +729,68 @@ export function App() {
         >
           {/* 좌측: 실시간 국면 및 AI 수읽기 / 리액션 말풍선 브리핑 */}
           <div className="flex items-center gap-1.5 overflow-hidden text-xs font-black truncate flex-1 mr-2">
-            <span className="text-sm shrink-0" title={`${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title})`}>
-              {AI_PERSONAS[aiDifficulty]?.avatar}
-            </span>
-            {!isGameStarted ? (
-              <span className="truncate text-amber-900">
-                {AI_PERSONAS[aiDifficulty]?.name}: "{AI_PERSONAS[aiDifficulty]?.greeting}"
-              </span>
-            ) : isCheckState ? (
+            {winner ? (
               <>
-                <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce text-xs shrink-0"></i>
-                <span className="truncate">
-                  {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '장군 위기! 왕을 피하세요!' : '외통의 길목이오, 장군!')}"
-                </span>
-              </>
-            ) : isAiThinking ? (
-              <>
-                <i className="fas fa-microchip text-indigo-600 animate-spin text-xs shrink-0"></i>
-                <span className="truncate animate-pulse text-indigo-950">
-                  {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || '수읽기 연산 중...'}"
+                <i className="fas fa-flag-checkered text-amber-600 text-xs shrink-0"></i>
+                <span className="truncate text-amber-950">
+                  대국 종료 ({winReason || '최종 수 확인'}) — 마지막 수를 확인하세요
                 </span>
               </>
             ) : (
-              <span className="truncate">
-                {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '당신의 차례입니다. 신중히 두세요.' : '수를 준비 중입니다.')}"
-              </span>
+              <>
+                <span className="text-sm shrink-0" title={`${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title})`}>
+                  {AI_PERSONAS[aiDifficulty]?.avatar}
+                </span>
+                {!isGameStarted ? (
+                  <span className="truncate text-amber-900">
+                    {AI_PERSONAS[aiDifficulty]?.name}: "{AI_PERSONAS[aiDifficulty]?.greeting}"
+                  </span>
+                ) : isCheckState ? (
+                  <>
+                    <i className="fas fa-exclamation-triangle text-rose-600 animate-bounce text-xs shrink-0"></i>
+                    <span className="truncate">
+                      {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '장군 위기! 왕을 피하세요!' : '외통의 길목이오, 장군!')}"
+                    </span>
+                  </>
+                ) : isAiThinking ? (
+                  <>
+                    <i className="fas fa-microchip text-indigo-600 animate-spin text-xs shrink-0"></i>
+                    <span className="truncate animate-pulse text-indigo-950">
+                      {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || '수읽기 연산 중...'}"
+                    </span>
+                  </>
+                ) : (
+                  <span className="truncate">
+                    {AI_PERSONAS[aiDifficulty]?.name}: "{aiDialogue || (currentTurn === playerSide ? '당신의 차례입니다. 신중히 두세요.' : '수를 준비 중입니다.')}"
+                  </span>
+                )}
+              </>
             )}
           </div>
 
-          {/* 우측: 현재 AI 대국 난이도 고정 뱃지 (대국 중 실시간 변경 방지) */}
-          <div
-            title={`상대: ${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title}) - ${DIFFICULTY_INFO[aiDifficulty]?.label}`}
-            className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border select-none shrink-0 shadow-xs ${
-              DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
-            }`}
-          >
-            <span>{DIFFICULTY_INFO[aiDifficulty]?.badge}</span>
-          </div>
+          {/* 우측: 대국 종료 시 [결과창 보기] 버튼 또는 현재 AI 대국 난이도 고정 뱃지 */}
+          {winner ? (
+            <button
+              type="button"
+              onClick={() => {
+                soundEffects.playSnap();
+                setIsVictoryModalOpen(true);
+              }}
+              className="flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black bg-amber-500 hover:bg-amber-600 text-white shadow-xs shrink-0 transition-colors cursor-pointer"
+            >
+              <i className="fas fa-trophy text-[10px]"></i>
+              <span>결과창 보기</span>
+            </button>
+          ) : (
+            <div
+              title={`상대: ${AI_PERSONAS[aiDifficulty]?.name} (${AI_PERSONAS[aiDifficulty]?.title}) - ${DIFFICULTY_INFO[aiDifficulty]?.label}`}
+              className={`flex items-center gap-1 py-1 px-2.5 rounded-lg text-[11px] font-black border select-none shrink-0 shadow-xs ${
+                DIFFICULTY_INFO[aiDifficulty]?.color || 'bg-white text-slate-700 border-slate-300'
+              }`}
+            >
+              <span>{DIFFICULTY_INFO[aiDifficulty]?.badge}</span>
+            </div>
+          )}
         </div>
 
         {/* 메인 장기판 (9x10 또는 7x7 보드) */}
@@ -822,6 +863,7 @@ export function App() {
 
       {/* 승리 / 무승부 모달 */}
       <VictoryModal
+        isOpen={isVictoryModalOpen}
         winner={winner}
         reason={winReason}
         choScore={score.choPoints}
@@ -833,6 +875,7 @@ export function App() {
         isSavingScore={isSavingScore}
         saveMessage={saveMessage}
         isLoggedIn={!!user}
+        onClose={() => setIsVictoryModalOpen(false)}
         onRestart={handleOpenNewGame}
         onNewGame={handleOpenNewGame}
       />

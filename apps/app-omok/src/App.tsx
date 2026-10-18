@@ -19,6 +19,7 @@ export default function App() {
   const [scoreDetails, setScoreDetails] = useState<GameScoreDetails | null>(null);
   const [isSavingScore, setIsSavingScore] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isVictoryModalOpen, setIsVictoryModalOpen] = useState(false);
   const gameOverHandledRef = useRef(false);
 
   const {
@@ -42,6 +43,18 @@ export default function App() {
     setHumanPlayer,
     toggleMute,
   } = useOmokGame();
+
+  // 대국 종료 시 마지막 수 확인을 위해 1.8초 딜레이 후 결과 모달 표시
+  useEffect(() => {
+    if (status !== 'PLAYING') {
+      const timer = setTimeout(() => {
+        setIsVictoryModalOpen(true);
+      }, 1800);
+      return () => clearTimeout(timer);
+    } else {
+      setIsVictoryModalOpen(false);
+    }
+  }, [status]);
 
   // 대국 종료 시 점수 계산 및 서버 DB / 리더보드 저장
   useEffect(() => {
@@ -116,6 +129,27 @@ export default function App() {
           onToggleMute={toggleMute}
         />
 
+        {/* 대국 종료 후 마지막 수 확인 안내 및 결과창 다시 보기 배너 */}
+        {status !== 'PLAYING' && !isVictoryModalOpen && (
+          <div className="mx-3 mt-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-300 shadow-sm flex items-center justify-between gap-2 animate-fade-in">
+            <div className="flex flex-col text-left">
+              <span className="text-xs font-black text-amber-950">
+                {status === 'WIN' ? '🏆 대국 승리! 마지막 수를 확인하세요' : status === 'LOSS' ? '⚔️ 대국 종료 — 마지막 결정타를 확인하세요' : '🤝 무승부 — 최종 바둑판을 확인하세요'}
+              </span>
+              <span className="text-[10px] font-bold text-amber-700">
+                붉은 포커스 링이 방금 놓인 마지막 수입니다
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsVictoryModalOpen(true)}
+              className="shrink-0 px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-extrabold shadow-xs transition-colors cursor-pointer"
+            >
+              결과창 보기
+            </button>
+          </div>
+        )}
+
         {/* 중앙 인터랙티브 15×15 원목 오목판 */}
         <div data-screenshot-control className="flex-1 flex flex-col items-center justify-center">
           <OmokBoard
@@ -150,6 +184,7 @@ export default function App() {
 
         {/* 승패 결과 및 축하 폭죽 모달 (마케팅 결과 캡처 data-screenshot-result 포함) */}
         <VictoryModal
+          isOpen={isVictoryModalOpen}
           status={status}
           difficulty={difficulty}
           timeElapsed={timeElapsed}
@@ -159,6 +194,7 @@ export default function App() {
           saveMessage={saveMessage}
           isLoggedIn={!!user}
           humanPlayer={humanPlayer}
+          onClose={() => setIsVictoryModalOpen(false)}
           onRestart={() => resetGame()}
         />
       </main>

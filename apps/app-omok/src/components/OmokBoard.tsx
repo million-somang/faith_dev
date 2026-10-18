@@ -123,14 +123,26 @@ export const OmokBoard: React.FC<OmokBoardProps> = ({
                           isWinStone ? 'animate-golden-win z-25' : 'z-10'
                         }`}
                       >
-                        {/* 마지막 수 인디케이터 펄스 링 */}
-                        {isLast && !isWinStone && (
-                          <div className="absolute inset-[-4px] rounded-full border-2 border-amber-400/90 animate-last-move pointer-events-none" />
+                        {/* 마지막 수 인디케이터 펄스 링 (결정타 승리 돌일 때는 붉은 포커스 링으로 강조) */}
+                        {isLast && (
+                          <div
+                            className={`absolute inset-[-5px] rounded-full border-2 pointer-events-none ${
+                              isWinStone
+                                ? 'border-rose-500 ring-2 ring-amber-300/90 animate-pulse'
+                                : 'border-amber-400/90 animate-last-move'
+                            }`}
+                          />
                         )}
 
-                        {/* 승리 돌 별빛 마커 */}
+                        {/* 승리 돌 별빛 마커 및 결정타 코어 표시 */}
                         {isWinStone && (
-                          <div className="w-2 h-2 rounded-full bg-amber-400 shadow-md animate-ping" />
+                          <div
+                            className={`rounded-full shadow-md ${
+                              isLast
+                                ? 'w-3 h-3 bg-rose-500 ring-2 ring-white animate-bounce'
+                                : 'w-2 h-2 bg-amber-400 animate-ping'
+                            }`}
+                          />
                         )}
                       </div>
                     )}

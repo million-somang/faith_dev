@@ -2,7 +2,8 @@ import React from 'react';
 import { GameMode, Side } from '../types/janggi';
 import { soundEffects } from '../utils/soundEffects';
 
-interface VictoryModalProps {
+export interface VictoryModalProps {
+  isOpen: boolean;
   winner: Side | 'draw' | null;
   reason: string;
   choScore: number;
@@ -14,11 +15,13 @@ interface VictoryModalProps {
   isSavingScore?: boolean;
   saveMessage?: string | null;
   isLoggedIn?: boolean;
+  onClose: () => void;
   onRestart: () => void;
   onNewGame: () => void;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
+  isOpen,
   winner,
   reason,
   choScore,
@@ -30,10 +33,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   isSavingScore = false,
   saveMessage = null,
   isLoggedIn = false,
+  onClose,
   onRestart,
   onNewGame,
 }) => {
-  if (!winner) return null;
+  if (!winner || !isOpen) return null;
 
   const isCho = winner === 'cho';
   const isDraw = winner === 'draw';
@@ -67,6 +71,19 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         className="w-full max-w-sm rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-5 sm:p-6 text-center relative overflow-hidden text-slate-800"
         data-screenshot-target="victory-dialog"
       >
+        {/* 우측 상단 닫기 (판 확인하기) 버튼 */}
+        <button
+          type="button"
+          onClick={() => {
+            soundEffects.playSnap();
+            onClose();
+          }}
+          title="결과창 닫고 장기판 확인하기"
+          className="absolute top-3.5 right-3.5 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
+        >
+          <i className="fas fa-times text-xs"></i>
+        </button>
+
         {/* Soft ambient background accent */}
         <div
           className={`absolute -top-16 -left-16 w-40 h-40 rounded-full blur-3xl opacity-20 ${
@@ -129,7 +146,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         </div>
 
         {/* 베라 포인트 적립 & 서버 랭킹 저장 상태 인디케이터 */}
-        <div className="flex flex-col gap-1.5 mb-4">
+        <div className="flex flex-col gap-1.5 mb-3.5">
           <div className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-black shadow-2xs">
             <i className="fas fa-coins text-amber-500"></i>
             <span>베라 포인트 +{earnedPoints}P 적립</span>
@@ -155,6 +172,19 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         {/* 조작 버튼 */}
         <div className="space-y-2">
           <button
+            type="button"
+            onClick={() => {
+              soundEffects.playSnap();
+              onClose();
+            }}
+            className="w-full py-2.5 px-4 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-extrabold text-xs border border-amber-300 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <i className="fas fa-search-plus text-amber-600"></i>
+            <span>장기판 확인하기 (마지막 수 보기)</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               soundEffects.playSnap();
               onNewGame();
@@ -167,6 +197,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
               onClick={() => {
                 soundEffects.playSnap();
                 onRestart();
@@ -176,6 +207,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
               <i className="fas fa-redo-alt mr-1.5"></i>다시하기
             </button>
             <button
+              type="button"
               onClick={handleShare}
               className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200 active:scale-95 transition-all cursor-pointer"
             >
