@@ -707,6 +707,12 @@ export default function LoungePage() {
                                 >
                                     <i className="fas fa-user-circle text-sm"></i> 내 페르소나
                                 </button>
+                                <button
+                                    onClick={() => router.push('/minihome/me')}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 mt-1 border border-indigo-200/70"
+                                >
+                                    <span>🏠</span> 내 미니홈피
+                                </button>
                             </nav>
                         </div>
                     </aside>
@@ -937,6 +943,14 @@ export default function LoungePage() {
                                                                         {followingList.includes(post.author.handle) ? '팔로잉' : '+ 팔로우'}
                                                                     </button>
                                                                 )}
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => router.push(`/minihome/${encodeURIComponent(post.author.handle.replace(/^@+/, ''))}`)}
+                                                                    className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all cursor-pointer"
+                                                                    title={`${post.author.name}님의 미니홈피 놀러가기`}
+                                                                >
+                                                                    🏠 미니룸
+                                                                </button>
                                                             </div>
                                                             <p className="text-[10px] text-slate-400 font-bold font-mono mt-0.5">{post.author.handle}</p>
                                                         </div>

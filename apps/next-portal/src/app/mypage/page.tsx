@@ -885,6 +885,13 @@ const DEFAULT_SHOPPING_ITEMS = [
                             <i className="fas fa-magic text-sm"></i>
                             <span>{t('홈꾸미기')}</span>
                         </button>
+                        <Link
+                            href="/minihome/me"
+                            className="flex-1 min-w-[130px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-50 to-fuchsia-50 hover:from-indigo-100 hover:to-fuchsia-100 text-indigo-700 border border-indigo-200/80 shadow-2xs"
+                        >
+                            <span>🏠</span>
+                            <span>{t('내 미니홈피')}</span>
+                        </Link>
                     </nav>
                 </div>
 
@@ -1545,6 +1552,28 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                 <i className="fas fa-magic mr-3 text-green-500 text-3xl"></i>내 홈페이지 꾸미기
                                             </h2>
                                             <p className="text-gray-500 text-sm mb-6">설정을 바꾸면 메인 페이지가 나만의 모습으로 바뀝니다.</p>
+
+                                            {/* 🏠 추억의 미니홈피 2.5D 내 방 꾸미기 배너 */}
+                                            <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 text-white shadow-lg flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                <div className="space-y-1">
+                                                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[11px] font-black">
+                                                        <span>NEW ✨</span>
+                                                        <span>싸이월드 감성 미니룸 & 도토리 상점</span>
+                                                    </div>
+                                                    <h3 className="text-lg sm:text-xl font-black">
+                                                        🏠 나만의 2.5D 미니룸 꾸미러 가기
+                                                    </h3>
+                                                    <p className="text-xs sm:text-sm text-indigo-100">
+                                                        벽지·바닥·가구·미니미를 배치하고 BGM과 일촌 방명록, 파도타기를 즐겨보세요!
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    href="/minihome/me"
+                                                    className="px-5 py-3 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs sm:text-sm shadow-md transition-all shrink-0"
+                                                >
+                                                    내 방 꾸미기 입장 →
+                                                </Link>
+                                            </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                                                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
