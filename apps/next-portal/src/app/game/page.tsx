@@ -364,6 +364,53 @@ function VeraPopThumb() {
     );
 }
 
+function BilliardsThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="bilCloth" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#2563eb" />
+                    <stop offset="55%" stopColor="#1d4ed8" />
+                    <stop offset="100%" stopColor="#1e40af" />
+                </linearGradient>
+                <linearGradient id="bilWood" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#5c2d16" />
+                    <stop offset="50%" stopColor="#7c3f1d" />
+                    <stop offset="100%" stopColor="#4a220f" />
+                </linearGradient>
+            </defs>
+            <rect width="320" height="120" fill="url(#bilWood)" />
+            <rect x="10" y="10" width="300" height="100" rx="6" fill="#1e3a8a" />
+            <rect x="15" y="15" width="290" height="90" rx="3" fill="url(#bilCloth)" />
+            <g fill="#f8fafc" opacity="0.8">
+                <circle cx="55" cy="5" r="1.5" />
+                <circle cx="107" cy="5" r="1.5" />
+                <circle cx="160" cy="5" r="1.5" />
+                <circle cx="213" cy="5" r="1.5" />
+                <circle cx="265" cy="5" r="1.5" />
+                <circle cx="55" cy="115" r="1.5" />
+                <circle cx="107" cy="115" r="1.5" />
+                <circle cx="160" cy="115" r="1.5" />
+                <circle cx="213" cy="115" r="1.5" />
+                <circle cx="265" cy="115" r="1.5" />
+            </g>
+            <path d="M 85 74 L 168 42 L 245 15 L 305 58 L 222 80" fill="none" stroke="#93c5fd" strokeWidth="1.8" strokeDasharray="4 3" opacity="0.85" />
+            <line x1="18" y1="100" x2="72" y2="79" stroke="#fde68a" strokeWidth="4.5" strokeLinecap="round" />
+            <line x1="18" y1="100" x2="42" y2="91" stroke="#78350f" strokeWidth="5.5" strokeLinecap="round" />
+            <circle cx="72" cy="79" r="2.2" fill="#38bdf8" />
+            <circle cx="85" cy="74" r="12" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1" />
+            <circle cx="81" cy="70" r="3.5" fill="#ffffff" opacity="0.9" />
+            <circle cx="88" cy="76" r="1.8" fill="#ef4444" />
+            <circle cx="180" cy="38" r="12" fill="#ef4444" stroke="#991b1b" strokeWidth="1" />
+            <circle cx="176" cy="34" r="3.5" fill="#fecaca" opacity="0.8" />
+            <circle cx="222" cy="80" r="12" fill="#dc2626" stroke="#7f1d1d" strokeWidth="1" />
+            <circle cx="218" cy="76" r="3.5" fill="#fecaca" opacity="0.8" />
+            <circle cx="255" cy="46" r="12" fill="#facc15" stroke="#ca8a04" strokeWidth="1" />
+            <circle cx="251" cy="42" r="3.5" fill="#fef08a" opacity="0.85" />
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -397,7 +444,7 @@ export default function GamePage() {
                             ? '소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행'
                             : activeGenre === 'online'
                             ? '베라오목 온라인 — 실시간 매칭과 대기실 기능으로 다른 플레이어와 1:1 두뇌 승부를 펼쳐보세요'
-                            : '베라 플라이트 · 베라장기 · 숫자야구 · 베라오목 · 베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 팝업 창에서 자유롭게 플레이하세요'}
+                            : '베라 당구 클럽 · 베라 플라이트 · 베라장기 · 숫자야구 · 베라오목 · 베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 팝업 창에서 자유롭게 플레이하세요'}
                     </p>
                 </div>
             </section>
@@ -426,6 +473,44 @@ export default function GamePage() {
 
                 {activeGenre === 'mini' ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* 0-A. 베라 당구 클럽 (4구 · 3구) */}
+                        <div
+                            onClick={() => router.push('/game/billiards')}
+                            className="bg-white border-2 text-left border-blue-200 rounded-2xl overflow-hidden hover:border-blue-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                4구 & 3쿠션
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#1d4ed8]"><BilliardsThumb /></div>
+                                <div className="p-5 pb-2">
+                                    <h3 className="font-black text-xl text-blue-800 mb-1 group-hover:text-blue-900 transition-colors flex items-center gap-2">
+                                        <span>Vera Billiards (베라 당구 클럽)</span>
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">4구·3쿠션</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">한국식 4구와 국제식 3구(3쿠션) 물리 엔진! 3D 당점(밀어치기·끌어치기·히네리), 고스트볼 두께 가이드, 리얼 타구음과 4단계 AI 대전을 즐겨보세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-5 pt-0">
+                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/billiards/', 'app-billiards');
+                                        }}
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-blue-600 font-bold hover:underline flex items-center gap-1">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* 0. 베라 플라이트 */}
                         <div
                             onClick={() => router.push('/game/flight')}

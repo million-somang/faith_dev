@@ -60,6 +60,8 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                 return 'bg-red-600';
             case 'freecell':
                 return 'bg-emerald-600';
+            case 'billiards':
+                return 'bg-blue-600';
             default:
                 return 'bg-blue-600';
         }

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>베라 당구 클럽 (4구 & 3구 캐럼 당구 시뮬레이터) | VeraNex</title>
+  <meta name="description" content="한국 당구장 정통 4구(Four-Ball)와 대대·중대 3구(3쿠션)를 무설치 웹 브라우저에서 무료로 즐기세요. 당점(밀어치기·끌어치기·스핀) 제어, 고스트볼 분리각 가이드라인, 3단계 AI 대전을 지원합니다." />
+  <link rel="canonical" href="https://veranex.app/app/billiards/" />
+
+  <!-- PWA Manifest & App Icons -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="베라 당구 클럽" />
+  <link rel="apple-touch-icon" href="/logo-192.png" />
+  <link rel="icon" type="image/png" href="/logo-192.png" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="VeraNex" />
+  <meta property="og:title" content="베라 당구 클럽 - 정통 4구 & 3구(3쿠션) 당구 게임 | VeraNex" />
+  <meta property="og:description" content="정교한 당점(회전) 물리 엔진과 경쾌한 당구공 타격음! 4구 다마수 대결과 3쿠션 뱅크샷에 지금 도전하세요." />
+  <meta property="og:locale" content="ko_KR" />
+  <meta property="og:image" content="https://veranex.app/logo-512.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="베라 당구 클럽 - 정통 4구 & 3구(3쿠션) 당구 게임 | VeraNex" />
+  <meta name="twitter:description" content="정교한 당점(회전) 물리 엔진과 경쾌한 당구공 타격음! 4구 다마수 대결과 3쿠션 뱅크샷에 지금 도전하세요." />
+  <meta name="twitter:image" content="https://veranex.app/logo-512.png" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+
+  <!-- Schema.org JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["SoftwareApplication", "Game"],
+        "name": "베라 당구 클럽 (Vera Billiards - 4구 & 3구)",
+        "applicationCategory": "GameApplication",
+        "genre": "Sports Simulation",
+        "operatingSystem": "All modern web browsers",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "KRW" },
+        "description": "정통 한국식 4구(Four-Ball)와 국제식 3구(Three-Cushion) 규칙, 9방향 당점(English) 스핀 물리 엔진, 고스트볼 분리각 예측 가이드, 4단계 AI 대전을 제공하는 프리미엄 웹 당구 시뮬레이터입니다."
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "홈", "item": "https://veranex.app" },
+          { "@type": "ListItem", "position": 2, "name": "게임센터", "item": "https://veranex.app/game" },
+          { "@type": "ListItem", "position": 3, "name": "베라 당구 클럽", "item": "https://veranex.app/app/billiards/" }
+        ]
+      },
+      {
+        "@type": "HowTo",
+        "name": "베라 당구 클럽 4구 및 3쿠션 플레이 방법",
+        "description": "당점 조절과 파워 게이지로 4구 및 3구 득점을 성공시키는 3단계 방법",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "position": 1,
+            "name": "1단계: 게임 모드(4구/3구) 및 조준각 설정",
+            "text": "4구 모드 또는 3구(3쿠션) 모드를 선택하고, 당구대 위에서 드래그하거나 미세 각도 버튼으로 고스트볼(1차 충돌 지점)을 조준합니다."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 2,
+            "name": "2단계: 당점(스핀) 및 초크 세팅",
+            "text": "당점 다이얼에서 상단(밀어치기), 하단(끌어치기), 좌·우 회전(잉글리시)을 설정하고 초크를 발라 미스큐를 방지합니다."
+          },
+          {
+            "@type": "HowToStep",
+            "position": 3,
+            "name": "3단계: 파워 조절 및 스트로크 타격",
+            "text": "파워 슬라이더(10~100%)를 맞춘 뒤 스트로크 샷 버튼을 눌러 연속 득점(하이런)과 3쿠션 마무리를 달성합니다."
+          }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "4구 당구와 3구(3쿠션) 당구의 규칙 차이는 무엇인가요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "4구는 수구 2개(흰공, 노란공)와 적구 2개(빨간공 2개) 총 4개의 공을 사용하며, 내 수구로 빨간공 2개를 맞히면 10점을 득점하고 상대 수구를 맞히면 파울(-10점)이 됩니다. 반면 3구(3쿠션)는 총 3개의 공을 사용하며, 제2적구에 맞기 전 수구가 최소 3번 이상 쿠션(레일)에 부딪혀야 1점을 득점합니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "당점(밀어치기, 끌어치기, 좌우 회전)은 공 궤적에 어떤 영향을 주나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "상단 당점(밀어치기)은 제1적구 충돌 후 수구가 전진 방향으로 휘어 나아가게 하고, 하단 당점(끌어치기)은 충돌 후 수구가 뒤로 끌려오게 만듭니다. 좌우 당점(사이드 스핀)은 수구가 쿠션(레일)에 부딪힐 때 반사각을 정반사보다 더 좁거나 넓게 변화시킵니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "초크(Chalk) 바르기 기능은 왜 필요한가요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "샷을 반복하면 큐 팁의 초크 잔량이 소모됩니다. 초크 잔량이 낮을 때 극단적인 상하좌우 당점을 주면 팁이 공 표면에서 미끄러지는 미스큐(삑사리)가 발생할 수 있으므로, 초크 바르기 버튼으로 마찰력을 100%로 유지하는 것이 좋습니다."
+            }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
+</head>
+<body class="bg-[#FAF8F5] text-[#2D2A26] antialiased select-none overflow-x-hidden">
+  <div id="root">
+    <!-- 크롤러 및 AI 검색엔진용 1,200자 이상 시맨틱 사전렌더링 본문 (Thin Content 원천 차단) -->
+    <article style="display:none;" aria-hidden="true">
+      <h1>베라 당구 클럽: 정통 4구(Four-Ball) & 3구(3쿠션) 캐럼 당구 물리 시뮬레이터</h1>
+      <p>베라 당구 클럽(Vera Billiards)은 한국 당구장의 대표적인 두 가지 캐럼(Carom) 종목인 4구와 3구(3쿠션)를 별도의 설치 없이 웹 브라우저에서 60fps 실시간 물리 엔진으로 즐길 수 있는 프리미엄 스포츠 미니게임입니다. 모바일 스마트폰, 태블릿, 데스크톱 PC 환경에 맞춰 자동으로 최적화되는 반응형 인터페이스를 제공합니다.</p>
+
+      <h2>1. 한국식 정통 4구(Four-Ball) 규칙과 득점 메커니즘</h2>
+      <p>4구 경기는 흰색 수구 1개, 노란색 수구 1개, 그리고 붉은색 적구 2개 총 4개의 당구공으로 진행됩니다. 플레이어는 자신의 수구(흰공)를 큐대로 타격하여 두 개의 빨간 적구를 모두 맞히면 10점을 득점하며, 득점에 성공한 경우 이닝이 끝나지 않고 계속해서 공격권(연속 득점 하이런)을 이어갑니다. 만약 자신의 수구가 상대방의 수구(노란공)에 먼저 닿거나 과정 중에 접촉하면 파울(Foul)이 선언되어 10점이 감점되고 즉시 공격 턴이 상대에게 넘어갑니다. 목표 다마수(50점, 100점, 150점, 200점, 300점)에 도달하기 위한 마지막 득점은 정통 당구장 규칙에 따라 3쿠션으로 성공시켜야 최종 승리합니다.</p>
+
+      <h2>2. 국제식 3구(Three-Cushion) 규칙과 뱅크샷</h2>
+      <p>3구(쓰리쿠션) 경기는 내 수구(흰공), 상대 수구(노란공), 적구(빨간공) 총 3개의 공으로 진행됩니다. 내 수구 외의 나머지 두 공이 모두 표적구(제1적구, 제2적구)가 되며, 수구가 제1적구와 제2적구를 모두 맞히되 두 번째 공에 닿기 전까지 당구대 고무 레일(쿠션)에 최소 3회 이상 부딪혀야 1점을 득점합니다. 첫 번째 충돌을 공이 아닌 쿠션부터 시작하여 3쿠션 이상으로 두 공을 맞히면 고난도 뱅크샷(Bank Shot)으로 인정됩니다.</p>
+
+      <h2>3. 당점(English) 스핀 물리와 파이브 앤 하프(Five & Half) 시스템</h2>
+      <p>캐럼 당구의 핵심은 수구의 어느 지점을 타격하느냐에 따른 회전(당점) 제어입니다. 중앙보다 위쪽을 타격하는 밀어치기(Follow)는 전진 회전을 부여해 적구와 부딪힌 뒤에도 수구가 앞으로 전진하게 만들고, 아래쪽을 타격하는 끌어치기(Draw)는 역회전을 부여해 충돌 후 수구가 뒤로 되돌아오게 합니다. 좌우 당점(Side Spin)은 쿠션과의 마찰을 통해 반사각을 변화시키며, 당구대 프레임에 새겨진 다이아몬드 포인트를 활용한 파이브 앤 하프 시스템(수구수 - 3쿠션수 = 1쿠션수)을 통해 수학적으로 정밀한 3쿠션 궤적을 설계할 수 있습니다.</p>
+    </article>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

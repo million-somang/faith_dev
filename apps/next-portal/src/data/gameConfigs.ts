@@ -204,4 +204,23 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-sfc',
         leaderboardUrl: '',
     },
+    billiards: {
+        label: '베라 당구 클럽 (4구 · 3쿠션 캐롬)',
+        icon: 'fas fa-circle-dot',
+        gradient: 'from-blue-600 to-indigo-700',
+        buttonGradient: 'from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800',
+        tagline: '정통 한국식 4구(Four-Ball)와 국제식 3구(3쿠션) 당구 시뮬레이터!',
+        description: '당점(밀어치기·끌어치기·히네리 회전)과 18개 다이아몬드 포인트 시스템, 고스트볼 궤적 가이드, 리얼 페놀 수지 당구공 타격음을 갖춘 정통 캐롬 당구 미니게임입니다. 4단계 AI 상대 또는 2인 교대 대전을 즐기고 명예의 전당 랭킹에 도전하세요!',
+        controls: [
+            { keys: '당구대 드래그 / 방향키 (← →)', desc: '큐 조준 각도 정밀 조절 (고스트볼 두께 가이드 표시)' },
+            { keys: '3D 당점 다이얼 클릭', desc: '상단(밀어치기)·하단(끌어치기)·좌우(히네리 회전) 당점 지정' },
+            { keys: '파워 슬라이더 / 방향키 (↑ ↓)', desc: '스트로크 파워 게이지(10% ~ 100%) 조절' },
+            { keys: '스트로크 (SHOT) / Space·Enter', desc: '큐 샷 발사 및 물리 시뮬레이션 실행' },
+            { keys: '초크 바르기 (C키)', desc: '큐 팁 마찰력 100% 충전으로 미스큐(Miscue) 방지' },
+            { keys: '묘수 세팅 버튼', desc: '제각돌리기·대회전·끌어치기 예술구 포지션 즉시 체험' },
+        ],
+        appUrl: '/app/billiards/',
+        appName: 'app-billiards',
+        leaderboardUrl: '/api/games/billiards/leaderboard',
+    },
 };
