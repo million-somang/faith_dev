@@ -104,14 +104,21 @@ export function findBestAiShot(
     if (!simCue) continue;
 
     const rad = (testAngleDeg * Math.PI) / 180;
-    const speed = (power / 100) * 15.5;
-    simCue.vx = Math.cos(rad) * speed;
-    simCue.vy = Math.sin(rad) * speed;
+    const topSpinBoost = spin.y > 0 ? 1 + spin.y * 0.08 : 1;
+    const speed = (power / 100) * 28.5 * topSpinBoost;
+    const dirX = Math.cos(rad);
+    const dirY = Math.sin(rad);
+    simCue.vx = dirX * speed;
+    simCue.vy = dirY * speed;
+    simCue.forwardDirX = dirX;
+    simCue.forwardDirY = dirY;
     simCue.sideSpin = spin.x;
     simCue.topBottomSpin = spin.y;
+    simCue.hasHitFirstBall = false;
+    simCue.spinDriveFrames = 0;
 
     const tracker = createShotTracker(cueBallId);
-    for (let step = 0; step < 190; step++) {
+    for (let step = 0; step < 260; step++) {
       const stopped = stepPhysicsFrame(simBalls, tracker);
       if (stopped) break;
     }

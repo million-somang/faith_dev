@@ -28,6 +28,15 @@ export interface BallState {
   /** 당점(English)에 의한 좌우/상하 스핀 잔량 (-1.0 ~ 1.0) */
   sideSpin: number;
   topBottomSpin: number;
+  /** 수구 발사 및 제1적구 충돌 직전 진행 방향 단위 벡터 (밀어치기/끌어치기 2차 가속 방향 기준) */
+  forwardDirX?: number;
+  forwardDirY?: number;
+  /** 제1적구 충돌 후 라사지 그립 가속(Follow/Draw Curve) 벡터 및 잔여 프레임 */
+  spinDriveVx?: number;
+  spinDriveVy?: number;
+  spinDriveFrames?: number;
+  /** 수구가 첫 적구를 맞혔는지 여부 (맞히기 전까지 상하단 스핀 슬라이딩 보존) */
+  hasHitFirstBall?: boolean;
 }
 
 /** 당점(Cue Tip Offset) 상태: -1.0 ~ +1.0 정규화 좌표 */
@@ -95,6 +104,8 @@ export interface AimPrediction {
   hitCushionNormal: { nx: number; ny: number } | null;
   /** 충돌 후 수구 예상 진행 선분 (밀어치기/끌어치기/스핀 반영) */
   cueDeflectEnd: { x: number; y: number };
+  /** 밀어치기/끌어치기 시 휘어지는 2차 궤적 곡선 포인트 배열 */
+  cueCurvePoints?: Array<{ x: number; y: number }>;
   /** 피격 적구 예상 진행 선분 */
   targetBallEnd: { x: number; y: number } | null;
 }

@@ -195,7 +195,8 @@ export const BilliardsCanvas: React.FC<BilliardsCanvasProps> = ({
 
     // 4. 실시간 고스트볼(Ghost Ball) & 당점 분리각 가이드라인 렌더링
     if (!isSimulating && aimPrediction) {
-      const { cueStart, impactPoint, hitBallId, cueDeflectEnd, targetBallEnd } = aimPrediction;
+      const { cueStart, impactPoint, hitBallId, cueDeflectEnd, cueCurvePoints, targetBallEnd } =
+        aimPrediction;
 
       // (1) 수구 -> 1차 충돌점 점선
       ctx.save();
@@ -216,13 +217,20 @@ export const BilliardsCanvas: React.FC<BilliardsCanvasProps> = ({
       ctx.fill();
       ctx.stroke();
 
-      // (3) 충돌 후 수구 예상 진로 (밀어치기/끌어치기/스핀 반영 - 에메랄드/시안 라인)
+      // (3) 충돌 후 수구 예상 진로 (밀어치기 곡선 / 끌어치기 역주행 / 쿠션 스핀 반사각 - 에메랄드 라인)
       ctx.setLineDash([]);
       ctx.strokeStyle = '#34D399';
-      ctx.lineWidth = 2.4;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
-      ctx.moveTo(impactPoint.x, impactPoint.y);
-      ctx.lineTo(cueDeflectEnd.x, cueDeflectEnd.y);
+      if (cueCurvePoints && cueCurvePoints.length > 1) {
+        ctx.moveTo(cueCurvePoints[0].x, cueCurvePoints[0].y);
+        for (let idx = 1; idx < cueCurvePoints.length; idx++) {
+          ctx.lineTo(cueCurvePoints[idx].x, cueCurvePoints[idx].y);
+        }
+      } else {
+        ctx.moveTo(impactPoint.x, impactPoint.y);
+        ctx.lineTo(cueDeflectEnd.x, cueDeflectEnd.y);
+      }
       ctx.stroke();
 
       // (4) 피격 적구 예상 진로 (오렌지/골드 라인)

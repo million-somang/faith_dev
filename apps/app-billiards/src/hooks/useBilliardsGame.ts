@@ -222,19 +222,38 @@ export function useBilliardsGame() {
       const isMiscue = actor === 1 && chalkLevel < 25 && spinMagnitude > 0.8;
 
       const rad = (angleDeg * Math.PI) / 180;
-      const baseSpeed = ((isMiscue ? powerVal * 0.35 : powerVal) / 100) * 15.8;
+      // 풀파워(100%) 시 대회전(다이 1.5~2바퀴, 5~7쿠션)이 가능하도록 최대 초기 속도를 28.5로 설정
+      const topSpinSpeedBoost = !isMiscue && spinVal.y > 0 ? 1 + spinVal.y * 0.08 : 1;
+      const baseSpeed =
+        ((isMiscue ? powerVal * 0.35 : powerVal) / 100) * 28.5 * topSpinSpeedBoost;
       const finalAngle = isMiscue ? rad + (Math.random() - 0.5) * 0.35 : rad;
+      const dirX = Math.cos(finalAngle);
+      const dirY = Math.sin(finalAngle);
 
       sound.playCueStrike(powerVal / 100, spinMagnitude, isMiscue);
 
       const nextBalls = ballsRef.current.map((b) => {
-        if (b.id !== cueId) return { ...b };
+        if (b.id !== cueId) {
+          return {
+            ...b,
+            spinDriveVx: 0,
+            spinDriveVy: 0,
+            spinDriveFrames: 0,
+            hasHitFirstBall: false,
+          };
+        }
         return {
           ...b,
-          vx: Math.cos(finalAngle) * baseSpeed,
-          vy: Math.sin(finalAngle) * baseSpeed,
+          vx: dirX * baseSpeed,
+          vy: dirY * baseSpeed,
+          forwardDirX: dirX,
+          forwardDirY: dirY,
           sideSpin: isMiscue ? 0 : spinVal.x,
           topBottomSpin: isMiscue ? 0 : spinVal.y,
+          spinDriveVx: 0,
+          spinDriveVy: 0,
+          spinDriveFrames: 0,
+          hasHitFirstBall: false,
         };
       });
 
