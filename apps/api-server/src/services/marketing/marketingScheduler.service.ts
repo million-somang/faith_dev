@@ -1,9 +1,9 @@
-﻿import cron from 'node-cron';
 import { getDB } from '../../db/adapter.js';
 import { publishToSocialMedia } from './metaPublisher.service.js';
 import { generateMarketingContent } from './marketingAi.service.js';
 
 let isSchedulerRunning = false;
+let isTickProcessing = false;
 
 export function startMarketingScheduler() {
     if (isSchedulerRunning) return;
@@ -11,15 +11,19 @@ export function startMarketingScheduler() {
 
     console.log('[MarketingScheduler] 마케팅 자동 발행 스케줄러 시작됨 (1분 주기)');
 
-    // 매 1분마다 실행
-    cron.schedule('* * * * *', async () => {
+    // node-cron의 1초 단위 하트비트 워닝([NODE-CRON] [WARN] missed execution) 원천 제거 및 중복 실행 방지
+    setInterval(async () => {
+        if (isTickProcessing) return;
+        isTickProcessing = true;
         try {
             await processScheduledPosts();
             await checkAutoPilotSchedule();
         } catch (err: any) {
             console.error('[MarketingScheduler] 스케줄러 실행 오류:', err.message);
+        } finally {
+            isTickProcessing = false;
         }
-    });
+    }, 60 * 1000);
 }
 
 /**
