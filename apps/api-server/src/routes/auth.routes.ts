@@ -9,8 +9,9 @@ import {
     verifyPassword
 } from '../middleware/auth.js'
 import type { SessionUser } from '../middleware/auth.js'
+import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js'
 
-const authRoutes = new Hono<{ Variables: { user: SessionUser | null } }>()
+const authRoutes = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>()
 
 // 사용자 정보 조회 API
 authRoutes.get('/api/auth/me', async (c: Context) => {
@@ -67,6 +68,8 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         const user = res.rows[0]
 
         if (!user) {
+            c.set('errorLogged', true)
+            logApiError(c, 401, `로그인 실패 (존재하지 않는 이메일: ${email})`)
             return c.json({
                 success: false,
                 message: '이메일 또는 비밀번호가 올바르지 않습니다'
@@ -75,6 +78,8 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
 
         // 계정 상태 확인
         if (user.status !== 'active') {
+            c.set('errorLogged', true)
+            logApiError(c, 403, `비활성 계정 로그인 시도 (${email})`)
             return c.json({
                 success: false,
                 message: '비활성화된 계정입니다. 관리자에게 문의하세요'
@@ -85,6 +90,8 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         const isValid = await verifyPassword(password, user.password as string)
 
         if (!isValid) {
+            c.set('errorLogged', true)
+            logApiError(c, 401, `로그인 실패 (비밀번호 불일치: ${email})`)
             return c.json({
                 success: false,
                 message: '이메일 또는 비밀번호가 올바르지 않습니다'
@@ -106,6 +113,8 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
             [user.id, ipAddress, userAgent]
         )
 
+        logActivity('🔐', '로그인성공', `회원(${user.name || user.email})`, `${user.email} 로그인 완료 (Lv.${user.level || 1})`)
+
         return c.json({
             success: true,
             message: '로그인 성공',
@@ -122,10 +131,8 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
             }
         })
     } catch (error) {
-        console.error('로그인 오류 상세:', error)
-        if (error instanceof Error) {
-            console.error('Stack:', error.stack)
-        }
+        c.set('errorLogged', true)
+        logApiError(c, 500, '로그인 처리 중 서버 오류', undefined, error)
         return c.json({
             success: false,
             message: '로그인 처리 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error))
@@ -178,7 +185,11 @@ authRoutes.get('/api/auth/check', handleAuthCheck)
 // 로그아웃 API
 authRoutes.post('/api/auth/logout', async (c: Context) => {
     try {
+        const user = await checkSession(c)
         await deleteSession(c)
+        if (user) {
+            logActivity('👋', '로그아웃', `회원(${user.name || user.email})`, `${user.email} 로그아웃`)
+        }
 
         return c.json({
             success: true,
@@ -252,6 +263,8 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
         // 자동 로그인 (세션 생성)
         await createSession(c, userId)
 
+        logActivity('🎉', '신규회원가입', getActorLabel(c), `신규 회원 #${userId} 가입 완료! (${name} · ${email})`)
+
         return c.json({
             success: true,
             message: '회원가입 성공',
@@ -268,7 +281,8 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
             }
         })
     } catch (error) {
-        console.error('회원가입 오류:', error)
+        c.set('errorLogged', true)
+        logApiError(c, 500, '회원가입 처리 중 서버 오류', undefined, error)
         return c.json({
             success: false,
             message: '회원가입 처리 중 오류가 발생했습니다'
@@ -300,6 +314,8 @@ const handleUpdateSajuProfile = async (c: Context) => {
             SET birth_date = $1, birth_time = $2, gender = $3, is_solar = $4, name = $5
             WHERE id = $6
         `, [finalBirthDate, finalBirthTime, finalGender, finalIsSolar, finalName, user.id])
+
+        logActivity('🔮', '사주프로필저장', `회원(${finalName || user.email})`, `생년월일(${finalBirthDate || '미입력'}) 프로필 업데이트`)
 
         return c.json({
             success: true,

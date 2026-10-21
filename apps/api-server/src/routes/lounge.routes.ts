@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
 import { optionalAuth } from '../middleware/auth.js';
+import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 
-export const loungeRoutes = new Hono<{ Variables: { user?: { id: number; email: string; name?: string; role?: string } } }>();
+export const loungeRoutes = new Hono<{ Variables: { user?: { id: number; email: string; name?: string; role?: string }; errorLogged?: boolean } }>();
 
 // ============================================================================
 // 1. 라운지 피드 목록 조회 (GET /api/lounge/posts)
@@ -114,6 +115,8 @@ loungeRoutes.get('/api/lounge/posts', optionalAuth, async (c) => {
             };
         });
 
+        logActivity('💬', '라운지피드조회', getActorLabel(c), `피드 ${formattedPosts.length}건 조회 (전체 ${total}건)`);
+
         return c.json({
             success: true,
             posts: formattedPosts,
@@ -192,6 +195,13 @@ loungeRoutes.post('/api/lounge/posts', optionalAuth, async (c) => {
             hasLiked: false,
             isMine: true
         };
+
+        logActivity(
+            '📝',
+            '라운지글작성',
+            getActorLabel(c),
+            `${authorObj.name}(${authorObj.handle}) 새 피드 등록: "${content.trim().slice(0, 32)}"`
+        );
 
         return c.json({ success: true, post: createdPost });
     } catch (error: any) {
@@ -321,6 +331,8 @@ loungeRoutes.post('/api/lounge/posts/:id/like', optionalAuth, async (c) => {
             await DB.prepare('UPDATE lounge_posts SET likes = ? WHERE id = ?').bind(newLikes, postId).run();
             hasLiked = true;
         }
+
+        logActivity('❤️', '라운지좋아요', getActorLabel(c), `게시글 ${postId} 좋아요 ${hasLiked ? '추가' : '취소'} (총 ${newLikes})`);
 
         return c.json({ success: true, hasLiked, likes: newLikes });
     } catch (error: any) {

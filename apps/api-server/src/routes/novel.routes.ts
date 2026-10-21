@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { requireAuth, checkSession } from '../middleware/auth.js';
+import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 import { getDB } from '../db/adapter.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const router = new Hono<{ Variables: { user?: any } }>();
+const router = new Hono<{ Variables: { user?: any; errorLogged?: boolean } }>();
 
 // DB 테이블 생성 및 시드 데이터 초기화
 async function initNovelDatabase() {
@@ -101,6 +102,7 @@ initNovelDatabase().catch(err => console.error('[SQLite] Web Novel DB Init Faile
 
 // 1. [공통] 전체 소설 리스트 및 장르 필터 조회
 router.get('/list', async (c) => {
+    const t0 = performance.now();
     const db = await getDB(c);
     const genre = c.req.query('genre');
     let list;
@@ -111,6 +113,7 @@ router.get('/list', async (c) => {
         const res = await db.prepare('SELECT * FROM novel_novels ORDER BY id DESC').all();
         list = res.results;
     }
+    logActivity('📚', '웹소설목록', getActorLabel(c), `장르:${genre || '전체'} (${(list || []).length}작품 조회)`, performance.now() - t0);
     return c.json({ success: true, list });
 });
 
@@ -160,6 +163,7 @@ router.get('/detail', async (c) => {
 
     const epRes = await db.prepare(queryStr).bind(novelId).all();
 
+    logActivity('📚', '웹소설상세', getActorLabel(c), `#${novelId} "${novel.title}" (${novel.genre} · 총 ${(epRes.results || []).length}화)`);
     return c.json({ success: true, novel, episodes: epRes.results });
 });
 
@@ -210,6 +214,7 @@ router.post('/create', requireAuth, async (c) => {
          VALUES (?, ?, ?, ?, ?, ?)`
     ).bind(user.id, title, author, description, coverUrl || '', genre).run();
 
+    logActivity('📝', '웹소설등록', getActorLabel(c), `신규 웹소설 #${res.lastInsertRowid} "${title}" 등록 완료! (작가: ${author} · 장르: ${genre})`);
     return c.json({ success: true, novelId: res.lastInsertRowid });
 });
 
@@ -310,6 +315,7 @@ router.post('/episode/create', requireAuth, async (c) => {
         finalPublishAt
     ).run();
 
+    logActivity('📝', '웹소설회차등록', getActorLabel(c), `작품 #${novelId} - 제${nextEpNo}화 "${title}" 등록 완료! (${isFree ? '무료' : '유료'})`);
     return c.json({ success: true, episodeNo: nextEpNo });
 });
 
@@ -428,6 +434,8 @@ router.get('/episode', requireAuth, async (c) => {
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ON CONFLICT(user_id, novel_id) DO UPDATE SET last_episode_no = excluded.last_episode_no, updated_at = CURRENT_TIMESTAMP
     `).bind(user.id, novelId, episodeNo).run();
+
+    logActivity('📖', '웹소설열람', getActorLabel(c), `작품 #${novelId} 제${episodeNo}화 "${ep.title}" 열람 (조회수 ${(ep.views || 0) + 1})`);
 
     return c.json({
         success: true,

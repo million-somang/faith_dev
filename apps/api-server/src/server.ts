@@ -4,6 +4,7 @@ import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
 import { pool } from '@faithportal/database';
 import { errorHandler } from './middleware/errors.js';
+import { activityLoggerMiddleware } from './middleware/activityLogger.js';
 import { optionalAuth, checkSession } from './middleware/auth.js';
 import dotenv from 'dotenv';
 import fs from 'fs';
@@ -24,6 +25,7 @@ app.use('*', cors({
 }));
 
 app.use('*', errorHandler);
+app.use('*', activityLoggerMiddleware);
 
 // ==================== 공인 검색엔진 외 무단 크롤러 및 스크래퍼 차단 미들웨어 ====================
 const ALLOWED_BOT_PATTERNS = [

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { optionalAuth } from '../middleware/auth.js';
+import { getActorLabel, logActivity } from '../middleware/activityLogger.js';
 import { MinihomeService, MinihomeMoodType, MinihomeRoomLayout } from '../services/minihome.service.js';
 
 type RouteUser = {
@@ -52,6 +53,8 @@ minihomeRoutes.get('/api/minihome/room/:handle', optionalAuth, async (c) => {
         );
 
         const surfData = await MinihomeService.getSurfTargets(profile.handle);
+
+        logActivity('🏡', '미니홈피방문', getActorLabel(c), `${profile.ownerName}(@${profile.handle}) 미니룸 방문 (투데이 ${profile.todayVisitors} / 토탈 ${profile.totalVisitors})`);
 
         return c.json({
             success: true,
@@ -199,6 +202,8 @@ minihomeRoutes.post('/api/minihome/guestbook/:handle', optionalAuth, async (c) =
             user?.id || null,
             effectiveAuthorHandle
         );
+
+        logActivity('📝', '방명록작성', getActorLabel(c), `@${hostHandle} 미니홈피에 일촌평 등록: "${body.content.trim().slice(0, 28)}"`);
 
         return c.json({
             success: true,

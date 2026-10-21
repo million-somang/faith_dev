@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { getDB } from '../db/adapter.js'
 import { requireAdmin } from './admin.routes.js'
+import { describePortalPath, getActorLabel, logActivity } from '../middleware/activityLogger.js'
 import geoip from 'geoip-lite'
 
 const analyticsRoutes = new Hono()
@@ -53,6 +54,11 @@ analyticsRoutes.post('/api/analytics/pageview', async (c) => {
             screenWidth || null,
             durationMs || 0
         ).run()
+
+        // 실시간 방문자 콘텐츠 이동/사용 로그 출력
+        const desc = describePortalPath(path)
+        const actor = getActorLabel(c, userId)
+        logActivity(desc.icon, desc.category, actor, `${desc.label} 접속 (${path})`)
 
         return c.json({ success: true })
     } catch (error: unknown) {

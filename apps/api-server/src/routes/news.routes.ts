@@ -12,8 +12,10 @@ import {
 import { fetchBatchStockData } from '../utils/stockDataFetcher.js';
 import { resolveDescriptionFromGoogleNews } from '../utils/googleNewsResolver.js';
 import { requireAuth, optionalAuth, SessionUser } from '../middleware/auth.js';
+import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
+import { bodyLimit } from 'hono/body-limit';
 
-const news = new Hono<{ Variables: { user: SessionUser | null } }>();
+const news = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>();
 
 const NEWS_LIST_FIELDS = `
     id, title, category, source, published_at, created_at,
@@ -40,9 +42,17 @@ news.get('/api/news', async (c) => {
     const publisher = c.req.query('publisher');
 
     const now = Date.now();
+    const t0 = performance.now();
     const cacheKey = `${category || 'all'}|${publisher || ''}|${limit}|${offset}|${includeStocks ? '1' : '0'}`;
     const cached = newsListCache.get(cacheKey);
     if (cached && now - cached.ts < NEWS_LIST_CACHE_TTL) {
+        logActivity(
+            '📰',
+            '뉴스탐색',
+            getActorLabel(c),
+            `카테고리:${category || 'all'}${publisher ? ` · 언론사:${publisher}` : ''} (${cached.data.count || 0}건, 캐시:HIT)`,
+            performance.now() - t0
+        );
         c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
         c.header('X-Cache', 'HIT');
         return c.json(cached.data);
@@ -128,11 +138,20 @@ news.get('/api/news', async (c) => {
         if (newsListCache.size > 200) newsListCache.clear();
         newsListCache.set(cacheKey, { data: payload, ts: now });
 
+        logActivity(
+            '📰',
+            '뉴스탐색',
+            getActorLabel(c),
+            `카테고리:${category || 'all'}${publisher ? ` · 언론사:${publisher}` : ''} (${finalItems.length}건, 캐시:MISS)`,
+            performance.now() - t0
+        );
+
         c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
         c.header('X-Cache', 'MISS');
         return c.json(payload);
-    } catch (error) {
-        console.error('Fetch news error:', error);
+    } catch (error: any) {
+        c.set('errorLogged', true);
+        logApiError(c, 500, '뉴스 목록 조회 실패: ' + (error?.message || error), performance.now() - t0, error);
         return c.json({ success: false, message: 'Failed to fetch news' }, 500);
     }
 });
@@ -193,6 +212,7 @@ news.get('/api/news/search', async (c) => {
         return c.json({ success: false, message: 'Query required' }, 400);
     }
 
+    const t0 = performance.now();
     try {
         const ftsQuery = q.trim().split(/\s+/).map(w => `"${w.replace(/"/g, '')}"`).join(' AND ');
 
@@ -206,6 +226,8 @@ news.get('/api/news/search', async (c) => {
             ORDER BY created_at DESC, id DESC
             LIMIT $2 OFFSET $3
         `, [ftsQuery, limit, offset]);
+
+        logActivity('🔍', '뉴스검색', getActorLabel(c), `키워드: "${q}" (${result.rows.length}건 검색됨)`, performance.now() - t0);
 
         return c.json({
             success: true,
@@ -259,9 +281,12 @@ news.get('/api/news/sources', async (c) => {
 // GET /api/news/:id - Get news detail (숫자 ID만 매칭)
 news.get('/api/news/:id{[0-9]+}', async (c) => {
     const id = c.req.param('id');
+    const t0 = performance.now();
     try {
         const result = await pool.query('SELECT * FROM news WHERE id = $1', [id]);
         if (result.rows.length === 0) {
+            c.set('errorLogged', true);
+            logApiError(c, 404, `존재하지 않는 뉴스 기사 조회 (#${id})`, performance.now() - t0);
             return c.json({ success: false, message: 'News not found' }, 404);
         }
         const row = result.rows[0];
@@ -280,9 +305,19 @@ news.get('/api/news/:id{[0-9]+}', async (c) => {
         // Increment view count
         await pool.query('UPDATE news SET view_count = view_count + 1, popularity_score = popularity_score + 1 WHERE id = $1', [id]);
 
+        const shortTitle = String(row.title || '').slice(0, 32);
+        logActivity(
+            '📰',
+            '뉴스본문열람',
+            getActorLabel(c),
+            `#${id} "${shortTitle}" (카테고리:${row.category || 'all'} · 누적조회:${Number(row.view_count || 0) + 1})`,
+            performance.now() - t0
+        );
+
         return c.json({ success: true, news: row });
-    } catch (error) {
-        console.error('Get news detail error:', error);
+    } catch (error: any) {
+        c.set('errorLogged', true);
+        logApiError(c, 500, `뉴스 상세 조회 실패 (#${id}): ${error?.message || error}`, performance.now() - t0, error);
         return c.json({ success: false, message: 'Failed to fetch news detail' }, 500);
     }
 });
@@ -329,6 +364,8 @@ news.post('/api/news/:id/vote', requireAuth, async (c) => {
         await pool.query(`UPDATE news SET ${field} = ${field} + 1 WHERE id = $1`, [id]);
         const scoreChange = type === 'up' ? 2 : -1;
         await pool.query('UPDATE news SET popularity_score = popularity_score + $1 WHERE id = $2', [scoreChange, id]);
+
+        logActivity('👍', '뉴스투표', getActorLabel(c), `뉴스 #${id} ${type === 'up' ? '추천' : '비추천'} 투표`);
 
         return c.json({ success: true, action: 'voted', type });
     } catch (error) {
@@ -476,7 +513,7 @@ function extractAutoAiSummary(content: string, title: string): string {
     const cleanText = content
         .replace(/<[^>]*>/g, ' ')
         .replace(/([.!?])([가-힣A-Z0-9])/g, '$1 $2')
-        .replace(/(?:기사문의|제보|카톡|라인|카카오톡|당신이 담은 순간|자료사진|무단\s*전재)[\\s\\S]*$/gi, ' ')
+        .replace(/(?:기사문의|제보|카톡|라인|카카오톡|당신이 담은 순간|자료사진|무단\s*전재)[\s\S]*$/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
     const sentences = cleanText
@@ -501,6 +538,8 @@ const handleUploadNewsImage = async (c: any) => {
     const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
 
     if (!isAuthorized) {
+        c.set('errorLogged', true);
+        logApiError(c, 401, '뉴스 이미지 업로드 실패: 유효하지 않거나 누락된 X-API-KEY');
         return c.json({
             success: false,
             error: {
@@ -555,6 +594,8 @@ const handleUploadNewsImage = async (c: any) => {
         const relativeUrl = `/uploads/news/${fileName}`;
         const fullUrl = `https://veranex.app${relativeUrl}`;
 
+        logActivity('🖼️', '뉴스이미지업로드', getActorLabel(c), `${fileName} (${Math.round(buffer.length / 1024)}KB) 업로드 완료`);
+
         return c.json({
             success: true,
             message: '이미지가 성공적으로 업로드되었습니다.',
@@ -564,7 +605,8 @@ const handleUploadNewsImage = async (c: any) => {
             fileSize: buffer.length
         }, 201);
     } catch (error: any) {
-        console.error('[Upload News Image Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, '뉴스 이미지 업로드 실패: ' + (error.message || 'Server error'), undefined, error);
         return c.json({
             success: false,
             error: { code: 500, message: 'Image upload failed: ' + (error.message || 'Server error') }
@@ -574,6 +616,7 @@ const handleUploadNewsImage = async (c: any) => {
 
 // POST /api/news/create (및 POST /api/news) - 뉴스 기사 외부 API 등록
 const handleCreateNewsApi = async (c: any) => {
+    const t0 = performance.now();
     const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
     const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
@@ -582,6 +625,8 @@ const handleCreateNewsApi = async (c: any) => {
     const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
 
     if (!isAuthorized) {
+        c.set('errorLogged', true);
+        logApiError(c, 401, '뉴스 등록 실패: 유효하지 않거나 누락된 X-API-KEY', performance.now() - t0);
         return c.json({
             success: false,
             error: {
@@ -612,6 +657,8 @@ const handleCreateNewsApi = async (c: any) => {
 
         // 필수 필드 검증
         if (!title || typeof title !== 'string' || title.trim().length < 3) {
+            c.set('errorLogged', true);
+            logApiError(c, 400, '뉴스 등록 실패: title(제목) 누락 또는 3자 미만', performance.now() - t0);
             return c.json({
                 success: false,
                 error: {
@@ -623,6 +670,8 @@ const handleCreateNewsApi = async (c: any) => {
 
         const rawContent = (content || summary || '').trim();
         if (!rawContent || rawContent.length < 10) {
+            c.set('errorLogged', true);
+            logApiError(c, 400, '뉴스 등록 실패: content(본문) 누락 또는 10자 미만', performance.now() - t0);
             return c.json({
                 success: false,
                 error: {
@@ -715,6 +764,14 @@ const handleCreateNewsApi = async (c: any) => {
         const insertedTitle = newNews?.title || title.trim();
         const insertedCategory = newNews?.category || normalizedCategory;
 
+        logActivity(
+            '📝',
+            '뉴스콘텐츠등록',
+            getActorLabel(c),
+            `신규 뉴스 #${insertedId} "${String(insertedTitle).slice(0, 32)}" 등록 완료! (카테고리: ${insertedCategory} · 출처: ${finalSource})`,
+            performance.now() - t0
+        );
+
         return c.json({
             success: true,
             message: '뉴스가 성공적으로 등록되었습니다.',
@@ -729,7 +786,8 @@ const handleCreateNewsApi = async (c: any) => {
             }
         }, 201);
     } catch (error: any) {
-        console.error('[Create News API Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, '뉴스 기사 등록 DB/서버 오류: ' + (error.message || 'Server error'), performance.now() - t0, error);
         try {
             const logEntry = `[${new Date().toISOString()}] News Create Error: ${error.message}\n`;
             fs.appendFileSync(path.resolve(process.cwd(), 'logs/publish-errors.log'), logEntry);
@@ -744,8 +802,6 @@ const handleCreateNewsApi = async (c: any) => {
     }
 };
 
-import { bodyLimit } from 'hono/body-limit';
-
 const handleUpdateNewsApi = async (c: any) => {
     const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
@@ -754,6 +810,8 @@ const handleUpdateNewsApi = async (c: any) => {
     const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
 
     if (!isAuthorized) {
+        c.set('errorLogged', true);
+        logApiError(c, 401, '뉴스 수정 실패: 권한 없음');
         return c.json({
             success: false,
             error: {
@@ -845,6 +903,8 @@ const handleUpdateNewsApi = async (c: any) => {
 
         invalidateNewsCache();
 
+        logActivity('✏️', '뉴스콘텐츠수정', getActorLabel(c), `뉴스 #${id} "${String(targetTitle).slice(0, 32)}" 수정 완료`);
+
         return c.json({
             success: true,
             message: '뉴스가 성공적으로 업데이트되었습니다.',
@@ -858,7 +918,8 @@ const handleUpdateNewsApi = async (c: any) => {
             }
         });
     } catch (error: any) {
-        console.error('[Update News API Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, `뉴스 수정 실패 (#${id}): ` + (error.message || 'Server error'), undefined, error);
         return c.json({
             success: false,
             error: {

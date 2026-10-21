@@ -4,13 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pool, parseKoreanLocation, STANDARD_PROVINCES } from '@faithportal/database';
 import { optionalAuth, SessionUser } from '../middleware/auth.js';
+import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 import {
     getTravelMapCounts,
     syncTravelMapCounts,
     adjustTravelCount
 } from '../services/travel-counter.service.js';
 
-export const travelRoutes = new Hono<{ Variables: { user: SessionUser | null } }>();
+export const travelRoutes = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>();
 
 // 전역 인증 옵셔널 미들웨어 적용
 travelRoutes.use('/api/travel/*', optionalAuth);
@@ -277,6 +278,7 @@ travelRoutes.get('/api/travel', async (c) => {
     const city = c.req.query('city');
     const sort = c.req.query('sort') || 'latest'; // latest, popular
 
+    const t0 = performance.now();
     try {
         const { payload, cacheHit } = await queryTravelList({
             region,
@@ -290,11 +292,31 @@ travelRoutes.get('/api/travel', async (c) => {
             sort
         });
 
+        const elapsed = performance.now() - t0;
+        const locLabel = province && province !== 'all'
+            ? `${province}${city && city !== 'all' ? ' ' + city : ''}`
+            : (region && region !== 'all' ? `권역:${region}` : '전국·전체');
+        const filterSummary = [
+            locLabel,
+            category && category !== 'all' ? `테마:${category}` : null,
+            keyword ? `검색:"${keyword}"` : null,
+            offset > 0 ? `p.${Math.floor(offset / limit) + 1}` : null
+        ].filter(Boolean).join(' · ');
+
+        logActivity(
+            '🗺️',
+            '여행탐색',
+            getActorLabel(c),
+            `${filterSummary} (${payload.articles.length}건 반환 / 총 ${payload.pagination.total}곳, 캐시:${cacheHit ? 'HIT' : 'MISS'})`,
+            elapsed
+        );
+
         c.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
         c.header('X-Cache', cacheHit ? 'HIT' : 'MISS');
         return c.json(payload);
     } catch (error: any) {
-        console.error('[Get Travel List Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, '여행 목록 조회 실패: ' + error.message, performance.now() - t0, error);
         return c.json({ success: false, message: 'Failed to fetch travel list: ' + error.message }, 500);
     }
 });
@@ -492,9 +514,12 @@ travelRoutes.get('/api/travel/featured', async (c) => {
 // 3. GET /api/travel/:id - 여행 상세 조회
 travelRoutes.get('/api/travel/:id{[0-9]+}', async (c) => {
     const id = c.req.param('id');
+    const t0 = performance.now();
     try {
         const result = await pool.query('SELECT * FROM travel_articles WHERE id = $1 AND hidden = 0', [id]);
         if (result.rows.length === 0) {
+            c.set('errorLogged', true);
+            logApiError(c, 404, `존재하지 않는 여행기 조회 (#${id})`, performance.now() - t0);
             return c.json({ success: false, message: 'Travel article not found' }, 404);
         }
 
@@ -520,13 +545,23 @@ travelRoutes.get('/api/travel/:id{[0-9]+}', async (c) => {
             [article.region, id]
         );
 
+        const shortTitle = String(article.title || '').slice(0, 32);
+        logActivity(
+            '📖',
+            '여행상세',
+            getActorLabel(c),
+            `#${id} "${shortTitle}" (${article.province || article.destination || ''} · 누적조회 ${article.view_count})`,
+            performance.now() - t0
+        );
+
         return c.json({
             success: true,
             article,
             related: relatedRes.rows
         });
     } catch (error: any) {
-        console.error('[Get Travel Detail Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, `여행 상세 조회 실패 (#${id}): ${error.message}`, performance.now() - t0, error);
         return c.json({ success: false, message: 'Failed to fetch travel detail' }, 500);
     }
 });
@@ -536,9 +571,14 @@ travelRoutes.post('/api/travel/:id{[0-9]+}/like', async (c) => {
     const id = c.req.param('id');
     try {
         await pool.query('UPDATE travel_articles SET like_count = like_count + 1 WHERE id = $1', [id]);
-        const res = await pool.query('SELECT like_count FROM travel_articles WHERE id = $1', [id]);
-        return c.json({ success: true, likeCount: res.rows[0]?.like_count || 0 });
+        const res = await pool.query('SELECT title, like_count FROM travel_articles WHERE id = $1', [id]);
+        const likeCount = res.rows[0]?.like_count || 0;
+        const title = String(res.rows[0]?.title || '').slice(0, 28);
+        logActivity('❤️', '여행좋아요', getActorLabel(c), `#${id} "${title}" 좋아요 클릭! (누적 ${likeCount})`);
+        return c.json({ success: true, likeCount });
     } catch (error: any) {
+        c.set('errorLogged', true);
+        logApiError(c, 500, `여행 좋아요 처리 실패 (#${id}): ${error.message}`, undefined, error);
         return c.json({ success: false, message: 'Failed to like travel article' }, 500);
     }
 });
@@ -605,6 +645,8 @@ travelRoutes.post('/api/travel/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1
         const relativeUrl = `/uploads/travel/${fileName}`;
         const fullUrl = `https://veranex.app${relativeUrl}`;
 
+        logActivity('🖼️', '여행이미지업로드', getActorLabel(c), `${fileName} (${Math.round(buffer.length / 1024)}KB) 업로드 완료`);
+
         return c.json({
             success: true,
             message: '여행 이미지가 성공적으로 업로드되었습니다.',
@@ -614,7 +656,8 @@ travelRoutes.post('/api/travel/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1
             fileSize: buffer.length
         }, 201);
     } catch (error: any) {
-        console.error('[Upload Travel Image Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, '여행 이미지 업로드 실패: ' + (error.message || 'Server error'), undefined, error);
         return c.json({
             success: false,
             error: { code: 500, message: 'Image upload failed: ' + (error.message || 'Server error') }
@@ -624,6 +667,7 @@ travelRoutes.post('/api/travel/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1
 
 // 6. POST /api/travel 및 POST /api/travel/create - 여행 콘텐츠 등록 API
 const handleCreateTravel = async (c: any) => {
+    const t0 = performance.now();
     const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
     const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
@@ -631,6 +675,8 @@ const handleCreateTravel = async (c: any) => {
     const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-travel-api-key-2026' || apiKeyHeader === 'vera-news-api-key-2026')) || (user && user.role === 'admin');
 
     if (!isAuthorized) {
+        c.set('errorLogged', true);
+        logApiError(c, 401, '여행 콘텐츠 등록 실패: 유효하지 않거나 누락된 X-API-KEY', performance.now() - t0);
         return c.json({
             success: false,
             error: {
@@ -790,6 +836,14 @@ const handleCreateTravel = async (c: any) => {
             createdArticle = selRes.rows[0];
         }
 
+        logActivity(
+            '📝',
+            '여행콘텐츠등록',
+            getActorLabel(c),
+            `신규 여행기 #${newId} "${title.trim().slice(0, 32)}" 등록 완료! (지역: ${finalProvince} ${finalCity || ''} · 테마: ${normalizedCategory})`,
+            performance.now() - t0
+        );
+
         return c.json({
             success: true,
             message: '여행 콘텐츠가 성공적으로 등록되었습니다.',
@@ -806,7 +860,8 @@ const handleCreateTravel = async (c: any) => {
             url: `https://veranex.app/entertainment/travel/${newId || ''}`
         }, 201);
     } catch (error: any) {
-        console.error('[Create Travel Error]', error);
+        c.set('errorLogged', true);
+        logApiError(c, 500, '여행 콘텐츠 등록 DB/서버 오류: ' + (error.message || 'Server error'), performance.now() - t0, error);
         try {
             const logEntry = `[${new Date().toISOString()}] Travel Create Error: ${error.message}\n`;
             fs.appendFileSync(path.resolve(process.cwd(), 'logs/publish-errors.log'), logEntry);
