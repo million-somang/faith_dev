@@ -222,14 +222,24 @@ export function logActivity(icon: string, category: string, actor: string, detai
     console.log(`[${time}] ${icon} [${category}] ${actor} ➔ ${detail}${durSuffix}`);
 }
 
+function getReadablePathWithQuery(c: Context): string {
+    const raw = c.req.path + (c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '');
+    try {
+        return decodeURIComponent(raw);
+    } catch {
+        return raw;
+    }
+}
+
 /**
  * 표준화된 경고/에러 로그 출력 (stderr -> pm2 error log & stdout 동시 가시성)
  */
 export function logApiError(c: Context, statusCode: number, reason: string, durationMs?: number, errObj?: unknown) {
+    c.set('errorLogged', true);
     const time = getKstTimeString();
     const actor = getActorLabel(c);
     const method = c.req.method;
-    const pathWithQuery = c.req.path + (c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '');
+    const pathWithQuery = getReadablePathWithQuery(c);
     const durSuffix = typeof durationMs === 'number' ? ` [${Math.round(durationMs)}ms]` : '';
     const badge = statusCode >= 500 ? '🚨 [서버에러]' : '⚠️ [요청오류]';
 
@@ -296,7 +306,7 @@ export async function activityLoggerMiddleware(c: Context, next: Next) {
 
     // 2. 4xx / 5xx 에러 응답이지만 개별 라우트에서 아직 로깅하지 않은 경우 자동 감지 로깅
     if (status >= 400 && !c.get('errorLogged')) {
-        const pathWithQuery = path + (c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '');
+        const pathWithQuery = getReadablePathWithQuery(c);
         const time = getKstTimeString();
         const actor = getActorLabel(c);
         const badge = status >= 500 ? '🚨 [API서버에러]' : '⚠️ [API요청오류]';
@@ -306,7 +316,7 @@ export async function activityLoggerMiddleware(c: Context, next: Next) {
 
     // 3. 500ms 이상 소요된 지연 API 요청 경고 로깅
     if (elapsed >= 500 && path.startsWith('/api/')) {
-        const pathWithQuery = path + (c.req.url.includes('?') ? '?' + c.req.url.split('?')[1] : '');
+        const pathWithQuery = getReadablePathWithQuery(c);
         logActivity('🐢', '지연요청감지', getActorLabel(c), `${method} ${pathWithQuery} (HTTP ${status})`, elapsed);
     }
 }
