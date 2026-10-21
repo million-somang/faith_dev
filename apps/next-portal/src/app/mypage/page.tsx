@@ -8,10 +8,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PreferenceWizard } from '@/components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '@/components/homepage/MobileTabEditor';
-import { CompactDashboardWidgets } from '@/components/homepage/CompactDashboardWidgets';
 import { MyLifeSection } from '@/components/mypage/MyLifeSection';
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
+import { useMinihome } from '@/hooks/useMinihome';
+import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
+import { MinihomeBgmPlayer } from '@/components/minihome/MinihomeBgmPlayer';
+import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
+import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
+import { MinihomePersonalHubSection } from '@/components/minihome/MinihomePersonalHubSection';
+import { MINIHOME_MOODS, getCatalogItemById } from '@/data/minihomeCatalogData';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -136,6 +142,70 @@ function urlBase64ToUint8Array(base64String: string) {
 export default function MyPage() {
     const { user, logout, isLoading, updateUser } = useAuth();
     const router = useRouter();
+
+    const {
+        profile: minihomeProfile,
+        guestbook: minihomeGuestbook,
+        surfData: minihomeSurfData,
+        isLoading: minihomeLoading,
+        toastMessage: minihomeToastMessage,
+        isEditMode: minihomeEditMode,
+        isSaving: minihomeSaving,
+        isBuyingItemId: minihomeBuyingItemId,
+        draftLayout: minihomeDraftLayout,
+        setDraftLayout: setMinihomeDraftLayout,
+        draftRoomTitle: minihomeDraftRoomTitle,
+        setDraftRoomTitle: setMinihomeDraftRoomTitle,
+        draftMood: minihomeDraftMood,
+        setDraftMood: setMinihomeDraftMood,
+        draftStatusMessage: minihomeDraftStatusMessage,
+        setDraftStatusMessage: setMinihomeDraftStatusMessage,
+        draftBgmTrackId: minihomeDraftBgmTrackId,
+        setDraftBgmTrackId: setMinihomeDraftBgmTrackId,
+        selectedTargetId: minihomeSelectedTargetId,
+        setSelectedTargetId: setMinihomeSelectedTargetId,
+        handleEnterEditMode: handleMinihomeEnterEditMode,
+        handleCancelEditMode: handleMinihomeCancelEditMode,
+        handleTileClick: handleMinihomeTileClick,
+        handleApplyCatalogItem: handleMinihomeApplyCatalogItem,
+        handleFlipSelectedItem: handleMinihomeFlipSelectedItem,
+        handleRemoveSelectedItem: handleMinihomeRemoveSelectedItem,
+        handleResetDefaultRoom: handleMinihomeResetDefaultRoom,
+        handleSaveMinihome,
+        handlePurchaseItem: handleMinihomePurchaseItem,
+        handleAddGuestbook: handleMinihomeAddGuestbook,
+        handleReplyGuestbook: handleMinihomeReplyGuestbook,
+        handleSoftDeleteGuestbook: handleMinihomeSoftDeleteGuestbook,
+        showToast: showMinihomeToast,
+    } = useMinihome('me');
+
+    const [showSurfModal, setShowSurfModal] = useState<boolean>(false);
+    const activeMoodId = minihomeEditMode ? minihomeDraftMood : (minihomeProfile?.statusMood || 'happy');
+    const currentMoodMeta = MINIHOME_MOODS.find((m) => m.id === activeMoodId) || MINIHOME_MOODS[0];
+
+    const handleRandomSurf = () => {
+        const target = minihomeSurfData.randomHandle || 'vera_official';
+        router.push(`/minihome/${encodeURIComponent(target)}`);
+    };
+
+    const handleShareMinihome = async () => {
+        if (typeof window === 'undefined' || !minihomeProfile) return;
+        const shareUrl = `${window.location.origin}/minihome/${encodeURIComponent(minihomeProfile.handle)}`;
+        try {
+            if (navigator.share) {
+                await navigator.share({
+                    title: `${minihomeProfile.ownerName}님의 VERA 미니홈피`,
+                    text: `${minihomeProfile.roomTitle} - 내 방 구경 오세요!`,
+                    url: shareUrl,
+                });
+            } else {
+                await navigator.clipboard.writeText(shareUrl);
+                showMinihomeToast('🔗 내 미니홈피 주소가 클립보드에 복사되었습니다!');
+            }
+        } catch (_) {
+            // 공유 취소 무시
+        }
+    };
 
     const [isPushSubscribed, setIsPushSubscribed] = useState(false);
     const [pushLoading, setPushLoading] = useState(false);
@@ -780,7 +850,7 @@ const DEFAULT_SHOPPING_ITEMS = [
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 font-sans">
-            <div className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full">
+            <div className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full">
                 
                 {/* 상단 타이틀 & 광고 영역 */}
                 <div className="mb-6 space-y-4">
@@ -810,14 +880,14 @@ const DEFAULT_SHOPPING_ITEMS = [
                     <nav className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
                         <button
                             onClick={() => setActiveSection('dashboard')}
-                            className={`flex-1 min-w-[120px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            className={`flex-1 min-w-[130px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
                                 activeSection === 'dashboard'
-                                    ? 'bg-violet-600 text-white shadow-md'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
                                     : 'text-slate-600 hover:bg-slate-100 font-bold'
                             }`}
                         >
-                            <i className="fas fa-house-user text-sm"></i>
-                            <span>{t('나의 홈')}</span>
+                            <span>🏠</span>
+                            <span>{t('내 미니홈피')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('schedule')}
@@ -885,618 +955,464 @@ const DEFAULT_SHOPPING_ITEMS = [
                             <i className="fas fa-magic text-sm"></i>
                             <span>{t('홈꾸미기')}</span>
                         </button>
-                        <Link
-                            href="/minihome/me"
-                            className="flex-1 min-w-[130px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-50 to-fuchsia-50 hover:from-indigo-100 hover:to-fuchsia-100 text-indigo-700 border border-indigo-200/80 shadow-2xs"
-                        >
-                            <span>🏠</span>
-                            <span>{t('내 미니홈피')}</span>
-                        </Link>
                     </nav>
                 </div>
 
                 {/* 메인 컨텐츠 영역 (100% 전체 너비로 확장) */}
                 <div className="w-full">
-                    {loading ? (
+                    {loading && activeSection !== 'dashboard' ? (
                         <div className="bg-white rounded-3xl shadow-sm p-16 border border-slate-200/80 min-h-[400px] flex items-center justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
                         </div>
                     ) : (
                         <>
-                            {/* ─── [신설] 나만의 홈 대시보드 뷰 ─── */}
+                            {/* ─── [통합 메인 뷰] 🏠 내 미니홈피 + 나의 홈 다이어리 & 퍼스널 보드 ─── */}
                             {activeSection === 'dashboard' && (
                                 <div className="animate-fade-in space-y-6">
-                                    
-                                    {/* 🌟 1. 퍼스널 웰컴 & 모닝 브리핑 히어로 (Personal Briefing Hero Banner) */}
-                                    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl border border-indigo-500/20">
-                                        {/* 은은한 배경 오로라 글로우 효과 */}
-                                        <div className="absolute -top-24 -right-24 w-80 h-80 bg-violet-500/20 rounded-full blur-3xl pointer-events-none"></div>
-                                        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-                                        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                                            {/* 좌측: 유저 프로필 & 인사말 */}
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-sky-400 p-0.5 shadow-lg shadow-violet-500/30 shrink-0">
-                                                    <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-2xl sm:text-3xl text-violet-300">
-                                                        <i className="fas fa-user-astronaut"></i>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2 flex-wrap">
-                                                        <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                                                            반가워요, <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 via-indigo-200 to-sky-300">{user.name}</span>님!
-                                                        </h2>
-                                                        <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-violet-500/30 text-violet-200 border border-violet-400/30 backdrop-blur-xs">
-                                                            VIP MEMBER
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs sm:text-sm text-slate-300 mt-1 font-medium">
-                                                        오늘도 활기차고 뜻깊은 하루를 시작해보세요 ✨
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* 우측 3대 퀵 스탯 칩스 (Quick Stat Chips) */}
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                                {/* 칩 1: 베라포인트 */}
-                                                <div 
-                                                    onClick={() => user?.email === 'sukman@naver.com' && router.push('/reward/exchange')}
-                                                    className="bg-white/10 hover:bg-white/15 border border-white/10 backdrop-blur-md rounded-2xl p-3.5 transition-all cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center justify-between text-xs text-amber-300 font-bold mb-1">
-                                                        <span className="flex items-center gap-1.5"><i className="fas fa-coins"></i> 베라포인트</span>
-                                                        <i className="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                                                    </div>
-                                                    <div className="text-lg font-black font-mono text-white">
-                                                        {veraPointsData.points.toLocaleString()} <span className="text-xs font-normal text-slate-300">P</span>
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                                        정산대기: {veraPointsData.pendingAmount.toLocaleString()}원
-                                                    </div>
-                                                </div>
-
-                                                {/* 칩 2: 오늘 일정 */}
-                                                <div 
-                                                    onClick={() => setActiveSection('schedule')}
-                                                    className="bg-white/10 hover:bg-white/15 border border-white/10 backdrop-blur-md rounded-2xl p-3.5 transition-all cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center justify-between text-xs text-emerald-300 font-bold mb-1">
-                                                        <span className="flex items-center gap-1.5"><i className="fas fa-calendar-day"></i> 오늘 일정</span>
-                                                        <i className="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                                                    </div>
-                                                    <div className="text-lg font-black text-white">
-                                                        {todaySchedules.length > 0 ? `${todaySchedules.length}건 진행중` : '여유로운 날'}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                                        {todayFormatted} 기준
-                                                    </div>
-                                                </div>
-
-                                                {/* 칩 3: 사주 행운 지수 */}
-                                                <div 
-                                                    onClick={() => setActiveSection('schedule')}
-                                                    className="bg-white/10 hover:bg-white/15 border border-white/10 backdrop-blur-md rounded-2xl p-3.5 transition-all cursor-pointer group"
-                                                >
-                                                    <div className="flex items-center justify-between text-xs text-violet-300 font-bold mb-1">
-                                                        <span className="flex items-center gap-1.5"><i className="fas fa-sparkles"></i> 행운 지수</span>
-                                                        <i className="fas fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                                                    </div>
-                                                    <div className="text-lg font-black text-white flex items-center gap-1.5">
-                                                        <span>{todaySajuGuide.score}점</span>
-                                                        <span className="text-[11px] font-normal px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-300 border border-emerald-400/30">
-                                                            대길
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-400 mt-0.5 truncate">
-                                                        행운색: {todaySajuGuide.luckyColor}
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    {/* 미니홈피 토스트 알림 */}
+                                    {minihomeToastMessage && (
+                                        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 text-white text-xs sm:text-sm font-extrabold shadow-xl border border-indigo-400/40 animate-bounce">
+                                            {minihomeToastMessage}
                                         </div>
-                                    </div>
+                                    )}
 
-                                    {/* 🌤️📈 2. 날씨 & 금융/증시 슬림형 컴팩트 위젯 바 */}
-                                    <CompactDashboardWidgets />
-
-                                    {/* 🏛️ 3. 벤토 그리드 (Bento Grid Layout) */}
-                                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                                        
-                                        {/* ─── [좌측 와이드 카드: My Life 데일리 포커스] ─── */}
-                                        <div className="lg:col-span-7 bg-white border border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-6">
-                                            <div>
-                                                {/* 카드 헤더 */}
-                                                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-emerald-200">
-                                                            <i className="fas fa-compass"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h3 className="font-extrabold text-slate-900 text-base sm:text-lg tracking-tight">
-                                                                My Life 데일리 포커스
-                                                            </h3>
-                                                            <p className="text-xs text-slate-400">오늘의 일정과 사주 가이드 및 명언 종합 브리핑</p>
-                                                        </div>
+                                    {/* 1. 미니홈피 대문 아우터 헤더 프레임 */}
+                                    <header className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
+                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                                            <div className="space-y-2">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-mono font-black">
+                                                        <span className="text-rose-600">
+                                                            TODAY {(minihomeProfile?.todayVisitors ?? 1).toLocaleString()}
+                                                        </span>
+                                                        <span className="text-slate-300">|</span>
+                                                        <span className="text-slate-700">
+                                                            TOTAL {(minihomeProfile?.totalVisitors ?? 1).toLocaleString()}
+                                                        </span>
                                                     </div>
+
+                                                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
+                                                        @{minihomeProfile?.handle || (user.email ? user.email.split('@')[0] : 'vera_room')}
+                                                    </span>
+
+                                                    <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
+                                                        🏠 나의 미니홈피 홈
+                                                    </span>
+                                                </div>
+
+                                                {minihomeEditMode ? (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="text"
+                                                            maxLength={45}
+                                                            value={minihomeDraftRoomTitle}
+                                                            onChange={(e) => setMinihomeDraftRoomTitle(e.target.value)}
+                                                            placeholder="내 미니홈피 대문 제목을 입력하세요"
+                                                            className="px-3.5 py-1.5 rounded-xl bg-indigo-50/70 border border-indigo-300 text-base sm:text-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-96"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                                                        {minihomeProfile?.roomTitle || `${user.name}님의 따뜻한 VERA 미니홈피`}
+                                                    </h2>
+                                                )}
+                                            </div>
+
+                                            {/* 우측: BGM 미니 플레이어 & 파도타기 액션 버튼 */}
+                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                                                <MinihomeBgmPlayer
+                                                    trackId={minihomeEditMode ? minihomeDraftBgmTrackId : (minihomeProfile?.bgmTrackId || 'bgm-orgel')}
+                                                    isEditMode={minihomeEditMode}
+                                                    onChangeTrack={(newTrack) => {
+                                                        setMinihomeDraftBgmTrackId(newTrack);
+                                                        if (!minihomeEditMode && minihomeProfile?.isOwner) {
+                                                            handleSaveMinihome({ bgmTrackId: newTrack });
+                                                        }
+                                                    }}
+                                                />
+
+                                                <div className="flex items-center gap-2">
                                                     <button
-                                                        onClick={() => setActiveSection('schedule')}
-                                                        className="text-xs font-extrabold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-3.5 py-2 rounded-xl border border-emerald-200 transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                                                        type="button"
+                                                        onClick={handleRandomSurf}
+                                                        className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
                                                     >
-                                                        <span>My Life 전체보기</span>
-                                                        <i className="fas fa-arrow-right text-[10px]"></i>
+                                                        <span>🌊 파도타기</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowSurfModal(true)}
+                                                        className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                                                    >
+                                                        <i className="fas fa-users text-[11px]"></i>
+                                                        <span>이웃방</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleShareMinihome}
+                                                        className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                                                        title="내 미니홈피 주소 복사/공유"
+                                                    >
+                                                        <i className="fas fa-share-nodes text-[11px]"></i>
+                                                        <span>공유</span>
                                                     </button>
                                                 </div>
-
-                                                {/* 섹션 A: 오늘의 일정 */}
-                                                <div className="space-y-3 mb-5">
-                                                    <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                                        <span className="flex items-center gap-1.5">
-                                                            <i className="fas fa-calendar-check text-emerald-500"></i> 오늘의 일정
-                                                        </span>
-                                                        <span className="text-[11px] font-mono text-slate-400">{todayFormatted}</span>
-                                                    </div>
-
-                                                    {todaySchedules.length > 0 ? (
-                                                        <div className="space-y-2">
-                                                            {todaySchedules.slice(0, 3).map((item: any, idx: number) => {
-                                                                const colorKey = item.color || 'blue';
-                                                                const colorConfig = SCHEDULE_COLOR_CONFIG[colorKey] || SCHEDULE_COLOR_CONFIG.blue;
-                                                                const timeText = item.schedule_time || item.time || (item.is_all_day ? '하루 종일' : '');
-                                                                const titleText = item.schedule_text || item.title || item.text || '제목 없음';
-
-                                                                return (
-                                                                    <div 
-                                                                        key={item.id || idx}
-                                                                        className={`flex items-center justify-between gap-3 px-4 py-2.5 rounded-2xl ${colorConfig.bg} border ${colorConfig.border} transition-all`}
-                                                                    >
-                                                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${colorConfig.badge} shrink-0`}>
-                                                                                {colorConfig.label}
-                                                                            </span>
-                                                                            {timeText && (
-                                                                                <span className="text-xs font-bold text-slate-600 flex items-center gap-1 font-mono shrink-0 bg-white/90 px-2 py-0.5 rounded-md border border-slate-200/60 shadow-2xs">
-                                                                                    <i className="far fa-clock text-[10px] text-slate-400"></i>
-                                                                                    {timeText}
-                                                                                </span>
-                                                                            )}
-                                                                            <span className="font-extrabold text-xs sm:text-sm text-slate-800 truncate">
-                                                                                {titleText}
-                                                                            </span>
-                                                                        </div>
-                                                                        <span className="text-[11px] font-bold text-slate-400 shrink-0">
-                                                                            진행중
-                                                                        </span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                            {todaySchedules.length > 3 && (
-                                                                <p className="text-xs font-bold text-slate-400 text-right pr-2">
-                                                                    외 {todaySchedules.length - 3}개의 일정이 더 있습니다.
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="p-4 bg-slate-50 border border-slate-200/70 rounded-2xl flex items-center justify-between text-xs text-slate-500">
-                                                            <span className="flex items-center gap-2">
-                                                                <i className="fas fa-mug-hot text-amber-500 text-sm"></i>
-                                                                오늘 등록된 일정이 없습니다. 여유로운 하루를 즐겨보세요!
-                                                            </span>
-                                                            <button 
-                                                                onClick={() => setActiveSection('schedule')}
-                                                                className="font-black text-emerald-600 hover:text-emerald-700 underline text-xs cursor-pointer"
-                                                            >
-                                                                + 일정 추가
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* 섹션 B: 오늘 사주 주의보 & 추천 행동 가이드 */}
-                                                <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-200/80 rounded-2xl p-4 mb-4">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-sm">🔮</span>
-                                                        <h4 className="text-xs font-black text-slate-900 tracking-tight">
-                                                            오늘의 사주 주의보 & 실천 팁
-                                                        </h4>
-                                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-amber-200/60 text-amber-900 ml-auto">
-                                                            길방: {todaySajuGuide.luckyDirection}
-                                                        </span>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-700">
-                                                        <div className="flex items-start gap-1.5 bg-white/80 p-2.5 rounded-xl border border-amber-100">
-                                                            <span className="text-rose-500 font-black shrink-0">⚠️ 주의:</span>
-                                                            <span className="font-medium text-slate-800 leading-snug">{todaySajuGuide.caution}</span>
-                                                        </div>
-                                                        <div className="flex items-start gap-1.5 bg-white/80 p-2.5 rounded-xl border border-amber-100">
-                                                            <span className="text-emerald-600 font-black shrink-0">🍀 추천:</span>
-                                                            <span className="font-medium text-slate-800 leading-snug">{todaySajuGuide.goodAction}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* 섹션 C: 365 데일리 명언 */}
-                                                <div className="bg-slate-50 border border-slate-200/70 rounded-2xl p-4 flex items-start gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center font-black text-sm shrink-0">
-                                                        <i className="fas fa-quote-left"></i>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-xs sm:text-sm text-slate-700 font-bold leading-relaxed italic">
-                                                            "{todayQuote.quote}"
-                                                        </p>
-                                                        <div className="text-[11px] font-extrabold text-slate-400 mt-1 flex items-center gap-1.5">
-                                                            <span>— {todayQuote.author}</span>
-                                                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-200 text-slate-600">{todayQuote.category}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
+                                    </header>
 
-                                        {/* ─── [우측 스택 카드: 실시간 주식 + 사주 오행] ─── */}
-                                        <div className="lg:col-span-5 flex flex-col gap-6">
-                                            
-                                            {/* 우측 1: 관심 주식 시황 위젯 */}
-                                            <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs font-black shadow-sm">
-                                                                <i className="fas fa-chart-line"></i>
-                                                            </div>
-                                                            <h3 className="font-extrabold text-slate-900 text-sm">
-                                                                내 관심 주식 종목
-                                                            </h3>
+                                    {/* 2. 미니홈피 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 2.5D 미니룸·방명록 8) */}
+                                    {minihomeLoading && !minihomeProfile ? (
+                                        <div className="bg-white rounded-3xl border border-slate-200 p-14 text-center space-y-3">
+                                            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                                            <p className="text-sm font-bold text-slate-500">
+                                                내 미니홈피 미니룸과 소품을 불러오는 중입니다...
+                                            </p>
+                                        </div>
+                                    ) : minihomeProfile ? (
+                                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                            {/* 좌측 사이드바: Today is 기분 & 미니미 프로필 & 나의 홈 3대 퀵스탯 & 이웃방 (lg:col-span-4) */}
+                                            <aside className="lg:col-span-4 space-y-5">
+                                                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5">
+                                                    {/* Today is... 상태창 */}
+                                                    <div
+                                                        className={`p-3.5 rounded-2xl border ${currentMoodMeta.badgeBg} ${currentMoodMeta.border} flex items-center justify-between`}
+                                                    >
+                                                        <span className="text-xs font-black tracking-wider text-slate-500 uppercase">
+                                                            TODAY IS...
+                                                        </span>
+                                                        <span className={`text-sm font-black ${currentMoodMeta.badgeText} flex items-center gap-1.5`}>
+                                                            <span className="text-base">{currentMoodMeta.emoji}</span>
+                                                            <span>{currentMoodMeta.label}</span>
+                                                        </span>
+                                                    </div>
+
+                                                    {/* 기분 선택 칩 (꾸미기 모드일 때) */}
+                                                    {minihomeEditMode && (
+                                                        <div className="grid grid-cols-3 gap-1.5">
+                                                            {MINIHOME_MOODS.map((m) => (
+                                                                <button
+                                                                    key={m.id}
+                                                                    type="button"
+                                                                    onClick={() => setMinihomeDraftMood(m.id)}
+                                                                    className={`py-1.5 px-2 rounded-xl text-[11px] font-extrabold border transition-all cursor-pointer ${
+                                                                        minihomeDraftMood === m.id
+                                                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                                                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                    }`}
+                                                                >
+                                                                    {m.emoji} {m.label}
+                                                                </button>
+                                                            ))}
                                                         </div>
-                                                        {stocksData.watchlist.length > 0 && (
-                                                            <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
-                                                                {stocksData.watchlist.length}개 모니터링
-                                                            </span>
+                                                    )}
+
+                                                    {/* 대표 미니미 카드 & 주인장 소개 */}
+                                                    <div className="text-center p-4 rounded-2xl bg-gradient-to-b from-indigo-50/60 to-slate-50 border border-slate-200/70 space-y-2">
+                                                        <div className="w-16 h-16 rounded-2xl bg-white border-2 border-indigo-200 shadow-xs mx-auto flex items-center justify-center text-3xl">
+                                                            {currentMoodMeta.emoji}
+                                                        </div>
+                                                        <div className="font-black text-base text-slate-900">
+                                                            {minihomeProfile.ownerName || user.name}
+                                                        </div>
+                                                        <div className="text-[11px] font-bold text-indigo-600">
+                                                            {getCatalogItemById((minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout).minimiItemId)?.name ||
+                                                                '캐주얼 데일리 미니미'}
+                                                        </div>
+
+                                                        {minihomeEditMode ? (
+                                                            <textarea
+                                                                rows={3}
+                                                                maxLength={100}
+                                                                value={minihomeDraftStatusMessage}
+                                                                onChange={(e) => setMinihomeDraftStatusMessage(e.target.value)}
+                                                                placeholder="프로필 자기소개 한마디를 입력하세요"
+                                                                className="w-full mt-2 p-2.5 rounded-xl bg-white border border-indigo-200 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                            />
+                                                        ) : (
+                                                            <p className="text-xs text-slate-600 font-medium leading-relaxed pt-1">
+                                                                “{minihomeProfile.statusMessage}”
+                                                            </p>
                                                         )}
                                                     </div>
 
+                                                    {/* 내 방 꾸미기 / 소셜 라운지 CTA */}
                                                     <div className="space-y-2">
-                                                        {stocksData.watchlist && stocksData.watchlist.length > 0 ? (
-                                                            stocksData.watchlist.slice(0, 3).map(stock => (
-                                                                <Link 
-                                                                    key={stock.id} 
-                                                                    href="/finance"
-                                                                    className="flex justify-between items-center bg-slate-50 hover:bg-emerald-50/60 p-3 rounded-2xl text-xs border border-slate-100 hover:border-emerald-200 transition-all group"
-                                                                >
-                                                                    <div>
-                                                                        <span className="font-black text-slate-800 mr-2 group-hover:text-emerald-700 transition-colors">{stock.stock_name}</span>
-                                                                        <span className="font-mono text-[11px] text-slate-400">{stock.stock_symbol}</span>
-                                                                    </div>
-                                                                    {stock.target_price ? (
-                                                                        <span className="font-extrabold text-emerald-600 font-mono">목표가: {Number(stock.target_price).toLocaleString()}원</span>
-                                                                    ) : (
-                                                                        <span className="text-[10px] font-bold text-slate-400">실시간 시세 <i className="fas fa-chevron-right text-[8px]"></i></span>
-                                                                    )}
-                                                                </Link>
-                                                            ))
+                                                        {!minihomeEditMode ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleMinihomeEnterEditMode}
+                                                                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                                            >
+                                                                <i className="fas fa-wand-magic-sparkles"></i>
+                                                                <span>내 방 꾸미기 &amp; 도토리 상점 열기</span>
+                                                            </button>
                                                         ) : (
-                                                            <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                                                관심 등록한 주식이 없습니다
-                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleSaveMinihome()}
+                                                                disabled={minihomeSaving}
+                                                                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                                            >
+                                                                <i className="fas fa-check"></i>
+                                                                <span>{minihomeSaving ? '저장 중...' : '꾸미기 완료 & 저장하기'}</span>
+                                                            </button>
                                                         )}
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setActiveSection('schedule')}
+                                                                className="py-2.5 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/70 font-extrabold text-xs text-center transition-colors cursor-pointer"
+                                                            >
+                                                                📅 일정 달력 (My Life)
+                                                            </button>
+                                                            <Link
+                                                                href="/lounge"
+                                                                className="py-2.5 px-3 rounded-xl bg-fuchsia-50 hover:bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200/70 font-extrabold text-xs text-center transition-colors"
+                                                            >
+                                                                💬 소셜 라운지
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* 나의 홈 3대 퀵 스탯 보드 (도토리·보유가구·오늘일정·사주행운지수 통합) */}
+                                                    <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                                                        <div className="grid grid-cols-2 gap-2 text-center">
+                                                            <div
+                                                                onClick={() => user?.email === 'sukman@naver.com' && router.push('/reward/exchange')}
+                                                                className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 cursor-pointer hover:bg-amber-100/70 transition-colors"
+                                                            >
+                                                                <div className="text-[10px] font-bold text-amber-700">보유 도토리(P)</div>
+                                                                <div className="text-sm font-black text-amber-900 mt-0.5 font-mono">
+                                                                    🌰 {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
+                                                                </div>
+                                                            </div>
+                                                            <div className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70">
+                                                                <div className="text-[10px] font-bold text-indigo-700">보유 가구·소품</div>
+                                                                <div className="text-sm font-black text-indigo-900 mt-0.5">
+                                                                    🎁 {minihomeProfile.ownedItemIds.length}종
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setActiveSection('schedule')}
+                                                                className="p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/70 text-left transition-colors cursor-pointer"
+                                                            >
+                                                                <div className="text-[10px] font-bold text-emerald-700 flex items-center justify-between">
+                                                                    <span>📅 오늘 일정</span>
+                                                                    <i className="fas fa-chevron-right text-[8px]"></i>
+                                                                </div>
+                                                                <div className="text-xs font-black text-emerald-950 mt-0.5 truncate">
+                                                                    {todaySchedules.length > 0 ? `${todaySchedules.length}건 진행중` : '여유로운 날'}
+                                                                </div>
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setActiveSection('schedule')}
+                                                                className="p-3 rounded-2xl bg-violet-50/70 hover:bg-violet-100/70 border border-violet-200/70 text-left transition-colors cursor-pointer"
+                                                            >
+                                                                <div className="text-[10px] font-bold text-violet-700 flex items-center justify-between">
+                                                                    <span>🔮 행운 지수</span>
+                                                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-200/70 text-violet-800 font-black">대길</span>
+                                                                </div>
+                                                                <div className="text-xs font-black text-violet-950 mt-0.5 truncate">
+                                                                    {todaySajuGuide.score}점 · {todaySajuGuide.luckyColor}
+                                                                </div>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <a
-                                                    href="/finance"
-                                                    className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-center text-xs rounded-xl shadow-sm block transition-all active:scale-98"
-                                                >
-                                                    주식/금융 센터 바로가기
-                                                </a>
-                                            </div>
-
-                                            {/* 우측 2: 사주팔자 오행 & 에너지 밸런스 위젯 */}
-                                            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 text-white rounded-3xl p-6 shadow-md border border-indigo-500/20 flex flex-col justify-between">
-                                                <div>
-                                                    <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-base">☯️</span>
-                                                            <h3 className="font-extrabold text-white text-sm">
-                                                                {user.name}님의 사주 오행
-                                                            </h3>
-                                                        </div>
+                                                {/* 파도타기 추천 이웃 미니룸 미니 리스트 */}
+                                                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <h3 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                                            <span>🌊</span>
+                                                            <span>인기 이웃 미니룸 놀러가기</span>
+                                                        </h3>
                                                         <button
-                                                            onClick={() => setShowBirthEditor(true)}
-                                                            className="text-[10px] bg-white/15 hover:bg-white/25 text-violet-200 px-2.5 py-1 rounded-lg font-bold transition-colors cursor-pointer"
+                                                            type="button"
+                                                            onClick={handleRandomSurf}
+                                                            className="text-[11px] font-extrabold text-sky-600 hover:underline cursor-pointer"
                                                         >
-                                                            생일 수정
+                                                            랜덤 파도타기 →
                                                         </button>
                                                     </div>
 
-                                                    {/* 생일 수정 폼 */}
-                                                    {showBirthEditor ? (
-                                                        <form onSubmit={handleSaveBirth} className="space-y-3 py-2">
-                                                            <p className="text-xs text-slate-300 font-bold">생년월일을 입력해 실시간 사주를 받아보세요.</p>
-                                                            <input
-                                                                type="date"
-                                                                value={tempBirthDate}
-                                                                onChange={(e) => setTempBirthDate(e.target.value)}
-                                                                className="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white text-xs font-bold focus:outline-none focus:border-violet-400"
-                                                                required
-                                                            />
-                                                            <div className="flex gap-2">
-                                                                <button type="submit" className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-black">확인</button>
-                                                                {birthDate && <button type="button" onClick={() => setShowBirthEditor(false)} className="flex-1 py-2 bg-white/20 text-slate-300 rounded-xl text-xs font-black">취소</button>}
-                                                            </div>
-                                                        </form>
-                                                    ) : saju ? (
-                                                        <div className="space-y-3">
-                                                            <p className="text-xs text-slate-200 leading-relaxed font-bold break-keep bg-white/5 p-3 rounded-2xl border border-white/10">
-                                                                🔮 <span className="text-violet-300 font-black">천성:</span> {saju.nature}
-                                                            </p>
-                                                            {/* 오행 비주얼 그래프 */}
-                                                            <div className="space-y-1.5 pt-1">
-                                                                <div className="flex justify-between text-[10px] font-black text-slate-300">
-                                                                    <span className="text-emerald-400">🌳 목 {saju.wood}%</span>
-                                                                    <span className="text-rose-400">🔥 화 {saju.fire}%</span>
-                                                                    <span className="text-amber-400">⛰️ 토 {saju.earth}%</span>
-                                                                    <span className="text-stone-300">⚙️ 금 {saju.metal}%</span>
-                                                                    <span className="text-sky-400">💧 수 {saju.water}%</span>
-                                                                </div>
-                                                                <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden flex shadow-inner">
-                                                                    <div className="bg-emerald-500" style={{ width: `${saju.wood}%` }} title={`목 ${saju.wood}%`}></div>
-                                                                    <div className="bg-rose-500" style={{ width: `${saju.fire}%` }} title={`화 ${saju.fire}%`}></div>
-                                                                    <div className="bg-amber-500" style={{ width: `${saju.earth}%` }} title={`토 ${saju.earth}%`}></div>
-                                                                    <div className="bg-stone-400" style={{ width: `${saju.metal}%` }} title={`금 ${saju.metal}%`}></div>
-                                                                    <div className="bg-sky-500" style={{ width: `${saju.water}%` }} title={`수 ${saju.water}%`}></div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    ) : null}
-                                                </div>
-
-                                                <Link
-                                                    href="/entertainment/saju"
-                                                    className="mt-4 w-full py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-black text-center text-xs rounded-xl shadow-md block transition-all active:scale-98"
-                                                >
-                                                    전통 사주 종합 해설 열기
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* 📰 4. 내가 구독한 주제 최신 뉴스 (매거진 피드) */}
-                                    <div className="border border-slate-200/80 rounded-3xl p-6 sm:p-7 bg-white shadow-sm flex flex-col gap-5">
-                                        {/* 상단 헤더 & 구독 키워드 뱃지 목록 */}
-                                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-sky-100/80 pb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-11 h-11 rounded-2xl bg-sky-500 text-white flex items-center justify-center font-black text-xl shadow-md shadow-sky-200">
-                                                    <i className="fas fa-newspaper"></i>
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-extrabold text-slate-800 text-lg tracking-tight flex items-center gap-2">
-                                                        내가 구독한 주제 최신 뉴스
-                                                        <span className="text-[10px] font-black font-mono px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700">
-                                                            LIVE FEED
-                                                        </span>
-                                                    </h3>
-                                                    <p className="text-xs text-slate-400">구독하신 맞춤 관심 주제의 실시간 관련 뉴스 피드입니다.</p>
-                                                </div>
-                                            </div>
-
-                                            {/* 구독중인 키워드 태그 뱃지 목록 & 키워드 설정 이동 버튼 */}
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    {newsData.keywords && newsData.keywords.length > 0 ? (
-                                                        newsData.keywords.map((kw: any, idx: number) => {
-                                                            const kwName = typeof kw === 'string' ? kw : (kw.keyword || kw.name || '');
-                                                            const kwId = typeof kw === 'object' ? kw.id : null;
-                                                            return (
-                                                                <span key={kwId || idx} className="text-xs font-black px-3 py-1 rounded-xl bg-white border border-sky-200 text-sky-700 shadow-2xs flex items-center gap-1.5">
-                                                                    <i className="fas fa-hashtag text-[10px] text-sky-400"></i> {kwName}
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => handleDeleteKeyword(kwId, kwName)}
-                                                                        className="text-sky-300 hover:text-red-500 transition-colors ml-0.5 cursor-pointer"
-                                                                        title="구독 해제"
-                                                                    >
-                                                                        <i className="fas fa-times text-[10px]"></i>
-                                                                    </button>
-                                                                </span>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        <span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-xl">
-                                                            기본 추천 키워드 (AI, 경제, IT, 기술, 금융)
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setActiveSection('news')}
-                                                    className="px-3.5 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer ml-1 active:scale-98"
-                                                >
-                                                    <i className="fas fa-plus text-[11px]"></i> 주제 추가/관리
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {/* 구독 뉴스 기사 카드 그리드 (3열) */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {newsData.keywordNews && newsData.keywordNews.length > 0 ? (
-                                                newsData.keywordNews.slice(0, 3).map((article: any, idx: number) => (
-                                                    <a
-                                                        key={article.id || idx}
-                                                        href={article.origin_url || article.url || '#'}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="bg-white border border-slate-200/90 hover:border-sky-400 p-4 sm:p-5 rounded-2xl shadow-2xs hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
-                                                    >
-                                                        <div>
-                                                            <div className="flex items-center justify-between gap-2 mb-2.5">
-                                                                <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-md bg-sky-50 text-sky-600 border border-sky-100">
-                                                                    #{article.category || article.keyword || '구독뉴스'}
-                                                                </span>
-                                                                <span className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">
-                                                                    {article.publisher || article.source || '주요뉴스'}
-                                                                </span>
-                                                            </div>
-                                                            <h4 className="font-extrabold text-slate-800 text-sm line-clamp-2 group-hover:text-sky-600 transition-colors leading-snug">
-                                                                {article.title}
-                                                            </h4>
-                                                            {article.description && (
-                                                                <p className="text-xs text-slate-500 line-clamp-2 mt-2 leading-relaxed font-normal">
-                                                                    {article.description}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 text-[10px] font-extrabold text-slate-400">
-                                                            <span className="font-mono">{article.published_at ? String(article.published_at).substring(0, 10) : '최근'}</span>
-                                                            <span className="text-sky-600 group-hover:translate-x-0.5 transition-transform flex items-center gap-1">
-                                                                기사 읽기 <i className="fas fa-arrow-right text-[9px]"></i>
-                                                            </span>
-                                                        </div>
-                                                    </a>
-                                                ))
-                                            ) : (
-                                                <div className="col-span-3 text-slate-400 text-xs py-10 text-center bg-white rounded-2xl border border-dashed border-slate-200">
-                                                    <i className="fas fa-newspaper text-slate-300 text-2xl mb-2 block"></i>
-                                                    구독한 주제의 뉴스 기사를 불러오는 중이거나 아직 등록된 뉴스가 없습니다.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* ─── 5. 베라포인트 리워드 & 맞춤 쇼핑 (2열 대칭 그리드) ─── */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        
-                                        {/* 위젯 1: 베라포인트 정산 (Vera Points Settlement) */}
-                                        <div className="border border-slate-200/90 rounded-3xl p-6 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[320px]">
-                                            <div>
-                                                <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                                                    <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs font-black shadow-sm">
-                                                            <i className="fas fa-coins"></i>
-                                                        </div>
-                                                        베라포인트 정산 & 미션 센터
-                                                    </h3>
-                                                    <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
-                                                        POINT HUB
-                                                    </span>
-                                                </div>
-
-                                                {/* 지표 보드 */}
-                                                <div className="grid grid-cols-2 gap-3 mb-4">
-                                                    <div className="p-3.5 bg-amber-50/60 border border-amber-200/70 rounded-2xl">
-                                                        <span className="text-[10px] text-amber-700 font-black">누적 포인트</span>
-                                                        <span className="block text-lg font-mono font-black text-slate-900 mt-0.5">{veraPointsData.points.toLocaleString()} P</span>
-                                                    </div>
-                                                    <div className="p-3.5 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl">
-                                                        <span className="text-[10px] text-emerald-700 font-black">정산 대기 금액</span>
-                                                        <span className="block text-lg font-mono font-black text-slate-900 mt-0.5">{veraPointsData.pendingAmount.toLocaleString()} 원</span>
-                                                    </div>
-                                                </div>
-
-                                                {/* 적립 내역 지표 */}
-                                                <div className="space-y-2.5">
-                                                    <span className="text-[10px] text-slate-400 font-bold block">베라포인트 활동 달성률</span>
-                                                    <div>
-                                                        <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-1">
-                                                            <span>📅 출석체크 & 미션 완료</span>
-                                                            <span className="font-mono">{veraPointsData.attendanceRatio}%</span>
-                                                        </div>
-                                                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${veraPointsData.attendanceRatio}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-1">
-                                                            <span>💬 소셜 라운지 & 커뮤니티 활동</span>
-                                                            <span className="font-mono">{veraPointsData.activityRatio}%</span>
-                                                        </div>
-                                                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${veraPointsData.activityRatio}%` }}></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {user?.email === 'sukman@naver.com' && (
-                                                <Link 
-                                                    href="/reward/exchange"
-                                                    className="mt-4 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all active:scale-98"
-                                                >
-                                                    베라포인트 리워드 교환 신청
-                                                </Link>
-                                            )}
-                                        </div>
-
-                                        {/* 위젯 2: 나를 위한 맞춤 쇼핑 & 신박템 위젯 */}
-                                        <div className="border border-slate-200/90 rounded-3xl p-6 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[320px]">
-                                            <div>
-                                                <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                                                    <h3 className="font-black text-slate-800 text-sm flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xs font-black shadow-sm">
-                                                            <i className="fas fa-shopping-bag"></i>
-                                                        </div>
-                                                        {user.name}님을 위한 맞춤 쇼핑
-                                                    </h3>
-                                                    <span className="text-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white px-2.5 py-0.5 rounded-full font-black shadow-xs flex items-center gap-1">
-                                                        <i className="fas fa-wand-magic-sparkles text-[9px]"></i> 신박 꿀템
-                                                    </span>
-                                                </div>
-
-                                                {/* 상품 리스트 */}
-                                                <div className="space-y-2.5">
-                                                    {shoppingItems && shoppingItems.length > 0 ? (
-                                                        shoppingItems.slice(0, 2).map((item) => (
-                                                            <a
-                                                                key={item.productId}
-                                                                href={item.productUrl}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center gap-3.5 p-2.5 rounded-2xl bg-slate-50 hover:bg-purple-50/60 border border-slate-100 hover:border-purple-200 transition-all group"
+                                                    <div className="space-y-2">
+                                                        {minihomeSurfData.popularRooms.slice(0, 4).map((room) => (
+                                                            <Link
+                                                                key={room.handle}
+                                                                href={`/minihome/${encodeURIComponent(room.handle)}`}
+                                                                className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-200/60 transition-colors"
                                                             >
-                                                                <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-slate-200 border border-slate-200">
-                                                                    <img 
-                                                                        src={item.productImage} 
-                                                                        alt={item.productName} 
-                                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                                    />
-                                                                    {item.discountRate && (
-                                                                        <span className="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1 rounded-bl">
-                                                                            {item.discountRate}%
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex-1 min-w-0">
-                                                                    {item.curationPoint && (
-                                                                        <div className="text-[10px] font-extrabold text-purple-700 truncate flex items-center gap-0.5 mb-0.5">
-                                                                            <span>💡</span> {item.curationPoint}
-                                                                        </div>
-                                                                    )}
-                                                                    <h4 className="text-xs font-bold text-slate-800 truncate group-hover:text-purple-600 transition-colors leading-tight">
-                                                                        {item.productName}
-                                                                    </h4>
-                                                                    <div className="text-xs font-black text-slate-900 mt-0.5">
-                                                                        {item.productPrice?.toLocaleString()}<span className="text-[10px] font-normal text-slate-500">원</span>
+                                                                <div className="min-w-0">
+                                                                    <div className="text-xs font-extrabold text-slate-900 truncate">
+                                                                        {room.ownerName}
+                                                                    </div>
+                                                                    <div className="text-[11px] text-slate-500 truncate">
+                                                                        {room.roomTitle}
                                                                     </div>
                                                                 </div>
-                                                                <div className="text-slate-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all text-xs pr-1">
-                                                                    <i className="fas fa-chevron-right text-[10px]"></i>
+                                                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60 text-[10px] font-black shrink-0">
+                                                                    TODAY {room.todayVisitors}
+                                                                </span>
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </aside>
+
+                                            {/* 우측 메인 스테이지: 2.5D 아이소메트릭 미니룸 + 도토리 상점 + 일촌 방명록 (lg:col-span-8) */}
+                                            <div className="lg:col-span-8 space-y-6">
+                                                {/* 1) 2.5D 아이소메트릭 미니룸 캔버스 */}
+                                                <IsometricRoomCanvas
+                                                    layout={minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout}
+                                                    ownerName={minihomeProfile.ownerName || user.name}
+                                                    isEditMode={minihomeEditMode}
+                                                    selectedTargetId={minihomeSelectedTargetId}
+                                                    onSelectTarget={(id) => {
+                                                        if (!minihomeEditMode) {
+                                                            handleMinihomeEnterEditMode();
+                                                        }
+                                                        setMinihomeSelectedTargetId(id);
+                                                    }}
+                                                    onTileClick={handleMinihomeTileClick}
+                                                    onFlipSelected={handleMinihomeFlipSelectedItem}
+                                                    onRemoveSelected={handleMinihomeRemoveSelectedItem}
+                                                    onChangeSpeechBubble={(text) =>
+                                                        setMinihomeDraftLayout((prev) => ({ ...prev, speechBubble: text }))
+                                                    }
+                                                />
+
+                                                {/* 2) 꾸미기 모드 활성화 시: 보관함 & 도토리 상점 드로어 */}
+                                                {minihomeEditMode && (
+                                                    <MinihomeShopDrawer
+                                                        ownedItemIds={minihomeProfile.ownedItemIds}
+                                                        veraPoints={minihomeProfile.veraPoints}
+                                                        draftLayout={minihomeDraftLayout}
+                                                        isBuyingItemId={minihomeBuyingItemId}
+                                                        onApplyItem={handleMinihomeApplyCatalogItem}
+                                                        onPurchaseItem={handleMinihomePurchaseItem}
+                                                        onResetRoom={handleMinihomeResetDefaultRoom}
+                                                        onSaveRoom={() => handleSaveMinihome()}
+                                                        onCancelEdit={handleMinihomeCancelEditMode}
+                                                        isSaving={minihomeSaving}
+                                                    />
+                                                )}
+
+                                                {/* 3) 일촌평 & 방문자 방명록 */}
+                                                <MinihomeGuestbook
+                                                    entries={minihomeGuestbook}
+                                                    isOwner={minihomeProfile.isOwner}
+                                                    ownerName={minihomeProfile.ownerName || user.name}
+                                                    onAddEntry={handleMinihomeAddGuestbook}
+                                                    onReplyEntry={handleMinihomeReplyGuestbook}
+                                                    onDeleteEntry={handleMinihomeSoftDeleteGuestbook}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : null}
+
+                                    {/* 3. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 미니홈피 하단에 통합) */}
+                                    <MinihomePersonalHubSection
+                                        userName={user.name}
+                                        userEmail={user.email}
+                                        todayFormatted={todayFormatted}
+                                        todaySchedules={todaySchedules}
+                                        scheduleColorConfig={SCHEDULE_COLOR_CONFIG}
+                                        todaySajuGuide={todaySajuGuide}
+                                        todayQuote={todayQuote}
+                                        saju={saju}
+                                        birthDate={birthDate}
+                                        showBirthEditor={showBirthEditor}
+                                        tempBirthDate={tempBirthDate}
+                                        onToggleBirthEditor={setShowBirthEditor}
+                                        onChangeTempBirthDate={setTempBirthDate}
+                                        onSaveBirth={handleSaveBirth}
+                                        watchlist={stocksData.watchlist}
+                                        newsKeywords={newsData.keywords}
+                                        keywordNews={newsData.keywordNews}
+                                        onDeleteKeyword={handleDeleteKeyword}
+                                        veraPointsData={{
+                                            ...veraPointsData,
+                                            points: minihomeProfile?.veraPoints ?? veraPointsData.points,
+                                        }}
+                                        shoppingItems={shoppingItems}
+                                        onNavigateSection={(sec) => setActiveSection(sec)}
+                                    />
+
+                                    {/* 이웃 미니룸 전체보기 모달 */}
+                                    {showSurfModal && (
+                                        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                                            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                                                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                    <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                                                        <span>🌊</span>
+                                                        <span>이웃 미니홈피 파도타기 목록</span>
+                                                    </h3>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowSurfModal(false)}
+                                                        className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                                                    >
+                                                        <i className="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+
+                                                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                                                    {minihomeSurfData.popularRooms.map((room) => (
+                                                        <Link
+                                                            key={room.handle}
+                                                            href={`/minihome/${encodeURIComponent(room.handle)}`}
+                                                            onClick={() => setShowSurfModal(false)}
+                                                            className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 transition-colors"
+                                                        >
+                                                            <div>
+                                                                <div className="text-sm font-black text-slate-900">
+                                                                    {room.ownerName}{' '}
+                                                                    <span className="text-xs font-normal text-slate-400">
+                                                                        (@{room.handle})
+                                                                    </span>
                                                                 </div>
-                                                            </a>
-                                                        ))
-                                                    ) : (
-                                                        <div className="text-slate-400 text-xs py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                                            추천 상품을 불러오는 중입니다...
-                                                        </div>
-                                                    )}
+                                                                <div className="text-xs font-semibold text-indigo-600 mt-0.5">
+                                                                    {room.roomTitle}
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right shrink-0">
+                                                                <div className="text-xs font-black text-rose-600">
+                                                                    TODAY {room.todayVisitors}
+                                                                </div>
+                                                                <div className="text-[10px] text-slate-400">
+                                                                    TOTAL {room.totalVisitors}
+                                                                </div>
+                                                            </div>
+                                                        </Link>
+                                                    ))}
+                                                </div>
+
+                                                <div className="pt-2 flex justify-end gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowSurfModal(false);
+                                                            handleRandomSurf();
+                                                        }}
+                                                        className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black cursor-pointer"
+                                                    >
+                                                        🌊 랜덤 이웃 방으로 즉시 이동
+                                                    </button>
                                                 </div>
                                             </div>
-
-                                            <Link
-                                                href="/shopping"
-                                                className="mt-4 w-full py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black text-center text-xs rounded-xl shadow-sm block transition-all active:scale-98"
-                                            >
-                                                스마트 쇼핑 & 핫딜 센터 바로가기
-                                            </Link>
                                         </div>
-
-                                    </div>
+                                    )}
                                 </div>
                             )}
 
@@ -1567,12 +1483,16 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         벽지·바닥·가구·미니미를 배치하고 BGM과 일촌 방명록, 파도타기를 즐겨보세요!
                                                     </p>
                                                 </div>
-                                                <Link
-                                                    href="/minihome/me"
-                                                    className="px-5 py-3 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs sm:text-sm shadow-md transition-all shrink-0"
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setActiveSection('dashboard');
+                                                        handleMinihomeEnterEditMode();
+                                                    }}
+                                                    className="px-5 py-3 rounded-xl bg-white text-indigo-700 hover:bg-indigo-50 font-black text-xs sm:text-sm shadow-md transition-all shrink-0 cursor-pointer"
                                                 >
                                                     내 방 꾸미기 입장 →
-                                                </Link>
+                                                </button>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">

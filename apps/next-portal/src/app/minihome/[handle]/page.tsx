@@ -177,7 +177,7 @@ export default function MinihomePage() {
                                     href="/mypage"
                                     className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors"
                                 >
-                                    ← 마이페이지로
+                                    ← 내 미니홈피(마이페이지)로
                                 </Link>
                             </div>
 
@@ -359,7 +359,7 @@ export default function MinihomePage() {
 
                                         <div className="grid grid-cols-2 gap-2">
                                             <Link
-                                                href="/minihome/me"
+                                                href="/mypage"
                                                 className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs text-center transition-colors"
                                             >
                                                 🏠 내 미니룸 홈
