@@ -11,14 +11,17 @@ import {
   MatchType,
   ShotResult,
   ShotTracker,
+  SkillDama,
   SpinOffset,
   TrickShotPreset,
 } from '../types/billiards';
 import {
+  aiDifficultyToDama,
   computeAimPrediction,
   createInitialBalls,
   createShotTracker,
   evaluateShotResult,
+  getSkillProfile,
   stepPhysicsFrame,
   TRICK_SHOT_PRESETS,
 } from '../engine/physicsEngine';
@@ -31,7 +34,8 @@ export function useBilliardsGame() {
   // 게임 설정 상태
   const [ruleMode, setRuleMode] = useState<BilliardsRuleMode>('four-ball');
   const [matchType, setMatchType] = useState<MatchType>('ai');
-  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('amateur');
+  const [playerDama, setPlayerDama] = useState<SkillDama>(150);
+  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('dama150');
   const [targetScore, setTargetScore] = useState<number>(50); // 4구 기본 50다마, 3구 기본 5점
   const [requireThreeCushionFinish, setRequireThreeCushionFinish] = useState<boolean>(true);
   const [clothTheme, setClothTheme] = useState<ClothTheme>('royal-blue');
@@ -76,10 +80,28 @@ export function useBilliardsGame() {
   const activeCueBallId: BallId =
     matchType === 'practice' ? 'cue_white' : currentPlayer === 1 ? 'cue_white' : 'cue_yellow';
 
-  // 실시간 조준 예측선 계산
+  // 실시간 조준 예측선 계산 (플레이어 다마수에 따라 분리각·회전 반사각 연동)
   const aimPrediction: AimPrediction | null = !isSimulating
-    ? computeAimPrediction(balls, activeCueBallId, (aimAngleDeg * Math.PI) / 180, spin)
+    ? computeAimPrediction(balls, activeCueBallId, (aimAngleDeg * Math.PI) / 180, spin, playerDama)
     : null;
+
+  // 플레이어 다마수(실력 등급) 변경 핸들러
+  const changePlayerDama = useCallback((nextDama: SkillDama) => {
+    const profile = getSkillProfile(nextDama);
+    setPlayerDama(nextDama);
+    setSpin((prev) => {
+      const mag = Math.hypot(prev.x, prev.y);
+      if (mag > profile.maxTipOffset && mag > 0) {
+        const ratio = profile.maxTipOffset / mag;
+        return {
+          x: Number((prev.x * ratio).toFixed(2)),
+          y: Number((prev.y * ratio).toFixed(2)),
+        };
+      }
+      return prev;
+    });
+    setAiComment(`🎱 내 구질 [${profile.label}] 적용 — ${profile.desc}`);
+  }, []);
 
   // 충돌 이펙트 추가 헬퍼
   const pushImpactEffect = useCallback(
@@ -183,6 +205,10 @@ export function useBilliardsGame() {
         setTargetScore(chosen.ruleMode === 'four-ball' ? 50 : 5);
       }
 
+      if (chosen.recommendedDama && playerDama < chosen.recommendedDama) {
+        setPlayerDama(chosen.recommendedDama);
+      }
+
       ballsRef.current = updatedBalls;
       setBalls(updatedBalls);
       setCurrentPlayer(1);
@@ -192,12 +218,14 @@ export function useBilliardsGame() {
       setChalkLevel(100);
       setActivePresetId(chosen.id);
       sound.playChalkBrush();
-      setAiComment(`🎯 [${chosen.label}] 세팅 완료! 지금 '스트로크 샷!'을 누르면 묘수가 발동됩니다.`);
+      setAiComment(
+        `🎯 [${chosen.label} (${chosen.badge})] 세팅 완료! 지금 '스트로크 샷!'을 누르면 묘수가 발동됩니다.`
+      );
     },
-    [isSimulating, ruleMode]
+    [isSimulating, ruleMode, playerDama]
   );
 
-  // 스트로크 발사 함수 (플레이어 & AI 공용)
+  // 스트로크 발사 함수 (플레이어 & AI 공용 — 다마수별 물리 계수 연동)
   const executeStroke = useCallback(
     (customShot?: { angleDeg: number; powerVal: number; spinVal: SpinOffset; actor: 1 | 2 }) => {
       if (isSimulating || winner !== null) return;
@@ -213,19 +241,39 @@ export function useBilliardsGame() {
       const cueId: BallId =
         matchType === 'practice' ? 'cue_white' : actor === 1 ? 'cue_white' : 'cue_yellow';
 
+      // 현재 타격자의 다마수(실력 등급) 결정
+      const shooterDama: SkillDama =
+        actor === 2 && matchType === 'ai' ? aiDifficultyToDama(aiDifficulty) : playerDama;
+      const skillProfile = getSkillProfile(shooterDama);
+
       const angleDeg = isCustom && customShot ? customShot.angleDeg : aimAngleDeg;
       const powerVal = isCustom && customShot ? customShot.powerVal : power;
-      const spinVal = isCustom && customShot ? customShot.spinVal : spin;
+      const rawSpinVal = isCustom && customShot ? customShot.spinVal : spin;
+
+      // 다마수별 유효 당점 한계(maxTipOffset) 클램핑
+      const rawSpinMag = Math.hypot(rawSpinVal.x, rawSpinVal.y);
+      const clampedRatio =
+        rawSpinMag > skillProfile.maxTipOffset && rawSpinMag > 0
+          ? skillProfile.maxTipOffset / rawSpinMag
+          : 1;
+      const spinVal: SpinOffset = {
+        x: rawSpinVal.x * clampedRatio,
+        y: rawSpinVal.y * clampedRatio,
+      };
 
       const spinMagnitude = Math.hypot(spinVal.x, spinVal.y);
       // 초크가 25% 미만이고 극단적 당점(>0.8)일 때 미스큐(삑사리) 발생 가능
       const isMiscue = actor === 1 && chalkLevel < 25 && spinMagnitude > 0.8;
 
       const rad = (angleDeg * Math.PI) / 180;
-      // 풀파워(100%) 시 대회전(다이 1.5~2바퀴, 5~7쿠션)이 가능하도록 최대 초기 속도를 28.5로 설정
-      const topSpinSpeedBoost = !isMiscue && spinVal.y > 0 ? 1 + spinVal.y * 0.08 : 1;
+      // 다마수별 파워 효율(powerScale) 및 상단 당점 가속(followScale) 적용
+      const topSpinSpeedBoost =
+        !isMiscue && spinVal.y > 0 ? 1 + spinVal.y * 0.08 * skillProfile.followScale : 1;
       const baseSpeed =
-        ((isMiscue ? powerVal * 0.35 : powerVal) / 100) * 28.5 * topSpinSpeedBoost;
+        ((isMiscue ? powerVal * 0.35 : powerVal) / 100) *
+        28.5 *
+        skillProfile.powerScale *
+        topSpinSpeedBoost;
       const finalAngle = isMiscue ? rad + (Math.random() - 0.5) * 0.35 : rad;
       const dirX = Math.cos(finalAngle);
       const dirY = Math.sin(finalAngle);
@@ -250,6 +298,10 @@ export function useBilliardsGame() {
           forwardDirY: dirY,
           sideSpin: isMiscue ? 0 : spinVal.x,
           topBottomSpin: isMiscue ? 0 : spinVal.y,
+          spinScale: skillProfile.spinScale,
+          drawScale: skillProfile.drawScale,
+          followScale: skillProfile.followScale,
+          driveFrames: skillProfile.driveFrames,
           spinDriveVx: 0,
           spinDriveVy: 0,
           spinDriveFrames: 0,
@@ -345,9 +397,9 @@ export function useBilliardsGame() {
           // 이닝 히스토리 기록 추가 (최신순 상단 유지)
           const actorLabel =
             actor === 1
-              ? '나 (Player 1)'
+              ? `나 (${getSkillProfile(playerDama).shortLabel})`
               : matchType === 'ai'
-              ? `AI (${aiDifficulty.toUpperCase()})`
+              ? `AI (${getSkillProfile(aiDifficultyToDama(aiDifficulty)).shortLabel})`
               : 'Player 2';
 
           setInningHistory((prev) => [
@@ -419,6 +471,7 @@ export function useBilliardsGame() {
       ruleMode,
       targetScore,
       requireThreeCushionFinish,
+      playerDama,
       aiDifficulty,
       inning,
       pushImpactEffect,
@@ -488,6 +541,7 @@ export function useBilliardsGame() {
     // 상태
     ruleMode,
     matchType,
+    playerDama,
     aiDifficulty,
     targetScore,
     requireThreeCushionFinish,
@@ -522,6 +576,7 @@ export function useBilliardsGame() {
     // 액션
     setRuleMode,
     setMatchType,
+    changePlayerDama,
     setAiDifficulty,
     setTargetScore,
     setRequireThreeCushionFinish,

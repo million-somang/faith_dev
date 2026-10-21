@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import fs from 'node:fs';
 import path from 'node:path';
-import { pool, parseKoreanLocation } from '@faithportal/database';
+import { pool, parseKoreanLocation, STANDARD_PROVINCES } from '@faithportal/database';
 import { optionalAuth, SessionUser } from '../middleware/auth.js';
 import {
     getTravelMapCounts,
@@ -93,14 +93,31 @@ const MAP_SPOTS_CACHE_TTL = 30 * 60 * 1000; // 30분
 const mapSpotsLocationCache = new Map<string, { data: any; ts: number }>();
 const travelListCache = new Map<string, { data: any; ts: number }>();
 const travelCountCache = new Map<string, { total: number; ts: number }>();
-const TRAVEL_LIST_CACHE_TTL = 60 * 1000; // 60초
-const TRAVEL_COUNT_CACHE_TTL = 10 * 60 * 1000; // 10분
+const TRAVEL_LIST_CACHE_TTL = 10 * 60 * 1000; // 10분 (수정/삭제/등록 시 invalidateTravelCache로 즉시 갱신됨)
+const TRAVEL_COUNT_CACHE_TTL = 15 * 60 * 1000; // 15분
 
 const TRAVEL_LIST_COLUMNS = `
     id, title, destination, region, category, summary, ai_summary, thumbnail,
     best_season, duration, estimated_cost, location_address, province, city, tags, author, source,
     view_count, like_count, is_featured, published_at
 `;
+
+// travel_articles_lite 테이블 존재 여부 런타임 캐시 (오버플로우 페이지 0개 초경량 테이블 우선 사용)
+let hasLiteTableCache: boolean | null = null;
+async function getTravelListTableName(): Promise<string> {
+    if (hasLiteTableCache !== null) {
+        return hasLiteTableCache ? 'travel_articles_lite' : 'travel_articles';
+    }
+    try {
+        const res = await pool.query(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name='travel_articles_lite'`
+        );
+        hasLiteTableCache = res.rows.length > 0;
+    } catch {
+        hasLiteTableCache = false;
+    }
+    return hasLiteTableCache ? 'travel_articles_lite' : 'travel_articles';
+}
 
 export function invalidateTravelCache() {
     cachedMapSpots = null;
@@ -110,7 +127,145 @@ export function invalidateTravelCache() {
     travelCountCache.clear();
 }
 
-// 1. GET /api/travel - 여행 목록 조회 (인덱스에서 화면에 보일 개수 ID만 먼저 뽑는 Deferred Join으로 초고속 조회)
+export async function queryTravelList(params: {
+    region?: string;
+    category?: string;
+    keyword?: string;
+    featured?: string;
+    limit: number;
+    offset: number;
+    province?: string;
+    city?: string;
+    sort?: string;
+}) {
+    const region = params.region;
+    const category = params.category;
+    const keyword = (params.keyword || '').trim();
+    const featured = params.featured;
+    const limit = params.limit;
+    const offset = params.offset;
+    const province = params.province;
+    const city = params.city;
+    const sort = params.sort || 'latest';
+
+    const hasSpecificLocation = Boolean((province && province !== 'all') || (city && city !== 'all'));
+    // province 또는 city가 지정된 경우 이미 국내 지역으로 한정되므로, 불필요한 region='domestic' 조건을 제거하여
+    // 복합 커버링 인덱스(idx_travel_lite_prov_latest 등)가 100% 깨지지 않고 작동하도록 정규화
+    const effectiveRegion = (hasSpecificLocation && region === 'domestic') ? 'all' : (region || 'all');
+
+    const now = Date.now();
+    const listCacheKey = `${effectiveRegion}|${category || 'all'}|${province || 'all'}|${city || 'all'}|${featured || '0'}|${sort}|${limit}|${offset}|${keyword}`;
+    if (!keyword) {
+        const cached = travelListCache.get(listCacheKey);
+        if (cached && now - cached.ts < TRAVEL_LIST_CACHE_TTL) {
+            return { payload: cached.data, cacheHit: true };
+        }
+    }
+
+    const tableName = await getTravelListTableName();
+    let whereClause = 'WHERE hidden = 0';
+    const filterParams: any[] = [];
+
+    if (effectiveRegion && effectiveRegion !== 'all') {
+        whereClause += ` AND region = $${filterParams.length + 1}`;
+        filterParams.push(effectiveRegion);
+    }
+
+    if (category && category !== 'all') {
+        whereClause += ` AND category = $${filterParams.length + 1}`;
+        filterParams.push(category);
+    }
+
+    if (province && province !== 'all') {
+        whereClause += ` AND province = $${filterParams.length + 1}`;
+        filterParams.push(province);
+    }
+
+    if (city && city !== 'all') {
+        whereClause += ` AND city = $${filterParams.length + 1}`;
+        filterParams.push(city);
+    }
+
+    if (featured === 'true' || featured === '1') {
+        whereClause += ` AND is_featured = 1`;
+    }
+
+    if (keyword) {
+        const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
+        const val = `%${escaped}%`;
+        whereClause += ` AND (title LIKE $${filterParams.length + 1} ESCAPE '\\' OR destination LIKE $${filterParams.length + 2} ESCAPE '\\' OR location_address LIKE $${filterParams.length + 3} ESCAPE '\\' OR tags LIKE $${filterParams.length + 4} ESCAPE '\\')`;
+        filterParams.push(val, val, val, val);
+    }
+
+    const orderClause = sort === 'popular'
+        ? 'ORDER BY view_count DESC, like_count DESC, published_at DESC'
+        : 'ORDER BY published_at DESC, id DESC';
+
+    // [1단계] 초경량 테이블(travel_articles_lite)에서 목록 컬럼 직접 조회 (오버플로우 페이지 0개, 1ms 이내)
+    const listQuery = `
+        SELECT ${TRAVEL_LIST_COLUMNS}
+        FROM ${tableName}
+        ${whereClause}
+        ${orderClause}
+        LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}
+    `;
+    const listRes = await pool.query(listQuery, [...filterParams, limit, offset]);
+    const rows: any[] = listRes.rows;
+
+    // [2단계] 조건별 총 개수(total) 산출 — 시·도/시·군·구 사전 집계 카운터(O(1)) 및 메모리 캐시 우선 활용
+    const isUnfilteredCategory = !category || category === 'all';
+    const isUnfilteredFeatured = !featured || (featured !== 'true' && featured !== '1');
+    const countCacheKey = `${effectiveRegion}|${category || 'all'}|${province || 'all'}|${city || 'all'}|${featured || '0'}|${keyword}`;
+    let total: number | null = null;
+
+    if (!keyword && isUnfilteredCategory && isUnfilteredFeatured && hasSpecificLocation) {
+        try {
+            const mapCounts = await getTravelMapCounts();
+            if (province && province !== 'all' && city && city !== 'all') {
+                const cityVal = mapCounts.cities?.[province]?.[city];
+                if (typeof cityVal === 'number') total = cityVal;
+            } else if (province && province !== 'all') {
+                const provVal = mapCounts.provinces?.[province];
+                if (typeof provVal === 'number') total = provVal;
+            }
+        } catch {}
+    }
+
+    if (total === null) {
+        const cachedCount = travelCountCache.get(countCacheKey);
+        if (cachedCount && now - cachedCount.ts < TRAVEL_COUNT_CACHE_TTL) {
+            total = cachedCount.total;
+        } else {
+            const countRes = await pool.query(
+                `SELECT COUNT(id) as total FROM ${tableName} ${whereClause}`,
+                filterParams
+            );
+            total = parseInt(countRes.rows[0]?.total || '0');
+            if (travelCountCache.size > 1000) travelCountCache.clear();
+            travelCountCache.set(countCacheKey, { total, ts: now });
+        }
+    }
+
+    const responsePayload = {
+        success: true,
+        articles: rows,
+        pagination: {
+            total,
+            limit,
+            offset,
+            hasMore: offset + rows.length < total
+        }
+    };
+
+    if (!keyword) {
+        if (travelListCache.size > 500) travelListCache.clear();
+        travelListCache.set(listCacheKey, { data: responsePayload, ts: now });
+    }
+
+    return { payload: responsePayload, cacheHit: false };
+}
+
+// 1. GET /api/travel - 여행 목록 조회 (초경량 인덱스 테이블 + O(1) 지역 카운터 결합)
 travelRoutes.get('/api/travel', async (c) => {
     const region = c.req.query('region');
     const category = c.req.query('category');
@@ -122,117 +277,22 @@ travelRoutes.get('/api/travel', async (c) => {
     const city = c.req.query('city');
     const sort = c.req.query('sort') || 'latest'; // latest, popular
 
-    const now = Date.now();
-    const listCacheKey = `${region || 'all'}|${category || 'all'}|${province || 'all'}|${city || 'all'}|${featured || '0'}|${sort}|${limit}|${offset}|${keyword}`;
-    if (!keyword) {
-        const cached = travelListCache.get(listCacheKey);
-        if (cached && now - cached.ts < TRAVEL_LIST_CACHE_TTL) {
-            c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
-            c.header('X-Cache', 'HIT');
-            return c.json(cached.data);
-        }
-    }
-
     try {
-        // 공통 WHERE 절 구성 (hidden = 0 단일 조건으로 복합 인덱스 100% 활용)
-        let whereClause = 'WHERE hidden = 0';
-        const filterParams: any[] = [];
+        const { payload, cacheHit } = await queryTravelList({
+            region,
+            category,
+            keyword,
+            featured,
+            limit,
+            offset,
+            province,
+            city,
+            sort
+        });
 
-        if (region && region !== 'all') {
-            whereClause += ` AND region = $${filterParams.length + 1}`;
-            filterParams.push(region);
-        }
-
-        if (category && category !== 'all') {
-            whereClause += ` AND category = $${filterParams.length + 1}`;
-            filterParams.push(category);
-        }
-
-        if (province && province !== 'all') {
-            whereClause += ` AND province = $${filterParams.length + 1}`;
-            filterParams.push(province);
-        }
-
-        if (city && city !== 'all') {
-            whereClause += ` AND city = $${filterParams.length + 1}`;
-            filterParams.push(city);
-        }
-
-        if (featured === 'true' || featured === '1') {
-            whereClause += ` AND is_featured = 1`;
-        }
-
-        if (keyword) {
-            const escaped = keyword.replace(/[\\%_]/g, (ch) => '\\' + ch);
-            const val = `%${escaped}%`;
-            whereClause += ` AND (title LIKE $${filterParams.length + 1} ESCAPE '\\' OR destination LIKE $${filterParams.length + 2} ESCAPE '\\' OR location_address LIKE $${filterParams.length + 3} ESCAPE '\\' OR tags LIKE $${filterParams.length + 4} ESCAPE '\\')`;
-            filterParams.push(val, val, val, val);
-        }
-
-        const orderClause = sort === 'popular'
-            ? 'ORDER BY view_count DESC, like_count DESC, published_at DESC'
-            : 'ORDER BY published_at DESC, id DESC';
-
-        // [1단계] 커버링 인덱스(Covering Index)에서 화면에 표시할 limit 개의 ID만 1ms 내에 추출
-        const idQuery = `
-            SELECT id FROM travel_articles
-            ${whereClause}
-            ${orderClause}
-            LIMIT $${filterParams.length + 1} OFFSET $${filterParams.length + 2}
-        `;
-        const idRes = await pool.query(idQuery, [...filterParams, limit, offset]);
-        const targetIds: number[] = idRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
-
-        // [2단계] 추출된 소수(예: 12개)의 PK에 대해서만 목록 렌더링 필수 컬럼 조회 (260MB 본문 페이지 스캔 원천 차단)
-        let rows: any[] = [];
-        if (targetIds.length > 0) {
-            const placeholders = targetIds.map((_, idx) => `$${idx + 1}`).join(', ');
-            const detailRes = await pool.query(
-                `SELECT ${TRAVEL_LIST_COLUMNS} FROM travel_articles WHERE id IN (${placeholders})`,
-                targetIds
-            );
-            const rowMap = new Map<number, any>();
-            for (const r of detailRes.rows) {
-                rowMap.set(Number(r.id), r);
-            }
-            rows = targetIds.map(id => rowMap.get(id)).filter(Boolean);
-        }
-
-        // [3단계] 조건별 총 개수(total) 산출 — 캐시 우선 사용하여 매 요청 COUNT 스캔 제거
-        const countCacheKey = `${region || 'all'}|${category || 'all'}|${province || 'all'}|${city || 'all'}|${featured || '0'}|${keyword}`;
-        let total = 0;
-        const cachedCount = travelCountCache.get(countCacheKey);
-        if (cachedCount && now - cachedCount.ts < TRAVEL_COUNT_CACHE_TTL) {
-            total = cachedCount.total;
-        } else {
-            const countRes = await pool.query(
-                `SELECT COUNT(id) as total FROM travel_articles ${whereClause}`,
-                filterParams
-            );
-            total = parseInt(countRes.rows[0]?.total || '0');
-            if (travelCountCache.size > 500) travelCountCache.clear();
-            travelCountCache.set(countCacheKey, { total, ts: now });
-        }
-
-        const responsePayload = {
-            success: true,
-            articles: rows,
-            pagination: {
-                total,
-                limit,
-                offset,
-                hasMore: offset + rows.length < total
-            }
-        };
-
-        if (!keyword) {
-            if (travelListCache.size > 200) travelListCache.clear();
-            travelListCache.set(listCacheKey, { data: responsePayload, ts: now });
-        }
-
-        c.header('Cache-Control', 'public, max-age=15, stale-while-revalidate=30');
-        c.header('X-Cache', 'MISS');
-        return c.json(responsePayload);
+        c.header('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+        c.header('X-Cache', cacheHit ? 'HIT' : 'MISS');
+        return c.json(payload);
     } catch (error: any) {
         console.error('[Get Travel List Error]', error);
         return c.json({ success: false, message: 'Failed to fetch travel list: ' + error.message }, 500);
@@ -283,6 +343,7 @@ travelRoutes.post('/api/travel/sync-counts', async (c) => {
 });
 
 async function fetchMapSpotsByIndex(province?: string, city?: string, limitCount: number = 20): Promise<any[]> {
+    const tableName = await getTravelListTableName();
     let whereClause = 'WHERE hidden = 0';
     const params: any[] = [];
 
@@ -298,45 +359,69 @@ async function fetchMapSpotsByIndex(province?: string, city?: string, limitCount
         params.push(city);
     }
 
-    // 1단계: 커버링 인덱스에서 상위 N개 ID만 즉시 조회
-    const idRes = await pool.query(
-        `SELECT id FROM travel_articles ${whereClause} ORDER BY is_featured DESC, view_count DESC, published_at DESC LIMIT $${params.length + 1}`,
+    // 초경량 테이블(travel_articles_lite)에서 직접 조회 (오버플로우 페이지 0개, 1ms 이내)
+    const detailRes = await pool.query(
+        `SELECT id, title, destination, region, category, thumbnail, location_address, province, city
+         FROM ${tableName}
+         ${whereClause}
+         ORDER BY is_featured DESC, view_count DESC, published_at DESC
+         LIMIT $${params.length + 1}`,
         [...params, limitCount]
     );
-    const ids: number[] = idRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
-    if (ids.length === 0) return [];
-
-    // 2단계: 해당 ID의 경량 컬럼만 PK로 즉시 조회
-    const placeholders = ids.map((_, idx) => `$${idx + 1}`).join(', ');
-    const detailRes = await pool.query(
-        `SELECT id, title, destination, region, category, thumbnail, location_address, province, city FROM travel_articles WHERE id IN (${placeholders})`,
-        ids
-    );
-    const rowMap = new Map<number, any>();
-    for (const r of detailRes.rows) {
-        rowMap.set(Number(r.id), r);
-    }
-    return ids.map(id => rowMap.get(id)).filter(Boolean);
+    return detailRes.rows;
 }
 
 export async function prewarmMapSpotsCache() {
     try {
+        const now = Date.now();
+        // 1. 전국 상위 20개 지도 명소 캐시 프리워밍
         const rows = await fetchMapSpotsByIndex(undefined, undefined, 20);
         cachedMapSpots = {
             success: true,
             total: rows.length,
             articles: rows
         };
-        mapSpotsCacheTime = Date.now();
-        console.log(`[Travel Cache] Prewarmed ${rows.length} top map spots into memory.`);
+        mapSpotsCacheTime = now;
+
+        // 2. 주요 권역 탭(전체/국내/아시아/유럽/미주) 첫 페이지 목록 프리워밍
+        const mainRegions = ['all', 'domestic', 'asia', 'europe', 'americas'];
+        for (const reg of mainRegions) {
+            await queryTravelList({ region: reg, category: 'all', limit: 12, offset: 0, sort: 'latest' });
+        }
+
+        // 3. 대한민국 17개 시·도 전체의 map-spots(10개) 및 첫 페이지 목록(12개) 프리워밍
+        for (const prov of STANDARD_PROVINCES) {
+            const provSpots = await fetchMapSpotsByIndex(prov, undefined, 10);
+            mapSpotsLocationCache.set(`${prov}|all`, {
+                data: {
+                    success: true,
+                    total: provSpots.length,
+                    articles: provSpots
+                },
+                ts: Date.now()
+            });
+            await queryTravelList({
+                region: 'domestic',
+                category: 'all',
+                province: prov,
+                limit: 12,
+                offset: 0,
+                sort: 'latest'
+            });
+        }
+
+        console.log(`[Travel Cache] Prewarmed national + 17 provinces map spots & page-1 lists into memory.`);
     } catch (e) {
         console.error('[Travel Cache] Prewarm error:', e);
     }
 }
 
-// 서버 기동 직후 1초 후 백그라운드 사전 캐싱 실행
+// 서버 기동 직후 1초 후 백그라운드 사전 캐싱 실행 + 9분 주기로 백그라운드 자동 갱신
 setTimeout(() => {
     prewarmMapSpotsCache();
+    setInterval(() => {
+        prewarmMapSpotsCache().catch(() => {});
+    }, 9 * 60 * 1000);
 }, 1000);
 
 // 1-3. GET /api/travel/map-spots - 인터랙티브 지도 전용 명소 조회 (특정 지역 10개, 미지정 시 전국 추천 20개)
@@ -378,7 +463,7 @@ travelRoutes.get('/api/travel/map-spots', async (c) => {
             cachedMapSpots = responseData;
             mapSpotsCacheTime = now;
         } else {
-            if (mapSpotsLocationCache.size > 300) mapSpotsLocationCache.clear();
+            if (mapSpotsLocationCache.size > 500) mapSpotsLocationCache.clear();
             mapSpotsLocationCache.set(locKey, { data: responseData, ts: now });
         }
 
@@ -394,23 +479,11 @@ travelRoutes.get('/api/travel/map-spots', async (c) => {
 // 2. GET /api/travel/featured - 추천 여행지 하이라이트
 travelRoutes.get('/api/travel/featured', async (c) => {
     try {
-        const idRes = await pool.query(
-            'SELECT id FROM travel_articles WHERE hidden = 0 ORDER BY is_featured DESC, view_count DESC, published_at DESC LIMIT 5'
-        );
-        const ids: number[] = idRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
-        if (ids.length === 0) {
-            return c.json({ success: true, articles: [] });
-        }
-        const placeholders = ids.map((_, idx) => `$${idx + 1}`).join(', ');
+        const tableName = await getTravelListTableName();
         const detailRes = await pool.query(
-            `SELECT ${TRAVEL_LIST_COLUMNS} FROM travel_articles WHERE id IN (${placeholders})`,
-            ids
+            `SELECT ${TRAVEL_LIST_COLUMNS} FROM ${tableName} WHERE hidden = 0 ORDER BY is_featured DESC, view_count DESC, published_at DESC LIMIT 5`
         );
-        const rowMap = new Map<number, any>();
-        for (const r of detailRes.rows) {
-            rowMap.set(Number(r.id), r);
-        }
-        return c.json({ success: true, articles: ids.map(id => rowMap.get(id)).filter(Boolean) });
+        return c.json({ success: true, articles: detailRes.rows });
     } catch (error: any) {
         return c.json({ success: false, message: 'Failed to fetch featured travel' }, 500);
     }
@@ -436,28 +509,21 @@ travelRoutes.get('/api/travel/:id{[0-9]+}', async (c) => {
             } catch {}
         }
 
-        // 관련 추천 여행지 (동일 권역 최신 3건 — 커버링 인덱스로 ID 선조회)
-        const relIdRes = await pool.query(
-            'SELECT id FROM travel_articles WHERE hidden = 0 AND region = $1 AND id != $2 ORDER BY published_at DESC, id DESC LIMIT 3',
+        // 관련 추천 여행지 (동일 권역 최신 3건 — 초경량 테이블에서 즉시 조회)
+        const tableName = await getTravelListTableName();
+        const relatedRes = await pool.query(
+            `SELECT id, title, destination, region, category, thumbnail, duration, best_season, published_at
+             FROM ${tableName}
+             WHERE hidden = 0 AND region = $1 AND id != $2
+             ORDER BY published_at DESC, id DESC
+             LIMIT 3`,
             [article.region, id]
         );
-        const relIds: number[] = relIdRes.rows.map((r: any) => Number(r.id)).filter(Boolean);
-        let relatedRows: any[] = [];
-        if (relIds.length > 0) {
-            const placeholders = relIds.map((_, idx) => `$${idx + 1}`).join(', ');
-            const relatedRes = await pool.query(
-                `SELECT id, title, destination, region, category, thumbnail, duration, best_season, published_at FROM travel_articles WHERE id IN (${placeholders})`,
-                relIds
-            );
-            const relMap = new Map<number, any>();
-            for (const r of relatedRes.rows) relMap.set(Number(r.id), r);
-            relatedRows = relIds.map(rid => relMap.get(rid)).filter(Boolean);
-        }
 
         return c.json({
             success: true,
             article,
-            related: relatedRows
+            related: relatedRes.rows
         });
     } catch (error: any) {
         console.error('[Get Travel Detail Error]', error);

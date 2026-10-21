@@ -1,10 +1,13 @@
 import type {
+  AiDifficulty,
   AimPrediction,
   BallId,
   BallState,
   BilliardsRuleMode,
   ShotResult,
   ShotTracker,
+  SkillDama,
+  SkillPhysicsProfile,
   SpinOffset,
   TrickShotPreset,
 } from '../types/billiards';
@@ -13,6 +16,122 @@ import type {
 export const TABLE_WIDTH = 600;
 export const TABLE_HEIGHT = 300;
 export const BALL_RADIUS = 12;
+
+/**
+ * 한국 당구장 정통 다마수(80 / 100 / 120 / 150 / 200 / 300 / 프로)별 물리 스케일링 프로필
+ * - 다마수에 따라 큐 임팩트 파워, 회전량(히네리), 끌어치기(히끼), 밀어치기(오시), 유효 당점 한계가 차등 적용됨
+ */
+export const SKILL_PHYSICS_PROFILES: Record<SkillDama, SkillPhysicsProfile> = {
+  80: {
+    dama: 80,
+    label: '80 다마 (입문)',
+    shortLabel: '80다마',
+    powerScale: 0.78,
+    spinScale: 0.38,
+    drawScale: 0.35,
+    followScale: 0.45,
+    maxTipOffset: 0.60,
+    driveFrames: 10,
+    desc: '입문자 구질: 회전이 적게 먹고 정직한 입사=반사각 위주. 끌어치기 시 제자리 스톱샷 수준',
+  },
+  100: {
+    dama: 100,
+    label: '100 다마 (초급)',
+    shortLabel: '100다마',
+    powerScale: 0.82,
+    spinScale: 0.48,
+    drawScale: 0.46,
+    followScale: 0.55,
+    maxTipOffset: 0.68,
+    driveFrames: 12,
+    desc: '초급자 구질: 부드러운 기본 회전과 단거리 밀어치기·끌어치기가 구사됨',
+  },
+  120: {
+    dama: 120,
+    label: '120 다마 (초중급)',
+    shortLabel: '120다마',
+    powerScale: 0.86,
+    spinScale: 0.58,
+    drawScale: 0.58,
+    followScale: 0.65,
+    maxTipOffset: 0.75,
+    driveFrames: 13,
+    desc: '초중급 구질: 기본 밀어치기·끌어치기 분리각이 안정적으로 형성되며 쿠션 꺾임이 완만함',
+  },
+  150: {
+    dama: 150,
+    label: '150 다마 (동호인)',
+    shortLabel: '150다마',
+    powerScale: 0.90,
+    spinScale: 0.68,
+    drawScale: 0.68,
+    followScale: 0.74,
+    maxTipOffset: 0.82,
+    driveFrames: 15,
+    desc: '표준 동호인 구질: 과장되지 않은 정석 회전과 깔끔한 중소거리 히끼·오시가 구사됨',
+  },
+  200: {
+    dama: 200,
+    label: '200 다마 (상급자)',
+    shortLabel: '200다마',
+    powerScale: 0.95,
+    spinScale: 0.82,
+    drawScale: 0.82,
+    followScale: 0.85,
+    maxTipOffset: 0.88,
+    driveFrames: 18,
+    desc: '상급자 구질: 3쿠션 대회전과 중장거리 끌어치기·밀어치기 커브가 날카롭게 살아남',
+  },
+  300: {
+    dama: 300,
+    label: '300 다마 (고수)',
+    shortLabel: '300다마',
+    powerScale: 1.00,
+    spinScale: 0.96,
+    drawScale: 0.96,
+    followScale: 0.96,
+    maxTipOffset: 0.94,
+    driveFrames: 20,
+    desc: '클럽 고수 구질: 강한 손목 스냅으로 당구대 한 바퀴 반 대회전 및 장거리 히끼·오시 구사',
+  },
+  500: {
+    dama: 500,
+    label: '프로 챔피언 (500+)',
+    shortLabel: '프로(500)',
+    powerScale: 1.05,
+    spinScale: 1.08,
+    drawScale: 1.08,
+    followScale: 1.08,
+    maxTipOffset: 0.98,
+    driveFrames: 22,
+    desc: '프로 예술구 구질: 극한 당점과 강력한 스트로크로 깊은 회전 반사각 및 파워 샷 구사',
+  },
+};
+
+export function getSkillProfile(dama: SkillDama): SkillPhysicsProfile {
+  return SKILL_PHYSICS_PROFILES[dama] ?? SKILL_PHYSICS_PROFILES[150];
+}
+
+export function aiDifficultyToDama(difficulty: AiDifficulty): SkillDama {
+  switch (difficulty) {
+    case 'dama80':
+      return 80;
+    case 'dama100':
+      return 100;
+    case 'dama120':
+      return 120;
+    case 'dama150':
+      return 150;
+    case 'dama200':
+      return 200;
+    case 'dama300':
+      return 300;
+    case 'master':
+      return 500;
+    default:
+      return 150;
+  }
+}
 
 /**
  * 정통 캐럼 대대(열선 라사지 & 고탄성 고무 쿠션) 물리 상수
@@ -175,36 +294,43 @@ function applyCushionBounceWithSpin(
   const vn = b.vx * nx + b.vy * ny;
   const vt = b.vx * tx + b.vy * ty;
 
+  // 다마수(실력 등급)별 회전 계수 (기본값: 150 다마 0.68)
+  const spinScale = b.spinScale ?? 0.68;
+
   // 기본 탄성 반사 법선 속도 (상/하단 스핀이 쿠션에 닿을 때 반발 각도에 주는 미세 영향 반영)
-  const topBottomRailFactor = !b.hasHitFirstBall ? 1 - b.topBottomSpin * 0.08 : 1;
+  const topBottomRailFactor = !b.hasHitFirstBall ? 1 - b.topBottomSpin * 0.07 * spinScale : 1;
   let newVn = Math.abs(vn) * CUSHION_RESTITUTION * Math.max(0.78, Math.min(1.12, topBottomRailFactor));
 
   // 기본 쿠션 마찰 감쇠된 접선 속도
   let newVt = vt * 0.92;
 
   if (Math.abs(b.sideSpin) > 0.015) {
-    // 스핀에 의한 접선 킥(Kick) 속도량: 고속 및 중저속 모두에서 회전이 확실히 먹도록 계산
-    const spinKick = b.sideSpin * (Math.max(1.85, speedBefore * 0.56) + Math.abs(vn) * 0.28);
+    // 다마수별 회전 반사 킥(Kick): 300다마 기준 정통 계수에 다마수별 spinScale(0.38 ~ 1.08) 곱셈 적용
+    const spinKick =
+      b.sideSpin *
+      spinScale *
+      (Math.max(1.30, speedBefore * 0.44) + Math.abs(vn) * 0.24);
     const isRunningEnglish = vt * b.sideSpin >= 0;
+
+    // 다마수가 높을수록 쿠션 마찰 시 회전 유지율이 높아 4~6쿠션까지 회전이 살아남음
+    const retentionBoost = 0.78 + Math.min(0.24, spinScale * 0.22);
 
     if (isRunningEnglish) {
       // 정회전(Running English): 회전이 진행 방향과 같아 쿠션을 타고 길고 빠르게 뻗어나감
       newVt += spinKick;
       const targetSpeed = Math.min(
-        speedBefore * (0.93 + Math.abs(b.sideSpin) * 0.05),
+        speedBefore * (0.91 + Math.abs(b.sideSpin) * spinScale * 0.06),
         Math.hypot(newVn, newVt)
       );
       const curSpeed = Math.hypot(newVn, newVt) || 1;
       newVn = (newVn / curSpeed) * targetSpeed;
       newVt = (newVt / curSpeed) * targetSpeed;
-      // 정회전은 쿠션 마찰 손실이 적어 4~6쿠션까지 회전이 오래 살아남음
-      b.sideSpin *= 0.87;
+      b.sideSpin *= 0.86 * retentionBoost;
     } else {
       // 역회전(Reverse English): 입사 접선 속도를 강하게 브레이크 걸고 둔각/역각으로 꺾어냄
-      newVt = vt * 0.68 + spinKick * 1.15;
+      newVt = vt * (0.76 - 0.10 * spinScale) + spinKick * 1.12;
       newVn *= 0.96;
-      // 역회전은 쿠션과 강하게 마찰하며 일부 회전이 각도 변화로 소모됨
-      b.sideSpin *= 0.78;
+      b.sideSpin *= 0.76 * retentionBoost;
     }
   }
 
@@ -337,7 +463,7 @@ export function stepPhysicsFrame(
             b2.vx += impulse * nx;
             b2.vy += impulse * ny;
 
-            // 수구의 상하 당점(밀어치기 + / 끌어치기 -) 및 좌우 스핀 처리 헬퍼
+            // 수구의 상하 당점(밀어치기 + / 끌어치기 -) 및 좌우 스핀 처리 헬퍼 (다마수별 물리 계수 연동)
             const applyCueBallSpinAfterImpact = (
               cue: BallState,
               target: BallState,
@@ -351,6 +477,12 @@ export function stepPhysicsFrame(
 
               const fwdX = cue.forwardDirX ?? inVx / inSpeed;
               const fwdY = cue.forwardDirY ?? inVy / inSpeed;
+
+              // 다마수별 물리 배율 (기본값: 150 다마 동호인 프로필)
+              const spinScale = cue.spinScale ?? 0.68;
+              const drawScale = cue.drawScale ?? 0.68;
+              const followScale = cue.followScale ?? 0.74;
+              const profileDriveFrames = cue.driveFrames ?? 15;
 
               // 두께(Fullness of hit): 정면 충돌이면 1.0, 얇게 스치면 0에 가까움
               const fullness = Math.max(0.15, Math.min(1, fwdX * hitNx + fwdY * hitNy));
@@ -368,14 +500,14 @@ export function stepPhysicsFrame(
               if (Math.abs(cue.sideSpin) > 0.05) {
                 const throwTangentX = hitNy;
                 const throwTangentY = -hitNx;
-                // 수구는 회전 방향으로 미세 가속, 적구는 반대 방향으로 미세 스로우
-                const throwMag = cue.sideSpin * velAlongNormal * 0.085;
+                // 수구는 회전 방향으로 미세 가속, 적구는 반대 방향으로 미세 스로우 (다마수 비례)
+                const throwMag = cue.sideSpin * spinScale * velAlongNormal * 0.085;
                 cue.vx += throwTangentX * throwMag;
                 cue.vy += throwTangentY * throwMag;
                 target.vx -= throwTangentX * throwMag * 0.35;
                 target.vy -= throwTangentY * throwMag * 0.35;
-                // 적구 충돌 후에도 수구 좌우 회전의 88%가 유지되어 이후 쿠션에서 히네리가 그대로 작용
-                cue.sideSpin *= 0.88;
+                // 다마수가 높을수록 적구 충돌 후에도 수구 좌우 회전이 더 많이 살아남음
+                cue.sideSpin *= 0.76 + Math.min(0.14, spinScale * 0.12);
               }
 
               // (B) 상하 당점(topBottomSpin)에 의한 밀어치기(Follow) & 끌어치기(Draw)
@@ -383,15 +515,16 @@ export function stepPhysicsFrame(
               if (Math.abs(spinY) > 0.05) {
                 if (spinY < 0) {
                   // ================= 끌어치기 (Draw / 히끼) =================
-                  const drawStrength = Math.abs(spinY); // 0.05 ~ 1.0
-                  // 1. 충돌 순간 수구에 남아있는 전진 법선 잔류 속도를 즉시 브레이크 (스톱샷 효과)
+                  const drawStrength = Math.abs(spinY) * drawScale;
+                  // 1. 다마수에 비례하는 전진 법선 속도 브레이크 (80~100다마는 살짝 밀리다 멈추고, 150~300다마는 칼같이 제동)
                   const remNormal = cue.vx * hitNx + cue.vy * hitNy;
+                  const normalBrake = Math.min(1, 0.55 + drawScale * 0.48);
                   if (remNormal > 0) {
-                    cue.vx -= hitNx * remNormal;
-                    cue.vy -= hitNy * remNormal;
+                    cue.vx -= hitNx * remNormal * normalBrake;
+                    cue.vy -= hitNy * remNormal * normalBrake;
                   }
                   // 두꺼운 두께로 맞힐수록 횡방향(접선) 잔류 속도도 순간 감속되어 날카로운 역각 형성
-                  const tangentBrake = Math.max(0.25, 1 - drawStrength * fullness * 0.62);
+                  const tangentBrake = Math.max(0.28, 1 - drawStrength * fullness * 0.60);
                   cue.vx *= tangentBrake;
                   cue.vy *= tangentBrake;
 
@@ -402,22 +535,22 @@ export function stepPhysicsFrame(
                   pullDirX /= pullLen;
                   pullDirY /= pullLen;
 
-                  // 총 끌어치기 속도량 (두께가 두꺼울수록, 스트로크가 강할수록 강력하게 끌림)
+                  // 총 끌어치기 속도량 (다마수 drawScale이 직접 반영되어 100 vs 120 vs 150 vs 300 히끼 비거리 차등화)
                   const totalDrawSpeed =
                     drawStrength *
-                    Math.max(4.5, inSpeed * (0.48 + 0.38 * fullness));
+                    Math.max(4.0, inSpeed * (0.46 + 0.38 * fullness));
 
-                  // 즉시 역방향 바이트(45%) + 이후 20프레임 동안 라사지를 할퀴며 빨려 들어오는 2차 가속(55%)
+                  // 즉시 역방향 바이트(45%) + 다마수별 지속 프레임(10~22f) 동안 라사지를 할퀴며 빨려 들어오는 2차 가속(55%)
                   cue.vx += pullDirX * (totalDrawSpeed * 0.45);
                   cue.vy += pullDirY * (totalDrawSpeed * 0.45);
 
-                  const driveFrames = 20;
+                  const driveFrames = profileDriveFrames;
                   cue.spinDriveFrames = driveFrames;
                   cue.spinDriveVx = (pullDirX * (totalDrawSpeed * 0.55)) / driveFrames;
                   cue.spinDriveVy = (pullDirY * (totalDrawSpeed * 0.55)) / driveFrames;
                 } else {
                   // ================= 밀어치기 (Follow / 오시) =================
-                  const followStrength = spinY; // 0.05 ~ 1.0
+                  const followStrength = spinY * followScale;
                   // 전진 추진 방향: 원래 큐 진행 방향(fwd) 70% + 충돌 법선(hitN) 30%
                   let pushDirX = fwdX * 0.7 + hitNx * 0.3;
                   let pushDirY = fwdY * 0.7 + hitNy * 0.3;
@@ -427,13 +560,13 @@ export function stepPhysicsFrame(
 
                   const totalFollowSpeed =
                     followStrength *
-                    Math.max(4.2, inSpeed * (0.44 + 0.34 * fullness));
+                    Math.max(3.8, inSpeed * (0.42 + 0.34 * fullness));
 
-                  // 충돌 직후 1차 밀림(40%) + 이후 22프레임 동안 포물선을 그리며 뻗어 나가는 2차 오시 가속(60%)
+                  // 충돌 직후 1차 밀림(40%) + 다마수별 지속 프레임(10~22f) 동안 포물선을 그리며 뻗어 나가는 2차 오시 가속(60%)
                   cue.vx += pushDirX * (totalFollowSpeed * 0.4);
                   cue.vy += pushDirY * (totalFollowSpeed * 0.4);
 
-                  const driveFrames = 22;
+                  const driveFrames = profileDriveFrames;
                   cue.spinDriveFrames = driveFrames;
                   cue.spinDriveVx = (pushDirX * (totalFollowSpeed * 0.6)) / driveFrames;
                   cue.spinDriveVy = (pushDirY * (totalFollowSpeed * 0.6)) / driveFrames;
@@ -669,16 +802,19 @@ export function evaluateShotResult(
 
 /**
  * 실시간 고스트볼(Ghost Ball) 조준선 & 분리각(밀어치기 곡선 / 끌어치기 역주행 / 히네리 반사각) 예측선 계산
+ * - 다마수(playerDama)에 따라 초록색 분리각/쿠션 반사 가이드라인의 휘어짐 정도와 반사각이 실시간으로 달라짐
  */
 export function computeAimPrediction(
   balls: BallState[],
   cueBallId: BallId,
   aimAngleRad: number,
-  spin: SpinOffset
+  spin: SpinOffset,
+  playerDama: SkillDama = 150
 ): AimPrediction | null {
   const cueBall = balls.find((b) => b.id === cueBallId);
   if (!cueBall) return null;
 
+  const profile = getSkillProfile(playerDama);
   const dirX = Math.cos(aimAngleRad);
   const dirY = Math.sin(aimAngleRad);
   const r = cueBall.radius;
@@ -741,25 +877,25 @@ export function computeAimPrediction(
       ty /= tLen;
     }
 
-    // 좌우 스핀에 의한 미세 스로우 방향
-    const throwTx = ny * spin.x * 0.14;
-    const throwTy = -nx * spin.x * 0.14;
+    // 다마수별 좌우 스핀에 의한 미세 스로우 방향
+    const throwTx = ny * spin.x * profile.spinScale * 0.14;
+    const throwTy = -nx * spin.x * profile.spinScale * 0.14;
 
-    // 상하 당점(밀어치기 +y / 끌어치기 -y)에 따른 수구 2차 분리 방향 및 곡선 포인트 생성
+    // 상하 당점(밀어치기 +y / 끌어치기 -y) 및 다마수(drawScale/followScale)에 따른 수구 2차 분리 방향
     let finalDirX: number;
     let finalDirY: number;
 
     if (spin.y < -0.05) {
-      // 끌어치기(Draw): 적구 반대 법선(-n) 및 큐 반대 방향(-dir)으로 강하게 역주행
-      const drawAmt = Math.abs(spin.y);
+      // 끌어치기(Draw): 다마수(drawScale)가 높을수록 역방향으로 날카롭게 꺾여 들어감
+      const drawAmt = Math.abs(spin.y) * profile.drawScale;
       const pullX = -nx * 0.65 - dirX * 0.35;
       const pullY = -ny * 0.65 - dirY * 0.35;
       const tangentKeep = (1 - fullness * 0.72) * (1 - drawAmt * 0.45);
       finalDirX = tx * tangentKeep + pullX * drawAmt * 1.35 + throwTx;
       finalDirY = ty * tangentKeep + pullY * drawAmt * 1.35 + throwTy;
     } else if (spin.y > 0.05) {
-      // 밀어치기(Follow): 90도 분리선을 따라 출발한 뒤 원래 진행 방향(dir)으로 깊게 휘어짐
-      const followAmt = spin.y;
+      // 밀어치기(Follow): 다마수(followScale)가 높을수록 전진 포물선이 깊게 형성됨
+      const followAmt = spin.y * profile.followScale;
       const pushX = dirX * 0.72 + nx * 0.28;
       const pushY = dirY * 0.72 + ny * 0.28;
       finalDirX = tx * (1 - followAmt * 0.45) + pushX * followAmt * 1.25 + throwTx;
@@ -771,7 +907,7 @@ export function computeAimPrediction(
     }
 
     const dLen = Math.hypot(finalDirX, finalDirY) || 1;
-    const guideLength = 110;
+    const guideLength = Math.round(85 + profile.spinScale * 30);
     const endX = impactX + (finalDirX / dLen) * guideLength;
     const endY = impactY + (finalDirY / dLen) * guideLength;
 
@@ -804,7 +940,7 @@ export function computeAimPrediction(
     };
   }
 
-  // 쿠션 직격(뱅크샷) 시 실제 물리 엔진과 100% 동일한 법선-접선(t = (ny, -nx)) 스핀 반사각 예측
+  // 쿠션 직격(뱅크샷) 시 다마수(spinScale)가 반영된 법선-접선(t = (ny, -nx)) 스핀 반사각 예측
   const n = hitNormal || { nx: 0, ny: 1 };
   const tx = n.ny;
   const ty = -n.nx;
@@ -813,8 +949,10 @@ export function computeAimPrediction(
 
   const newVn = Math.abs(vn) * CUSHION_RESTITUTION;
   const isRunning = vt * spin.x >= 0;
-  const spinKick = spin.x * (0.58 + Math.abs(vn) * 0.28);
-  const newVt = isRunning ? vt * 0.92 + spinKick : vt * 0.68 + spinKick * 1.15;
+  const spinKick = spin.x * profile.spinScale * (0.48 + Math.abs(vn) * 0.24);
+  const newVt = isRunning
+    ? vt * 0.92 + spinKick
+    : vt * (0.76 - 0.10 * profile.spinScale) + spinKick * 1.12;
 
   const rx = n.nx * newVn + tx * newVt;
   const ry = n.ny * newVn + ty * newVt;
@@ -840,12 +978,13 @@ export const TRICK_SHOT_PRESETS: TrickShotPreset[] = [
   {
     id: 'four-ball-sweet',
     label: '4구 모아치기 정석',
-    badge: '4구 +10점 확정',
+    badge: '150다마 정석 +10점',
     ruleMode: 'four-ball',
     desc: '제1적구를 맞힌 뒤 상단 밀어치기(오시) 추진력으로 제2적구까지 연달아 관통하는 4구 정석 배치',
     aimAngleDeg: 0,
-    power: 46,
+    power: 48,
     spin: { x: 0.1, y: 0.65 },
+    recommendedDama: 150,
     balls: [
       { id: 'cue_white', x: 140, y: 150 },
       { id: 'obj_red1', x: 300, y: 150 },
@@ -856,27 +995,29 @@ export const TRICK_SHOT_PRESETS: TrickShotPreset[] = [
   {
     id: 'three-cushion-bank',
     label: '3구 대회전 뱅크 묘수',
-    badge: '3구 뱅크샷 +2점',
+    badge: '300다마 뱅크샷 +2점',
     ruleMode: 'three-cushion',
-    desc: '강력한 우측 히네리(정회전)로 다이 한 바퀴(3쿠션)를 크게 돌아 적구 2개를 연달아 맞히는 프로 배치',
+    desc: '300다마 고수의 우측 히네리(정회전)로 다이 한 바퀴(3쿠션)를 크게 돌아 적구 2개를 연달아 맞히는 배치',
     aimAngleDeg: -52,
-    power: 84,
-    spin: { x: 0.8, y: 0.35 },
+    power: 85,
+    spin: { x: 0.85, y: 0.35 },
+    recommendedDama: 300,
     balls: [
       { id: 'cue_white', x: 115, y: 225 },
-      { id: 'obj_red1', x: 412, y: 196 },
-      { id: 'cue_yellow', x: 382, y: 214 },
+      { id: 'obj_red1', x: 400, y: 196 },
+      { id: 'cue_yellow', x: 368, y: 215 },
     ],
   },
   {
     id: 'four-ball-draw',
     label: '4구 강력 끌어치기(히끼)',
-    badge: '강력 하단 당점',
+    badge: '300다마 히끼 +10점',
     ruleMode: 'four-ball',
-    desc: '하단 당점(Draw)으로 앞쪽 적구 타격 후 수구를 뒤로 쫙 끌어당겨 등 뒤의 제2적구를 맞히는 기술',
+    desc: '300다마 고수의 하단 당점(Draw)으로 앞쪽 적구 타격 후 수구를 뒤로 쫙 끌어당겨 등 뒤의 제2적구를 맞히는 기술',
     aimAngleDeg: 0,
-    power: 64,
+    power: 68,
     spin: { x: 0, y: -0.9 },
+    recommendedDama: 300,
     balls: [
       { id: 'cue_white', x: 250, y: 150 },
       { id: 'obj_red1', x: 410, y: 150 },

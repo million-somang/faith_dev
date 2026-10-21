@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import { PROVINCES, KOREA_MAP_VIEWBOX, ProvinceMeta } from './koreaMapData';
@@ -31,6 +31,44 @@ interface InteractiveKoreaMapProps {
     selectedProvince: string | null;
     selectedCity: string | null;
     onSelectLocation: (province: string | null, city: string | null) => void;
+    onPrefetchLocation?: (province: string | null, city: string | null) => void;
+}
+
+// 클라이언트 인메모리 지도 스팟 캐시 (한 번 조회/프리페치한 지역은 0ms 즉시 렌더링)
+const mapSpotsClientCache = new Map<string, TravelSpot[]>();
+const mapSpotsInFlight = new Map<string, Promise<TravelSpot[]>>();
+
+function getMapSpotsKey(province?: string | null, city?: string | null): string {
+    return `${province && province !== 'all' ? province : 'all'}|${city && city !== 'all' ? city : 'all'}`;
+}
+
+export function fetchAndCacheMapSpots(province?: string | null, city?: string | null): Promise<TravelSpot[]> {
+    const key = getMapSpotsKey(province, city);
+    const cached = mapSpotsClientCache.get(key);
+    if (cached) return Promise.resolve(cached);
+
+    const existing = mapSpotsInFlight.get(key);
+    if (existing) return existing;
+
+    const params: Record<string, string> = {};
+    if (province && province !== 'all') params.province = province;
+    if (city && city !== 'all') params.city = city;
+
+    const req = axios
+        .get('/api/travel/map-spots', { params })
+        .then(res => {
+            const list: TravelSpot[] = res.data?.success ? (res.data.articles || []) : [];
+            mapSpotsClientCache.set(key, list);
+            mapSpotsInFlight.delete(key);
+            return list;
+        })
+        .catch(err => {
+            mapSpotsInFlight.delete(key);
+            throw err;
+        });
+
+    mapSpotsInFlight.set(key, req);
+    return req;
 }
 
 // 7대 대표 권역 그룹 정의 (상단 퀵 바용)
@@ -48,16 +86,27 @@ export default function InteractiveKoreaMap({
     counts,
     selectedProvince,
     selectedCity,
-    onSelectLocation
+    onSelectLocation,
+    onPrefetchLocation
 }: InteractiveKoreaMapProps) {
     const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
     const [selectedSpot, setSelectedSpot] = useState<TravelSpot | null>(null);
     const [isCollapsed, setIsCollapsed] = useState(false);
     const [isZoomed, setIsZoomed] = useState(true);
 
-    // 온디맨드 스팟 목록 (선택 지역 상위 5개 표시용)
-    const [spots, setSpots] = useState<TravelSpot[]>([]);
+    // 온디맨드 스팟 목록 (선택 지역 상위 5개 표시용 — 캐시 존재 시 초기값부터 즉시 주입)
+    const [spots, setSpots] = useState<TravelSpot[]>(() => {
+        return mapSpotsClientCache.get(getMapSpotsKey(selectedProvince, selectedCity)) || [];
+    });
     const [loadingSpots, setLoadingSpots] = useState(false);
+
+    // 마우스 오버 시 지도 스팟 + 하단 여행 목록 동시 백그라운드 프리페치
+    const handleHoverPrefetch = useCallback((province: string | null, city: string | null) => {
+        fetchAndCacheMapSpots(province, city).catch(() => {});
+        if (onPrefetchLocation) {
+            onPrefetchLocation(province, city);
+        }
+    }, [onPrefetchLocation]);
 
     // 각 도별 등록된 실제 여행지 개수 (O(1) 사전 집계 데이터 매핑)
     const provinceCounts = useMemo(() => {
@@ -82,32 +131,29 @@ export default function InteractiveKoreaMap({
         return counts.total ?? 0;
     }, [counts, activeProvinceMeta, selectedCity]);
 
-    // 선택된 지역 변경 시 온디맨드로 상위 5개 스팟 초경량 조회
+    // 선택된 지역 변경 시 클라이언트 캐시 우선 확인 후(0ms) 미스 시에만 초경량 조회
     useEffect(() => {
         let isMounted = true;
-        const fetchSpots = async () => {
-            setLoadingSpots(true);
-            try {
-                const params: Record<string, string> = {};
-                if (selectedProvince && selectedProvince !== 'all') {
-                    params.province = selectedProvince;
-                }
-                if (selectedCity && selectedCity !== 'all') {
-                    params.city = selectedCity;
-                }
-                const res = await axios.get('/api/travel/map-spots', { params });
-                if (isMounted && res.data?.success) {
-                    setSpots(res.data.articles || []);
-                }
-            } catch (err) {
+        const key = getMapSpotsKey(selectedProvince, selectedCity);
+        const cached = mapSpotsClientCache.get(key);
+        if (cached) {
+            setSpots(cached);
+            setLoadingSpots(false);
+            return;
+        }
+
+        setLoadingSpots(true);
+        fetchAndCacheMapSpots(selectedProvince, selectedCity)
+            .then(list => {
+                if (isMounted) setSpots(list);
+            })
+            .catch(err => {
                 console.error('[Fetch Map Spots Error]', err);
                 if (isMounted) setSpots([]);
-            } finally {
+            })
+            .finally(() => {
                 if (isMounted) setLoadingSpots(false);
-            }
-        };
-
-        fetchSpots();
+            });
 
         return () => {
             isMounted = false;
@@ -278,6 +324,9 @@ export default function InteractiveKoreaMap({
                             <button
                                 key={group.id}
                                 onClick={() => handleRegionGroupClick(group)}
+                                onMouseEnter={() => {
+                                    if (group.provNames?.[0]) handleHoverPrefetch(group.provNames[0], null);
+                                }}
                                 className={`px-3 py-1 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
                                     isGroupActive
                                         ? 'bg-emerald-600 text-white shadow-xs'
@@ -372,7 +421,10 @@ export default function InteractiveKoreaMap({
                                                 key={prov.id}
                                                 d={prov.path}
                                                 onClick={() => handleProvinceClick(prov)}
-                                                onMouseEnter={() => setHoveredProvince(prov.name)}
+                                                onMouseEnter={() => {
+                                                    setHoveredProvince(prov.name);
+                                                    handleHoverPrefetch(prov.name, null);
+                                                }}
                                                 onMouseLeave={() => setHoveredProvince(null)}
                                                 className="transition-all duration-200 cursor-pointer"
                                                 style={{
@@ -415,7 +467,10 @@ export default function InteractiveKoreaMap({
                                                 key={`svg-badge-${prov.id}`}
                                                 transform={`translate(${posX}, ${posY})`}
                                                 onClick={() => handleProvinceClick(prov)}
-                                                onMouseEnter={() => setHoveredProvince(prov.name)}
+                                                onMouseEnter={() => {
+                                                    setHoveredProvince(prov.name);
+                                                    handleHoverPrefetch(prov.name, null);
+                                                }}
                                                 onMouseLeave={() => setHoveredProvince(null)}
                                                 className="cursor-pointer select-none transition-transform duration-200"
                                                 style={{
@@ -516,6 +571,7 @@ export default function InteractiveKoreaMap({
                                                 e.stopPropagation();
                                                 handleCityClick(city.name);
                                             }}
+                                            onMouseEnter={() => handleHoverPrefetch(selectedProvince, city.name)}
                                             className={`absolute -translate-x-1/2 -translate-y-1/2 pointer-events-auto cursor-pointer group select-none transition-transform duration-150 origin-center scale-85 scale-[0.85] sm:scale-100 hover:scale-110 active:scale-95 ${
                                                 isCitySelected ? 'z-25 z-[25]' : 'z-20 hover:z-30 hover:z-[30]'
                                             }`}
@@ -603,6 +659,7 @@ export default function InteractiveKoreaMap({
                                             <button
                                                 key={city.name}
                                                 onClick={() => handleCityClick(city.name)}
+                                                onMouseEnter={() => handleHoverPrefetch(selectedProvince, city.name)}
                                                 className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
                                                     selectedCity === city.name
                                                         ? 'bg-emerald-500 text-white shadow-md'

@@ -4,8 +4,31 @@ export type BilliardsRuleMode = 'four-ball' | 'three-cushion';
 /** 대전 형태: AI 대전 | 1인 하이런 연습 | 2인 로컬 교대 플레이 */
 export type MatchType = 'ai' | 'practice' | 'local-2p';
 
+/** 한국 당구장 정통 다마수(실력 등급) 체계 */
+export type SkillDama = 80 | 100 | 120 | 150 | 200 | 300 | 500;
+
+/** 다마수별 물리 스케일링 프로필 */
+export interface SkillPhysicsProfile {
+  dama: SkillDama;
+  label: string;
+  shortLabel: string;
+  /** 스트로크 파워 효율 (0.78 ~ 1.05) */
+  powerScale: number;
+  /** 좌우 회전(히네리) 쿠션 반사 효율 (0.38 ~ 1.08) */
+  spinScale: number;
+  /** 하단 끌어치기(히끼) 역회전 효율 (0.35 ~ 1.08) */
+  drawScale: number;
+  /** 상단 밀어치기(오시) 전진 휨 효율 (0.45 ~ 1.08) */
+  followScale: number;
+  /** 유효 당점 한계 반경 (0.60 ~ 0.98) */
+  maxTipOffset: number;
+  /** 2차 라사지 그립 가속 지속 프레임 (10 ~ 22) */
+  driveFrames: number;
+  desc: string;
+}
+
 /** AI 난이도 (다마수/핸디캡 연동) */
-export type AiDifficulty = 'beginner' | 'amateur' | 'pro' | 'master';
+export type AiDifficulty = 'dama80' | 'dama100' | 'dama120' | 'dama150' | 'dama200' | 'dama300' | 'master';
 
 /** 상단 3단 알약 탭 (`miniapp.md` 표준) */
 export type ActiveTab = 'arena' | 'howto' | 'faq';
@@ -37,6 +60,11 @@ export interface BallState {
   spinDriveFrames?: number;
   /** 수구가 첫 적구를 맞혔는지 여부 (맞히기 전까지 상하단 스핀 슬라이딩 보존) */
   hasHitFirstBall?: boolean;
+  /** 수구 발사자의 다마수(실력 등급)에 따른 회전·끌기·밀기 물리 배율 */
+  spinScale?: number;
+  drawScale?: number;
+  followScale?: number;
+  driveFrames?: number;
 }
 
 /** 당점(Cue Tip Offset) 상태: -1.0 ~ +1.0 정규화 좌표 */
@@ -120,5 +148,6 @@ export interface TrickShotPreset {
   aimAngleDeg: number;
   power: number;
   spin: SpinOffset;
+  recommendedDama?: SkillDama;
   balls: Array<{ id: BallId; x: number; y: number }>;
 }

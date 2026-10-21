@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 import EntertainmentSubMenu from '@/components/entertainment/EntertainmentSubMenu';
 import InteractiveKoreaMap, { MapCountsData } from '@/components/travel/InteractiveKoreaMap';
 
 const API_BASE_URL = '';
+const PAGE_LIMIT = 12;
 
 interface TravelArticle {
     id: number;
@@ -16,7 +17,7 @@ interface TravelArticle {
     category: string;
     summary: string | null;
     ai_summary: string | null;
-    content: string;
+    content?: string;
     travel_tips: string | null;
     thumbnail: string | null;
     gallery: string | null;
@@ -31,6 +32,86 @@ interface TravelArticle {
     like_count: number;
     is_featured: number;
     published_at: string;
+}
+
+interface CachedTravelListResult {
+    articles: TravelArticle[];
+    total: number;
+}
+
+// 클라이언트 인메모리 여행 목록 캐시 (재방문·호버 프리페치 시 0ms 즉시 렌더링)
+const travelListClientCache = new Map<string, CachedTravelListResult>();
+const travelListInFlight = new Map<string, Promise<CachedTravelListResult>>();
+let cachedMapCountsData: MapCountsData | null = null;
+
+function buildListCacheKey(params: {
+    region: string;
+    category: string;
+    province: string | null;
+    city: string | null;
+    sort: string;
+    page: number;
+    keyword: string;
+}): string {
+    const hasSpecificLocation = Boolean((params.province && params.province !== 'all') || (params.city && params.city !== 'all'));
+    const effectiveRegion = (hasSpecificLocation && params.region === 'domestic') ? 'all' : (params.region || 'all');
+    return `${effectiveRegion}|${params.category || 'all'}|${params.province || 'all'}|${params.city || 'all'}|${params.sort}|${params.page}|${params.keyword.trim()}`;
+}
+
+function fetchAndCacheTravelList(params: {
+    region: string;
+    category: string;
+    province: string | null;
+    city: string | null;
+    sort: string;
+    page: number;
+    keyword: string;
+}): Promise<CachedTravelListResult> {
+    const key = buildListCacheKey(params);
+    const trimmedKeyword = params.keyword.trim();
+    if (!trimmedKeyword) {
+        const cached = travelListClientCache.get(key);
+        if (cached) return Promise.resolve(cached);
+    }
+
+    const existing = travelListInFlight.get(key);
+    if (existing) return existing;
+
+    const hasSpecificLocation = Boolean((params.province && params.province !== 'all') || (params.city && params.city !== 'all'));
+    const effectiveRegion = (hasSpecificLocation && params.region === 'domestic') ? 'all' : (params.region || 'all');
+    const offset = (params.page - 1) * PAGE_LIMIT;
+
+    const req = axios
+        .get(`${API_BASE_URL}/api/travel`, {
+            params: {
+                region: effectiveRegion !== 'all' ? effectiveRegion : undefined,
+                category: params.category !== 'all' ? params.category : undefined,
+                province: params.province || undefined,
+                city: params.city || undefined,
+                sort: params.sort,
+                keyword: trimmedKeyword || undefined,
+                limit: PAGE_LIMIT,
+                offset
+            }
+        })
+        .then(res => {
+            const result: CachedTravelListResult = {
+                articles: res.data?.success ? (res.data.articles || []) : [],
+                total: res.data?.pagination?.total || 0
+            };
+            if (!trimmedKeyword) {
+                travelListClientCache.set(key, result);
+            }
+            travelListInFlight.delete(key);
+            return result;
+        })
+        .catch(err => {
+            travelListInFlight.delete(key);
+            throw err;
+        });
+
+    travelListInFlight.set(key, req);
+    return req;
 }
 
 const REGION_TABS = [
@@ -59,19 +140,24 @@ export default function TravelPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedProvince, setSelectedProvince] = useState<string | null>(null);
     const [selectedCity, setSelectedCity] = useState<string | null>(null);
-    const [mapCounts, setMapCounts] = useState<MapCountsData | null>(null);
+    const [mapCounts, setMapCounts] = useState<MapCountsData | null>(cachedMapCountsData);
     const [sortBy, setSortBy] = useState<'latest' | 'popular'>('latest');
     const [searchTerm, setSearchTerm] = useState('');
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
-    const limit = 12;
+    const limit = PAGE_LIMIT;
 
     // 지도 렌더링용 전국 도/시별 사전 집계 수량 1회 일괄 조회
     useEffect(() => {
+        if (cachedMapCountsData) {
+            setMapCounts(cachedMapCountsData);
+            return;
+        }
         const fetchMapCounts = async () => {
             try {
                 const res = await axios.get(`${API_BASE_URL}/api/travel/map-counts`);
                 if (res.data?.success) {
+                    cachedMapCountsData = res.data;
                     setMapCounts(res.data);
                 }
             } catch (err) {
@@ -85,32 +171,42 @@ export default function TravelPage() {
         fetchTravelArticles();
     }, [selectedRegion, selectedCategory, selectedProvince, selectedCity, sortBy, page]);
 
-    const fetchTravelArticles = async () => {
-        setLoading(true);
-        try {
-            const offset = (page - 1) * limit;
-            const res = await axios.get(`${API_BASE_URL}/api/travel`, {
-                params: {
-                    region: selectedRegion,
-                    category: selectedCategory,
-                    province: selectedProvince || undefined,
-                    city: selectedCity || undefined,
-                    sort: sortBy,
-                    keyword: searchTerm.trim() || undefined,
-                    limit,
-                    offset
-                }
-            });
+    const fetchTravelArticles = async (overrideKeyword?: string) => {
+        const currentKeyword = overrideKeyword !== undefined ? overrideKeyword : searchTerm;
+        const queryParams = {
+            region: selectedRegion,
+            category: selectedCategory,
+            province: selectedProvince,
+            city: selectedCity,
+            sort: sortBy,
+            page,
+            keyword: currentKeyword
+        };
 
-            if (res.data?.success) {
-                const list: TravelArticle[] = res.data.articles || [];
-                setArticles(list);
-                setTotalCount(res.data.pagination?.total || 0);
-
-                if (page === 1 && list.length > 0) {
-                    const top = list.find(a => a.is_featured === 1) || list[0];
+        // 클라이언트 캐시 적중 시 스켈레톤 깜빡임 없이 0ms 즉시 렌더링
+        if (!currentKeyword.trim()) {
+            const cached = travelListClientCache.get(buildListCacheKey(queryParams));
+            if (cached) {
+                setArticles(cached.articles);
+                setTotalCount(cached.total);
+                setLoading(false);
+                if (page === 1 && cached.articles.length > 0 && !selectedProvince) {
+                    const top = cached.articles.find(a => a.is_featured === 1) || cached.articles[0];
                     setFeatured(top);
                 }
+                return;
+            }
+        }
+
+        setLoading(true);
+        try {
+            const result = await fetchAndCacheTravelList(queryParams);
+            setArticles(result.articles);
+            setTotalCount(result.total);
+
+            if (page === 1 && result.articles.length > 0 && !selectedProvince) {
+                const top = result.articles.find(a => a.is_featured === 1) || result.articles[0];
+                setFeatured(top);
             }
         } catch (error) {
             console.error('[Fetch Travel Articles Error]', error);
@@ -119,19 +215,35 @@ export default function TravelPage() {
         }
     };
 
-    const handleSelectLocation = (province: string | null, city: string | null) => {
+    const handleSelectLocation = useCallback((province: string | null, city: string | null) => {
         setSelectedProvince(province);
         setSelectedCity(city);
         setPage(1);
         if (province) {
             setSelectedRegion('domestic');
         }
-    };
+    }, []);
+
+    const handlePrefetchLocation = useCallback((province: string | null, city: string | null) => {
+        if (!province && !city) return;
+        fetchAndCacheTravelList({
+            region: 'domestic',
+            category: selectedCategory,
+            province,
+            city,
+            sort: sortBy,
+            page: 1,
+            keyword: ''
+        }).catch(() => {});
+    }, [selectedCategory, sortBy]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        setPage(1);
-        fetchTravelArticles();
+        if (page !== 1) {
+            setPage(1);
+        } else {
+            fetchTravelArticles(searchTerm);
+        }
     };
 
     // AI 요약 불릿 파싱 (최대 2줄 프리뷰)
@@ -229,6 +341,7 @@ export default function TravelPage() {
                     selectedProvince={selectedProvince}
                     selectedCity={selectedCity}
                     onSelectLocation={handleSelectLocation}
+                    onPrefetchLocation={handlePrefetchLocation}
                 />
 
                 {/* 3. 상단 스포트라이트 추천 여행지 (Featured) */}
@@ -311,7 +424,22 @@ export default function TravelPage() {
                             key={tab.id}
                             onClick={() => {
                                 setSelectedRegion(tab.id);
+                                if (tab.id !== 'domestic' && tab.id !== 'all') {
+                                    setSelectedProvince(null);
+                                    setSelectedCity(null);
+                                }
                                 setPage(1);
+                            }}
+                            onMouseEnter={() => {
+                                fetchAndCacheTravelList({
+                                    region: tab.id,
+                                    category: selectedCategory,
+                                    province: (tab.id === 'domestic' || tab.id === 'all') ? selectedProvince : null,
+                                    city: (tab.id === 'domestic' || tab.id === 'all') ? selectedCity : null,
+                                    sort: sortBy,
+                                    page: 1,
+                                    keyword: ''
+                                }).catch(() => {});
                             }}
                             className={`flex-1 py-2.5 px-3 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 whitespace-nowrap ${
                                 selectedRegion === tab.id
@@ -334,6 +462,17 @@ export default function TravelPage() {
                                 onClick={() => {
                                     setSelectedCategory(chip.id);
                                     setPage(1);
+                                }}
+                                onMouseEnter={() => {
+                                    fetchAndCacheTravelList({
+                                        region: selectedRegion,
+                                        category: chip.id,
+                                        province: selectedProvince,
+                                        city: selectedCity,
+                                        sort: sortBy,
+                                        page: 1,
+                                        keyword: ''
+                                    }).catch(() => {});
                                 }}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                                     selectedCategory === chip.id
@@ -388,6 +527,8 @@ export default function TravelPage() {
                             onClick={() => {
                                 setSelectedRegion('all');
                                 setSelectedCategory('all');
+                                setSelectedProvince(null);
+                                setSelectedCity(null);
                                 setSearchTerm('');
                                 setPage(1);
                             }}
@@ -456,7 +597,7 @@ export default function TravelPage() {
                                                 </div>
                                             ) : (
                                                 <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
-                                                    {article.summary || article.content.replace(/<[^>]*>/g, '').slice(0, 100)}
+                                                    {article.summary || (article.content || '').replace(/<[^>]*>/g, '').slice(0, 100)}
                                                 </p>
                                             )}
                                         </div>

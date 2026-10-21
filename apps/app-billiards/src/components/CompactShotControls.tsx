@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart3, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react';
-import { MatchType, SpinOffset, TrickShotPreset } from '../types/billiards';
-import { TRICK_SHOT_PRESETS } from '../engine/physicsEngine';
+import { MatchType, SkillDama, SpinOffset, TrickShotPreset } from '../types/billiards';
+import { getSkillProfile, TRICK_SHOT_PRESETS } from '../engine/physicsEngine';
 import { assetManager } from '../engine/assets';
 import { sound } from '../utils/sound';
 import { ClothTheme } from '../hooks/useBilliardsGame';
@@ -10,6 +10,7 @@ interface CompactShotControlsProps {
   isSimulating: boolean;
   matchType: MatchType;
   currentPlayer: 1 | 2;
+  playerDama: SkillDama;
   aimAngleDeg: number;
   power: number;
   spin: SpinOffset;
@@ -30,6 +31,7 @@ export const CompactShotControls: React.FC<CompactShotControlsProps> = ({
   isSimulating,
   matchType,
   currentPlayer,
+  playerDama,
   aimAngleDeg,
   power,
   spin,
@@ -48,6 +50,7 @@ export const CompactShotControls: React.FC<CompactShotControlsProps> = ({
   const [isMuted, setIsMuted] = useState<boolean>(() => sound.isMuted());
   const chalkSrc = assetManager.getAssetUrl('/assets/sprites/chalk_cube.png');
   const disabled = isSimulating || (matchType === 'ai' && currentPlayer === 2);
+  const skillProfile = getSkillProfile(playerDama);
 
   const handleDialInteraction = (e: React.PointerEvent<SVGSVGElement>) => {
     if (disabled) return;
@@ -55,8 +58,9 @@ export const CompactShotControls: React.FC<CompactShotControlsProps> = ({
     const nx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const ny = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
     const mag = Math.hypot(nx, ny);
-    const clampedX = mag > 0.92 ? (nx / mag) * 0.92 : nx;
-    const clampedY = mag > 0.92 ? (ny / mag) * 0.92 : ny;
+    const limit = skillProfile.maxTipOffset;
+    const clampedX = mag > limit ? (nx / mag) * limit : nx;
+    const clampedY = mag > limit ? (ny / mag) * limit : ny;
     onChangeSpin({
       x: Number(clampedX.toFixed(2)),
       y: Number(clampedY.toFixed(2)),
@@ -162,10 +166,19 @@ export const CompactShotControls: React.FC<CompactShotControlsProps> = ({
                 </radialGradient>
               </defs>
               <circle cx="38" cy="38" r="35" fill="url(#spinBallGrad)" />
-              {/* 십자 기준선 & 안전 당점 한계원 */}
+              {/* 십자 기준선 & 다마수별 유효 당점 한계원 */}
               <line x1="38" y1="6" x2="38" y2="70" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2 2" />
               <line x1="6" y1="38" x2="70" y2="38" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2 2" />
-              <circle cx="38" cy="38" r="24" fill="none" stroke="#94A3B8" strokeWidth="1" strokeDasharray="3 2" />
+              <circle
+                cx="38"
+                cy="38"
+                r={Math.round(25 * skillProfile.maxTipOffset)}
+                fill="none"
+                stroke="#3B82F6"
+                strokeWidth="1"
+                strokeDasharray="3 2"
+                opacity="0.7"
+              />
 
               {/* 선택된 당점 타겟 포인트 */}
               <circle
@@ -184,13 +197,18 @@ export const CompactShotControls: React.FC<CompactShotControlsProps> = ({
               <div className="text-[10px] font-black text-[#2D2A26] truncate">
                 {getSpinDescription()}
               </div>
-              <button
-                type="button"
-                onClick={() => onChangeSpin({ x: 0, y: 0 })}
-                className="text-[9px] font-bold text-indigo-600 hover:underline cursor-pointer"
-              >
-                당점 중앙 초기화
-              </button>
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-[9px] font-extrabold text-blue-700">
+                  구질 {Math.round(skillProfile.spinScale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onChangeSpin({ x: 0, y: 0 })}
+                  className="text-[9px] font-bold text-indigo-600 hover:underline cursor-pointer"
+                >
+                  초기화
+                </button>
+              </div>
             </div>
 
             {/* 나노바나나 초크 바르기 버튼 */}

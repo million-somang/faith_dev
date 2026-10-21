@@ -236,6 +236,7 @@ export const App: React.FC = () => {
               <ScoreboardBar
                 ruleMode={game.ruleMode}
                 matchType={game.matchType}
+                playerDama={game.playerDama}
                 aiDifficulty={game.aiDifficulty}
                 targetScore={game.targetScore}
                 currentPlayer={game.currentPlayer}
@@ -245,6 +246,7 @@ export const App: React.FC = () => {
                 highRun={game.highRun}
                 liveCushionCount={game.liveCushionCount}
                 onChangeRuleMode={(mode) => game.resetMatch(mode, game.matchType)}
+                onChangePlayerDama={game.changePlayerDama}
                 onChangeDifficulty={game.setAiDifficulty}
                 onReset={() => {
                   setIsScoreSaved(false);
@@ -278,6 +280,7 @@ export const App: React.FC = () => {
                     isSimulating={game.isSimulating}
                     matchType={game.matchType}
                     currentPlayer={game.currentPlayer}
+                    playerDama={game.playerDama}
                     aimAngleDeg={game.aimAngleDeg}
                     power={game.power}
                     spin={game.spin}
