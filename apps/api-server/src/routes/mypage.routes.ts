@@ -128,7 +128,7 @@ mypage.get('/watchlist/stats', async (c) => {
             }
         });
     } catch (err) {
-        return c.json({ success: true, stats: { total: 2, kr: 2, us: 0 } });
+        return c.json({ success: true, stats: { total: 0, kr: 0, us: 0 } });
     }
 });
 
@@ -141,10 +141,7 @@ mypage.get('/watchlist', async (c) => {
         console.error('Get watchlist error:', err);
         return c.json({
             success: true,
-            stocks: [
-                { id: 1, stock_symbol: '005930', stock_name: 'SamsungElec', market_type: 'KR', target_price: 249500 },
-                { id: 2, stock_symbol: '000660', stock_name: 'SK hynix', market_type: 'KR', target_price: 1759000 }
-            ]
+            stocks: []
         });
     }
 });

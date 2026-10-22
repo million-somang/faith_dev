@@ -72,7 +72,7 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
 
     return (
         <section
-            aria-label="일촌평 및 방문자 방명록"
+            aria-label="아지트 방문자 방명록"
             className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5"
         >
             {/* 헤더 */}
@@ -83,19 +83,19 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                     </span>
                     <div>
                         <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-                            일촌평 & 방명록 ({entries.length})
+                            아지트 방명록 ({entries.length})
                         </h2>
                         <p className="text-xs text-slate-500">
-                            {ownerName}님의 미니룸에 따뜻한 방명록을 남기면 활동 포인트(+10P)가 적립됩니다!
+                            {ownerName}님의 아지트에 따뜻한 응원이나 인사말을 남겨보세요!
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* 빠른 일촌평 스티커 문구 칩 */}
+            {/* 빠른 응원 스티커 문구 칩 */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
                 <span className="text-[11px] font-black text-indigo-600 shrink-0 mr-1">
-                    ✨ 빠른 일촌평:
+                    ✨ 빠른 인사말:
                 </span>
                 {QUICK_ILCHON_MESSAGES.map((msg, idx) => (
                     <button
@@ -116,9 +116,9 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                     maxLength={250}
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
-                    data-screenshot-input="우와 미니룸이 정말 아늑해요! 일촌 도장 꾹 남기고 갑니다 ✨"
-                    aria-label="방명록 일촌평 입력"
-                    placeholder="일촌평이나 방명록 인사말을 남겨보세요... (최대 250자)"
+                    data-screenshot-input="우와 아지트가 정말 아늑해요! 발도장 꾹 남기고 갑니다 ✨"
+                    aria-label="아지트 방명록 입력"
+                    placeholder="아지트 방명록 인사말을 남겨보세요... (최대 250자)"
                     className="flex-1 px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
                 />
                 <button
@@ -126,7 +126,7 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                     disabled={isSubmitting || !newContent.trim()}
                     className="px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs sm:text-sm shadow-sm transition-all cursor-pointer disabled:opacity-50 shrink-0"
                 >
-                    {isSubmitting ? '등록 중...' : '💌 일촌평 남기기'}
+                    {isSubmitting ? '등록 중...' : '💌 방명록 남기기'}
                 </button>
             </form>
 
@@ -134,7 +134,7 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
             <div className="space-y-3">
                 {entries.length === 0 ? (
                     <div className="py-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-semibold">
-                        아직 남겨진 방명록이 없습니다. 첫 번째 일촌평의 주인공이 되어보세요!
+                        아직 남겨진 방명록이 없습니다. 첫 번째 방명록의 주인공이 되어보세요!
                     </div>
                 ) : (
                     entries.map((entry) => (
@@ -146,7 +146,7 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                                 <div className="flex items-center gap-2.5">
                                     <Link
                                         href={`/minihome/${encodeURIComponent(entry.authorHandle)}`}
-                                        title={`${entry.authorName}님의 미니홈피 놀러가기`}
+                                        title={`${entry.authorName}님의 아지트 놀러가기`}
                                         className="w-11 h-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center p-1 shadow-2xs hover:scale-105 transition-transform shrink-0 overflow-hidden"
                                     >
                                         <img
@@ -171,7 +171,7 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                                                 href={`/minihome/${encodeURIComponent(entry.authorHandle)}`}
                                                 className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-100 hover:bg-indigo-100 transition-colors"
                                             >
-                                                🏠 미니룸 방문
+                                                🏠 아지트 방문
                                             </Link>
                                             <span className="text-[11px] text-slate-400 font-mono">
                                                 {new Date(entry.createdAt).toLocaleDateString('ko-KR')}

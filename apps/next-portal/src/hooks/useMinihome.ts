@@ -32,7 +32,7 @@ export function useMinihome(routeHandle: string) {
     const [profile, setProfile] = useState<MinihomeProfileData | null>(null);
     const [guestbook, setGuestbook] = useState<MinihomeGuestbookEntry[]>([]);
     const [surfData, setSurfData] = useState<MinihomeSurfData>({
-        randomHandle: 'vera_official',
+        randomHandle: '',
         popularRooms: [],
     });
 
@@ -40,8 +40,9 @@ export function useMinihome(routeHandle: string) {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-    // 꾸미기 모드 상태
+    // 꾸미기 모드 & 상점 팝업(모달) 상태
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
+    const [isShopModalOpen, setIsShopModalOpen] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [isBuyingItemId, setIsBuyingItemId] = useState<string | null>(null);
 
@@ -111,13 +112,13 @@ export function useMinihome(routeHandle: string) {
             const json = (await res.json()) as ApiStandardResponse<RoomResponsePayload>;
 
             if (!res.ok || !json.success || !json.data) {
-                throw new Error(json.error?.message || '미니홈피를 불러오지 못했습니다.');
+                throw new Error(json.error?.message || '아지트를 불러오지 못했습니다.');
             }
 
             const loadedProfile = json.data.profile;
             setProfile(loadedProfile);
             setGuestbook(json.data.guestbook || []);
-            setSurfData(json.data.surf || { randomHandle: 'vera_official', popularRooms: [] });
+            setSurfData(json.data.surf || { randomHandle: '', popularRooms: [] });
 
             // 드래프트 초기화
             setDraftLayout(loadedProfile.layout || DEFAULT_CLIENT_LAYOUT);
@@ -138,7 +139,7 @@ export function useMinihome(routeHandle: string) {
     }, [fetchMinihome]);
 
     // ==================== 꾸미기 조작 핸들러 ====================
-    const handleEnterEditMode = useCallback(() => {
+    const handleEnterEditMode = useCallback((openShopModal = false) => {
         if (!profile) return;
         setDraftLayout(profile.layout);
         setDraftRoomTitle(profile.roomTitle);
@@ -147,6 +148,9 @@ export function useMinihome(routeHandle: string) {
         setDraftBgmTrackId(profile.bgmTrackId);
         setSelectedTargetId('minimi');
         setIsEditMode(true);
+        if (openShopModal) {
+            setIsShopModalOpen(true);
+        }
     }, [profile]);
 
     const handleCancelEditMode = useCallback(() => {
@@ -157,6 +161,7 @@ export function useMinihome(routeHandle: string) {
             setDraftStatusMessage(profile.statusMessage);
             setDraftBgmTrackId(profile.bgmTrackId);
         }
+        setIsShopModalOpen(false);
         setIsEditMode(false);
     }, [profile]);
 
@@ -205,18 +210,17 @@ export function useMinihome(routeHandle: string) {
         if (meta.category === 'minimi') {
             setDraftLayout((prev) => ({ ...prev, minimiItemId: itemId }));
             setSelectedTargetId('minimi');
-            showToast(`🧍 [${meta.name}] 아바타로 갈아입었습니다!`);
+            showToast(`🧍 [${meta.name}] 아바타로 변경되었습니다!`);
             return;
         }
 
-        // 가구(furniture) 또는 소품(prop)인 경우: 이미 배치되어 있으면 제거/선택, 없으면 새로 배치
+        // 가구(furniture) 또는 소품(prop)인 경우: 새로 배치
         setDraftLayout((prev) => {
             if (prev.placedItems.length >= 14) {
-                showToast('방에는 최대 14개의 가구·소품까지 배치할 수 있습니다.');
+                showToast('아지트에는 최대 14개의 가구·소품까지 배치할 수 있습니다.');
                 return prev;
             }
             const newInstanceId = `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-            // 빈 타일 탐색
             let targetX = 3;
             let targetY = 3;
             for (let y = 1; y <= 6; y++) {
@@ -259,7 +263,7 @@ export function useMinihome(routeHandle: string) {
 
     const handleRemoveSelectedItem = useCallback(() => {
         if (selectedTargetId === 'minimi') {
-            showToast('미니미 캐릭터는 방에서 제거할 수 없습니다. 위치를 옮기거나 의상을 바꿔보세요!');
+            showToast('아바타 캐릭터는 아지트에서 제거할 수 없습니다. 위치를 옮기거나 의상을 바꿔보세요!');
             return;
         }
         setDraftLayout((prev) => ({
@@ -273,7 +277,7 @@ export function useMinihome(routeHandle: string) {
     const handleResetDefaultRoom = useCallback(() => {
         setDraftLayout(DEFAULT_CLIENT_LAYOUT);
         setSelectedTargetId('minimi');
-        showToast('기본 미니룸 배치로 초기화되었습니다.');
+        showToast('기본 아지트 배치로 초기화되었습니다.');
     }, [showToast]);
 
     const handleSaveMinihome = useCallback(async (overridePartial?: {
@@ -317,8 +321,9 @@ export function useMinihome(routeHandle: string) {
                       }
                     : null
             );
+            setIsShopModalOpen(false);
             setIsEditMode(false);
-            showToast('✅ 나만의 미니홈피 설정이 저장되었습니다!');
+            showToast('✅ 나만의 아지트 설정이 저장되었습니다!');
             return true;
         } catch (err) {
             const msg = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
@@ -350,7 +355,7 @@ export function useMinihome(routeHandle: string) {
             }>;
 
             if (!res.ok || !json.success || !json.data) {
-                throw new Error(json.error?.message || '아이템 구매에 실패했습니다.');
+                throw new Error(json.error?.message || '아이템 획득에 실패했습니다.');
             }
 
             const { ownedItemIds, remainingPoints, purchasedItemName } = json.data;
@@ -363,10 +368,10 @@ export function useMinihome(routeHandle: string) {
                       }
                     : null
             );
-            showToast(`🎁 [${purchasedItemName}] 구매 완료! 내 보관함에 추가되었습니다.`);
+            showToast(`🎁 [${purchasedItemName}] 획득 완료! 내 보관함에 추가되었습니다.`);
             return true;
         } catch (err) {
-            const msg = err instanceof Error ? err.message : '구매 처리 중 오류가 발생했습니다.';
+            const msg = err instanceof Error ? err.message : '아이템 획득 처리 중 오류가 발생했습니다.';
             showToast(`⚠️ ${msg}`);
             return false;
         } finally {
@@ -396,7 +401,7 @@ export function useMinihome(routeHandle: string) {
                 throw new Error(json.error?.message || '방명록 등록 실패');
             }
             setGuestbook(json.data.guestbook);
-            showToast('💌 따뜻한 일촌평 방명록을 남겼습니다! (+10 베라포인트)');
+            showToast('💌 따뜻한 아지트 방명록을 남겼습니다!');
             return true;
         } catch (err) {
             const msg = err instanceof Error ? err.message : '방명록 작성 중 오류가 발생했습니다.';
@@ -468,6 +473,8 @@ export function useMinihome(routeHandle: string) {
         errorMessage,
         toastMessage,
         isEditMode,
+        isShopModalOpen,
+        setIsShopModalOpen,
         isSaving,
         isBuyingItemId,
         draftLayout,

@@ -17,7 +17,7 @@ import { MinihomeBgmPlayer } from '@/components/minihome/MinihomeBgmPlayer';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
 import { MinihomePersonalHubSection } from '@/components/minihome/MinihomePersonalHubSection';
-import { MINIHOME_MOODS, getCatalogItemById } from '@/data/minihomeCatalogData';
+import { MINIHOME_MOODS, VERA_POINT_SHOP_ENABLED, getCatalogItemById } from '@/data/minihomeCatalogData';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -150,6 +150,8 @@ export default function MyPage() {
         isLoading: minihomeLoading,
         toastMessage: minihomeToastMessage,
         isEditMode: minihomeEditMode,
+        isShopModalOpen: minihomeShopModalOpen,
+        setIsShopModalOpen: setMinihomeShopModalOpen,
         isSaving: minihomeSaving,
         isBuyingItemId: minihomeBuyingItemId,
         draftLayout: minihomeDraftLayout,
@@ -184,8 +186,11 @@ export default function MyPage() {
     const currentMoodMeta = MINIHOME_MOODS.find((m) => m.id === activeMoodId) || MINIHOME_MOODS[0];
 
     const handleRandomSurf = () => {
-        const target = minihomeSurfData.randomHandle || 'vera_official';
-        router.push(`/minihome/${encodeURIComponent(target)}`);
+        if (!minihomeSurfData.randomHandle) {
+            showMinihomeToast('아직 방문 가능한 다른 회원의 아지트가 없습니다.');
+            return;
+        }
+        router.push(`/minihome/${encodeURIComponent(minihomeSurfData.randomHandle)}`);
     };
 
     const handleShareMinihome = async () => {
@@ -194,13 +199,13 @@ export default function MyPage() {
         try {
             if (navigator.share) {
                 await navigator.share({
-                    title: `${minihomeProfile.ownerName}님의 VERA 미니홈피`,
-                    text: `${minihomeProfile.roomTitle} - 내 방 구경 오세요!`,
+                    title: `${minihomeProfile.ownerName}님의 VERA 아지트`,
+                    text: `${minihomeProfile.roomTitle} - 내 아지트 구경 오세요!`,
                     url: shareUrl,
                 });
             } else {
                 await navigator.clipboard.writeText(shareUrl);
-                showMinihomeToast('🔗 내 미니홈피 주소가 클립보드에 복사되었습니다!');
+                showMinihomeToast('🔗 내 아지트 주소가 클립보드에 복사되었습니다!');
             }
         } catch (_) {
             // 공유 취소 무시
@@ -296,43 +301,12 @@ export default function MyPage() {
         }
     };
 
-const DEFAULT_WATCHLIST = [
-    { id: 1, stock_symbol: '005930', stock_name: 'SamsungElec', market_type: 'KR', target_price: 249500 },
-    { id: 2, stock_symbol: '000660', stock_name: 'SK hynix', market_type: 'KR', target_price: 1759000 }
-];
-
-const DEFAULT_SHOPPING_ITEMS = [
-    {
-        productId: 20001,
-        productName: '공중부양 3D 달 무드등 16색 리모컨 터치 조명',
-        productPrice: 49800,
-        originalPrice: 79000,
-        discountRate: 37,
-        productImage: 'https://images.unsplash.com/photo-1532767153582-b1a0e5145009?w=600&auto=format&fit=crop&q=80',
-        productUrl: 'https://link.coupang.com/a/sample-levitating-moon',
-        curationPoint: '360도 공중부양 회전 무드등',
-        tag: '신박템'
-    },
-    {
-        productId: 20002,
-        productName: '스마트 3in1 머그컵 워머 & 고속 무선충전기 세트',
-        productPrice: 28900,
-        originalPrice: 42000,
-        discountRate: 31,
-        productImage: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=600&auto=format&fit=crop&q=80',
-        productUrl: 'https://link.coupang.com/a/sample-mug-warmer',
-        curationPoint: '온도 유지 + 폰 무선충전 2in1',
-        tag: '데스크꿀템'
-    }
-];
-
-// ... inside MyPage component ...
-    // 데이터 상태 관리
+    // 데이터 상태 관리 (목업 데이터 없이 실데이터만 연동)
     const [newsData, setNewsData] = useState<{ keywords: any[], keywordNews: any[], bookmarks: any[] }>({ keywords: [], keywordNews: [], bookmarks: [] });
-    const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: DEFAULT_WATCHLIST });
+    const [stocksData, setStocksData] = useState<{ stats: any, watchlist: any[] }>({ stats: {}, watchlist: [] });
     const [gamesData, setGamesData] = useState<{ stats: any, history: any[] }>({ stats: {}, history: [] });
     const [utilsData, setUtilsData] = useState<{ settings: any, history: any[] }>({ settings: {}, history: [] });
-    const [shoppingItems, setShoppingItems] = useState<any[]>(DEFAULT_SHOPPING_ITEMS);
+    const [shoppingItems, setShoppingItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     // 뉴스 키워드/주제 추가 및 삭제 처리
@@ -736,9 +710,9 @@ const DEFAULT_SHOPPING_ITEMS = [
                         instance.get(`/api/user/vera-points`).catch(() => ({ data: {} }))
                     ]);
 
-                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks) && wlRes.data.stocks.length > 0)
+                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks))
                         ? wlRes.data.stocks
-                        : DEFAULT_WATCHLIST;
+                        : [];
 
                     const activeKeywords = (kwRes.data && Array.isArray(kwRes.data.keywords) && kwRes.data.keywords.length > 0)
                         ? kwRes.data.keywords
@@ -800,9 +774,9 @@ const DEFAULT_SHOPPING_ITEMS = [
                         instance.get(`/api/user/watchlist/stats`).catch(() => ({ data: {} })),
                         instance.get(`/api/user/watchlist`).catch(() => ({ data: {} }))
                     ]);
-                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks) && wlRes.data.stocks.length > 0)
+                    const fetchedWatchlist = (wlRes.data && Array.isArray(wlRes.data.stocks))
                         ? wlRes.data.stocks
-                        : DEFAULT_WATCHLIST;
+                        : [];
                     setStocksData({
                         stats: statsRes.data.stats || {},
                         watchlist: fetchedWatchlist
@@ -887,7 +861,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                             }`}
                         >
                             <span>🏠</span>
-                            <span>{t('내 미니홈피')}</span>
+                            <span>{t('내 아지트')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('schedule')}
@@ -966,17 +940,17 @@ const DEFAULT_SHOPPING_ITEMS = [
                         </div>
                     ) : (
                         <>
-                            {/* ─── [통합 메인 뷰] 🏠 내 미니홈피 + 나의 홈 다이어리 & 퍼스널 보드 ─── */}
+                            {/* ─── [통합 메인 뷰] 🏠 내 아지트 + 나의 홈 다이어리 & 퍼스널 보드 ─── */}
                             {activeSection === 'dashboard' && (
                                 <div className="animate-fade-in space-y-6">
-                                    {/* 미니홈피 토스트 알림 */}
+                                    {/* 내 아지트 토스트 알림 */}
                                     {minihomeToastMessage && (
                                         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900/95 text-white text-xs sm:text-sm font-extrabold shadow-xl border border-indigo-400/40 animate-bounce">
                                             {minihomeToastMessage}
                                         </div>
                                     )}
 
-                                    {/* 1. 미니홈피 대문 아우터 헤더 프레임 */}
+                                    {/* 1. 내 아지트 대문 아우터 헤더 프레임 */}
                                     <header className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
                                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                                             <div className="space-y-2">
@@ -996,7 +970,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     </span>
 
                                                     <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
-                                                        🏠 나의 미니홈피 홈
+                                                        🏠 나의 아지트 홈
                                                     </span>
                                                 </div>
 
@@ -1007,18 +981,18 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                             maxLength={45}
                                                             value={minihomeDraftRoomTitle}
                                                             onChange={(e) => setMinihomeDraftRoomTitle(e.target.value)}
-                                                            placeholder="내 미니홈피 대문 제목을 입력하세요"
+                                                            placeholder="내 아지트 대문 제목을 입력하세요"
                                                             className="px-3.5 py-1.5 rounded-xl bg-indigo-50/70 border border-indigo-300 text-base sm:text-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-96"
                                                         />
                                                     </div>
                                                 ) : (
                                                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                                                        {minihomeProfile?.roomTitle || `${user.name}님의 따뜻한 VERA 미니홈피`}
+                                                        {minihomeProfile?.roomTitle || `${user.name}님의 따뜻한 VERA 아지트`}
                                                     </h2>
                                                 )}
                                             </div>
 
-                                            {/* 우측: BGM 미니 플레이어 & 파도타기 액션 버튼 */}
+                                            {/* 우측: BGM 미니 플레이어 & 이웃 아지트 놀러가기 액션 버튼 */}
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
                                                 <MinihomeBgmPlayer
                                                     trackId={minihomeEditMode ? minihomeDraftBgmTrackId : (minihomeProfile?.bgmTrackId || 'bgm-orgel')}
@@ -1032,28 +1006,32 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                 />
 
                                                 <div className="flex items-center gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRandomSurf}
-                                                        className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                                    >
-                                                        <span>🌊 파도타기</span>
-                                                    </button>
+                                                    {minihomeSurfData.popularRooms.length > 0 && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleRandomSurf}
+                                                                className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                                            >
+                                                                <span>🌊 이웃 놀러가기</span>
+                                                            </button>
 
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowSurfModal(true)}
-                                                        className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                                    >
-                                                        <i className="fas fa-users text-[11px]"></i>
-                                                        <span>이웃방</span>
-                                                    </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setShowSurfModal(true)}
+                                                                className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                                                            >
+                                                                <i className="fas fa-users text-[11px]"></i>
+                                                                <span>이웃 목록</span>
+                                                            </button>
+                                                        </>
+                                                    )}
 
                                                     <button
                                                         type="button"
                                                         onClick={handleShareMinihome}
                                                         className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                                        title="내 미니홈피 주소 복사/공유"
+                                                        title="내 아지트 주소 복사/공유"
                                                     >
                                                         <i className="fas fa-share-nodes text-[11px]"></i>
                                                         <span>공유</span>
@@ -1063,17 +1041,17 @@ const DEFAULT_SHOPPING_ITEMS = [
                                         </div>
                                     </header>
 
-                                    {/* 2. 미니홈피 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 2.5D 미니룸·방명록 8) */}
+                                    {/* 2. 내 아지트 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 2.5D 아지트·방명록 8) */}
                                     {minihomeLoading && !minihomeProfile ? (
                                         <div className="bg-white rounded-3xl border border-slate-200 p-14 text-center space-y-3">
                                             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
                                             <p className="text-sm font-bold text-slate-500">
-                                                내 미니홈피 미니룸과 소품을 불러오는 중입니다...
+                                                내 아지트 공간과 소품을 불러오는 중입니다...
                                             </p>
                                         </div>
                                     ) : minihomeProfile ? (
                                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                                            {/* 좌측 사이드바: Today is 기분 & 미니미 프로필 & 나의 홈 3대 퀵스탯 & 이웃방 (lg:col-span-4) */}
+                                            {/* 좌측 사이드바: Today is 기분 & 아바타 프로필 & 나의 홈 3대 퀵스탯 & 이웃 아지트 (lg:col-span-4) */}
                                             <aside className="lg:col-span-4 space-y-5">
                                                 <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5">
                                                     {/* Today is... 상태창 */}
@@ -1109,7 +1087,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         </div>
                                                     )}
 
-                                                    {/* 대표 미니미 카드 & 주인장 소개 */}
+                                                    {/* 대표 아바타 카드 & 주인장 소개 */}
                                                     <div className="text-center p-4 rounded-2xl bg-gradient-to-b from-indigo-50/60 to-slate-50 border border-slate-200/70 space-y-2">
                                                         <div className="w-20 h-20 rounded-2xl bg-white border-2 border-indigo-200 shadow-xs mx-auto flex items-center justify-center p-1.5 overflow-hidden">
                                                             <img
@@ -1119,7 +1097,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                                             .minimiItemId
                                                                     )?.spriteUrl || '/images/minihome/items/minimi-casual.png'
                                                                 }
-                                                                alt="대표 미니미 캐릭터"
+                                                                alt="대표 아바타 캐릭터"
                                                                 className="w-full h-full object-contain"
                                                             />
                                                         </div>
@@ -1128,7 +1106,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         </div>
                                                         <div className="text-[11px] font-bold text-indigo-600">
                                                             {getCatalogItemById((minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout).minimiItemId)?.name ||
-                                                                '캐주얼 데일리 미니미'}
+                                                                '캐주얼 데일리 아바타'}
                                                         </div>
 
                                                         {minihomeEditMode ? (
@@ -1147,27 +1125,42 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         )}
                                                     </div>
 
-                                                    {/* 내 방 꾸미기 / 소셜 라운지 CTA */}
+                                                    {/* 내 아지트 꾸미기 / 상점 팝업 / 소셜 라운지 CTA */}
                                                     <div className="space-y-2">
-                                                        {!minihomeEditMode ? (
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleMinihomeEnterEditMode}
-                                                                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                                                            >
-                                                                <i className="fas fa-wand-magic-sparkles"></i>
-                                                                <span>내 방 꾸미기 &amp; 도토리 상점 열기</span>
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => handleSaveMinihome()}
-                                                                disabled={minihomeSaving}
-                                                                className="w-full py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                                                            >
-                                                                <i className="fas fa-check"></i>
-                                                                <span>{minihomeSaving ? '저장 중...' : '꾸미기 완료 & 저장하기'}</span>
-                                                            </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                if (!minihomeEditMode) {
+                                                                    handleMinihomeEnterEditMode(true);
+                                                                } else {
+                                                                    setMinihomeShopModalOpen(true);
+                                                                }
+                                                            }}
+                                                            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-black text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                                        >
+                                                            <i className="fas fa-store"></i>
+                                                            <span>아지트 꾸미기 &amp; 아이템 상점 (전 품목 무료)</span>
+                                                        </button>
+
+                                                        {minihomeEditMode && (
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleSaveMinihome()}
+                                                                    disabled={minihomeSaving}
+                                                                    className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                                                >
+                                                                    <i className="fas fa-check"></i>
+                                                                    <span>{minihomeSaving ? '저장 중...' : '배치 완료·저장'}</span>
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={handleMinihomeCancelEditMode}
+                                                                    className="py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition-all flex items-center justify-center gap-1 cursor-pointer"
+                                                                >
+                                                                    <span>꾸미기 종료</span>
+                                                                </button>
+                                                            </div>
                                                         )}
 
                                                         <div className="grid grid-cols-2 gap-2">
@@ -1187,19 +1180,28 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         </div>
                                                     </div>
 
-                                                    {/* 나의 홈 3대 퀵 스탯 보드 (도토리·보유가구·오늘일정·사주행운지수 통합) */}
+                                                    {/* 나의 홈 3대 퀵 스탯 보드 (베라포인트·보유가구·오늘일정·사주행운지수 통합) */}
                                                     <div className="pt-3 border-t border-slate-100 space-y-2.5">
                                                         <div className="grid grid-cols-2 gap-2 text-center">
                                                             <div
                                                                 onClick={() => user?.email === 'sukman@naver.com' && router.push('/reward/exchange')}
                                                                 className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 cursor-pointer hover:bg-amber-100/70 transition-colors"
                                                             >
-                                                                <div className="text-[10px] font-bold text-amber-700">보유 도토리(P)</div>
+                                                                <div className="text-[10px] font-bold text-amber-700">베라포인트(P)</div>
                                                                 <div className="text-sm font-black text-amber-900 mt-0.5 font-mono">
-                                                                    🌰 {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
+                                                                    💎 {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
                                                                 </div>
                                                             </div>
-                                                            <div className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70">
+                                                            <div
+                                                                onClick={() => {
+                                                                    if (!minihomeEditMode) {
+                                                                        handleMinihomeEnterEditMode(true);
+                                                                    } else {
+                                                                        setMinihomeShopModalOpen(true);
+                                                                    }
+                                                                }}
+                                                                className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 transition-colors"
+                                                            >
                                                                 <div className="text-[10px] font-bold text-indigo-700">보유 가구·소품</div>
                                                                 <div className="text-sm font-black text-indigo-900 mt-0.5">
                                                                     🎁 {minihomeProfile.ownedItemIds.length}종
@@ -1239,49 +1241,51 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     </div>
                                                 </div>
 
-                                                {/* 파도타기 추천 이웃 미니룸 미니 리스트 */}
-                                                <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <h3 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
-                                                            <span>🌊</span>
-                                                            <span>인기 이웃 미니룸 놀러가기</span>
-                                                        </h3>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleRandomSurf}
-                                                            className="text-[11px] font-extrabold text-sky-600 hover:underline cursor-pointer"
-                                                        >
-                                                            랜덤 파도타기 →
-                                                        </button>
-                                                    </div>
-
-                                                    <div className="space-y-2">
-                                                        {minihomeSurfData.popularRooms.slice(0, 4).map((room) => (
-                                                            <Link
-                                                                key={room.handle}
-                                                                href={`/minihome/${encodeURIComponent(room.handle)}`}
-                                                                className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-200/60 transition-colors"
+                                                {/* 실제 이웃 회원 아지트가 있을 때만 표시 */}
+                                                {minihomeSurfData.popularRooms.length > 0 && (
+                                                    <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <h3 className="text-xs sm:text-sm font-black text-slate-800 flex items-center gap-1.5">
+                                                                <span>🌊</span>
+                                                                <span>이웃 아지트 놀러가기</span>
+                                                            </h3>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleRandomSurf}
+                                                                className="text-[11px] font-extrabold text-sky-600 hover:underline cursor-pointer"
                                                             >
-                                                                <div className="min-w-0">
-                                                                    <div className="text-xs font-extrabold text-slate-900 truncate">
-                                                                        {room.ownerName}
+                                                                랜덤 방문 →
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            {minihomeSurfData.popularRooms.slice(0, 4).map((room) => (
+                                                                <Link
+                                                                    key={room.handle}
+                                                                    href={`/minihome/${encodeURIComponent(room.handle)}`}
+                                                                    className="flex items-center justify-between gap-2 p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50/60 border border-slate-200/60 transition-colors"
+                                                                >
+                                                                    <div className="min-w-0">
+                                                                        <div className="text-xs font-extrabold text-slate-900 truncate">
+                                                                            {room.ownerName}
+                                                                        </div>
+                                                                        <div className="text-[11px] text-slate-500 truncate">
+                                                                            {room.roomTitle}
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="text-[11px] text-slate-500 truncate">
-                                                                        {room.roomTitle}
-                                                                    </div>
-                                                                </div>
-                                                                <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60 text-[10px] font-black shrink-0">
-                                                                    TODAY {room.todayVisitors}
-                                                                </span>
-                                                            </Link>
-                                                        ))}
+                                                                    <span className="px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200/60 text-[10px] font-black shrink-0">
+                                                                        TODAY {room.todayVisitors}
+                                                                    </span>
+                                                                </Link>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )}
                                             </aside>
 
-                                            {/* 우측 메인 스테이지: 2.5D 아이소메트릭 미니룸 + 도토리 상점 + 일촌 방명록 (lg:col-span-8) */}
+                                            {/* 우측 메인 스테이지: 2.5D 아이소메트릭 아지트 + 방문자 방명록 (lg:col-span-8) */}
                                             <div className="lg:col-span-8 space-y-6">
-                                                {/* 1) 2.5D 아이소메트릭 미니룸 캔버스 */}
+                                                {/* 1) 2.5D 아이소메트릭 아지트 캔버스 */}
                                                 <IsometricRoomCanvas
                                                     layout={minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout}
                                                     ownerName={minihomeProfile.ownerName || user.name}
@@ -1289,7 +1293,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     selectedTargetId={minihomeSelectedTargetId}
                                                     onSelectTarget={(id) => {
                                                         if (!minihomeEditMode) {
-                                                            handleMinihomeEnterEditMode();
+                                                            handleMinihomeEnterEditMode(false);
                                                         }
                                                         setMinihomeSelectedTargetId(id);
                                                     }}
@@ -1299,25 +1303,13 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                     onChangeSpeechBubble={(text) =>
                                                         setMinihomeDraftLayout((prev) => ({ ...prev, speechBubble: text }))
                                                     }
+                                                    onOpenShopModal={() => setMinihomeShopModalOpen(true)}
+                                                    onSaveRoom={() => handleSaveMinihome()}
+                                                    onCancelEdit={handleMinihomeCancelEditMode}
+                                                    isSaving={minihomeSaving}
                                                 />
 
-                                                {/* 2) 꾸미기 모드 활성화 시: 보관함 & 도토리 상점 드로어 */}
-                                                {minihomeEditMode && (
-                                                    <MinihomeShopDrawer
-                                                        ownedItemIds={minihomeProfile.ownedItemIds}
-                                                        veraPoints={minihomeProfile.veraPoints}
-                                                        draftLayout={minihomeDraftLayout}
-                                                        isBuyingItemId={minihomeBuyingItemId}
-                                                        onApplyItem={handleMinihomeApplyCatalogItem}
-                                                        onPurchaseItem={handleMinihomePurchaseItem}
-                                                        onResetRoom={handleMinihomeResetDefaultRoom}
-                                                        onSaveRoom={() => handleSaveMinihome()}
-                                                        onCancelEdit={handleMinihomeCancelEditMode}
-                                                        isSaving={minihomeSaving}
-                                                    />
-                                                )}
-
-                                                {/* 3) 일촌평 & 방문자 방명록 */}
+                                                {/* 2) 방문자 방명록 */}
                                                 <MinihomeGuestbook
                                                     entries={minihomeGuestbook}
                                                     isOwner={minihomeProfile.isOwner}
@@ -1330,7 +1322,29 @@ const DEFAULT_SHOPPING_ITEMS = [
                                         </div>
                                     ) : null}
 
-                                    {/* 3. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 미니홈피 하단에 통합) */}
+                                    {/* 3. 아지트 아이템 상점 & 내 보관함 팝업 모달 */}
+                                    {minihomeProfile && (
+                                        <MinihomeShopDrawer
+                                            isOpen={minihomeShopModalOpen}
+                                            onClose={() => setMinihomeShopModalOpen(false)}
+                                            ownedItemIds={minihomeProfile.ownedItemIds}
+                                            veraPoints={minihomeProfile.veraPoints}
+                                            draftLayout={minihomeDraftLayout}
+                                            isBuyingItemId={minihomeBuyingItemId}
+                                            onApplyItem={(item) => {
+                                                if (!minihomeEditMode) {
+                                                    handleMinihomeEnterEditMode(true);
+                                                }
+                                                handleMinihomeApplyCatalogItem(item);
+                                            }}
+                                            onPurchaseItem={handleMinihomePurchaseItem}
+                                            onResetRoom={handleMinihomeResetDefaultRoom}
+                                            onSaveRoom={() => handleSaveMinihome()}
+                                            isSaving={minihomeSaving}
+                                        />
+                                    )}
+
+                                    {/* 4. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 아지트 하단에 통합) */}
                                     <MinihomePersonalHubSection
                                         userName={user.name}
                                         userEmail={user.email}
@@ -1358,14 +1372,14 @@ const DEFAULT_SHOPPING_ITEMS = [
                                         onNavigateSection={(sec) => setActiveSection(sec)}
                                     />
 
-                                    {/* 이웃 미니룸 전체보기 모달 */}
+                                    {/* 이웃 아지트 전체보기 모달 */}
                                     {showSurfModal && (
                                         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
                                             <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
                                                 <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                                                     <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                                                         <span>🌊</span>
-                                                        <span>이웃 미니홈피 파도타기 목록</span>
+                                                        <span>이웃 아지트 목록</span>
                                                     </h3>
                                                     <button
                                                         type="button"
@@ -1416,7 +1430,7 @@ const DEFAULT_SHOPPING_ITEMS = [
                                                         }}
                                                         className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-black cursor-pointer"
                                                     >
-                                                        🌊 랜덤 이웃 방으로 즉시 이동
+                                                        🌊 랜덤 이웃 아지트로 이동
                                                     </button>
                                                 </div>
                                             </div>

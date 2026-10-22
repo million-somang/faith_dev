@@ -1,5 +1,12 @@
 import { pool } from '@faithportal/database';
 
+/**
+ * 베라포인트 유료 상점 활성화 여부 스위치
+ * - false: 전 품목 무료(0P) 오픈 (포인트 차감 없이 즉시 획득)
+ * - true: 추후 베라포인트(pointPrice) 정식 활성화 시 포인트 차감 적용
+ */
+export const VERA_POINT_SHOP_ENABLED = false;
+
 export type MinihomeMoodType = 'happy' | 'passion' | 'relax' | 'focus' | 'gaming' | 'lucky';
 
 export interface PlacedRoomItem {
@@ -24,54 +31,65 @@ export interface CatalogPriceItem {
     itemId: string;
     name: string;
     price: number;
+    pointPrice: number;
     category: string;
 }
 
-export const SERVER_CATALOG_ITEMS: Record<string, CatalogPriceItem> = {
+const RAW_SERVER_CATALOG: Record<string, { itemId: string; name: string; pointPrice: number; category: string }> = {
     // 기본 무료 아이템 (0P)
-    'wall-white-modern': { itemId: 'wall-white-modern', name: '화이트 모던 벽지', price: 0, category: 'wall' },
-    'wall-cozy-beige': { itemId: 'wall-cozy-beige', name: '코지 베이지 벽지', price: 0, category: 'wall' },
-    'floor-oak-wood': { itemId: 'floor-oak-wood', name: '기본 오크 마루', price: 0, category: 'floor' },
-    'floor-gray-tile': { itemId: 'floor-gray-tile', name: '모던 그레이 타일', price: 0, category: 'floor' },
-    'furn-wood-desk': { itemId: 'furn-wood-desk', name: '원목 스터디 데스크', price: 0, category: 'furniture' },
-    'furn-floor-lamp': { itemId: 'furn-floor-lamp', name: '따스한 스탠드 조명', price: 0, category: 'furniture' },
-    'prop-mini-plant': { itemId: 'prop-mini-plant', name: '몬스테라 미니 화분', price: 0, category: 'prop' },
-    'prop-coffee-rug': { itemId: 'prop-coffee-rug', name: '포근한 크림 원형 러그', price: 0, category: 'prop' },
-    'minimi-casual': { itemId: 'minimi-casual', name: '캐주얼 데일리 미니미', price: 0, category: 'minimi' },
-    'minimi-hoodie': { itemId: 'minimi-hoodie', name: '코지 후드티 미니미', price: 0, category: 'minimi' },
+    'wall-white-modern': { itemId: 'wall-white-modern', name: '화이트 모던 벽지', pointPrice: 0, category: 'wall' },
+    'wall-cozy-beige': { itemId: 'wall-cozy-beige', name: '코지 베이지 벽지', pointPrice: 0, category: 'wall' },
+    'floor-oak-wood': { itemId: 'floor-oak-wood', name: '기본 오크 마루', pointPrice: 0, category: 'floor' },
+    'floor-gray-tile': { itemId: 'floor-gray-tile', name: '모던 그레이 타일', pointPrice: 0, category: 'floor' },
+    'furn-wood-desk': { itemId: 'furn-wood-desk', name: '원목 스터디 데스크', pointPrice: 0, category: 'furniture' },
+    'furn-floor-lamp': { itemId: 'furn-floor-lamp', name: '따스한 스탠드 조명', pointPrice: 0, category: 'furniture' },
+    'prop-mini-plant': { itemId: 'prop-mini-plant', name: '몬스테라 미니 화분', pointPrice: 0, category: 'prop' },
+    'prop-coffee-rug': { itemId: 'prop-coffee-rug', name: '포근한 크림 원형 러그', pointPrice: 0, category: 'prop' },
+    'minimi-casual': { itemId: 'minimi-casual', name: '캐주얼 데일리 아바타', pointPrice: 0, category: 'minimi' },
+    'minimi-hoodie': { itemId: 'minimi-hoodie', name: '코지 후드티 아바타', pointPrice: 0, category: 'minimi' },
 
-    // 베라포인트 상점 아이템
-    'wall-pastel-sky': { itemId: 'wall-pastel-sky', name: '파스텔 스카이 창문 벽지', price: 100, category: 'wall' },
-    'wall-retro-brick': { itemId: 'wall-retro-brick', name: '레트로 브릭 카페 벽지', price: 200, category: 'wall' },
-    'wall-hanok-paper': { itemId: 'wall-hanok-paper', name: '고즈넉한 한옥 창호 벽지', price: 300, category: 'wall' },
-    'wall-cyber-neon': { itemId: 'wall-cyber-neon', name: '사이버펑크 나이트시티 벽지', price: 350, category: 'wall' },
-    'wall-vip-gold': { itemId: 'wall-vip-gold', name: 'VIP 골드 펜트하우스 벽지', price: 500, category: 'wall' },
+    // 아지트 상점 아이템 (현재 무료 오픈 / 추후 베라포인트 활성화 시 pointPrice 적용)
+    'wall-pastel-sky': { itemId: 'wall-pastel-sky', name: '파스텔 스카이 창문 벽지', pointPrice: 100, category: 'wall' },
+    'wall-retro-brick': { itemId: 'wall-retro-brick', name: '레트로 브릭 카페 벽지', pointPrice: 200, category: 'wall' },
+    'wall-hanok-paper': { itemId: 'wall-hanok-paper', name: '고즈넉한 한옥 창호 벽지', pointPrice: 300, category: 'wall' },
+    'wall-cyber-neon': { itemId: 'wall-cyber-neon', name: '사이버펑크 나이트시티 벽지', pointPrice: 350, category: 'wall' },
+    'wall-vip-gold': { itemId: 'wall-vip-gold', name: 'VIP 골드 펜트하우스 벽지', pointPrice: 500, category: 'wall' },
 
-    'floor-herringbone': { itemId: 'floor-herringbone', name: '유럽풍 헤링본 우드 마루', price: 100, category: 'floor' },
-    'floor-green-lawn': { itemId: 'floor-green-lawn', name: '피크닉 테라스 잔디 바닥', price: 200, category: 'floor' },
-    'floor-retro-checker': { itemId: 'floor-retro-checker', name: '레트로 다이너 체커보드', price: 250, category: 'floor' },
-    'floor-galaxy': { itemId: 'floor-galaxy', name: '스타라이트 갤럭시 플로어', price: 400, category: 'floor' },
+    'floor-herringbone': { itemId: 'floor-herringbone', name: '유럽풍 헤링본 우드 마루', pointPrice: 100, category: 'floor' },
+    'floor-green-lawn': { itemId: 'floor-green-lawn', name: '피크닉 테라스 잔디 바닥', pointPrice: 200, category: 'floor' },
+    'floor-retro-checker': { itemId: 'floor-retro-checker', name: '레트로 다이너 체커보드', pointPrice: 250, category: 'floor' },
+    'floor-galaxy': { itemId: 'floor-galaxy', name: '스타라이트 갤럭시 플로어', pointPrice: 400, category: 'floor' },
 
-    'furn-beanbag': { itemId: 'furn-beanbag', name: '마시멜로 빈백 소파', price: 150, category: 'furniture' },
-    'furn-bookshelf': { itemId: 'furn-bookshelf', name: '지식인의 원목 대형 책장', price: 200, category: 'furniture' },
-    'furn-turntable': { itemId: 'furn-turntable', name: '빈티지 LP 턴테이블 테이블', price: 250, category: 'furniture' },
-    'furn-gaming-setup': { itemId: 'furn-gaming-setup', name: '듀얼모니터 RGB 게이밍 셋업', price: 300, category: 'furniture' },
-    'furn-arcade-cabinet': { itemId: 'furn-arcade-cabinet', name: '레트로 8비트 오락실 게임기', price: 400, category: 'furniture' },
+    'furn-beanbag': { itemId: 'furn-beanbag', name: '마시멜로 빈백 소파', pointPrice: 150, category: 'furniture' },
+    'furn-bookshelf': { itemId: 'furn-bookshelf', name: '지식인의 원목 대형 책장', pointPrice: 200, category: 'furniture' },
+    'furn-turntable': { itemId: 'furn-turntable', name: '빈티지 LP 턴테이블 테이블', pointPrice: 250, category: 'furniture' },
+    'furn-gaming-setup': { itemId: 'furn-gaming-setup', name: '듀얼모니터 RGB 게이밍 셋업', pointPrice: 300, category: 'furniture' },
+    'furn-arcade-cabinet': { itemId: 'furn-arcade-cabinet', name: '레트로 8비트 오락실 게임기', pointPrice: 400, category: 'furniture' },
 
-    'prop-moon-lamp': { itemId: 'prop-moon-lamp', name: '보름달 무드등 스탠드', price: 200, category: 'prop' },
-    'prop-neon-sign': { itemId: 'prop-neon-sign', name: 'VERA 네온 사인 보드', price: 250, category: 'prop' },
-    'prop-cheese-cat': { itemId: 'prop-cheese-cat', name: '식빵 굽는 치즈고양이', price: 350, category: 'prop' },
-    'prop-corgi-dog': { itemId: 'prop-corgi-dog', name: '궁디팡팡 웰시코기 강아지', price: 350, category: 'prop' },
-    'trophy-2048': { itemId: 'trophy-2048', name: '2048 마스터 황금 트로피', price: 300, category: 'prop' },
-    'trophy-sudoku': { itemId: 'trophy-sudoku', name: '스도쿠 브레인 크리스탈 트로피', price: 300, category: 'prop' },
-    'trophy-minesweeper': { itemId: 'trophy-minesweeper', name: '지뢰찾기 영웅 황금 깃발', price: 300, category: 'prop' },
+    'prop-moon-lamp': { itemId: 'prop-moon-lamp', name: '보름달 무드등 스탠드', pointPrice: 200, category: 'prop' },
+    'prop-neon-sign': { itemId: 'prop-neon-sign', name: 'VERA 네온 사인 보드', pointPrice: 250, category: 'prop' },
+    'prop-cheese-cat': { itemId: 'prop-cheese-cat', name: '식빵 굽는 치즈고양이', pointPrice: 350, category: 'prop' },
+    'prop-corgi-dog': { itemId: 'prop-corgi-dog', name: '궁디팡팡 웰시코기 강아지', pointPrice: 350, category: 'prop' },
+    'trophy-2048': { itemId: 'trophy-2048', name: '2048 마스터 황금 트로피', pointPrice: 300, category: 'prop' },
+    'trophy-sudoku': { itemId: 'trophy-sudoku', name: '스도쿠 브레인 크리스탈 트로피', pointPrice: 300, category: 'prop' },
+    'trophy-minesweeper': { itemId: 'trophy-minesweeper', name: '지뢰찾기 영웅 황금 깃발', pointPrice: 300, category: 'prop' },
 
-    'minimi-ceo': { itemId: 'minimi-ceo', name: '월스트리트 수트 미니미', price: 250, category: 'minimi' },
-    'minimi-astronaut': { itemId: 'minimi-astronaut', name: '우주 탐사 비행사 미니미', price: 300, category: 'minimi' },
-    'minimi-hanbok': { itemId: 'minimi-hanbok', name: '사주 명리학 도포 선비 미니미', price: 300, category: 'minimi' },
-    'minimi-wizard': { itemId: 'minimi-wizard', name: '별빛 아카데미 마법사 미니미', price: 350, category: 'minimi' },
-    'minimi-champion': { itemId: 'minimi-champion', name: '로열 챔피언 왕관 미니미', price: 450, category: 'minimi' },
+    'minimi-ceo': { itemId: 'minimi-ceo', name: '월스트리트 수트 아바타', pointPrice: 250, category: 'minimi' },
+    'minimi-astronaut': { itemId: 'minimi-astronaut', name: '우주 탐사 비행사 아바타', pointPrice: 300, category: 'minimi' },
+    'minimi-hanbok': { itemId: 'minimi-hanbok', name: '전통 한복 선비 아바타', pointPrice: 300, category: 'minimi' },
+    'minimi-wizard': { itemId: 'minimi-wizard', name: '별빛 아카데미 마법사 아바타', pointPrice: 350, category: 'minimi' },
+    'minimi-champion': { itemId: 'minimi-champion', name: '로열 챔피언 왕관 아바타', pointPrice: 450, category: 'minimi' },
 };
+
+export const SERVER_CATALOG_ITEMS: Record<string, CatalogPriceItem> = Object.fromEntries(
+    Object.entries(RAW_SERVER_CATALOG).map(([key, val]) => [
+        key,
+        {
+            ...val,
+            price: VERA_POINT_SHOP_ENABLED ? val.pointPrice : 0,
+        },
+    ])
+);
 
 export const DEFAULT_FREE_ITEM_IDS = [
     'wall-white-modern',
@@ -92,7 +110,7 @@ export const DEFAULT_ROOM_LAYOUT: MinihomeRoomLayout = {
     minimiItemId: 'minimi-casual',
     minimiX: 4,
     minimiY: 4,
-    speechBubble: '내 미니룸에 놀러온 걸 환영해요! 방명록 남기고 가세요 ✨',
+    speechBubble: '내 아지트에 놀러온 걸 환영해요! 방명록 남기고 가세요 ✨',
     placedItems: [
         { instanceId: 'init-rug', itemId: 'prop-coffee-rug', gridX: 3, gridY: 3, flipped: false },
         { instanceId: 'init-desk', itemId: 'furn-wood-desk', gridX: 1, gridY: 1, flipped: false },
@@ -147,9 +165,9 @@ export class MinihomeService {
                     user_id INTEGER,
                     handle TEXT NOT NULL UNIQUE,
                     owner_name TEXT NOT NULL,
-                    room_title TEXT NOT NULL DEFAULT '사이좋은 사람들의 따뜻한 미니룸',
+                    room_title TEXT NOT NULL DEFAULT '나만의 아늑한 아지트',
                     status_mood TEXT NOT NULL DEFAULT 'happy',
-                    status_message TEXT NOT NULL DEFAULT '오늘도 내 방에 놀러와줘서 고마워요! ✨',
+                    status_message TEXT NOT NULL DEFAULT '오늘도 내 아지트에 놀러와줘서 고마워요! ✨',
                     bgm_track_id TEXT NOT NULL DEFAULT 'bgm-orgel',
                     layout_json TEXT NOT NULL,
                     today_visitors INTEGER NOT NULL DEFAULT 1,
@@ -202,197 +220,84 @@ export class MinihomeService {
                 );
             `);
 
-            await this.seedShowcaseMinihomes();
+            await this.cleanupMockMinihomes();
             this.initialized = true;
         } catch (err) {
             console.error('[MinihomeService] ensureTables error:', err);
         }
     }
 
-    private static async seedShowcaseMinihomes(): Promise<void> {
-        const samples: Array<{
-            handle: string;
-            ownerName: string;
-            roomTitle: string;
-            mood: MinihomeMoodType;
-            message: string;
-            bgm: string;
-            today: number;
-            total: number;
-            layout: MinihomeRoomLayout;
-        }> = [
-            {
-                handle: 'vera_official',
-                ownerName: '베라 공식 매니저',
-                roomTitle: '🌟 VERA 공식 웰컴 펜트하우스',
-                mood: 'happy',
-                message: '파도타기로 오신 모든 회원님 환영합니다! 방명록 남기면 행운 가득 🍀',
-                bgm: 'bgm-orgel',
-                today: 48,
-                total: 3920,
-                layout: {
-                    wallItemId: 'wall-pastel-sky',
-                    floorItemId: 'floor-herringbone',
-                    minimiItemId: 'minimi-champion',
-                    minimiX: 4,
-                    minimiY: 4,
-                    speechBubble: '베라 미니홈피 오픈! 나만의 방을 꾸며보세요 🏠✨',
-                    placedItems: [
-                        { instanceId: 's1-1', itemId: 'prop-coffee-rug', gridX: 3, gridY: 3, flipped: false },
-                        { instanceId: 's1-2', itemId: 'furn-gaming-setup', gridX: 1, gridY: 1, flipped: false },
-                        { instanceId: 's1-3', itemId: 'furn-bookshelf', gridX: 4, gridY: 0, flipped: false },
-                        { instanceId: 's1-4', itemId: 'prop-cheese-cat', gridX: 3, gridY: 5, flipped: false },
-                        { instanceId: 's1-5', itemId: 'trophy-2048', gridX: 6, gridY: 2, flipped: false },
-                    ],
-                },
-            },
-            {
-                handle: 'cyber_gamer',
-                ownerName: '네온 아케이드 킹',
-                roomTitle: '🕹️ 레트로 & 사이버 게이밍 아지트',
-                mood: 'gaming',
-                message: '2048 & 지뢰찾기 랭킹 1위 도전 중! 배틀 환영합니다 🔥',
-                bgm: 'bgm-arcade',
-                today: 29,
-                total: 1580,
-                layout: {
-                    wallItemId: 'wall-cyber-neon',
-                    floorItemId: 'floor-retro-checker',
-                    minimiItemId: 'minimi-astronaut',
-                    minimiX: 3,
-                    minimiY: 4,
-                    speechBubble: '오늘 밤 2048 최고기록 깬다! 🎮⚡',
-                    placedItems: [
-                        { instanceId: 's2-1', itemId: 'furn-arcade-cabinet', gridX: 1, gridY: 1, flipped: false },
-                        { instanceId: 's2-2', itemId: 'furn-gaming-setup', gridX: 4, gridY: 1, flipped: false },
-                        { instanceId: 's2-3', itemId: 'prop-neon-sign', gridX: 0, gridY: 3, flipped: false },
-                        { instanceId: 's2-4', itemId: 'trophy-minesweeper', gridX: 5, gridY: 4, flipped: false },
-                    ],
-                },
-            },
-            {
-                handle: 'saju_master',
-                ownerName: '청담동 명리학자',
-                roomTitle: '🍵 고즈넉한 한옥 사주 & 독서 다실',
-                mood: 'lucky',
-                message: '오늘의 운세 대길(大吉)! 따뜻한 차 한 잔 하고 가세요.',
-                bgm: 'bgm-lofi-rain',
-                today: 34,
-                total: 2140,
-                layout: {
-                    wallItemId: 'wall-hanok-paper',
-                    floorItemId: 'floor-oak-wood',
-                    minimiItemId: 'minimi-hanbok',
-                    minimiX: 4,
-                    minimiY: 3,
-                    speechBubble: '마음이 편안해지는 한옥 서재입니다 🌿',
-                    placedItems: [
-                        { instanceId: 's3-1', itemId: 'furn-bookshelf', gridX: 1, gridY: 0, flipped: false },
-                        { instanceId: 's3-2', itemId: 'furn-turntable', gridX: 5, gridY: 1, flipped: false },
-                        { instanceId: 's3-3', itemId: 'prop-moon-lamp', gridX: 1, gridY: 4, flipped: false },
-                        { instanceId: 's3-4', itemId: 'prop-corgi-dog', gridX: 4, gridY: 5, flipped: true },
-                    ],
-                },
-            },
-        ];
-
-        for (const s of samples) {
-            const existing = await pool.query(
-                'SELECT id FROM user_minihomes WHERE handle = $1 AND is_deleted = 0',
-                [s.handle]
+    /**
+     * 과거에 시드되었던 가짜 샘플 1촌/아지트 및 가짜 방명록 데이터를 Soft Delete 처리
+     * (rule.md에 따라 Hard DELETE 쿼리를 절대 사용하지 않고 is_deleted = 1 처리)
+     */
+    private static async cleanupMockMinihomes(): Promise<void> {
+        try {
+            await pool.query(
+                `UPDATE user_minihomes
+                 SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP
+                 WHERE handle IN ('vera_official', 'cyber_gamer', 'saju_master')
+                   AND is_deleted = 0`
             );
-            if (existing.rows.length === 0) {
-                await pool.query(
-                    `INSERT INTO user_minihomes (handle, owner_name, room_title, status_mood, status_message, bgm_track_id, layout_json, today_visitors, total_visitors)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                     ON CONFLICT (handle) DO NOTHING`,
-                    [
-                        s.handle,
-                        s.ownerName,
-                        s.roomTitle,
-                        s.mood,
-                        s.message,
-                        s.bgm,
-                        JSON.stringify(s.layout),
-                        s.today,
-                        s.total,
-                    ]
-                );
-
-                // 샘플 방명록 1건씩 시드
-                await pool.query(
-                    `INSERT INTO minihome_guestbook (host_handle, author_name, author_handle, author_minimi_id, content)
-                     VALUES ($1, '베라 프렌즈', 'vera_friends', 'minimi-hoodie', '우와 방이 너무 예뻐요! 파도타기 타고 구경 왔다가 일촌평 남기고 갑니다 😊')`,
-                    [s.handle]
-                );
-            }
+            await pool.query(
+                `UPDATE minihome_guestbook
+                 SET is_deleted = 1, deleted_at = CURRENT_TIMESTAMP
+                 WHERE (author_handle = 'vera_friends' OR host_handle IN ('vera_official', 'cyber_gamer', 'saju_master'))
+                   AND is_deleted = 0`
+            );
+            // 기존 회원의 방 제목·소개글에 남아있는 '미니홈피/미니룸/일촌평' 기본 문구도 '아지트/방명록'으로 자동 정리
+            await pool.query(
+                `UPDATE user_minihomes
+                 SET room_title = REPLACE(REPLACE(room_title, '미니홈피', '아지트'), '미니룸', '아지트'),
+                     status_message = REPLACE(REPLACE(status_message, '일촌평', '방명록'), '내 방에', '내 아지트에')
+                 WHERE is_deleted = 0`
+            );
+        } catch (err) {
+            console.error('[MinihomeService] cleanupMockMinihomes error:', err);
         }
     }
 
     static async getVeraPoints(userId: number | null): Promise<number> {
         if (!userId) return 0;
         const res = await pool.query(
-            'SELECT points FROM user_points WHERE user_id = $1',
+            'SELECT points, attendance_points, activity_points FROM user_points WHERE user_id = $1',
             [userId]
         );
         if (res.rows.length === 0) {
             await pool.query(
                 `INSERT INTO user_points (user_id, points, pending_amount, attendance_points, activity_points)
-                 VALUES ($1, 500, 0, 500, 0)
+                 VALUES ($1, 0, 0, 0, 0)
                  ON CONFLICT DO NOTHING`,
                 [userId]
             );
-            return 500;
+            return 0;
         }
-        return Number(res.rows[0].points || 0);
+        const row = res.rows[0];
+        // 과거 더미 초기값(500P)이 자동 주입된 레코드가 있다면 0으로 초기화
+        if (Number(row.points) === 500 && Number(row.attendance_points) === 500 && Number(row.activity_points) === 0) {
+            await pool.query(
+                `UPDATE user_points SET points = 0, attendance_points = 0 WHERE user_id = $1`,
+                [userId]
+            );
+            return 0;
+        }
+        return Number(row.points || 0);
     }
 
     static async ensureDefaultInventory(userId: number | null, handle: string): Promise<string[]> {
         const cleanHandle = this.normalizeHandle(handle);
 
-        for (const itemId of DEFAULT_FREE_ITEM_IDS) {
+        const initialItemIds = VERA_POINT_SHOP_ENABLED
+            ? DEFAULT_FREE_ITEM_IDS
+            : Object.keys(SERVER_CATALOG_ITEMS);
+
+        for (const itemId of initialItemIds) {
             await pool.query(
                 `INSERT INTO user_minihome_inventory (user_id, user_handle, item_id, acquired_type, price_paid)
                  VALUES ($1, $2, $3, 'free', 0)
                  ON CONFLICT (user_handle, item_id) DO NOTHING`,
                 [userId, cleanHandle, itemId]
             );
-        }
-
-        // 게임 기록이 있는 회원은 해당 게임 트로피 자동 해금 지급
-        if (userId) {
-            try {
-                const gameRes = await pool.query(
-                    'SELECT DISTINCT game_type FROM user_game_scores WHERE user_id = $1',
-                    [userId]
-                );
-                for (const row of gameRes.rows) {
-                    const gType = String(row.game_type || '').toLowerCase();
-                    if (gType.includes('2048')) {
-                        await pool.query(
-                            `INSERT INTO user_minihome_inventory (user_id, user_handle, item_id, acquired_type, price_paid)
-                             VALUES ($1, $2, 'trophy-2048', 'achievement', 0) ON CONFLICT DO NOTHING`,
-                            [userId, cleanHandle]
-                        );
-                    }
-                    if (gType.includes('sudoku')) {
-                        await pool.query(
-                            `INSERT INTO user_minihome_inventory (user_id, user_handle, item_id, acquired_type, price_paid)
-                             VALUES ($1, $2, 'trophy-sudoku', 'achievement', 0) ON CONFLICT DO NOTHING`,
-                            [userId, cleanHandle]
-                        );
-                    }
-                    if (gType.includes('mine')) {
-                        await pool.query(
-                            `INSERT INTO user_minihome_inventory (user_id, user_handle, item_id, acquired_type, price_paid)
-                             VALUES ($1, $2, 'trophy-minesweeper', 'achievement', 0) ON CONFLICT DO NOTHING`,
-                            [userId, cleanHandle]
-                        );
-                    }
-                }
-            } catch (_) {
-                // 테이블 미존재 등 무시
-            }
         }
 
         const invRes = await pool.query(
@@ -417,7 +322,7 @@ export class MinihomeService {
             [cleanHandle]
         );
 
-        // 만약 user_id로 먼저 생성된 미니홈피가 있는지 체크
+        // 만약 user_id로 먼저 생성된 아지트가 있는지 체크
         if (res.rows.length === 0 && params.viewerUserId && cleanHandle === this.normalizeHandle(params.viewerHandle || '')) {
             const byUser = await pool.query(
                 'SELECT * FROM user_minihomes WHERE user_id = $1 AND is_deleted = 0',
@@ -431,20 +336,23 @@ export class MinihomeService {
         if (res.rows.length === 0) {
             const ownerName = params.viewerName && cleanHandle === this.normalizeHandle(params.viewerHandle || cleanHandle)
                 ? params.viewerName
-                : `${cleanHandle}님의 미니홈피`;
+                : `${cleanHandle}님의 아지트`;
             const ownerUserId = cleanHandle === this.normalizeHandle(params.viewerHandle || cleanHandle)
                 ? params.viewerUserId
                 : null;
 
             await pool.query(
                 `INSERT INTO user_minihomes (user_id, handle, owner_name, room_title, status_mood, status_message, bgm_track_id, layout_json, today_visitors, total_visitors)
-                 VALUES ($1, $2, $3, $4, 'happy', '내 방에 놀러와줘서 고마워요! 일촌평 남겨주세요 ✨', 'bgm-orgel', $5, 1, 1)
-                 ON CONFLICT (handle) DO NOTHING`,
+                 VALUES ($1, $2, $3, $4, 'happy', '내 아지트에 놀러와줘서 고마워요! 방명록 남겨주세요 ✨', 'bgm-orgel', $5, 1, 1)
+                 ON CONFLICT (handle) DO UPDATE SET
+                    is_deleted = 0,
+                    deleted_at = NULL,
+                    user_id = COALESCE(user_minihomes.user_id, EXCLUDED.user_id)`,
                 [
                     ownerUserId,
                     cleanHandle,
                     ownerName,
-                    `${ownerName}의 미니룸`,
+                    `${ownerName}의 아지트`,
                     JSON.stringify(DEFAULT_ROOM_LAYOUT),
                 ]
             );
@@ -493,6 +401,11 @@ export class MinihomeService {
         let parsedLayout: MinihomeRoomLayout = DEFAULT_ROOM_LAYOUT;
         try {
             parsedLayout = JSON.parse(row.layout_json) as MinihomeRoomLayout;
+            if (parsedLayout.speechBubble) {
+                parsedLayout.speechBubble = parsedLayout.speechBubble
+                    .replace(/미니룸/g, '아지트')
+                    .replace(/미니홈피/g, '아지트');
+            }
         } catch (_) {
             parsedLayout = DEFAULT_ROOM_LAYOUT;
         }
@@ -545,7 +458,7 @@ export class MinihomeService {
             [cleanHandle]
         );
         if (existingRes.rows.length === 0) {
-            throw new Error('미니홈피를 찾을 수 없습니다.');
+            throw new Error('아지트를 찾을 수 없습니다.');
         }
 
         const current = existingRes.rows[0] as DbMinihomeRow;
@@ -595,38 +508,35 @@ export class MinihomeService {
             throw new Error('존재하지 않는 아이템입니다.');
         }
 
-        const existingInv = await pool.query(
-            'SELECT id FROM user_minihome_inventory WHERE user_handle = $1 AND item_id = $2 AND is_deleted = 0',
-            [cleanHandle, params.itemId]
-        );
-        if (existingInv.rows.length > 0) {
-            throw new Error('이미 보유 중인 아이템입니다.');
-        }
+        const effectivePrice = VERA_POINT_SHOP_ENABLED ? catalogItem.pointPrice : 0;
 
         let remainingPoints = 0;
         if (params.userId) {
             const currentPoints = await this.getVeraPoints(params.userId);
-            if (currentPoints < catalogItem.price) {
-                throw new Error(`베라포인트가 부족합니다. (보유: ${currentPoints}P / 필요: ${catalogItem.price}P)`);
+            if (VERA_POINT_SHOP_ENABLED && currentPoints < effectivePrice) {
+                throw new Error(`베라포인트가 부족합니다. (보유: ${currentPoints}P / 필요: ${effectivePrice}P)`);
             }
 
-            if (catalogItem.price > 0) {
+            if (effectivePrice > 0) {
                 await pool.query(
                     'UPDATE user_points SET points = points - $1 WHERE user_id = $2',
-                    [catalogItem.price, params.userId]
+                    [effectivePrice, params.userId]
                 );
             }
-            remainingPoints = currentPoints - catalogItem.price;
-        } else {
-            // 비로그인 체험 유저의 경우 무료/체험 구매 허용하되 안내
-            remainingPoints = 0;
+            remainingPoints = currentPoints - effectivePrice;
         }
 
         await pool.query(
             `INSERT INTO user_minihome_inventory (user_id, user_handle, item_id, acquired_type, price_paid, is_deleted)
-             VALUES ($1, $2, $3, 'purchase', $4, 0)
+             VALUES ($1, $2, $3, $4, $5, 0)
              ON CONFLICT (user_handle, item_id) DO UPDATE SET is_deleted = 0, deleted_at = NULL`,
-            [params.userId, cleanHandle, params.itemId, catalogItem.price]
+            [
+                params.userId,
+                cleanHandle,
+                params.itemId,
+                VERA_POINT_SHOP_ENABLED ? 'purchase' : 'free',
+                effectivePrice,
+            ]
         );
 
         const ownedItemIds = await this.ensureDefaultInventory(params.userId, cleanHandle);
@@ -693,15 +603,15 @@ export class MinihomeService {
             [
                 cleanHost,
                 params.authorUserId,
-                params.authorName.trim() || '이웃 일촌',
+                params.authorName.trim() || '베라 이웃',
                 cleanAuthor,
                 params.authorMinimiId || 'minimi-casual',
                 trimmed,
             ]
         );
 
-        // 방명록 작성 시 활동 포인트 +10P 지급 (로그인 유저인 경우)
-        if (params.authorUserId) {
+        // 베라포인트 활성화 시에만 방명록 포인트 적립
+        if (VERA_POINT_SHOP_ENABLED && params.authorUserId) {
             try {
                 await this.getVeraPoints(params.authorUserId);
                 await pool.query(
@@ -752,10 +662,12 @@ export class MinihomeService {
         await this.ensureTables();
         const cleanExclude = excludeHandle ? this.normalizeHandle(excludeHandle) : '';
 
+        // 가짜 시드 계정이 아닌 실제 가입 회원(user_id IS NOT NULL)의 아지트만 조회
         const res = await pool.query(
             `SELECT handle, owner_name, room_title, status_mood, status_message, today_visitors, total_visitors, layout_json, updated_at
              FROM user_minihomes
              WHERE is_deleted = 0
+               AND user_id IS NOT NULL
              ORDER BY today_visitors DESC, updated_at DESC
              LIMIT 20`
         );
@@ -781,11 +693,11 @@ export class MinihomeService {
         const candidates = list.filter((item) => item.handle !== cleanExclude);
         const randomPick = candidates.length > 0
             ? candidates[Math.floor(Math.random() * candidates.length)].handle
-            : (list[0]?.handle || 'vera_official');
+            : '';
 
         return {
             randomHandle: randomPick,
-            popularRooms: list,
+            popularRooms: candidates,
         };
     }
 }

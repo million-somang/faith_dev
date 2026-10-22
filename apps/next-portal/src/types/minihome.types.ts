@@ -15,7 +15,8 @@ export interface MinihomeCatalogItem {
     itemId: string;
     name: string;
     category: MinihomeItemCategory;
-    price: number; // 0이면 기본 무료, 양수면 베라포인트 가격
+    price: number; // 현재 적용 가격 (무료 오픈 시 0, 유료화 시 pointPrice)
+    pointPrice?: number; // 추후 베라포인트 활성화 시 차감될 정가 포인트
     isTrophy?: boolean;
     unlockCondition?: string;
     badgeText?: string;

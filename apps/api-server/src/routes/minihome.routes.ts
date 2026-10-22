@@ -54,7 +54,7 @@ minihomeRoutes.get('/api/minihome/room/:handle', optionalAuth, async (c) => {
 
         const surfData = await MinihomeService.getSurfTargets(profile.handle);
 
-        logActivity('🏡', '미니홈피방문', getActorLabel(c), `${profile.ownerName}(@${profile.handle}) 미니룸 방문 (투데이 ${profile.todayVisitors} / 토탈 ${profile.totalVisitors})`);
+        logActivity('🏡', '아지트방문', getActorLabel(c), `${profile.ownerName}(@${profile.handle}) 아지트 방문 (투데이 ${profile.todayVisitors} / 토탈 ${profile.totalVisitors})`);
 
         return c.json({
             success: true,
@@ -65,7 +65,7 @@ minihomeRoutes.get('/api/minihome/room/:handle', optionalAuth, async (c) => {
             },
         });
     } catch (err) {
-        const message = err instanceof Error ? err.message : '미니홈피 정보를 불러오지 못했습니다.';
+        const message = err instanceof Error ? err.message : '아지트 정보를 불러오지 못했습니다.';
         console.error('[Minihome] GET room error:', err);
         return c.json({
             success: false,
@@ -186,7 +186,7 @@ minihomeRoutes.post('/api/minihome/guestbook/:handle', optionalAuth, async (c) =
         }
 
         const effectiveAuthorHandle = body.authorHandle || (user?.email ? user.email.split('@')[0] : 'vera_friend');
-        const effectiveAuthorName = user?.name || body.authorName || '베라 일촌';
+        const effectiveAuthorName = user?.name || body.authorName || '베라 이웃';
 
         await MinihomeService.addGuestbook({
             hostHandle,
@@ -203,7 +203,7 @@ minihomeRoutes.post('/api/minihome/guestbook/:handle', optionalAuth, async (c) =
             effectiveAuthorHandle
         );
 
-        logActivity('📝', '방명록작성', getActorLabel(c), `@${hostHandle} 미니홈피에 일촌평 등록: "${body.content.trim().slice(0, 28)}"`);
+        logActivity('📝', '방명록작성', getActorLabel(c), `@${hostHandle} 아지트에 방명록 등록: "${body.content.trim().slice(0, 28)}"`);
 
         return c.json({
             success: true,

@@ -148,10 +148,10 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                     </span>
                     <div>
                         <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-                            나의 홈 다이어리 &amp; 퍼스널 보드
+                            나의 아지트 다이어리 &amp; 퍼스널 보드
                         </h2>
                         <p className="text-[11px] sm:text-xs text-slate-500 font-medium">
-                            오늘의 일정, 사주 오행·주의보, 실시간 날씨·증시, 구독 뉴스, 도토리(포인트) 정산을 내 미니홈피에서 한눈에 관리하세요.
+                            오늘의 일정, 사주 오행·주의보, 실시간 날씨·증시, 구독 뉴스, 베라포인트 정산을 내 아지트에서 한눈에 관리하세요.
                         </p>
                     </div>
                 </div>
@@ -596,7 +596,7 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                 </div>
             </div>
 
-            {/* ─── 4. 베라포인트(도토리) 리워드 정산 & 맞춤 쇼핑 (2열 대칭 그리드) ─── */}
+            {/* ─── 4. 베라포인트 리워드 정산 & 맞춤 쇼핑 (2열 대칭 그리드) ─── */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 위젯 1: 베라포인트 정산 (Vera Points Settlement) */}
                 <div className="border border-slate-200/90 rounded-3xl p-6 bg-white shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[300px]">
@@ -606,7 +606,7 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs font-black shadow-sm">
                                     <i className="fas fa-coins"></i>
                                 </div>
-                                베라포인트(도토리) 정산 &amp; 미션 센터
+                                베라포인트 정산 &amp; 미션 센터
                             </h3>
                             <span className="text-[10px] font-black font-mono px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
                                 POINT HUB
@@ -615,9 +615,9 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
 
                         <div className="grid grid-cols-2 gap-3 mb-4">
                             <div className="p-3.5 bg-amber-50/60 border border-amber-200/70 rounded-2xl">
-                                <span className="text-[10px] text-amber-700 font-black">누적 포인트 (도토리)</span>
+                                <span className="text-[10px] text-amber-700 font-black">누적 베라포인트</span>
                                 <span className="block text-lg font-mono font-black text-slate-900 mt-0.5">
-                                    🌰 {veraPointsData.points.toLocaleString()} P
+                                    🪙 {veraPointsData.points.toLocaleString()} P
                                 </span>
                             </div>
                             <div className="p-3.5 bg-emerald-50/60 border border-emerald-200/70 rounded-2xl">
@@ -651,7 +651,7 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                             </div>
                             <div>
                                 <div className="flex justify-between text-[10px] font-bold text-slate-700 mb-1">
-                                    <span>💬 소셜 라운지 &amp; 미니홈피 활동</span>
+                                    <span>💬 소셜 라운지 &amp; 아지트 활동</span>
                                     <span className="font-mono">{veraPointsData.activityRatio}%</span>
                                 </div>
                                 <svg

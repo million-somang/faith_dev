@@ -14,6 +14,10 @@ interface IsometricRoomCanvasProps {
     onFlipSelected: () => void;
     onRemoveSelected: () => void;
     onChangeSpeechBubble?: (text: string) => void;
+    onOpenShopModal?: () => void;
+    onSaveRoom?: () => void;
+    onCancelEdit?: () => void;
+    isSaving?: boolean;
 }
 
 const ORIGIN_X = 400;
@@ -52,6 +56,10 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onFlipSelected,
     onRemoveSelected,
     onChangeSpeechBubble,
+    onOpenShopModal,
+    onSaveRoom,
+    onCancelEdit,
+    isSaving,
 }) => {
     // 벽면 스타일 테마 컬러 계산 (입체 두께감 포함)
     const getWallTheme = (wallId: string) => {
@@ -271,25 +279,66 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
     return (
         <div className="relative bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-2xl border border-slate-200/90 overflow-hidden shadow-inner">
-            {/* 상단 미니룸 뱃지 & 편집 상태 안내 바 */}
+            {/* 상단 아지트 뱃지 & 상점 팝업 / 편집 상태 안내 바 */}
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70">
                 <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide">
-                        MINI ROOM
+                        MY AGIT
                     </span>
                     <span className="text-xs font-extrabold text-slate-700">
-                        {ownerName}님의 2.5D 아이소메트릭 미니룸
+                        {ownerName}님의 2.5D 아이소메트릭 아지트
                     </span>
                 </div>
 
                 {isEditMode ? (
-                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
-                        <i className="fas fa-hand-pointer animate-bounce"></i>
-                        <span>바닥 타일을 클릭하면 선택된 [{selectedItemMeta?.name || '미니미'}] 위치가 이동합니다!</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                            <i className="fas fa-hand-pointer animate-bounce"></i>
+                            <span>바닥 타일 클릭 시 [{selectedItemMeta?.name || '아바타'}] 이동</span>
+                        </span>
+                        {onOpenShopModal && (
+                            <button
+                                type="button"
+                                onClick={onOpenShopModal}
+                                className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                            >
+                                <span>🎁 아지트 상점·보관함 팝업</span>
+                            </button>
+                        )}
+                        {onCancelEdit && (
+                            <button
+                                type="button"
+                                onClick={onCancelEdit}
+                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                            >
+                                취소
+                            </button>
+                        )}
+                        {onSaveRoom && (
+                            <button
+                                type="button"
+                                onClick={onSaveRoom}
+                                disabled={isSaving}
+                                className="px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                            >
+                                {isSaving ? '저장 중...' : '💾 저장'}
+                            </button>
+                        )}
                     </div>
                 ) : (
-                    <div className="text-[11px] text-slate-400 font-semibold">
-                        가구 {layout.placedItems.length}개 배치됨
+                    <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-slate-400 font-semibold">
+                            가구 {layout.placedItems.length}개 배치됨
+                        </span>
+                        {onOpenShopModal && (
+                            <button
+                                type="button"
+                                onClick={onOpenShopModal}
+                                className="px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                                <span>🎁 상점·보관함 팝업</span>
+                            </button>
+                        )}
                     </div>
                 )}
             </div>
@@ -564,10 +613,10 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             );
                         }
 
-                        // 미니미 아바타 + 말풍선
+                        // 아바타 + 말풍선
                         const minimiPos = getTileCenter(layout.minimiX, layout.minimiY);
                         const isMinimiSelected = isEditMode && selectedTargetId === 'minimi';
-                        const bubbleText = layout.speechBubble || `${ownerName}의 미니룸에 오신 것을 환영합니다!`;
+                        const bubbleText = layout.speechBubble || `${ownerName}의 아지트에 오신 것을 환영합니다!`;
 
                         return (
                             <g
@@ -636,12 +685,21 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             </span>
                             <span className="font-bold text-indigo-200">
                                 {selectedTargetId === 'minimi'
-                                    ? `미니미 캐릭터 (${selectedItemMeta?.name || '기본'})`
+                                    ? `아바타 캐릭터 (${selectedItemMeta?.name || '기본'})`
                                     : selectedItemMeta?.name || '가구'}
                             </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            {onOpenShopModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenShopModal}
+                                    className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold transition-colors cursor-pointer"
+                                >
+                                    🎁 가구·벽지 상점 팝업
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => onSelectTarget('minimi')}
@@ -651,7 +709,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                                 }`}
                             >
-                                🧍 미니미 선택
+                                🧍 아바타 선택
                             </button>
                             {selectedTargetId !== 'minimi' && (
                                 <>
@@ -676,19 +734,19 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                 )}
             </div>
 
-            {/* 꾸미기 모드 시 미니미 한줄 말풍선 즉시 편집 바 */}
+            {/* 꾸미기 모드 시 아바타 한줄 말풍선 즉시 편집 바 */}
             {isEditMode && onChangeSpeechBubble && (
                 <div className="px-4 py-3 bg-indigo-50/70 border-t border-indigo-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <label className="text-xs font-extrabold text-indigo-900 shrink-0 flex items-center gap-1.5">
                         <i className="fas fa-comment-dots text-indigo-600"></i>
-                        <span>미니미 말풍선:</span>
+                        <span>아바타 말풍선:</span>
                     </label>
                     <input
                         type="text"
                         maxLength={40}
                         value={layout.speechBubble}
                         onChange={(e) => onChangeSpeechBubble(e.target.value)}
-                        placeholder="미니미 머리 위에 띄울 한줄 인사말을 입력하세요 (최대 40자)"
+                        placeholder="아바타 머리 위에 띄울 한줄 인사말을 입력하세요 (최대 40자)"
                         className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                 </div>
