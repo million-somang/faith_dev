@@ -62,12 +62,12 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
             role="dialog"
             aria-modal="true"
             aria-label="아지트 방문자 방명록 팝업"
-            className="fixed inset-0 z-50 bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5"
+            className="fixed inset-0 z-[60] bg-slate-900/65 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-5 overflow-x-hidden"
             onClick={onClose}
         >
             <section
                 aria-label="아지트 방문자 방명록"
-                className="bg-white rounded-3xl border-2 border-indigo-200 shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden animate-fade-in"
+                className="bg-white rounded-2xl sm:rounded-3xl border-2 border-indigo-200 shadow-2xl w-full max-w-[calc(100vw-1.25rem)] sm:max-w-2xl min-w-0 max-h-[88vh] flex flex-col overflow-hidden animate-fade-in"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* 모달 상단 헤더 */}
