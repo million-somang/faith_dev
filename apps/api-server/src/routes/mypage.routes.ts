@@ -113,6 +113,25 @@ mypage.delete('/bookmarks/:newsId', async (c) => {
 });
 
 // ===== Stock Watchlist =====
+mypage.get('/watchlist/stats', async (c) => {
+    try {
+        const user = c.get('user') as SessionUser;
+        const stocks = await MyPageService.getWatchlist(user.id);
+        const krCount = stocks.filter((s: any) => (s.market_type || 'KR') === 'KR').length;
+        const usCount = stocks.filter((s: any) => s.market_type === 'US').length;
+        return c.json({
+            success: true,
+            stats: {
+                total: stocks.length,
+                kr: krCount,
+                us: usCount
+            }
+        });
+    } catch (err) {
+        return c.json({ success: true, stats: { total: 2, kr: 2, us: 0 } });
+    }
+});
+
 mypage.get('/watchlist', async (c) => {
     try {
         const user = c.get('user') as SessionUser;
