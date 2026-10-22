@@ -335,9 +335,10 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
     return (
         <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
-            {/* 상단 아지트 뱃지 & 아지트 이름 수정 / 방명록·상점 팝업 안내 바 */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+            {/* 상단 아지트 뱃지 & 아지트 이름 수정 / 방명록·상점 팝업 안내 바 (2줄 구조) */}
+            <div className="flex flex-col gap-2.5 px-4 sm:px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
+                {/* 1번째 줄: MY AGIT 뱃지 + 아지트 이름 전체 + 수정 버튼 */}
+                <div className="w-full flex flex-wrap items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide shrink-0">
                         MY AGIT
                     </span>
@@ -379,8 +380,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             </button>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                            <span className="text-xs sm:text-sm font-extrabold text-slate-800 break-words">
                                 {displayRoomTitle}
                             </span>
                             {isOwner && onSaveRoomTitle && (
@@ -401,64 +402,69 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     )}
                 </div>
 
+                {/* 2번째 줄: 가구 배치 현황 + 방명록 + 상점·보관함 팝업 버튼 */}
                 {isEditMode ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
+                    <div className="w-full flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
                             <i className="fas fa-hand-pointer animate-bounce"></i>
                             <span>바닥 타일 클릭 시 [{selectedItemMeta?.name || '아바타'}] 이동</span>
                         </span>
-                        {onOpenShopModal && (
-                            <button
-                                type="button"
-                                onClick={onOpenShopModal}
-                                className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer flex items-center gap-1"
-                            >
-                                <span>🎁 아지트 상점·보관함 팝업</span>
-                            </button>
-                        )}
-                        {onCancelEdit && (
-                            <button
-                                type="button"
-                                onClick={onCancelEdit}
-                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
-                            >
-                                취소
-                            </button>
-                        )}
-                        {onSaveRoom && (
-                            <button
-                                type="button"
-                                onClick={onSaveRoom}
-                                disabled={isSaving}
-                                className="px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer disabled:opacity-50"
-                            >
-                                {isSaving ? '저장 중...' : '💾 저장'}
-                            </button>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            {onOpenShopModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenShopModal}
+                                    className="px-3 py-1 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>🎁 아지트 상점·보관함 팝업</span>
+                                </button>
+                            )}
+                            {onCancelEdit && (
+                                <button
+                                    type="button"
+                                    onClick={onCancelEdit}
+                                    className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
+                                >
+                                    취소
+                                </button>
+                            )}
+                            {onSaveRoom && (
+                                <button
+                                    type="button"
+                                    onClick={onSaveRoom}
+                                    disabled={isSaving}
+                                    className="px-3 py-1 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+                                >
+                                    {isSaving ? '저장 중...' : '💾 저장'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 ) : (
-                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className="text-[11px] text-slate-400 font-semibold mr-0.5">
+                    <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                        <span className="text-[11px] text-slate-500 font-bold">
                             가구 {layout.placedItems.length}개 배치됨
                         </span>
-                        {onOpenGuestbookModal && (
-                            <button
-                                type="button"
-                                onClick={onOpenGuestbookModal}
-                                className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                            >
-                                <span>📖 방명록 ({guestbookCount})</span>
-                            </button>
-                        )}
-                        {onOpenShopModal && (
-                            <button
-                                type="button"
-                                onClick={onOpenShopModal}
-                                className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
-                            >
-                                <span>🎁 상점·보관함 팝업</span>
-                            </button>
-                        )}
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            {onOpenGuestbookModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenGuestbookModal}
+                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>📖 방명록 ({guestbookCount})</span>
+                                </button>
+                            )}
+                            {onOpenShopModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenShopModal}
+                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>🎁 상점·보관함 팝업</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
