@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { getCatalogItemById } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
+import { useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
 
 interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
@@ -73,6 +74,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     isSaving,
 }) => {
     const { weather } = useWeather();
+    const avatarSim = useAvatarLifeSim({ layout, isEditMode });
     const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
     const displayRoomTitle = roomTitle?.trim() || defaultRoomTitle;
 
@@ -253,7 +255,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         })),
         {
             kind: 'minimi' as const,
-            depth: layout.minimiX + layout.minimiY + 0.1,
+            depth: avatarSim.animX + avatarSim.animY + 0.1,
         },
     ].sort((a, b) => a.depth - b.depth);
 
@@ -290,26 +292,36 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         );
     };
 
-    // 나노바나나 고해상도 3D 미니미 아바타 렌더러
+    // 나노바나나 고해상도 3D 미니미 아바타 렌더러 (자율 이동·앉기·호흡 애니메이션 반영)
     const renderMinimiGraphic = (minimiId: string) => {
         const meta = getCatalogItemById(minimiId);
         const spriteUrl = meta?.spriteUrl || `/images/minihome/items/${minimiId}.png`;
         const w = meta?.spriteWidth || 98;
         const h = meta?.spriteHeight || 98;
         const offsetY = meta?.spriteOffsetY ?? 14;
+        const totalOffsetY = avatarSim.sitOffsetY + avatarSim.bobOffsetY;
+        const shadowScale = avatarSim.isWalking ? 0.92 : avatarSim.isSitting ? 1.08 : 1;
 
         return (
             <g>
                 {/* 발 밑 바닥 그림자 */}
-                <ellipse cx="0" cy="6" rx="24" ry="12" fill="rgba(15, 23, 42, 0.26)" />
-                <image
-                    href={spriteUrl}
-                    x={-w / 2}
-                    y={-h + offsetY}
-                    width={w}
-                    height={h}
-                    preserveAspectRatio="xMidYMax meet"
+                <ellipse
+                    cx="0"
+                    cy="6"
+                    rx={Math.round(24 * shadowScale)}
+                    ry={Math.round(12 * shadowScale)}
+                    fill="rgba(15, 23, 42, 0.26)"
                 />
+                <g transform={`translate(0, ${totalOffsetY}) scale(${avatarSim.facingLeft ? -1 : 1}, ${avatarSim.isSitting ? 0.94 : 1})`}>
+                    <image
+                        href={spriteUrl}
+                        x={-w / 2}
+                        y={-h + offsetY}
+                        width={w}
+                        height={h}
+                        preserveAspectRatio="xMidYMax meet"
+                    />
+                </g>
             </g>
         );
     };
@@ -937,8 +949,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             );
                         }
 
-                        // 아바타
-                        const minimiPos = getTileCenter(layout.minimiX, layout.minimiY);
+                        // 아바타 (자율 산책 및 가구 상호작용 연속 좌표 반영)
+                        const minimiPos = getTileCenter(avatarSim.animX, avatarSim.animY);
                         const isMinimiSelected = isEditMode && selectedTargetId === 'minimi';
 
                         return (
@@ -963,6 +975,32 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     />
                                 )}
                                 {renderMinimiGraphic(layout.minimiItemId)}
+
+                                {/* 가구 상호작용 중일 때 표시되는 아담한 상태 배지 */}
+                                {!isEditMode && avatarSim.activityBadge && (
+                                    <g transform={`translate(0, ${-88 + avatarSim.sitOffsetY})`}>
+                                        <rect
+                                            x="-68"
+                                            y="-18"
+                                            width="136"
+                                            height="20"
+                                            rx="10"
+                                            fill="rgba(15, 23, 42, 0.78)"
+                                            stroke="rgba(255, 255, 255, 0.35)"
+                                            strokeWidth="1"
+                                        />
+                                        <text
+                                            x="0"
+                                            y="-5"
+                                            textAnchor="middle"
+                                            fill="#ffffff"
+                                            fontSize="9.5"
+                                            fontWeight="800"
+                                        >
+                                            {avatarSim.activityBadge}
+                                        </text>
+                                    </g>
+                                )}
 
                                 {/* 미니미 이름표 */}
                                 <rect x="-40" y="12" width="80" height="17" rx="8.5" fill="rgba(15, 23, 42, 0.82)" />
