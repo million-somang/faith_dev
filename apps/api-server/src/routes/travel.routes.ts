@@ -519,7 +519,13 @@ travelRoutes.get('/api/travel/:id{[0-9]+}', async (c) => {
         const result = await pool.query('SELECT * FROM travel_articles WHERE id = $1 AND hidden = 0', [id]);
         if (result.rows.length === 0) {
             c.set('errorLogged', true);
-            logApiError(c, 404, `존재하지 않는 여행기 조회 (#${id})`, performance.now() - t0);
+            logActivity(
+                'ℹ️',
+                '만료여행기404',
+                getActorLabel(c),
+                `삭제·만료된 과거 여행기 URL 조회 (#${id}) ➔ 404 응답 처리`,
+                performance.now() - t0
+            );
             return c.json({ success: false, message: 'Travel article not found' }, 404);
         }
 

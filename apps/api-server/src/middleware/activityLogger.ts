@@ -80,7 +80,12 @@ export function getActorLabel(c: Context, explicitUserId?: number | string | nul
             return `API발행(${maskIp(getClientIp(c))})`;
         }
 
-        return `비회원(${maskIp(getClientIp(c))}·${device})`;
+        const ipLabel = maskIp(getClientIp(c));
+        if (ipLabel === '로컬' && (device === 'Script' || device === 'API')) {
+            return '포털SSR(크롤러·프리뷰)';
+        }
+
+        return `비회원(${ipLabel}·${device})`;
     } catch {
         return '방문자';
     }
@@ -309,13 +314,17 @@ export async function activityLoggerMiddleware(c: Context, next: Next) {
         const pathWithQuery = getReadablePathWithQuery(c);
         const time = getKstTimeString();
         const actor = getActorLabel(c);
+        if (status === 404) {
+            console.log(`[${time}] ℹ️ [미존재경로404] ${actor} ➔ ${method} ${pathWithQuery} (404 응답) [${Math.round(elapsed)}ms]`);
+            return;
+        }
         const badge = status >= 500 ? '🚨 [API서버에러]' : '⚠️ [API요청오류]';
         console.error(`[${time}] ${badge} ${method} ${pathWithQuery} ➔ HTTP ${status} | ${actor} [${Math.round(elapsed)}ms]`);
         return;
     }
 
-    // 3. 500ms 이상 소요된 지연 API 요청 경고 로깅
-    if (elapsed >= 500 && path.startsWith('/api/')) {
+    // 3. 500ms 이상 소요된 지연 API 요청 경고 로깅 (정상 2xx/3xx 응답 대상)
+    if (elapsed >= 500 && status < 400 && path.startsWith('/api/')) {
         const pathWithQuery = getReadablePathWithQuery(c);
         logActivity('🐢', '지연요청감지', getActorLabel(c), `${method} ${pathWithQuery} (HTTP ${status})`, elapsed);
     }

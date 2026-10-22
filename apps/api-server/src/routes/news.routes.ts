@@ -286,7 +286,13 @@ news.get('/api/news/:id{[0-9]+}', async (c) => {
         const result = await pool.query('SELECT * FROM news WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             c.set('errorLogged', true);
-            logApiError(c, 404, `존재하지 않는 뉴스 기사 조회 (#${id})`, performance.now() - t0);
+            logActivity(
+                'ℹ️',
+                '만료뉴스404',
+                getActorLabel(c),
+                `삭제·만료된 과거 뉴스 URL 조회 (#${id}) ➔ 404 응답 처리`,
+                performance.now() - t0
+            );
             return c.json({ success: false, message: 'News not found' }, 404);
         }
         const row = result.rows[0];
