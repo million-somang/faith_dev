@@ -43,6 +43,7 @@ export function useMinihome(routeHandle: string) {
     // 꾸미기 모드 & 상점 팝업(모달) 상태
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [isShopModalOpen, setIsShopModalOpen] = useState<boolean>(false);
+    const [isGuestbookModalOpen, setIsGuestbookModalOpen] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [isBuyingItemId, setIsBuyingItemId] = useState<string | null>(null);
 
@@ -475,6 +476,8 @@ export function useMinihome(routeHandle: string) {
         isEditMode,
         isShopModalOpen,
         setIsShopModalOpen,
+        isGuestbookModalOpen,
+        setIsGuestbookModalOpen,
         isSaving,
         isBuyingItemId,
         draftLayout,

@@ -152,6 +152,8 @@ export default function MyPage() {
         isEditMode: minihomeEditMode,
         isShopModalOpen: minihomeShopModalOpen,
         setIsShopModalOpen: setMinihomeShopModalOpen,
+        isGuestbookModalOpen: minihomeGuestbookModalOpen,
+        setIsGuestbookModalOpen: setMinihomeGuestbookModalOpen,
         isSaving: minihomeSaving,
         isBuyingItemId: minihomeBuyingItemId,
         draftLayout: minihomeDraftLayout,
@@ -1029,6 +1031,14 @@ export default function MyPage() {
 
                                                     <button
                                                         type="button"
+                                                        onClick={() => setMinihomeGuestbookModalOpen(true)}
+                                                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                                    >
+                                                        <span>📖 방명록 ({minihomeGuestbook.length})</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
                                                         onClick={handleShareMinihome}
                                                         className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
                                                         title="내 아지트 주소 복사/공유"
@@ -1162,6 +1172,15 @@ export default function MyPage() {
                                                                 </button>
                                                             </div>
                                                         )}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMinihomeGuestbookModalOpen(true)}
+                                                            className="w-full py-3 px-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-black text-xs sm:text-sm shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                                        >
+                                                            <i className="fas fa-book-open"></i>
+                                                            <span>아지트 방명록 ({minihomeGuestbook.length})</span>
+                                                        </button>
 
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <button
@@ -1308,40 +1327,43 @@ export default function MyPage() {
                                                     onCancelEdit={handleMinihomeCancelEditMode}
                                                     isSaving={minihomeSaving}
                                                 />
-
-                                                {/* 2) 방문자 방명록 */}
-                                                <MinihomeGuestbook
-                                                    entries={minihomeGuestbook}
-                                                    isOwner={minihomeProfile.isOwner}
-                                                    ownerName={minihomeProfile.ownerName || user.name}
-                                                    onAddEntry={handleMinihomeAddGuestbook}
-                                                    onReplyEntry={handleMinihomeReplyGuestbook}
-                                                    onDeleteEntry={handleMinihomeSoftDeleteGuestbook}
-                                                />
                                             </div>
                                         </div>
                                     ) : null}
 
-                                    {/* 3. 아지트 아이템 상점 & 내 보관함 팝업 모달 */}
+                                    {/* 3. 아지트 아이템 상점 & 방명록 팝업 모달 */}
                                     {minihomeProfile && (
-                                        <MinihomeShopDrawer
-                                            isOpen={minihomeShopModalOpen}
-                                            onClose={() => setMinihomeShopModalOpen(false)}
-                                            ownedItemIds={minihomeProfile.ownedItemIds}
-                                            veraPoints={minihomeProfile.veraPoints}
-                                            draftLayout={minihomeDraftLayout}
-                                            isBuyingItemId={minihomeBuyingItemId}
-                                            onApplyItem={(item) => {
-                                                if (!minihomeEditMode) {
-                                                    handleMinihomeEnterEditMode(true);
-                                                }
-                                                handleMinihomeApplyCatalogItem(item);
-                                            }}
-                                            onPurchaseItem={handleMinihomePurchaseItem}
-                                            onResetRoom={handleMinihomeResetDefaultRoom}
-                                            onSaveRoom={() => handleSaveMinihome()}
-                                            isSaving={minihomeSaving}
-                                        />
+                                        <>
+                                            <MinihomeShopDrawer
+                                                isOpen={minihomeShopModalOpen}
+                                                onClose={() => setMinihomeShopModalOpen(false)}
+                                                ownedItemIds={minihomeProfile.ownedItemIds}
+                                                veraPoints={minihomeProfile.veraPoints}
+                                                draftLayout={minihomeDraftLayout}
+                                                isBuyingItemId={minihomeBuyingItemId}
+                                                onApplyItem={(item) => {
+                                                    if (!minihomeEditMode) {
+                                                        handleMinihomeEnterEditMode(true);
+                                                    }
+                                                    handleMinihomeApplyCatalogItem(item);
+                                                }}
+                                                onPurchaseItem={handleMinihomePurchaseItem}
+                                                onResetRoom={handleMinihomeResetDefaultRoom}
+                                                onSaveRoom={() => handleSaveMinihome()}
+                                                isSaving={minihomeSaving}
+                                            />
+
+                                            <MinihomeGuestbook
+                                                isOpen={minihomeGuestbookModalOpen}
+                                                onClose={() => setMinihomeGuestbookModalOpen(false)}
+                                                entries={minihomeGuestbook}
+                                                isOwner={minihomeProfile.isOwner}
+                                                ownerName={minihomeProfile.ownerName || user.name}
+                                                onAddEntry={handleMinihomeAddGuestbook}
+                                                onReplyEntry={handleMinihomeReplyGuestbook}
+                                                onDeleteEntry={handleMinihomeSoftDeleteGuestbook}
+                                            />
+                                        </>
                                     )}
 
                                     {/* 4. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 아지트 하단에 통합) */}

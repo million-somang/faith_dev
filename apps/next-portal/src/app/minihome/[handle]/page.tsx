@@ -32,6 +32,8 @@ export default function MinihomePage() {
         isEditMode,
         isShopModalOpen,
         setIsShopModalOpen,
+        isGuestbookModalOpen,
+        setIsGuestbookModalOpen,
         isSaving,
         isBuyingItemId,
         draftLayout,
@@ -246,6 +248,14 @@ export default function MinihomePage() {
 
                                 <button
                                     type="button"
+                                    onClick={() => setIsGuestbookModalOpen(true)}
+                                    className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                >
+                                    <span>📖 방명록 ({guestbook.length})</span>
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={handleShareMinihome}
                                     className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
                                     title="내 아지트 주소 복사/공유"
@@ -397,6 +407,15 @@ export default function MinihomePage() {
                                             </div>
                                         )}
 
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsGuestbookModalOpen(true)}
+                                            className="w-full py-3 px-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-black text-xs sm:text-sm shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                                        >
+                                            <i className="fas fa-book-open"></i>
+                                            <span>아지트 방명록 ({guestbook.length})</span>
+                                        </button>
+
                                         <div className="grid grid-cols-2 gap-2">
                                             <Link
                                                 href="/mypage"
@@ -508,16 +527,6 @@ export default function MinihomePage() {
                                     onSaveRoom={() => handleSaveMinihome()}
                                     onCancelEdit={handleCancelEditMode}
                                     isSaving={isSaving}
-                                />
-
-                                {/* 2) 아지트 방문자 방명록 */}
-                                <MinihomeGuestbook
-                                    entries={guestbook}
-                                    isOwner={profile.isOwner}
-                                    ownerName={profile.ownerName}
-                                    onAddEntry={handleAddGuestbook}
-                                    onReplyEntry={handleReplyGuestbook}
-                                    onDeleteEntry={handleSoftDeleteGuestbook}
                                 />
                             </div>
                         </div>
@@ -672,21 +681,34 @@ export default function MinihomePage() {
                 )}
             </div>
 
-            {/* 아지트 상점 & 보관함 팝업 모달 */}
+            {/* 아지트 상점 & 방명록 팝업 모달 */}
             {profile && (
-                <MinihomeShopDrawer
-                    isOpen={isShopModalOpen}
-                    onClose={() => setIsShopModalOpen(false)}
-                    ownedItemIds={profile.ownedItemIds}
-                    veraPoints={profile.veraPoints}
-                    draftLayout={draftLayout}
-                    isBuyingItemId={isBuyingItemId}
-                    onApplyItem={handleApplyCatalogItem}
-                    onPurchaseItem={handlePurchaseItem}
-                    onResetRoom={handleResetDefaultRoom}
-                    onSaveRoom={() => handleSaveMinihome()}
-                    isSaving={isSaving}
-                />
+                <>
+                    <MinihomeShopDrawer
+                        isOpen={isShopModalOpen}
+                        onClose={() => setIsShopModalOpen(false)}
+                        ownedItemIds={profile.ownedItemIds}
+                        veraPoints={profile.veraPoints}
+                        draftLayout={draftLayout}
+                        isBuyingItemId={isBuyingItemId}
+                        onApplyItem={handleApplyCatalogItem}
+                        onPurchaseItem={handlePurchaseItem}
+                        onResetRoom={handleResetDefaultRoom}
+                        onSaveRoom={() => handleSaveMinihome()}
+                        isSaving={isSaving}
+                    />
+
+                    <MinihomeGuestbook
+                        isOpen={isGuestbookModalOpen}
+                        onClose={() => setIsGuestbookModalOpen(false)}
+                        entries={guestbook}
+                        isOwner={profile.isOwner}
+                        ownerName={profile.ownerName}
+                        onAddEntry={handleAddGuestbook}
+                        onReplyEntry={handleReplyGuestbook}
+                        onDeleteEntry={handleSoftDeleteGuestbook}
+                    />
+                </>
             )}
 
             {/* 이웃 아지트 전체보기 모달 */}
