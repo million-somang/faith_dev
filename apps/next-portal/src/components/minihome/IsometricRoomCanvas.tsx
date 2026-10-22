@@ -613,10 +613,9 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             );
                         }
 
-                        // 아바타 + 말풍선
+                        // 아바타
                         const minimiPos = getTileCenter(layout.minimiX, layout.minimiY);
                         const isMinimiSelected = isEditMode && selectedTargetId === 'minimi';
-                        const bubbleText = layout.speechBubble || `${ownerName}의 아지트에 오신 것을 환영합니다!`;
 
                         return (
                             <g
@@ -646,31 +645,6 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                 <text x="0" y="23.5" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="800">
                                     {ownerName.slice(0, 8)}
                                 </text>
-
-                                {/* 머리 위 한줄 말풍선 */}
-                                <g transform="translate(0, -90)">
-                                    <rect
-                                        x="-128"
-                                        y="-24"
-                                        width="256"
-                                        height="28"
-                                        rx="14"
-                                        fill="#ffffff"
-                                        stroke="#6366f1"
-                                        strokeWidth="2"
-                                    />
-                                    <polygon points="-6,4 6,4 0,11" fill="#6366f1" />
-                                    <text
-                                        x="0"
-                                        y="-6"
-                                        textAnchor="middle"
-                                        fill="#1e293b"
-                                        fontSize="11"
-                                        fontWeight="800"
-                                    >
-                                        💬 {bubbleText.length > 22 ? `${bubbleText.slice(0, 22)}…` : bubbleText}
-                                    </text>
-                                </g>
                             </g>
                         );
                     })}
@@ -733,24 +707,6 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     </div>
                 )}
             </div>
-
-            {/* 꾸미기 모드 시 아바타 한줄 말풍선 즉시 편집 바 */}
-            {isEditMode && onChangeSpeechBubble && (
-                <div className="px-4 py-3 bg-indigo-50/70 border-t border-indigo-100 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <label className="text-xs font-extrabold text-indigo-900 shrink-0 flex items-center gap-1.5">
-                        <i className="fas fa-comment-dots text-indigo-600"></i>
-                        <span>아바타 말풍선:</span>
-                    </label>
-                    <input
-                        type="text"
-                        maxLength={40}
-                        value={layout.speechBubble}
-                        onChange={(e) => onChangeSpeechBubble(e.target.value)}
-                        placeholder="아바타 머리 위에 띄울 한줄 인사말을 입력하세요 (최대 40자)"
-                        className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-indigo-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                </div>
-            )}
         </div>
     );
 };

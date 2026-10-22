@@ -433,11 +433,13 @@ export default function MinihomePage() {
                                     </div>
 
                                     {/* 보유 포인트 & 아이템 현황 */}
-                                    <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2.5 text-center">
-                                        <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70">
-                                            <div className="text-[10px] font-bold text-amber-700">베라포인트</div>
-                                            <div className="text-sm font-black text-amber-900 mt-0.5">
-                                                🪙 {profile.veraPoints.toLocaleString()} P
+                                    <div className="pt-3 border-t border-slate-100 grid grid-cols-2 gap-2.5 text-left">
+                                        <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 text-left">
+                                            <div className="text-[10px] font-bold text-amber-700 flex items-center justify-between">
+                                                <span>🪙 베라포인트</span>
+                                            </div>
+                                            <div className="text-xs font-black text-amber-900 mt-0.5 font-mono truncate">
+                                                {profile.veraPoints.toLocaleString()} P
                                             </div>
                                         </div>
                                         <div
@@ -445,11 +447,14 @@ export default function MinihomePage() {
                                                 if (!isEditMode) handleEnterEditMode(true);
                                                 else setIsShopModalOpen(true);
                                             }}
-                                            className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 transition-colors"
+                                            className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 text-left transition-colors"
                                         >
-                                            <div className="text-[10px] font-bold text-indigo-700">아지트 아이템</div>
-                                            <div className="text-sm font-black text-indigo-900 mt-0.5">
-                                                🎁 {VERA_POINT_SHOP_ENABLED ? `${profile.ownedItemIds.length}종` : '전 품목 무료'}
+                                            <div className="text-[10px] font-bold text-indigo-700 flex items-center justify-between">
+                                                <span>🎁 아지트 아이템</span>
+                                                <i className="fas fa-chevron-right text-[8px]"></i>
+                                            </div>
+                                            <div className="text-xs font-black text-indigo-900 mt-0.5 truncate">
+                                                {VERA_POINT_SHOP_ENABLED ? `${profile.ownedItemIds.length}종 보유` : '전 품목 무료'}
                                             </div>
                                         </div>
                                     </div>

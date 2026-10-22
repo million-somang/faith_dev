@@ -1201,14 +1201,16 @@ export default function MyPage() {
 
                                                     {/* 나의 홈 3대 퀵 스탯 보드 (베라포인트·보유가구·오늘일정·사주행운지수 통합) */}
                                                     <div className="pt-3 border-t border-slate-100 space-y-2.5">
-                                                        <div className="grid grid-cols-2 gap-2 text-center">
+                                                        <div className="grid grid-cols-2 gap-2 text-left">
                                                             <div
                                                                 onClick={() => user?.email === 'sukman@naver.com' && router.push('/reward/exchange')}
-                                                                className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 cursor-pointer hover:bg-amber-100/70 transition-colors"
+                                                                className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200/70 cursor-pointer hover:bg-amber-100/70 text-left transition-colors"
                                                             >
-                                                                <div className="text-[10px] font-bold text-amber-700">베라포인트(P)</div>
-                                                                <div className="text-sm font-black text-amber-900 mt-0.5 font-mono">
-                                                                    💎 {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
+                                                                <div className="text-[10px] font-bold text-amber-700 flex items-center justify-between">
+                                                                    <span>💎 베라포인트(P)</span>
+                                                                </div>
+                                                                <div className="text-xs font-black text-amber-900 mt-0.5 font-mono truncate">
+                                                                    {(minihomeProfile.veraPoints || veraPointsData.points).toLocaleString()} P
                                                                 </div>
                                                             </div>
                                                             <div
@@ -1219,11 +1221,14 @@ export default function MyPage() {
                                                                         setMinihomeShopModalOpen(true);
                                                                     }
                                                                 }}
-                                                                className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 transition-colors"
+                                                                className="p-3 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 cursor-pointer hover:bg-indigo-100/70 text-left transition-colors"
                                                             >
-                                                                <div className="text-[10px] font-bold text-indigo-700">보유 가구·소품</div>
-                                                                <div className="text-sm font-black text-indigo-900 mt-0.5">
-                                                                    🎁 {minihomeProfile.ownedItemIds.length}종
+                                                                <div className="text-[10px] font-bold text-indigo-700 flex items-center justify-between">
+                                                                    <span>🎁 보유 가구·소품</span>
+                                                                    <i className="fas fa-chevron-right text-[8px]"></i>
+                                                                </div>
+                                                                <div className="text-xs font-black text-indigo-900 mt-0.5 truncate">
+                                                                    {minihomeProfile.ownedItemIds.length}종 보유
                                                                 </div>
                                                             </div>
                                                         </div>
