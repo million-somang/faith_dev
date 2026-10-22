@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { MinihomeGuestbookEntry } from '@/types/minihome.types';
-import { QUICK_ILCHON_MESSAGES } from '@/data/minihomeCatalogData';
+import { getCatalogItemById, QUICK_ILCHON_MESSAGES } from '@/data/minihomeCatalogData';
 
 interface MinihomeGuestbookProps {
     entries: MinihomeGuestbookEntry[];
@@ -147,9 +147,17 @@ export const MinihomeGuestbook: React.FC<MinihomeGuestbookProps> = ({
                                     <Link
                                         href={`/minihome/${encodeURIComponent(entry.authorHandle)}`}
                                         title={`${entry.authorName}님의 미니홈피 놀러가기`}
-                                        className="w-10 h-10 rounded-2xl bg-white border border-slate-200 flex items-center justify-center text-lg shadow-2xs hover:scale-105 transition-transform shrink-0"
+                                        className="w-11 h-11 rounded-2xl bg-white border border-slate-200 flex items-center justify-center p-1 shadow-2xs hover:scale-105 transition-transform shrink-0 overflow-hidden"
                                     >
-                                        {getMinimiBadgeEmoji(entry.authorMinimiId)}
+                                        <img
+                                            src={
+                                                getCatalogItemById(entry.authorMinimiId)?.spriteUrl ||
+                                                '/images/minihome/items/minimi-casual.png'
+                                            }
+                                            alt={entry.authorName}
+                                            className="w-full h-full object-contain"
+                                            loading="lazy"
+                                        />
                                     </Link>
                                     <div>
                                         <div className="flex items-center gap-1.5 flex-wrap">

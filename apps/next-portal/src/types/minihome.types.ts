@@ -21,6 +21,10 @@ export interface MinihomeCatalogItem {
     badgeText?: string;
     description: string;
     accentColor: string;
+    spriteUrl?: string;
+    spriteWidth?: number;
+    spriteHeight?: number;
+    spriteOffsetY?: number;
 }
 
 export interface MinihomeBgmTrack {

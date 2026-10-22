@@ -1111,8 +1111,17 @@ const DEFAULT_SHOPPING_ITEMS = [
 
                                                     {/* 대표 미니미 카드 & 주인장 소개 */}
                                                     <div className="text-center p-4 rounded-2xl bg-gradient-to-b from-indigo-50/60 to-slate-50 border border-slate-200/70 space-y-2">
-                                                        <div className="w-16 h-16 rounded-2xl bg-white border-2 border-indigo-200 shadow-xs mx-auto flex items-center justify-center text-3xl">
-                                                            {currentMoodMeta.emoji}
+                                                        <div className="w-20 h-20 rounded-2xl bg-white border-2 border-indigo-200 shadow-xs mx-auto flex items-center justify-center p-1.5 overflow-hidden">
+                                                            <img
+                                                                src={
+                                                                    getCatalogItemById(
+                                                                        (minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout)
+                                                                            .minimiItemId
+                                                                    )?.spriteUrl || '/images/minihome/items/minimi-casual.png'
+                                                                }
+                                                                alt="대표 미니미 캐릭터"
+                                                                className="w-full h-full object-contain"
+                                                            />
                                                         </div>
                                                         <div className="font-black text-base text-slate-900">
                                                             {minihomeProfile.ownerName || user.name}

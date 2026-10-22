@@ -175,13 +175,21 @@ export const MinihomeShopDrawer: React.FC<MinihomeShopDrawerProps> = ({
                         >
                             <div>
                                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow-2xs border border-black/5 shrink-0"
-                                            style={{ backgroundColor: item.accentColor }}
-                                        >
-                                            {getCategoryEmoji(item.category, item.isTrophy)}
-                                        </span>
+                                    <div className="flex items-center gap-2.5">
+                                        {item.spriteUrl ? (
+                                            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-2xs border border-slate-200/80 shrink-0 p-1 overflow-hidden">
+                                                <img
+                                                    src={item.spriteUrl}
+                                                    alt={item.name}
+                                                    className="w-full h-full object-contain"
+                                                    loading="lazy"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <span className="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center text-lg shadow-2xs border border-indigo-100 shrink-0">
+                                                {getCategoryEmoji(item.category, item.isTrophy)}
+                                            </span>
+                                        )}
                                         <div>
                                             <h4 className="text-xs font-black text-slate-900 leading-snug">
                                                 {item.name}
