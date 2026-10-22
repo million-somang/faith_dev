@@ -220,21 +220,7 @@ export default function MinihomePage() {
                                 }}
                             />
 
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (!isEditMode) {
-                                            handleEnterEditMode(true);
-                                        } else {
-                                            setIsShopModalOpen(true);
-                                        }
-                                    }}
-                                    className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                >
-                                    <span>🎁 아지트 상점</span>
-                                </button>
-
+                            <div className="flex flex-wrap items-center gap-2">
                                 {surfData.popularRooms.length > 0 && (
                                     <button
                                         type="button"
@@ -252,6 +238,20 @@ export default function MinihomePage() {
                                     className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
                                 >
                                     <span>📖 방명록 ({guestbook.length})</span>
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (!isEditMode) {
+                                            handleEnterEditMode(true);
+                                        } else {
+                                            setIsShopModalOpen(true);
+                                        }
+                                    }}
+                                    className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                >
+                                    <span>🎁 상점·보관함 팝업</span>
                                 </button>
 
                                 <button
@@ -508,6 +508,14 @@ export default function MinihomePage() {
                                 <IsometricRoomCanvas
                                     layout={isEditMode ? draftLayout : profile.layout}
                                     ownerName={profile.ownerName}
+                                    roomTitle={isEditMode ? draftRoomTitle : profile.roomTitle}
+                                    isOwner={Boolean(profile.isOwner)}
+                                    onSaveRoomTitle={(newTitle) => {
+                                        setDraftRoomTitle(newTitle);
+                                        handleSaveMinihome({ roomTitle: newTitle });
+                                    }}
+                                    guestbookCount={guestbook.length}
+                                    onOpenGuestbookModal={() => setIsGuestbookModalOpen(true)}
                                     isEditMode={isEditMode}
                                     selectedTargetId={selectedTargetId}
                                     onSelectTarget={(id) => {

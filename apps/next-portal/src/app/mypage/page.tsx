@@ -1039,6 +1039,20 @@ export default function MyPage() {
 
                                                     <button
                                                         type="button"
+                                                        onClick={() => {
+                                                            if (!minihomeEditMode) {
+                                                                handleMinihomeEnterEditMode(true);
+                                                            } else {
+                                                                setMinihomeShopModalOpen(true);
+                                                            }
+                                                        }}
+                                                        className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
+                                                    >
+                                                        <span>🎁 상점·보관함 팝업</span>
+                                                    </button>
+
+                                                    <button
+                                                        type="button"
                                                         onClick={handleShareMinihome}
                                                         className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
                                                         title="내 아지트 주소 복사/공유"
@@ -1313,6 +1327,14 @@ export default function MyPage() {
                                                 <IsometricRoomCanvas
                                                     layout={minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout}
                                                     ownerName={minihomeProfile.ownerName || user.name}
+                                                    roomTitle={minihomeEditMode ? minihomeDraftRoomTitle : minihomeProfile.roomTitle}
+                                                    isOwner={Boolean(minihomeProfile.isOwner)}
+                                                    onSaveRoomTitle={(newTitle) => {
+                                                        setMinihomeDraftRoomTitle(newTitle);
+                                                        handleSaveMinihome({ roomTitle: newTitle });
+                                                    }}
+                                                    guestbookCount={minihomeGuestbook.length}
+                                                    onOpenGuestbookModal={() => setMinihomeGuestbookModalOpen(true)}
                                                     isEditMode={minihomeEditMode}
                                                     selectedTargetId={minihomeSelectedTargetId}
                                                     onSelectTarget={(id) => {

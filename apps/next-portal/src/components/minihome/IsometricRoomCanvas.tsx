@@ -1,12 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { getCatalogItemById } from '@/data/minihomeCatalogData';
+import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
 
 interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
     ownerName: string;
+    roomTitle?: string;
+    isOwner?: boolean;
+    onSaveRoomTitle?: (newTitle: string) => void;
+    guestbookCount?: number;
+    onOpenGuestbookModal?: () => void;
     isEditMode: boolean;
     selectedTargetId: string;
     onSelectTarget: (targetId: string) => void;
@@ -49,6 +55,11 @@ function getTilePolygonPoints(gridX: number, gridY: number): string {
 export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     layout,
     ownerName,
+    roomTitle,
+    isOwner = false,
+    onSaveRoomTitle,
+    guestbookCount = 0,
+    onOpenGuestbookModal,
     isEditMode,
     selectedTargetId,
     onSelectTarget,
@@ -61,6 +72,39 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onCancelEdit,
     isSaving,
 }) => {
+    const { weather } = useWeather();
+    const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
+    const displayRoomTitle = roomTitle?.trim() || defaultRoomTitle;
+
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [titleDraft, setTitleDraft] = useState(displayRoomTitle);
+
+    useEffect(() => {
+        if (!isEditingTitle) {
+            setTitleDraft(displayRoomTitle);
+        }
+    }, [displayRoomTitle, isEditingTitle]);
+
+    const handleConfirmTitleSave = () => {
+        const trimmed = titleDraft.trim() || defaultRoomTitle;
+        if (onSaveRoomTitle) {
+            onSaveRoomTitle(trimmed);
+        }
+        setIsEditingTitle(false);
+    };
+
+    const weatherScene: WeatherSceneType = weather?.scene || 'clear-day';
+    const isNightWeather =
+        weatherScene === 'clear-night' || weatherScene === 'partly-cloudy-night' || (weather ? !weather.isDay : false);
+    const isRainWeather = weatherScene === 'rain' || weatherScene === 'thunderstorm';
+    const isSnowWeather = weatherScene === 'snow';
+    const isCloudyWeather =
+        weatherScene === 'partly-cloudy-day' ||
+        weatherScene === 'partly-cloudy-night' ||
+        weatherScene === 'cloudy' ||
+        weatherScene === 'fog' ||
+        isRainWeather ||
+        isSnowWeather;
     // 벽면 스타일 테마 컬러 계산 (입체 두께감 포함)
     const getWallTheme = (wallId: string) => {
         switch (wallId) {
@@ -279,15 +323,70 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
     return (
         <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
-            {/* 상단 아지트 뱃지 & 상점 팝업 / 편집 상태 안내 바 */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
-                <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide">
+            {/* 상단 아지트 뱃지 & 아지트 이름 수정 / 방명록·상점 팝업 안내 바 */}
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide shrink-0">
                         MY AGIT
                     </span>
-                    <span className="text-xs font-extrabold text-slate-700">
-                        {ownerName}님의 2.5D 아이소메트릭 아지트
-                    </span>
+
+                    {isEditingTitle && isOwner ? (
+                        <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-md">
+                            <input
+                                type="text"
+                                maxLength={40}
+                                value={titleDraft}
+                                onChange={(e) => setTitleDraft(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleConfirmTitleSave();
+                                    if (e.key === 'Escape') {
+                                        setTitleDraft(displayRoomTitle);
+                                        setIsEditingTitle(false);
+                                    }
+                                }}
+                                placeholder="나만의 아지트 이름을 입력하세요"
+                                className="flex-1 min-w-0 px-2.5 py-1 rounded-xl bg-indigo-50/80 border border-indigo-300 text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                autoFocus
+                            />
+                            <button
+                                type="button"
+                                onClick={handleConfirmTitleSave}
+                                className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black shrink-0 cursor-pointer transition-colors"
+                            >
+                                저장
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setTitleDraft(displayRoomTitle);
+                                    setIsEditingTitle(false);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold shrink-0 cursor-pointer transition-colors"
+                            >
+                                취소
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-xs sm:text-sm font-extrabold text-slate-800 truncate">
+                                {displayRoomTitle}
+                            </span>
+                            {isOwner && onSaveRoomTitle && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setTitleDraft(displayRoomTitle);
+                                        setIsEditingTitle(true);
+                                    }}
+                                    className="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-700 border border-slate-200/90 text-[10px] font-extrabold transition-colors cursor-pointer shrink-0 flex items-center gap-1"
+                                    title="아지트 이름 수정"
+                                >
+                                    <i className="fas fa-pen text-[9px]"></i>
+                                    <span>수정</span>
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {isEditMode ? (
@@ -326,15 +425,24 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-slate-400 font-semibold">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                        <span className="text-[11px] text-slate-400 font-semibold mr-0.5">
                             가구 {layout.placedItems.length}개 배치됨
                         </span>
+                        {onOpenGuestbookModal && (
+                            <button
+                                type="button"
+                                onClick={onOpenGuestbookModal}
+                                className="px-2.5 sm:px-3 py-1 rounded-full bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                            >
+                                <span>📖 방명록 ({guestbookCount})</span>
+                            </button>
+                        )}
                         {onOpenShopModal && (
                             <button
                                 type="button"
                                 onClick={onOpenShopModal}
-                                className="px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
                             >
                                 <span>🎁 상점·보관함 팝업</span>
                             </button>
@@ -348,6 +456,25 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                 className="relative w-full flex-1 min-h-[300px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex flex-col items-center justify-center select-none"
                 data-screenshot-point="result"
             >
+                {/* 실시간 외부 날씨 배지 (포털 날씨 위젯 100% 연동) */}
+                {weather && (
+                    <div
+                        className={`absolute top-2.5 right-2.5 sm:top-3.5 sm:right-4 z-10 px-2.5 py-1 rounded-full border shadow-2xs backdrop-blur-xs flex items-center gap-1.5 text-[11px] font-extrabold transition-colors ${
+                            isNightWeather
+                                ? 'bg-slate-900/85 text-slate-100 border-indigo-400/40'
+                                : isRainWeather
+                                ? 'bg-sky-900/80 text-sky-100 border-sky-400/40'
+                                : 'bg-white/90 text-slate-800 border-slate-200/90'
+                        }`}
+                        title="포털 날씨 위젯 실시간 연동 날씨"
+                    >
+                        <i className={`fas ${weather.icon} text-xs`}></i>
+                        <span>{weather.temp.toFixed(1)}°</span>
+                        <span>{weather.label}</span>
+                        <span className="text-[10px] opacity-75">({weather.location})</span>
+                    </div>
+                )}
+
                 <svg
                     viewBox="95 30 610 505"
                     className="w-full flex-1 object-contain"
@@ -355,21 +482,218 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     aria-label={`${ownerName}의 미니룸 캔버스`}
                 >
                     <defs>
-                        <radialGradient id="roomGlow" cx="50%" cy="46%" r="55%">
-                            <stop offset="0%" stopColor="#e0e7ff" stopOpacity="0.7" />
+                        <radialGradient id="roomGlow" cx="50%" cy="42%" r="58%">
+                            <stop
+                                offset="0%"
+                                stopColor={
+                                    isNightWeather
+                                        ? '#1e1b4b'
+                                        : isRainWeather
+                                        ? '#bae6fd'
+                                        : isSnowWeather
+                                        ? '#e0f2fe'
+                                        : weatherScene === 'cloudy' || weatherScene === 'fog'
+                                        ? '#cbd5e1'
+                                        : '#bae6fd'
+                                }
+                                stopOpacity={isNightWeather ? '0.88' : '0.75'}
+                            />
+                            <stop
+                                offset="65%"
+                                stopColor={
+                                    isNightWeather
+                                        ? '#312e81'
+                                        : isRainWeather
+                                        ? '#e0f2fe'
+                                        : '#e0e7ff'
+                                }
+                                stopOpacity={isNightWeather ? '0.35' : '0.42'}
+                            />
                             <stop offset="100%" stopColor="#f8fafc" stopOpacity="0" />
                         </radialGradient>
                         <linearGradient id="sunlightRay" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#fef08a" stopOpacity="0.32" />
-                            <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
+                            <stop
+                                offset="0%"
+                                stopColor={
+                                    isNightWeather
+                                        ? '#c7d2fe'
+                                        : isRainWeather || weatherScene === 'cloudy'
+                                        ? '#bae6fd'
+                                        : '#fef08a'
+                                }
+                                stopOpacity={isNightWeather ? '0.26' : isRainWeather ? '0.18' : '0.36'}
+                            />
+                            <stop
+                                offset="100%"
+                                stopColor={isNightWeather ? '#c7d2fe' : '#fef08a'}
+                                stopOpacity="0"
+                            />
                         </linearGradient>
                         <filter id="roomDropShadow" x="-15%" y="-10%" width="130%" height="130%">
                             <feDropShadow dx="0" dy="18" stdDeviation="16" floodColor="#0f172a" floodOpacity="0.16" />
                         </filter>
                     </defs>
 
-                    {/* 배경 후광 */}
+                    {/* ==================== 0. 아지트 바깥 실시간 날씨 배경 (외벽 뒤쪽 하늘) ==================== */}
                     <rect x="0" y="0" width="800" height="540" fill="url(#roomGlow)" />
+
+                    {/* 아지트 외벽 바깥 상단 하늘 아우라 */}
+                    <ellipse
+                        cx="400"
+                        cy="155"
+                        rx="285"
+                        ry="115"
+                        fill={
+                            isNightWeather
+                                ? 'rgba(30, 27, 75, 0.72)'
+                                : isRainWeather
+                                ? 'rgba(100, 116, 139, 0.34)'
+                                : isSnowWeather
+                                ? 'rgba(186, 230, 253, 0.55)'
+                                : weatherScene === 'cloudy' || weatherScene === 'fog'
+                                ? 'rgba(148, 163, 184, 0.34)'
+                                : 'rgba(125, 211, 252, 0.42)'
+                        }
+                    />
+
+                    {/* 낮/맑음·구름조금: 아지트 바깥 하늘의 태양 */}
+                    {!isNightWeather && (weatherScene === 'clear-day' || weatherScene === 'partly-cloudy-day') && (
+                        <g transform="translate(205, 78)">
+                            <circle cx="0" cy="0" r="28" fill="#fef08a" opacity="0.45" />
+                            <circle cx="0" cy="0" r="19" fill="#facc15" />
+                            <circle cx="-4" cy="-4" r="6" fill="#fef9c3" opacity="0.8" />
+                        </g>
+                    )}
+
+                    {/* 밤: 아지트 바깥 밤하늘의 초승달과 별빛 */}
+                    {isNightWeather && (
+                        <g>
+                            {/* 반짝이는 별들 */}
+                            {[
+                                { x: 155, y: 92, r: 2.2 },
+                                { x: 245, y: 66, r: 1.8 },
+                                { x: 335, y: 52, r: 2.5 },
+                                { x: 465, y: 55, r: 2.1 },
+                                { x: 560, y: 74, r: 2.6 },
+                                { x: 635, y: 105, r: 1.9 },
+                                { x: 185, y: 140, r: 1.6 },
+                                { x: 615, y: 145, r: 2.2 },
+                            ].map((star, idx) => (
+                                <circle
+                                    key={`sky-star-${idx}`}
+                                    cx={star.x}
+                                    cy={star.y}
+                                    r={star.r}
+                                    fill="#fef08a"
+                                    opacity="0.9"
+                                />
+                            ))}
+                            {/* 초승달 */}
+                            <g transform="translate(210, 78)">
+                                <circle cx="0" cy="0" r="22" fill="#fef08a" opacity="0.25" />
+                                <path
+                                    d="M4,-16 A16,16 0 1,0 16,10 A13,13 0 1,1 4,-16 Z"
+                                    fill="#fde047"
+                                />
+                            </g>
+                        </g>
+                    )}
+
+                    {/* 구름 조금 / 흐림 / 비 / 눈 / 안개: 아지트 바깥 구름 레이어 */}
+                    {isCloudyWeather && (
+                        <g opacity={isNightWeather ? 0.65 : 0.92}>
+                            {/* 좌측 상단 바깥 구름 */}
+                            <g
+                                transform="translate(238, 76)"
+                                fill={
+                                    isRainWeather
+                                        ? '#94a3b8'
+                                        : isNightWeather
+                                        ? '#cbd5e1'
+                                        : '#ffffff'
+                                }
+                            >
+                                <ellipse cx="0" cy="6" rx="28" ry="13" />
+                                <circle cx="-12" cy="0" r="14" />
+                                <circle cx="6" cy="-3" r="16" />
+                                <circle cx="20" cy="3" r="11" />
+                            </g>
+                            {/* 우측 상단 바깥 구름 */}
+                            <g
+                                transform="translate(555, 84)"
+                                fill={
+                                    isRainWeather
+                                        ? '#94a3b8'
+                                        : isNightWeather
+                                        ? '#cbd5e1'
+                                        : '#ffffff'
+                                }
+                            >
+                                <ellipse cx="0" cy="6" rx="32" ry="14" />
+                                <circle cx="-14" cy="0" r="15" />
+                                <circle cx="6" cy="-4" r="18" />
+                                <circle cx="22" cy="2" r="12" />
+                            </g>
+                        </g>
+                    )}
+
+                    {/* 비 / 이슬비 / 소나기 / 뇌우: 아지트 바깥 하늘에서 내리는 빗줄기 */}
+                    {isRainWeather && (
+                        <g stroke="#38bdf8" strokeWidth="2" strokeLinecap="round" opacity="0.72">
+                            {[
+                                { x: 145, y: 110 },
+                                { x: 175, y: 95 },
+                                { x: 215, y: 88 },
+                                { x: 255, y: 74 },
+                                { x: 305, y: 66 },
+                                { x: 495, y: 68 },
+                                { x: 535, y: 82 },
+                                { x: 575, y: 96 },
+                                { x: 615, y: 112 },
+                                { x: 648, y: 132 },
+                                { x: 132, y: 165 },
+                                { x: 662, y: 175 },
+                            ].map((drop, idx) => (
+                                <line
+                                    key={`rain-outside-${idx}`}
+                                    x1={drop.x}
+                                    y1={drop.y}
+                                    x2={drop.x - 6}
+                                    y2={drop.y + 18}
+                                />
+                            ))}
+                        </g>
+                    )}
+
+                    {/* 뇌우: 번개 포인트 */}
+                    {weatherScene === 'thunderstorm' && (
+                        <polygon
+                            points="548,96 534,120 546,120 536,144 562,114 548,114"
+                            fill="#facc15"
+                            stroke="#ca8a04"
+                            strokeWidth="1"
+                        />
+                    )}
+
+                    {/* 눈: 아지트 바깥 하늘에 내리는 눈송이 */}
+                    {isSnowWeather && (
+                        <g fill="#ffffff" stroke="#7dd3fc" strokeWidth="1">
+                            {[
+                                { x: 148, y: 112, r: 4 },
+                                { x: 188, y: 92, r: 3.5 },
+                                { x: 228, y: 84, r: 4.5 },
+                                { x: 278, y: 68, r: 3.5 },
+                                { x: 515, y: 72, r: 4 },
+                                { x: 558, y: 88, r: 4.5 },
+                                { x: 602, y: 106, r: 3.5 },
+                                { x: 642, y: 128, r: 4 },
+                                { x: 130, y: 162, r: 3.5 },
+                                { x: 665, y: 168, r: 4 },
+                            ].map((flake, idx) => (
+                                <circle key={`snow-outside-${idx}`} cx={flake.x} cy={flake.y} r={flake.r} />
+                            ))}
+                        </g>
+                    )}
 
                     {/* 디오라마 전체 하단 그림자 */}
                     <polygon
