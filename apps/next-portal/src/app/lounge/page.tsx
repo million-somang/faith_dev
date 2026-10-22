@@ -561,9 +561,9 @@ export default function LoungePage() {
 
     return (
         <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans">
-            <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-8 w-full">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-4 md:py-8 w-full">
                 {/* VERA Lounge Hero Banner */}
-                <div className="relative mb-8 rounded-3xl overflow-hidden bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl border border-indigo-500/30">
+                <div className="hidden md:block relative mb-8 rounded-3xl overflow-hidden bg-gradient-to-r from-violet-900 via-indigo-900 to-slate-900 text-white shadow-xl border border-indigo-500/30">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)] pointer-events-none" />
                     <div className="flex flex-col lg:flex-row items-center justify-between p-6 sm:p-8 lg:p-10 gap-8 relative z-10">
                         {/* Copy & Glassmorphism Badges */}
