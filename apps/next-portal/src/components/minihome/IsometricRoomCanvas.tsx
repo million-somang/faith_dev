@@ -345,12 +345,12 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
             {/* 메인 2.5D 아이소메트릭 디오라마 스테이지 */}
             <div
-                className="relative w-full flex-1 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex items-center justify-center select-none"
+                className="relative w-full flex-1 min-h-[300px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex flex-col items-center justify-center select-none"
                 data-screenshot-point="result"
             >
                 <svg
                     viewBox="95 30 610 505"
-                    className="w-full h-full object-contain"
+                    className="w-full flex-1 object-contain"
                     role="img"
                     aria-label={`${ownerName}의 미니룸 캔버스`}
                 >
@@ -652,7 +652,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
                 {/* 꾸미기 모드 시 하단 플로팅 오브젝트 조작 바 */}
                 {isEditMode && (
-                    <div className="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-2 border border-slate-700">
+                    <div className="w-full mt-2 lg:mt-0 lg:w-auto lg:absolute lg:bottom-3 lg:left-3 lg:right-3 bg-slate-900/90 backdrop-blur-md text-white px-3.5 sm:px-4 py-2.5 rounded-2xl shadow-lg flex flex-wrap items-center justify-between gap-2 border border-slate-700 shrink-0">
                         <div className="flex items-center gap-2 text-xs">
                             <span className="px-2 py-0.5 rounded-md bg-indigo-500 font-black text-[10px]">
                                 선택됨

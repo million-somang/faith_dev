@@ -294,7 +294,7 @@ export default function MinihomePage() {
                         {/* ==================== 3. 메인 12컬럼 그리드 (좌측 프로필 4 : 우측 아지트·방명록 8) ==================== */}
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                             {/* ─── 좌측 사이드바: Today is... 기분 카드 & 프로필 (lg:col-span-4) ─── */}
-                            <aside className="lg:col-span-4 flex flex-col gap-5">
+                            <aside className="order-2 lg:order-1 lg:col-span-4 flex flex-col gap-5">
                                 <div className="flex-1 flex flex-col justify-between bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5">
                                     {/* Today is... 상태창 */}
                                     <div
@@ -503,7 +503,7 @@ export default function MinihomePage() {
                             </aside>
 
                             {/* ─── 우측 메인 스테이지: 2.5D 아이소메트릭 아지트 + 방명록 (lg:col-span-8) ─── */}
-                            <div className="lg:col-span-8 flex flex-col">
+                            <div className="order-1 lg:order-2 lg:col-span-8 flex flex-col">
                                 {/* 1) 2.5D 아이소메트릭 아지트 캔버스 */}
                                 <IsometricRoomCanvas
                                     layout={isEditMode ? draftLayout : profile.layout}
