@@ -851,8 +851,12 @@ export default function MyPage() {
                     </div>
                 </div>
 
-                {/* 히어로 배너 바로 아래: 상단 가로 탭 바 (Horizontal Tab Bar) */}
-                <div className="bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80 mb-6">
+                {/* 히어로 배너 바로 아래: 상단 가로 탭 바 (모바일에서 내 아지트 기본 진입 시에는 '나의 아지트 다이어리 & 퍼스널 보드' 아래에 노출) */}
+                <div
+                    className={`bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80 mb-6 ${
+                        activeSection === 'dashboard' ? 'hidden lg:block' : 'block'
+                    }`}
+                >
                     <nav className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
                         <button
                             onClick={() => setActiveSection('dashboard')}

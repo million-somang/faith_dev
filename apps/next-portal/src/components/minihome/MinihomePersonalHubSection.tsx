@@ -106,7 +106,7 @@ export interface MinihomePersonalHubProps {
         activityRatio: number;
     };
     shoppingItems: MinihomeShoppingItem[];
-    onNavigateSection?: (section: 'schedule' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize') => void;
+    onNavigateSection?: (section: 'dashboard' | 'schedule' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize') => void;
 }
 
 export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
@@ -159,6 +159,88 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                     📅 {todayFormatted} 브리핑
                 </span>
             </div>
+
+            {/* 모바일 전용: 나의 아지트 다이어리 & 퍼스널 보드 바로 아래 가로 탭 메뉴 바 */}
+            {onNavigateSection && (
+                <div className="lg:hidden bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80">
+                    <nav className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
+                        <button
+                            type="button"
+                            onClick={() => onNavigateSection('dashboard')}
+                            className="flex-1 min-w-[120px] py-2.5 px-3.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md"
+                        >
+                            <span>🏠</span>
+                            <span>내 아지트</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('schedule');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[110px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-sparkles text-amber-400 text-sm"></i>
+                            <span>My Life</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('news');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[100px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-newspaper text-sm"></i>
+                            <span>뉴스</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('stocks');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[100px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-chart-line text-sm"></i>
+                            <span>주식</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('games');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[100px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-gamepad text-sm"></i>
+                            <span>게임</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('utils');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[105px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-tools text-sm"></i>
+                            <span>유틸리티</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('home-customize');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[110px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <i className="fas fa-magic text-sm"></i>
+                            <span>홈꾸미기</span>
+                        </button>
+                    </nav>
+                </div>
+            )}
 
             {/* 🌤️📈 1. 실시간 날씨 & 금융/증시 슬림형 컴팩트 위젯 바 */}
             <CompactDashboardWidgets />
