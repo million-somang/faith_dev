@@ -278,9 +278,9 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
               );
 
     return (
-        <div className="relative bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-2xl border border-slate-200/90 overflow-hidden shadow-inner">
+        <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
             {/* 상단 아지트 뱃지 & 상점 팝업 / 편집 상태 안내 바 */}
-            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
                 <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide">
                         MY AGIT
@@ -345,11 +345,11 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
             {/* 메인 2.5D 아이소메트릭 디오라마 스테이지 */}
             <div
-                className="relative w-full aspect-[16/11] min-h-[320px] max-h-[500px] flex items-center justify-center select-none"
+                className="relative w-full flex-1 min-h-[340px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex items-center justify-center select-none"
                 data-screenshot-point="result"
             >
                 <svg
-                    viewBox="0 0 800 540"
+                    viewBox="95 30 610 505"
                     className="w-full h-full object-contain"
                     role="img"
                     aria-label={`${ownerName}의 미니룸 캔버스`}
