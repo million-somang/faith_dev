@@ -780,7 +780,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                 }}
             >
                 {/* 좌측 상단: 무손실 스마트 줌 컨트롤러 (100% ~ 200% 안전 배율 제한 + 아바타 클로즈업) */}
-                <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-4 z-10 flex flex-wrap items-center gap-1.5">
+                <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-4 z-10 flex items-center gap-1.5">
                     <div className="inline-flex items-center bg-white/92 backdrop-blur-xs border border-slate-200/90 rounded-full p-0.5 shadow-2xs">
                         <button
                             type="button"
@@ -796,9 +796,9 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             type="button"
                             onClick={() => handleZoomChange(1.0, false)}
                             title="기본 크기(100%)로 초기화"
-                            className="px-2 py-0.5 text-[11px] font-mono font-black text-indigo-700 hover:text-indigo-900 cursor-pointer"
+                            className="px-1.5 py-0.5 text-[11px] font-mono font-black text-indigo-700 hover:text-indigo-900 cursor-pointer"
                         >
-                            🔍 {Math.round(zoomLevel * 100)}%
+                            {Math.round(zoomLevel * 100)}%
                         </button>
                         <button
                             type="button"
@@ -815,15 +815,15 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     <button
                         type="button"
                         onClick={handleToggleFollowAvatar}
-                        className={`px-2.5 py-1 rounded-full border text-[11px] font-extrabold shadow-2xs backdrop-blur-xs transition-all cursor-pointer flex items-center gap-1 ${
+                        aria-label={isFollowingAvatar && zoomLevel > 1 ? '아바타 추적 해제' : '아바타 추적'}
+                        className={`w-7 h-7 rounded-full border shadow-2xs backdrop-blur-xs transition-all cursor-pointer flex items-center justify-center ${
                             isFollowingAvatar && zoomLevel > 1
-                                ? 'bg-indigo-600 text-white border-indigo-500'
+                                ? 'bg-indigo-600 text-white border-indigo-500 ring-2 ring-indigo-300/60'
                                 : 'bg-white/90 hover:bg-indigo-50 text-slate-700 border-slate-200/90'
                         }`}
-                        title="아바타 클로즈업 및 실시간 자동 추적"
+                        title={isFollowingAvatar && zoomLevel > 1 ? '아바타 실시간 자동 추적 중 (클릭 시 해제)' : '아바타 클로즈업 및 실시간 자동 추적'}
                     >
-                        <span>🎯</span>
-                        <span>{isFollowingAvatar && zoomLevel > 1 ? '아바타 추적중' : '아바타 확대'}</span>
+                        <i className="fas fa-crosshairs text-xs"></i>
                     </button>
 
                     {zoomLevel > 1 && !isFollowingAvatar && (
@@ -848,7 +848,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         <i className={`fas ${weather.icon} text-xs`}></i>
                         <span>{weather.temp.toFixed(1)}°</span>
                         <span>{weather.label}</span>
-                        <span className="text-[10px] opacity-75">({weather.location})</span>
+                        <span className="hidden sm:inline text-[10px] opacity-75">({weather.location})</span>
                     </div>
                 )}
 
