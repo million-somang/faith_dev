@@ -56,6 +56,10 @@ export default function MinihomePage() {
         handleRemoveSelectedItem,
         handleResetDefaultRoom,
         handleSaveMinihome,
+        handlePlantCrop,
+        handleWaterPlot,
+        handleHarvestPlot,
+        handleClearPlot,
         handlePurchaseItem,
         handleAddGuestbook,
         handleReplyGuestbook,
@@ -540,6 +544,10 @@ export default function MinihomePage() {
                                     onSaveRoom={() => handleSaveMinihome()}
                                     onCancelEdit={handleCancelEditMode}
                                     isSaving={isSaving}
+                                    onPlantCrop={handlePlantCrop}
+                                    onWaterPlot={handleWaterPlot}
+                                    onHarvestPlot={handleHarvestPlot}
+                                    onClearPlot={handleClearPlot}
                                 />
                             </div>
                         </div>

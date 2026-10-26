@@ -1,6 +1,9 @@
 import {
+    GardenCropId,
+    GardenCropMeta,
     MinihomeBgmTrack,
     MinihomeCatalogItem,
+    MinihomeGardenState,
     MinihomeMoodMeta,
     MinihomeRoomLayout,
 } from '@/types/minihome.types';
@@ -583,6 +586,181 @@ export const QUICK_ILCHON_MESSAGES: string[] = [
     'BGM 선곡 센스 최고예요! 잘 듣고 갑니다 🎵',
 ];
 
+export const GARDEN_CROP_CATALOG: GardenCropMeta[] = [
+    {
+        cropId: 'crop-carrot',
+        name: '아삭 달콤 당근',
+        shortName: '당근',
+        emoji: '🥕',
+        description: '초록 잎사귀 아래 통통하고 달콤한 주황빛 당근이 자라납니다.',
+        accentColor: '#f97316',
+        stageLabels: ['빈 텃밭', '🌱 당근 새싹', '🌿 당근 잎 무성', '🥕 당근 수확 가능!'],
+        avatarCareBadge: '🥕 당근 밭 살펴보는 중',
+    },
+    {
+        cropId: 'crop-pepper',
+        name: '매콤 태양초 고추',
+        shortName: '고추',
+        emoji: '🌶️',
+        description: '하얀 고추꽃이 핀 뒤 새빨간 태양초 고추가 주렁주렁 열립니다.',
+        accentColor: '#ef4444',
+        stageLabels: ['빈 텃밭', '🌱 고추 모종', '🌼 고추꽃 개화', '🌶️ 고추 수확 가능!'],
+        avatarCareBadge: '🌶️ 고추 자라는 모습 관찰 중',
+    },
+    {
+        cropId: 'crop-tomato',
+        name: '싱그러운 방울토마토',
+        shortName: '방울토마토',
+        emoji: '🍅',
+        description: '지지대를 타고 올라가 탐스러운 붉은 방울토마토가 열립니다.',
+        accentColor: '#e11d48',
+        stageLabels: ['빈 텃밭', '🌱 토마토 새싹', '🌼 노란 토마토꽃', '🍅 토마토 수확 가능!'],
+        avatarCareBadge: '🍅 방울토마토 돌보는 중',
+    },
+    {
+        cropId: 'crop-lettuce',
+        name: '유기농 아삭 청상추',
+        shortName: '청상추',
+        emoji: '🥬',
+        description: '물만 주어도 쑥쑥 자라나는 푸릇푸릇하고 건강한 유기농 쌈채소입니다.',
+        accentColor: '#22c55e',
+        stageLabels: ['빈 텃밭', '🌱 상추 떡잎', '🌿 여린 상추잎', '🥬 청상추 수확 가능!'],
+        avatarCareBadge: '🥬 상추 잎사귀 확인 중',
+    },
+    {
+        cropId: 'crop-strawberry',
+        name: '달콤 설향 딸기',
+        shortName: '딸기',
+        emoji: '🍓',
+        description: '향긋한 하얀 딸기꽃이 피고 새빨간 설향 딸기가 맺힙니다.',
+        accentColor: '#f43f5e',
+        stageLabels: ['빈 텃밭', '🌱 딸기 런너', '🌸 하얀 딸기꽃', '🍓 딸기 수확 가능!'],
+        avatarCareBadge: '🍓 달콤한 딸기 향기 맡는 중',
+    },
+    {
+        cropId: 'crop-potato',
+        name: '포슬포슬 황금 햇감자',
+        shortName: '햇감자',
+        emoji: '🥔',
+        description: '든든한 감자 줄기 아래 땅속에서 황금빛 알감자가 알차게 영급니다.',
+        accentColor: '#d97706',
+        stageLabels: ['빈 텃밭', '🌱 감자 싹', '🌿 감자 줄기 성장', '🥔 햇감자 수확 가능!'],
+        avatarCareBadge: '🥔 감자 밭 흙 다독이는 중',
+    },
+];
+
+export const DEFAULT_GARDEN_STATE: MinihomeGardenState = {
+    plots: [
+        {
+            plotIndex: 0,
+            cropId: 'crop-carrot',
+            stage: 2,
+            waterCount: 2,
+            plantedAt: '2026-10-26T00:00:00.000Z',
+            lastWateredAt: '2026-10-26T00:00:00.000Z',
+        },
+        {
+            plotIndex: 1,
+            cropId: 'crop-pepper',
+            stage: 3,
+            waterCount: 3,
+            plantedAt: '2026-10-26T00:00:00.000Z',
+            lastWateredAt: '2026-10-26T00:00:00.000Z',
+        },
+        {
+            plotIndex: 2,
+            cropId: 'crop-tomato',
+            stage: 1,
+            waterCount: 1,
+            plantedAt: '2026-10-26T00:00:00.000Z',
+            lastWateredAt: '2026-10-26T00:00:00.000Z',
+        },
+        {
+            plotIndex: 3,
+            cropId: 'crop-lettuce',
+            stage: 2,
+            waterCount: 2,
+            plantedAt: '2026-10-26T00:00:00.000Z',
+            lastWateredAt: '2026-10-26T00:00:00.000Z',
+        },
+        {
+            plotIndex: 4,
+            cropId: null,
+            stage: 0,
+            waterCount: 0,
+            plantedAt: null,
+            lastWateredAt: null,
+        },
+        {
+            plotIndex: 5,
+            cropId: null,
+            stage: 0,
+            waterCount: 0,
+            plantedAt: null,
+            lastWateredAt: null,
+        },
+    ],
+    harvestCounts: {
+        'crop-carrot': 0,
+        'crop-pepper': 0,
+        'crop-tomato': 0,
+        'crop-lettuce': 0,
+        'crop-strawberry': 0,
+        'crop-potato': 0,
+    },
+    totalHarvested: 0,
+};
+
+export function getGardenCropById(cropId: GardenCropId | null | undefined): GardenCropMeta | undefined {
+    if (!cropId) return undefined;
+    return GARDEN_CROP_CATALOG.find((c) => c.cropId === cropId);
+}
+
+export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenState {
+    if (!garden || !Array.isArray(garden.plots) || garden.plots.length === 0) {
+        return {
+            plots: DEFAULT_GARDEN_STATE.plots.map((p) => ({ ...p })),
+            harvestCounts: { ...DEFAULT_GARDEN_STATE.harvestCounts },
+            totalHarvested: 0,
+        };
+    }
+    const normalizedPlots = Array.from({ length: 6 }).map((_, idx) => {
+        const found = garden.plots.find((p) => p.plotIndex === idx) || garden.plots[idx];
+        if (!found) {
+            return {
+                plotIndex: idx,
+                cropId: null,
+                stage: 0 as const,
+                waterCount: 0,
+                plantedAt: null,
+                lastWateredAt: null,
+            };
+        }
+        return {
+            plotIndex: idx,
+            cropId: found.cropId || null,
+            stage: (found.cropId ? Math.max(1, Math.min(3, found.stage || 1)) : 0) as 0 | 1 | 2 | 3,
+            waterCount: Number(found.waterCount || 0),
+            plantedAt: found.plantedAt || null,
+            lastWateredAt: found.lastWateredAt || null,
+        };
+    });
+    const harvestCounts: Record<GardenCropId, number> = {
+        'crop-carrot': Number(garden.harvestCounts?.['crop-carrot'] || 0),
+        'crop-pepper': Number(garden.harvestCounts?.['crop-pepper'] || 0),
+        'crop-tomato': Number(garden.harvestCounts?.['crop-tomato'] || 0),
+        'crop-lettuce': Number(garden.harvestCounts?.['crop-lettuce'] || 0),
+        'crop-strawberry': Number(garden.harvestCounts?.['crop-strawberry'] || 0),
+        'crop-potato': Number(garden.harvestCounts?.['crop-potato'] || 0),
+    };
+    const totalHarvested = Object.values(harvestCounts).reduce((acc, v) => acc + v, 0);
+    return {
+        plots: normalizedPlots,
+        harvestCounts,
+        totalHarvested,
+    };
+}
+
 export const DEFAULT_CLIENT_LAYOUT: MinihomeRoomLayout = {
     wallItemId: 'wall-white-modern',
     floorItemId: 'floor-oak-wood',
@@ -596,6 +774,7 @@ export const DEFAULT_CLIENT_LAYOUT: MinihomeRoomLayout = {
         { instanceId: 'init-lamp', itemId: 'furn-floor-lamp', gridX: 0, gridY: 3, flipped: false },
         { instanceId: 'init-plant', itemId: 'prop-mini-plant', gridX: 5, gridY: 1, flipped: false },
     ],
+    garden: DEFAULT_GARDEN_STATE,
 };
 
 export const MINIHOME_HOW_TO_STEPS = [

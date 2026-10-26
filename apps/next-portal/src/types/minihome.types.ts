@@ -46,6 +46,42 @@ export interface PlacedRoomItem {
     flipped: boolean;
 }
 
+export type GardenCropId =
+    | 'crop-carrot'
+    | 'crop-pepper'
+    | 'crop-tomato'
+    | 'crop-lettuce'
+    | 'crop-strawberry'
+    | 'crop-potato';
+
+export type GardenCropStage = 0 | 1 | 2 | 3; // 0: 빈 밭, 1: 새싹, 2: 줄기·꽃 성장, 3: 수확 가능!
+
+export interface GardenCropMeta {
+    cropId: GardenCropId;
+    name: string;
+    shortName: string;
+    emoji: string;
+    description: string;
+    accentColor: string;
+    stageLabels: [string, string, string, string];
+    avatarCareBadge: string;
+}
+
+export interface GardenPlotItem {
+    plotIndex: number; // 0 ~ 5 (6구획 마당 텃밭 이랑)
+    cropId: GardenCropId | null;
+    stage: GardenCropStage;
+    waterCount: number;
+    plantedAt: string | null;
+    lastWateredAt: string | null;
+}
+
+export interface MinihomeGardenState {
+    plots: GardenPlotItem[];
+    harvestCounts: Record<GardenCropId, number>;
+    totalHarvested: number;
+}
+
 export interface MinihomeRoomLayout {
     wallItemId: string;
     floorItemId: string;
@@ -54,6 +90,7 @@ export interface MinihomeRoomLayout {
     minimiY: number; // 0 ~ 7
     speechBubble: string;
     placedItems: PlacedRoomItem[];
+    garden?: MinihomeGardenState;
 }
 
 export interface MinihomeProfileData {

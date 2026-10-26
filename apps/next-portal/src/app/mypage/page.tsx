@@ -176,6 +176,10 @@ export default function MyPage() {
         handleRemoveSelectedItem: handleMinihomeRemoveSelectedItem,
         handleResetDefaultRoom: handleMinihomeResetDefaultRoom,
         handleSaveMinihome,
+        handlePlantCrop: handleMinihomePlantCrop,
+        handleWaterPlot: handleMinihomeWaterPlot,
+        handleHarvestPlot: handleMinihomeHarvestPlot,
+        handleClearPlot: handleMinihomeClearPlot,
         handlePurchaseItem: handleMinihomePurchaseItem,
         handleAddGuestbook: handleMinihomeAddGuestbook,
         handleReplyGuestbook: handleMinihomeReplyGuestbook,
@@ -1357,6 +1361,10 @@ export default function MyPage() {
                                                     onSaveRoom={() => handleSaveMinihome()}
                                                     onCancelEdit={handleMinihomeCancelEditMode}
                                                     isSaving={minihomeSaving}
+                                                    onPlantCrop={handleMinihomePlantCrop}
+                                                    onWaterPlot={handleMinihomeWaterPlot}
+                                                    onHarvestPlot={handleMinihomeHarvestPlot}
+                                                    onClearPlot={handleMinihomeClearPlot}
                                                 />
                                             </div>
                                         </div>

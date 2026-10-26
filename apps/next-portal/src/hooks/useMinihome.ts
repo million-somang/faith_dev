@@ -3,13 +3,20 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
+    GardenCropId,
+    MinihomeGardenState,
     MinihomeGuestbookEntry,
     MinihomeMoodType,
     MinihomeProfileData,
     MinihomeRoomLayout,
     MinihomeSurfData,
 } from '@/types/minihome.types';
-import { DEFAULT_CLIENT_LAYOUT, getCatalogItemById } from '@/data/minihomeCatalogData';
+import {
+    DEFAULT_CLIENT_LAYOUT,
+    ensureGardenState,
+    getCatalogItemById,
+    getGardenCropById,
+} from '@/data/minihomeCatalogData';
 
 interface ApiStandardResponse<T> {
     success: boolean;
@@ -286,6 +293,8 @@ export function useMinihome(routeHandle: string) {
         statusMessage?: string;
         bgmTrackId?: string;
         roomTitle?: string;
+        layout?: MinihomeRoomLayout;
+        silentToast?: boolean;
     }) => {
         if (!profile) return false;
         setIsSaving(true);
@@ -296,7 +305,7 @@ export function useMinihome(routeHandle: string) {
                 statusMood: overridePartial?.statusMood ?? draftMood,
                 statusMessage: overridePartial?.statusMessage ?? draftStatusMessage,
                 bgmTrackId: overridePartial?.bgmTrackId ?? draftBgmTrackId,
-                layout: draftLayout,
+                layout: overridePartial?.layout ?? draftLayout,
             };
 
             const res = await fetch(`/api/minihome/room/${encodeURIComponent(profile.handle)}`, {
@@ -322,9 +331,11 @@ export function useMinihome(routeHandle: string) {
                       }
                     : null
             );
-            setIsShopModalOpen(false);
-            setIsEditMode(false);
-            showToast('✅ 나만의 아지트 설정이 저장되었습니다!');
+            if (!overridePartial?.silentToast) {
+                setIsShopModalOpen(false);
+                setIsEditMode(false);
+                showToast('✅ 나만의 아지트 설정이 저장되었습니다!');
+            }
             return true;
         } catch (err) {
             const msg = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
@@ -334,6 +345,161 @@ export function useMinihome(routeHandle: string) {
             setIsSaving(false);
         }
     }, [profile, draftRoomTitle, draftMood, draftStatusMessage, draftBgmTrackId, draftLayout, showToast]);
+
+    // ==================== 앞마당 텃밭 (야채 재배) 핸들러 ====================
+    const commitGardenState = useCallback(
+        (updater: (currentGarden: MinihomeGardenState) => MinihomeGardenState, toastText?: string) => {
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const currentGarden = ensureGardenState(baseLayout.garden);
+            const nextGarden = updater(currentGarden);
+            const nextLayout: MinihomeRoomLayout = {
+                ...baseLayout,
+                garden: nextGarden,
+            };
+
+            setDraftLayout(nextLayout);
+            setProfile((prev) => (prev ? { ...prev, layout: nextLayout } : null));
+
+            if (toastText) {
+                showToast(toastText);
+            }
+
+            if (profile?.isOwner) {
+                handleSaveMinihome({ layout: nextLayout, silentToast: true }).catch(() => {});
+            }
+        },
+        [isEditMode, draftLayout, profile, showToast, handleSaveMinihome]
+    );
+
+    const handlePlantCrop = useCallback(
+        (plotIndex: number, cropId: GardenCropId) => {
+            const cropMeta = getGardenCropById(cropId);
+            if (!cropMeta) return;
+            const nowIso = new Date().toISOString();
+            commitGardenState(
+                (garden) => ({
+                    ...garden,
+                    plots: garden.plots.map((p) =>
+                        p.plotIndex === plotIndex
+                            ? {
+                                  ...p,
+                                  cropId,
+                                  stage: 1,
+                                  waterCount: 1,
+                                  plantedAt: nowIso,
+                                  lastWateredAt: nowIso,
+                              }
+                            : p
+                    ),
+                }),
+                `🌱 텃밭 ${plotIndex + 1}번 이랑에 [${cropMeta.emoji} ${cropMeta.name}] 씨앗을 심었습니다!`
+            );
+        },
+        [commitGardenState]
+    );
+
+    const handleWaterPlot = useCallback(
+        (plotIndex: number) => {
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const garden = ensureGardenState(baseLayout.garden);
+            const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
+            if (!targetPlot || !targetPlot.cropId) return;
+
+            const cropMeta = getGardenCropById(targetPlot.cropId);
+            if (targetPlot.stage >= 3) {
+                showToast(`✨ [${cropMeta?.emoji || ''} ${cropMeta?.shortName || '작물'}]이(가) 이미 다 자랐어요! 지금 수확해보세요.`);
+                return;
+            }
+
+            const nextStage = Math.min(3, targetPlot.stage + 1) as 1 | 2 | 3;
+            const nowIso = new Date().toISOString();
+
+            commitGardenState(
+                (prevGarden) => ({
+                    ...prevGarden,
+                    plots: prevGarden.plots.map((p) =>
+                        p.plotIndex === plotIndex
+                            ? {
+                                  ...p,
+                                  stage: nextStage,
+                                  waterCount: p.waterCount + 1,
+                                  lastWateredAt: nowIso,
+                              }
+                            : p
+                    ),
+                }),
+                nextStage === 3
+                    ? `🎉 물을 듬뿍 주어 [${cropMeta?.emoji} ${cropMeta?.name}]이(가) 수확 가능 상태가 되었습니다!`
+                    : `💧 [${cropMeta?.emoji} ${cropMeta?.shortName}]에 시원하게 물을 주었습니다! 무럭무럭 자라나는 중 (${nextStage}/3단계)`
+            );
+        },
+        [isEditMode, draftLayout, profile, commitGardenState, showToast]
+    );
+
+    const handleHarvestPlot = useCallback(
+        (plotIndex: number) => {
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const garden = ensureGardenState(baseLayout.garden);
+            const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
+            if (!targetPlot || !targetPlot.cropId || targetPlot.stage < 3) return;
+
+            const harvestedCropId = targetPlot.cropId;
+            const cropMeta = getGardenCropById(harvestedCropId);
+
+            commitGardenState(
+                (prevGarden) => {
+                    const nextHarvestCounts = {
+                        ...prevGarden.harvestCounts,
+                        [harvestedCropId]: (prevGarden.harvestCounts[harvestedCropId] || 0) + 1,
+                    };
+                    const nextTotal = Object.values(nextHarvestCounts).reduce((a, b) => a + b, 0);
+                    return {
+                        ...prevGarden,
+                        plots: prevGarden.plots.map((p) =>
+                            p.plotIndex === plotIndex
+                                ? {
+                                      ...p,
+                                      cropId: null,
+                                      stage: 0,
+                                      waterCount: 0,
+                                      plantedAt: null,
+                                      lastWateredAt: null,
+                                  }
+                                : p
+                        ),
+                        harvestCounts: nextHarvestCounts,
+                        totalHarvested: nextTotal,
+                    };
+                },
+                `🧺 싱싱한 [${cropMeta?.emoji} ${cropMeta?.name}] 수확 완료! 마당 수확 바구니에 담았습니다.`
+            );
+        },
+        [isEditMode, draftLayout, profile, commitGardenState]
+    );
+
+    const handleClearPlot = useCallback(
+        (plotIndex: number) => {
+            commitGardenState(
+                (prevGarden) => ({
+                    ...prevGarden,
+                    plots: prevGarden.plots.map((p) =>
+                        p.plotIndex === plotIndex
+                            ? {
+                                  ...p,
+                                  cropId: null,
+                                  stage: 0,
+                                  waterCount: 0,
+                                  plantedAt: null,
+                                  lastWateredAt: null,
+                              }
+                            : p
+                    ),
+                }),
+                `🌿 ${plotIndex + 1}번 텃밭 이랑을 깨끗하게 정리했습니다. 새 씨앗을 심어보세요!`
+            );
+        },
+        [commitGardenState]
+    );
 
     // ==================== 상점 구매 핸들러 ====================
     const handlePurchaseItem = useCallback(async (itemId: string) => {
@@ -500,6 +666,10 @@ export function useMinihome(routeHandle: string) {
         handleRemoveSelectedItem,
         handleResetDefaultRoom,
         handleSaveMinihome,
+        handlePlantCrop,
+        handleWaterPlot,
+        handleHarvestPlot,
+        handleClearPlot,
         handlePurchaseItem,
         handleAddGuestbook,
         handleReplyGuestbook,

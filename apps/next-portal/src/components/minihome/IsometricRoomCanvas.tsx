@@ -1,10 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
-import { getCatalogItemById } from '@/data/minihomeCatalogData';
+import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
+import { ensureGardenState, getCatalogItemById } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
-import { useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
+import { GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
+import {
+    GardenBenchAndWateringCan,
+    GardenCourtyardBackdrop,
+    GardenPlotIsoNode,
+    MinihomeGardenControlPanel,
+} from '@/components/minihome/MinihomeGardenLayer';
 
 interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
@@ -25,6 +31,10 @@ interface IsometricRoomCanvasProps {
     onSaveRoom?: () => void;
     onCancelEdit?: () => void;
     isSaving?: boolean;
+    onPlantCrop?: (plotIndex: number, cropId: GardenCropId) => void;
+    onWaterPlot?: (plotIndex: number) => void;
+    onHarvestPlot?: (plotIndex: number) => void;
+    onClearPlot?: (plotIndex: number) => void;
 }
 
 const ORIGIN_X = 400;
@@ -72,9 +82,24 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onSaveRoom,
     onCancelEdit,
     isSaving,
+    onPlantCrop,
+    onWaterPlot,
+    onHarvestPlot,
+    onClearPlot,
 }) => {
+    const [activeZone, setActiveZone] = useState<'indoor' | 'garden'>('indoor');
+    const [selectedPlotIndex, setSelectedPlotIndex] = useState<number>(0);
+
+    useEffect(() => {
+        if (isEditMode && activeZone === 'garden') {
+            setActiveZone('indoor');
+        }
+    }, [isEditMode, activeZone]);
+
     const { weather } = useWeather();
-    const avatarSim = useAvatarLifeSim({ layout, isEditMode });
+    const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone });
+    const gardenState = ensureGardenState(layout.garden);
+    const readyHarvestCount = gardenState.plots.filter((p) => p.cropId && p.stage === 3).length;
     const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
     const displayRoomTitle = roomTitle?.trim() || defaultRoomTitle;
 
@@ -253,6 +278,34 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
             depth: item.gridX + item.gridY,
             data: item,
         })),
+        {
+            kind: 'minimi' as const,
+            depth: avatarSim.animX + avatarSim.animY + 0.1,
+        },
+    ].sort((a, b) => a.depth - b.depth);
+
+    type GardenRenderEntity =
+        | { kind: 'plot'; depth: number; plot: GardenPlotItem; gridX: number; gridY: number }
+        | { kind: 'bench'; depth: number; gridX: number; gridY: number }
+        | { kind: 'minimi'; depth: number };
+
+    const sortedGardenEntities: GardenRenderEntity[] = [
+        ...gardenState.plots.map((plot) => {
+            const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+            return {
+                kind: 'plot' as const,
+                depth: coord.gridX + coord.gridY,
+                plot,
+                gridX: coord.gridX,
+                gridY: coord.gridY,
+            };
+        }),
+        {
+            kind: 'bench' as const,
+            depth: 0 + 4,
+            gridX: 0,
+            gridY: 4,
+        },
         {
             kind: 'minimi' as const,
             depth: avatarSim.animX + avatarSim.animY + 0.1,
@@ -442,9 +495,46 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     </div>
                 ) : (
                     <div className="w-full flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                        <span className="text-[11px] text-slate-500 font-bold">
-                            가구 {layout.placedItems.length}개 배치됨
-                        </span>
+                        {/* 좌측: 실내 아지트 ↔ 앞마당 텃밭 공간 전환 스위치 */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <div className="inline-flex items-center p-0.5 rounded-full bg-slate-100 border border-slate-200/90">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveZone('indoor')}
+                                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                        activeZone === 'indoor'
+                                            ? 'bg-indigo-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:text-slate-900'
+                                    }`}
+                                >
+                                    <span>🏠 실내 아지트</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveZone('garden')}
+                                    data-screenshot-click="action"
+                                    className={`px-2.5 sm:px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                                        activeZone === 'garden'
+                                            ? 'bg-emerald-600 text-white shadow-2xs'
+                                            : 'text-emerald-700 hover:bg-emerald-50'
+                                    }`}
+                                >
+                                    <span>🌿 앞마당 텃밭</span>
+                                    {readyHarvestCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                                            수확 {readyHarvestCount}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+
+                            <span className="hidden sm:inline text-[11px] text-slate-400 font-bold">
+                                {activeZone === 'indoor'
+                                    ? `· 가구 ${layout.placedItems.length}개`
+                                    : `· 수확 누적 ${gardenState.totalHarvested}개`}
+                            </span>
+                        </div>
+
                         <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             {onOpenGuestbookModal && (
                                 <button
@@ -720,303 +810,459 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         filter="url(#roomDropShadow)"
                     />
 
-                    {/* ==================== 1. 3D 디오라마 외벽 두께 & 좌/우 벽면 ==================== */}
-                    {/* 좌측 벽 외곽 단면 두께 */}
-                    <polygon
-                        points={`${floorLeft.x - WALL_THICK},${floorLeft.y - WALL_H - 7} ${floorLeft.x},${floorLeft.y - WALL_H} ${floorLeft.x},${floorLeft.y + FLOOR_THICK} ${floorLeft.x - WALL_THICK},${floorLeft.y + FLOOR_THICK - 7}`}
-                        fill={wallTheme.outerSide}
-                    />
-                    {/* 우측 벽 외곽 단면 두께 */}
-                    <polygon
-                        points={`${floorRight.x},${floorRight.y - WALL_H} ${floorRight.x + WALL_THICK},${floorRight.y - WALL_H - 7} ${floorRight.x + WALL_THICK},${floorRight.y + FLOOR_THICK - 7} ${floorRight.x},${floorRight.y + FLOOR_THICK}`}
-                        fill={wallTheme.outerSide}
-                    />
-                    {/* 좌측 벽 상단 캡(두께면) */}
-                    <polygon
-                        points={`${floorLeft.x - WALL_THICK},${floorLeft.y - WALL_H - 7} ${floorTop.x},${floorTop.y - WALL_H - WALL_THICK} ${floorTop.x},${floorTop.y - WALL_H} ${floorLeft.x},${floorLeft.y - WALL_H}`}
-                        fill={wallTheme.topCap}
-                        stroke={wallTheme.outerSide}
-                        strokeWidth="1"
-                    />
-                    {/* 우측 벽 상단 캡(두께면) */}
-                    <polygon
-                        points={`${floorTop.x},${floorTop.y - WALL_H - WALL_THICK} ${floorRight.x + WALL_THICK},${floorRight.y - WALL_H - 7} ${floorRight.x},${floorRight.y - WALL_H} ${floorTop.x},${floorTop.y - WALL_H}`}
-                        fill={wallTheme.topCap}
-                        stroke={wallTheme.outerSide}
-                        strokeWidth="1"
-                    />
+                    {activeZone === 'garden' ? (
+                        <>
+                            {/* ==================== [앞마당 텃밭 모드] 1. 집 테라스 외벽 & 정원 울타리 & 잔디 바닥 ==================== */}
+                            <GardenCourtyardBackdrop
+                                floorTop={floorTop}
+                                floorLeft={floorLeft}
+                                floorRight={floorRight}
+                                floorBottom={floorBottom}
+                                wallH={WALL_H}
+                                floorThick={FLOOR_THICK}
+                                onEnterIndoor={() => setActiveZone('indoor')}
+                            />
 
-                    {/* 좌측 내벽 */}
-                    <polygon
-                        points={`${floorLeft.x},${floorLeft.y - WALL_H} ${floorTop.x},${floorTop.y - WALL_H} ${floorTop.x},${floorTop.y} ${floorLeft.x},${floorLeft.y}`}
-                        fill={wallTheme.left}
-                        stroke={wallTheme.outerSide}
-                        strokeWidth="1.5"
-                    />
-                    {/* 우측 내벽 */}
-                    <polygon
-                        points={`${floorTop.x},${floorTop.y - WALL_H} ${floorRight.x},${floorRight.y - WALL_H} ${floorRight.x},${floorRight.y} ${floorTop.x},${floorTop.y}`}
-                        fill={wallTheme.right}
-                        stroke={wallTheme.outerSide}
-                        strokeWidth="1.5"
-                    />
+                            {/* ==================== [앞마당 텃밭 모드] 2. 8x8 잔디 타일 & 현관 디딤돌 산책로 ==================== */}
+                            {Array.from({ length: 8 }).map((_, gx) =>
+                                Array.from({ length: 8 }).map((__, gy) => {
+                                    const isCheckerAlt = (gx + gy) % 2 === 1;
+                                    const isSteppingStone = gx === 0 && (gy === 1 || gy === 2 || gy === 3);
+                                    return (
+                                        <g key={`garden-tile-${gx}-${gy}`}>
+                                            <polygon
+                                                points={getTilePolygonPoints(gx, gy)}
+                                                fill={isCheckerAlt ? '#4ade80' : '#3dd674'}
+                                                stroke="#22c55e"
+                                                strokeWidth="0.7"
+                                                strokeOpacity="0.45"
+                                            />
+                                            {isSteppingStone && (
+                                                <ellipse
+                                                    cx={getTileCenter(gx, gy).x}
+                                                    cy={getTileCenter(gx, gy).y}
+                                                    rx="16"
+                                                    ry="8"
+                                                    fill="#e2e8f0"
+                                                    stroke="#94a3b8"
+                                                    strokeWidth="1.5"
+                                                />
+                                            )}
+                                        </g>
+                                    );
+                                })
+                            )}
 
-                    {/* 벽지 세로 웨인스코팅/패널 디테일 라인 */}
-                    {[1, 2, 3, 4, 5, 6, 7].map((step) => {
-                        const lx = floorLeft.x + (step / 8) * (floorTop.x - floorLeft.x);
-                        const ly = floorLeft.y + (step / 8) * (floorTop.y - floorLeft.y);
-                        const rx = floorTop.x + (step / 8) * (floorRight.x - floorTop.x);
-                        const ry = floorTop.y + (step / 8) * (floorRight.y - floorTop.y);
-                        return (
-                            <g key={`wall-panel-${step}`}>
-                                <line
-                                    x1={lx}
-                                    y1={ly - WALL_H}
-                                    x2={lx}
-                                    y2={ly}
-                                    stroke={wallTheme.stripe}
-                                    strokeWidth="1.5"
-                                />
-                                <line
-                                    x1={rx}
-                                    y1={ry - WALL_H}
-                                    x2={rx}
-                                    y2={ry}
-                                    stroke={wallTheme.stripe}
-                                    strokeWidth="1.5"
-                                />
-                            </g>
-                        );
-                    })}
-
-                    {/* 중앙 코너 앰비언트 오클루전 음영 */}
-                    <line
-                        x1={floorTop.x}
-                        y1={floorTop.y - WALL_H}
-                        x2={floorTop.x}
-                        y2={floorTop.y}
-                        stroke="rgba(15, 23, 42, 0.16)"
-                        strokeWidth="4"
-                    />
-
-                    {/* 벽 하단 걸레받이(Baseboard Molding) */}
-                    <polygon
-                        points={`${floorLeft.x},${floorLeft.y - 10} ${floorTop.x},${floorTop.y - 10} ${floorTop.x},${floorTop.y} ${floorLeft.x},${floorLeft.y}`}
-                        fill={wallTheme.baseboard}
-                        opacity="0.85"
-                    />
-                    <polygon
-                        points={`${floorTop.x},${floorTop.y - 10} ${floorRight.x},${floorRight.y - 10} ${floorRight.x},${floorRight.y} ${floorTop.x},${floorTop.y}`}
-                        fill={wallTheme.baseboard}
-                        opacity="0.95"
-                    />
-
-                    {/* 좌측 벽 나노바나나 3D 창문 & 따스한 햇살 광선 */}
-                    <polygon
-                        points="210,165 305,118 365,265 255,315"
-                        fill="url(#sunlightRay)"
-                        pointerEvents="none"
-                    />
-                    <image
-                        href="/images/minihome/items/room-window-cozy.png"
-                        x={206}
-                        y={82}
-                        width={118}
-                        height={118}
-                        preserveAspectRatio="xMidYMid meet"
-                    />
-
-                    {/* 우측 벽 나노바나나 3D 우드 선반 & 시계/액자 갤러리 (우측 벽 각도에 맞춰 좌우 미러링) */}
-                    <g transform="translate(538, 152) scale(-1, 1)">
-                        <image
-                            href="/images/minihome/items/room-wall-gallery.png"
-                            x={-62}
-                            y={-58}
-                            width={124}
-                            height={124}
-                            preserveAspectRatio="xMidYMid meet"
-                        />
-                    </g>
-
-                    {/* ==================== 2. 바닥 베이스 & 입체 단면 두께 ==================== */}
-                    {/* 바닥 좌/우 측면 두께 */}
-                    <polygon
-                        points={`${floorLeft.x},${floorLeft.y} ${floorBottom.x},${floorBottom.y} ${floorBottom.x},${floorBottom.y + FLOOR_THICK} ${floorLeft.x},${floorLeft.y + FLOOR_THICK}`}
-                        fill={floorTheme.sideLeft}
-                    />
-                    <polygon
-                        points={`${floorBottom.x},${floorBottom.y} ${floorRight.x},${floorRight.y} ${floorRight.x},${floorRight.y + FLOOR_THICK} ${floorBottom.x},${floorBottom.y + FLOOR_THICK}`}
-                        fill={floorTheme.sideRight}
-                    />
-                    {/* 메인 바닥면 */}
-                    <polygon
-                        points={`${floorTop.x},${floorTop.y} ${floorRight.x},${floorRight.y} ${floorBottom.x},${floorBottom.y} ${floorLeft.x},${floorLeft.y}`}
-                        fill={floorTheme.base}
-                        stroke={floorTheme.line}
-                        strokeWidth="2"
-                    />
-
-                    {/* ==================== 3. 8x8 아이소메트릭 타일 그리드 ==================== */}
-                    {Array.from({ length: 8 }).map((_, gx) =>
-                        Array.from({ length: 8 }).map((__, gy) => {
-                            const isCheckerAlt = (gx + gy) % 2 === 1;
-                            const isSelectedMinimiTile =
-                                isEditMode && selectedTargetId === 'minimi' && layout.minimiX === gx && layout.minimiY === gy;
-                            const isSelectedItemTile =
-                                isEditMode &&
-                                layout.placedItems.some(
-                                    (it) => it.instanceId === selectedTargetId && it.gridX === gx && it.gridY === gy
-                                );
-
-                            return (
-                                <polygon
-                                    key={`tile-${gx}-${gy}`}
-                                    points={getTilePolygonPoints(gx, gy)}
-                                    fill={
-                                        isSelectedMinimiTile || isSelectedItemTile
-                                            ? 'rgba(99, 102, 241, 0.35)'
-                                            : isCheckerAlt
-                                            ? floorTheme.alt
-                                            : floorTheme.base
-                                    }
-                                    stroke={isEditMode ? 'rgba(99, 102, 241, 0.4)' : floorTheme.line}
-                                    strokeWidth={isEditMode ? '1.3' : '0.75'}
-                                    strokeOpacity={isEditMode ? 0.9 : 0.5}
-                                    className={isEditMode ? 'cursor-pointer hover:fill-indigo-400/30 transition-colors' : ''}
-                                    onClick={() => isEditMode && onTileClick(gx, gy)}
-                                />
-                            );
-                        })
-                    )}
-
-                    {/* ==================== 4. 바닥 러그 레이어 ==================== */}
-                    {rugItems.map((rug) => {
-                        const pos = getTileCenter(rug.gridX, rug.gridY);
-                        const isSelected = isEditMode && selectedTargetId === rug.instanceId;
-                        return (
-                            <g
-                                key={rug.instanceId}
-                                transform={`translate(${pos.x}, ${pos.y}) scale(${rug.flipped ? -1 : 1}, 1)`}
-                                className="cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelectTarget(rug.instanceId);
-                                }}
-                            >
-                                {isSelected && (
-                                    <ellipse
-                                        cx="0"
-                                        cy="4"
-                                        rx="58"
-                                        ry="30"
-                                        fill="rgba(99, 102, 241, 0.15)"
-                                        stroke="#4f46e5"
-                                        strokeWidth="2.5"
-                                        strokeDasharray="4 2"
-                                    />
-                                )}
-                                {renderItemGraphic(rug.itemId)}
-                            </g>
-                        );
-                    })}
-
-                    {/* ==================== 5. 깊이(Z-Index) 정렬된 가구 & 미니미 레이어 ==================== */}
-                    {sortedEntities.map((entity) => {
-                        if (entity.kind === 'item') {
-                            const item = entity.data;
-                            const pos = getTileCenter(item.gridX, item.gridY);
-                            const isSelected = isEditMode && selectedTargetId === item.instanceId;
-                            return (
-                                <g
-                                    key={item.instanceId}
-                                    transform={`translate(${pos.x}, ${pos.y})`}
-                                    className="cursor-pointer"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSelectTarget(item.instanceId);
-                                    }}
-                                >
-                                    {isSelected && (
-                                        <ellipse
-                                            cx="0"
-                                            cy="6"
-                                            rx="36"
-                                            ry="18"
-                                            fill="rgba(99, 102, 241, 0.22)"
-                                            stroke="#4f46e5"
-                                            strokeWidth="2.5"
-                                            strokeDasharray="4 2"
+                            {/* ==================== [앞마당 텃밭 모드] 3. 깊이(Z-Order) 정렬된 6구획 텃밭·벤치·아바타 ==================== */}
+                            {sortedGardenEntities.map((entity) => {
+                                if (entity.kind === 'bench') {
+                                    return (
+                                        <GardenBenchAndWateringCan
+                                            key="garden-bench-node"
+                                            pos={getTileCenter(entity.gridX, entity.gridY)}
                                         />
-                                    )}
-                                    <g transform={`scale(${item.flipped ? -1 : 1}, 1)`}>
-                                        {renderItemGraphic(item.itemId)}
-                                    </g>
-                                </g>
-                            );
-                        }
+                                    );
+                                }
 
-                        // 아바타 (자율 산책 및 가구 상호작용 연속 좌표 반영)
-                        const minimiPos = getTileCenter(avatarSim.animX, avatarSim.animY);
-                        const isMinimiSelected = isEditMode && selectedTargetId === 'minimi';
+                                if (entity.kind === 'plot') {
+                                    const pos = getTileCenter(entity.gridX, entity.gridY);
+                                    return (
+                                        <GardenPlotIsoNode
+                                            key={`garden-plot-${entity.plot.plotIndex}`}
+                                            plot={entity.plot}
+                                            pos={pos}
+                                            isSelected={selectedPlotIndex === entity.plot.plotIndex}
+                                            onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
+                                        />
+                                    );
+                                }
 
-                        return (
-                            <g
-                                key="minimi-avatar"
-                                transform={`translate(${minimiPos.x}, ${minimiPos.y})`}
-                                className="cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onSelectTarget('minimi');
-                                }}
-                            >
-                                {isMinimiSelected && (
-                                    <ellipse
-                                        cx="0"
-                                        cy="6"
-                                        rx="28"
-                                        ry="14"
-                                        fill="rgba(79, 70, 229, 0.28)"
-                                        stroke="#4f46e5"
-                                        strokeWidth="2.5"
-                                    />
-                                )}
-                                {renderMinimiGraphic(layout.minimiItemId)}
+                                const minimiPos = getTileCenter(avatarSim.animX, avatarSim.animY);
+                                return (
+                                    <g
+                                        key="garden-minimi-avatar"
+                                        transform={`translate(${minimiPos.x}, ${minimiPos.y})`}
+                                    >
+                                        {renderMinimiGraphic(layout.minimiItemId)}
 
-                                {/* 가구 상호작용 중일 때 표시되는 아담한 상태 배지 */}
-                                {!isEditMode && avatarSim.activityBadge && (
-                                    <g transform={`translate(0, ${-88 + avatarSim.sitOffsetY})`}>
+                                        {avatarSim.activityBadge && (
+                                            <g transform={`translate(0, ${-88 + avatarSim.sitOffsetY})`}>
+                                                <rect
+                                                    x="-72"
+                                                    y="-18"
+                                                    width="144"
+                                                    height="20"
+                                                    rx="10"
+                                                    fill="rgba(6, 78, 59, 0.88)"
+                                                    stroke="rgba(167, 243, 208, 0.55)"
+                                                    strokeWidth="1"
+                                                />
+                                                <text
+                                                    x="0"
+                                                    y="-5"
+                                                    textAnchor="middle"
+                                                    fill="#ffffff"
+                                                    fontSize="9.5"
+                                                    fontWeight="800"
+                                                >
+                                                    {avatarSim.activityBadge}
+                                                </text>
+                                            </g>
+                                        )}
+
                                         <rect
-                                            x="-68"
-                                            y="-18"
-                                            width="136"
-                                            height="20"
-                                            rx="10"
-                                            fill="rgba(15, 23, 42, 0.78)"
-                                            stroke="rgba(255, 255, 255, 0.35)"
-                                            strokeWidth="1"
+                                            x="-40"
+                                            y="12"
+                                            width="80"
+                                            height="17"
+                                            rx="8.5"
+                                            fill="rgba(15, 23, 42, 0.82)"
                                         />
                                         <text
                                             x="0"
-                                            y="-5"
+                                            y="23.5"
                                             textAnchor="middle"
                                             fill="#ffffff"
                                             fontSize="9.5"
                                             fontWeight="800"
                                         >
-                                            {avatarSim.activityBadge}
+                                            {ownerName.slice(0, 8)}
                                         </text>
                                     </g>
-                                )}
+                                );
+                            })}
+                        </>
+                    ) : (
+                        <>
+                            {/* ==================== 1. 3D 디오라마 외벽 두께 & 좌/우 벽면 ==================== */}
+                            {/* 좌측 벽 외곽 단면 두께 */}
+                            <polygon
+                                points={`${floorLeft.x - WALL_THICK},${floorLeft.y - WALL_H - 7} ${floorLeft.x},${floorLeft.y - WALL_H} ${floorLeft.x},${floorLeft.y + FLOOR_THICK} ${floorLeft.x - WALL_THICK},${floorLeft.y + FLOOR_THICK - 7}`}
+                                fill={wallTheme.outerSide}
+                            />
+                            {/* 우측 벽 외곽 단면 두께 */}
+                            <polygon
+                                points={`${floorRight.x},${floorRight.y - WALL_H} ${floorRight.x + WALL_THICK},${floorRight.y - WALL_H - 7} ${floorRight.x + WALL_THICK},${floorRight.y + FLOOR_THICK - 7} ${floorRight.x},${floorRight.y + FLOOR_THICK}`}
+                                fill={wallTheme.outerSide}
+                            />
+                            {/* 좌측 벽 상단 캡(두께면) */}
+                            <polygon
+                                points={`${floorLeft.x - WALL_THICK},${floorLeft.y - WALL_H - 7} ${floorTop.x},${floorTop.y - WALL_H - WALL_THICK} ${floorTop.x},${floorTop.y - WALL_H} ${floorLeft.x},${floorLeft.y - WALL_H}`}
+                                fill={wallTheme.topCap}
+                                stroke={wallTheme.outerSide}
+                                strokeWidth="1"
+                            />
+                            {/* 우측 벽 상단 캡(두께면) */}
+                            <polygon
+                                points={`${floorTop.x},${floorTop.y - WALL_H - WALL_THICK} ${floorRight.x + WALL_THICK},${floorRight.y - WALL_H - 7} ${floorRight.x},${floorRight.y - WALL_H} ${floorTop.x},${floorTop.y - WALL_H}`}
+                                fill={wallTheme.topCap}
+                                stroke={wallTheme.outerSide}
+                                strokeWidth="1"
+                            />
 
-                                {/* 미니미 이름표 */}
-                                <rect x="-40" y="12" width="80" height="17" rx="8.5" fill="rgba(15, 23, 42, 0.82)" />
-                                <text x="0" y="23.5" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="800">
-                                    {ownerName.slice(0, 8)}
-                                </text>
+                            {/* 좌측 내벽 */}
+                            <polygon
+                                points={`${floorLeft.x},${floorLeft.y - WALL_H} ${floorTop.x},${floorTop.y - WALL_H} ${floorTop.x},${floorTop.y} ${floorLeft.x},${floorLeft.y}`}
+                                fill={wallTheme.left}
+                                stroke={wallTheme.outerSide}
+                                strokeWidth="1.5"
+                            />
+                            {/* 우측 내벽 */}
+                            <polygon
+                                points={`${floorTop.x},${floorTop.y - WALL_H} ${floorRight.x},${floorRight.y - WALL_H} ${floorRight.x},${floorRight.y} ${floorTop.x},${floorTop.y}`}
+                                fill={wallTheme.right}
+                                stroke={wallTheme.outerSide}
+                                strokeWidth="1.5"
+                            />
+
+                            {/* 벽지 세로 웨인스코팅/패널 디테일 라인 */}
+                            {[1, 2, 3, 4, 5, 6, 7].map((step) => {
+                                const lx = floorLeft.x + (step / 8) * (floorTop.x - floorLeft.x);
+                                const ly = floorLeft.y + (step / 8) * (floorTop.y - floorLeft.y);
+                                const rx = floorTop.x + (step / 8) * (floorRight.x - floorTop.x);
+                                const ry = floorTop.y + (step / 8) * (floorRight.y - floorTop.y);
+                                return (
+                                    <g key={`wall-panel-${step}`}>
+                                        <line
+                                            x1={lx}
+                                            y1={ly - WALL_H}
+                                            x2={lx}
+                                            y2={ly}
+                                            stroke={wallTheme.stripe}
+                                            strokeWidth="1.5"
+                                        />
+                                        <line
+                                            x1={rx}
+                                            y1={ry - WALL_H}
+                                            x2={rx}
+                                            y2={ry}
+                                            stroke={wallTheme.stripe}
+                                            strokeWidth="1.5"
+                                        />
+                                    </g>
+                                );
+                            })}
+
+                            {/* 중앙 코너 앰비언트 오클루전 음영 */}
+                            <line
+                                x1={floorTop.x}
+                                y1={floorTop.y - WALL_H}
+                                x2={floorTop.x}
+                                y2={floorTop.y}
+                                stroke="rgba(15, 23, 42, 0.16)"
+                                strokeWidth="4"
+                            />
+
+                            {/* 벽 하단 걸레받이(Baseboard Molding) */}
+                            <polygon
+                                points={`${floorLeft.x},${floorLeft.y - 10} ${floorTop.x},${floorTop.y - 10} ${floorTop.x},${floorTop.y} ${floorLeft.x},${floorLeft.y}`}
+                                fill={wallTheme.baseboard}
+                                opacity="0.85"
+                            />
+                            <polygon
+                                points={`${floorTop.x},${floorTop.y - 10} ${floorRight.x},${floorRight.y - 10} ${floorRight.x},${floorRight.y} ${floorTop.x},${floorTop.y}`}
+                                fill={wallTheme.baseboard}
+                                opacity="0.95"
+                            />
+
+                            {/* 좌측 벽 나노바나나 3D 창문 & 따스한 햇살 광선 */}
+                            <polygon
+                                points="210,165 305,118 365,265 255,315"
+                                fill="url(#sunlightRay)"
+                                pointerEvents="none"
+                            />
+                            <image
+                                href="/images/minihome/items/room-window-cozy.png"
+                                x={206}
+                                y={82}
+                                width={118}
+                                height={118}
+                                preserveAspectRatio="xMidYMid meet"
+                            />
+
+                            {/* 우측 벽 나노바나나 3D 우드 선반 & 시계/액자 갤러리 (우측 벽 각도에 맞춰 좌우 미러링) */}
+                            <g transform="translate(538, 152) scale(-1, 1)">
+                                <image
+                                    href="/images/minihome/items/room-wall-gallery.png"
+                                    x={-62}
+                                    y={-58}
+                                    width={124}
+                                    height={124}
+                                    preserveAspectRatio="xMidYMid meet"
+                                />
                             </g>
-                        );
-                    })}
+
+                            {/* ==================== 2. 바닥 베이스 & 입체 단면 두께 ==================== */}
+                            {/* 바닥 좌/우 측면 두께 */}
+                            <polygon
+                                points={`${floorLeft.x},${floorLeft.y} ${floorBottom.x},${floorBottom.y} ${floorBottom.x},${floorBottom.y + FLOOR_THICK} ${floorLeft.x},${floorLeft.y + FLOOR_THICK}`}
+                                fill={floorTheme.sideLeft}
+                            />
+                            <polygon
+                                points={`${floorBottom.x},${floorBottom.y} ${floorRight.x},${floorRight.y} ${floorRight.x},${floorRight.y + FLOOR_THICK} ${floorBottom.x},${floorBottom.y + FLOOR_THICK}`}
+                                fill={floorTheme.sideRight}
+                            />
+                            {/* 메인 바닥면 */}
+                            <polygon
+                                points={`${floorTop.x},${floorTop.y} ${floorRight.x},${floorRight.y} ${floorBottom.x},${floorBottom.y} ${floorLeft.x},${floorLeft.y}`}
+                                fill={floorTheme.base}
+                                stroke={floorTheme.line}
+                                strokeWidth="2"
+                            />
+
+                            {/* ==================== 3. 8x8 아이소메트릭 타일 그리드 ==================== */}
+                            {Array.from({ length: 8 }).map((_, gx) =>
+                                Array.from({ length: 8 }).map((__, gy) => {
+                                    const isCheckerAlt = (gx + gy) % 2 === 1;
+                                    const isSelectedMinimiTile =
+                                        isEditMode && selectedTargetId === 'minimi' && layout.minimiX === gx && layout.minimiY === gy;
+                                    const isSelectedItemTile =
+                                        isEditMode &&
+                                        layout.placedItems.some(
+                                            (it) => it.instanceId === selectedTargetId && it.gridX === gx && it.gridY === gy
+                                        );
+
+                                    return (
+                                        <polygon
+                                            key={`tile-${gx}-${gy}`}
+                                            points={getTilePolygonPoints(gx, gy)}
+                                            fill={
+                                                isSelectedMinimiTile || isSelectedItemTile
+                                                    ? 'rgba(99, 102, 241, 0.35)'
+                                                    : isCheckerAlt
+                                                    ? floorTheme.alt
+                                                    : floorTheme.base
+                                            }
+                                            stroke={isEditMode ? 'rgba(99, 102, 241, 0.4)' : floorTheme.line}
+                                            strokeWidth={isEditMode ? '1.3' : '0.75'}
+                                            strokeOpacity={isEditMode ? 0.9 : 0.5}
+                                            className={isEditMode ? 'cursor-pointer hover:fill-indigo-400/30 transition-colors' : ''}
+                                            onClick={() => isEditMode && onTileClick(gx, gy)}
+                                        />
+                                    );
+                                })
+                            )}
+
+                            {/* ==================== 4. 바닥 러그 레이어 ==================== */}
+                            {rugItems.map((rug) => {
+                                const pos = getTileCenter(rug.gridX, rug.gridY);
+                                const isSelected = isEditMode && selectedTargetId === rug.instanceId;
+                                return (
+                                    <g
+                                        key={rug.instanceId}
+                                        transform={`translate(${pos.x}, ${pos.y}) scale(${rug.flipped ? -1 : 1}, 1)`}
+                                        className="cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSelectTarget(rug.instanceId);
+                                        }}
+                                    >
+                                        {isSelected && (
+                                            <ellipse
+                                                cx="0"
+                                                cy="4"
+                                                rx="58"
+                                                ry="30"
+                                                fill="rgba(99, 102, 241, 0.15)"
+                                                stroke="#4f46e5"
+                                                strokeWidth="2.5"
+                                                strokeDasharray="4 2"
+                                            />
+                                        )}
+                                        {renderItemGraphic(rug.itemId)}
+                                    </g>
+                                );
+                            })}
+
+                            {/* ==================== 5. 깊이(Z-Index) 정렬된 가구 & 미니미 레이어 ==================== */}
+                            {sortedEntities.map((entity) => {
+                                if (entity.kind === 'item') {
+                                    const item = entity.data;
+                                    const pos = getTileCenter(item.gridX, item.gridY);
+                                    const isSelected = isEditMode && selectedTargetId === item.instanceId;
+                                    return (
+                                        <g
+                                            key={item.instanceId}
+                                            transform={`translate(${pos.x}, ${pos.y})`}
+                                            className="cursor-pointer"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onSelectTarget(item.instanceId);
+                                            }}
+                                        >
+                                            {isSelected && (
+                                                <ellipse
+                                                    cx="0"
+                                                    cy="6"
+                                                    rx="36"
+                                                    ry="18"
+                                                    fill="rgba(99, 102, 241, 0.22)"
+                                                    stroke="#4f46e5"
+                                                    strokeWidth="2.5"
+                                                    strokeDasharray="4 2"
+                                                />
+                                            )}
+                                            <g transform={`scale(${item.flipped ? -1 : 1}, 1)`}>
+                                                {renderItemGraphic(item.itemId)}
+                                            </g>
+                                        </g>
+                                    );
+                                }
+
+                                // 아바타 (자율 산책 및 가구 상호작용 연속 좌표 반영)
+                                const minimiPos = getTileCenter(avatarSim.animX, avatarSim.animY);
+                                const isMinimiSelected = isEditMode && selectedTargetId === 'minimi';
+
+                                return (
+                                    <g
+                                        key="minimi-avatar"
+                                        transform={`translate(${minimiPos.x}, ${minimiPos.y})`}
+                                        className="cursor-pointer"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSelectTarget('minimi');
+                                        }}
+                                    >
+                                        {isMinimiSelected && (
+                                            <ellipse
+                                                cx="0"
+                                                cy="6"
+                                                rx="28"
+                                                ry="14"
+                                                fill="rgba(79, 70, 229, 0.28)"
+                                                stroke="#4f46e5"
+                                                strokeWidth="2.5"
+                                            />
+                                        )}
+                                        {renderMinimiGraphic(layout.minimiItemId)}
+
+                                        {/* 가구 상호작용 중일 때 표시되는 아담한 상태 배지 */}
+                                        {!isEditMode && avatarSim.activityBadge && (
+                                            <g transform={`translate(0, ${-88 + avatarSim.sitOffsetY})`}>
+                                                <rect
+                                                    x="-68"
+                                                    y="-18"
+                                                    width="136"
+                                                    height="20"
+                                                    rx="10"
+                                                    fill="rgba(15, 23, 42, 0.78)"
+                                                    stroke="rgba(255, 255, 255, 0.35)"
+                                                    strokeWidth="1"
+                                                />
+                                                <text
+                                                    x="0"
+                                                    y="-5"
+                                                    textAnchor="middle"
+                                                    fill="#ffffff"
+                                                    fontSize="9.5"
+                                                    fontWeight="800"
+                                                >
+                                                    {avatarSim.activityBadge}
+                                                </text>
+                                            </g>
+                                        )}
+
+                                        {/* 미니미 이름표 */}
+                                        <rect x="-40" y="12" width="80" height="17" rx="8.5" fill="rgba(15, 23, 42, 0.82)" />
+                                        <text x="0" y="23.5" textAnchor="middle" fill="#ffffff" fontSize="9.5" fontWeight="800">
+                                            {ownerName.slice(0, 8)}
+                                        </text>
+                                    </g>
+                                );
+                            })}
+
+                            {/* 실내 우측 하단 디딤돌: 클릭 시 앞마당 텃밭으로 이동 */}
+                            {!isEditMode && (
+                                <g
+                                    transform={`translate(${floorRight.x - 54}, ${floorRight.y + 42})`}
+                                    className="cursor-pointer"
+                                    onClick={() => setActiveZone('garden')}
+                                >
+                                    <ellipse cx="0" cy="4" rx="46" ry="13" fill="#4ade80" stroke="#16a34a" strokeWidth="1.5" />
+                                    <rect x="-48" y="-12" width="96" height="20" rx="10" fill="#15803d" stroke="#bbf7d0" strokeWidth="1.2" />
+                                    <text x="0" y="1.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="900">
+                                        🌿 앞마당 텃밭 나가기
+                                    </text>
+                                </g>
+                            )}
+                        </>
+                    )}
                 </svg>
+
+                {/* 앞마당 텃밭 모드일 때 하단 야채 심기·물주기·수확하기 컨트롤 패널 */}
+                {activeZone === 'garden' && !isEditMode && (
+                    <MinihomeGardenControlPanel
+                        gardenState={gardenState}
+                        selectedPlotIndex={selectedPlotIndex}
+                        onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
+                        isOwner={isOwner}
+                        isRainWeather={isRainWeather}
+                        onPlantCrop={onPlantCrop}
+                        onWaterPlot={onWaterPlot}
+                        onHarvestPlot={onHarvestPlot}
+                        onClearPlot={onClearPlot}
+                    />
+                )}
 
                 {/* 꾸미기 모드 시 하단 플로팅 오브젝트 조작 바 */}
                 {isEditMode && (

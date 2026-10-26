@@ -25,6 +25,7 @@ export interface MinihomeRoomLayout {
     minimiY: number;
     speechBubble: string;
     placedItems: PlacedRoomItem[];
+    garden?: Record<string, unknown>;
 }
 
 export interface CatalogPriceItem {

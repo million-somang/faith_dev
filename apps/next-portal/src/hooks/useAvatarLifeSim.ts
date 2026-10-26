@@ -2,6 +2,16 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
+import { ensureGardenState, getGardenCropById } from '@/data/minihomeCatalogData';
+
+export const GARDEN_PLOT_COORDS: Array<{ plotIndex: number; gridX: number; gridY: number }> = [
+    { plotIndex: 0, gridX: 2, gridY: 2 },
+    { plotIndex: 1, gridX: 4, gridY: 2 },
+    { plotIndex: 2, gridX: 6, gridY: 2 },
+    { plotIndex: 3, gridX: 2, gridY: 5 },
+    { plotIndex: 4, gridX: 4, gridY: 5 },
+    { plotIndex: 5, gridX: 6, gridY: 5 },
+];
 
 export interface AvatarLifeSimState {
     animX: number;
@@ -180,10 +190,69 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
 export function useAvatarLifeSim(params: {
     layout: MinihomeRoomLayout;
     isEditMode: boolean;
+    activeZone?: 'indoor' | 'garden';
 }): AvatarLifeSimState {
-    const { layout, isEditMode } = params;
+    const { layout, isEditMode, activeZone = 'indoor' } = params;
 
     const waypoints = useMemo<ActivityWaypoint[]>(() => {
+        if (activeZone === 'garden') {
+            const gardenState = ensureGardenState(layout.garden);
+            const gardenList: ActivityWaypoint[] = [];
+
+            for (const plot of gardenState.plots) {
+                const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
+                const cropMeta = getGardenCropById(plot.cropId);
+                if (cropMeta) {
+                    const badgeText =
+                        plot.stage === 3
+                            ? `✨ 다 자란 ${cropMeta.shortName} 수확 준비!`
+                            : plot.stage === 1
+                            ? `💧 ${cropMeta.shortName} 새싹에 물 주는 중`
+                            : cropMeta.avatarCareBadge;
+                    gardenList.push({
+                        id: `wp-garden-plot-${plot.plotIndex}`,
+                        targetX: clampGrid(coord.gridX - 0.55),
+                        targetY: clampGrid(coord.gridY + 0.55),
+                        lookAtX: coord.gridX,
+                        lookAtY: coord.gridY,
+                        isSitting: false,
+                        sitOffsetY: 0,
+                        badge: badgeText,
+                        dwellMs: 7800,
+                        priority: plot.stage === 3 ? 1 : 2,
+                    });
+                }
+            }
+
+            gardenList.push({
+                id: 'wp-garden-bench',
+                targetX: 0.9,
+                targetY: 3.6,
+                lookAtX: 3.0,
+                lookAtY: 3.6,
+                isSitting: true,
+                sitOffsetY: 8,
+                badge: '🪑 마당 벤치에 앉아 텃밭 구경 중',
+                dwellMs: 8200,
+                priority: 4,
+            });
+
+            gardenList.push({
+                id: 'wp-garden-stroll',
+                targetX: 3.2,
+                targetY: 3.6,
+                lookAtX: 4.2,
+                lookAtY: 2.5,
+                isSitting: false,
+                sitOffsetY: 0,
+                badge: '🌿 마당에서 상쾌한 바람 쐬는 중',
+                dwellMs: 6800,
+                priority: 5,
+            });
+
+            return gardenList;
+        }
+
         const list: ActivityWaypoint[] = [];
         for (const item of layout.placedItems) {
             const wp = buildWaypointForItem(item);
@@ -219,7 +288,7 @@ export function useAvatarLifeSim(params: {
         });
 
         return list;
-    }, [layout.placedItems, layout.minimiX, layout.minimiY]);
+    }, [activeZone, layout.garden, layout.placedItems, layout.minimiX, layout.minimiY]);
 
     const [simState, setSimState] = useState<AvatarLifeSimState>({
         animX: layout.minimiX,
