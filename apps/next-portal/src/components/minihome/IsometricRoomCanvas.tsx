@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { ensureGardenState, getCatalogItemById } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
-import { GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
+import { ForcedGardenActionTrigger, GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
+import { MinihomeAvatarActionOverlay } from '@/components/minihome/MinihomeAvatarActionOverlay';
 import {
     GardenBenchAndWateringCan,
     GardenCourtyardBackdrop,
@@ -93,6 +94,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 }) => {
     const [activeZone, setActiveZone] = useState<'indoor' | 'garden'>('indoor');
     const [selectedPlotIndex, setSelectedPlotIndex] = useState<number>(0);
+    const [forcedGardenAction, setForcedGardenAction] = useState<ForcedGardenActionTrigger | null>(null);
 
     useEffect(() => {
         if (isEditMode && activeZone === 'garden') {
@@ -101,7 +103,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     }, [isEditMode, activeZone]);
 
     const { weather } = useWeather();
-    const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone });
+    const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone, forcedGardenAction });
     const gardenState = ensureGardenState(layout.garden);
     const readyHarvestCount = gardenState.plots.filter((p) => p.cropId && p.stage === 3).length;
     const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
@@ -349,7 +351,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         );
     };
 
-    // 나노바나나 고해상도 3D 미니미 아바타 렌더러 (자율 이동·앉기·호흡 애니메이션 반영)
+    // 나노바나나 고해상도 3D 미니미 아바타 렌더러 (자율 이동·앉기·상황별 리얼 모션 & 소품 애니메이션 반영)
     const renderMinimiGraphic = (minimiId: string) => {
         const meta = getCatalogItemById(minimiId);
         const spriteUrl = meta?.spriteUrl || `/images/minihome/items/${minimiId}.png`;
@@ -369,7 +371,11 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     ry={Math.round(12 * shadowScale)}
                     fill="rgba(15, 23, 42, 0.26)"
                 />
-                <g transform={`translate(0, ${totalOffsetY}) scale(${avatarSim.facingLeft ? -1 : 1}, ${avatarSim.isSitting ? 0.94 : 1})`}>
+                <g
+                    transform={`translate(0, ${totalOffsetY}) scale(${avatarSim.facingLeft ? -1 : 1}, ${
+                        avatarSim.isSitting ? 0.94 : 1
+                    }) rotate(${avatarSim.tiltDeg || 0} 0 -18)`}
+                >
                     <image
                         href={spriteUrl}
                         x={-w / 2}
@@ -379,6 +385,13 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         preserveAspectRatio="xMidYMax meet"
                     />
                 </g>
+                {/* 상황별 실시간 소품(물조리개·찻잔·책 등) 및 파티클 애니메이션 오버레이 */}
+                <MinihomeAvatarActionOverlay
+                    simState={avatarSim}
+                    isEditMode={isEditMode}
+                    isRainWeather={isRainWeather}
+                    isNightWeather={isNightWeather}
+                />
             </g>
         );
     };
@@ -1270,9 +1283,39 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
                         isOwner={isOwner}
                         isRainWeather={isRainWeather}
-                        onPlantCrop={onPlantCrop}
-                        onWaterPlot={onWaterPlot}
-                        onHarvestPlot={onHarvestPlot}
+                        onPlantCrop={(plotIdx, cropId) => {
+                            if (onPlantCrop) {
+                                onPlantCrop(plotIdx, cropId);
+                            }
+                            setForcedGardenAction({
+                                plotIndex: plotIdx,
+                                activityType: 'watering',
+                                badge: `💧 새로 심은 씨앗에 정성껏 물 주는 중`,
+                                timestamp: Date.now(),
+                            });
+                        }}
+                        onWaterPlot={(plotIdx) => {
+                            if (onWaterPlot) {
+                                onWaterPlot(plotIdx);
+                            }
+                            setForcedGardenAction({
+                                plotIndex: plotIdx,
+                                activityType: 'watering',
+                                badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
+                                timestamp: Date.now(),
+                            });
+                        }}
+                        onHarvestPlot={(plotIdx) => {
+                            if (onHarvestPlot) {
+                                onHarvestPlot(plotIdx);
+                            }
+                            setForcedGardenAction({
+                                plotIndex: plotIdx,
+                                activityType: 'harvest-ready',
+                                badge: `🧺 ${plotIdx + 1}번 텃밭 수확 완료!`,
+                                timestamp: Date.now(),
+                            });
+                        }}
                         onClearPlot={onClearPlot}
                         onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
                         onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}

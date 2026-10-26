@@ -13,14 +13,38 @@ export const GARDEN_PLOT_COORDS: Array<{ plotIndex: number; gridX: number; gridY
     { plotIndex: 5, gridX: 6, gridY: 5 },
 ];
 
+export type AvatarActivityType =
+    | 'walking'
+    | 'idle'
+    | 'watering'
+    | 'drinking-tea'
+    | 'looking-window'
+    | 'reading-book'
+    | 'listening-music'
+    | 'working-desk'
+    | 'playing-game'
+    | 'petting-animal'
+    | 'harvest-ready'
+    | 'admiring-lamp';
+
+export interface ForcedGardenActionTrigger {
+    plotIndex: number;
+    activityType: 'watering' | 'harvest-ready';
+    badge: string;
+    timestamp: number;
+}
+
 export interface AvatarLifeSimState {
     animX: number;
     animY: number;
     facingLeft: boolean;
     bobOffsetY: number;
     sitOffsetY: number;
+    tiltDeg: number;
     isSitting: boolean;
     isWalking: boolean;
+    activityType: AvatarActivityType;
+    actionPhase: number; // 초 단위 연속 애니메이션 시간값 (물방울 낙하, 찻잔 홀짝임, 김 상승 등 계산용)
     activityBadge: string | null;
 }
 
@@ -32,6 +56,7 @@ interface ActivityWaypoint {
     lookAtY: number;
     isSitting: boolean;
     sitOffsetY: number;
+    activityType: AvatarActivityType;
     badge: string;
     dwellMs: number;
     priority: number;
@@ -43,6 +68,79 @@ function clampGrid(v: number): number {
 
 function screenDeltaX(fromX: number, fromY: number, toX: number, toY: number): number {
     return (toX - toY) - (fromX - fromY);
+}
+
+function computeActivityMotion(
+    activityType: AvatarActivityType,
+    elapsedSec: number
+): { bobOffsetY: number; tiltDeg: number } {
+    switch (activityType) {
+        case 'watering': {
+            // 물조리개를 기울여 물을 주는 리드미컬한 상체 숙임 모션
+            const pourCycle = (Math.sin(elapsedSec * Math.PI * 1.4) + 1) * 0.5; // 0 ~ 1
+            return {
+                bobOffsetY: pourCycle * 2.2,
+                tiltDeg: 5 + pourCycle * 6.5, // 앞으로 5~11.5도 기울임
+            };
+        }
+        case 'drinking-tea': {
+            // 주기적으로 찻잔을 입가로 가져가 홀짝이는(Sip) 모션
+            const sipWave = Math.max(0, Math.sin(elapsedSec * Math.PI * 0.9));
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 0.7) * 1.1,
+                tiltDeg: -sipWave * 4.5, // 마실 때 살짝 뒤로 고개를 젖힘
+            };
+        }
+        case 'looking-window': {
+            // 창밖 풍경과 날씨를 바라보며 잔잔하게 고개를 갸웃거리는 모션
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 0.65) * 1.2,
+                tiltDeg: Math.sin(elapsedSec * Math.PI * 0.45) * 3.2,
+            };
+        }
+        case 'reading-book': {
+            // 책을 읽으며 고개를 끄덕이는 모션
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 0.8) * 1.3,
+                tiltDeg: 2.5 + Math.sin(elapsedSec * Math.PI * 1.1) * 1.8,
+            };
+        }
+        case 'listening-music': {
+            // LP 음악 비트에 맞춰 좌우로 신나게 리듬을 타는 그루브 스웨이
+            return {
+                bobOffsetY: -Math.abs(Math.sin(elapsedSec * Math.PI * 1.8)) * 3.2,
+                tiltDeg: Math.sin(elapsedSec * Math.PI * 1.8) * 5.2,
+            };
+        }
+        case 'working-desk':
+        case 'playing-game': {
+            // 키보드 타이핑 / 게임 컨트롤러 집중 조작 모션
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 3.2) * 1.1,
+                tiltDeg: 2.2 + Math.sin(elapsedSec * Math.PI * 2.6) * 2.0,
+            };
+        }
+        case 'petting-animal': {
+            // 반려동물을 다정하게 쓰다듬는 모션
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 1.5) * 1.8,
+                tiltDeg: 4 + Math.sin(elapsedSec * Math.PI * 1.5) * 3.5,
+            };
+        }
+        case 'harvest-ready': {
+            // 다 자란 농작물을 보고 기뻐하며 통통 튀는 모션
+            return {
+                bobOffsetY: -Math.abs(Math.sin(elapsedSec * Math.PI * 2.2)) * 4.5,
+                tiltDeg: Math.sin(elapsedSec * Math.PI * 2.2) * 3.5,
+            };
+        }
+        default: {
+            return {
+                bobOffsetY: Math.sin(elapsedSec * Math.PI * 0.85) * 1.4,
+                tiltDeg: 0,
+            };
+        }
+    }
 }
 
 function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
@@ -59,7 +157,8 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: true,
                 sitOffsetY: 9,
-                badge: '💻 책상에 앉아 집중 중',
+                activityType: 'working-desk',
+                badge: '💻 책상에 앉아 집중 타이핑 중',
                 dwellMs: 8500,
                 priority: 1,
             };
@@ -72,7 +171,8 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: true,
                 sitOffsetY: 9,
-                badge: '🎧 책상에 앉아 게임 중',
+                activityType: 'playing-game',
+                badge: '🎧 게이밍 데스크에서 열겜 중',
                 dwellMs: 8500,
                 priority: 2,
             };
@@ -85,8 +185,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: false,
                 sitOffsetY: 0,
-                badge: '🌱 반려식물 살펴보는 중',
-                dwellMs: 8000,
+                activityType: 'watering',
+                badge: '💧 반려식물에 정성껏 물 주는 중',
+                dwellMs: 8200,
                 priority: 3,
             };
         case 'furn-bookshelf':
@@ -98,8 +199,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: false,
                 sitOffsetY: 0,
-                badge: '📖 책장에서 책 고르는 중',
-                dwellMs: 7800,
+                activityType: 'reading-book',
+                badge: '📖 책장 앞에서 독서 삼매경',
+                dwellMs: 8000,
                 priority: 4,
             };
         case 'prop-coffee-rug':
@@ -111,8 +213,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy + 1,
                 isSitting: true,
                 sitOffsetY: 7,
-                badge: '☕ 러그에 앉아 티타임',
-                dwellMs: 8200,
+                activityType: 'drinking-tea',
+                badge: '☕ 러그에 앉아 따뜻한 차 마시는 중',
+                dwellMs: 8600,
                 priority: 5,
             };
         case 'furn-beanbag':
@@ -124,8 +227,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy + 1,
                 isSitting: true,
                 sitOffsetY: 10,
-                badge: '🛋️ 빈백에 앉아 휴식 중',
-                dwellMs: 8500,
+                activityType: 'drinking-tea',
+                badge: '🍵 빈백 소파에서 향긋한 티타임',
+                dwellMs: 8600,
                 priority: 5,
             };
         case 'furn-turntable':
@@ -137,8 +241,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: false,
                 sitOffsetY: 0,
-                badge: '🎵 LP 음악 감상 중',
-                dwellMs: 7800,
+                activityType: 'listening-music',
+                badge: '🎵 LP 턴테이블 음악에 리듬 타는 중',
+                dwellMs: 8200,
                 priority: 6,
             };
         case 'furn-arcade-cabinet':
@@ -150,7 +255,8 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: false,
                 sitOffsetY: 0,
-                badge: '🕹️ 오락실 게임 플레이',
+                activityType: 'playing-game',
+                badge: '🕹️ 오락실 아케이드 신기록 도전 중',
                 dwellMs: 8000,
                 priority: 6,
             };
@@ -164,8 +270,9 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: true,
                 sitOffsetY: 5,
-                badge: '🐾 반려동물과 교감 중',
-                dwellMs: 8000,
+                activityType: 'petting-animal',
+                badge: '🐾 귀여운 반려동물 쓰다듬는 중',
+                dwellMs: 8200,
                 priority: 4,
             };
         case 'furn-floor-lamp':
@@ -178,7 +285,8 @@ function buildWaypointForItem(item: PlacedRoomItem): ActivityWaypoint | null {
                 lookAtY: gy,
                 isSitting: false,
                 sitOffsetY: 0,
-                badge: '✨ 은은한 무드등 감상',
+                activityType: 'admiring-lamp',
+                badge: '✨ 은은한 무드등 불빛 감상 중',
                 dwellMs: 7000,
                 priority: 7,
             };
@@ -191,8 +299,9 @@ export function useAvatarLifeSim(params: {
     layout: MinihomeRoomLayout;
     isEditMode: boolean;
     activeZone?: 'indoor' | 'garden';
+    forcedGardenAction?: ForcedGardenActionTrigger | null;
 }): AvatarLifeSimState {
-    const { layout, isEditMode, activeZone = 'indoor' } = params;
+    const { layout, isEditMode, activeZone = 'indoor', forcedGardenAction = null } = params;
 
     const waypoints = useMemo<ActivityWaypoint[]>(() => {
         if (activeZone === 'garden') {
@@ -203,12 +312,10 @@ export function useAvatarLifeSim(params: {
                 const coord = GARDEN_PLOT_COORDS[plot.plotIndex] || GARDEN_PLOT_COORDS[0];
                 const cropMeta = getGardenCropById(plot.cropId);
                 if (cropMeta) {
-                    const badgeText =
-                        plot.stage === 3
-                            ? `✨ 다 자란 ${cropMeta.shortName} 수확 준비!`
-                            : plot.stage === 1
-                            ? `💧 ${cropMeta.shortName} 새싹에 물 주는 중`
-                            : cropMeta.avatarCareBadge;
+                    const isReady = plot.stage === 3;
+                    const badgeText = isReady
+                        ? `✨ 다 자란 ${cropMeta.shortName} 수확 준비!`
+                        : `💧 ${cropMeta.shortName} 밭에 정성껏 물 주는 중`;
                     gardenList.push({
                         id: `wp-garden-plot-${plot.plotIndex}`,
                         targetX: clampGrid(coord.gridX - 0.55),
@@ -217,9 +324,10 @@ export function useAvatarLifeSim(params: {
                         lookAtY: coord.gridY,
                         isSitting: false,
                         sitOffsetY: 0,
+                        activityType: isReady ? 'harvest-ready' : 'watering',
                         badge: badgeText,
-                        dwellMs: 7800,
-                        priority: plot.stage === 3 ? 1 : 2,
+                        dwellMs: 8000,
+                        priority: isReady ? 1 : 2,
                     });
                 }
             }
@@ -232,23 +340,29 @@ export function useAvatarLifeSim(params: {
                 lookAtY: 3.6,
                 isSitting: true,
                 sitOffsetY: 8,
-                badge: '🪑 마당 벤치에 앉아 텃밭 구경 중',
-                dwellMs: 8200,
-                priority: 4,
+                activityType: 'drinking-tea',
+                badge: '🍵 마당 벤치에 앉아 시원한 차 마시는 중',
+                dwellMs: 8500,
+                priority: 3,
             });
 
-            gardenList.push({
-                id: 'wp-garden-stroll',
-                targetX: 3.2,
-                targetY: 3.6,
-                lookAtX: 4.2,
-                lookAtY: 2.5,
-                isSitting: false,
-                sitOffsetY: 0,
-                badge: '🌿 마당에서 상쾌한 바람 쐬는 중',
-                dwellMs: 6800,
-                priority: 5,
-            });
+            if (gardenList.length === 1) {
+                // 작물이 아직 하나도 심어지지 않았을 때도 1번 텃밭에서 물조리개로 땅을 촉촉이 적시는 모션 제공
+                const firstPlot = GARDEN_PLOT_COORDS[0];
+                gardenList.unshift({
+                    id: 'wp-garden-soil-care',
+                    targetX: clampGrid(firstPlot.gridX - 0.55),
+                    targetY: clampGrid(firstPlot.gridY + 0.55),
+                    lookAtX: firstPlot.gridX,
+                    lookAtY: firstPlot.gridY,
+                    isSitting: false,
+                    sitOffsetY: 0,
+                    activityType: 'watering',
+                    badge: '💧 텃밭 흙에 촉촉하게 물 주는 중',
+                    dwellMs: 7800,
+                    priority: 2,
+                });
+            }
 
             return gardenList;
         }
@@ -260,32 +374,38 @@ export function useAvatarLifeSim(params: {
         }
         list.sort((a, b) => a.priority - b.priority);
 
-        // 창가 날씨 감상 스팟 및 기본 아지트 산책 스팟 추가
+        // 창가 날씨 감상 스팟 (좌측 벽 창문 바로 앞)
         list.push({
             id: 'wp-window-view',
-            targetX: 0.9,
-            targetY: 2.3,
+            targetX: 0.85,
+            targetY: 2.35,
             lookAtX: 0,
-            lookAtY: 2.3,
+            lookAtY: 2.35,
             isSitting: false,
             sitOffsetY: 0,
-            badge: '🪟 창밖 날씨 구경 중',
-            dwellMs: 7500,
-            priority: 8,
+            activityType: 'looking-window',
+            badge: '🪟 창밖 풍경과 날씨 감상 중',
+            dwellMs: 8500,
+            priority: 2,
         });
 
-        list.push({
-            id: 'wp-home-base',
-            targetX: clampGrid(layout.minimiX),
-            targetY: clampGrid(layout.minimiY),
-            lookAtX: clampGrid(layout.minimiX) + 1,
-            lookAtY: clampGrid(layout.minimiY) + 1,
-            isSitting: false,
-            sitOffsetY: 0,
-            badge: '🏠 내 아지트 산책 중',
-            dwellMs: 6200,
-            priority: 9,
-        });
+        // 만약 러그나 빈백이 없더라도 기본 차 마시기 스팟 제공
+        const hasTeaSpot = list.some((w) => w.activityType === 'drinking-tea');
+        if (!hasTeaSpot) {
+            list.push({
+                id: 'wp-home-tea',
+                targetX: clampGrid(layout.minimiX),
+                targetY: clampGrid(layout.minimiY),
+                lookAtX: clampGrid(layout.minimiX) + 1,
+                lookAtY: clampGrid(layout.minimiY) + 1,
+                isSitting: false,
+                sitOffsetY: 0,
+                activityType: 'drinking-tea',
+                badge: '☕ 향긋한 따뜻한 차 한 잔 마시는 중',
+                dwellMs: 7800,
+                priority: 8,
+            });
+        }
 
         return list;
     }, [activeZone, layout.garden, layout.placedItems, layout.minimiX, layout.minimiY]);
@@ -296,8 +416,11 @@ export function useAvatarLifeSim(params: {
         facingLeft: false,
         bobOffsetY: 0,
         sitOffsetY: 0,
+        tiltDeg: 0,
         isSitting: false,
         isWalking: false,
+        activityType: 'idle',
+        actionPhase: 0,
         activityBadge: null,
     });
 
@@ -310,6 +433,7 @@ export function useAvatarLifeSim(params: {
         targetY: number;
         phaseStartTime: number;
         phaseDurationMs: number;
+        overrideWp: ActivityWaypoint | null;
     }>({
         mode: 'dwell',
         wpIndex: 0,
@@ -319,7 +443,40 @@ export function useAvatarLifeSim(params: {
         targetY: layout.minimiY,
         phaseStartTime: 0,
         phaseDurationMs: 2200,
+        overrideWp: null,
     });
+
+    // 유저가 마당에서 물주기/파종/수확 클릭 시 아바타가 즉시 해당 이랑에서 액션 수행
+    useEffect(() => {
+        if (!forcedGardenAction || activeZone !== 'garden' || isEditMode) return;
+        const coord = GARDEN_PLOT_COORDS[forcedGardenAction.plotIndex] || GARDEN_PLOT_COORDS[0];
+        const targetX = clampGrid(coord.gridX - 0.55);
+        const targetY = clampGrid(coord.gridY + 0.55);
+
+        phaseRef.current = {
+            mode: 'dwell',
+            wpIndex: 0,
+            startX: targetX,
+            startY: targetY,
+            targetX,
+            targetY,
+            phaseStartTime: performance.now(),
+            phaseDurationMs: 5500,
+            overrideWp: {
+                id: `forced-plot-${forcedGardenAction.plotIndex}`,
+                targetX,
+                targetY,
+                lookAtX: coord.gridX,
+                lookAtY: coord.gridY,
+                isSitting: false,
+                sitOffsetY: 0,
+                activityType: forcedGardenAction.activityType,
+                badge: forcedGardenAction.badge,
+                dwellMs: 5500,
+                priority: 0,
+            },
+        };
+    }, [forcedGardenAction, activeZone, isEditMode]);
 
     useEffect(() => {
         if (isEditMode || waypoints.length === 0) {
@@ -329,8 +486,11 @@ export function useAvatarLifeSim(params: {
                 facingLeft: false,
                 bobOffsetY: 0,
                 sitOffsetY: 0,
+                tiltDeg: 0,
                 isSitting: false,
                 isWalking: false,
+                activityType: 'idle',
+                actionPhase: 0,
                 activityBadge: null,
             });
             return;
@@ -348,18 +508,18 @@ export function useAvatarLifeSim(params: {
             targetX: firstWp.targetX,
             targetY: firstWp.targetY,
             phaseStartTime: performance.now(),
-            // 천천히 걷는 속도 (최소 4.2초 ~ 최대 7.5초 동안 여유롭게 걸어감)
-            phaseDurationMs: Math.max(4200, Math.min(7500, (initDist / 0.52) * 1000)),
+            phaseDurationMs: Math.max(3800, Math.min(6800, (initDist / 0.55) * 1000)),
+            overrideWp: null,
         };
 
         const tick = (now: number) => {
             const p = phaseRef.current;
-            const currentWp = waypoints[p.wpIndex % waypoints.length];
+            const currentWp = p.overrideWp || waypoints[p.wpIndex % waypoints.length];
             const elapsed = now - p.phaseStartTime;
+            const elapsedSec = elapsed / 1000;
 
             if (p.mode === 'walk') {
                 const rawProgress = Math.min(1, elapsed / p.phaseDurationMs);
-                // 부드러운 Ease-In-Out 곡선
                 const eased = rawProgress * rawProgress * (3 - 2 * rawProgress);
                 const curX = p.startX + (p.targetX - p.startX) * eased;
                 const curY = p.startY + (p.targetY - p.startY) * eased;
@@ -367,9 +527,10 @@ export function useAvatarLifeSim(params: {
                 const dxScreen = screenDeltaX(p.startX, p.startY, p.targetX, p.targetY);
                 const facingLeft = dxScreen < -0.05;
 
-                // 천천히 또박또박 걷는 발걸음 바운스 (초당 약 1.8보)
-                const stepCycle = Math.abs(Math.sin((elapsed / 1000) * Math.PI * 1.8));
-                const bobOffsetY = -stepCycle * 3.8;
+                // 또박또박 걷는 발걸음 바운스 + 귀여운 좌우 스윙 각도
+                const stepSin = Math.sin(elapsedSec * Math.PI * 2.2);
+                const bobOffsetY = -Math.abs(stepSin) * 4.2;
+                const tiltDeg = stepSin * 3.8;
 
                 setSimState({
                     animX: curX,
@@ -377,8 +538,11 @@ export function useAvatarLifeSim(params: {
                     facingLeft,
                     bobOffsetY,
                     sitOffsetY: 0,
+                    tiltDeg,
                     isSitting: false,
                     isWalking: true,
+                    activityType: 'walking',
+                    actionPhase: elapsedSec,
                     activityBadge: null,
                 });
 
@@ -390,7 +554,6 @@ export function useAvatarLifeSim(params: {
                     p.phaseDurationMs = currentWp.dwellMs;
                 }
             } else {
-                // 가구 앞에서 머무르며 상호작용 (앉기 / 식물 관찰 / 책 고르기 등)
                 const lookDx = screenDeltaX(
                     currentWp.targetX,
                     currentWp.targetY,
@@ -399,21 +562,24 @@ export function useAvatarLifeSim(params: {
                 );
                 const facingLeft = lookDx < -0.05;
 
-                // 가만히 앉거나 서 있을 때 은은하게 숨쉬는 모션
-                const breatheOffsetY = Math.sin((elapsed / 1000) * Math.PI * 0.85) * 1.4;
+                const motion = computeActivityMotion(currentWp.activityType, elapsedSec);
 
                 setSimState({
                     animX: currentWp.targetX,
                     animY: currentWp.targetY,
                     facingLeft,
-                    bobOffsetY: breatheOffsetY,
+                    bobOffsetY: motion.bobOffsetY,
                     sitOffsetY: currentWp.sitOffsetY,
+                    tiltDeg: motion.tiltDeg,
                     isSitting: currentWp.isSitting,
                     isWalking: false,
+                    activityType: currentWp.activityType,
+                    actionPhase: elapsedSec,
                     activityBadge: currentWp.badge,
                 });
 
                 if (elapsed >= p.phaseDurationMs) {
+                    p.overrideWp = null;
                     const nextIdx = (p.wpIndex + 1) % waypoints.length;
                     const nextWp = waypoints[nextIdx];
                     const dist = Math.hypot(
@@ -428,7 +594,7 @@ export function useAvatarLifeSim(params: {
                     p.targetX = nextWp.targetX;
                     p.targetY = nextWp.targetY;
                     p.phaseStartTime = now;
-                    p.phaseDurationMs = Math.max(4200, Math.min(7500, (dist / 0.52) * 1000));
+                    p.phaseDurationMs = Math.max(3800, Math.min(6800, (dist / 0.55) * 1000));
                 }
             }
 
