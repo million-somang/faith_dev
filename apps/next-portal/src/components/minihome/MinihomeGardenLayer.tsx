@@ -596,10 +596,12 @@ interface GardenControlPanelProps {
     onWaterPlot?: (plotIndex: number) => void;
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
+    onOpenSeedShop?: () => void;
+    onOpenWarehouse?: () => void;
 }
 
 /**
- * 캔버스 하단 앞마당 텃밭 컨트롤 바 & 내 아지트 수확 바구니 패널
+ * 캔버스 하단 앞마당 텃밭 컨트롤 바 & 내 아지트 농장 창고(씨앗·수확 작물) 패널
  */
 export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     gardenState,
@@ -611,14 +613,17 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     onWaterPlot,
     onHarvestPlot,
     onClearPlot,
+    onOpenSeedShop,
+    onOpenWarehouse,
 }) => {
     const activePlot =
         gardenState.plots.find((p) => p.plotIndex === selectedPlotIndex) || gardenState.plots[0];
     const activeCropMeta = getGardenCropById(activePlot?.cropId);
+    const totalSeeds = Object.values(gardenState.seedCounts || {}).reduce((acc, v) => acc + v, 0);
 
     return (
         <div className="w-full mt-2 bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-emerald-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-emerald-700/60 space-y-3 shrink-0">
-            {/* 1행: 선택된 텃밭 이랑 번호 탭 + 현재 작물 상태 */}
+            {/* 1행: 선택된 텃밭 이랑 번호 탭 + 씨앗 상점/농장 창고 바로가기 */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px]">
@@ -647,11 +652,31 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                     </div>
                 </div>
 
-                {isRainWeather && (
-                    <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[11px] font-bold">
-                        🌧️ 단비가 내려 작물이 싱그럽게 자라요!
-                    </span>
-                )}
+                <div className="flex flex-wrap items-center gap-1.5">
+                    {isRainWeather && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[11px] font-bold">
+                            🌧️ 단비가 내려 작물이 싱그럽게 자라요!
+                        </span>
+                    )}
+                    {isOwner && onOpenSeedShop && (
+                        <button
+                            type="button"
+                            onClick={onOpenSeedShop}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                            <span>🎁 씨앗 상점 (0원)</span>
+                        </button>
+                    )}
+                    {isOwner && onOpenWarehouse && (
+                        <button
+                            type="button"
+                            onClick={onOpenWarehouse}
+                            className="px-2.5 py-1 rounded-lg bg-amber-400/90 hover:bg-amber-300 text-slate-950 text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                            <span>🏚️ 농장 창고 ({totalSeeds + gardenState.totalHarvested})</span>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* 2행: 선택된 이랑 상세 상태 & 씨앗 심기 / 물주기 / 수확하기 액션 */}
@@ -669,13 +694,15 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                 </span>
                             </>
                         ) : (
-                            <span className="text-amber-300">비어있는 텃밭 이랑입니다 · 심고 싶은 야채를 골라보세요!</span>
+                            <span className="text-amber-300">
+                                비어있는 텃밭 이랑 · 창고에 보관된 씨앗을 꺼내 심어보세요! (보유 씨앗 총 {totalSeeds}개)
+                            </span>
                         )}
                     </div>
                     <p className="text-[11px] text-slate-400">
                         {activeCropMeta
                             ? activeCropMeta.description
-                            : '당근, 고추, 방울토마토, 청상추, 딸기, 햇감자 중 원하는 작물을 심고 물을 주어 수확해보세요.'}
+                            : '상점에서 작물 씨앗을 0원에 구매하면 농장 창고에 들어갑니다. 창고의 씨앗으로 파종하고 수확한 작물도 창고에 보관해보세요.'}
                     </p>
                 </div>
 
@@ -683,18 +710,34 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 {isOwner ? (
                     <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                         {!activeCropMeta ? (
-                            GARDEN_CROP_CATALOG.map((crop) => (
-                                <button
-                                    key={crop.cropId}
-                                    type="button"
-                                    onClick={() => onPlantCrop && onPlantCrop(activePlot.plotIndex, crop.cropId)}
-                                    data-screenshot-click="action"
-                                    className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                                >
-                                    <span>{crop.emoji}</span>
-                                    <span>{crop.shortName} 심기</span>
-                                </button>
-                            ))
+                            GARDEN_CROP_CATALOG.map((crop) => {
+                                const seedQty = gardenState.seedCounts?.[crop.cropId] || 0;
+                                return (
+                                    <button
+                                        key={crop.cropId}
+                                        type="button"
+                                        onClick={() => onPlantCrop && onPlantCrop(activePlot.plotIndex, crop.cropId)}
+                                        data-screenshot-click="action"
+                                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                                            seedQty > 0
+                                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-emerald-500/40'
+                                        }`}
+                                    >
+                                        <span>{crop.emoji}</span>
+                                        <span>{crop.shortName}</span>
+                                        <span
+                                            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                                                seedQty > 0
+                                                    ? 'bg-slate-950/35 text-amber-300'
+                                                    : 'bg-amber-400/20 text-amber-300'
+                                            }`}
+                                        >
+                                            {seedQty > 0 ? `씨앗 ${seedQty}` : '0원구매'}
+                                        </span>
+                                    </button>
+                                );
+                            })
                         ) : activePlot.stage < 3 ? (
                             <>
                                 <button
@@ -710,7 +753,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                     onClick={() => onClearPlot && onClearPlot(activePlot.plotIndex)}
                                     className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
                                 >
-                                    🌱 다른 작물 심기
+                                    🌱 이랑 비우기
                                 </button>
                             </>
                         ) : (
@@ -721,7 +764,7 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                     data-screenshot-click="result"
                                     className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-md animate-pulse"
                                 >
-                                    <span>🧺 {activeCropMeta.shortName} 수확하기!</span>
+                                    <span>🏚️ {activeCropMeta.shortName} 수확해 창고에 넣기!</span>
                                 </button>
                             </>
                         )}
@@ -733,26 +776,41 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 )}
             </div>
 
-            {/* 3행: 내 아지트 마당 수확 바구니 현황 */}
+            {/* 3행: 내 아지트 농장 창고 현황 (보유 씨앗 & 수확 작물) */}
             <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px]">
-                <span className="font-black text-amber-300 flex items-center gap-1.5">
-                    <span>🧺 마당 수확 바구니 (총 {gardenState.totalHarvested}회 수확)</span>
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-black text-amber-300 flex items-center gap-1.5">
+                        <span>🏚️ 내 농장 창고 보관 현황</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-900/80 border border-emerald-600/50 text-emerald-200 font-extrabold">
+                        🌱 씨앗 {totalSeeds}봉지
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-amber-900/60 border border-amber-500/50 text-amber-200 font-extrabold">
+                        🧺 수확 작물 {gardenState.totalHarvested}개
+                    </span>
+                </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                     {GARDEN_CROP_CATALOG.map((crop) => {
-                        const count = gardenState.harvestCounts[crop.cropId] || 0;
+                        const seedCount = gardenState.seedCounts?.[crop.cropId] || 0;
+                        const harvestCount = gardenState.harvestCounts?.[crop.cropId] || 0;
                         return (
                             <span
-                                key={`harvest-stat-${crop.cropId}`}
+                                key={`warehouse-stat-${crop.cropId}`}
                                 className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 ${
-                                    count > 0
+                                    seedCount > 0 || harvestCount > 0
                                         ? 'bg-emerald-900/70 border-emerald-500/50 text-emerald-100'
                                         : 'bg-slate-800/70 border-slate-700 text-slate-400'
                                 }`}
                             >
                                 <span>{crop.emoji}</span>
                                 <span>{crop.shortName}</span>
-                                <span className="font-black text-amber-300">{count}</span>
+                                <span className="text-[10px] text-emerald-300 font-extrabold">
+                                    씨앗 {seedCount}
+                                </span>
+                                <span className="text-slate-500">·</span>
+                                <span className="text-[10px] font-black text-amber-300">
+                                    작물 {harvestCount}
+                                </span>
                             </span>
                         );
                     })}

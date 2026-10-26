@@ -80,6 +80,13 @@ const RAW_SERVER_CATALOG: Record<string, { itemId: string; name: string; pointPr
     'minimi-hanbok': { itemId: 'minimi-hanbok', name: '전통 한복 선비 아바타', pointPrice: 300, category: 'minimi' },
     'minimi-wizard': { itemId: 'minimi-wizard', name: '별빛 아카데미 마법사 아바타', pointPrice: 350, category: 'minimi' },
     'minimi-champion': { itemId: 'minimi-champion', name: '로열 챔피언 왕관 아바타', pointPrice: 450, category: 'minimi' },
+
+    'seed-carrot': { itemId: 'seed-carrot', name: '아삭 달콤 당근 씨앗', pointPrice: 50, category: 'seed' },
+    'seed-pepper': { itemId: 'seed-pepper', name: '매콤 태양초 고추 씨앗', pointPrice: 50, category: 'seed' },
+    'seed-tomato': { itemId: 'seed-tomato', name: '싱그러운 방울토마토 씨앗', pointPrice: 50, category: 'seed' },
+    'seed-lettuce': { itemId: 'seed-lettuce', name: '유기농 아삭 청상추 씨앗', pointPrice: 50, category: 'seed' },
+    'seed-strawberry': { itemId: 'seed-strawberry', name: '달콤 설향 딸기 모종 씨앗', pointPrice: 80, category: 'seed' },
+    'seed-potato': { itemId: 'seed-potato', name: '포슬포슬 황금 햇감자 씨앗', pointPrice: 60, category: 'seed' },
 };
 
 export const SERVER_CATALOG_ITEMS: Record<string, CatalogPriceItem> = Object.fromEntries(

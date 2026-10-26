@@ -152,6 +152,9 @@ export default function MyPage() {
         isEditMode: minihomeEditMode,
         isShopModalOpen: minihomeShopModalOpen,
         setIsShopModalOpen: setMinihomeShopModalOpen,
+        shopModalInitialTab: minihomeShopInitialTab,
+        shopModalInitialCategory: minihomeShopInitialCategory,
+        handleOpenShopModal: handleMinihomeOpenShopModal,
         isGuestbookModalOpen: minihomeGuestbookModalOpen,
         setIsGuestbookModalOpen: setMinihomeGuestbookModalOpen,
         isSaving: minihomeSaving,
@@ -176,6 +179,7 @@ export default function MyPage() {
         handleRemoveSelectedItem: handleMinihomeRemoveSelectedItem,
         handleResetDefaultRoom: handleMinihomeResetDefaultRoom,
         handleSaveMinihome,
+        handleBuySeed: handleMinihomeBuySeed,
         handlePlantCrop: handleMinihomePlantCrop,
         handleWaterPlot: handleMinihomeWaterPlot,
         handleHarvestPlot: handleMinihomeHarvestPlot,
@@ -1357,7 +1361,9 @@ export default function MyPage() {
                                                     onChangeSpeechBubble={(text) =>
                                                         setMinihomeDraftLayout((prev) => ({ ...prev, speechBubble: text }))
                                                     }
-                                                    onOpenShopModal={() => setMinihomeShopModalOpen(true)}
+                                                    onOpenShopModal={() => handleMinihomeOpenShopModal('shop', 'all')}
+                                                    onOpenSeedShopModal={() => handleMinihomeOpenShopModal('shop', 'seed')}
+                                                    onOpenWarehouseModal={() => handleMinihomeOpenShopModal('warehouse', 'all')}
                                                     onSaveRoom={() => handleSaveMinihome()}
                                                     onCancelEdit={handleMinihomeCancelEditMode}
                                                     isSaving={minihomeSaving}
@@ -1387,9 +1393,12 @@ export default function MyPage() {
                                                     handleMinihomeApplyCatalogItem(item);
                                                 }}
                                                 onPurchaseItem={handleMinihomePurchaseItem}
+                                                onBuySeed={handleMinihomeBuySeed}
                                                 onResetRoom={handleMinihomeResetDefaultRoom}
                                                 onSaveRoom={() => handleSaveMinihome()}
                                                 isSaving={minihomeSaving}
+                                                initialMode={minihomeShopInitialTab}
+                                                initialCategory={minihomeShopInitialCategory}
                                             />
 
                                             <MinihomeGuestbook

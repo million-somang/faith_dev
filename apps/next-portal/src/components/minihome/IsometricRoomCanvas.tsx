@@ -28,6 +28,8 @@ interface IsometricRoomCanvasProps {
     onRemoveSelected: () => void;
     onChangeSpeechBubble?: (text: string) => void;
     onOpenShopModal?: () => void;
+    onOpenSeedShopModal?: () => void;
+    onOpenWarehouseModal?: () => void;
     onSaveRoom?: () => void;
     onCancelEdit?: () => void;
     isSaving?: boolean;
@@ -79,6 +81,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onRemoveSelected,
     onChangeSpeechBubble,
     onOpenShopModal,
+    onOpenSeedShopModal,
+    onOpenWarehouseModal,
     onSaveRoom,
     onCancelEdit,
     isSaving,
@@ -545,13 +549,22 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     <span>📖 방명록 ({guestbookCount})</span>
                                 </button>
                             )}
+                            {onOpenWarehouseModal && (
+                                <button
+                                    type="button"
+                                    onClick={onOpenWarehouseModal}
+                                    className="px-2.5 sm:px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                    <span>🏚️ 농장 창고</span>
+                                </button>
+                            )}
                             {onOpenShopModal && (
                                 <button
                                     type="button"
                                     onClick={onOpenShopModal}
                                     className="px-2.5 sm:px-3 py-1 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-[11px] font-extrabold transition-colors cursor-pointer flex items-center gap-1"
                                 >
-                                    <span>🎁 상점·보관함 팝업</span>
+                                    <span>🎁 상점·보관함 (0원)</span>
                                 </button>
                             )}
                         </div>
@@ -1261,6 +1274,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                         onWaterPlot={onWaterPlot}
                         onHarvestPlot={onHarvestPlot}
                         onClearPlot={onClearPlot}
+                        onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
+                        onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}
                     />
                 )}
 

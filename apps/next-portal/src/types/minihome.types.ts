@@ -1,4 +1,4 @@
-export type MinihomeItemCategory = 'wall' | 'floor' | 'furniture' | 'prop' | 'minimi';
+export type MinihomeItemCategory = 'wall' | 'floor' | 'furniture' | 'prop' | 'minimi' | 'seed';
 
 export type MinihomeMoodType = 'happy' | 'passion' | 'relax' | 'focus' | 'gaming' | 'lucky';
 
@@ -26,6 +26,7 @@ export interface MinihomeCatalogItem {
     spriteWidth?: number;
     spriteHeight?: number;
     spriteOffsetY?: number;
+    cropId?: GardenCropId;
 }
 
 export interface MinihomeBgmTrack {
@@ -78,6 +79,7 @@ export interface GardenPlotItem {
 
 export interface MinihomeGardenState {
     plots: GardenPlotItem[];
+    seedCounts: Record<GardenCropId, number>;
     harvestCounts: Record<GardenCropId, number>;
     totalHarvested: number;
 }

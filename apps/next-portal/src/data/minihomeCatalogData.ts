@@ -523,6 +523,74 @@ const RAW_CATALOG_ITEMS: MinihomeCatalogItem[] = [
         spriteHeight: 102,
         spriteOffsetY: 14,
     },
+
+    // ==================== 6. 텃밭 씨앗 (seed) ====================
+    {
+        itemId: 'seed-carrot',
+        name: '아삭 달콤 당근 씨앗',
+        category: 'seed',
+        cropId: 'crop-carrot',
+        price: 0,
+        pointPrice: 50,
+        badgeText: '텃밭인기',
+        description: '앞마당 텃밭에 심으면 주황빛 아삭 달콤 당근으로 자라나는 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#f97316',
+    },
+    {
+        itemId: 'seed-pepper',
+        name: '매콤 태양초 고추 씨앗',
+        category: 'seed',
+        cropId: 'crop-pepper',
+        price: 0,
+        pointPrice: 50,
+        badgeText: '텃밭인기',
+        description: '하얀 고추꽃이 핀 뒤 새빨간 태양초 고추가 열리는 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#ef4444',
+    },
+    {
+        itemId: 'seed-tomato',
+        name: '싱그러운 방울토마토 씨앗',
+        category: 'seed',
+        cropId: 'crop-tomato',
+        price: 0,
+        pointPrice: 50,
+        badgeText: '텃밭씨앗',
+        description: '지지대를 타고 올라가 탐스러운 방울토마토가 맺히는 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#e11d48',
+    },
+    {
+        itemId: 'seed-lettuce',
+        name: '유기농 아삭 청상추 씨앗',
+        category: 'seed',
+        cropId: 'crop-lettuce',
+        price: 0,
+        pointPrice: 50,
+        badgeText: '초보추천',
+        description: '물만 주어도 쑥쑥 자라나는 푸릇푸릇한 유기농 청상추 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#22c55e',
+    },
+    {
+        itemId: 'seed-strawberry',
+        name: '달콤 설향 딸기 모종 씨앗',
+        category: 'seed',
+        cropId: 'crop-strawberry',
+        price: 0,
+        pointPrice: 80,
+        badgeText: '스페셜작물',
+        description: '향긋한 딸기꽃이 피고 새빨간 설향 딸기가 맺히는 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#f43f5e',
+    },
+    {
+        itemId: 'seed-potato',
+        name: '포슬포슬 황금 햇감자 씨앗',
+        category: 'seed',
+        cropId: 'crop-potato',
+        price: 0,
+        pointPrice: 60,
+        badgeText: '든든수확',
+        description: '땅속에서 황금빛 알감자가 알차게 영그는 햇감자 씨앗입니다. 구매 시 농장 창고에 보관됩니다.',
+        accentColor: '#d97706',
+    },
 ];
 
 export const MINIHOME_CATALOG_ITEMS: MinihomeCatalogItem[] = RAW_CATALOG_ITEMS.map((item) => ({
@@ -700,6 +768,14 @@ export const DEFAULT_GARDEN_STATE: MinihomeGardenState = {
             lastWateredAt: null,
         },
     ],
+    seedCounts: {
+        'crop-carrot': 0,
+        'crop-pepper': 0,
+        'crop-tomato': 0,
+        'crop-lettuce': 0,
+        'crop-strawberry': 0,
+        'crop-potato': 0,
+    },
     harvestCounts: {
         'crop-carrot': 0,
         'crop-pepper': 0,
@@ -720,6 +796,7 @@ export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenS
     if (!garden || !Array.isArray(garden.plots) || garden.plots.length === 0) {
         return {
             plots: DEFAULT_GARDEN_STATE.plots.map((p) => ({ ...p })),
+            seedCounts: { ...DEFAULT_GARDEN_STATE.seedCounts },
             harvestCounts: { ...DEFAULT_GARDEN_STATE.harvestCounts },
             totalHarvested: 0,
         };
@@ -745,17 +822,26 @@ export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenS
             lastWateredAt: found.lastWateredAt || null,
         };
     });
+    const seedCounts: Record<GardenCropId, number> = {
+        'crop-carrot': Math.max(0, Number(garden.seedCounts?.['crop-carrot'] || 0)),
+        'crop-pepper': Math.max(0, Number(garden.seedCounts?.['crop-pepper'] || 0)),
+        'crop-tomato': Math.max(0, Number(garden.seedCounts?.['crop-tomato'] || 0)),
+        'crop-lettuce': Math.max(0, Number(garden.seedCounts?.['crop-lettuce'] || 0)),
+        'crop-strawberry': Math.max(0, Number(garden.seedCounts?.['crop-strawberry'] || 0)),
+        'crop-potato': Math.max(0, Number(garden.seedCounts?.['crop-potato'] || 0)),
+    };
     const harvestCounts: Record<GardenCropId, number> = {
-        'crop-carrot': Number(garden.harvestCounts?.['crop-carrot'] || 0),
-        'crop-pepper': Number(garden.harvestCounts?.['crop-pepper'] || 0),
-        'crop-tomato': Number(garden.harvestCounts?.['crop-tomato'] || 0),
-        'crop-lettuce': Number(garden.harvestCounts?.['crop-lettuce'] || 0),
-        'crop-strawberry': Number(garden.harvestCounts?.['crop-strawberry'] || 0),
-        'crop-potato': Number(garden.harvestCounts?.['crop-potato'] || 0),
+        'crop-carrot': Math.max(0, Number(garden.harvestCounts?.['crop-carrot'] || 0)),
+        'crop-pepper': Math.max(0, Number(garden.harvestCounts?.['crop-pepper'] || 0)),
+        'crop-tomato': Math.max(0, Number(garden.harvestCounts?.['crop-tomato'] || 0)),
+        'crop-lettuce': Math.max(0, Number(garden.harvestCounts?.['crop-lettuce'] || 0)),
+        'crop-strawberry': Math.max(0, Number(garden.harvestCounts?.['crop-strawberry'] || 0)),
+        'crop-potato': Math.max(0, Number(garden.harvestCounts?.['crop-potato'] || 0)),
     };
     const totalHarvested = Object.values(harvestCounts).reduce((acc, v) => acc + v, 0);
     return {
         plots: normalizedPlots,
+        seedCounts,
         harvestCounts,
         totalHarvested,
     };

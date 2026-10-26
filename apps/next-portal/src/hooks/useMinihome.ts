@@ -6,6 +6,7 @@ import {
     GardenCropId,
     MinihomeGardenState,
     MinihomeGuestbookEntry,
+    MinihomeItemCategory,
     MinihomeMoodType,
     MinihomeProfileData,
     MinihomeRoomLayout,
@@ -50,6 +51,8 @@ export function useMinihome(routeHandle: string) {
     // 꾸미기 모드 & 상점 팝업(모달) 상태
     const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [isShopModalOpen, setIsShopModalOpen] = useState<boolean>(false);
+    const [shopModalInitialTab, setShopModalInitialTab] = useState<'shop' | 'inventory' | 'warehouse'>('shop');
+    const [shopModalInitialCategory, setShopModalInitialCategory] = useState<'all' | MinihomeItemCategory>('all');
     const [isGuestbookModalOpen, setIsGuestbookModalOpen] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [isBuyingItemId, setIsBuyingItemId] = useState<string | null>(null);
@@ -146,6 +149,15 @@ export function useMinihome(routeHandle: string) {
         fetchMinihome();
     }, [fetchMinihome]);
 
+    const handleOpenShopModal = useCallback(
+        (tab: 'shop' | 'inventory' | 'warehouse' = 'shop', category: 'all' | MinihomeItemCategory = 'all') => {
+            setShopModalInitialTab(tab);
+            setShopModalInitialCategory(category);
+            setIsShopModalOpen(true);
+        },
+        []
+    );
+
     // ==================== 꾸미기 조작 핸들러 ====================
     const handleEnterEditMode = useCallback((openShopModal = false) => {
         if (!profile) return;
@@ -157,6 +169,8 @@ export function useMinihome(routeHandle: string) {
         setSelectedTargetId('minimi');
         setIsEditMode(true);
         if (openShopModal) {
+            setShopModalInitialTab('shop');
+            setShopModalInitialCategory('all');
             setIsShopModalOpen(true);
         }
     }, [profile]);
@@ -371,14 +385,54 @@ export function useMinihome(routeHandle: string) {
         [isEditMode, draftLayout, profile, showToast, handleSaveMinihome]
     );
 
+    const handleBuySeed = useCallback(
+        (cropId: GardenCropId, quantity = 1) => {
+            const cropMeta = getGardenCropById(cropId);
+            if (!cropMeta) return;
+            const addQty = Math.max(1, quantity);
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const currentGarden = ensureGardenState(baseLayout.garden);
+            const nextCount = (currentGarden.seedCounts[cropId] || 0) + addQty;
+
+            commitGardenState(
+                (garden) => ({
+                    ...garden,
+                    seedCounts: {
+                        ...garden.seedCounts,
+                        [cropId]: (garden.seedCounts[cropId] || 0) + addQty,
+                    },
+                }),
+                `🌱 [${cropMeta.emoji} ${cropMeta.name} 씨앗] ${addQty}봉지를 0원에 구매하여 농장 창고에 넣었습니다! (창고 보유: ${nextCount}개)`
+            );
+        },
+        [isEditMode, draftLayout, profile, commitGardenState]
+    );
+
     const handlePlantCrop = useCallback(
         (plotIndex: number, cropId: GardenCropId) => {
             const cropMeta = getGardenCropById(cropId);
             if (!cropMeta) return;
+
+            const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
+            const currentGarden = ensureGardenState(baseLayout.garden);
+            const ownedSeedCount = currentGarden.seedCounts[cropId] || 0;
+
+            if (ownedSeedCount <= 0) {
+                showToast(`🌱 창고에 [${cropMeta.emoji} ${cropMeta.shortName}] 씨앗이 없습니다! 상점에서 0원으로 씨앗을 구매해 주세요.`);
+                handleOpenShopModal('shop', 'seed');
+                return;
+            }
+
             const nowIso = new Date().toISOString();
+            const remainingSeeds = Math.max(0, ownedSeedCount - 1);
+
             commitGardenState(
                 (garden) => ({
                     ...garden,
+                    seedCounts: {
+                        ...garden.seedCounts,
+                        [cropId]: Math.max(0, (garden.seedCounts[cropId] || 0) - 1),
+                    },
                     plots: garden.plots.map((p) =>
                         p.plotIndex === plotIndex
                             ? {
@@ -392,10 +446,10 @@ export function useMinihome(routeHandle: string) {
                             : p
                     ),
                 }),
-                `🌱 텃밭 ${plotIndex + 1}번 이랑에 [${cropMeta.emoji} ${cropMeta.name}] 씨앗을 심었습니다!`
+                `🌱 창고에서 [${cropMeta.emoji} ${cropMeta.name}] 씨앗 1개를 꺼내 ${plotIndex + 1}번 텃밭에 심었습니다! (창고 잔여: ${remainingSeeds}개)`
             );
         },
-        [commitGardenState]
+        [isEditMode, draftLayout, profile, commitGardenState, showToast, handleOpenShopModal]
     );
 
     const handleWaterPlot = useCallback(
@@ -445,6 +499,7 @@ export function useMinihome(routeHandle: string) {
 
             const harvestedCropId = targetPlot.cropId;
             const cropMeta = getGardenCropById(harvestedCropId);
+            const nextCropCount = (garden.harvestCounts[harvestedCropId] || 0) + 1;
 
             commitGardenState(
                 (prevGarden) => {
@@ -471,7 +526,7 @@ export function useMinihome(routeHandle: string) {
                         totalHarvested: nextTotal,
                     };
                 },
-                `🧺 싱싱한 [${cropMeta?.emoji} ${cropMeta?.name}] 수확 완료! 마당 수확 바구니에 담았습니다.`
+                `🏚️ 싱싱한 [${cropMeta?.emoji} ${cropMeta?.name}] 수확 완료! 농장 창고에 넣었습니다. (창고 보유: ${nextCropCount}개)`
             );
         },
         [isEditMode, draftLayout, profile, commitGardenState]
@@ -642,6 +697,9 @@ export function useMinihome(routeHandle: string) {
         isEditMode,
         isShopModalOpen,
         setIsShopModalOpen,
+        shopModalInitialTab,
+        shopModalInitialCategory,
+        handleOpenShopModal,
         isGuestbookModalOpen,
         setIsGuestbookModalOpen,
         isSaving,
@@ -666,6 +724,7 @@ export function useMinihome(routeHandle: string) {
         handleRemoveSelectedItem,
         handleResetDefaultRoom,
         handleSaveMinihome,
+        handleBuySeed,
         handlePlantCrop,
         handleWaterPlot,
         handleHarvestPlot,

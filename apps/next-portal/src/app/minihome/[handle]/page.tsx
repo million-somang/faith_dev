@@ -32,6 +32,9 @@ export default function MinihomePage() {
         isEditMode,
         isShopModalOpen,
         setIsShopModalOpen,
+        shopModalInitialTab,
+        shopModalInitialCategory,
+        handleOpenShopModal,
         isGuestbookModalOpen,
         setIsGuestbookModalOpen,
         isSaving,
@@ -56,6 +59,7 @@ export default function MinihomePage() {
         handleRemoveSelectedItem,
         handleResetDefaultRoom,
         handleSaveMinihome,
+        handleBuySeed,
         handlePlantCrop,
         handleWaterPlot,
         handleHarvestPlot,
@@ -534,13 +538,9 @@ export default function MinihomePage() {
                                     onChangeSpeechBubble={(text) =>
                                         setDraftLayout((prev) => ({ ...prev, speechBubble: text }))
                                     }
-                                    onOpenShopModal={() => {
-                                        if (!isEditMode) {
-                                            handleEnterEditMode(true);
-                                        } else {
-                                            setIsShopModalOpen(true);
-                                        }
-                                    }}
+                                    onOpenShopModal={() => handleOpenShopModal('shop', 'all')}
+                                    onOpenSeedShopModal={() => handleOpenShopModal('shop', 'seed')}
+                                    onOpenWarehouseModal={() => handleOpenShopModal('warehouse', 'all')}
                                     onSaveRoom={() => handleSaveMinihome()}
                                     onCancelEdit={handleCancelEditMode}
                                     isSaving={isSaving}
@@ -714,9 +714,12 @@ export default function MinihomePage() {
                         isBuyingItemId={isBuyingItemId}
                         onApplyItem={handleApplyCatalogItem}
                         onPurchaseItem={handlePurchaseItem}
+                        onBuySeed={handleBuySeed}
                         onResetRoom={handleResetDefaultRoom}
                         onSaveRoom={() => handleSaveMinihome()}
                         isSaving={isSaving}
+                        initialMode={shopModalInitialTab}
+                        initialCategory={shopModalInitialCategory}
                     />
 
                     <MinihomeGuestbook
