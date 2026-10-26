@@ -58,6 +58,16 @@ const WALL_H = 172;
 const WALL_THICK = 14;
 const FLOOR_THICK = 18;
 
+const BASE_VB_X = 95;
+const BASE_VB_Y = 30;
+const BASE_VB_W = 610;
+const BASE_VB_H = 505;
+const BASE_CENTER_X = BASE_VB_X + BASE_VB_W / 2; // 400
+const BASE_CENTER_Y = BASE_VB_Y + BASE_VB_H / 2; // 282.5
+const MIN_SAFE_ZOOM = 1.0;
+const MAX_SAFE_ZOOM = 2.0; // 512x512 원본 스프라이트 및 SVG 벡터 무손실 최대 배율(200%)
+const ZOOM_STEP = 0.25;
+
 function getTileCenter(gridX: number, gridY: number): { x: number; y: number } {
     const x = ORIGIN_X + (gridX - gridY) * (TILE_W / 2);
     const y = ORIGIN_Y + (gridX + gridY + 1) * (TILE_H / 2);
@@ -114,6 +124,38 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     const [activeZone, setActiveZone] = useState<'indoor' | 'garden'>('indoor');
     const [selectedPlotIndex, setSelectedPlotIndex] = useState<number>(0);
     const [forcedGardenAction, setForcedGardenAction] = useState<ForcedGardenActionTrigger | null>(null);
+
+    // ─── 무손실 스마트 줌 (100% ~ 200% 안전 배율) & 드래그 팬(Pan) 상태 ───
+    const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+    const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+    const [isFollowingAvatar, setIsFollowingAvatar] = useState<boolean>(false);
+    const [isDraggingPan, setIsDraggingPan] = useState<boolean>(false);
+    const [dragStartInfo, setDragStartInfo] = useState<{
+        clientX: number;
+        clientY: number;
+        originPanX: number;
+        originPanY: number;
+    } | null>(null);
+
+    const handleZoomChange = (nextZoom: number, followAvatar = false) => {
+        const clamped = Math.max(MIN_SAFE_ZOOM, Math.min(MAX_SAFE_ZOOM, Math.round(nextZoom * 100) / 100));
+        setZoomLevel(clamped);
+        if (clamped <= 1.0) {
+            setPanOffset({ x: 0, y: 0 });
+            setIsFollowingAvatar(false);
+        } else if (followAvatar) {
+            setIsFollowingAvatar(true);
+        }
+    };
+
+    const handleToggleFollowAvatar = () => {
+        if (isFollowingAvatar && zoomLevel > 1.0) {
+            handleZoomChange(1.0, false);
+        } else {
+            setZoomLevel((prev) => (prev < 1.5 ? 1.75 : prev));
+            setIsFollowingAvatar(true);
+        }
+    };
 
     useEffect(() => {
         if (isEditMode && activeZone === 'garden') {
@@ -422,6 +464,30 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                   layout.placedItems.find((i) => i.instanceId === selectedTargetId)?.itemId || ''
               );
 
+    // ─── 동적 SVG viewBox 계산 (최대 200% 무손실 벡터/고해상도 카메라 줌) ───
+    const currentVbW = BASE_VB_W / zoomLevel;
+    const currentVbH = BASE_VB_H / zoomLevel;
+    const maxPanX = (BASE_VB_W - currentVbW) / 2;
+    const maxPanY = (BASE_VB_H - currentVbH) / 2;
+
+    const avatarCenterPos = getTileCenter(avatarSim.animX, avatarSim.animY);
+    const targetPanX =
+        isFollowingAvatar && zoomLevel > 1
+            ? avatarCenterPos.x - BASE_CENTER_X
+            : panOffset.x;
+    const targetPanY =
+        isFollowingAvatar && zoomLevel > 1
+            ? avatarCenterPos.y - 34 - BASE_CENTER_Y
+            : panOffset.y;
+
+    const clampedPanX = Math.max(-maxPanX, Math.min(maxPanX, targetPanX));
+    const clampedPanY = Math.max(-maxPanY, Math.min(maxPanY, targetPanY));
+    const dynamicViewBox = `${(BASE_CENTER_X + clampedPanX - currentVbW / 2).toFixed(1)} ${(
+        BASE_CENTER_Y +
+        clampedPanY -
+        currentVbH / 2
+    ).toFixed(1)} ${currentVbW.toFixed(1)} ${currentVbH.toFixed(1)}`;
+
     return (
         <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
             {/* 통합 아지트 헤더 바 (방문자수·핸들·타이틀·실내/텃밭 스위치·방명록·창고·상점·공유 통합) */}
@@ -671,9 +737,102 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
             {/* 메인 2.5D 아이소메트릭 디오라마 스테이지 */}
             <div
-                className="relative w-full flex-1 min-h-[300px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex flex-col items-center justify-center select-none"
+                className={`relative w-full flex-1 min-h-[300px] sm:min-h-[460px] lg:min-h-[560px] p-2 sm:p-4 flex flex-col items-center justify-center select-none ${
+                    zoomLevel > 1 && !isEditMode
+                        ? isDraggingPan
+                            ? 'cursor-grabbing'
+                            : 'cursor-grab'
+                        : ''
+                }`}
                 data-screenshot-point="result"
+                onPointerDown={(e) => {
+                    if (zoomLevel <= 1 || isEditMode) return;
+                    // 버튼 클릭은 드래그 제외
+                    if ((e.target as HTMLElement).closest('button')) return;
+                    setIsDraggingPan(true);
+                    setIsFollowingAvatar(false);
+                    setDragStartInfo({
+                        clientX: e.clientX,
+                        clientY: e.clientY,
+                        originPanX: clampedPanX,
+                        originPanY: clampedPanY,
+                    });
+                }}
+                onPointerMove={(e) => {
+                    if (!isDraggingPan || !dragStartInfo || zoomLevel <= 1) return;
+                    const scaleFactor = 1 / zoomLevel;
+                    const dx = (dragStartInfo.clientX - e.clientX) * scaleFactor;
+                    const dy = (dragStartInfo.clientY - e.clientY) * scaleFactor;
+                    setPanOffset({
+                        x: Math.max(-maxPanX, Math.min(maxPanX, dragStartInfo.originPanX + dx)),
+                        y: Math.max(-maxPanY, Math.min(maxPanY, dragStartInfo.originPanY + dy)),
+                    });
+                }}
+                onPointerUp={() => {
+                    setIsDraggingPan(false);
+                    setDragStartInfo(null);
+                }}
+                onPointerLeave={() => {
+                    if (isDraggingPan) {
+                        setIsDraggingPan(false);
+                        setDragStartInfo(null);
+                    }
+                }}
             >
+                {/* 좌측 상단: 무손실 스마트 줌 컨트롤러 (100% ~ 200% 안전 배율 제한 + 아바타 클로즈업) */}
+                <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-4 z-10 flex flex-wrap items-center gap-1.5">
+                    <div className="inline-flex items-center bg-white/92 backdrop-blur-xs border border-slate-200/90 rounded-full p-0.5 shadow-2xs">
+                        <button
+                            type="button"
+                            onClick={() => handleZoomChange(zoomLevel - ZOOM_STEP, isFollowingAvatar)}
+                            disabled={zoomLevel <= MIN_SAFE_ZOOM}
+                            title="화면 축소"
+                            aria-label="화면 축소"
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-slate-700 hover:bg-slate-100 disabled:opacity-35 disabled:pointer-events-none cursor-pointer transition-colors"
+                        >
+                            −
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleZoomChange(1.0, false)}
+                            title="기본 크기(100%)로 초기화"
+                            className="px-2 py-0.5 text-[11px] font-mono font-black text-indigo-700 hover:text-indigo-900 cursor-pointer"
+                        >
+                            🔍 {Math.round(zoomLevel * 100)}%
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleZoomChange(zoomLevel + ZOOM_STEP, isFollowingAvatar)}
+                            disabled={zoomLevel >= MAX_SAFE_ZOOM}
+                            title="화면 확대 (최대 200% 화질 유지)"
+                            aria-label="화면 확대"
+                            className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-slate-700 hover:bg-slate-100 disabled:opacity-35 disabled:pointer-events-none cursor-pointer transition-colors"
+                        >
+                            +
+                        </button>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleToggleFollowAvatar}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-extrabold shadow-2xs backdrop-blur-xs transition-all cursor-pointer flex items-center gap-1 ${
+                            isFollowingAvatar && zoomLevel > 1
+                                ? 'bg-indigo-600 text-white border-indigo-500'
+                                : 'bg-white/90 hover:bg-indigo-50 text-slate-700 border-slate-200/90'
+                        }`}
+                        title="아바타 클로즈업 및 실시간 자동 추적"
+                    >
+                        <span>🎯</span>
+                        <span>{isFollowingAvatar && zoomLevel > 1 ? '아바타 추적중' : '아바타 확대'}</span>
+                    </button>
+
+                    {zoomLevel > 1 && !isFollowingAvatar && (
+                        <span className="hidden md:inline-flex items-center px-2 py-0.5 rounded-full bg-slate-900/75 text-white text-[10px] font-bold">
+                            🖐️ 드래그하여 이동
+                        </span>
+                    )}
+                </div>
+
                 {/* 실시간 외부 날씨 배지 (포털 날씨 위젯 100% 연동) */}
                 {weather && (
                     <div
@@ -694,7 +853,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                 )}
 
                 <svg
-                    viewBox="95 30 610 505"
+                    viewBox={dynamicViewBox}
                     className="w-full flex-1 object-contain"
                     role="img"
                     aria-label={`${ownerName}의 미니룸 캔버스`}
