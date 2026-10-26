@@ -13,7 +13,6 @@ import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
-import { MinihomeBgmPlayer } from '@/components/minihome/MinihomeBgmPlayer';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
 import { MinihomePersonalHubSection } from '@/components/minihome/MinihomePersonalHubSection';
@@ -1006,19 +1005,8 @@ export default function MyPage() {
                                                 )}
                                             </div>
 
-                                            {/* 우측: BGM 미니 플레이어 & 이웃 아지트 놀러가기 액션 버튼 */}
+                                            {/* 우측: 이웃 아지트 놀러가기 & 액션 버튼 */}
                                             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                                                <MinihomeBgmPlayer
-                                                    trackId={minihomeEditMode ? minihomeDraftBgmTrackId : (minihomeProfile?.bgmTrackId || 'bgm-orgel')}
-                                                    isEditMode={minihomeEditMode}
-                                                    onChangeTrack={(newTrack) => {
-                                                        setMinihomeDraftBgmTrackId(newTrack);
-                                                        if (!minihomeEditMode && minihomeProfile?.isOwner) {
-                                                            handleSaveMinihome({ bgmTrackId: newTrack });
-                                                        }
-                                                    }}
-                                                />
-
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     {minihomeSurfData.popularRooms.length > 0 && (
                                                         <>

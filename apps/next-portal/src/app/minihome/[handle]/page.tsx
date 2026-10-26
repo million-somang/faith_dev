@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useMinihome } from '@/hooks/useMinihome';
 import { IsometricRoomCanvas } from '@/components/minihome/IsometricRoomCanvas';
-import { MinihomeBgmPlayer } from '@/components/minihome/MinihomeBgmPlayer';
 import { MinihomeShopDrawer } from '@/components/minihome/MinihomeShopDrawer';
 import { MinihomeGuestbook } from '@/components/minihome/MinihomeGuestbook';
 import { AdSlot } from '@/components/adsense/AdSlot';
@@ -215,19 +214,8 @@ export default function MinihomePage() {
                             )}
                         </div>
 
-                        {/* 우측: BGM 미니 플레이어 & 액션 버튼들 */}
+                        {/* 우측: 아지트 액션 버튼들 */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                            <MinihomeBgmPlayer
-                                trackId={isEditMode ? draftBgmTrackId : (profile?.bgmTrackId || 'bgm-orgel')}
-                                isEditMode={isEditMode}
-                                onChangeTrack={(newTrack) => {
-                                    setDraftBgmTrackId(newTrack);
-                                    if (!isEditMode && profile?.isOwner) {
-                                        handleSaveMinihome({ bgmTrackId: newTrack });
-                                    }
-                                }}
-                            />
-
                             <div className="flex flex-wrap items-center gap-2">
                                 {surfData.popularRooms.length > 0 && (
                                     <button
