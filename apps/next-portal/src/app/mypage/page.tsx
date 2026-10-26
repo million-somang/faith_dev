@@ -963,109 +963,7 @@ export default function MyPage() {
                                         </div>
                                     )}
 
-                                    {/* 1. 내 아지트 대문 아우터 헤더 프레임 */}
-                                    <header className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
-                                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                                            <div className="space-y-2">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-mono font-black">
-                                                        <span className="text-rose-600">
-                                                            TODAY {(minihomeProfile?.todayVisitors ?? 1).toLocaleString()}
-                                                        </span>
-                                                        <span className="text-slate-300">|</span>
-                                                        <span className="text-slate-700">
-                                                            TOTAL {(minihomeProfile?.totalVisitors ?? 1).toLocaleString()}
-                                                        </span>
-                                                    </div>
-
-                                                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-                                                        @{minihomeProfile?.handle || (user.email ? user.email.split('@')[0] : 'vera_room')}
-                                                    </span>
-
-                                                    <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
-                                                        🏠 나의 아지트 홈
-                                                    </span>
-                                                </div>
-
-                                                {minihomeEditMode ? (
-                                                    <div className="flex items-center gap-2">
-                                                        <input
-                                                            type="text"
-                                                            maxLength={45}
-                                                            value={minihomeDraftRoomTitle}
-                                                            onChange={(e) => setMinihomeDraftRoomTitle(e.target.value)}
-                                                            placeholder="내 아지트 대문 제목을 입력하세요"
-                                                            className="px-3.5 py-1.5 rounded-xl bg-indigo-50/70 border border-indigo-300 text-base sm:text-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-96"
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                                                        {minihomeProfile?.roomTitle || `${user.name}님의 따뜻한 VERA 아지트`}
-                                                    </h2>
-                                                )}
-                                            </div>
-
-                                            {/* 우측: 이웃 아지트 놀러가기 & 액션 버튼 */}
-                                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    {minihomeSurfData.popularRooms.length > 0 && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={handleRandomSurf}
-                                                                className="px-3.5 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                                            >
-                                                                <span>🌊 이웃 놀러가기</span>
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setShowSurfModal(true)}
-                                                                className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                                            >
-                                                                <i className="fas fa-users text-[11px]"></i>
-                                                                <span>이웃 목록</span>
-                                                            </button>
-                                                        </>
-                                                    )}
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setMinihomeGuestbookModalOpen(true)}
-                                                        className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                                    >
-                                                        <span>📖 방명록 ({minihomeGuestbook.length})</span>
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (!minihomeEditMode) {
-                                                                handleMinihomeEnterEditMode(true);
-                                                            } else {
-                                                                setMinihomeShopModalOpen(true);
-                                                            }
-                                                        }}
-                                                        className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                                    >
-                                                        <span>🎁 상점·보관함 팝업</span>
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleShareMinihome}
-                                                        className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                                        title="내 아지트 주소 복사/공유"
-                                                    >
-                                                        <i className="fas fa-share-nodes text-[11px]"></i>
-                                                        <span>공유</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </header>
-
-                                    {/* 2. 내 아지트 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 2.5D 아지트·방명록 8) */}
+                                    {/* 1. 내 아지트 메인 12컬럼 스테이지 (좌측 프로필·브리핑 4 : 우측 통합 헤더 + 2.5D 아지트 8) */}
                                     {minihomeLoading && !minihomeProfile ? (
                                         <div className="bg-white rounded-3xl border border-slate-200 p-14 text-center space-y-3">
                                             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -1186,15 +1084,6 @@ export default function MyPage() {
                                                                 </button>
                                                             </div>
                                                         )}
-
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setMinihomeGuestbookModalOpen(true)}
-                                                            className="w-full py-3 px-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-black text-xs sm:text-sm shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                                                        >
-                                                            <i className="fas fa-book-open"></i>
-                                                            <span>아지트 방명록 ({minihomeGuestbook.length})</span>
-                                                        </button>
 
                                                         <div className="grid grid-cols-2 gap-2">
                                                             <button
@@ -1323,11 +1212,19 @@ export default function MyPage() {
 
                                             {/* 우측 메인 스테이지: 2.5D 아이소메트릭 아지트 + 방문자 방명록 (lg:col-span-8) */}
                                             <div className="order-1 lg:order-2 lg:col-span-8 flex flex-col">
-                                                {/* 1) 2.5D 아이소메트릭 아지트 캔버스 */}
+                                                {/* 1) 2.5D 아이소메트릭 아지트 캔버스 (통합 헤더 포함) */}
                                                 <IsometricRoomCanvas
                                                     layout={minihomeEditMode ? minihomeDraftLayout : minihomeProfile.layout}
                                                     ownerName={minihomeProfile.ownerName || user.name}
                                                     roomTitle={minihomeEditMode ? minihomeDraftRoomTitle : minihomeProfile.roomTitle}
+                                                    handle={minihomeProfile.handle || (user.email ? user.email.split('@')[0] : 'vera_room')}
+                                                    todayVisitors={minihomeProfile.todayVisitors ?? 1}
+                                                    totalVisitors={minihomeProfile.totalVisitors ?? 1}
+                                                    headingTag="h2"
+                                                    hasNeighbors={minihomeSurfData.popularRooms.length > 0}
+                                                    onRandomSurf={handleRandomSurf}
+                                                    onOpenSurfModal={() => setShowSurfModal(true)}
+                                                    onShare={handleShareMinihome}
                                                     isOwner={Boolean(minihomeProfile.isOwner)}
                                                     onSaveRoomTitle={(newTitle) => {
                                                         setMinihomeDraftRoomTitle(newTitle);

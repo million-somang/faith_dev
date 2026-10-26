@@ -168,103 +168,7 @@ export default function MinihomePage() {
 
             {/* 상단 헤더(PortalNavbar)와 1px 오차 없이 동일한 최상위 본문 컨테이너 */}
             <div className="max-w-6xl mx-auto px-3 sm:px-4 w-full space-y-6">
-                {/* ==================== 1. 아지트 상단 아우터 헤더 프레임 ==================== */}
-                <header className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-6 space-y-4">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                        {/* 좌측: TODAY / TOTAL 카운터 + 아지트 H1 타이틀 */}
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[11px] font-mono font-black">
-                                    <span className="text-rose-600">
-                                        TODAY {(profile?.todayVisitors ?? 1).toLocaleString()}
-                                    </span>
-                                    <span className="text-slate-300">|</span>
-                                    <span className="text-slate-700">
-                                        TOTAL {(profile?.totalVisitors ?? 1).toLocaleString()}
-                                    </span>
-                                </div>
-
-                                <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-full border border-indigo-100">
-                                    @{profile?.handle || 'vera_agit'}
-                                </span>
-
-                                <Link
-                                    href="/mypage"
-                                    className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors"
-                                >
-                                    ← 내 아지트(마이페이지)로
-                                </Link>
-                            </div>
-
-                            {isEditMode ? (
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="text"
-                                        maxLength={45}
-                                        value={draftRoomTitle}
-                                        onChange={(e) => setDraftRoomTitle(e.target.value)}
-                                        placeholder="내 아지트 대문 제목을 입력하세요"
-                                        className="px-3.5 py-1.5 rounded-xl bg-indigo-50/70 border border-indigo-300 text-base sm:text-xl font-black text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-96"
-                                    />
-                                </div>
-                            ) : (
-                                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                                    {profile?.roomTitle || '나만의 아늑한 VERA 아지트'}
-                                </h1>
-                            )}
-                        </div>
-
-                        {/* 우측: 아지트 액션 버튼들 */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-                            <div className="flex flex-wrap items-center gap-2">
-                                {surfData.popularRooms.length > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowSurfModal(true)}
-                                        className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                    >
-                                        <i className="fas fa-users text-[11px]"></i>
-                                        <span>이웃 아지트</span>
-                                    </button>
-                                )}
-
-                                <button
-                                    type="button"
-                                    onClick={() => setIsGuestbookModalOpen(true)}
-                                    className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                >
-                                    <span>📖 방명록 ({guestbook.length})</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        if (!isEditMode) {
-                                            handleEnterEditMode(true);
-                                        } else {
-                                            setIsShopModalOpen(true);
-                                        }
-                                    }}
-                                    className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer shrink-0"
-                                >
-                                    <span>🎁 상점·보관함 팝업</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleShareMinihome}
-                                    className="px-3 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                                    title="내 아지트 주소 복사/공유"
-                                >
-                                    <i className="fas fa-share-nodes text-[11px]"></i>
-                                    <span>공유</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </header>
-
-                {/* ==================== 2. 로딩 및 에러 상태 처리 ==================== */}
+                {/* ==================== 1. 로딩 및 에러 상태 처리 ==================== */}
                 {isLoading ? (
                     <div className="bg-white rounded-3xl border border-slate-200 p-16 text-center space-y-3">
                         <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -403,15 +307,6 @@ export default function MinihomePage() {
                                             </div>
                                         )}
 
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsGuestbookModalOpen(true)}
-                                            className="w-full py-3 px-4 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/80 font-black text-xs sm:text-sm shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                                        >
-                                            <i className="fas fa-book-open"></i>
-                                            <span>아지트 방명록 ({guestbook.length})</span>
-                                        </button>
-
                                         <div className="grid grid-cols-2 gap-2">
                                             <Link
                                                 href="/mypage"
@@ -500,11 +395,20 @@ export default function MinihomePage() {
 
                             {/* ─── 우측 메인 스테이지: 2.5D 아이소메트릭 아지트 + 방명록 (lg:col-span-8) ─── */}
                             <div className="order-1 lg:order-2 lg:col-span-8 flex flex-col">
-                                {/* 1) 2.5D 아이소메트릭 아지트 캔버스 */}
+                                {/* 1) 2.5D 아이소메트릭 아지트 캔버스 (통합 헤더 포함) */}
                                 <IsometricRoomCanvas
                                     layout={isEditMode ? draftLayout : profile.layout}
                                     ownerName={profile.ownerName}
                                     roomTitle={isEditMode ? draftRoomTitle : profile.roomTitle}
+                                    handle={profile.handle || 'vera_agit'}
+                                    todayVisitors={profile.todayVisitors ?? 1}
+                                    totalVisitors={profile.totalVisitors ?? 1}
+                                    headingTag="h1"
+                                    backHref="/mypage"
+                                    hasNeighbors={surfData.popularRooms.length > 0}
+                                    onRandomSurf={handleRandomSurf}
+                                    onOpenSurfModal={() => setShowSurfModal(true)}
+                                    onShare={handleShareMinihome}
                                     isOwner={Boolean(profile.isOwner)}
                                     onSaveRoomTitle={(newTitle) => {
                                         setDraftRoomTitle(newTitle);

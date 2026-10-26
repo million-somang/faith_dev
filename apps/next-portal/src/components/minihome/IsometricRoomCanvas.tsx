@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
 import { ensureGardenState, getCatalogItemById } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
@@ -17,6 +18,15 @@ interface IsometricRoomCanvasProps {
     layout: MinihomeRoomLayout;
     ownerName: string;
     roomTitle?: string;
+    handle?: string;
+    todayVisitors?: number;
+    totalVisitors?: number;
+    headingTag?: 'h1' | 'h2';
+    backHref?: string;
+    hasNeighbors?: boolean;
+    onRandomSurf?: () => void;
+    onOpenSurfModal?: () => void;
+    onShare?: () => void;
     isOwner?: boolean;
     onSaveRoomTitle?: (newTitle: string) => void;
     guestbookCount?: number;
@@ -70,6 +80,15 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     layout,
     ownerName,
     roomTitle,
+    handle,
+    todayVisitors = 1,
+    totalVisitors = 1,
+    headingTag = 'h2',
+    backHref,
+    hasNeighbors = false,
+    onRandomSurf,
+    onOpenSurfModal,
+    onShare,
     isOwner = false,
     onSaveRoomTitle,
     guestbookCount = 0,
@@ -405,14 +424,73 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
 
     return (
         <div className="relative h-full flex-1 flex flex-col bg-gradient-to-b from-slate-100 via-white to-slate-100 rounded-3xl border border-slate-200/90 overflow-hidden shadow-sm">
-            {/* 상단 아지트 뱃지 & 아지트 이름 수정 / 방명록·상점 팝업 안내 바 (2줄 구조) */}
-            <div className="flex flex-col gap-2.5 px-4 sm:px-5 py-3.5 bg-white/90 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
-                {/* 1번째 줄: MY AGIT 뱃지 + 아지트 이름 전체 + 수정 버튼 */}
-                <div className="w-full flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[11px] font-black tracking-wide shrink-0">
-                        MY AGIT
-                    </span>
+            {/* 통합 아지트 헤더 바 (방문자수·핸들·타이틀·실내/텃밭 스위치·방명록·창고·상점·공유 통합) */}
+            <div className="flex flex-col gap-2.5 px-4 sm:px-5 py-3.5 bg-white/95 backdrop-blur-xs border-b border-slate-200/70 shrink-0">
+                {/* 1단: TODAY/TOTAL + @handle + 아지트 타이틀(수정) ─── 우측: 이웃·공유 */}
+                <div className="w-full flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                        <span className="px-2.5 py-0.5 rounded-full bg-indigo-600 text-white text-[10px] font-black tracking-wide shrink-0">
+                            MY AGIT
+                        </span>
 
+                        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] sm:text-[11px] font-mono font-black shrink-0">
+                            <span className="text-rose-600">TODAY {todayVisitors.toLocaleString()}</span>
+                            <span className="text-slate-300">|</span>
+                            <span className="text-slate-700">TOTAL {totalVisitors.toLocaleString()}</span>
+                        </div>
+
+                        {handle && (
+                            <span className="text-[10px] sm:text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shrink-0">
+                                @{handle}
+                            </span>
+                        )}
+
+                        {backHref && (
+                            <Link
+                                href={backHref}
+                                className="text-[11px] font-bold text-slate-500 hover:text-indigo-600 transition-colors shrink-0"
+                            >
+                                ← 마이페이지
+                            </Link>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 ml-auto">
+                        {hasNeighbors && onRandomSurf && (
+                            <button
+                                type="button"
+                                onClick={onRandomSurf}
+                                className="px-2.5 py-1 rounded-full bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                            >
+                                <span>🌊 이웃 놀러가기</span>
+                            </button>
+                        )}
+                        {hasNeighbors && onOpenSurfModal && (
+                            <button
+                                type="button"
+                                onClick={onOpenSurfModal}
+                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                            >
+                                <i className="fas fa-users text-[10px]"></i>
+                                <span>이웃</span>
+                            </button>
+                        )}
+                        {onShare && (
+                            <button
+                                type="button"
+                                onClick={onShare}
+                                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                                title="내 아지트 주소 복사/공유"
+                            >
+                                <i className="fas fa-share-nodes text-[10px]"></i>
+                                <span>공유</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* 2단: 아지트 타이틀 + 인라인 수정 */}
+                <div className="w-full flex flex-wrap items-center gap-2">
                     {isEditingTitle && isOwner ? (
                         <div className="flex items-center gap-1.5 flex-1 min-w-[200px] max-w-md">
                             <input
@@ -428,7 +506,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     }
                                 }}
                                 placeholder="나만의 아지트 이름을 입력하세요"
-                                className="flex-1 min-w-0 px-2.5 py-1 rounded-xl bg-indigo-50/80 border border-indigo-300 text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="flex-1 min-w-0 px-3 py-1 rounded-xl bg-indigo-50/80 border border-indigo-300 text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 autoFocus
                             />
                             <button
@@ -450,10 +528,16 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             </button>
                         </div>
                     ) : (
-                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                            <span className="text-xs sm:text-sm font-extrabold text-slate-800 break-words">
-                                {displayRoomTitle}
-                            </span>
+                        <div className="flex flex-wrap items-center gap-2 min-w-0">
+                            {headingTag === 'h1' ? (
+                                <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight break-words">
+                                    {displayRoomTitle}
+                                </h1>
+                            ) : (
+                                <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight break-words">
+                                    {displayRoomTitle}
+                                </h2>
+                            )}
                             {isOwner && onSaveRoomTitle && (
                                 <button
                                     type="button"
@@ -472,7 +556,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     )}
                 </div>
 
-                {/* 2번째 줄: 가구 배치 현황 + 방명록 + 상점·보관함 팝업 버튼 */}
+                {/* 3단: 실내 아지트 ↔ 앞마당 텃밭 스위치 + 방명록 · 농장 창고 · 상점·보관함 버튼 */}
                 {isEditMode ? (
                     <div className="w-full flex flex-wrap items-center justify-between gap-1.5 pt-2 border-t border-slate-100">
                         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200">
