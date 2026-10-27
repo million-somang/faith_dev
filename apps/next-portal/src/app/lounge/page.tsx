@@ -43,23 +43,104 @@ export default function LoungePage() {
         { tag: '비트코인', count: '5.9K', type: 'stock' }
     ]);
 
+    // 더미/비로그인 기본값 판별 헬퍼
+    const isFallbackName = (val?: string | null) => {
+        if (!val) return true;
+        const t = val.trim();
+        return !t || t === '베라 프렌즈' || t === '베라 유저' || t === '익명' || t.endsWith(' 라운지');
+    };
+
+    const isFallbackHandle = (val?: string | null) => {
+        if (!val) return true;
+        const clean = val.trim().replace(/^@+/, '').toLowerCase();
+        return (
+            !clean ||
+            clean === 'user_1234' ||
+            clean === 'vera_user' ||
+            clean === 'anonymous' ||
+            clean.startsWith('guest_') ||
+            clean.endsWith('_king')
+        );
+    };
+
     // 3. 독립 페르소나 (멀티 프로필 핸들)
     const [persona, setPersona] = useState(() => {
         const savedHandle = typeof window !== 'undefined' ? localStorage.getItem('vera_lounge_handle') : null;
         const savedName = typeof window !== 'undefined' ? localStorage.getItem('vera_lounge_name') : null;
+        const emailPrefix = user?.email
+            ? user.email.split('@')[0].replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase()
+            : '';
+        const resolvedName = user?.name
+            ? (!isFallbackName(savedName) ? savedName! : user.name)
+            : (savedName || '베라 프렌즈');
+        const resolvedHandle = user?.email && emailPrefix
+            ? (!isFallbackHandle(savedHandle) ? (savedHandle!.startsWith('@') ? savedHandle! : `@${savedHandle}`) : `@${emailPrefix}`)
+            : (savedHandle || '@user_1234');
+
         return {
-            name: savedName || (user?.name ? `${user.name} 라운지` : '베라 프렌즈'),
-            handle: savedHandle || (user?.name ? `@${user.name.toLowerCase()}_king` : '@user_1234'),
+            name: resolvedName,
+            handle: resolvedHandle,
             avatar: '🦊',
             bio: 'VERA 라운지에서 게임, 사주, 유틸 내기와 소통을 즐기는 유저입니다. ✨'
         };
     });
+
+    // 로그인 유저(AuthContext) 로드 완료 시 페르소나 및 로컬스토리지 자동 동기화
+    useEffect(() => {
+        if (!user) return;
+        const emailPrefix = user.email
+            ? user.email.split('@')[0].replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase()
+            : (user.name || '').replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase();
+        const canonicalHandle = `@${emailPrefix || `user_${user.id}`}`;
+        const canonicalName = user.name?.trim() || '베라 유저';
+
+        const savedHandle = typeof window !== 'undefined' ? localStorage.getItem('vera_lounge_handle') : null;
+        const savedName = typeof window !== 'undefined' ? localStorage.getItem('vera_lounge_name') : null;
+
+        const nextName = !isFallbackName(savedName) ? savedName! : canonicalName;
+        const nextHandle = !isFallbackHandle(savedHandle)
+            ? (savedHandle!.startsWith('@') ? savedHandle! : `@${savedHandle}`)
+            : canonicalHandle;
+
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('vera_lounge_name', nextName);
+            localStorage.setItem('vera_lounge_handle', nextHandle);
+        }
+
+        setPersona(prev => ({
+            ...prev,
+            name: nextName,
+            handle: nextHandle,
+        }));
+        setEditName(nextName);
+        setEditHandle(nextHandle);
+    }, [user]);
 
     // 내가 작성한 글 판별 헬퍼 (isMine 플래그, 핸들 일치, ID 접두사 'post-' 등)
     const isMyPost = (post: Post) => {
         return post.isMine === true || 
                post.author.handle === persona.handle || 
                (typeof post.id === 'string' && post.id.startsWith('post-'));
+    };
+
+    // 내 글인데 과거 더미 이름/핸들('베라 프렌즈', '@user_1234')로 저장된 경우 현재 로그인 페르소나로 보정하여 표시
+    const getPostAuthorName = (post: Post) => {
+        if (isMyPost(post) && isFallbackName(post.author.name)) {
+            return persona.name;
+        }
+        return post.author.name;
+    };
+
+    const getPostAuthorHandle = (post: Post) => {
+        if (isMyPost(post) && isFallbackHandle(post.author.handle)) {
+            return persona.handle;
+        }
+        return post.author.handle;
+    };
+
+    const getPostMinihomeSlug = (post: Post) => {
+        const rawHandle = isMyPost(post) ? persona.handle : getPostAuthorHandle(post);
+        return rawHandle.replace(/^@+/, '').trim() || 'me';
     };
 
     // 프로필 편집 상태
@@ -922,7 +1003,7 @@ export default function LoungePage() {
                                                         <div className="min-w-0 flex-1">
                                                             {/* 1행: 닉네임 + 배지 + 내글/팔로우 */}
                                                             <div className="flex items-center gap-1.5 min-w-0">
-                                                                <span className="font-extrabold text-sm text-slate-850 truncate">{post.author.name}</span>
+                                                                <span className="font-extrabold text-sm text-slate-850 truncate">{getPostAuthorName(post)}</span>
                                                                 {post.author.badge && (
                                                                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 border border-violet-200 whitespace-nowrap shrink-0">
                                                                         {post.author.badge}
@@ -934,28 +1015,28 @@ export default function LoungePage() {
                                                                     </span>
                                                                 ) : (
                                                                     <button
-                                                                        onClick={() => handleFollowToggle(post.author.handle)}
+                                                                        onClick={() => handleFollowToggle(getPostAuthorHandle(post))}
                                                                         className={`text-[10px] font-black px-2 py-0.5 rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
-                                                                            followingList.includes(post.author.handle)
+                                                                            followingList.includes(getPostAuthorHandle(post))
                                                                                 ? 'bg-slate-100 text-slate-500 border-slate-200'
                                                                                 : 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100'
                                                                         }`}
                                                                     >
-                                                                        {followingList.includes(post.author.handle) ? '팔로잉' : '+ 팔로우'}
+                                                                        {followingList.includes(getPostAuthorHandle(post)) ? '팔로잉' : '+ 팔로우'}
                                                                     </button>
                                                                 )}
                                                             </div>
                                                             {/* 2행: 핸들 + 작성시간 + 미니룸 바로가기 (한 줄 정렬) */}
                                                             <div className="flex items-center gap-1.5 mt-1 min-w-0 text-[11px] text-slate-400">
-                                                                <span className="font-bold font-mono truncate max-w-[115px] sm:max-w-none">{post.author.handle}</span>
+                                                                <span className="font-bold font-mono truncate max-w-[115px] sm:max-w-none">{getPostAuthorHandle(post)}</span>
                                                                 <span className="text-slate-300 shrink-0">·</span>
                                                                 <span className="font-semibold whitespace-nowrap shrink-0">{post.createdAt}</span>
                                                                 <span className="text-slate-300 shrink-0">·</span>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => router.push(`/minihome/${encodeURIComponent(post.author.handle.replace(/^@+/, ''))}`)}
+                                                                    onClick={() => router.push(`/minihome/${encodeURIComponent(getPostMinihomeSlug(post))}`)}
                                                                     className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200/80 hover:bg-indigo-100 transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0"
-                                                                    title={`${post.author.name}님의 미니홈피 놀러가기`}
+                                                                    title={`${getPostAuthorName(post)}님의 미니홈피 놀러가기`}
                                                                 >
                                                                     <span>🏠</span>
                                                                     <span>미니룸</span>

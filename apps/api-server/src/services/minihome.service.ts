@@ -324,16 +324,35 @@ export class MinihomeService {
     }) {
         await this.ensureTables();
         const cleanHandle = this.normalizeHandle(params.targetHandle);
+        const isViewerSelf = Boolean(
+            params.viewerUserId &&
+            cleanHandle === this.normalizeHandle(params.viewerHandle || cleanHandle)
+        );
+
+        // 공용 더미 핸들(user_1234, vera_user, vera_guest, guest_*)에 로그인 회원의 user_id가 잘못 묶여 있다면 연결 해제
+        if (params.viewerUserId) {
+            await pool.query(
+                `UPDATE user_minihomes
+                 SET user_id = NULL
+                 WHERE user_id = $1
+                   AND (handle IN ('user_1234', 'vera_user', 'vera_guest', 'anonymous') OR handle LIKE 'guest_%')`,
+                [params.viewerUserId]
+            );
+        }
 
         let res = await pool.query(
             'SELECT * FROM user_minihomes WHERE handle = $1 AND is_deleted = 0',
             [cleanHandle]
         );
 
-        // 만약 user_id로 먼저 생성된 아지트가 있는지 체크
-        if (res.rows.length === 0 && params.viewerUserId && cleanHandle === this.normalizeHandle(params.viewerHandle || '')) {
+        // 만약 user_id로 먼저 생성된 정상 핸들 아지트가 있는지 체크
+        if (res.rows.length === 0 && isViewerSelf && params.viewerUserId) {
             const byUser = await pool.query(
-                'SELECT * FROM user_minihomes WHERE user_id = $1 AND is_deleted = 0',
+                `SELECT * FROM user_minihomes
+                 WHERE user_id = $1
+                   AND is_deleted = 0
+                   AND handle NOT IN ('user_1234', 'vera_user', 'vera_guest', 'anonymous')
+                   AND handle NOT LIKE 'guest_%'`,
                 [params.viewerUserId]
             );
             if (byUser.rows.length > 0) {
@@ -342,10 +361,10 @@ export class MinihomeService {
         }
 
         if (res.rows.length === 0) {
-            const ownerName = params.viewerName && cleanHandle === this.normalizeHandle(params.viewerHandle || cleanHandle)
+            const ownerName = params.viewerName && isViewerSelf
                 ? params.viewerName
                 : `${cleanHandle}님의 아지트`;
-            const ownerUserId = cleanHandle === this.normalizeHandle(params.viewerHandle || cleanHandle)
+            const ownerUserId = isViewerSelf
                 ? params.viewerUserId
                 : null;
 
@@ -372,6 +391,41 @@ export class MinihomeService {
         }
 
         const row = res.rows[0] as DbMinihomeRow;
+
+        // 로그인 회원 본인 아지트인데 과거 더미 이름('베라 프렌즈' 등)으로 저장되어 있다면 실제 회원 이름으로 자동 복구
+        const isDummyOwnerName = (name?: string | null) => {
+            if (!name) return true;
+            const t = name.trim();
+            return !t || t === '베라 프렌즈' || t === '베라 유저' || t === '베라 이웃' || t.endsWith('님의 아지트') || t.endsWith(' 라운지');
+        };
+        if (isViewerSelf && params.viewerUserId && params.viewerName && !isDummyOwnerName(params.viewerName)) {
+            const realName = params.viewerName.trim();
+            const needsOwnerFix = isDummyOwnerName(row.owner_name);
+            const needsTitleFix =
+                !row.room_title ||
+                row.room_title.includes('베라 프렌즈') ||
+                row.room_title.includes('베라 유저') ||
+                row.room_title.includes('user_1234') ||
+                row.room_title.includes('guest_');
+            const needsUserIdFix = !row.user_id;
+
+            if (needsOwnerFix || needsTitleFix || needsUserIdFix) {
+                const nextOwnerName = needsOwnerFix ? realName : row.owner_name;
+                const nextRoomTitle = needsTitleFix ? `${realName}의 아지트` : row.room_title;
+                await pool.query(
+                    `UPDATE user_minihomes
+                     SET owner_name = $1,
+                         room_title = $2,
+                         user_id = COALESCE(user_id, $3),
+                         updated_at = CURRENT_TIMESTAMP
+                     WHERE id = $4`,
+                    [nextOwnerName, nextRoomTitle, params.viewerUserId, row.id]
+                );
+                row.owner_name = nextOwnerName;
+                row.room_title = nextRoomTitle;
+                row.user_id = row.user_id || params.viewerUserId;
+            }
+        }
         const todayStr = new Date().toISOString().substring(0, 10);
 
         // 날짜 변경 시 today_visitors 리셋

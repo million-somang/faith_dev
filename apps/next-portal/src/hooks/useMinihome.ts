@@ -36,7 +36,7 @@ interface RoomResponsePayload {
 }
 
 export function useMinihome(routeHandle: string) {
-    const { user } = useAuth();
+    const { user, isLoading: isAuthLoading } = useAuth();
 
     const [profile, setProfile] = useState<MinihomeProfileData | null>(null);
     const [guestbook, setGuestbook] = useState<MinihomeGuestbookEntry[]>([]);
@@ -76,40 +76,59 @@ export function useMinihome(routeHandle: string) {
     }, []);
 
     const getViewerIdentity = useCallback(() => {
+        if (user) {
+            const rawPrefix = user.email
+                ? user.email.split('@')[0]
+                : (user.name || `user_${user.id}`);
+            const effectiveHandle = rawPrefix.replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase() || `user_${user.id}`;
+            const effectiveName = user.name?.trim() || '베라 유저';
+            return { effectiveHandle, effectiveName };
+        }
+
         let localHandle = 'vera_guest';
         let localName = '베라 이웃';
         if (typeof window !== 'undefined') {
-            const savedLoungeHandle = localStorage.getItem('vera_lounge_handle');
-            const savedLoungeName = localStorage.getItem('vera_lounge_name');
-            const savedMiniHandle = localStorage.getItem('vera_minihome_guest_handle');
-            if (savedLoungeHandle) {
-                localHandle = savedLoungeHandle.replace(/^@+/, '');
-            } else if (savedMiniHandle) {
+            const savedLoungeHandle = localStorage.getItem('vera_lounge_handle')?.replace(/^@+/, '').trim().toLowerCase();
+            const savedLoungeName = localStorage.getItem('vera_lounge_name')?.trim();
+            const savedMiniHandle = localStorage.getItem('vera_minihome_guest_handle')?.trim().toLowerCase();
+
+            const isDummyHandle = (h?: string) => !h || h === 'user_1234' || h === 'vera_user' || h === 'anonymous';
+            const isDummyName = (n?: string) => !n || n === '베라 프렌즈' || n === '베라 유저';
+
+            if (savedLoungeHandle && !isDummyHandle(savedLoungeHandle)) {
+                localHandle = savedLoungeHandle;
+            } else if (savedMiniHandle && !isDummyHandle(savedMiniHandle)) {
                 localHandle = savedMiniHandle;
             } else {
                 const generated = `guest_${Math.floor(1000 + Math.random() * 9000)}`;
                 localStorage.setItem('vera_minihome_guest_handle', generated);
                 localHandle = generated;
             }
-            if (savedLoungeName) {
+            if (savedLoungeName && !isDummyName(savedLoungeName)) {
                 localName = savedLoungeName;
             }
         }
 
-        const effectiveHandle = user?.email
-            ? user.email.split('@')[0].toLowerCase()
-            : localHandle.toLowerCase();
-        const effectiveName = user?.name || localName;
-
-        return { effectiveHandle, effectiveName };
+        return {
+            effectiveHandle: localHandle.toLowerCase(),
+            effectiveName: localName,
+        };
     }, [user]);
 
     const fetchMinihome = useCallback(async () => {
+        if (isAuthLoading) return;
         setIsLoading(true);
         setErrorMessage(null);
         try {
             const { effectiveHandle, effectiveName } = getViewerIdentity();
-            const target = !routeHandle || routeHandle === 'me' || routeHandle === 'my'
+            const cleanRoute = decodeURIComponent(routeHandle || '').replace(/^@+/, '').trim().toLowerCase();
+            const isSelfOrDummyRoute =
+                !cleanRoute ||
+                cleanRoute === 'me' ||
+                cleanRoute === 'my' ||
+                (Boolean(user) && (cleanRoute === 'user_1234' || cleanRoute === 'vera_user'));
+
+            const target = isSelfOrDummyRoute
                 ? effectiveHandle
                 : decodeURIComponent(routeHandle).replace(/^@+/, '');
 
@@ -144,11 +163,13 @@ export function useMinihome(routeHandle: string) {
         } finally {
             setIsLoading(false);
         }
-    }, [routeHandle, getViewerIdentity]);
+    }, [routeHandle, getViewerIdentity, isAuthLoading, user]);
 
     useEffect(() => {
-        fetchMinihome();
-    }, [fetchMinihome]);
+        if (!isAuthLoading) {
+            fetchMinihome();
+        }
+    }, [fetchMinihome, isAuthLoading]);
 
     const handleOpenShopModal = useCallback(
         (tab: 'shop' | 'inventory' | 'warehouse' = 'shop', category: 'all' | MinihomeItemCategory = 'all') => {

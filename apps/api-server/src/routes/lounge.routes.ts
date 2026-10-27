@@ -5,6 +5,31 @@ import { getActorLabel, logActivity, logApiError } from '../middleware/activityL
 
 export const loungeRoutes = new Hono<{ Variables: { user?: { id: number; email: string; name?: string; role?: string }; errorLogged?: boolean } }>();
 
+function isDummyAuthorName(name?: string | null): boolean {
+    if (!name) return true;
+    const t = name.trim();
+    return !t || t === '베라 프렌즈' || t === '베라 유저' || t === '익명' || t.endsWith(' 라운지');
+}
+
+function isDummyAuthorHandle(handle?: string | null): boolean {
+    if (!handle) return true;
+    const clean = handle.trim().replace(/^@+/, '').toLowerCase();
+    return (
+        !clean ||
+        clean === 'user_1234' ||
+        clean === 'vera_user' ||
+        clean === 'anonymous' ||
+        clean.startsWith('guest_') ||
+        clean.endsWith('_king')
+    );
+}
+
+function buildCanonicalHandle(email?: string | null, name?: string | null, userId?: number | null): string {
+    const raw = email ? email.split('@')[0] : (name || '');
+    const clean = raw.replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase();
+    return `@${clean || (userId ? `user_${userId}` : 'vera_user')}`;
+}
+
 // ============================================================================
 // 1. 라운지 피드 목록 조회 (GET /api/lounge/posts)
 // ============================================================================
@@ -60,6 +85,43 @@ loungeRoutes.get('/api/lounge/posts', optionalAuth, async (c) => {
         const { results } = await DB.prepare(selectSql).bind(...selectBinds).all();
         const postList = results || [];
 
+        // 로그인 회원(user_id 존재) 게시글 중 더미 이름('베라 프렌즈')/더미 핸들('@user_1234')로 잘못 저장된 데이터 자동 보정
+        const userIdsToResolve = Array.from(
+            new Set(
+                postList
+                    .filter((row: any) => row.user_id && (isDummyAuthorName(row.author_name) || isDummyAuthorHandle(row.author_handle)))
+                    .map((row: any) => Number(row.user_id))
+            )
+        );
+        const userMap = new Map<number, { name: string; handle: string }>();
+        if (userIdsToResolve.length > 0) {
+            const uPlaceholders = userIdsToResolve.map(() => '?').join(',');
+            const { results: userRows } = await DB.prepare(
+                `SELECT id, name, email FROM users WHERE id IN (${uPlaceholders})`
+            ).bind(...userIdsToResolve).all();
+
+            for (const u of (userRows || []) as any[]) {
+                const realName = (u.name || '').trim() || '베라 유저';
+                const realHandle = buildCanonicalHandle(u.email, u.name, u.id);
+                userMap.set(Number(u.id), { name: realName, handle: realHandle });
+            }
+
+            for (const row of postList as any[]) {
+                const resolved = row.user_id ? userMap.get(Number(row.user_id)) : undefined;
+                if (resolved) {
+                    const nextName = isDummyAuthorName(row.author_name) ? resolved.name : row.author_name;
+                    const nextHandle = isDummyAuthorHandle(row.author_handle) ? resolved.handle : row.author_handle;
+                    if (nextName !== row.author_name || nextHandle !== row.author_handle) {
+                        row.author_name = nextName;
+                        row.author_handle = nextHandle;
+                        await DB.prepare(
+                            `UPDATE lounge_posts SET author_name = ?, author_handle = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
+                        ).bind(nextName, nextHandle, row.id).run();
+                    }
+                }
+            }
+        }
+
         // 현재 사용자가 누른 좋아요 목록 조회
         const postIds = postList.map((p: any) => p.id);
         const likedPostSet = new Set<string>();
@@ -90,10 +152,15 @@ loungeRoutes.get('/api/lounge/posts', optionalAuth, async (c) => {
                 } catch {}
             }
 
-            const isMine = !!(
-                (user?.id && row.user_id === user.id) ||
-                (currentHandle && row.author_handle === currentHandle)
+            const isMineByUser = !!(user?.id && Number(row.user_id) === Number(user.id));
+            const isMineByHandle = !!(
+                !user?.id &&
+                !row.user_id &&
+                currentHandle &&
+                !isDummyAuthorHandle(currentHandle) &&
+                row.author_handle === currentHandle
             );
+            const isMine = isMineByUser || isMineByHandle;
 
             return {
                 id: row.id,
@@ -151,6 +218,18 @@ loungeRoutes.post('/api/lounge/posts', optionalAuth, async (c) => {
             avatar: body.authorAvatar,
             badge: body.authorBadge
         };
+
+        if (user?.id) {
+            const dbUser = await DB.prepare('SELECT id, name, email FROM users WHERE id = ?').bind(user.id).first() as any;
+            if (dbUser) {
+                if (isDummyAuthorName(authorObj?.name)) {
+                    authorObj.name = (dbUser.name || '').trim() || '베라 유저';
+                }
+                if (isDummyAuthorHandle(authorObj?.handle)) {
+                    authorObj.handle = buildCanonicalHandle(dbUser.email, dbUser.name, dbUser.id);
+                }
+            }
+        }
 
         if (!authorObj || !authorObj.name || !authorObj.handle) {
             return c.json({ success: false, message: '작성자 정보가 올바르지 않습니다.' }, 400);

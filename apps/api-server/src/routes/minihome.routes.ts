@@ -23,13 +23,26 @@ minihomeRoutes.get('/api/minihome/room/:handle', optionalAuth, async (c) => {
         const viewerHandleQuery = c.req.query('viewerHandle') || '';
         const viewerNameQuery = c.req.query('viewerName') || '';
 
+        const isDummyHandle = (h?: string) => {
+            if (!h) return true;
+            const c = h.replace(/^@+/, '').trim().toLowerCase();
+            return !c || c === 'user_1234' || c === 'vera_user' || c === 'vera_guest' || c === 'anonymous' || c.startsWith('guest_');
+        };
+
         const defaultUserHandle = user?.email
-            ? user.email.split('@')[0]
-            : (viewerHandleQuery || 'vera_guest');
-        const effectiveViewerHandle = viewerHandleQuery || defaultUserHandle;
+            ? user.email.split('@')[0].replace(/[^a-zA-Z0-9_가-힣]/g, '').toLowerCase() || `user_${user.id}`
+            : (!isDummyHandle(viewerHandleQuery) ? viewerHandleQuery : 'vera_guest');
+        const effectiveViewerHandle = user?.id
+            ? defaultUserHandle
+            : (viewerHandleQuery || defaultUserHandle);
         const effectiveViewerName = user?.name || viewerNameQuery || effectiveViewerHandle;
 
-        const targetHandle = (rawHandle === 'me' || rawHandle === 'my')
+        const cleanRawHandle = rawHandle.replace(/^@+/, '').trim().toLowerCase();
+        const targetHandle = (
+            cleanRawHandle === 'me' ||
+            cleanRawHandle === 'my' ||
+            (Boolean(user?.id) && (cleanRawHandle === 'user_1234' || cleanRawHandle === 'vera_user'))
+        )
             ? effectiveViewerHandle
             : rawHandle;
 
