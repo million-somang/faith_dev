@@ -6,11 +6,14 @@ import {
   renderGameEngine,
   triggerPlayerRoll,
   triggerPlayerBomb,
+  applyPlayerUpgrade,
+  proceedFromHangar,
+  UpgradeOptionId,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '../engine/gameLoop';
 import { DifficultyRank } from '../engine/types';
-import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert } from 'lucide-react';
+import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert, Wrench, Rocket, Shield, Sparkles } from 'lucide-react';
 
 interface FlightCanvasProps {
   onGameOver: (score: number, kills: number, highScore: number) => void;
@@ -88,25 +91,87 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
   const [hudState, setHudState] = useState<{
     score: number;
+    stage: number;
+    hp: number;
+    maxHp: number;
     lives: number;
     bombs: number;
     rolls: number;
     weaponLevel: number;
+    missileLevel: number;
+    plasmaLevel: number;
+    firepowerLevel: number;
+    speedLevel: number;
+    hullLevel: number;
+    upgradePoints: number;
+    stageKills: number;
     hasEscorts: boolean;
     kills: number;
     status: string;
     difficultyRank: DifficultyRank;
   }>({
     score: 0,
+    stage: 1,
+    hp: 100,
+    maxHp: 100,
     lives: 3,
     bombs: 2,
     rolls: 3,
     weaponLevel: 1,
+    missileLevel: 0,
+    plasmaLevel: 0,
+    firepowerLevel: 0,
+    speedLevel: 0,
+    hullLevel: 0,
+    upgradePoints: 0,
+    stageKills: 0,
     hasEscorts: false,
     kills: 0,
     status: 'ready',
     difficultyRank: 'NORMAL',
   });
+
+  const syncHudFromEngine = useCallback(() => {
+    const state = stateRef.current;
+    setHudState({
+      score: state.player.score,
+      stage: state.stage || 1,
+      hp: state.player.hp,
+      maxHp: state.player.maxHp || 100,
+      lives: state.player.lives,
+      bombs: state.player.bombs,
+      rolls: state.player.rolls,
+      weaponLevel: state.player.weaponLevel,
+      missileLevel: state.player.missileLevel || 0,
+      plasmaLevel: state.player.plasmaLevel || 0,
+      firepowerLevel: state.player.firepowerLevel || 0,
+      speedLevel: state.player.speedLevel || 0,
+      hullLevel: state.player.hullLevel || 0,
+      upgradePoints: state.player.upgradePoints || 0,
+      stageKills: state.player.stageKills || 0,
+      hasEscorts: state.player.hasEscorts,
+      kills: state.player.kills,
+      status: state.status,
+      difficultyRank: state.difficultyRank || 'NORMAL',
+    });
+    if (onStateUpdate) {
+      onStateUpdate({ ...state, player: { ...state.player } });
+    }
+  }, [onStateUpdate]);
+
+  const handleUpgrade = useCallback(
+    (option: UpgradeOptionId) => {
+      if (applyPlayerUpgrade(stateRef.current, option)) {
+        syncHudFromEngine();
+      }
+    },
+    [syncHudFromEngine]
+  );
+
+  const handleLaunchNextStage = useCallback(() => {
+    proceedFromHangar(stateRef.current);
+    syncHudFromEngine();
+  }, [syncHudFromEngine]);
 
   // 속도 변경 핸들러
   const handleSelectSpeed = useCallback((newSpeed: number) => {
@@ -154,21 +219,8 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     stateRef.current.gameSpeed = activeSpeed;
     stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
     stateRef.current.status = 'playing';
-    setHudState({
-      score: 0,
-      lives: 3,
-      bombs: 2,
-      rolls: 3,
-      weaponLevel: 1,
-      hasEscorts: false,
-      kills: 0,
-      status: 'playing',
-      difficultyRank: 'NORMAL',
-    });
-    if (onStateUpdate) {
-      onStateUpdate(stateRef.current);
-    }
-  }, [highScore, onStateUpdate]);
+    syncHudFromEngine();
+  }, [highScore, syncHudFromEngine]);
 
   // 외부(게임오버 모달 등)에서 재시작 요청 처리
   useEffect(() => {
@@ -180,22 +232,9 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
       stateRef.current.gameSpeed = activeSpeed;
       stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
       stateRef.current.status = 'playing';
-      setHudState({
-        score: 0,
-        lives: 3,
-        bombs: 2,
-        rolls: 3,
-        weaponLevel: 1,
-        hasEscorts: false,
-        kills: 0,
-        status: 'playing',
-        difficultyRank: 'NORMAL',
-      });
-      if (onStateUpdate) {
-        onStateUpdate(stateRef.current);
-      }
+      syncHudFromEngine();
     }
-  }, [restartTriggerRequested, highScore, onStateUpdate]);
+  }, [restartTriggerRequested, highScore, syncHudFromEngine]);
 
   // 외부(버튼 등)에서 롤 요청 처리
   useEffect(() => {
@@ -295,6 +334,7 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
       if (canvas && ctx) {
         try {
+          const prevStatus = state.status;
           let stepRun = false;
           while (accumulator >= TARGET_FRAME_MS) {
             updateGameEngine(state, keysRef.current);
@@ -305,22 +345,9 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           // 렌더링
           renderGameEngine(ctx, state);
 
-          // 주기적 HUD 및 상태 동기화 (물리 프레임 진행 시 매 3프레임마다)
-          if (stepRun && state.currentFrame % 3 === 0) {
-            setHudState({
-              score: state.player.score,
-              lives: state.player.lives,
-              bombs: state.player.bombs,
-              rolls: state.player.rolls,
-              weaponLevel: state.player.weaponLevel,
-              hasEscorts: state.player.hasEscorts,
-              kills: state.player.kills,
-              status: state.status,
-              difficultyRank: state.difficultyRank || 'NORMAL',
-            });
-            if (onStateUpdate) {
-              onStateUpdate(state);
-            }
+          // 주기적 HUD 및 상태 동기화 (물리 프레임 진행 시 매 3프레임마다 또는 상태 전환 시 즉시)
+          if ((stepRun && state.currentFrame % 3 === 0) || state.status !== prevStatus) {
+            syncHudFromEngine();
           }
 
           // 게임오버 감지 (단 1회만 발동되도록 가드)
@@ -346,43 +373,67 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
 
   return (
     <div className="relative w-full max-w-[450px] mx-auto flex flex-col items-center select-none">
-      {/* 🌟 상단 스코어 전광판 바 (모바일/450px 팝업에서도 현재 점수·최고 기록·격추 수가 선명하게 표시됨) */}
-      <div className="w-full grid grid-cols-3 gap-1.5 mb-1.5">
-        <div className="bg-white rounded-xl px-3 py-1.5 border border-sky-200 shadow-2xs flex items-center justify-between">
+      {/* 🌟 상단 스코어 & 스테이지 전광판 바 */}
+      <div className="w-full grid grid-cols-4 gap-1.5 mb-1.5">
+        <div className="bg-white rounded-xl px-2.5 py-1.5 border border-indigo-200 shadow-2xs flex items-center justify-between">
+          <span className="text-[10px] font-extrabold text-indigo-600 uppercase tracking-wider">STAGE</span>
+          <span className="font-mono text-xs sm:text-sm font-black text-indigo-700">
+            {hudState.stage}<span className="text-[10px] opacity-60">/99</span>
+          </span>
+        </div>
+        <div className="bg-white rounded-xl px-2.5 py-1.5 border border-sky-200 shadow-2xs flex items-center justify-between">
           <span className="text-[10px] font-extrabold text-sky-600 uppercase tracking-wider">SCORE</span>
-          <span className="font-mono text-sm sm:text-base font-black text-sky-700">
+          <span className="font-mono text-xs sm:text-sm font-black text-sky-700">
             {hudState.score.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white rounded-xl px-3 py-1.5 border border-amber-200 shadow-2xs flex items-center justify-between">
+        <div className="bg-white rounded-xl px-2.5 py-1.5 border border-amber-200 shadow-2xs flex items-center justify-between">
           <span className="text-[10px] font-extrabold text-amber-600 uppercase tracking-wider">BEST</span>
-          <span className="font-mono text-sm sm:text-base font-black text-amber-600">
+          <span className="font-mono text-xs sm:text-sm font-black text-amber-600">
             {liveBestScore.toLocaleString()}
           </span>
         </div>
-        <div className="bg-white rounded-xl px-3 py-1.5 border border-rose-200 shadow-2xs flex items-center justify-between">
+        <div className="bg-white rounded-xl px-2.5 py-1.5 border border-rose-200 shadow-2xs flex items-center justify-between">
           <span className="text-[10px] font-extrabold text-rose-600 uppercase tracking-wider">KILLS</span>
-          <span className="font-mono text-sm sm:text-base font-black text-rose-600">
+          <span className="font-mono text-xs sm:text-sm font-black text-rose-600">
             {hudState.kills.toLocaleString()}기
           </span>
         </div>
       </div>
 
-      {/* HUD 전술 상태 바 */}
-      <div className="w-full flex items-center justify-between px-3 py-1.5 mb-1.5 bg-white rounded-xl border border-[#EBE6DD] shadow-2xs text-xs font-bold">
-        {/* 잔여 기체 (라이프) */}
-        <div className="flex items-center gap-1">
-          <span className="text-[11px] text-[#7A756D] mr-0.5">기체:</span>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Heart
-              key={i}
-              className={`w-3.5 h-3.5 ${
-                i < hudState.lives
-                  ? 'fill-red-500 text-red-500'
-                  : 'fill-stone-200 text-stone-300'
-              }`}
-            />
-          ))}
+      {/* HUD 전술 상태 바 (기체 HP 게이지 + 잔여 기체 + 속도 + 무기) */}
+      <div className="w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 mb-1.5 bg-white rounded-xl border border-[#EBE6DD] shadow-2xs text-xs font-bold">
+        {/* 기체 HP 프로그레스 바 & 잔여 기체 */}
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <div className="flex items-center gap-0.5 shrink-0">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Heart
+                key={i}
+                className={`w-3.5 h-3.5 ${
+                  i < hudState.lives
+                    ? 'fill-red-500 text-red-500'
+                    : 'fill-stone-200 text-stone-300'
+                }`}
+              />
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 flex-1 min-w-[90px] max-w-[140px]">
+            <div className="flex-1 h-2.5 bg-stone-200 rounded-full overflow-hidden border border-stone-300/80">
+              <div
+                className={`h-full transition-all duration-150 ${
+                  hudState.hp > 50
+                    ? 'bg-emerald-500'
+                    : hudState.hp > 25
+                    ? 'bg-amber-500'
+                    : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.max(0, Math.min(100, (hudState.hp / (hudState.maxHp || 100)) * 100))}%` }}
+              />
+            </div>
+            <span className="font-mono text-[10px] font-black text-stone-700 shrink-0">
+              HP {hudState.hp}
+            </span>
+          </div>
         </div>
 
         {/* 속도 조절 퀵 토글 버튼 */}
@@ -424,10 +475,20 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           <span>{hudState.difficultyRank}</span>
         </div>
 
-        {/* 무기 레벨 */}
+        {/* 무기 & 보조무기 레벨 */}
         <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800">
           <Zap className="w-3 h-3 text-amber-600 fill-amber-500" />
           <span>LV.{hudState.weaponLevel}</span>
+          {hudState.missileLevel > 0 && (
+            <span className="text-[9px] bg-purple-600 text-white px-1 rounded font-black" title="유도 미사일 장착">
+              M{hudState.missileLevel}
+            </span>
+          )}
+          {hudState.plasmaLevel > 0 && (
+            <span className="text-[9px] bg-cyan-600 text-white px-1 rounded font-black" title="플라즈마 캐논 장착">
+              W{hudState.plasmaLevel}
+            </span>
+          )}
           {hudState.hasEscorts && (
             <span className="text-[9px] bg-emerald-600 text-white px-1 rounded font-black">
               +호위기
@@ -599,6 +660,284 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-stone-900 font-extrabold text-sm shadow-lg transition active:scale-95 cursor-pointer"
             >
               전투기 출격 시작
+            </button>
+          </div>
+        )}
+
+        {/* 스테이지 클리어 & 격추수 기반 비행기 개조 격납고 오버레이 */}
+        {hudState.status === 'hangar' && (
+          <div className="absolute inset-0 bg-slate-950/90 backdrop-blur-xs flex flex-col justify-between p-4 text-white z-20 overflow-y-auto">
+            <div>
+              <div className="flex items-center justify-between border-b border-white/15 pb-2.5 mb-3">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 block">
+                    🎉 STAGE {hudState.stage} CLEAR!
+                  </span>
+                  <h3 className="text-base sm:text-lg font-black flex items-center gap-1.5">
+                    <Wrench className="w-4 h-4 text-amber-400" />
+                    전투기 개조 격납고
+                  </h3>
+                </div>
+                <div className="text-right bg-amber-500/20 border border-amber-400/50 rounded-xl px-3 py-1">
+                  <span className="text-[10px] text-amber-200 font-bold block">
+                    가용 개조 포인트 (누적 격추 {hudState.kills}기)
+                  </span>
+                  <span className="font-mono text-base font-black text-amber-300">
+                    {hudState.upgradePoints} KP
+                  </span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-300 mb-2.5 leading-snug">
+                적기를 격추해 모은 <strong>개조 포인트(KP)</strong>로 기체 HP, 비행 속도, 유도탄 등 무장을 강화하세요!
+              </p>
+
+              {/* 개조 항목 그리드 */}
+              <div className="grid grid-cols-1 gap-1.5">
+                {/* 1. 유도 미사일 장착/강화 */}
+                {(() => {
+                  const cost = 7 + hudState.missileLevel * 3;
+                  const isMax = hudState.missileLevel >= 3;
+                  const canBuy = !isMax && hudState.upgradePoints >= cost;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canBuy}
+                      onClick={() => handleUpgrade('missile')}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                        canBuy
+                          ? 'bg-purple-950/60 border-purple-400/60 hover:bg-purple-900/70 cursor-pointer active:scale-[0.99]'
+                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-purple-500/25 border border-purple-400/40 flex items-center justify-center shrink-0">
+                          <Rocket className="w-4 h-4 text-purple-300" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>🚀 자동 추적 유도탄</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-purple-500/30 text-purple-200 font-mono">
+                              LV.{hudState.missileLevel}/3
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-300">
+                            총탄과 함께 적기를 스스로 찾아가는 유도 미사일 발사 (1발➔2발➔4발)
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-purple-500 text-white font-mono text-xs font-black shrink-0">
+                        {isMax ? 'MAX' : `${cost} KP`}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* 2. 플라즈마 캐논 장착/강화 */}
+                {(() => {
+                  const cost = 7 + hudState.plasmaLevel * 3;
+                  const isMax = hudState.plasmaLevel >= 3;
+                  const canBuy = !isMax && hudState.upgradePoints >= cost;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canBuy}
+                      onClick={() => handleUpgrade('plasma')}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                        canBuy
+                          ? 'bg-cyan-950/60 border-cyan-400/60 hover:bg-cyan-900/70 cursor-pointer active:scale-[0.99]'
+                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-cyan-500/25 border border-cyan-400/40 flex items-center justify-center shrink-0">
+                          <Sparkles className="w-4 h-4 text-cyan-300" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>⚡ 플라즈마 레이저 캐논</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-500/30 text-cyan-200 font-mono">
+                              LV.{hudState.plasmaLevel}/3
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-300">
+                            총탄과 함께 초고속 고화력 에너지 볼트 추가 발사
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-cyan-600 text-white font-mono text-xs font-black shrink-0">
+                        {isMax ? 'MAX' : `${cost} KP`}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* 3. 최대 HP 장갑 증설 */}
+                {(() => {
+                  const cost = 5 + hudState.hullLevel * 2;
+                  const isMax = hudState.hullLevel >= 5;
+                  const canBuy = !isMax && hudState.upgradePoints >= cost;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canBuy}
+                      onClick={() => handleUpgrade('hull')}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                        canBuy
+                          ? 'bg-emerald-950/60 border-emerald-400/60 hover:bg-emerald-900/70 cursor-pointer active:scale-[0.99]'
+                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/25 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                          <Shield className="w-4 h-4 text-emerald-300" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>🛡️ 기체 장갑 강화 (최대 HP +25)</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-200 font-mono">
+                              LV.{hudState.hullLevel}/5
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-300">
+                            최대 HP 영구 +25 증가 및 즉시 +40 HP 수리 (현재 {hudState.hp}/{hudState.maxHp})
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white font-mono text-xs font-black shrink-0">
+                        {isMax ? 'MAX' : `${cost} KP`}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* 4. 비행기 이동 속도 업 */}
+                {(() => {
+                  const cost = 5 + hudState.speedLevel * 2;
+                  const isMax = hudState.speedLevel >= 5;
+                  const canBuy = !isMax && hudState.upgradePoints >= cost;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canBuy}
+                      onClick={() => handleUpgrade('speed')}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                        canBuy
+                          ? 'bg-sky-950/60 border-sky-400/60 hover:bg-sky-900/70 cursor-pointer active:scale-[0.99]'
+                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-sky-500/25 border border-sky-400/40 flex items-center justify-center shrink-0">
+                          <Gauge className="w-4 h-4 text-sky-300" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>💨 엔진 출력 개조 (비행 속도 업)</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-500/30 text-sky-200 font-mono">
+                              LV.{hudState.speedLevel}/5
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-300">
+                            기체 이동 및 회피 기동 속도를 영구적으로 높입니다
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white font-mono text-xs font-black shrink-0">
+                        {isMax ? 'MAX' : `${cost} KP`}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* 5. 주포 화력 & 연사 개조 */}
+                {(() => {
+                  const cost = 6 + hudState.firepowerLevel * 2;
+                  const isMax = hudState.firepowerLevel >= 5;
+                  const canBuy = !isMax && hudState.upgradePoints >= cost;
+                  return (
+                    <button
+                      type="button"
+                      disabled={!canBuy}
+                      onClick={() => handleUpgrade('firepower')}
+                      className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition ${
+                        canBuy
+                          ? 'bg-amber-950/60 border-amber-400/60 hover:bg-amber-900/70 cursor-pointer active:scale-[0.99]'
+                          : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/25 border border-amber-400/40 flex items-center justify-center shrink-0">
+                          <Zap className="w-4 h-4 text-amber-300" />
+                        </div>
+                        <div>
+                          <div className="text-xs font-black text-white flex items-center gap-1.5">
+                            <span>🔥 주포 화력·연사 개조</span>
+                            <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/30 text-amber-200 font-mono">
+                              LV.{hudState.firepowerLevel}/5
+                            </span>
+                          </div>
+                          <span className="text-[10px] text-slate-300">
+                            모든 무기 공격력 +16% 증가, 연사 속도 향상 및 주포 단계 상승
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-amber-600 text-white font-mono text-xs font-black shrink-0">
+                        {isMax ? 'MAX' : `${cost} KP`}
+                      </span>
+                    </button>
+                  );
+                })()}
+
+                {/* 6. 긴급 완전 수리 & 전술 무장 보급 (2열) */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    disabled={hudState.upgradePoints < 4 || hudState.hp >= hudState.maxHp}
+                    onClick={() => handleUpgrade('repair')}
+                    className={`p-2 rounded-xl border text-left flex items-center justify-between transition ${
+                      hudState.upgradePoints >= 4 && hudState.hp < hudState.maxHp
+                        ? 'bg-rose-950/60 border-rose-400/60 hover:bg-rose-900/70 cursor-pointer'
+                        : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[11px] font-black block">🔧 HP 100% 수리</span>
+                      <span className="text-[9px] text-slate-300">체력 즉시 완충</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-rose-600 text-white font-mono text-[11px] font-black">
+                      4 KP
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={hudState.upgradePoints < 5}
+                    onClick={() => handleUpgrade('tactical')}
+                    className={`p-2 rounded-xl border text-left flex items-center justify-between transition ${
+                      hudState.upgradePoints >= 5
+                        ? 'bg-indigo-950/60 border-indigo-400/60 hover:bg-indigo-900/70 cursor-pointer'
+                        : 'bg-white/5 border-white/10 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <div>
+                      <span className="text-[11px] font-black block">💣 폭탄+1 & 롤+1</span>
+                      <span className="text-[9px] text-slate-300">특수기 즉시 보충</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-black">
+                      5 KP
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleLaunchNextStage}
+              className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black text-sm shadow-lg transition active:scale-95 cursor-pointer"
+            >
+              🚀 개조 완료 — STAGE {Math.min(99, hudState.stage + 1)} 출격 시작!
             </button>
           </div>
         )}

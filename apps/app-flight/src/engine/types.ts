@@ -1,6 +1,8 @@
 // 1942 스타일 베라 플라이트 게임 엔진 타입 정의
 
-export type GameStatus = 'ready' | 'playing' | 'paused' | 'gameover' | 'victory';
+export type GameStatus = 'ready' | 'playing' | 'hangar' | 'paused' | 'gameover' | 'victory';
+
+export type UpgradeOptionId = 'hull' | 'repair' | 'speed' | 'firepower' | 'missile' | 'plasma' | 'tactical';
 
 export interface Position {
   x: number;
@@ -13,10 +15,19 @@ export interface Player {
   width: number;
   height: number;
   speed: number;
+  hp: number; // 현재 체력 (기본 100, 0 도달 시 기체 격추)
+  maxHp: number; // 최대 체력 (기본 100)
   lives: number;
   bombs: number;
   rolls: number; // 360도 공중제비 롤 잔여 횟수
   weaponLevel: number; // 1 ~ 4
+  missileLevel: number; // 0 ~ 3 (자동 추적 유도 미사일 등급)
+  plasmaLevel: number; // 0 ~ 3 (고화력 플라즈마 캐논 등급)
+  firepowerLevel: number; // 0 ~ 5 (주포 공격력/연사 개조 등급)
+  speedLevel: number; // 0 ~ 5 (엔진 속도 개조 등급)
+  hullLevel: number; // 0 ~ 5 (최대 HP 장갑 개조 등급)
+  upgradePoints: number; // 격추수로 획득한 가용 개조 포인트 (KP)
+  stageKills: number; // 현재 스테이지에서 기록한 격추 수
   hasEscorts: boolean; // 호위기 2기 동반 여부
   isInvincible: boolean;
   invincibleTimer: number; // 무적 잔여 프레임
@@ -28,6 +39,8 @@ export interface Player {
   highScore: number;
   kills: number;
   lastShotFrame: number;
+  lastMissileFrame: number;
+  lastPlasmaFrame: number;
   hitFlashTimer?: number;
 }
 
@@ -41,6 +54,8 @@ export interface Bullet {
   color: string;
   isPlayer: boolean;
   damage: number;
+  kind?: 'normal' | 'homing' | 'plasma';
+  angle?: number;
 }
 
 export type EnemyType = 'scout' | 'red-formation' | 'bomber' | 'boss';
@@ -76,7 +91,7 @@ export interface BossTurret {
   lastShot: number;
 }
 
-export type ItemType = 'P' | 'L' | 'B' | 'S';
+export type ItemType = 'P' | 'L' | 'B' | 'S' | 'M' | 'W';
 
 export interface Item {
   id: number;
@@ -167,6 +182,7 @@ export interface GameEngineState {
   islands: Island[];
   currentFrame: number;
   stage: number;
+  stageClearTimer?: number; // 보스 격파 후 다음 스테이지 전환 배너 타이머
   bossActive: boolean;
   bossWarningTimer: number; // 보스 경보 사이렌 카운트다운
   nextBossScore?: number; // 다음 보스 출현 목표 점수

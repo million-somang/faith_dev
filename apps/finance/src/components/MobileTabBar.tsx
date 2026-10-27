@@ -16,19 +16,17 @@ interface MobileTabItem {
     color?: string;   // 아이콘 색상 (하단 탭바에서 사용)
 }
 
-// 메인 포털(apps/next-portal/src/types/homepage.types.ts)과 100% 동일한 11개 모바일 하단 탭 목록
+// 메인 포털(apps/next-portal/src/types/homepage.types.ts)과 100% 동일한 9개 모바일 하단 탭 목록
 const ALL_MOBILE_TAB_ITEMS: MobileTabItem[] = [
     { id: 'home', label: '홈', icon: 'fas fa-home', path: '/', color: '#2563eb' },
+    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
     { id: 'news', label: '뉴스', icon: 'fas fa-newspaper', path: '/news', color: '#0ea5e9' },
-    { id: 'guides', label: '지식가이드', icon: 'fas fa-book-open-reader', path: '/guides', color: '#0d9488' },
     { id: 'lifestyle', label: '생활도구', icon: 'fas fa-screwdriver-wrench', path: '/lifestyle', color: '#16a34a' },
     { id: 'finance', label: '금융', icon: 'fas fa-won-sign', path: '/finance', color: '#f97316' },
     { id: 'game', label: '게임', icon: 'fas fa-gamepad', path: '/game', color: '#a855f7' },
     { id: 'entertainment', label: '재미', icon: 'fas fa-masks-theater', path: '/entertainment', color: '#e11d48' },
     { id: 'lounge', label: '라운지', icon: 'fas fa-comments', path: '/lounge', color: '#8b5cf6' },
-    { id: 'mypage', label: '마이페이지', icon: 'fas fa-user', path: '/mypage', color: '#6366f1' },
-    { id: 'reward', label: '리워드', icon: 'fas fa-gift', path: '/reward', color: '#f59e0b' },
-    { id: 'b2b', label: '제작문의', icon: 'fas fa-magic', path: '/b2b', color: '#059669' },
+    { id: 'guides', label: '지식가이드', icon: 'fas fa-book-open-reader', path: '/guides', color: '#0d9488' },
 ];
 
 const toHref = (path: string) => `${MAIN_PORTAL_URL}${path}`;

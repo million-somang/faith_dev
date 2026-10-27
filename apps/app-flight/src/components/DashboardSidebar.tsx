@@ -22,31 +22,18 @@ interface DashboardSidebarProps {
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => {
   const score = state?.player.score || 0;
   const highScore = state?.player.highScore || 0;
+  const stage = state?.stage || 1;
+  const hp = state?.player.hp ?? 100;
+  const maxHp = state?.player.maxHp || 100;
   const kills = state?.player.kills || 0;
   const weaponLevel = state?.player.weaponLevel || 1;
   const hasEscorts = state?.player.hasEscorts || false;
   const rolls = state?.player.rolls || 0;
   const bombs = state?.player.bombs || 0;
+  const nextBossScore = state?.nextBossScore || 2200;
 
-  const diff = getDifficultyScale(score);
-
-  const getNextRankMilestone = (currentScore: number) => {
-    if (currentScore < 2500) {
-      return { target: 2500, label: 'RANK 2 [NORMAL+] 진입', diffScore: 2500 - currentScore };
-    }
-    if (currentScore < 6000) {
-      return { target: 6000, label: 'RANK 3 [HARD] 진입 (폭격기 4-way)', diffScore: 6000 - currentScore };
-    }
-    if (currentScore < 12000) {
-      return { target: 12000, label: 'RANK 4 [EXPERT] 진입 (정찰기 2연사)', diffScore: 12000 - currentScore };
-    }
-    if (currentScore < 20000) {
-      return { target: 20000, label: 'RANK 5 [HELL] 극한 탄막 모드', diffScore: 20000 - currentScore };
-    }
-    return { target: 20000, label: '최고 난이도 도달! 극한의 탄막을 돌파하세요!', diffScore: 0 };
-  };
-
-  const nextMilestone = getNextRankMilestone(score);
+  const diff = getDifficultyScale(stage);
+  const remainToBoss = Math.max(0, nextBossScore - score);
 
   const weaponTiers = [
     { level: 1, name: '단발 기관총', desc: '전방 단발 고속 탄환' },
@@ -68,7 +55,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
             실시간 연동
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 text-center">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD]">
+            <span className="text-[10px] text-[#8A847A] block font-medium">현재 스테이지</span>
+            <span className="text-lg font-black font-mono text-indigo-700 tracking-tight">
+              {stage} <span className="text-xs text-[#8A847A]">/ 99</span>
+            </span>
+          </div>
           <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD]">
             <span className="text-[10px] text-[#8A847A] block font-medium">현재 점수</span>
             <span className="text-lg font-black font-mono text-sky-700 tracking-tight">
@@ -76,20 +69,20 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
             </span>
           </div>
           <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD]">
-            <span className="text-[10px] text-[#8A847A] block font-medium">역대 최고 기록</span>
-            <span className="text-lg font-black font-mono text-amber-600 tracking-tight">
-              {highScore.toLocaleString()}
+            <span className="text-[10px] text-[#8A847A] block font-medium">기체 내구도(HP)</span>
+            <span className="text-lg font-black font-mono text-emerald-600 tracking-tight">
+              {hp} <span className="text-xs text-[#8A847A]">/ {maxHp}</span>
             </span>
           </div>
         </div>
       </div>
 
-      {/* 1.5. 실시간 전황 위험도 & 난이도 배율 (Dynamic Difficulty Scaling) */}
+      {/* 1.5. 실시간 스테이지 위험도 & 난이도 배율 (Stage 1 ~ 99) */}
       <div className="p-3.5 bg-white rounded-2xl border border-[#EBE6DD] shadow-2xs">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-bold text-[#2D2A26] flex items-center gap-1.5">
             <ShieldAlert className="w-4 h-4 text-red-500" />
-            전황 위험도 & 난이도 배율
+            STAGE {stage}/99 난이도 배율
           </span>
           <span
             className={`text-[11px] font-black px-2 py-0.5 rounded-full border ${
@@ -136,15 +129,17 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
           </div>
         </div>
 
-        {/* 승급 진행 가이드 */}
+        {/* 스테이지 보스 출현 안내 */}
         <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD] flex items-center justify-between text-[11px]">
           <span className="text-[#7A756D] font-medium flex items-center gap-1">
             <Flame className="w-3.5 h-3.5 text-amber-500" />
-            {nextMilestone.label}
+            {state?.bossActive
+              ? `STAGE ${stage} 보스 교전 중! (격파 시 STAGE ${Math.min(99, stage + 1)} 진급)`
+              : `STAGE ${stage} 보스 출현까지`}
           </span>
-          {nextMilestone.diffScore > 0 && (
+          {!state?.bossActive && (
             <span className="font-mono font-bold text-sky-700">
-              +{nextMilestone.diffScore.toLocaleString()}점 남음
+              {remainToBoss > 0 ? `+${remainToBoss.toLocaleString()}점 남음` : '곧 출현!'}
             </span>
           )}
         </div>
@@ -230,6 +225,66 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
             }`}
           >
             {hasEscorts ? '활성' : '비활성'}
+          </span>
+        </div>
+
+        {/* 보조 특수 무기 (M 유도 미사일 / W 플라즈마 캐논) */}
+        <div className="mt-2 grid grid-cols-2 gap-1.5">
+          <div
+            className={`p-2 rounded-xl border flex items-center justify-between ${
+              missileLevel > 0
+                ? 'bg-fuchsia-50 border-fuchsia-300 text-fuchsia-900'
+                : 'bg-[#F7F4EE] border-[#ECE7DE] text-[#8A847A]'
+            }`}
+          >
+            <div>
+              <span className="text-[11px] font-bold block leading-tight">🚀 유도탄 (M)</span>
+              <span className="text-[9px] text-[#7A756D]">
+                {missileLevel > 0 ? '적기 자동 추적' : '미장착'}
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-black px-1.5 py-0.5 rounded font-mono ${
+                missileLevel > 0 ? 'bg-fuchsia-600 text-white' : 'bg-stone-200 text-stone-500'
+              }`}
+            >
+              LV.{missileLevel}/3
+            </span>
+          </div>
+
+          <div
+            className={`p-2 rounded-xl border flex items-center justify-between ${
+              plasmaLevel > 0
+                ? 'bg-sky-50 border-sky-300 text-sky-900'
+                : 'bg-[#F7F4EE] border-[#ECE7DE] text-[#8A847A]'
+            }`}
+          >
+            <div>
+              <span className="text-[11px] font-bold block leading-tight">⚡ 플라즈마 (W)</span>
+              <span className="text-[9px] text-[#7A756D]">
+                {plasmaLevel > 0 ? '고화력 에너지포' : '미장착'}
+              </span>
+            </div>
+            <span
+              className={`text-[10px] font-black px-1.5 py-0.5 rounded font-mono ${
+                plasmaLevel > 0 ? 'bg-sky-600 text-white' : 'bg-stone-200 text-stone-500'
+              }`}
+            >
+              LV.{plasmaLevel}/3
+            </span>
+          </div>
+        </div>
+
+        {/* 격추 포인트 (개조 포인트 KP) */}
+        <div className="mt-2 p-2 rounded-xl bg-amber-50/70 border border-amber-200 flex items-center justify-between">
+          <div>
+            <span className="text-[11px] font-bold text-amber-900 block leading-tight">
+              🔧 격납고 개조 포인트 (KP)
+            </span>
+            <span className="text-[9px] text-amber-700">보스 격파 시 기체·무기 개조에 사용</span>
+          </div>
+          <span className="text-xs font-black font-mono px-2 py-0.5 rounded-md bg-amber-500 text-white">
+            {upgradePoints} KP
           </span>
         </div>
       </div>

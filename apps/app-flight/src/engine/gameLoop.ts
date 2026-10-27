@@ -7,11 +7,12 @@ import type {
   Island,
   DifficultyRank,
   DifficultyScale,
+  UpgradeOptionId,
 } from './types';
 import { sound } from '../utils/sound';
 import { assetManager } from './assets';
 
-export type { GameEngineState, DifficultyRank, DifficultyScale };
+export type { GameEngineState, DifficultyRank, DifficultyScale, UpgradeOptionId };
 
 
 // 캔버스 크로스 브라우징 roundRect 헬퍼 (구형 브라우저 및 인앱 웹뷰 폴백)
@@ -45,60 +46,69 @@ export const CANVAS_HEIGHT = 600;
 
 let nextEntityId = 1;
 
-// 점수 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수
-export function getDifficultyScale(score: number): DifficultyScale {
-  if (score >= 20000) {
+// 스테이지(1 ~ 99) 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수
+export function getDifficultyScale(stage = 1): DifficultyScale {
+  const clampedStage = Math.max(1, Math.min(99, Math.floor(stage || 1)));
+  // Stage 1은 초보자도 쉽게 적응하도록 낮게 시작하고, Stage 99까지 점진적으로 상승
+  const progress = (clampedStage - 1) / 98; // 0.0 (Stage 1) ~ 1.0 (Stage 99)
+
+  const spawnRateMultiplier = Number((0.65 + progress * 1.55).toFixed(2));   // 0.65x ➔ 2.20x
+  const shootRateMultiplier = Number((0.55 + progress * 1.45).toFixed(2));   // 0.55x ➔ 2.00x
+  const bulletSpeedMultiplier = Number((0.68 + progress * 0.97).toFixed(2)); // 0.68x ➔ 1.65x
+  const enemyHpMultiplier = Number((0.85 + progress * 1.65).toFixed(2));     // 0.85x ➔ 2.50x
+
+  if (clampedStage >= 40) {
     return {
       rank: 'HELL',
       rankLevel: 5,
-      spawnRateMultiplier: 1.75,
-      shootRateMultiplier: 1.6,
-      bulletSpeedMultiplier: 1.4,
-      enemyHpMultiplier: 1.6,
-      color: '#DC2626', // Crimson red
+      spawnRateMultiplier,
+      shootRateMultiplier,
+      bulletSpeedMultiplier,
+      enemyHpMultiplier,
+      color: '#DC2626',
     };
   }
-  if (score >= 12000) {
+  if (clampedStage >= 19) {
     return {
       rank: 'EXPERT',
       rankLevel: 4,
-      spawnRateMultiplier: 1.55,
-      shootRateMultiplier: 1.45,
-      bulletSpeedMultiplier: 1.3,
-      enemyHpMultiplier: 1.4,
-      color: '#EA580C', // Orange
+      spawnRateMultiplier,
+      shootRateMultiplier,
+      bulletSpeedMultiplier,
+      enemyHpMultiplier,
+      color: '#EA580C',
     };
   }
-  if (score >= 6000) {
+  if (clampedStage >= 9) {
     return {
       rank: 'HARD',
       rankLevel: 3,
-      spawnRateMultiplier: 1.35,
-      shootRateMultiplier: 1.3,
-      bulletSpeedMultiplier: 1.2,
-      enemyHpMultiplier: 1.25,
-      color: '#D97706', // Amber
+      spawnRateMultiplier,
+      shootRateMultiplier,
+      bulletSpeedMultiplier,
+      enemyHpMultiplier,
+      color: '#D97706',
     };
   }
-  if (score >= 2500) {
+  if (clampedStage >= 4) {
     return {
       rank: 'NORMAL+',
       rankLevel: 2,
-      spawnRateMultiplier: 1.15,
-      shootRateMultiplier: 1.15,
-      bulletSpeedMultiplier: 1.1,
-      enemyHpMultiplier: 1.1,
-      color: '#0284C7', // Sky blue
+      spawnRateMultiplier,
+      shootRateMultiplier,
+      bulletSpeedMultiplier,
+      enemyHpMultiplier,
+      color: '#0284C7',
     };
   }
   return {
     rank: 'NORMAL',
     rankLevel: 1,
-    spawnRateMultiplier: 1.0,
-    shootRateMultiplier: 1.0,
-    bulletSpeedMultiplier: 1.0,
-    enemyHpMultiplier: 1.0,
-    color: '#10B981', // Emerald green
+    spawnRateMultiplier,
+    shootRateMultiplier,
+    bulletSpeedMultiplier,
+    enemyHpMultiplier,
+    color: '#10B981',
   };
 }
 
@@ -132,10 +142,19 @@ export function createInitialState(gameSpeed = 1.0): GameEngineState {
     width: 36,
     height: 38,
     speed: 4.5,
+    hp: 100,
+    maxHp: 100,
     lives: 3,
     bombs: 2,
     rolls: 3,
     weaponLevel: 1,
+    missileLevel: 0,
+    plasmaLevel: 0,
+    firepowerLevel: 0,
+    speedLevel: 0,
+    hullLevel: 0,
+    upgradePoints: 0,
+    stageKills: 0,
     hasEscorts: false,
     isInvincible: false,
     invincibleTimer: 120, // 시작 시 2초간 스폰 무적
@@ -147,6 +166,8 @@ export function createInitialState(gameSpeed = 1.0): GameEngineState {
     highScore: savedHighScore,
     kills: 0,
     lastShotFrame: 0,
+    lastMissileFrame: 0,
+    lastPlasmaFrame: 0,
   };
 
   return {
@@ -162,9 +183,10 @@ export function createInitialState(gameSpeed = 1.0): GameEngineState {
     islands,
     currentFrame: 0,
     stage: 1,
+    stageClearTimer: 0,
     bossActive: false,
     bossWarningTimer: 0,
-    nextBossScore: 4000,
+    nextBossScore: 2200,
     bossEncounterCount: 0,
     difficultyRank: 'NORMAL',
     lastAnnouncedRank: 'NORMAL',
@@ -256,23 +278,102 @@ export function triggerPlayerBomb(state: GameEngineState): boolean {
   return true;
 }
 
-// 플레이어 사격 처리
+// 플레이어 사격 처리 (주포 + 자동 추적 유도 미사일 + 플라즈마 캐논 동시 발사)
 export function playerShoot(state: GameEngineState) {
   if (state.status !== 'playing') return;
   if (state.player.isRolling) return; // 롤 중에는 사격 중단
   const gameSpeed = state.gameSpeed || 1.0;
-  const shotInterval = Math.max(7, Math.round(9 / gameSpeed));
-  if (state.currentFrame - state.player.lastShotFrame < shotInterval) return; // 연사 딜레이
+  const p = state.player;
+  const fpBonus = p.firepowerLevel || 0;
+  const dmgMult = 1 + fpBonus * 0.16;
+  const baseInterval = Math.max(5.5, 9 - fpBonus * 0.5);
+  const shotInterval = Math.max(5, Math.round(baseInterval / gameSpeed));
 
-  state.player.lastShotFrame = state.currentFrame;
+  // 1. 보조 무기: 자동 추적 유도 미사일 (M 아이템 / 개조 장착 시 총탄과 함께 발사)
+  if ((p.missileLevel || 0) > 0) {
+    const mInterval = Math.max(16, Math.round((36 - p.missileLevel * 5) / gameSpeed));
+    if (state.currentFrame - (p.lastMissileFrame || 0) >= mInterval) {
+      p.lastMissileFrame = state.currentFrame;
+      const mDmg = Math.round((20 + p.missileLevel * 6) * dmgMult);
+      const offsets =
+        p.missileLevel === 1
+          ? [{ dx: 0, vx: 0 }]
+          : p.missileLevel === 2
+          ? [
+              { dx: -16, vx: -1.8 },
+              { dx: 16, vx: 1.8 },
+            ]
+          : [
+              { dx: -22, vx: -2.8 },
+              { dx: -10, vx: -1.1 },
+              { dx: 10, vx: 1.1 },
+              { dx: 22, vx: 2.8 },
+            ];
+
+      offsets.forEach(({ dx, vx }) => {
+        state.bullets.push({
+          id: nextEntityId++,
+          x: p.x + dx,
+          y: p.y - 6,
+          vx,
+          vy: -5.8,
+          radius: 4.5,
+          color: '#A855F7',
+          isPlayer: true,
+          damage: mDmg,
+          kind: 'homing',
+          angle: -Math.PI / 2,
+        });
+      });
+    }
+  }
+
+  // 2. 보조 무기: 고화력 플라즈마 레이저 캐논 (W 아이템 / 개조 장착 시 총탄과 함께 발사)
+  if ((p.plasmaLevel || 0) > 0) {
+    const pInterval = Math.max(12, Math.round((24 - p.plasmaLevel * 3) / gameSpeed));
+    if (state.currentFrame - (p.lastPlasmaFrame || 0) >= pInterval) {
+      p.lastPlasmaFrame = state.currentFrame;
+      const pDmg = Math.round((15 + p.plasmaLevel * 5) * dmgMult);
+      const offsets =
+        p.plasmaLevel === 1
+          ? [{ dx: 0, vx: 0 }]
+          : p.plasmaLevel === 2
+          ? [
+              { dx: -14, vx: 0 },
+              { dx: 14, vx: 0 },
+            ]
+          : [
+              { dx: -18, vx: -0.9 },
+              { dx: 0, vx: 0 },
+              { dx: 18, vx: 0.9 },
+            ];
+
+      offsets.forEach(({ dx, vx }) => {
+        state.bullets.push({
+          id: nextEntityId++,
+          x: p.x + dx,
+          y: p.y - 16,
+          vx,
+          vy: -11.5,
+          radius: 4.5,
+          color: '#06B6D4',
+          isPlayer: true,
+          damage: pDmg,
+          kind: 'plasma',
+        });
+      });
+    }
+  }
+
+  if (state.currentFrame - p.lastShotFrame < shotInterval) return; // 주포 연사 딜레이
+
+  p.lastShotFrame = state.currentFrame;
   sound.playGunSound();
 
-  const p = state.player;
   const bulletSpeed = -9.5;
 
-  // 무기 티어별 발사 탄환 패턴
+  // 3. 주무기 티어별 발사 탄환 패턴
   if (p.weaponLevel === 1) {
-    // 1단계: 단발 전방
     state.bullets.push({
       id: nextEntityId++,
       x: p.x,
@@ -282,10 +383,10 @@ export function playerShoot(state: GameEngineState) {
       radius: 3.5,
       color: '#FBBF24',
       isPlayer: true,
-      damage: 10,
+      damage: Math.round(10 * dmgMult),
+      kind: 'normal',
     });
   } else if (p.weaponLevel === 2) {
-    // 2단계: 트윈 건 (좌우 2열)
     state.bullets.push(
       {
         id: nextEntityId++,
@@ -296,7 +397,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 3.5,
         color: '#FBBF24',
         isPlayer: true,
-        damage: 11,
+        damage: Math.round(11 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -307,11 +409,11 @@ export function playerShoot(state: GameEngineState) {
         radius: 3.5,
         color: '#FBBF24',
         isPlayer: true,
-        damage: 11,
+        damage: Math.round(11 * dmgMult),
+        kind: 'normal',
       }
     );
   } else if (p.weaponLevel === 3) {
-    // 3단계: 부채꼴 3-way 스프레드
     state.bullets.push(
       {
         id: nextEntityId++,
@@ -322,7 +424,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 4,
         color: '#F59E0B',
         isPlayer: true,
-        damage: 12,
+        damage: Math.round(12 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -333,7 +436,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 3.5,
         color: '#F59E0B',
         isPlayer: true,
-        damage: 10,
+        damage: Math.round(10 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -344,11 +448,11 @@ export function playerShoot(state: GameEngineState) {
         radius: 3.5,
         color: '#F59E0B',
         isPlayer: true,
-        damage: 10,
+        damage: Math.round(10 * dmgMult),
+        kind: 'normal',
       }
     );
   } else {
-    // 4단계: 4열 헤비 캐논
     state.bullets.push(
       {
         id: nextEntityId++,
@@ -359,7 +463,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 4.5,
         color: '#EF4444',
         isPlayer: true,
-        damage: 14,
+        damage: Math.round(14 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -370,7 +475,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 4.5,
         color: '#EF4444',
         isPlayer: true,
-        damage: 14,
+        damage: Math.round(14 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -381,7 +487,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 4,
         color: '#F97316',
         isPlayer: true,
-        damage: 12,
+        damage: Math.round(12 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -392,7 +499,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 4,
         color: '#F97316',
         isPlayer: true,
-        damage: 12,
+        damage: Math.round(12 * dmgMult),
+        kind: 'normal',
       }
     );
   }
@@ -409,7 +517,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 3,
         color: '#10B981',
         isPlayer: true,
-        damage: 9,
+        damage: Math.round(9 * dmgMult),
+        kind: 'normal',
       },
       {
         id: nextEntityId++,
@@ -420,7 +529,8 @@ export function playerShoot(state: GameEngineState) {
         radius: 3,
         color: '#10B981',
         isPlayer: true,
-        damage: 9,
+        damage: Math.round(9 * dmgMult),
+        kind: 'normal',
       }
     );
   }
@@ -514,22 +624,26 @@ export function createExplosion(
   }
 }
 
-// 아이템 스폰
+// 아이템 스폰 (P: 주포, M: 유도탄, W: 플라즈마, L: 호위기, B: 폭탄, S: 스피드)
 function spawnItem(state: GameEngineState, x: number, y: number, specificType?: ItemType) {
   let type: ItemType = specificType || 'P';
   if (!specificType) {
     const roll = Math.random();
-    if (roll < 0.45) type = 'P';
-    else if (roll < 0.7) type = 'L';
-    else if (roll < 0.88) type = 'B';
+    if (roll < 0.28) type = 'P';
+    else if (roll < 0.52) type = 'M';
+    else if (roll < 0.70) type = 'W';
+    else if (roll < 0.82) type = 'L';
+    else if (roll < 0.92) type = 'B';
     else type = 'S';
   }
 
   const colorMap: Record<ItemType, string> = {
-    P: '#EF4444',
-    L: '#10B981',
-    B: '#3B82F6',
-    S: '#F59E0B',
+    P: '#EF4444', // 주포 강화 (레드)
+    M: '#9333EA', // 유도 미사일 (퍼플)
+    W: '#0891B2', // 플라즈마 캐논 (시안)
+    L: '#10B981', // 호위기 편대 (에메랄드)
+    B: '#2563EB', // 메가 폭탄 (블루)
+    S: '#F59E0B', // 엔진 스피드 (앰버)
   };
 
   state.items.push({
@@ -549,20 +663,23 @@ function spawnItem(state: GameEngineState, x: number, y: number, specificType?: 
 // 빨간 편대 비행대 스폰 (1942 Signature Red Formation)
 function spawnRedFormation(state: GameEngineState, diff: DifficultyScale) {
   const formationId = nextEntityId++;
-  state.redFormations.set(formationId, { total: 5, destroyed: 0 });
+  const stage = Math.max(1, Math.min(99, state.stage || 1));
+  const count = stage <= 2 ? 4 : 5;
+  state.redFormations.set(formationId, { total: count, destroyed: 0 });
 
   const side = Math.random() > 0.5 ? 1 : -1;
   const startX = side === 1 ? -30 : CANVAS_WIDTH + 30;
-  const baseHp = Math.round(18 * diff.enemyHpMultiplier);
-  const vySpeed = 2.2 * Math.min(1.3, 0.95 + diff.rankLevel * 0.05);
+  const baseHp = Math.round(15 * diff.enemyHpMultiplier);
+  const speedScale = Math.min(1.45, 0.78 + (stage - 1) * 0.015);
+  const vySpeed = 1.9 * speedScale;
 
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < count; i++) {
     state.enemies.push({
       id: nextEntityId++,
       type: 'red-formation',
       x: startX,
-      y: -40 - i * 36,
-      vx: side * (2.8 * Math.min(1.25, 0.95 + diff.rankLevel * 0.05)),
+      y: -40 - i * 38,
+      vx: side * (2.3 * speedScale),
       vy: vySpeed,
       width: 28,
       height: 28,
@@ -580,22 +697,25 @@ function spawnRedFormation(state: GameEngineState, diff: DifficultyScale) {
 
 // 정찰기 스폰
 function spawnScout(state: GameEngineState, diff: DifficultyScale) {
+  const stage = Math.max(1, Math.min(99, state.stage || 1));
   const x = 30 + Math.random() * (CANVAS_WIDTH - 60);
-  const hp = Math.round(15 * diff.enemyHpMultiplier);
-  const shootInterval = Math.max(45, Math.round((75 + Math.floor(Math.random() * 45)) / diff.shootRateMultiplier));
+  const hp = Math.round(12 * diff.enemyHpMultiplier);
+  // 초반 스테이지에서는 사격 간격을 넉넉하게 부여하고 스테이지 상승에 따라 단축
+  const shootInterval = Math.max(50, Math.round((135 + Math.floor(Math.random() * 55)) / diff.shootRateMultiplier));
+  const speedScale = Math.min(1.45, 0.76 + (stage - 1) * 0.015);
 
   state.enemies.push({
     id: nextEntityId++,
     type: 'scout',
     x,
     y: -30,
-    vx: (Math.random() - 0.5) * (1.8 * Math.min(1.3, 0.95 + diff.rankLevel * 0.05)),
-    vy: (2.4 + Math.random() * 0.8) * Math.min(1.25, 0.95 + diff.rankLevel * 0.05),
+    vx: (Math.random() - 0.5) * (1.5 * speedScale),
+    vy: (1.9 + Math.random() * 0.6) * speedScale,
     width: 26,
     height: 26,
     hp,
     maxHp: hp,
-    scoreValue: 100,
+    scoreValue: 120,
     lastShotFrame: state.currentFrame,
     shootInterval,
   });
@@ -603,17 +723,19 @@ function spawnScout(state: GameEngineState, diff: DifficultyScale) {
 
 // 중형 폭격기 스폰
 function spawnBomber(state: GameEngineState, diff: DifficultyScale) {
+  const stage = Math.max(1, Math.min(99, state.stage || 1));
   const x = 50 + Math.random() * (CANVAS_WIDTH - 100);
-  const hp = Math.round(65 * diff.enemyHpMultiplier);
-  const shootInterval = Math.max(50, Math.round(90 / diff.shootRateMultiplier));
+  const hp = Math.round(52 * diff.enemyHpMultiplier);
+  const shootInterval = Math.max(60, Math.round(135 / diff.shootRateMultiplier));
+  const speedScale = Math.min(1.4, 0.8 + (stage - 1) * 0.012);
 
   state.enemies.push({
     id: nextEntityId++,
     type: 'bomber',
     x,
     y: -50,
-    vx: (Math.random() - 0.5) * 0.8,
-    vy: 1.2,
+    vx: (Math.random() - 0.5) * 0.75 * speedScale,
+    vy: 1.05 * speedScale,
     width: 48,
     height: 44,
     hp,
@@ -624,34 +746,37 @@ function spawnBomber(state: GameEngineState, diff: DifficultyScale) {
   });
 }
 
-// 거대 보스 전함 스폰 (다단계 진화)
-function spawnBoss(state: GameEngineState, diff: DifficultyScale) {
+// 보스 출현 2초 사전 경보 시작 (2초 뒤 실제 보스 기체 스폰)
+function startBossWarning(state: GameEngineState) {
   state.bossActive = true;
-  state.bossWarningTimer = 120; // 2초간 경보 사이렌
+  state.bossWarningTimer = 120; // 60FPS 기준 2.0초간 '보스 출현' 경보 표시
   sound.playBossAlertSound();
+}
 
-  const phase = state.bossEncounterCount || 0;
-  const bossHp = Math.round((750 + phase * 300) * diff.enemyHpMultiplier);
-  const turretHp = Math.round((160 + phase * 60) * diff.enemyHpMultiplier);
-  const shootInterval = Math.max(30, Math.round(45 / diff.shootRateMultiplier));
+// 거대 보스 전함 실제 스폰 (2초 경보 종료 시점에 호출)
+function spawnBoss(state: GameEngineState, diff: DifficultyScale) {
+  const stage = Math.max(1, Math.min(99, state.stage || 1));
+  const bossHp = Math.round((520 + (stage - 1) * 160) * diff.enemyHpMultiplier);
+  const turretHp = Math.round((120 + (stage - 1) * 40) * diff.enemyHpMultiplier);
+  const shootInterval = Math.max(32, Math.round(68 / diff.shootRateMultiplier));
 
   state.enemies.push({
     id: nextEntityId++,
     type: 'boss',
     x: CANVAS_WIDTH / 2,
     y: -60, // 화면 바로 위에서 신속하게 진입 시작
-    vx: 1.2 * Math.min(1.4, 1.0 + phase * 0.1),
-    vy: 1.6, // 부드럽고 신속하게 화면에 안착
+    vx: 1.0 * Math.min(1.5, 0.9 + (stage - 1) * 0.02),
+    vy: 1.5, // 부드럽고 신속하게 화면에 안착
     width: 140,
     height: 100,
     hp: bossHp,
     maxHp: bossHp,
-    scoreValue: 5000 + phase * 1000,
+    scoreValue: 3000 + (stage - 1) * 500,
     lastShotFrame: state.currentFrame,
     shootInterval,
     turrets: [
       { id: 'left', relX: -45, relY: -15, hp: turretHp, maxHp: turretHp, lastShot: state.currentFrame },
-      { id: 'right', relX: 45, relY: -15, hp: turretHp, maxHp: turretHp, lastShot: state.currentFrame },
+      { id: 'right', relX: -45 + 90, relY: -15, hp: turretHp, maxHp: turretHp, lastShot: state.currentFrame },
     ],
   });
 }
@@ -664,17 +789,22 @@ export function updateGameEngine(
   if (state.status !== 'playing') return;
   state.currentFrame++;
   const gameSpeed = state.gameSpeed || 1.0;
-  const diff = getDifficultyScale(state.player.score);
+  const currentStage = Math.max(1, Math.min(99, state.stage || 1));
+  const diff = getDifficultyScale(currentStage);
   state.difficultyRank = diff.rank;
+
+  if (state.stageClearTimer && state.stageClearTimer > 0) {
+    state.stageClearTimer--;
+  }
 
   // 랭크 상승 감지 및 경보 알림
   if (state.lastAnnouncedRank !== diff.rank) {
     if (state.lastAnnouncedRank !== undefined && state.player.score > 0) {
       sound.playPowerUpSound();
-      state.screenShake = 15;
+      state.screenShake = 12;
       state.floatingTexts.push({
         id: nextEntityId++,
-        text: `⚠ DANGER LEVEL UP: [${diff.rank}] ⚠`,
+        text: `⚠ 위험도 상승: [${diff.rank}] ⚠`,
         x: CANVAS_WIDTH / 2,
         y: CANVAS_HEIGHT / 2 - 70,
         color: diff.color,
@@ -755,14 +885,18 @@ export function updateGameEngine(
     playerShoot(state);
   }
 
-  // 5. 적기 생성 스폰 로직 (gameSpeed & difficultyScale 반영)
-  const nextBossScore = state.nextBossScore || 4000;
-  if (!state.bossActive && state.player.score >= nextBossScore && state.enemies.length === 0) {
-    spawnBoss(state, diff);
-  } else if (!state.bossActive) {
-    const scoutInterval = Math.max(22, Math.round((70 / gameSpeed) / diff.spawnRateMultiplier));
-    const redInterval = Math.max(70, Math.round((260 / gameSpeed) / diff.spawnRateMultiplier));
-    const bomberInterval = Math.max(100, Math.round((380 / gameSpeed) / diff.spawnRateMultiplier));
+  // 5. 적기 생성 스폰 로직 (스테이지 1~99 난이도 배율 & gameSpeed 반영)
+  const nextBossScore = state.nextBossScore || 2200;
+  if (!state.bossActive && state.player.score >= nextBossScore) {
+    // 보스 점수 도달 시 일반 적기 추가 스폰을 중단하고 화면이 비면 2초 보스 출현 경보 시작
+    if (state.enemies.length === 0) {
+      startBossWarning(state);
+    }
+  } else if (!state.bossActive && (!state.stageClearTimer || state.stageClearTimer <= 0)) {
+    // 초반 스테이지(Stage 1)는 스폰 주기를 여유롭게 하고, 스테이지가 올라갈수록 점진적으로 단축
+    const scoutInterval = Math.max(25, Math.round((88 / gameSpeed) / diff.spawnRateMultiplier));
+    const redInterval = Math.max(80, Math.round((250 / gameSpeed) / diff.spawnRateMultiplier));
+    const bomberInterval = Math.max(115, Math.round((360 / gameSpeed) / diff.spawnRateMultiplier));
 
     if (state.currentFrame % scoutInterval === 0) {
       spawnScout(state, diff);
@@ -777,27 +911,72 @@ export function updateGameEngine(
 
   if (state.bossWarningTimer > 0) {
     state.bossWarningTimer--;
+    // 2초(120프레임) '보스 출현' 경고가 끝나는 즉시 실제 보스 전함 등장
+    if (state.bossWarningTimer === 0 && state.bossActive) {
+      spawnBoss(state, diff);
+    }
   }
 
-  // 6. 탄환 업데이트 (gameSpeed 배율 일관 적용)
+  // 6. 탄환 업데이트 (유도 미사일 자동 추적 + gameSpeed 배율 일관 적용)
   for (let i = state.bullets.length - 1; i >= 0; i--) {
     const b = state.bullets[i];
     const bSpeed = b.isPlayer ? Math.max(0.8, gameSpeed) : gameSpeed;
+
+    // 유도 미사일(homing) 가장 가까운 적기 자동 추적 조향
+    if (b.isPlayer && b.kind === 'homing' && state.enemies.length > 0) {
+      let nearestEnemy: Enemy | null = null;
+      let minDist = Infinity;
+      for (const enemy of state.enemies) {
+        if (enemy.hp > 0 && enemy.y > -20) {
+          const d = Math.hypot(enemy.x - b.x, enemy.y - b.y);
+          if (d < minDist) {
+            minDist = d;
+            nearestEnemy = enemy;
+          }
+        }
+      }
+      if (nearestEnemy) {
+        const targetAngle = Math.atan2(nearestEnemy.y - b.y, nearestEnemy.x - b.x);
+        const speedMag = 7.2;
+        const desiredVx = Math.cos(targetAngle) * speedMag;
+        const desiredVy = Math.sin(targetAngle) * speedMag;
+        b.vx = b.vx * 0.84 + desiredVx * 0.16;
+        b.vy = b.vy * 0.84 + desiredVy * 0.16;
+        b.angle = Math.atan2(b.vy, b.vx);
+      }
+
+      // 유도탄 꼬리 연기 파티클
+      if (state.currentFrame % 2 === 0) {
+        state.particles.push({
+          x: b.x,
+          y: b.y + 4,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: 1.2,
+          radius: 2.2,
+          color: '#E9D5FF',
+          alpha: 0.65,
+          decay: 0.06,
+          sizeDecay: 0.08,
+        });
+      }
+    }
+
     b.x += b.vx * bSpeed;
     b.y += b.vy * bSpeed;
 
     // 화면 밖 제거
-    if (b.y < -30 || b.y > CANVAS_HEIGHT + 30 || b.x < -30 || b.x > CANVAS_WIDTH + 30) {
+    if (b.y < -40 || b.y > CANVAS_HEIGHT + 40 || b.x < -40 || b.x > CANVAS_WIDTH + 40) {
       state.bullets.splice(i, 1);
       continue;
     }
 
-    // 플레이어 피격 판정 (적 탄환 vs 플레이어)
+    // 플레이어 피격 판정 (적 탄환 vs 플레이어 HP 차감)
     if (!b.isPlayer && !p.isInvincible) {
       const dist = Math.hypot(b.x - p.x, b.y - p.y);
-      if (dist < b.radius + 10) {
+      if (dist < b.radius + 9) {
+        const dmg = b.damage > 1 ? b.damage : 14;
         state.bullets.splice(i, 1);
-        handlePlayerHit(state);
+        handlePlayerHit(state, dmg);
         continue;
       }
     }
@@ -813,7 +992,7 @@ export function updateGameEngine(
 
     // 이동 패턴 및 난이도별 발사 쿨다운
     const effectiveShootInterval = Math.max(
-      20,
+      24,
       Math.round(e.shootInterval / (gameSpeed * diff.shootRateMultiplier))
     );
 
@@ -822,11 +1001,11 @@ export function updateGameEngine(
       e.y += e.vy * gameSpeed;
       if (e.x < 20 || e.x > CANVAS_WIDTH - 20) e.vx = -e.vx;
 
-      // 조준 사격 (난이도에 따른 탄속 및 2점사 버스트)
-      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 20 && e.y < CANVAS_HEIGHT - 100) {
+      // 조준 사격 (스테이지 상승에 따른 탄속 및 고스테이지 2연사 버스트)
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 25 && e.y < CANVAS_HEIGHT - 120) {
         e.lastShotFrame = state.currentFrame;
         const angle = Math.atan2(p.y - e.y, p.x - e.x);
-        const bulletSpeed = 3.4 * diff.bulletSpeedMultiplier;
+        const bulletSpeed = 3.0 * diff.bulletSpeedMultiplier;
         state.bullets.push({
           id: nextEntityId++,
           x: e.x,
@@ -836,11 +1015,11 @@ export function updateGameEngine(
           radius: 4,
           color: '#DC2626',
           isPlayer: false,
-          damage: 1,
+          damage: 12,
         });
 
-        // EXPERT(4) / HELL(5) 랭크: 2연사 버스트 탄환 추가
-        if (diff.rankLevel >= 4) {
+        // 스테이지 12 이상: 2연사 버스트 탄환 추가
+        if (currentStage >= 12) {
           const spreadAngle = angle + 0.16;
           state.bullets.push({
             id: nextEntityId++,
@@ -851,7 +1030,7 @@ export function updateGameEngine(
             radius: 3.5,
             color: '#EA580C',
             isPlayer: false,
-            damage: 1,
+            damage: 12,
           });
         }
       }
@@ -859,7 +1038,7 @@ export function updateGameEngine(
       e.curveTimer = (e.curveTimer || 0) + gameSpeed;
       if (e.curveTimer > 0) {
         // S자 선회 루프
-        e.x += Math.sin(e.curveTimer * 0.05) * 3.2 * gameSpeed;
+        e.x += Math.sin(e.curveTimer * 0.05) * 2.9 * gameSpeed;
         e.y += e.vy * gameSpeed;
       } else {
         e.y += e.vy * gameSpeed;
@@ -869,16 +1048,18 @@ export function updateGameEngine(
       e.y += e.vy * gameSpeed;
       if (e.x < 40 || e.x > CANVAS_WIDTH - 40) e.vx = -e.vx;
 
-      // 부채꼴 확산 탄환 (랭크에 따라 3-way, 4-way, 5-way)
-      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 40 && e.y < CANVAS_HEIGHT - 120) {
+      // 부채꼴 확산 탄환 (스테이지에 따라 2-way ➔ 3-way ➔ 4-way ➔ 5-way)
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 40 && e.y < CANVAS_HEIGHT - 130) {
         e.lastShotFrame = state.currentFrame;
-        const bSpeed = 3.2 * diff.bulletSpeedMultiplier;
+        const bSpeed = 2.8 * diff.bulletSpeedMultiplier;
         const angles =
-          diff.rankLevel >= 4
+          currentStage >= 15
             ? [-0.5, -0.25, 0, 0.25, 0.5]
-            : diff.rankLevel === 3
+            : currentStage >= 7
             ? [-0.45, -0.15, 0.15, 0.45]
-            : [-0.4, 0, 0.4];
+            : currentStage >= 3
+            ? [-0.36, 0, 0.36]
+            : [-0.24, 0.24];
 
         for (const a of angles) {
           state.bullets.push({
@@ -890,7 +1071,7 @@ export function updateGameEngine(
             radius: 4.5,
             color: '#EA580C',
             isPlayer: false,
-            damage: 1,
+            damage: 15,
           });
         }
       }
@@ -903,14 +1084,16 @@ export function updateGameEngine(
         if (e.x < 110 || e.x > CANVAS_WIDTH - 110) e.vx = -e.vx;
       }
 
-      // 보스 주포 사격 (3차 이상 보스이거나 HELL 랭크 시 7-way 와이드 방사)
+      // 보스 주포 사격 (스테이지 1~2: 3-way, 스테이지 3~6: 5-way, 스테이지 7+: 7-way)
       if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y >= 85) {
         e.lastShotFrame = state.currentFrame;
-        const bossBulletSpeed = 3.6 * diff.bulletSpeedMultiplier;
-        const isWideBoss = (state.bossEncounterCount || 0) >= 2 || diff.rankLevel >= 5;
-        const bossAngles = isWideBoss
-          ? [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6]
-          : [-0.6, -0.3, 0, 0.3, 0.6];
+        const bossBulletSpeed = 3.1 * diff.bulletSpeedMultiplier;
+        const bossAngles =
+          currentStage >= 7
+            ? [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6]
+            : currentStage >= 3
+            ? [-0.5, -0.25, 0, 0.25, 0.5]
+            : [-0.35, 0, 0.35];
 
         for (const a of bossAngles) {
           state.bullets.push({
@@ -922,15 +1105,15 @@ export function updateGameEngine(
             radius: 5,
             color: '#B91C1C',
             isPlayer: false,
-            damage: 1,
+            damage: 18,
           });
         }
       }
 
       // 보스 포탑 독립 사격 (화면 안착 후 사격)
       if (e.turrets && e.y >= 50) {
-        const turretInterval = Math.max(25, Math.round((70 / gameSpeed) / diff.shootRateMultiplier));
-        const turretBulletSpeed = 3.8 * diff.bulletSpeedMultiplier;
+        const turretInterval = Math.max(32, Math.round((85 / gameSpeed) / diff.shootRateMultiplier));
+        const turretBulletSpeed = 3.2 * diff.bulletSpeedMultiplier;
         e.turrets.forEach((turret) => {
           if (turret.hp > 0 && state.currentFrame - turret.lastShot > turretInterval) {
             turret.lastShot = state.currentFrame;
@@ -946,10 +1129,19 @@ export function updateGameEngine(
               radius: 4,
               color: '#DC2626',
               isPlayer: false,
-              damage: 1,
+              damage: 14,
             });
           }
         });
+      }
+    }
+
+    // 적 기체와 플레이어 기체 직접 충돌 판정 (HP 차감)
+    if (!p.isInvincible) {
+      const distToPlayer = Math.hypot(e.x - p.x, e.y - p.y);
+      const hitRadius = e.type === 'boss' ? 52 : e.type === 'bomber' ? 28 : 20;
+      if (distToPlayer < hitRadius) {
+        handlePlayerHit(state, 20);
       }
     }
 
@@ -1080,40 +1272,50 @@ export function updateGameEngine(
   }
 }
 
-// 적기 파괴 시 보상 및 전멸 검사
+// 적기 파괴 시 보상 및 전멸 검사 (격추수 기반 개조 포인트 적립)
 function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
   state.player.score += e.scoreValue;
   state.player.kills += 1;
+  state.player.stageKills = (state.player.stageKills || 0) + 1;
 
   if (e.type === 'boss') {
     createExplosion(state, e.x, e.y, 'boss', 40);
-    state.screenShake = 35;
+    state.screenShake = 30;
     state.bossActive = false;
     state.bossEncounterCount = (state.bossEncounterCount || 0) + 1;
-    state.nextBossScore = state.player.score + 5000; // 다음 보스는 5,000점 뒤에 출현
+    state.player.upgradePoints = (state.player.upgradePoints || 0) + 5; // 보스 격파 보너스 +5 개조 포인트
+
+    // 화면 내 적 탄환 모두 제거 및 플레이어 HP 회복 보상 (+35 HP)
+    state.bullets = state.bullets.filter((b) => b.isPlayer);
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 35);
+
+    const clearedStage = state.stage || 1;
     state.floatingTexts.push({
       id: nextEntityId++,
-      text: `BOSS PHASE ${state.bossEncounterCount} CLEARED! +${e.scoreValue.toLocaleString()}`,
+      text: `STAGE ${clearedStage} 보스 격파! (+5 개조 포인트)`,
       x: CANVAS_WIDTH / 2,
-      y: CANVAS_HEIGHT / 2 - 40,
+      y: CANVAS_HEIGHT / 2 - 55,
       color: '#10B981',
-      alpha: 1.2,
+      alpha: 1.3,
       vy: -0.8,
     });
-    // 보스 격파 시 폭탄 + 무기 풀파워 드롭
-    spawnItem(state, e.x - 20, e.y, 'B');
-    spawnItem(state, e.x + 20, e.y, 'P');
+
+    // 스테이지 종료: 격추수에 따라 비행기를 개조할 수 있는 격납고(hangar) 모드로 전환
+    state.status = 'hangar';
     return;
   }
 
   if (e.type === 'bomber') {
+    state.player.upgradePoints = (state.player.upgradePoints || 0) + 2; // 폭격기 격추 시 +2 KP
     createExplosion(state, e.x, e.y, 'medium', 18);
-    if (Math.random() < 0.6) {
+    if (Math.random() < 0.65) {
       spawnItem(state, e.x, e.y);
     }
     return;
   }
 
+  // 일반 적기(정찰기, 편대기) 격추 시 +1 KP
+  state.player.upgradePoints = (state.player.upgradePoints || 0) + 1;
   createExplosion(state, e.x, e.y, 'small', 10);
 
   // 빨간 편대 전멸 체크 (1942 Signature)
@@ -1122,11 +1324,14 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
     if (form) {
       form.destroyed++;
       if (form.destroyed >= form.total) {
-        // 전멸 성공! 아이템 확정 드롭
-        spawnItem(state, e.x, e.y, Math.random() > 0.5 ? 'P' : 'L');
+        // 전멸 성공! 아이템 확정 드롭 (유도탄/플라즈마/주포/호위기 중 드롭)
+        const bonusPool: ItemType[] = ['M', 'W', 'P', 'L'];
+        const dropType = bonusPool[Math.floor(Math.random() * bonusPool.length)];
+        spawnItem(state, e.x, e.y, dropType);
+        state.player.upgradePoints += 2;
         state.floatingTexts.push({
           id: nextEntityId++,
-          text: 'FORMATION DESTROYED! +1,000',
+          text: '편대 전멸 보너스! +1,000점 & +2 KP',
           x: e.x,
           y: e.y - 20,
           color: '#EF4444',
@@ -1140,7 +1345,7 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
   }
 }
 
-// 아이템 획득 효과
+// 아이템 획득 효과 (P: 주포, M: 유도 미사일, W: 플라즈마 캐논, L: 호위기, B: 메가폭탄, S: 스피드)
 function applyItem(state: GameEngineState, type: ItemType) {
   sound.playItemSound();
   const p = state.player;
@@ -1150,21 +1355,32 @@ function applyItem(state: GameEngineState, type: ItemType) {
 
   if (type === 'P') {
     p.weaponLevel = Math.min(4, p.weaponLevel + 1);
-    text = `WEAPON UPGRADE LV.${p.weaponLevel}!`;
+    text = `주포 업그레이드 LV.${p.weaponLevel}!`;
     color = '#EF4444';
+  } else if (type === 'M') {
+    p.missileLevel = Math.min(3, (p.missileLevel || 0) + 1);
+    text = `🚀 유도 미사일 장착 LV.${p.missileLevel}!`;
+    color = '#9333EA';
+  } else if (type === 'W') {
+    p.plasmaLevel = Math.min(3, (p.plasmaLevel || 0) + 1);
+    text = `⚡ 플라즈마 캐논 LV.${p.plasmaLevel}!`;
+    color = '#0891B2';
   } else if (type === 'L') {
     p.hasEscorts = true;
-    text = 'ESCORT WINGS ATTACHED!';
+    text = '호위기 편대 합류!';
     color = '#10B981';
   } else if (type === 'B') {
     p.bombs = Math.min(5, p.bombs + 1);
-    text = `MEGA BOMB +1 (TOTAL ${p.bombs})!`;
+    text = `메가 폭탄 +1 (보유 ${p.bombs})!`;
     color = '#3B82F6';
   } else if (type === 'S') {
-    p.speed = Math.min(6.5, p.speed + 0.6);
-    text = 'ENGINE SPEED UP!';
+    p.speed = Math.min(6.8, p.speed + 0.45);
+    text = '엔진 스피드 업!';
     color = '#F59E0B';
   }
+
+  // 모든 아이템 획득 시 소량의 기체 수리(HP +15) 보너스 추가
+  p.hp = Math.min(p.maxHp, p.hp + 15);
 
   state.floatingTexts.push({
     id: nextEntityId++,
@@ -1177,25 +1393,149 @@ function applyItem(state: GameEngineState, type: ItemType) {
   });
 }
 
-// 플레이어 피격 처리
-function handlePlayerHit(state: GameEngineState) {
+// 스테이지 종료 후 격납고(Hangar)에서 격추 포인트(KP)로 비행기 개조 실행
+export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOptionId): boolean {
   const p = state.player;
+  const kp = p.upgradePoints || 0;
+
+  if (option === 'hull') {
+    const cost = 5 + (p.hullLevel || 0) * 2;
+    if (kp < cost || (p.hullLevel || 0) >= 5) return false;
+    p.upgradePoints -= cost;
+    p.hullLevel = (p.hullLevel || 0) + 1;
+    p.maxHp += 25;
+    p.hp = Math.min(p.maxHp, p.hp + 40);
+    sound.playPowerUpSound();
+    return true;
+  }
+
+  if (option === 'repair') {
+    const cost = 4;
+    if (kp < cost || p.hp >= p.maxHp) return false;
+    p.upgradePoints -= cost;
+    p.hp = p.maxHp;
+    sound.playItemSound();
+    return true;
+  }
+
+  if (option === 'speed') {
+    const cost = 5 + (p.speedLevel || 0) * 2;
+    if (kp < cost || (p.speedLevel || 0) >= 5) return false;
+    p.upgradePoints -= cost;
+    p.speedLevel = (p.speedLevel || 0) + 1;
+    p.speed = Number(Math.min(7.2, p.speed + 0.45).toFixed(2));
+    sound.playPowerUpSound();
+    return true;
+  }
+
+  if (option === 'firepower') {
+    const cost = 6 + (p.firepowerLevel || 0) * 2;
+    if (kp < cost || (p.firepowerLevel || 0) >= 5) return false;
+    p.upgradePoints -= cost;
+    p.firepowerLevel = (p.firepowerLevel || 0) + 1;
+    if (p.weaponLevel < 4) p.weaponLevel += 1;
+    sound.playPowerUpSound();
+    return true;
+  }
+
+  if (option === 'missile') {
+    const cost = 7 + (p.missileLevel || 0) * 3;
+    if (kp < cost || (p.missileLevel || 0) >= 3) return false;
+    p.upgradePoints -= cost;
+    p.missileLevel = (p.missileLevel || 0) + 1;
+    sound.playPowerUpSound();
+    return true;
+  }
+
+  if (option === 'plasma') {
+    const cost = 7 + (p.plasmaLevel || 0) * 3;
+    if (kp < cost || (p.plasmaLevel || 0) >= 3) return false;
+    p.upgradePoints -= cost;
+    p.plasmaLevel = (p.plasmaLevel || 0) + 1;
+    sound.playPowerUpSound();
+    return true;
+  }
+
+  if (option === 'tactical') {
+    const cost = 5;
+    if (kp < cost) return false;
+    p.upgradePoints -= cost;
+    p.bombs = Math.min(6, p.bombs + 1);
+    p.rolls = Math.min(6, p.rolls + 1);
+    sound.playItemSound();
+    return true;
+  }
+
+  return false;
+}
+
+// 격납고 개조 완료 후 다음 스테이지(Stage 2 ~ 99)로 출격
+export function proceedFromHangar(state: GameEngineState) {
+  const clearedStage = state.stage || 1;
+  state.stage = Math.min(99, clearedStage + 1);
+  state.stageClearTimer = 110;
+  state.player.stageKills = 0;
+  state.nextBossScore = state.player.score + 2200 + (state.stage - 1) * 350;
+  state.enemies = [];
+  state.bullets = [];
+  state.player.x = CANVAS_WIDTH / 2;
+  state.player.y = CANVAS_HEIGHT - 90;
+  state.player.isInvincible = true;
+  state.player.invincibleTimer = 90;
+  state.status = 'playing';
+}
+
+// 플레이어 피격 처리 (HP 차감 시스템 — HP가 0이 되었을 때만 격추)
+function handlePlayerHit(state: GameEngineState, damage = 14) {
+  const p = state.player;
+  p.hp = Math.max(0, p.hp - damage);
+  p.hitFlashTimer = 10;
+
+  if (p.hp > 0) {
+    // 아직 HP가 남아있는 경우: 기체 파괴 없이 HP만 감소 + 0.45초 연속피격 보호 무적
+    p.isInvincible = true;
+    p.invincibleTimer = 28;
+    state.screenShake = 8;
+    createExplosion(state, p.x, p.y - 6, 'small', 6);
+    state.floatingTexts.push({
+      id: nextEntityId++,
+      text: `-${damage} HP`,
+      x: p.x,
+      y: p.y - 24,
+      color: '#EF4444',
+      alpha: 1.1,
+      vy: -1.1,
+    });
+    return;
+  }
+
+  // HP가 0이 된 경우: 기체 격추 처리
   p.lives--;
-  p.hasEscorts = false; // 피격 시 호위기 소실
+  p.hasEscorts = false; // 격추 시 호위기 소실
   p.weaponLevel = Math.max(1, p.weaponLevel - 1); // 무기 1단계 하향
-  p.hitFlashTimer = 12;
   triggerPlayerExplosion(state, p.x, p.y);
   createExplosion(state, p.x, p.y, 'medium', 25);
-  state.screenShake = 18;
+  state.screenShake = 20;
 
   if (p.lives <= 0) {
+    p.hp = 0;
     state.status = 'gameover';
   } else {
-    // 리스폰 및 무적 부여
+    // 예비 기체 리스폰 및 HP 100% 완충 + 무적 부여
+    p.hp = p.maxHp;
     p.x = CANVAS_WIDTH / 2;
     p.y = CANVAS_HEIGHT - 90;
     p.isInvincible = true;
     p.invincibleTimer = 150; // 2.5초 무적
+    state.floatingTexts.push({
+      id: nextEntityId++,
+      text: `기체 재출격! (잔여 기체: ${p.lives})`,
+      x: CANVAS_WIDTH / 2,
+      y: CANVAS_HEIGHT - 130,
+      color: '#38BDF8',
+      alpha: 1.2,
+      vy: -0.9,
+    });
   }
 }
 
@@ -1403,20 +1743,50 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     ctx.restore();
   });
 
-  // 4. 탄환 렌더링
+  // 4. 탄환 렌더링 (일반탄 / 유도 미사일 / 플라즈마 캐논 차별화)
   state.bullets.forEach((b) => {
     ctx.save();
-    ctx.fillStyle = b.color;
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // 플레이어 탄환 광원 이펙트
-    if (b.isPlayer) {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    if (b.isPlayer && b.kind === 'homing') {
+      ctx.translate(b.x, b.y);
+      ctx.rotate((b.angle ?? -Math.PI / 2) + Math.PI / 2);
+      // 유도 미사일 본체
+      ctx.fillStyle = '#A855F7';
       ctx.beginPath();
-      ctx.arc(b.x, b.y - 1, b.radius * 0.5, 0, Math.PI * 2);
+      safeRoundRect(ctx, -3, -7, 6, 14, 3);
       ctx.fill();
+      // 탄두
+      ctx.fillStyle = '#FDE047';
+      ctx.beginPath();
+      ctx.arc(0, -6, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      // 추진 화염
+      ctx.fillStyle = '#F97316';
+      ctx.beginPath();
+      ctx.arc(0, 7, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (b.isPlayer && b.kind === 'plasma') {
+      // 플라즈마 레이저 에너지 볼트
+      ctx.fillStyle = '#06B6D4';
+      ctx.beginPath();
+      safeRoundRect(ctx, b.x - 3, b.y - 9, 6, 18, 3);
+      ctx.fill();
+      ctx.fillStyle = '#CFFAFE';
+      ctx.beginPath();
+      safeRoundRect(ctx, b.x - 1.5, b.y - 7, 3, 14, 1.5);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = b.color;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 플레이어 탄환 광원 이펙트
+      if (b.isPlayer) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y - 1, b.radius * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.restore();
   });
@@ -1512,6 +1882,23 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     }
   }
 
+  // 플레이어 전투기 직하단 미니 HP 게이지 바 (비행 중 직관적 체력 확인)
+  if (state.status === 'playing' && p.hp > 0) {
+    ctx.save();
+    const barW = 42;
+    const barH = 5;
+    const barX = p.x - barW / 2;
+    const barY = p.y + 28;
+    const hpRatio = Math.max(0, Math.min(1, p.hp / (p.maxHp || 100)));
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+    ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+    ctx.fillStyle = hpRatio > 0.5 ? '#22C55E' : hpRatio > 0.25 ? '#F59E0B' : '#EF4444';
+    ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    ctx.restore();
+  }
+
   // 5.5 비행기 공중 폭발 애니메이션 렌더링 (Enemy & Player Explosion Sprite Sheet)
   state.explosions.forEach((exp) => {
     if (exp.frameTimer < 0) return; // 지연 스폰 대기 중인 경우 생략
@@ -1572,26 +1959,74 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     ctx.restore();
   });
 
-  // 8. 보스 경보 사이렌 오버레이
+  // 8. 보스 출현 2초 사전 경보 오버레이
   if (state.bossWarningTimer > 0) {
-    const flash = Math.floor(state.bossWarningTimer / 10) % 2 === 0;
-    if (flash) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(220, 38, 38, 0.2)';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    const pulseAlpha = 0.14 + Math.abs(Math.sin(state.bossWarningTimer * 0.18)) * 0.18;
+    ctx.save();
+    ctx.fillStyle = `rgba(220, 38, 38, ${pulseAlpha.toFixed(2)})`;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-      ctx.fillStyle = '#DC2626';
-      ctx.font = 'bold 22px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 4;
-      ctx.strokeText('⚠ WARNING: BOSS APPROACHING ⚠', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
-      ctx.fillText('⚠ WARNING: BOSS APPROACHING ⚠', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
-      ctx.restore();
-    }
+    // 중앙 경보 배너 박스
+    const bannerW = 340;
+    const bannerH = 92;
+    const bannerX = (CANVAS_WIDTH - bannerW) / 2;
+    const bannerY = CANVAS_HEIGHT / 2 - bannerH / 2 - 15;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+    ctx.beginPath();
+    safeRoundRect(ctx, bannerX, bannerY, bannerW, bannerH, 16);
+    ctx.fill();
+
+    ctx.strokeStyle = Math.floor(state.bossWarningTimer / 8) % 2 === 0 ? '#EF4444' : '#FBBF24';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // 메인 타이틀: 보스 출현!
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 26px sans-serif';
+    ctx.fillStyle = '#FEF08A';
+    ctx.fillText('🚨 보스 출현! 🚨', CANVAS_WIDTH / 2, bannerY + 34);
+
+    // 서브 안내 문구
+    const stageNum = state.stage || 1;
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#FCA5A5';
+    ctx.fillText(`STAGE ${stageNum} 거대 공중 전함 접근 중!`, CANVAS_WIDTH / 2, bannerY + 66);
+
+    ctx.restore();
   }
 
-  // 9. 인캔버스 상단 아케이드 스코어 오버레이 (비행 중 시선 이동 없이 실시간 점수 확인)
+  // 8.5 스테이지 클리어 & 다음 스테이지 돌입 배너
+  if (state.stageClearTimer && state.stageClearTimer > 0 && state.bossWarningTimer <= 0) {
+    ctx.save();
+    const bannerW = 330;
+    const bannerH = 84;
+    const bannerX = (CANVAS_WIDTH - bannerW) / 2;
+    const bannerY = CANVAS_HEIGHT / 2 - bannerH / 2 - 20;
+
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.86)';
+    ctx.beginPath();
+    safeRoundRect(ctx, bannerX, bannerY, bannerW, bannerH, 16);
+    ctx.fill();
+
+    ctx.strokeStyle = '#10B981';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '900 22px sans-serif';
+    ctx.fillStyle = '#6EE7B7';
+    ctx.fillText(`🎉 STAGE ${Math.max(1, state.stage - 1)} CLEAR!`, CANVAS_WIDTH / 2, bannerY + 30);
+
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`➔ STAGE ${state.stage} / 99 출격 돌입!`, CANVAS_WIDTH / 2, bannerY + 60);
+    ctx.restore();
+  }
+
+  // 9. 인캔버스 상단 아케이드 스코어 & 스테이지 오버레이 (비행 중 시선 이동 없이 실시간 확인)
   if (state.status === 'playing') {
     ctx.save();
     ctx.font = '900 13px monospace';
@@ -1605,6 +2040,13 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     ctx.strokeText(scoreText, 12, 10);
     ctx.fillStyle = '#FFFFFF';
     ctx.fillText(scoreText, 12, 10);
+
+    // 중앙 상단: STAGE N / 99
+    ctx.textAlign = 'center';
+    const stageText = `STAGE ${state.stage || 1}/99`;
+    ctx.strokeText(stageText, CANVAS_WIDTH / 2, 10);
+    ctx.fillStyle = '#38BDF8';
+    ctx.fillText(stageText, CANVAS_WIDTH / 2, 10);
 
     // 우상단: HIGH SCORE
     ctx.textAlign = 'right';
