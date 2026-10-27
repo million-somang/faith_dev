@@ -71,7 +71,7 @@ interface PersonalizedLayoutProps {
 function LoungePromoBanner() {
     return (
         <Link 
-            href="/lounge/topic/비트코인"
+            href="/lounge"
             className="flex items-center justify-between px-4.5 py-3 bg-gradient-to-r from-rose-600 via-violet-600 to-indigo-600 text-white rounded-2xl shadow-md mb-6 hover:opacity-95 transition-all hover:translate-y-[-1px] group"
         >
             <div className="flex items-center gap-2">

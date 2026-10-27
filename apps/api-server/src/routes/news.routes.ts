@@ -33,6 +33,18 @@ export function invalidateNewsCache() {
     newsListCache.clear();
 }
 
+function toHttpsThumbnail(url?: string | null): string | null {
+    if (!url) return null;
+    return String(url).trim().replace(/^http:\/\//i, 'https://');
+}
+
+// 서버 기동 시 기존 DB에 저장된 http:// 뉴스 썸네일을 https://로 일괄 업그레이드 (Mixed Content 방지)
+pool.query(`
+    UPDATE news
+    SET thumbnail = 'https://' || SUBSTR(thumbnail, 8)
+    WHERE thumbnail LIKE 'http://%'
+`).catch(() => {});
+
 // GET /api/news - Get news list (화면에 보이는 개수 ID만 커버링 인덱스에서 먼저 뽑는 Deferred Join)
 news.get('/api/news', async (c) => {
     const category = c.req.query('category');
@@ -94,6 +106,7 @@ news.get('/api/news', async (c) => {
             );
             const rowMap = new Map<number, any>();
             for (const r of detailRes.rows) {
+                if (r.thumbnail) r.thumbnail = toHttpsThumbnail(r.thumbnail);
                 rowMap.set(Number(r.id), r);
             }
             newsItems = targetIds.map(id => rowMap.get(id)).filter(Boolean);
@@ -185,7 +198,10 @@ news.get('/api/news/hot', async (c) => {
                 ids
             );
             const rowMap = new Map<number, any>();
-            for (const r of detailRes.rows) rowMap.set(Number(r.id), r);
+            for (const r of detailRes.rows) {
+                if (r.thumbnail) r.thumbnail = toHttpsThumbnail(r.thumbnail);
+                rowMap.set(Number(r.id), r);
+            }
             rows = ids.map(id => rowMap.get(id)).filter(Boolean);
         }
 

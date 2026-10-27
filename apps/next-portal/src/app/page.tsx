@@ -12,7 +12,8 @@ import { BannerSlot } from '@/components/BannerSlot';
 
 const API_SERVER_URL = process.env.API_SERVER_URL || 'http://127.0.0.1:4200';
 
-export const revalidate = 180;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'VERA (베라) - 실시간 뉴스 브리핑 · 지식 가이드 · 스마트 생활도구 · 무료 미니게임 포털',
@@ -51,12 +52,15 @@ export const metadata: Metadata = {
 async function fetchHomeInitialNews(): Promise<HomeNewsItem[]> {
   try {
     const res = await fetch(`${API_SERVER_URL}/api/news?limit=6`, {
-      next: { revalidate: 180 },
+      cache: 'no-store',
     });
     if (!res.ok) return [];
     const data = await res.json();
     if (data?.success) {
-      return (data.newsletters || data.news || []).slice(0, 6);
+      return (data.newsletters || data.news || []).slice(0, 6).map((item: HomeNewsItem) => ({
+        ...item,
+        thumbnail: item.thumbnail ? String(item.thumbnail).replace(/^http:\/\//i, 'https://') : item.thumbnail,
+      }));
     }
     return [];
   } catch {

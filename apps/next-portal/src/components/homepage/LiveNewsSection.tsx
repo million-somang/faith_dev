@@ -28,10 +28,29 @@ interface LiveNewsSectionProps {
   initialNews?: HomeNewsItem[];
 }
 
+function formatStaticDateLabel(dateStr?: string): string {
+  if (!dateStr) return '최신';
+  const match = String(dateStr).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[2]}.${match[3]}`;
+  }
+  return '최신';
+}
+
+function toHttpsUrl(url?: string): string {
+  if (!url) return '';
+  return String(url).trim().replace(/^http:\/\//i, 'https://');
+}
+
 export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews }) => {
   const hasInitial = Array.isArray(initialNews) && initialNews.length > 0;
   const [news, setNews] = useState<HomeNewsItem[]>(hasInitial ? initialNews : []);
   const [loading, setLoading] = useState(!hasInitial);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (hasInitial) return;
@@ -95,7 +114,9 @@ export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews })
           </div>
         ) : news.length > 0 ? (
           news.slice(0, 6).map((item) => {
-            const timeAgo = getTimeAgo(item.created_at || item.published_at);
+            const rawDate = item.created_at || item.published_at;
+            const timeAgo = mounted ? getTimeAgo(rawDate) : formatStaticDateLabel(rawDate);
+            const safeThumbnail = toHttpsUrl(item.thumbnail);
             const categories: string[] = String(item.category || '')
               .split(',')
               .map((s) => s.trim())
@@ -133,9 +154,9 @@ export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews })
                   {/* 썸네일 */}
                   <div className="relative w-24 h-24 sm:w-28 sm:h-[80px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-100">
                     <i className="far fa-newspaper text-gray-300 text-2xl"></i>
-                    {item.thumbnail && (
+                    {safeThumbnail && (
                       <img
-                        src={item.thumbnail}
+                        src={safeThumbnail}
                         alt=""
                         loading="lazy"
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -158,7 +179,10 @@ export const LiveNewsSection: React.FC<LiveNewsSectionProps> = ({ initialNews })
                           {getCategoryName(cat)}
                         </span>
                       ))}
-                      <span className="text-gray-500 text-[11px] font-bold flex-shrink-0">
+                      <span
+                        suppressHydrationWarning
+                        className="text-gray-500 text-[11px] font-bold flex-shrink-0"
+                      >
                         {timeAgo}
                       </span>
                       {isAnalyzed && (
