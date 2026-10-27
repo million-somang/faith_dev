@@ -17,6 +17,7 @@ import {
     ensureGardenState,
     getCatalogItemById,
     getGardenCropById,
+    getGardenPlotWaterStatus,
 } from '@/data/minihomeCatalogData';
 
 interface ApiStandardResponse<T> {
@@ -442,27 +443,36 @@ export function useMinihome(routeHandle: string) {
                                   waterCount: 1,
                                   plantedAt: nowIso,
                                   lastWateredAt: nowIso,
+                                  waterNotifiedAt: null,
                               }
                             : p
                     ),
                 }),
-                `🌱 창고에서 [${cropMeta.emoji} ${cropMeta.name}] 씨앗 1개를 꺼내 ${plotIndex + 1}번 텃밭에 심었습니다! (창고 잔여: ${remainingSeeds}개)`
+                `🌱 창고에서 [${cropMeta.emoji} ${cropMeta.name}] 씨앗을 심고 첫 물을 주었습니다! (8시간 후 2차 물주기 알림이 울립니다 · 창고 잔여: ${remainingSeeds}개)`
             );
         },
         [isEditMode, draftLayout, profile, commitGardenState, showToast, handleOpenShopModal]
     );
 
     const handleWaterPlot = useCallback(
-        (plotIndex: number) => {
+        (plotIndex: number): boolean => {
             const baseLayout = isEditMode ? draftLayout : (profile?.layout || draftLayout);
             const garden = ensureGardenState(baseLayout.garden);
             const targetPlot = garden.plots.find((p) => p.plotIndex === plotIndex);
-            if (!targetPlot || !targetPlot.cropId) return;
+            if (!targetPlot || !targetPlot.cropId) return false;
 
             const cropMeta = getGardenCropById(targetPlot.cropId);
             if (targetPlot.stage >= 3) {
                 showToast(`✨ [${cropMeta?.emoji || ''} ${cropMeta?.shortName || '작물'}]이(가) 이미 다 자랐어요! 지금 수확해보세요.`);
-                return;
+                return false;
+            }
+
+            const waterStatus = getGardenPlotWaterStatus(targetPlot, Date.now());
+            if (!waterStatus.canWater) {
+                showToast(
+                    `⏳ 아직 땅이 촉촉해요! [${cropMeta?.emoji || ''} ${cropMeta?.shortName || '작물'}] 다음 물주기까지 ${waterStatus.remainingLabel} 남았습니다. (하루 3번 · 8시간 간격)`
+                );
+                return false;
             }
 
             const nextStage = Math.min(3, targetPlot.stage + 1) as 1 | 2 | 3;
@@ -478,14 +488,16 @@ export function useMinihome(routeHandle: string) {
                                   stage: nextStage,
                                   waterCount: p.waterCount + 1,
                                   lastWateredAt: nowIso,
+                                  waterNotifiedAt: null,
                               }
                             : p
                     ),
                 }),
                 nextStage === 3
-                    ? `🎉 물을 듬뿍 주어 [${cropMeta?.emoji} ${cropMeta?.name}]이(가) 수확 가능 상태가 되었습니다!`
-                    : `💧 [${cropMeta?.emoji} ${cropMeta?.shortName}]에 시원하게 물을 주었습니다! 무럭무럭 자라나는 중 (${nextStage}/3단계)`
+                    ? `🎉 3차 물주기 완료! [${cropMeta?.emoji} ${cropMeta?.name}]이(가) 수확 가능 상태가 되었습니다!`
+                    : `💧 [${cropMeta?.emoji} ${cropMeta?.shortName}]에 시원하게 물을 주었습니다! (${nextStage}/3단계 · 8시간 후 마지막 물주기 가능)`
             );
+            return true;
         },
         [isEditMode, draftLayout, profile, commitGardenState, showToast]
     );
@@ -519,6 +531,7 @@ export function useMinihome(routeHandle: string) {
                                       waterCount: 0,
                                       plantedAt: null,
                                       lastWateredAt: null,
+                                      waterNotifiedAt: null,
                                   }
                                 : p
                         ),
@@ -546,6 +559,7 @@ export function useMinihome(routeHandle: string) {
                                   waterCount: 0,
                                   plantedAt: null,
                                   lastWateredAt: null,
+                                  waterNotifiedAt: null,
                               }
                             : p
                     ),

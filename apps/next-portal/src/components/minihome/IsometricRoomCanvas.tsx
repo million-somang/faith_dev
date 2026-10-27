@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
-import { ensureGardenState, getCatalogItemById } from '@/data/minihomeCatalogData';
+import { ensureGardenState, getCatalogItemById, getGardenPlotWaterStatus } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
 import { ForcedGardenActionTrigger, GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
 import { MinihomeAvatarActionOverlay } from '@/components/minihome/MinihomeAvatarActionOverlay';
@@ -45,7 +45,7 @@ interface IsometricRoomCanvasProps {
     onCancelEdit?: () => void;
     isSaving?: boolean;
     onPlantCrop?: (plotIndex: number, cropId: GardenCropId) => void;
-    onWaterPlot?: (plotIndex: number) => void;
+    onWaterPlot?: (plotIndex: number) => boolean | void;
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
 }
@@ -166,7 +166,20 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     const { weather } = useWeather();
     const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone, forcedGardenAction });
     const gardenState = ensureGardenState(layout.garden);
+    const [gardenTickMs, setGardenTickMs] = useState<number>(() => Date.now());
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setGardenTickMs(Date.now());
+        }, 1000);
+        return () => window.clearInterval(timer);
+    }, []);
+
     const readyHarvestCount = gardenState.plots.filter((p) => p.cropId && p.stage === 3).length;
+    const needWaterCount = gardenState.plots.filter((p) => {
+        const st = getGardenPlotWaterStatus(p, gardenTickMs);
+        return st.isPlanted && !st.isHarvestReady && st.canWater;
+    }).length;
     const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
     const displayRoomTitle = roomTitle?.trim() || defaultRoomTitle;
 
@@ -687,6 +700,11 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                     }`}
                                 >
                                     <span>🌿 앞마당 텃밭</span>
+                                    {needWaterCount > 0 && (
+                                        <span className="px-1.5 py-0.2 rounded-full bg-sky-400 text-slate-950 text-[10px] font-black animate-pulse">
+                                            💧 물주기 {needWaterCount}
+                                        </span>
+                                    )}
                                     {readyHarvestCount > 0 && (
                                         <span className="px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
                                             수확 {readyHarvestCount}
@@ -1142,6 +1160,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             pos={pos}
                                             isSelected={selectedPlotIndex === entity.plot.plotIndex}
                                             onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
+                                            nowMs={gardenTickMs}
                                         />
                                     );
                                 }
@@ -1538,15 +1557,20 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             });
                         }}
                         onWaterPlot={(plotIdx) => {
+                            let watered = true;
                             if (onWaterPlot) {
-                                onWaterPlot(plotIdx);
+                                const res = onWaterPlot(plotIdx);
+                                if (res === false) watered = false;
                             }
-                            setForcedGardenAction({
-                                plotIndex: plotIdx,
-                                activityType: 'watering',
-                                badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
-                                timestamp: Date.now(),
-                            });
+                            if (watered) {
+                                setForcedGardenAction({
+                                    plotIndex: plotIdx,
+                                    activityType: 'watering',
+                                    badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
+                                    timestamp: Date.now(),
+                                });
+                            }
+                            return watered;
                         }}
                         onHarvestPlot={(plotIdx) => {
                             if (onHarvestPlot) {

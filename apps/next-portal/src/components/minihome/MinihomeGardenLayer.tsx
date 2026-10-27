@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     GardenCropId,
     GardenPlotItem,
@@ -9,7 +9,19 @@ import {
 import {
     GARDEN_CROP_CATALOG,
     getGardenCropById,
+    getGardenPlotWaterStatus,
 } from '@/data/minihomeCatalogData';
+
+function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
 
 interface GardenBackdropProps {
     floorTop: { x: number; y: number };
@@ -585,6 +597,7 @@ interface GardenPlotProps {
     pos: { x: number; y: number };
     isSelected: boolean;
     onSelectPlot: (plotIndex: number) => void;
+    nowMs?: number;
 }
 
 /**
@@ -595,9 +608,12 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
     pos,
     isSelected,
     onSelectPlot,
+    nowMs,
 }) => {
     const cropMeta = getGardenCropById(plot.cropId);
     const isReadyToHarvest = plot.stage === 3 && Boolean(cropMeta);
+    const waterStatus = getGardenPlotWaterStatus(plot, nowMs ?? Date.now());
+    const needsWater = Boolean(cropMeta && plot.stage > 0 && plot.stage < 3 && waterStatus.canWater);
 
     return (
         <g
@@ -618,6 +634,20 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
                     fill="rgba(250, 204, 21, 0.22)"
                     stroke="#fbbf24"
                     strokeWidth="2.2"
+                />
+            )}
+
+            {/* 8시간 경과 물주기 알림 하늘빛 후광 오라 */}
+            {needsWater && (
+                <ellipse
+                    cx="0"
+                    cy="3"
+                    rx="45"
+                    ry="23"
+                    fill="rgba(56, 189, 248, 0.22)"
+                    stroke="#38bdf8"
+                    strokeWidth="2"
+                    strokeDasharray="5 2"
                 />
             )}
 
@@ -649,17 +679,17 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
                 stroke="#451a03"
                 strokeWidth="1"
             />
-            {/* 상단 나무 테두리 (수확 가능 시 황금빛 테두리 강조) */}
+            {/* 상단 나무 테두리 (수확 가능 시 황금빛 / 물주기 가능 시 청록빛 테두리 강조) */}
             <polygon
                 points="0,-19 38,0 0,19 -38,0"
-                fill={isReadyToHarvest ? '#d97706' : '#b45309'}
-                stroke={isReadyToHarvest ? '#fef08a' : '#78350f'}
-                strokeWidth={isReadyToHarvest ? '1.8' : '1.5'}
+                fill={isReadyToHarvest ? '#d97706' : needsWater ? '#0284c7' : '#b45309'}
+                stroke={isReadyToHarvest ? '#fef08a' : needsWater ? '#bae6fd' : '#78350f'}
+                strokeWidth={isReadyToHarvest || needsWater ? '1.8' : '1.5'}
             />
-            {/* 안쪽 비옥한 텃밭 흙 */}
+            {/* 안쪽 비옥한 텃밭 흙 (물 줄 시간이 되면 마른 흙 색상으로 표현) */}
             <polygon
                 points="0,-15 31,0 0,15 -31,0"
-                fill={plot.waterCount > 0 ? '#4a2c18' : '#6b4423'}
+                fill={needsWater ? '#7c4d25' : plot.waterCount > 0 ? '#4a2c18' : '#6b4423'}
                 stroke="#3b2212"
                 strokeWidth="1"
             />
@@ -710,7 +740,7 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
                 </text>
             </g>
 
-            {/* 단계별 직관적 플로팅 배지 */}
+            {/* 단계별 직관적 플로팅 배지 (8시간 물주기 알림 & 남은 시간 표시) */}
             {isReadyToHarvest && cropMeta ? (
                 <g transform="translate(0, -42)">
                     <rect
@@ -727,36 +757,43 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
                         🧺 {cropMeta.emoji} {cropMeta.shortName} 수확!
                     </text>
                 </g>
-            ) : cropMeta && plot.stage === 1 ? (
-                <g transform="translate(0, -24)">
+            ) : needsWater && cropMeta ? (
+                <g transform={`translate(0, ${plot.stage === 2 ? -36 : -30})`}>
                     <rect
-                        x="-28"
-                        y="-9"
-                        width="56"
-                        height="14"
-                        rx="7"
-                        fill="rgba(15, 23, 42, 0.72)"
-                        stroke="rgba(134, 239, 172, 0.6)"
-                        strokeWidth="0.9"
+                        x="-48"
+                        y="-11"
+                        width="96"
+                        height="18"
+                        rx="9"
+                        fill="#0284c7"
+                        stroke="#e0f2fe"
+                        strokeWidth="1.5"
                     />
-                    <text x="0" y="0.5" textAnchor="middle" fill="#86efac" fontSize="7.5" fontWeight="800">
-                        🌱 새싹 1/3
+                    <text x="0" y="1" textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="900">
+                        💧 {cropMeta.shortName} 물주기! ({plot.stage}/3)
                     </text>
                 </g>
-            ) : cropMeta && plot.stage === 2 ? (
-                <g transform="translate(0, -30)">
+            ) : cropMeta && (plot.stage === 1 || plot.stage === 2) ? (
+                <g transform={`translate(0, ${plot.stage === 2 ? -30 : -24})`}>
                     <rect
-                        x="-32"
+                        x="-44"
                         y="-9"
-                        width="64"
+                        width="88"
                         height="14"
                         rx="7"
-                        fill="rgba(15, 23, 42, 0.76)"
-                        stroke="rgba(253, 224, 71, 0.6)"
+                        fill="rgba(15, 23, 42, 0.78)"
+                        stroke={plot.stage === 2 ? 'rgba(253, 224, 71, 0.55)' : 'rgba(134, 239, 172, 0.55)'}
                         strokeWidth="0.9"
                     />
-                    <text x="0" y="0.5" textAnchor="middle" fill="#fde047" fontSize="7.5" fontWeight="800">
-                        🌼 성장중 2/3
+                    <text
+                        x="0"
+                        y="0.5"
+                        textAnchor="middle"
+                        fill={plot.stage === 2 ? '#fde047' : '#86efac'}
+                        fontSize="7.2"
+                        fontWeight="800"
+                    >
+                        {plot.stage === 1 ? '🌱' : '🌼'} {plot.stage}/3 · ⏳{waterStatus.shortRemainingLabel}
                     </text>
                 </g>
             ) : !cropMeta && isSelected ? (
@@ -785,7 +822,7 @@ interface GardenControlPanelProps {
     isOwner: boolean;
     isRainWeather: boolean;
     onPlantCrop?: (plotIndex: number, cropId: GardenCropId) => void;
-    onWaterPlot?: (plotIndex: number) => void;
+    onWaterPlot?: (plotIndex: number) => boolean | void;
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
     onOpenSeedShop?: () => void;
@@ -808,23 +845,167 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
     onOpenSeedShop,
     onOpenWarehouse,
 }) => {
+    const [nowMs, setNowMs] = useState<number>(() => Date.now());
+    const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
+    const [pushLoading, setPushLoading] = useState<boolean>(false);
+    const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+    const localNotifiedKeysRef = useRef<Set<string>>(new Set());
+
+    // 1초 간격 실시간 타이머 (8시간 물주기 카운트다운 및 알림 즉시 갱신)
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setNowMs(Date.now());
+        }, 1000);
+        return () => window.clearInterval(timer);
+    }, []);
+
+    // 모바일/웹 푸시 구독 상태 확인 및 서비스 워커 등록
+    useEffect(() => {
+        if (typeof window === 'undefined' || !isOwner) return;
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            navigator.serviceWorker
+                .register('/sw.js')
+                .catch(() => null)
+                .then(() => navigator.serviceWorker.ready)
+                .then((registration) => registration.pushManager.getSubscription())
+                .then((sub) => {
+                    setIsPushSubscribed(Boolean(sub));
+                })
+                .catch(() => {});
+        }
+    }, [isOwner]);
+
+    // 8시간 도래 작물 로컬 브라우저/서비스워커 즉시 알림 (열려있는 동안 쿨타임 만료 시)
+    useEffect(() => {
+        if (typeof window === 'undefined' || !isOwner) return;
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+        gardenState.plots.forEach((p) => {
+            if (!p.cropId || p.stage <= 0 || p.stage >= 3) return;
+            const status = getGardenPlotWaterStatus(p, nowMs);
+            if (!status.canWater) return;
+
+            const notifyKey = `${p.plotIndex}-${p.cropId}-${p.stage}-${p.lastWateredAt || 'init'}`;
+            if (localNotifiedKeysRef.current.has(notifyKey)) return;
+            localNotifiedKeysRef.current.add(notifyKey);
+
+            // 이미 과거에 알림 확인된 건은 첫 마운트 시 스킵하지 않고, 방금 만료된 경우(최근 15초 이내 만료) 브라우저 알림 표시
+            if (status.nextWaterAtMs && nowMs - status.nextWaterAtMs < 15000) {
+                const cMeta = getGardenCropById(p.cropId);
+                const title = '💧 [아지트 농장] 작물에 물을 줄 시간이에요!';
+                const body = `${p.plotIndex + 1}번 텃밭의 [${cMeta?.emoji || '🌱'} ${cMeta?.name || '작물'}]에 물을 주면 다음 단계로 자라납니다!`;
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready
+                        .then((reg) =>
+                            reg.showNotification(title, {
+                                body,
+                                icon: '/logo-192.png',
+                                badge: '/logo-192.png',
+                                data: { url: '/minihome/me' },
+                            })
+                        )
+                        .catch(() => {});
+                }
+            }
+        });
+    }, [gardenState.plots, nowMs, isOwner]);
+
+    const handleToggleFarmPush = async () => {
+        if (typeof window === 'undefined') return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            setPushFeedback('📱 모바일 홈 화면에 앱(PWA)을 추가하거나 푸시 지원 브라우저에서 이용해 주세요.');
+            setTimeout(() => setPushFeedback(null), 4000);
+            return;
+        }
+
+        try {
+            setPushLoading(true);
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') {
+                setPushFeedback('⚠️ 브라우저 알림 권한을 허용해야 8시간 물주기 푸시 알림을 받을 수 있습니다.');
+                setTimeout(() => setPushFeedback(null), 4000);
+                return;
+            }
+
+            await navigator.serviceWorker.register('/sw.js').catch(() => null);
+            const registration = await navigator.serviceWorker.ready;
+            let sub = await registration.pushManager.getSubscription();
+
+            if (sub) {
+                await sub.unsubscribe();
+                await fetch('/api/user/push-subscription', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ endpoint: sub.endpoint }),
+                });
+                setIsPushSubscribed(false);
+                setPushFeedback('🔕 아지트 농장 모바일 물주기 푸시 알림이 해제되었습니다.');
+            } else {
+                const keyRes = await fetch('/api/user/push-key', { credentials: 'include' });
+                if (keyRes.status === 401) {
+                    setPushFeedback('🔒 로그인 후 모바일 물주기 푸시 알림을 설정할 수 있습니다.');
+                    setTimeout(() => setPushFeedback(null), 4000);
+                    return;
+                }
+                const keyData = await keyRes.json();
+                if (!keyData?.publicKey) {
+                    throw new Error('VAPID public key load failed');
+                }
+                const convertedKey = urlBase64ToUint8Array(keyData.publicKey);
+                sub = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: convertedKey,
+                });
+
+                const saveRes = await fetch('/api/user/push-subscription', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ subscription: sub.toJSON() }),
+                });
+                if (!saveRes.ok) {
+                    throw new Error('Failed to save push subscription');
+                }
+                setIsPushSubscribed(true);
+                setPushFeedback('🔔 모바일 물주기 푸시 알림 ON! 8시간마다 물 줄 시간이 되면 알려드려요.');
+            }
+        } catch (err) {
+            console.error('Farm push toggle error:', err);
+            setPushFeedback('⚠️ 푸시 알림 설정 중 오류가 발생했습니다. 로그인 상태를 확인해 주세요.');
+        } finally {
+            setPushLoading(false);
+            setTimeout(() => setPushFeedback(null), 4500);
+        }
+    };
+
     const activePlot =
         gardenState.plots.find((p) => p.plotIndex === selectedPlotIndex) || gardenState.plots[0];
     const activeCropMeta = getGardenCropById(activePlot?.cropId);
+    const activeWaterStatus = getGardenPlotWaterStatus(activePlot, nowMs);
     const totalSeeds = Object.values(gardenState.seedCounts || {}).reduce((acc, v) => acc + v, 0);
+
+    const waterReadyPlots = gardenState.plots.filter((p) => {
+        const st = getGardenPlotWaterStatus(p, nowMs);
+        return st.isPlanted && !st.isHarvestReady && st.canWater;
+    });
 
     return (
         <div className="w-full mt-2 bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-emerald-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-emerald-700/60 space-y-3 shrink-0">
-            {/* 1행: 선택된 텃밭 이랑 번호 탭 + 씨앗 상점/농장 창고 바로가기 */}
+            {/* 1행: 선택된 텃밭 이랑 번호 탭 + 모바일 푸시 알림 / 씨앗 상점 / 농장 창고 바로가기 */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px]">
                         🌿 마당 텃밭
                     </span>
-                    <div className="flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[10px] font-extrabold">
+                        💧 하루 3번 (8시간 간격 물주기)
+                    </span>
+                    <div className="flex items-center gap-1 flex-wrap">
                         {gardenState.plots.map((p) => {
                             const cMeta = getGardenCropById(p.cropId);
                             const active = p.plotIndex === selectedPlotIndex;
+                            const pWater = getGardenPlotWaterStatus(p, nowMs);
                             return (
                                 <button
                                     key={`plot-tab-${p.plotIndex}`}
@@ -833,11 +1014,15 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                     className={`px-2 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
                                         active
                                             ? 'bg-amber-400 text-slate-950 shadow-xs'
-                                            : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
+                                            : pWater.canWater
+                                              ? 'bg-sky-600/90 text-white ring-1 ring-sky-300 animate-pulse'
+                                              : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
                                     }`}
                                 >
                                     <span>#{p.plotIndex + 1}</span>
                                     <span>{cMeta ? cMeta.emoji : '🌱'}</span>
+                                    {pWater.isHarvestReady && <span className="text-[10px]">🧺</span>}
+                                    {pWater.canWater && <span className="text-[10px]">💧</span>}
                                 </button>
                             );
                         })}
@@ -849,6 +1034,21 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                         <span className="px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[11px] font-bold">
                             🌧️ 단비가 내려 작물이 싱그럽게 자라요!
                         </span>
+                    )}
+                    {isOwner && (
+                        <button
+                            type="button"
+                            onClick={handleToggleFarmPush}
+                            disabled={pushLoading}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                                isPushSubscribed
+                                    ? 'bg-sky-500 hover:bg-sky-400 text-slate-950'
+                                    : 'bg-slate-800 hover:bg-slate-700 text-sky-200 border border-sky-400/50'
+                            }`}
+                            title="모바일(앱 설치 시) 8시간마다 물주기 푸시 알림 받기"
+                        >
+                            <span>{isPushSubscribed ? '🔔 물주기 푸시 ON' : '🔕 모바일 물주기 알림 켜기'}</span>
+                        </button>
                     )}
                     {isOwner && onOpenSeedShop && (
                         <button
@@ -871,7 +1071,46 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 </div>
             </div>
 
-            {/* 2행: 선택된 이랑 상세 상태 & 씨앗 심기 / 물주기 / 수확하기 액션 */}
+            {/* 푸시 알림 설정 피드백 메시지 */}
+            {pushFeedback && (
+                <div className="px-3 py-2 rounded-xl bg-sky-950/90 border border-sky-400/50 text-sky-100 text-xs font-bold flex items-center justify-between gap-2">
+                    <span>{pushFeedback}</span>
+                </div>
+            )}
+
+            {/* 8시간 경과 물주기 알림 배너 (물을 줄 수 있는 작물이 있을 때 즉시 노출) */}
+            {isOwner && waterReadyPlots.length > 0 && (
+                <div className="px-3 py-2 rounded-xl bg-sky-500/20 border border-sky-400/60 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-black text-sky-200">
+                        <span className="animate-bounce">💧</span>
+                        <span>
+                            물주기 알림! 8시간이 지나 지금 물을 줄 수 있는 작물이 {waterReadyPlots.length}개 있습니다!
+                        </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                        {waterReadyPlots.map((wp) => {
+                            const wpMeta = getGardenCropById(wp.cropId);
+                            return (
+                                <button
+                                    key={`quick-water-${wp.plotIndex}`}
+                                    type="button"
+                                    onClick={() => {
+                                        onSelectPlot(wp.plotIndex);
+                                        if (onWaterPlot) onWaterPlot(wp.plotIndex);
+                                    }}
+                                    className="px-2.5 py-1 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 text-[11px] font-black cursor-pointer transition-all shadow-2xs flex items-center gap-1"
+                                >
+                                    <span>
+                                        💧 #{wp.plotIndex + 1} {wpMeta?.emoji} {wpMeta?.shortName} 물주기
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* 2행: 선택된 이랑 상세 상태 & 씨앗 심기 / 물주기(8시간 간격) / 수확하기 액션 */}
             <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <div className="space-y-0.5">
                     <div className="text-xs sm:text-sm font-black text-emerald-200 flex items-center gap-1.5 flex-wrap">
@@ -882,8 +1121,21 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                     {activeCropMeta.emoji} {activeCropMeta.name}
                                 </span>
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px]">
-                                    {activeCropMeta.stageLabels[activePlot.stage]} ({activePlot.stage}/3단계)
+                                    {activeCropMeta.stageLabels[activePlot.stage]} ({activePlot.stage}/3단계 · 물주기 {activePlot.waterCount}/3회)
                                 </span>
+                                {activePlot.stage < 3 && (
+                                    <span
+                                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
+                                            activeWaterStatus.canWater
+                                                ? 'bg-sky-500 text-slate-950 animate-pulse'
+                                                : 'bg-slate-800 border border-slate-600 text-sky-300'
+                                        }`}
+                                    >
+                                        {activeWaterStatus.canWater
+                                            ? '💧 지금 물주기 가능!'
+                                            : `⏳ 다음 물주기까지 ${activeWaterStatus.shortRemainingLabel}`}
+                                    </span>
+                                )}
                             </>
                         ) : (
                             <span className="text-amber-300">
@@ -893,8 +1145,8 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                     </div>
                     <p className="text-[11px] text-slate-400">
                         {activeCropMeta
-                            ? activeCropMeta.description
-                            : '상점에서 작물 씨앗을 0원에 구매하면 농장 창고에 들어갑니다. 창고의 씨앗으로 파종하고 수확한 작물도 창고에 보관해보세요.'}
+                            ? `${activeCropMeta.description} (하루 3번, 8시간마다 물을 주면 총 3단계로 자라나 수확할 수 있습니다.)`
+                            : '상점에서 작물 씨앗을 0원에 구매하면 농장 창고에 들어갑니다. 씨앗을 심고 8시간마다 하루 3번 물을 주어 수확해보세요.'}
                     </p>
                 </div>
 
@@ -936,9 +1188,17 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                                     type="button"
                                     onClick={() => onWaterPlot && onWaterPlot(activePlot.plotIndex)}
                                     data-screenshot-click="action"
-                                    className="px-3.5 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
+                                        activeWaterStatus.canWater
+                                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 ring-2 ring-sky-200 animate-pulse'
+                                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
+                                    }`}
                                 >
-                                    <span>💧 물주기 (쑥쑥 성장!)</span>
+                                    {activeWaterStatus.canWater ? (
+                                        <span>💧 지금 물주기! ({activePlot.stage + 1}/3단계 성장)</span>
+                                    ) : (
+                                        <span>⏳ 다음 물주기 {activeWaterStatus.shortRemainingLabel}</span>
+                                    )}
                                 </button>
                                 <button
                                     type="button"

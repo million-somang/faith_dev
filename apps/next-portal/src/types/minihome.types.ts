@@ -75,6 +75,7 @@ export interface GardenPlotItem {
     waterCount: number;
     plantedAt: string | null;
     lastWateredAt: string | null;
+    waterNotifiedAt?: string | null;
 }
 
 export interface MinihomeGardenState {

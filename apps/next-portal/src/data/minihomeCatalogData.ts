@@ -792,6 +792,113 @@ export function getGardenCropById(cropId: GardenCropId | null | undefined): Gard
     return GARDEN_CROP_CATALOG.find((c) => c.cropId === cropId);
 }
 
+/**
+ * 아지트 농장 물주기 쿨타임: 하루 3번 (8시간마다 1회)
+ */
+export const GARDEN_WATER_COOLDOWN_MS = 8 * 60 * 60 * 1000;
+
+export interface GardenPlotWaterStatus {
+    isPlanted: boolean;
+    isHarvestReady: boolean;
+    canWater: boolean;
+    nextWaterAtMs: number | null;
+    remainingMs: number;
+    remainingLabel: string;
+    shortRemainingLabel: string;
+}
+
+export function getGardenPlotWaterStatus(
+    plot: { cropId: GardenCropId | null; stage: number; lastWateredAt?: string | null } | undefined,
+    nowMs: number = Date.now()
+): GardenPlotWaterStatus {
+    if (!plot || !plot.cropId || plot.stage <= 0) {
+        return {
+            isPlanted: false,
+            isHarvestReady: false,
+            canWater: false,
+            nextWaterAtMs: null,
+            remainingMs: 0,
+            remainingLabel: '',
+            shortRemainingLabel: '',
+        };
+    }
+
+    if (plot.stage >= 3) {
+        return {
+            isPlanted: true,
+            isHarvestReady: true,
+            canWater: false,
+            nextWaterAtMs: null,
+            remainingMs: 0,
+            remainingLabel: '수확 가능',
+            shortRemainingLabel: '수확 가능',
+        };
+    }
+
+    if (!plot.lastWateredAt) {
+        return {
+            isPlanted: true,
+            isHarvestReady: false,
+            canWater: true,
+            nextWaterAtMs: nowMs,
+            remainingMs: 0,
+            remainingLabel: '지금 물주기 가능',
+            shortRemainingLabel: '물주기!',
+        };
+    }
+
+    const lastWaterMs = new Date(plot.lastWateredAt).getTime();
+    if (Number.isNaN(lastWaterMs)) {
+        return {
+            isPlanted: true,
+            isHarvestReady: false,
+            canWater: true,
+            nextWaterAtMs: nowMs,
+            remainingMs: 0,
+            remainingLabel: '지금 물주기 가능',
+            shortRemainingLabel: '물주기!',
+        };
+    }
+
+    const nextWaterAtMs = lastWaterMs + GARDEN_WATER_COOLDOWN_MS;
+    const remainingMs = Math.max(0, nextWaterAtMs - nowMs);
+    if (remainingMs <= 0) {
+        return {
+            isPlanted: true,
+            isHarvestReady: false,
+            canWater: true,
+            nextWaterAtMs,
+            remainingMs: 0,
+            remainingLabel: '지금 물주기 가능',
+            shortRemainingLabel: '물주기!',
+        };
+    }
+
+    const totalSec = Math.ceil(remainingMs / 1000);
+    const hours = Math.floor(totalSec / 3600);
+    const minutes = Math.floor((totalSec % 3600) / 60);
+    const seconds = totalSec % 60;
+
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const shortRemainingLabel = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    const remainingLabel =
+        hours > 0
+            ? `${hours}시간 ${minutes}분`
+            : minutes > 0
+              ? `${minutes}분 ${seconds}초`
+              : `${seconds}초`;
+
+    return {
+        isPlanted: true,
+        isHarvestReady: false,
+        canWater: false,
+        nextWaterAtMs,
+        remainingMs,
+        remainingLabel,
+        shortRemainingLabel,
+    };
+}
+
 export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenState {
     if (!garden || !Array.isArray(garden.plots) || garden.plots.length === 0) {
         return {
@@ -811,6 +918,7 @@ export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenS
                 waterCount: 0,
                 plantedAt: null,
                 lastWateredAt: null,
+                waterNotifiedAt: null,
             };
         }
         return {
@@ -820,6 +928,7 @@ export function ensureGardenState(garden?: MinihomeGardenState): MinihomeGardenS
             waterCount: Number(found.waterCount || 0),
             plantedAt: found.plantedAt || null,
             lastWateredAt: found.lastWateredAt || null,
+            waterNotifiedAt: found.waterNotifiedAt || null,
         };
     });
     const seedCounts: Record<GardenCropId, number> = {

@@ -56,9 +56,13 @@ export class PushService {
                     endpoint TEXT NOT NULL UNIQUE,
                     p256dh TEXT NOT NULL,
                     auth TEXT NOT NULL,
+                    is_deleted INTEGER NOT NULL DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             `);
+            await pool.query(`
+                ALTER TABLE user_push_subscriptions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+            `).catch(() => {});
         } catch (e) {
             console.error('[PushService] ensurePushTable error:', e);
         }
@@ -76,17 +80,18 @@ export class PushService {
         }
 
         await pool.query(`
-            INSERT INTO user_push_subscriptions (user_id, endpoint, p256dh, auth)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO user_push_subscriptions (user_id, endpoint, p256dh, auth, is_deleted)
+            VALUES ($1, $2, $3, $4, 0)
             ON CONFLICT (endpoint) DO UPDATE
-            SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth
+            SET user_id = EXCLUDED.user_id, p256dh = EXCLUDED.p256dh, auth = EXCLUDED.auth, is_deleted = 0
         `, [userId, endpoint, keys.p256dh, keys.auth]);
     }
 
     static async removeSubscription(userId: number, endpoint: string) {
         await this.ensurePushTable();
         await pool.query(`
-            DELETE FROM user_push_subscriptions
+            UPDATE user_push_subscriptions
+            SET is_deleted = 1
             WHERE user_id = $1 AND endpoint = $2
         `, [userId, endpoint]);
     }
@@ -96,7 +101,7 @@ export class PushService {
         const res = await pool.query(`
             SELECT id, user_id, endpoint, p256dh, auth
             FROM user_push_subscriptions
-            WHERE user_id = $1
+            WHERE user_id = $1 AND (is_deleted = 0 OR is_deleted IS NULL)
         `, [userId]);
         return res.rows;
     }
@@ -120,9 +125,9 @@ export class PushService {
             } catch (err: any) {
                 console.error(`[PushService] Failed to send push to sub ${sub.id}:`, err?.statusCode || err?.message);
                 if (err?.statusCode === 410 || err?.statusCode === 404) {
-                    // Expired subscription, remove from DB
+                    // 만료된 구독은 Soft Delete 처리
                     try {
-                        await pool.query(`DELETE FROM user_push_subscriptions WHERE id = $1`, [sub.id]);
+                        await pool.query(`UPDATE user_push_subscriptions SET is_deleted = 1 WHERE id = $1`, [sub.id]);
                     } catch (_) {}
                 }
             }

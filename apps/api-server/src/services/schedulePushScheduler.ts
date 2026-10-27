@@ -1,19 +1,32 @@
 import { pool } from '@faithportal/database';
 import { PushService } from './push.service.js';
 import { MyPageService } from './mypage.service.js';
+import { MinihomeService } from './minihome.service.js';
 
 let isRunning = false;
+
+const GARDEN_WATER_COOLDOWN_MS = 8 * 60 * 60 * 1000; // 8시간 (하루 3번 물주기)
+
+const CROP_NAME_MAP: Record<string, string> = {
+    'crop-carrot': '🥕 당근',
+    'crop-pepper': '🌶️ 고추',
+    'crop-tomato': '🍅 방울토마토',
+    'crop-lettuce': '🥬 청상추',
+    'crop-strawberry': '🍓 설향 딸기',
+    'crop-potato': '🥔 햇감자',
+};
 
 export function startSchedulePushScheduler() {
     if (isRunning) return;
     isRunning = true;
 
-    console.log('[SchedulePushScheduler] Started 1-hour schedule notification monitor (interval: 1 minute)');
+    console.log('[SchedulePushScheduler] Started 1-hour schedule & 8-hour Azit Farm watering push monitor (interval: 1 minute)');
 
     // Run every 1 minute
     setInterval(async () => {
         try {
             await checkAndSend1HourNotifications();
+            await checkAndSendGardenWaterNotifications();
         } catch (err) {
             console.error('[SchedulePushScheduler] Check error:', err);
         }
@@ -21,7 +34,10 @@ export function startSchedulePushScheduler() {
 
     // Initial check after 5 seconds
     setTimeout(() => {
-        checkAndSend1HourNotifications().catch(e => console.error('[SchedulePushScheduler] Initial check error:', e));
+        Promise.all([
+            checkAndSend1HourNotifications(),
+            checkAndSendGardenWaterNotifications(),
+        ]).catch(e => console.error('[SchedulePushScheduler] Initial check error:', e));
     }, 5000);
 }
 
@@ -74,5 +90,83 @@ async function checkAndSend1HourNotifications() {
         }
     } catch (err) {
         console.error('[SchedulePushScheduler] checkAndSend1HourNotifications error:', err);
+    }
+}
+
+/**
+ * 아지트 농장(앞마당 텃밭) 8시간 경과 물주기 모바일 웹 푸시 알림 발송
+ * - 작물이 1단계(새싹) 또는 2단계(성장중)이고 lastWateredAt 으로부터 8시간이 경과했을 때
+ * - 아직 해당 물주기 회차에 푸시 알림을 보내지 않은 경우(waterNotifiedAt !== lastWateredAt) 1회 발송
+ */
+async function checkAndSendGardenWaterNotifications() {
+    try {
+        await MinihomeService.ensureTables();
+
+        const res = await pool.query(`
+            SELECT id, user_id, handle, owner_name, layout_json
+            FROM user_minihomes
+            WHERE is_deleted = 0
+              AND user_id IS NOT NULL
+        `);
+
+        const nowMs = Date.now();
+
+        for (const row of res.rows) {
+            try {
+                if (!row.layout_json || !row.user_id) continue;
+                const layout = JSON.parse(row.layout_json);
+                const plots = layout?.garden?.plots;
+                if (!Array.isArray(plots) || plots.length === 0) continue;
+
+                const duePlots: Array<{ plotIndex: number; cropId: string; stage: number }> = [];
+                let updated = false;
+
+                for (const plot of plots) {
+                    if (!plot || !plot.cropId) continue;
+                    const stage = Number(plot.stage || 0);
+                    if (stage !== 1 && stage !== 2) continue;
+                    if (!plot.lastWateredAt) continue;
+
+                    const lastWaterMs = new Date(plot.lastWateredAt).getTime();
+                    if (Number.isNaN(lastWaterMs)) continue;
+
+                    if (nowMs - lastWaterMs >= GARDEN_WATER_COOLDOWN_MS) {
+                        if (plot.waterNotifiedAt !== plot.lastWateredAt) {
+                            duePlots.push({
+                                plotIndex: Number(plot.plotIndex || 0),
+                                cropId: String(plot.cropId),
+                                stage,
+                            });
+                            plot.waterNotifiedAt = plot.lastWateredAt;
+                            updated = true;
+                        }
+                    }
+                }
+
+                if (updated && duePlots.length > 0) {
+                    await pool.query(
+                        `UPDATE user_minihomes SET layout_json = $1 WHERE id = $2`,
+                        [JSON.stringify(layout), row.id]
+                    );
+
+                    const firstCropLabel = CROP_NAME_MAP[duePlots[0].cropId] || '작물';
+                    const bodyText =
+                        duePlots.length === 1
+                            ? `앞마당 ${duePlots[0].plotIndex + 1}번 텃밭의 [${firstCropLabel}]에 물을 줄 시간(8시간 경과)이에요! 지금 물을 주어 키워보세요 🌱`
+                            : `앞마당 텃밭의 [${firstCropLabel}] 외 ${duePlots.length - 1}개 작물에 물을 줄 시간(8시간 경과)이에요! 지금 물을 주세요 💧`;
+
+                    await PushService.sendPushToUser(Number(row.user_id), {
+                        title: '💧 [아지트 농장] 작물에 물을 줄 시간이에요!',
+                        body: bodyText,
+                        url: '/minihome/me',
+                        icon: '/logo-192.png',
+                    });
+                }
+            } catch (rowErr) {
+                console.error(`[SchedulePushScheduler] Error processing minihome #${row.id}:`, rowErr);
+            }
+        }
+    } catch (err) {
+        console.error('[SchedulePushScheduler] checkAndSendGardenWaterNotifications error:', err);
     }
 }
