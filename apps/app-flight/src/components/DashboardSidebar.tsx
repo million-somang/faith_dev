@@ -21,12 +21,14 @@ interface DashboardSidebarProps {
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => {
   const score = state?.player.score || 0;
-  const highScore = state?.player.highScore || 0;
   const stage = state?.stage || 1;
   const hp = state?.player.hp ?? 100;
   const maxHp = state?.player.maxHp || 100;
   const kills = state?.player.kills || 0;
   const weaponLevel = state?.player.weaponLevel || 1;
+  const missileLevel = state?.player.missileLevel || 0;
+  const plasmaLevel = state?.player.plasmaLevel || 0;
+  const upgradePoints = state?.player.upgradePoints || 0;
   const hasEscorts = state?.player.hasEscorts || false;
   const rolls = state?.player.rolls || 0;
   const bombs = state?.player.bombs || 0;
