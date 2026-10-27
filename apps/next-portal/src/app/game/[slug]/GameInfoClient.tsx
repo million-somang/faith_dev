@@ -79,45 +79,47 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
     };
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-5 sm:py-8 w-full">
             {/* 상단: 뒤로가기 네비게이션 */}
-            <div className="mb-6 flex items-center justify-between">
+            <div className="mb-4 sm:mb-6 flex items-center justify-between gap-2 min-w-0">
                 <button
                     onClick={() => router.push('/game')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-sm shadow-sm cursor-pointer"
+                    className="shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-all font-bold text-xs sm:text-sm shadow-sm cursor-pointer"
                 >
-                    <i className="fas fa-arrow-left"></i> 게임 목록으로
+                    <i className="fas fa-arrow-left text-[11px] sm:text-xs"></i> 게임 목록으로
                 </button>
 
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                    <Link href="/" className="hover:text-slate-600 transition-colors">홈</Link>
-                    <span>/</span>
-                    <Link href="/game" className="hover:text-slate-600 transition-colors">게임</Link>
-                    <span>/</span>
-                    <span className="font-semibold text-slate-700">{config.label}</span>
+                <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs text-slate-400 whitespace-nowrap min-w-0 overflow-hidden">
+                    <Link href="/" className="hover:text-slate-600 transition-colors shrink-0">홈</Link>
+                    <span className="shrink-0">/</span>
+                    <Link href="/game" className="hover:text-slate-600 transition-colors shrink-0">게임</Link>
+                    <span className="shrink-0">/</span>
+                    <span className="font-semibold text-slate-700 truncate">{config.label}</span>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 items-start">
                 {/* 왼쪽: 히어로 카드 + 게임 시작(팝업) + AEO 가이드 + 조작법 + FAQ */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
+                <div className="lg:col-span-2 flex flex-col gap-5 sm:gap-6 min-w-0">
                     {/* 🎮 히어로 정보 카드 */}
-                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-7 sm:p-8 relative overflow-hidden">
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-5 sm:p-8 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-44 h-44 bg-slate-500/5 rounded-full -translate-y-1/3 translate-x-1/4 pointer-events-none"></div>
-                        <div className="relative flex items-start gap-4 mb-5">
+                        <div className="relative flex items-center sm:items-start gap-3 sm:gap-4 mb-4 sm:mb-5 min-w-0">
                             <div
                                 style={getFallbackInlineStyle(slug)}
-                                className={`w-14 h-14 rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-br ${config.gradient} flex items-center justify-center shrink-0 shadow-md`}
+                                className={`w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-br ${config.gradient} flex items-center justify-center shrink-0 shadow-md`}
                             >
-                                <i className={`${config.icon} text-white text-2xl`}></i>
+                                <i className={`${config.icon} text-white text-lg sm:text-2xl`}></i>
                             </div>
-                            <div>
-                                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">{config.label}</h1>
-                                <p className="text-slate-500 text-xs sm:text-sm mt-1">{config.tagline}</p>
+                            <div className="min-w-0 flex-1">
+                                <h1 className="text-[17px] sm:text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-tight whitespace-nowrap truncate">
+                                    {config.label}
+                                </h1>
+                                <p className="text-slate-500 text-xs sm:text-sm mt-1 truncate sm:whitespace-normal">{config.tagline}</p>
                             </div>
                         </div>
 
-                        <p className="relative text-slate-600 text-sm leading-relaxed mb-6">
+                        <p className="relative text-slate-600 text-xs sm:text-sm leading-relaxed mb-5 sm:mb-6">
                             {config.description}
                             {!user && (
                                 <span className="block mt-2 text-amber-500 italic text-xs">
@@ -127,20 +129,20 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                         </p>
 
                         {/* 🚀 게임 시작 버튼 (450x850 팝업 실행 방식) - 고대비 선명화 */}
-                        <div className="pt-2">
+                        <div className="pt-1 sm:pt-2">
                             <button
                                 onClick={() => launchApp(config.appUrl, config.appName)}
                                 style={getFallbackInlineStyle(slug)}
-                                className={`w-full sm:w-auto inline-flex items-center justify-center gap-3 px-8 py-4 rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-r ${config.buttonGradient} text-white font-black text-lg sm:text-xl shadow-lg hover:shadow-2xl active:scale-95 transition-all cursor-pointer ring-4 ring-slate-100 hover:ring-slate-200`}
+                                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2.5 sm:gap-3 px-4 sm:px-8 py-3.5 sm:py-4 rounded-2xl ${getFallbackBg(slug)} bg-gradient-to-r ${config.buttonGradient} text-white font-black text-sm sm:text-xl whitespace-nowrap shadow-lg hover:shadow-2xl active:scale-95 transition-all cursor-pointer ring-4 ring-slate-100 hover:ring-slate-200`}
                             >
-                                <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
-                                    <i className="fas fa-play text-xs text-white"></i>
+                                <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 shadow-inner">
+                                    <i className="fas fa-play text-[10px] sm:text-xs text-white"></i>
                                 </span>
-                                <span className="tracking-wide">지금 바로 게임 시작 (팝업)</span>
+                                <span className="tracking-wide whitespace-nowrap">지금 바로 게임 시작 (팝업)</span>
                             </button>
-                            <p className="text-xs text-slate-400 mt-2.5 flex items-center gap-1.5">
-                                <i className="fas fa-info-circle text-indigo-500"></i>
-                                게임 시작을 누르면 새 팝업 창에서 게임이 열립니다. (팝업 차단을 해제해 주세요)
+                            <p className="text-[11px] sm:text-xs text-slate-400 mt-2.5 flex items-center gap-1.5">
+                                <i className="fas fa-info-circle text-indigo-500 shrink-0"></i>
+                                <span className="truncate sm:whitespace-normal">게임 시작을 누르면 새 팝업 창에서 게임이 열립니다. (팝업 차단을 해제해 주세요)</span>
                             </p>
                         </div>
                     </div>
@@ -148,13 +150,13 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                     {seoData && (
                         <>
                             {/* 1. Direct Answer Callout Box (AI 핵심 직답 요약) */}
-                            <div className="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-150 p-6 sm:p-7 shadow-sm relative overflow-hidden">
+                            <div className="bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/40 rounded-2xl border border-indigo-150 p-5 sm:p-7 shadow-sm relative overflow-hidden">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-sm">
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-bold shadow-sm whitespace-nowrap shrink-0">
                                         <i className="fas fa-sparkles text-[11px]"></i>
                                         AI 핵심 요약 (AEO Direct Answer)
                                     </span>
-                                    <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                                    <span className="text-xs text-slate-400 font-medium hidden sm:inline whitespace-nowrap">
                                         인공지능 검색 인용 최적화 답변
                                     </span>
                                 </div>
@@ -164,13 +166,13 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                             </div>
 
                             {/* 2. 핵심 룰 & 전략 공식 카드 */}
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-7">
-                                <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2.5">
-                                        <i className="fas fa-chess-board text-indigo-500"></i>
-                                        {seoData.strategyRules.title}
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-7">
+                                <div className="flex items-center justify-between mb-4 gap-2 min-w-0">
+                                    <h2 className="text-sm sm:text-lg font-bold text-slate-800 flex items-center gap-2 min-w-0 truncate">
+                                        <i className="fas fa-chess-board text-indigo-500 shrink-0"></i>
+                                        <span className="truncate">{seoData.strategyRules.title}</span>
                                     </h2>
-                                    <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                    <span className="text-[11px] sm:text-xs font-semibold px-2 sm:px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0 whitespace-nowrap">
                                         승률 극대화 공식
                                     </span>
                                 </div>
@@ -180,9 +182,9 @@ export default function GameInfoClient({ slug }: GameInfoClientProps) {
                                 </p>
 
                                 {/* 공식 디스플레이 바 */}
-                                <div className="mb-6 p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs sm:text-sm shadow-inner flex items-center justify-between gap-3 overflow-x-auto">
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <div className="mb-6 p-3.5 sm:p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs sm:text-sm shadow-inner flex items-center justify-between gap-3 overflow-x-auto">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 whitespace-nowrap">
                                             FORMULA
                                         </span>
                                         <span className="font-semibold text-white">

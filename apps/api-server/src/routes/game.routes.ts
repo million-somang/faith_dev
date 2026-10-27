@@ -4,6 +4,88 @@ import { requireAuth } from '../middleware/auth.js';
 
 export const gameRoutes = new Hono<{ Variables: { user?: { id: string; email: string } } }>();
 
+type JanggiTierKey = 'beginner' | 'easy' | 'normal' | 'hard' | 'master';
+interface JanggiTierCounts {
+    wins: number;
+    losses: number;
+    draws: number;
+}
+type JanggiRecordsMap = Record<JanggiTierKey, JanggiTierCounts>;
+
+const JANGGI_TIERS: JanggiTierKey[] = ['beginner', 'easy', 'normal', 'hard', 'master'];
+
+function createEmptyJanggiRecords(): JanggiRecordsMap {
+    return {
+        beginner: { wins: 0, losses: 0, draws: 0 },
+        easy: { wins: 0, losses: 0, draws: 0 },
+        normal: { wins: 0, losses: 0, draws: 0 },
+        hard: { wins: 0, losses: 0, draws: 0 },
+        master: { wins: 0, losses: 0, draws: 0 },
+    };
+}
+
+function aggregateJanggiRecordsFromRows(
+    rows: Array<{ metadata?: string | Record<string, unknown> | null }>
+): JanggiRecordsMap {
+    const counted = createEmptyJanggiRecords();
+    const snapshotMax = createEmptyJanggiRecords();
+
+    for (const row of rows) {
+        if (!row.metadata) continue;
+        let parsed: Record<string, unknown> | null = null;
+        try {
+            parsed =
+                typeof row.metadata === 'string'
+                    ? (JSON.parse(row.metadata) as Record<string, unknown>)
+                    : (row.metadata as Record<string, unknown>);
+        } catch {
+            parsed = null;
+        }
+        if (!parsed) continue;
+
+        // 1. 개별 대국 결과 집계
+        const rawDiff = String(parsed.aiDifficulty || 'normal') as JanggiTierKey;
+        const diff: JanggiTierKey = JANGGI_TIERS.includes(rawDiff) ? rawDiff : 'normal';
+        const winner = parsed.winner;
+        const playerSide = parsed.playerSide || 'cho';
+        const gameMode = parsed.gameMode || 'classic';
+
+        if (winner === 'draw' || parsed.isDraw === true) {
+            counted[diff].draws += 1;
+        } else if (
+            parsed.isWin === true ||
+            (winner && (gameMode === 'puzzle' ? winner === 'cho' : winner === playerSide))
+        ) {
+            counted[diff].wins += 1;
+        } else if (winner === 'cho' || winner === 'han' || parsed.isWin === false) {
+            counted[diff].losses += 1;
+        }
+
+        // 2. tierRecords 스냅샷이 있는 경우 최대값 보정
+        const tierRecords = parsed.tierRecords as Record<string, Partial<JanggiTierCounts>> | undefined;
+        if (tierRecords && typeof tierRecords === 'object') {
+            for (const t of JANGGI_TIERS) {
+                const tr = tierRecords[t];
+                if (tr) {
+                    snapshotMax[t].wins = Math.max(snapshotMax[t].wins, Number(tr.wins) || 0);
+                    snapshotMax[t].losses = Math.max(snapshotMax[t].losses, Number(tr.losses) || 0);
+                    snapshotMax[t].draws = Math.max(snapshotMax[t].draws, Number(tr.draws) || 0);
+                }
+            }
+        }
+    }
+
+    const result = createEmptyJanggiRecords();
+    for (const t of JANGGI_TIERS) {
+        result[t] = {
+            wins: Math.max(counted[t].wins, snapshotMax[t].wins),
+            losses: Math.max(counted[t].losses, snapshotMax[t].losses),
+            draws: Math.max(counted[t].draws, snapshotMax[t].draws),
+        };
+    }
+    return result;
+}
+
 // ==================== 통합 게임 점수 API ====================
 
 // 점수 저장 (범용)
@@ -11,9 +93,9 @@ gameRoutes.post('/api/games/:gameId/score', requireAuth, async (c) => {
     const DB = getDB(c);
     const gameId = c.req.param('gameId');
     const user = c.get('user');
-    
+
     console.log(`[Game] Score save request: gameId=${gameId}, user=`, user ? `id=${user.id}, email=${user.email}` : 'NULL');
-    
+
     if (!user) {
         console.log('[Game] Score save BLOCKED - no user (requireAuth should have caught this)');
         return c.json({ success: false, message: 'Unauthorized' }, 401);
@@ -86,6 +168,85 @@ gameRoutes.get('/api/games/:gameId/leaderboard', async (c) => {
     console.log(`[Game] Leaderboard request: gameId=${gameId}`);
 
     try {
+        if (gameId === 'janggi') {
+            const allRowsResult = await DB.prepare(`
+                SELECT g.user_id, g.score, u.email, g.created_at, g.metadata
+                FROM game_scores g
+                JOIN users u ON g.user_id = u.id
+                WHERE g.game_id = 'janggi'
+                ORDER BY g.created_at DESC
+                LIMIT 500
+            `).all();
+
+            const rawRows = (allRowsResult.results || []) as Array<{
+                user_id: string | number;
+                score: number;
+                email: string | null;
+                created_at: string;
+                metadata?: string | Record<string, unknown> | null;
+            }>;
+
+            const byUser = new Map<
+                string,
+                {
+                    email: string | null;
+                    created_at: string;
+                    highScore: number;
+                    rows: Array<{ metadata?: string | Record<string, unknown> | null }>;
+                }
+            >();
+
+            for (const r of rawRows) {
+                const key = String(r.user_id || r.email || '');
+                if (!key) continue;
+                const existing = byUser.get(key);
+                if (!existing) {
+                    byUser.set(key, {
+                        email: r.email,
+                        created_at: r.created_at,
+                        highScore: Number(r.score) || 0,
+                        rows: [{ metadata: r.metadata }],
+                    });
+                } else {
+                    existing.highScore = Math.max(existing.highScore, Number(r.score) || 0);
+                    existing.rows.push({ metadata: r.metadata });
+                }
+            }
+
+            const janggiLeaderboard = Array.from(byUser.values())
+                .map((u) => {
+                    const tierRecords = aggregateJanggiRecordsFromRows(u.rows);
+                    let wins = 0;
+                    let losses = 0;
+                    let draws = 0;
+                    for (const t of JANGGI_TIERS) {
+                        wins += tierRecords[t].wins;
+                        losses += tierRecords[t].losses;
+                        draws += tierRecords[t].draws;
+                    }
+                    const decided = wins + losses;
+                    const winRate = decided > 0 ? Math.round((wins / decided) * 1000) / 10 : 0;
+                    return {
+                        email: u.email,
+                        created_at: u.created_at,
+                        score: u.highScore,
+                        wins,
+                        losses,
+                        draws,
+                        winRate,
+                        tierRecords,
+                    };
+                })
+                .sort((a, b) => {
+                    if (b.wins !== a.wins) return b.wins - a.wins;
+                    if (b.winRate !== a.winRate) return b.winRate - a.winRate;
+                    return b.score - a.score;
+                })
+                .slice(0, 10);
+
+            return c.json({ success: true, leaderboard: janggiLeaderboard });
+        }
+
         const result = await DB.prepare(`
             SELECT g.score, u.email, g.created_at, g.metadata
             FROM game_scores g
@@ -115,14 +276,18 @@ gameRoutes.get('/api/games/:gameId/highscore/:userId', async (c) => {
             .first();
 
         let latestSave: Record<string, unknown> | null = null;
+        let janggiRecords: JanggiRecordsMap | null = null;
         try {
             const recentRows = await DB.prepare(
-                "SELECT metadata FROM game_scores WHERE game_id = ? AND user_id = ? AND metadata IS NOT NULL ORDER BY created_at DESC LIMIT 20"
+                "SELECT metadata FROM game_scores WHERE game_id = ? AND user_id = ? AND metadata IS NOT NULL ORDER BY created_at DESC LIMIT 200"
             )
                 .bind(gameId, userId)
                 .all();
 
             const rows = (recentRows.results || []) as Array<{ metadata?: string | Record<string, unknown> | null }>;
+            if (gameId === 'janggi') {
+                janggiRecords = aggregateJanggiRecordsFromRows(rows);
+            }
             for (const row of rows) {
                 if (!row.metadata) continue;
                 const parsed =
@@ -139,7 +304,7 @@ gameRoutes.get('/api/games/:gameId/highscore/:userId', async (c) => {
         }
 
         const highScoreVal = Number(result?.highScore ?? result?.highscore ?? 0) || 0;
-        return c.json({ success: true, highScore: highScoreVal, latestSave });
+        return c.json({ success: true, highScore: highScoreVal, latestSave, janggiRecords });
     } catch (error) {
         console.error(`[Game] Highscore error (${gameId}):`, error);
         return c.json({ success: false, message: '서버 오류' }, 500);

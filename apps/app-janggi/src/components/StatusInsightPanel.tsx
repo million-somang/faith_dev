@@ -1,5 +1,12 @@
 import React from 'react';
-import { ScoreBreakdown, Piece, GameMode } from '../types/janggi';
+import {
+  ScoreBreakdown,
+  Piece,
+  GameMode,
+  Difficulty,
+  JanggiRecordsMap,
+  createEmptyJanggiRecords,
+} from '../types/janggi';
 
 interface StatusInsightPanelProps {
   score: ScoreBreakdown;
@@ -7,8 +14,18 @@ interface StatusInsightPanelProps {
   capturedByCho: Piece[];
   capturedByHan: Piece[];
   currentMode: GameMode;
+  aiDifficulty?: Difficulty;
+  recordsByTier?: JanggiRecordsMap;
   puzzleProgress?: { current: number; max: number };
 }
+
+const TIER_BADGES: { id: Difficulty; label: string }[] = [
+  { id: 'beginner', label: '18급' },
+  { id: 'easy', label: '10급' },
+  { id: 'normal', label: '3급' },
+  { id: 'hard', label: '1단' },
+  { id: 'master', label: '9단' },
+];
 
 const PIECE_LABEL_SHORT: Record<string, string> = {
   chariot: '車',
@@ -25,15 +42,63 @@ export function StatusInsightPanel({
   capturedByCho,
   capturedByHan,
   currentMode,
+  aiDifficulty = 'normal',
+  recordsByTier,
   puzzleProgress,
 }: StatusInsightPanelProps) {
   // 점수 백분율 계산 (기준 73.5점 기준)
   const total = score.choPoints + score.hanPoints;
   const choPercent = total > 0 ? Math.round((score.choPoints / total) * 100) : 50;
   const hanPercent = 100 - choPercent;
+  const tierRecords = recordsByTier || createEmptyJanggiRecords();
+  const currentTierRec = tierRecords[aiDifficulty] || { wins: 0, losses: 0, draws: 0 };
+  const currentTierLabel = TIER_BADGES.find((t) => t.id === aiDifficulty)?.label || '3급';
+  const currentTierDecided = currentTierRec.wins + currentTierRec.losses;
+  const currentTierWinRate =
+    currentTierDecided > 0 ? Math.round((currentTierRec.wins / currentTierDecided) * 100) : 0;
 
   return (
-    <div className="w-full nm-card-sm p-3 bg-white border border-slate-200/90 space-y-2.5 shadow-xs select-none">
+    <div className="w-full nm-card-sm p-3 bg-white border border-slate-200/90 space-y-2 shadow-xs select-none">
+      {/* 0. 급수별 승·무·패 전적 현황 바 */}
+      {currentMode !== 'puzzle' && (
+        <div className="bg-slate-50/90 rounded-xl px-2.5 py-1.5 border border-slate-200/80 space-y-1.5">
+          <div className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1.5 font-black text-slate-800">
+              <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[10px] font-black">
+                {currentTierLabel}
+              </span>
+              <span>대국 전적</span>
+            </div>
+            <div className="flex items-center gap-1.5 font-mono text-[11px] font-extrabold">
+              <span className="text-emerald-600">{currentTierRec.wins}승</span>
+              {currentTierRec.draws > 0 && <span className="text-slate-500">{currentTierRec.draws}무</span>}
+              <span className="text-rose-600">{currentTierRec.losses}패</span>
+              <span className="text-slate-400 text-[10px]">({currentTierWinRate}%)</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {TIER_BADGES.map((t) => {
+              const r = tierRecords[t.id] || { wins: 0, losses: 0, draws: 0 };
+              const isCurrent = t.id === aiDifficulty;
+              return (
+                <div
+                  key={t.id}
+                  className={`px-1 py-0.5 rounded-lg border text-center flex flex-col items-center justify-center ${
+                    isCurrent
+                      ? 'bg-amber-50 border-amber-300 text-amber-950 font-black'
+                      : 'bg-white border-slate-200/80 text-slate-600 font-bold'
+                  }`}
+                >
+                  <span className="text-[9px] leading-tight">{t.label}</span>
+                  <span className="text-[9px] font-mono leading-tight text-slate-700">
+                    {r.wins}승{r.losses}패
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {/* 1. 점수제 실시간 우세도 게이지 (한국 장기 공식 73.5점 체계) */}
       <div className="space-y-1">
         <div className="flex items-center justify-between text-xs font-black">

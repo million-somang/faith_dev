@@ -10,6 +10,8 @@ import {
   ScoreBreakdown,
   SajuElementBuff,
   JanggiGameScoreDetails,
+  JanggiRecordsMap,
+  createEmptyJanggiRecords,
 } from './types/janggi';
 import { useAuth, usePortalMessenger } from '@faithportal/mini-app-sdk';
 import axios from 'axios';
@@ -46,11 +48,45 @@ import { BigjangModal } from './components/BigjangModal';
 
 const DIFFICULTY_SEQUENCE: Difficulty[] = ['beginner', 'easy', 'normal', 'hard', 'master'];
 const DIFFICULTY_INFO: Record<Difficulty, { label: string; badge: string; color: string }> = {
-  beginner: { label: '입문 (18급)', badge: '🌱 입문', color: 'text-emerald-800 bg-emerald-100/90 border-emerald-300' },
-  easy: { label: '초급 (10급)', badge: '⭐ 초급', color: 'text-sky-800 bg-sky-100/90 border-sky-300' },
-  normal: { label: '중급 (3급)', badge: '⭐⭐ 중급', color: 'text-amber-800 bg-amber-100/90 border-amber-300' },
-  hard: { label: '고급 (1단)', badge: '⭐⭐⭐ 고급', color: 'text-indigo-800 bg-indigo-100/90 border-indigo-300' },
-  master: { label: '달인 (9단)', badge: '👑 프로', color: 'text-rose-800 bg-rose-100/90 border-rose-300' },
+  beginner: { label: '입문 (18급)', badge: '🌱 18급', color: 'text-emerald-800 bg-emerald-100/90 border-emerald-300' },
+  easy: { label: '초급 (10급)', badge: '⭐ 10급', color: 'text-sky-800 bg-sky-100/90 border-sky-300' },
+  normal: { label: '중급 (3급)', badge: '⭐⭐ 3급', color: 'text-amber-800 bg-amber-100/90 border-amber-300' },
+  hard: { label: '고급 (1단)', badge: '⭐⭐⭐ 1단', color: 'text-indigo-800 bg-indigo-100/90 border-indigo-300' },
+  master: { label: '달인 (9단)', badge: '👑 9단', color: 'text-rose-800 bg-rose-100/90 border-rose-300' },
+};
+
+const parseRecordsJson = (raw: string | null | undefined): JanggiRecordsMap => {
+  const base = createEmptyJanggiRecords();
+  if (!raw) return base;
+  try {
+    const parsed = JSON.parse(raw);
+    for (const d of DIFFICULTY_SEQUENCE) {
+      if (parsed?.[d]) {
+        base[d] = {
+          wins: Math.max(0, Number(parsed[d].wins) || 0),
+          losses: Math.max(0, Number(parsed[d].losses) || 0),
+          draws: Math.max(0, Number(parsed[d].draws) || 0),
+        };
+      }
+    }
+  } catch {
+    // ignore invalid json
+  }
+  return base;
+};
+
+const mergeRecordsMax = (a: JanggiRecordsMap, b: Partial<JanggiRecordsMap> | null | undefined): JanggiRecordsMap => {
+  const merged = createEmptyJanggiRecords();
+  for (const d of DIFFICULTY_SEQUENCE) {
+    const ra = a?.[d] || { wins: 0, losses: 0, draws: 0 };
+    const rb = b?.[d] || { wins: 0, losses: 0, draws: 0 };
+    merged[d] = {
+      wins: Math.max(ra.wins, Number(rb.wins) || 0),
+      losses: Math.max(ra.losses, Number(rb.losses) || 0),
+      draws: Math.max(ra.draws, Number(rb.draws) || 0),
+    };
+  }
+  return merged;
 };
 
 export function App() {
@@ -58,11 +94,51 @@ export function App() {
   const { user } = useAuth();
   const { sendToPortal } = usePortalMessenger();
 
-  // 대국 종료 점수 저장 상태
+  // 대국 종료 전적 저장 상태
   const gameOverHandledRef = useRef<boolean>(false);
   const [gameScoreDetails, setGameScoreDetails] = useState<JanggiGameScoreDetails | null>(null);
   const [isSavingScore, setIsSavingScore] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [recordsByTier, setRecordsByTier] = useState<JanggiRecordsMap>(() => {
+    if (typeof window === 'undefined') return createEmptyJanggiRecords();
+    return parseRecordsJson(localStorage.getItem('vera_janggi_records_v1'));
+  });
+
+  // 로그인 회원일 경우 유저별 로컬스토리지 및 서버 전적 동기화
+  useEffect(() => {
+    if (!user?.id) return;
+    const userKey = `vera_janggi_records_${user.id}`;
+    const localUserRecs = parseRecordsJson(localStorage.getItem(userKey));
+    setRecordsByTier((prev) => {
+      const merged = mergeRecordsMax(prev, localUserRecs);
+      try {
+        localStorage.setItem('vera_janggi_records_v1', JSON.stringify(merged));
+        localStorage.setItem(userKey, JSON.stringify(merged));
+      } catch {
+        // ignore
+      }
+      return merged;
+    });
+
+    axios
+      .get(`/api/games/janggi/highscore/${user.id}`, { withCredentials: true })
+      .then((res) => {
+        const serverRecords = res.data?.janggiRecords as Partial<JanggiRecordsMap> | undefined;
+        if (serverRecords && typeof serverRecords === 'object') {
+          setRecordsByTier((prev) => {
+            const synced = mergeRecordsMax(prev, serverRecords);
+            try {
+              localStorage.setItem('vera_janggi_records_v1', JSON.stringify(synced));
+              localStorage.setItem(userKey, JSON.stringify(synced));
+            } catch {
+              // ignore
+            }
+            return synced;
+          });
+        }
+      })
+      .catch(() => {});
+  }, [user?.id]);
 
   // 1. 초기 3초 스플래시 및 대국 시작 상태 (miniapp.md 필수 규격)
   const [showSplash, setShowSplash] = useState<boolean>(true);
@@ -182,7 +258,7 @@ export function App() {
     }
   }, [winner]);
 
-  // 대국 종료 시 종합 점수 산출 및 서버 DB/포털 리더보드 연동
+  // 대국 종료 시 급수별 승·무·패 전적 갱신 및 서버 DB/포털 리더보드 연동
   useEffect(() => {
     if (winner && !gameOverHandledRef.current) {
       gameOverHandledRef.current = true;
@@ -199,8 +275,28 @@ export function App() {
       });
       setGameScoreDetails(details);
 
-      // 1. 최고 점수 로컬스토리지 저장 (비회원/오프라인 지원)
+      // 1. 급수별 승·무·패 전적 계산 및 로컬스토리지 저장
+      const isDraw = winner === 'draw';
+      const isWin = !isDraw && (gameMode === 'puzzle' ? winner === 'cho' : winner === playerSide);
+
+      const baseRecs = parseRecordsJson(localStorage.getItem('vera_janggi_records_v1'));
+      const mergedPrev = mergeRecordsMax(recordsByTier, baseRecs);
+      const currentTierRec = mergedPrev[aiDifficulty] || { wins: 0, losses: 0, draws: 0 };
+      const updatedRecords: JanggiRecordsMap = {
+        ...mergedPrev,
+        [aiDifficulty]: {
+          wins: currentTierRec.wins + (isWin ? 1 : 0),
+          losses: currentTierRec.losses + (!isDraw && !isWin ? 1 : 0),
+          draws: currentTierRec.draws + (isDraw ? 1 : 0),
+        },
+      };
+      setRecordsByTier(updatedRecords);
+
       try {
+        localStorage.setItem('vera_janggi_records_v1', JSON.stringify(updatedRecords));
+        if (user?.id) {
+          localStorage.setItem(`vera_janggi_records_${user.id}`, JSON.stringify(updatedRecords));
+        }
         const prevHigh = parseInt(localStorage.getItem('vera_janggi_high_score') || '0', 10);
         if (details.totalScore > prevHigh) {
           localStorage.setItem('vera_janggi_high_score', details.totalScore.toString());
@@ -209,7 +305,7 @@ export function App() {
         console.warn('[Janggi] LocalStorage error:', e);
       }
 
-      // 2. 포털 부모 창(GameLeaderboard)에 점수 업데이트 메시지 전송
+      // 2. 포털 부모 창(GameLeaderboard)에 전적 업데이트 메시지 전송
       const targetWindow = window.opener || (window.parent !== window ? window.parent : null);
       if (targetWindow) {
         targetWindow.postMessage(
@@ -226,7 +322,7 @@ export function App() {
       sendToPortal('MISSION_CLEAR');
       sendToPortal('POINTS_UPDATED', { points: details.earnedPoints });
 
-      // 4. 로그인 회원일 경우 백엔드 API 서버에 점수 및 베라 포인트 영구 저장
+      // 4. 로그인 회원일 경우 백엔드 API 서버에 급수별 승패 전적 및 베라 포인트 영구 저장
       if (user) {
         setIsSavingScore(true);
         axios
@@ -239,21 +335,24 @@ export function App() {
                 aiDifficulty,
                 playerSide,
                 winner,
+                isWin,
+                isDraw,
                 winReason,
                 moveCount,
                 choScore: score.choPoints,
                 hanScore: score.hanPoints,
                 earnedPoints: details.earnedPoints,
+                tierRecords: updatedRecords,
                 breakdown: details,
               },
             },
             { withCredentials: true }
           )
           .then(() => {
-            setSaveMessage('명예의 전당 랭킹에 등록되었습니다!');
+            setSaveMessage('급수별 승패 전적이 명예의 전당에 기록되었습니다!');
           })
           .catch((err) => {
-            console.error('[Janggi] 점수 저장 실패:', err);
+            console.error('[Janggi] 전적 저장 실패:', err);
             setSaveMessage(null);
           })
           .finally(() => {
@@ -278,6 +377,7 @@ export function App() {
     puzzleStreak,
     user,
     sendToPortal,
+    recordsByTier,
   ]);
 
   // 모드 변경 처리: AI 대전 모드인 경우 난이도/설정 모달을 띄워 대국을 준비
@@ -789,6 +889,9 @@ export function App() {
               }`}
             >
               <span>{DIFFICULTY_INFO[aiDifficulty]?.badge}</span>
+              <span className="font-mono text-[10px] opacity-85">
+                · {recordsByTier[aiDifficulty]?.wins ?? 0}승{recordsByTier[aiDifficulty]?.losses ?? 0}패
+              </span>
             </div>
           )}
         </div>
@@ -835,6 +938,8 @@ export function App() {
           capturedByCho={capturedByCho}
           capturedByHan={capturedByHan}
           currentMode={gameMode}
+          aiDifficulty={aiDifficulty}
+          recordsByTier={recordsByTier}
           puzzleProgress={
             gameMode === 'puzzle'
               ? { current: puzzleMoveStep, max: dailyPuzzle.solution.length }
@@ -865,6 +970,9 @@ export function App() {
       <VictoryModal
         isOpen={isVictoryModalOpen}
         winner={winner}
+        playerSide={playerSide}
+        aiDifficulty={aiDifficulty}
+        recordsByTier={recordsByTier}
         reason={winReason}
         choScore={score.choPoints}
         hanScore={score.hanPoints}
@@ -899,6 +1007,7 @@ export function App() {
         hanSetup={hanSetup}
         aiDifficulty={aiDifficulty}
         playerSide={playerSide}
+        recordsByTier={recordsByTier}
         onClose={() => {
           setIsSetupOpen(false);
           if (!isGameStarted) {

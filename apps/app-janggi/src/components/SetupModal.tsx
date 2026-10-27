@@ -1,5 +1,5 @@
 import React from 'react';
-import { SetupType, Difficulty, Side } from '../types/janggi';
+import { SetupType, Difficulty, Side, JanggiRecordsMap, createEmptyJanggiRecords } from '../types/janggi';
 import { soundEffects } from '../utils/soundEffects';
 
 interface SetupModalProps {
@@ -8,6 +8,7 @@ interface SetupModalProps {
   hanSetup: SetupType;
   aiDifficulty: Difficulty;
   playerSide: Side;
+  recordsByTier?: JanggiRecordsMap;
   isStartMode?: boolean;
   onClose: () => void;
   onSave: (options: {
@@ -39,6 +40,7 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   hanSetup,
   aiDifficulty,
   playerSide,
+  recordsByTier,
   isStartMode = false,
   onClose,
   onSave,
@@ -47,6 +49,23 @@ export const SetupModal: React.FC<SetupModalProps> = ({
   const [selectedHanSetup, setSelectedHanSetup] = React.useState<SetupType>(hanSetup);
   const [selectedDiff, setSelectedDiff] = React.useState<Difficulty>(aiDifficulty);
   const [selectedSide, setSelectedSide] = React.useState<Side>(playerSide);
+  const tierRecords = recordsByTier || createEmptyJanggiRecords();
+  const totalStats = DIFFICULTIES.reduce(
+    (acc, d) => {
+      const r = tierRecords[d.id] || { wins: 0, losses: 0, draws: 0 };
+      acc.wins += r.wins;
+      acc.losses += r.losses;
+      acc.draws += r.draws;
+      return acc;
+    },
+    { wins: 0, losses: 0, draws: 0 }
+  );
+  const totalDecided = totalStats.wins + totalStats.losses;
+  const totalWinRate = totalDecided > 0 ? Math.round((totalStats.wins / totalDecided) * 100) : 0;
+  const activeTierRec = tierRecords[selectedDiff] || { wins: 0, losses: 0, draws: 0 };
+  const activeTierDecided = activeTierRec.wins + activeTierRec.losses;
+  const activeTierWinRate =
+    activeTierDecided > 0 ? Math.round((activeTierRec.wins / activeTierDecided) * 100) : 0;
 
   // 모달이 열릴 때 최신 props로 상태 동기화
   React.useEffect(() => {
@@ -121,26 +140,51 @@ export const SetupModal: React.FC<SetupModalProps> = ({
               </span>
             </div>
             <div className="grid grid-cols-5 gap-1">
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => {
-                    soundEffects.playSnap();
-                    setSelectedDiff(d.id);
-                  }}
-                  className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
-                    selectedDiff === d.id
-                      ? 'border-amber-500 bg-amber-500 text-white font-black shadow-sm scale-102'
-                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className={`text-[9px] font-extrabold ${selectedDiff === d.id ? 'text-amber-100' : 'text-slate-500'}`}>
-                    {d.tag.split(' ')[0]}
-                  </span>
-                  <span className="text-[11px] font-black mt-0.5">{d.badge}</span>
-                </button>
-              ))}
+              {DIFFICULTIES.map((d) => {
+                const rec = tierRecords[d.id] || { wins: 0, losses: 0, draws: 0 };
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => {
+                      soundEffects.playSnap();
+                      setSelectedDiff(d.id);
+                    }}
+                    className={`py-2 px-1 rounded-xl border flex flex-col items-center justify-center text-center transition-all cursor-pointer ${
+                      selectedDiff === d.id
+                        ? 'border-amber-500 bg-amber-500 text-white font-black shadow-sm scale-102'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span className={`text-[9px] font-extrabold ${selectedDiff === d.id ? 'text-amber-100' : 'text-slate-500'}`}>
+                      {d.tag.split(' ')[0]}
+                    </span>
+                    <span className="text-[11px] font-black mt-0.5">{d.badge}</span>
+                    <span
+                      className={`text-[9px] font-mono font-bold mt-0.5 ${
+                        selectedDiff === d.id ? 'text-amber-50' : 'text-slate-500'
+                      }`}
+                    >
+                      {rec.wins}승{rec.losses}패
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 px-2.5 py-2 rounded-xl bg-white/85 border border-amber-200/70 flex items-center justify-between text-[10px]">
+              <div className="flex items-center gap-1.5 font-extrabold text-slate-700">
+                <span className="px-1.5 py-0.5 rounded bg-amber-500 text-white font-black">
+                  {DIFFICULTIES.find((d) => d.id === selectedDiff)?.badge}
+                </span>
+                <span>전적:</span>
+                <span className="text-emerald-700 font-black">{activeTierRec.wins}승</span>
+                {activeTierRec.draws > 0 && <span className="text-slate-500 font-bold">{activeTierRec.draws}무</span>}
+                <span className="text-rose-600 font-black">{activeTierRec.losses}패</span>
+                <span className="text-slate-400 font-mono">({activeTierWinRate}%)</span>
+              </div>
+              <div className="text-slate-500 font-bold font-mono">
+                통산 {totalStats.wins}승 {totalStats.losses}패 ({totalWinRate}%)
+              </div>
             </div>
             <p className="text-[10px] text-amber-800 mt-2 px-1 font-medium bg-white/70 py-1.5 rounded-lg border border-amber-200/50">
               💡 {DIFFICULTIES.find((d) => d.id === selectedDiff)?.desc}

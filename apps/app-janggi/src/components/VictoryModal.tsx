@@ -1,10 +1,19 @@
 import React from 'react';
-import { GameMode, Side } from '../types/janggi';
+import {
+  GameMode,
+  Side,
+  Difficulty,
+  JanggiRecordsMap,
+  createEmptyJanggiRecords,
+} from '../types/janggi';
 import { soundEffects } from '../utils/soundEffects';
 
 export interface VictoryModalProps {
   isOpen: boolean;
   winner: Side | 'draw' | null;
+  playerSide?: Side;
+  aiDifficulty?: Difficulty;
+  recordsByTier?: JanggiRecordsMap;
   reason: string;
   choScore: number;
   hanScore: number;
@@ -20,15 +29,25 @@ export interface VictoryModalProps {
   onNewGame: () => void;
 }
 
+const TIER_ROWS: { id: Difficulty; badge: string; title: string }[] = [
+  { id: 'master', badge: '9단', title: '프로 달인' },
+  { id: 'hard', badge: '1단', title: '고급' },
+  { id: 'normal', badge: '3급', title: '중급' },
+  { id: 'easy', badge: '10급', title: '초급' },
+  { id: 'beginner', badge: '18급', title: '입문' },
+];
+
 export const VictoryModal: React.FC<VictoryModalProps> = ({
   isOpen,
   winner,
+  playerSide = 'cho',
+  aiDifficulty = 'normal',
+  recordsByTier,
   reason,
   choScore,
   hanScore,
   gameMode,
   puzzleStreak = 1,
-  gameScore = 0,
   earnedPoints = 35,
   isSavingScore = false,
   saveMessage = null,
@@ -41,27 +60,48 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
 
   const isCho = winner === 'cho';
   const isDraw = winner === 'draw';
+  const isPlayerWin = !isDraw && (gameMode === 'puzzle' ? winner === 'cho' : winner === playerSide);
+
+  const tierRecords = recordsByTier || createEmptyJanggiRecords();
+  const currentTierInfo = TIER_ROWS.find((t) => t.id === aiDifficulty) || TIER_ROWS[2];
+  const currentTierRec = tierRecords[aiDifficulty] || { wins: 0, losses: 0, draws: 0 };
+  const currentDecided = currentTierRec.wins + currentTierRec.losses;
+  const currentWinRate =
+    currentDecided > 0 ? Math.round((currentTierRec.wins / currentDecided) * 100) : 0;
+
+  const totalStats = TIER_ROWS.reduce(
+    (acc, t) => {
+      const r = tierRecords[t.id] || { wins: 0, losses: 0, draws: 0 };
+      acc.wins += r.wins;
+      acc.losses += r.losses;
+      acc.draws += r.draws;
+      return acc;
+    },
+    { wins: 0, losses: 0, draws: 0 }
+  );
+  const totalDecided = totalStats.wins + totalStats.losses;
+  const totalWinRate = totalDecided > 0 ? Math.round((totalStats.wins / totalDecided) * 100) : 0;
 
   const title = isDraw
     ? '무승부 (빅장 / 동점)'
-    : isCho
-    ? '초(楚)나라 승리!'
-    : '한(漢)나라 승리!';
+    : isPlayerWin
+    ? `${currentTierInfo.badge} 대국 승리!`
+    : `${currentTierInfo.badge} 대국 패배`;
 
   const handleShare = () => {
     soundEffects.playSnap();
-    const shareText = `[베라장기] ${title} - ${reason} | 랭킹 점수: ${gameScore.toLocaleString()}점 (초 ${choScore} : 한 ${hanScore})`;
+    const shareText = `[베라장기] ${title} (${reason}) | ${currentTierInfo.badge} 전적: ${currentTierRec.wins}승 ${currentTierRec.draws}무 ${currentTierRec.losses}패 | 통산 ${totalStats.wins}승 ${totalStats.losses}패 (승률 ${totalWinRate}%)`;
     if (navigator.share) {
       navigator
         .share({
-          title: '베라장기 승리 기록',
+          title: '베라장기 대국 전적',
           text: shareText,
           url: window.location.href,
         })
         .catch(() => {});
     } else {
       navigator.clipboard.writeText(shareText);
-      alert('승리 기록이 클립보드에 복사되었습니다!');
+      alert('대국 승패 전적이 클립보드에 복사되었습니다!');
     }
   };
 
@@ -107,36 +147,93 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         <h2 className="text-xl font-black tracking-tight text-slate-900 mb-0.5">{title}</h2>
         <p className="text-xs text-slate-500 mb-3.5 font-medium">{reason}</p>
 
-        {/* 종합 랭킹 점수 히어로 배너 */}
-        <div className="bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white rounded-2xl p-3.5 border border-emerald-200/90 mb-3 text-center shadow-xs">
-          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider block mb-0.5">
-            대국 랭킹 점수
+        {/* 현재 급수 대국 결과 및 승패 히어로 배너 */}
+        <div
+          className={`rounded-2xl p-3 border mb-2.5 text-center shadow-xs ${
+            isDraw
+              ? 'bg-gradient-to-br from-amber-50/90 via-white to-amber-50/40 border-amber-200/90'
+              : isPlayerWin
+              ? 'bg-gradient-to-br from-emerald-50/90 via-teal-50/50 to-white border-emerald-200/90'
+              : 'bg-gradient-to-br from-rose-50/90 via-white to-rose-50/40 border-rose-200/90'
+          }`}
+        >
+          <span
+            className={`text-[10px] font-extrabold uppercase tracking-wider block mb-0.5 ${
+              isDraw ? 'text-amber-800' : isPlayerWin ? 'text-emerald-800' : 'text-rose-800'
+            }`}
+          >
+            {currentTierInfo.badge} ({currentTierInfo.title}) 대국 전적
           </span>
-          <div className="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight">
-            {gameScore.toLocaleString()}
-            <span className="text-xs font-bold text-emerald-700 ml-1">점</span>
+          <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center justify-center gap-2 font-mono">
+            <span className="text-emerald-600">{currentTierRec.wins}승</span>
+            <span className="text-slate-400 text-base">{currentTierRec.draws}무</span>
+            <span className="text-rose-600">{currentTierRec.losses}패</span>
+            <span className="text-xs font-extrabold px-2 py-0.5 rounded-full bg-slate-900 text-amber-400">
+              승률 {currentWinRate}%
+            </span>
           </div>
         </div>
 
-        {/* 장기 공식 점수표 (초 vs 한) */}
-        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/90 mb-3 shadow-xs">
-          <div className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1.5">
-            한국장기협회 공식 기물 점수
+        {/* 전 급수별 (9단 · 1단 · 3급 · 10급 · 18급) 승·무·패 전적표 */}
+        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/90 mb-2.5 shadow-xs text-left">
+          <div className="flex items-center justify-between mb-1.5 px-0.5">
+            <span className="text-[10px] text-slate-600 font-black uppercase tracking-wider flex items-center gap-1">
+              <i className="fas fa-medal text-amber-500"></i>
+              급수별 승·무·패 전적 현황
+            </span>
+            <span className="text-[10px] font-mono font-extrabold text-slate-700">
+              통산 {totalStats.wins}승 {totalStats.draws}무 {totalStats.losses}패 ({totalWinRate}%)
+            </span>
           </div>
-          <div className="flex items-center justify-around">
-            <div className="flex flex-col items-center">
-              <span className="text-[11px] font-bold text-emerald-600 mb-0.5">초(楚)</span>
-              <span className="text-xl font-black text-slate-800">{choScore}</span>
-            </div>
-            <div className="text-slate-300 font-black text-base">VS</div>
-            <div className="flex flex-col items-center">
-              <span className="text-[11px] font-bold text-rose-600 mb-0.5">한(漢) (덤 +1.5)</span>
-              <span className="text-xl font-black text-slate-800">{hanScore}</span>
+
+          <div className="space-y-1">
+            {TIER_ROWS.map((t) => {
+              const r = tierRecords[t.id] || { wins: 0, losses: 0, draws: 0 };
+              const decided = r.wins + r.losses;
+              const rate = decided > 0 ? Math.round((r.wins / decided) * 100) : 0;
+              const isCurrent = t.id === aiDifficulty;
+              return (
+                <div
+                  key={t.id}
+                  className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl border text-xs font-mono ${
+                    isCurrent
+                      ? 'bg-amber-50/90 border-amber-300 font-black text-slate-900 shadow-2xs'
+                      : 'bg-white border-slate-200/70 font-bold text-slate-600'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5 font-sans">
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-black ${
+                        isCurrent ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {t.badge}
+                    </span>
+                    <span className="text-[11px]">{t.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <span className="text-emerald-600 font-extrabold">{r.wins}승</span>
+                    <span className="text-slate-400">{r.draws}무</span>
+                    <span className="text-rose-600 font-extrabold">{r.losses}패</span>
+                    <span className="text-[10px] text-slate-400 w-9 text-right">({rate}%)</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 장기 공식 기물 점수 (초 vs 한) 요약 */}
+          <div className="mt-2 pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px] px-0.5">
+            <span className="text-slate-400 font-bold">기물 점수 (공식 73.5점제)</span>
+            <div className="flex items-center gap-2 font-mono font-bold">
+              <span className="text-emerald-700">초(楚) {choScore}</span>
+              <span className="text-slate-300">:</span>
+              <span className="text-rose-700">한(漢) {hanScore}</span>
             </div>
           </div>
 
           {gameMode === 'puzzle' && (
-            <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
+            <div className="mt-1.5 pt-1.5 border-t border-slate-200 flex items-center justify-between text-xs">
               <span className="text-amber-600 font-bold">
                 <i className="fas fa-fire mr-1"></i>일일 묘수 연속 달성
               </span>
@@ -155,7 +252,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           {isSavingScore ? (
             <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-slate-500 py-0.5">
               <i className="fas fa-spinner fa-spin text-emerald-600"></i>
-              <span>명예의 전당 랭킹 등록 중...</span>
+              <span>급수별 승패 전적 저장 중...</span>
             </div>
           ) : saveMessage ? (
             <div className="flex items-center justify-center gap-1.5 text-[11px] font-black text-emerald-700 bg-emerald-50 py-1 px-3 rounded-lg border border-emerald-200">
@@ -164,7 +261,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             </div>
           ) : !isLoggedIn ? (
             <div className="text-[10px] text-slate-400 font-medium py-0.5">
-              💡 로그인 시 명예의 전당 랭킹 및 포인트가 영구 저장됩니다.
+              💡 로그인 시 급수별 승패 전적 및 포인트가 서버에 영구 저장됩니다.
             </div>
           ) : null}
         </div>

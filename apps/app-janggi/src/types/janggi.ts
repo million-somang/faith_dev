@@ -91,3 +91,20 @@ export interface JanggiGameScoreDetails {
   isWin: boolean;
   isDraw: boolean;
 }
+
+export interface JanggiTierRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+export type JanggiRecordsMap = Record<Difficulty, JanggiTierRecord>;
+
+export const createEmptyJanggiRecords = (): JanggiRecordsMap => ({
+  beginner: { wins: 0, losses: 0, draws: 0 },
+  easy: { wins: 0, losses: 0, draws: 0 },
+  normal: { wins: 0, losses: 0, draws: 0 },
+  hard: { wins: 0, losses: 0, draws: 0 },
+  master: { wins: 0, losses: 0, draws: 0 },
+});
+

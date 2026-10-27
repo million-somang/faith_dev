@@ -67,35 +67,35 @@ export default function ToolPage({ params }: ToolPageProps) {
 
       <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 flex flex-col items-center">
         {/* 상단 브레드크럼 & 뒤로가기 네비게이션 */}
-        <nav aria-label="Breadcrumb" className="w-full flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Link href="/" className="hover:text-blue-600 transition-colors">
+        <nav aria-label="Breadcrumb" className="w-full flex items-center justify-between gap-2 mb-4 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 text-[11px] sm:text-xs text-gray-500 whitespace-nowrap min-w-0 overflow-hidden">
+            <Link href="/" className="hover:text-blue-600 transition-colors shrink-0">
               홈
             </Link>
-            <span>/</span>
-            <Link href="/utility" className="hover:text-blue-600 transition-colors">
+            <span className="shrink-0">/</span>
+            <Link href="/utility" className="hover:text-blue-600 transition-colors shrink-0">
               도구 모음
             </Link>
-            <span>/</span>
-            <span className="font-semibold text-gray-800">{tool.name}</span>
+            <span className="shrink-0">/</span>
+            <span className="font-semibold text-gray-800 truncate">{tool.name}</span>
           </div>
 
           <Link
             href="/utility"
-            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all"
+            className="shrink-0 whitespace-nowrap text-[11px] sm:text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 transition-all"
           >
-            <i className="fas fa-th-large text-[11px]"></i>
+            <i className="fas fa-th-large text-[10px] sm:text-[11px]"></i>
             전체 도구 보기
           </Link>
         </nav>
 
         {/* 단일 <h1> 원칙 준수 시맨틱 헤더 (구글 SEO 가이드) */}
-        <header className="w-full text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/70 text-blue-800 text-xs font-bold mb-2">
+        <header className="w-full text-center mb-6 min-w-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-100/70 text-blue-800 text-xs font-bold mb-2 whitespace-nowrap">
             <i className={tool.icon}></i>
             {tool.categoryLabel}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
+          <h1 className="text-xl sm:text-3xl font-extrabold text-gray-900 tracking-tight whitespace-nowrap truncate max-w-full">
             {tool.name}
           </h1>
           <p className="mt-2 text-sm text-gray-600 max-w-xl mx-auto">
