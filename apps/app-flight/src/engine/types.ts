@@ -199,3 +199,24 @@ export interface GameEngineState {
 
 export type GameSpeedOption = 0.7 | 1.0 | 1.3;
 
+export interface FlightSaveState {
+  stage: number; // 이어서 시작할 스테이지 번호 (클리어한 스테이지 + 1, 2 ~ 99)
+  score: number;
+  kills: number;
+  hp: number;
+  maxHp: number;
+  lives: number;
+  bombs: number;
+  rolls: number;
+  weaponLevel: number;
+  missileLevel: number;
+  plasmaLevel: number;
+  firepowerLevel: number;
+  speedLevel: number;
+  hullLevel: number;
+  upgradePoints: number;
+  hasEscorts: boolean;
+  savedAt: string;
+}
+
+

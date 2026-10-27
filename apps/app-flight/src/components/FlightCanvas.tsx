@@ -8,17 +8,23 @@ import {
   triggerPlayerBomb,
   applyPlayerUpgrade,
   proceedFromHangar,
+  extractSaveState,
+  restoreFromSaveState,
   UpgradeOptionId,
+  FlightSaveState,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
 } from '../engine/gameLoop';
 import { DifficultyRank } from '../engine/types';
-import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert, Wrench, Rocket, Shield, Sparkles } from 'lucide-react';
+import { Heart, Bomb, RotateCw, Zap, Play, Gauge, ShieldAlert, Wrench, Rocket, Shield, Sparkles, Save, CheckCircle2, Lock } from 'lucide-react';
 
 interface FlightCanvasProps {
   onGameOver: (score: number, kills: number, highScore: number) => void;
   onStateUpdate?: (state: GameEngineState) => void;
   highScore?: number;
+  isLoggedIn?: boolean;
+  savedState?: FlightSaveState | null;
+  onSaveStageProgress?: (save: FlightSaveState) => Promise<boolean>;
   rollTriggerRequested?: number;
   bombTriggerRequested?: number;
   restartTriggerRequested?: number;
@@ -28,6 +34,9 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
   onGameOver,
   onStateUpdate,
   highScore = 0,
+  isLoggedIn = false,
+  savedState = null,
+  onSaveStageProgress,
   rollTriggerRequested = 0,
   bombTriggerRequested = 0,
   restartTriggerRequested = 0,
@@ -159,16 +168,35 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     }
   }, [onStateUpdate]);
 
+  const [isSavingStage, setIsSavingStage] = useState<boolean>(false);
+  const [stageSavedNotice, setStageSavedNotice] = useState<boolean>(false);
+
   const handleUpgrade = useCallback(
     (option: UpgradeOptionId) => {
       if (applyPlayerUpgrade(stateRef.current, option)) {
+        setStageSavedNotice(false); // 개조 변경 시 다시 세이브할 수 있도록 활성화
         syncHudFromEngine();
       }
     },
     [syncHudFromEngine]
   );
 
+  const handleSaveInHangar = useCallback(async () => {
+    if (!isLoggedIn || !onSaveStageProgress || isSavingStage) return;
+    setIsSavingStage(true);
+    try {
+      const snapshot = extractSaveState(stateRef.current);
+      const ok = await onSaveStageProgress(snapshot);
+      if (ok) {
+        setStageSavedNotice(true);
+      }
+    } finally {
+      setIsSavingStage(false);
+    }
+  }, [isLoggedIn, onSaveStageProgress, isSavingStage]);
+
   const handleLaunchNextStage = useCallback(() => {
+    setStageSavedNotice(false);
     proceedFromHangar(stateRef.current);
     syncHudFromEngine();
   }, [syncHudFromEngine]);
@@ -211,16 +239,30 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
     handleSelectSpeed(next);
   }, [handleSelectSpeed]);
 
-  // 게임 시작 트리거
+  // 게임 시작 트리거 (새 게임 STAGE 1)
   const handleStartGame = useCallback(() => {
     const activeSpeed = gameSpeedRef.current;
     gameOverReportedRef.current = false;
+    setStageSavedNotice(false);
     stateRef.current = createInitialState(activeSpeed);
     stateRef.current.gameSpeed = activeSpeed;
     stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
     stateRef.current.status = 'playing';
     syncHudFromEngine();
   }, [highScore, syncHudFromEngine]);
+
+  // 저장된 세이브 데이터로부터 이어하기 트리거
+  const handleContinueSavedGame = useCallback(() => {
+    if (!savedState) return;
+    const activeSpeed = gameSpeedRef.current;
+    gameOverReportedRef.current = false;
+    setStageSavedNotice(false);
+    stateRef.current = createInitialState(activeSpeed);
+    stateRef.current.gameSpeed = activeSpeed;
+    stateRef.current.player.highScore = Math.max(stateRef.current.player.highScore, highScore);
+    restoreFromSaveState(stateRef.current, savedState);
+    syncHudFromEngine();
+  }, [savedState, highScore, syncHudFromEngine]);
 
   // 외부(게임오버 모달 등)에서 재시작 요청 처리
   useEffect(() => {
@@ -657,13 +699,34 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={handleStartGame}
-              data-screenshot-click="action"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-stone-900 font-extrabold text-sm shadow-lg transition active:scale-95 cursor-pointer"
-            >
-              전투기 출격 시작
-            </button>
+            {/* 로그인 세이브 이어하기 & 새 출격 버튼 */}
+            <div className="w-full max-w-[280px] flex flex-col gap-2">
+              {isLoggedIn && savedState && savedState.stage >= 2 && (
+                <button
+                  type="button"
+                  onClick={handleContinueSavedGame}
+                  className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black text-xs shadow-lg transition active:scale-95 cursor-pointer flex flex-col items-center gap-0.5"
+                >
+                  <span className="flex items-center gap-1.5 text-sm">
+                    <Save className="w-4 h-4" />
+                    세이브 이어하기 (STAGE {savedState.stage})
+                  </span>
+                  <span className="text-[10px] font-bold opacity-85">
+                    점수 {savedState.score.toLocaleString()} • HP {savedState.hp}/{savedState.maxHp} • 개조 무장 복원
+                  </span>
+                </button>
+              )}
+
+              <button
+                onClick={handleStartGame}
+                data-screenshot-click="action"
+                className="w-full px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-stone-900 font-extrabold text-sm shadow-lg transition active:scale-95 cursor-pointer"
+              >
+                {isLoggedIn && savedState && savedState.stage >= 2
+                  ? '새 게임 출격 시작 (STAGE 1)'
+                  : '전투기 출격 시작'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -935,13 +998,52 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={handleLaunchNextStage}
-              className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black text-sm shadow-lg transition active:scale-95 cursor-pointer"
-            >
-              🚀 개조 완료 — STAGE {Math.min(99, hudState.stage + 1)} 출격 시작!
-            </button>
+            {/* 스테이지 클리어 세이브 (로그인 유저 전용) & 다음 스테이지 출격 버튼 */}
+            <div className="mt-2.5 flex flex-col gap-1.5">
+              {isLoggedIn ? (
+                <button
+                  type="button"
+                  disabled={isSavingStage}
+                  onClick={handleSaveInHangar}
+                  className={`w-full py-2 px-3 rounded-xl border font-bold text-xs flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                    stageSavedNotice
+                      ? 'bg-emerald-900/70 border-emerald-400 text-emerald-200'
+                      : 'bg-sky-900/70 border-sky-400/70 hover:bg-sky-800/80 text-sky-100 active:scale-[0.99]'
+                  }`}
+                >
+                  {stageSavedNotice ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      <span>
+                        ✅ STAGE {Math.min(99, hudState.stage + 1)} 출격 대기 & 기체 개조 서버 세이브 완료!
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 text-sky-300" />
+                      <span>
+                        {isSavingStage
+                          ? '서버에 세이브 중...'
+                          : `💾 현재 스테이지(STAGE ${Math.min(99, hudState.stage + 1)}) & 개조 상태 세이브`}
+                      </span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="w-full py-1.5 px-3 rounded-xl bg-white/5 border border-white/10 text-[10px] text-slate-300 flex items-center justify-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>로그인 후 플레이하면 스테이지 클리어 및 기체 개조 상태를 세이브할 수 있습니다</span>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={handleLaunchNextStage}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-slate-950 font-black text-sm shadow-lg transition active:scale-95 cursor-pointer"
+              >
+                🚀 개조 완료 — STAGE {Math.min(99, hudState.stage + 1)} 출격 시작!
+              </button>
+            </div>
           </div>
         )}
 

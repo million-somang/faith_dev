@@ -10,7 +10,7 @@ import { TouchControls } from './components/TouchControls';
 import { GameOverModal } from './components/GameOverModal';
 import { HowToModal } from './components/HowToModal';
 import { BannerSlot } from './components/BannerSlot';
-import { GameEngineState } from './engine/types';
+import { GameEngineState, FlightSaveState } from './engine/types';
 
 export default function App() {
   const { user } = useAuth();
@@ -22,6 +22,7 @@ export default function App() {
   const [finalScore, setFinalScore] = useState<number>(0);
   const [finalKills, setFinalKills] = useState<number>(0);
   const [isScoreSaved, setIsScoreSaved] = useState<boolean>(false);
+  const [savedState, setSavedState] = useState<FlightSaveState | null>(null);
   const [highScore, setHighScore] = useState<number>(() => {
     try {
       const s = localStorage.getItem('vera_flight_highscore');
@@ -36,17 +37,37 @@ export default function App() {
   const [bombTriggerCount, setBombTriggerCount] = useState<number>(0);
   const [restartTriggerCount, setRestartTriggerCount] = useState<number>(0);
 
-  // 로그인 유저의 서버 최고 기록 동기화
+  // 로그인 유저의 서버 최고 기록 및 최신 스테이지 세이브 동기화
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setSavedState(null);
+      return;
+    }
     let cancelled = false;
+
+    try {
+      const localSaveRaw = localStorage.getItem(`vera_flight_save_${user.id}`);
+      if (localSaveRaw) {
+        const parsed = JSON.parse(localSaveRaw) as FlightSaveState;
+        if (parsed && typeof parsed.stage === 'number') {
+          setSavedState(parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     axios
-      .get<{ success: boolean; highScore?: number }>(`/api/games/flight/highscore/${user.id}`, {
-        withCredentials: true,
-      })
+      .get<{ success: boolean; highScore?: number; latestSave?: FlightSaveState | null }>(
+        `/api/games/flight/highscore/${user.id}`,
+        {
+          withCredentials: true,
+        }
+      )
       .then((res) => {
+        if (cancelled) return;
         const serverHs = res.data?.highScore || 0;
-        if (!cancelled && serverHs > 0) {
+        if (serverHs > 0) {
           setHighScore((prev) => {
             const next = Math.max(prev, serverHs);
             try {
@@ -57,6 +78,14 @@ export default function App() {
             return next;
           });
         }
+        if (res.data?.latestSave && typeof res.data.latestSave.stage === 'number') {
+          setSavedState(res.data.latestSave);
+          try {
+            localStorage.setItem(`vera_flight_save_${user.id}`, JSON.stringify(res.data.latestSave));
+          } catch {
+            // ignore
+          }
+        }
       })
       .catch(() => {
         // ignore
@@ -65,6 +94,45 @@ export default function App() {
       cancelled = true;
     };
   }, [user?.id]);
+
+  // 스테이지 클리어 시 격납고에서 서버 세이브 실행 (로그인 유저 전용)
+  const handleSaveStageProgress = useCallback(
+    async (saveSnapshot: FlightSaveState): Promise<boolean> => {
+      if (!user?.id) return false;
+      setSavedState(saveSnapshot);
+      const best = Math.max(highScore, saveSnapshot.score);
+      setHighScore(best);
+
+      try {
+        localStorage.setItem(`vera_flight_save_${user.id}`, JSON.stringify(saveSnapshot));
+        localStorage.setItem('vera_flight_highscore', String(best));
+      } catch {
+        // ignore
+      }
+
+      try {
+        const earnedPoints = Math.min(30, Math.max(5, Math.floor(saveSnapshot.score / 800)));
+        await axios.post(
+          '/api/games/flight/score',
+          {
+            score: saveSnapshot.score,
+            metadata: {
+              kills: saveSnapshot.kills,
+              earnedPoints,
+              saveState: saveSnapshot,
+            },
+          },
+          { withCredentials: true }
+        );
+        sendToPortal('MISSION_CLEAR');
+        return true;
+      } catch (err) {
+        console.warn('[Vera Flight] 스테이지 세이브 서버 동기화 실패(로컬 백업 유지):', err);
+        return true;
+      }
+    },
+    [user, highScore, sendToPortal]
+  );
 
   // 게임오버 콜백 및 서버 점수 저장
   const handleGameOver = useCallback(
@@ -151,6 +219,9 @@ export default function App() {
                 onGameOver={handleGameOver}
                 onStateUpdate={setEngineState}
                 highScore={highScore}
+                isLoggedIn={!!user}
+                savedState={savedState}
+                onSaveStageProgress={handleSaveStageProgress}
                 rollTriggerRequested={rollTriggerCount}
                 bombTriggerRequested={bombTriggerCount}
                 restartTriggerRequested={restartTriggerCount}

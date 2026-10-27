@@ -114,7 +114,32 @@ gameRoutes.get('/api/games/:gameId/highscore/:userId', async (c) => {
             .bind(gameId, userId)
             .first();
 
-        return c.json({ success: true, highScore: result?.highScore || 0 });
+        let latestSave: Record<string, unknown> | null = null;
+        try {
+            const recentRows = await DB.prepare(
+                "SELECT metadata FROM game_scores WHERE game_id = ? AND user_id = ? AND metadata IS NOT NULL ORDER BY created_at DESC LIMIT 20"
+            )
+                .bind(gameId, userId)
+                .all();
+
+            const rows = (recentRows.results || []) as Array<{ metadata?: string | Record<string, unknown> | null }>;
+            for (const row of rows) {
+                if (!row.metadata) continue;
+                const parsed =
+                    typeof row.metadata === 'string'
+                        ? (JSON.parse(row.metadata) as Record<string, unknown>)
+                        : (row.metadata as Record<string, unknown>);
+                if (parsed && parsed.saveState && typeof parsed.saveState === 'object') {
+                    latestSave = parsed.saveState as Record<string, unknown>;
+                    break;
+                }
+            }
+        } catch (saveErr) {
+            console.warn(`[Game] Latest save parse warning (${gameId}):`, saveErr);
+        }
+
+        const highScoreVal = Number(result?.highScore ?? result?.highscore ?? 0) || 0;
+        return c.json({ success: true, highScore: highScoreVal, latestSave });
     } catch (error) {
         console.error(`[Game] Highscore error (${gameId}):`, error);
         return c.json({ success: false, message: '서버 오류' }, 500);

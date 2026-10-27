@@ -8,11 +8,12 @@ import type {
   DifficultyRank,
   DifficultyScale,
   UpgradeOptionId,
+  FlightSaveState,
 } from './types';
 import { sound } from '../utils/sound';
 import { assetManager } from './assets';
 
-export type { GameEngineState, DifficultyRank, DifficultyScale, UpgradeOptionId };
+export type { GameEngineState, DifficultyRank, DifficultyScale, UpgradeOptionId, FlightSaveState };
 
 
 // 캔버스 크로스 브라우징 roundRect 헬퍼 (구형 브라우저 및 인앱 웹뷰 폴백)
@@ -49,15 +50,15 @@ let nextEntityId = 1;
 // 스테이지(1 ~ 99) 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수
 export function getDifficultyScale(stage = 1): DifficultyScale {
   const clampedStage = Math.max(1, Math.min(99, Math.floor(stage || 1)));
-  // Stage 1은 초보자도 쉽게 적응하도록 낮게 시작하고, Stage 99까지 점진적으로 상승
-  const progress = (clampedStage - 1) / 98; // 0.0 (Stage 1) ~ 1.0 (Stage 99)
+  const s = clampedStage - 1;
 
-  const spawnRateMultiplier = Number((0.65 + progress * 1.55).toFixed(2));   // 0.65x ➔ 2.20x
-  const shootRateMultiplier = Number((0.55 + progress * 1.45).toFixed(2));   // 0.55x ➔ 2.00x
-  const bulletSpeedMultiplier = Number((0.68 + progress * 0.97).toFixed(2)); // 0.68x ➔ 1.65x
-  const enemyHpMultiplier = Number((0.85 + progress * 1.65).toFixed(2));     // 0.85x ➔ 2.50x
+  // 스테이지가 올라갈 때마다 물량·사격빈도·탄속·적기 HP가 체감되게 가파르게 상승
+  const spawnRateMultiplier = Number(Math.min(4.5, 0.9 + s * 0.24).toFixed(2));
+  const shootRateMultiplier = Number(Math.min(3.8, 0.8 + s * 0.2).toFixed(2));
+  const bulletSpeedMultiplier = Number(Math.min(2.5, 0.82 + s * 0.09).toFixed(2));
+  const enemyHpMultiplier = Number((1.0 + s * 0.48 + Math.pow(s, 1.35) * 0.18).toFixed(2));
 
-  if (clampedStage >= 40) {
+  if (clampedStage >= 19) {
     return {
       rank: 'HELL',
       rankLevel: 5,
@@ -68,7 +69,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#DC2626',
     };
   }
-  if (clampedStage >= 19) {
+  if (clampedStage >= 11) {
     return {
       rank: 'EXPERT',
       rankLevel: 4,
@@ -79,7 +80,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#EA580C',
     };
   }
-  if (clampedStage >= 9) {
+  if (clampedStage >= 6) {
     return {
       rank: 'HARD',
       rankLevel: 3,
@@ -90,7 +91,7 @@ export function getDifficultyScale(stage = 1): DifficultyScale {
       color: '#D97706',
     };
   }
-  if (clampedStage >= 4) {
+  if (clampedStage >= 3) {
     return {
       rank: 'NORMAL+',
       rankLevel: 2,
@@ -660,90 +661,124 @@ function spawnItem(state: GameEngineState, x: number, y: number, specificType?: 
   });
 }
 
-// 빨간 편대 비행대 스폰 (1942 Signature Red Formation)
+// 빨간 편대 비행대 스폰 (1942 Signature Red Formation — 스테이지별 편대 수량 및 HP 강화)
 function spawnRedFormation(state: GameEngineState, diff: DifficultyScale) {
   const formationId = nextEntityId++;
   const stage = Math.max(1, Math.min(99, state.stage || 1));
-  const count = stage <= 2 ? 4 : 5;
+  const count = Math.min(10, 5 + Math.floor(stage / 2)); // 5기 ➔ 최대 10기 편대 출격
   state.redFormations.set(formationId, { total: count, destroyed: 0 });
 
   const side = Math.random() > 0.5 ? 1 : -1;
   const startX = side === 1 ? -30 : CANVAS_WIDTH + 30;
-  const baseHp = Math.round(15 * diff.enemyHpMultiplier);
-  const speedScale = Math.min(1.45, 0.78 + (stage - 1) * 0.015);
-  const vySpeed = 1.9 * speedScale;
+  const baseHp = Math.round(48 * diff.enemyHpMultiplier);
+  const speedScale = Math.min(1.65, 0.85 + (stage - 1) * 0.035);
+  const vySpeed = 2.0 * speedScale;
+  const shootInterval = Math.max(48, Math.round(140 / diff.shootRateMultiplier));
 
   for (let i = 0; i < count; i++) {
     state.enemies.push({
       id: nextEntityId++,
       type: 'red-formation',
       x: startX,
-      y: -40 - i * 38,
-      vx: side * (2.3 * speedScale),
+      y: -40 - i * 36,
+      vx: side * (2.4 * speedScale),
       vy: vySpeed,
       width: 28,
       height: 28,
       hp: baseHp,
       maxHp: baseHp,
-      scoreValue: 200,
+      scoreValue: 200 + (stage - 1) * 20,
       formationId,
       formationIndex: i,
-      curveTimer: -i * 12,
-      lastShotFrame: 0,
-      shootInterval: 9999, // 빨간 편대는 폭탄 대신 곡예비행 집중
+      curveTimer: -i * 11,
+      lastShotFrame: state.currentFrame + i * 10,
+      shootInterval,
     });
   }
 }
 
-// 정찰기 스폰
+// 정찰기 편대 스폰 (스테이지가 올라갈수록 동시 출격 수량 1~5기 및 HP 대폭 증가)
 function spawnScout(state: GameEngineState, diff: DifficultyScale) {
   const stage = Math.max(1, Math.min(99, state.stage || 1));
-  const x = 30 + Math.random() * (CANVAS_WIDTH - 60);
-  const hp = Math.round(12 * diff.enemyHpMultiplier);
-  // 초반 스테이지에서는 사격 간격을 넉넉하게 부여하고 스테이지 상승에 따라 단축
-  const shootInterval = Math.max(50, Math.round((135 + Math.floor(Math.random() * 55)) / diff.shootRateMultiplier));
-  const speedScale = Math.min(1.45, 0.76 + (stage - 1) * 0.015);
+  const waveCount =
+    stage === 1
+      ? Math.random() < 0.45
+        ? 2
+        : 1
+      : stage <= 3
+      ? 2 + (Math.random() < 0.55 ? 1 : 0)
+      : stage <= 7
+      ? 3 + (Math.random() < 0.6 ? 1 : 0)
+      : 4 + (Math.random() < 0.6 ? 1 : 0);
 
-  state.enemies.push({
-    id: nextEntityId++,
-    type: 'scout',
-    x,
-    y: -30,
-    vx: (Math.random() - 0.5) * (1.5 * speedScale),
-    vy: (1.9 + Math.random() * 0.6) * speedScale,
-    width: 26,
-    height: 26,
-    hp,
-    maxHp: hp,
-    scoreValue: 120,
-    lastShotFrame: state.currentFrame,
-    shootInterval,
-  });
+  const hp = Math.round(38 * diff.enemyHpMultiplier);
+  const speedScale = Math.min(1.65, 0.84 + (stage - 1) * 0.035);
+
+  for (let w = 0; w < waveCount; w++) {
+    const slotWidth = (CANVAS_WIDTH - 60) / waveCount;
+    const x = Math.max(
+      28,
+      Math.min(
+        CANVAS_WIDTH - 28,
+        30 + w * slotWidth + Math.random() * Math.max(20, slotWidth - 10)
+      )
+    );
+    const shootInterval = Math.max(
+      34,
+      Math.round((110 + Math.floor(Math.random() * 45)) / diff.shootRateMultiplier)
+    );
+
+    state.enemies.push({
+      id: nextEntityId++,
+      type: 'scout',
+      x,
+      y: -30 - w * 22,
+      vx: (Math.random() - 0.5) * (1.8 * speedScale),
+      vy: (2.0 + Math.random() * 0.7) * speedScale,
+      width: 26,
+      height: 26,
+      hp,
+      maxHp: hp,
+      scoreValue: 130 + (stage - 1) * 15,
+      lastShotFrame: state.currentFrame + w * 8,
+      shootInterval,
+    });
+  }
 }
 
-// 중형 폭격기 스폰
+// 중형 폭격기 스폰 (고내구도 장갑 부여 & 스테이지 2+부터 복수 편대 출격)
 function spawnBomber(state: GameEngineState, diff: DifficultyScale) {
   const stage = Math.max(1, Math.min(99, state.stage || 1));
-  const x = 50 + Math.random() * (CANVAS_WIDTH - 100);
-  const hp = Math.round(52 * diff.enemyHpMultiplier);
-  const shootInterval = Math.max(60, Math.round(135 / diff.shootRateMultiplier));
-  const speedScale = Math.min(1.4, 0.8 + (stage - 1) * 0.012);
+  const twinChance = stage >= 2 ? Math.min(0.75, (stage - 1) * 0.18) : 0;
+  const bomberCount = Math.random() < twinChance ? 2 : 1;
+  const hp = Math.round(165 * diff.enemyHpMultiplier);
+  const shootInterval = Math.max(42, Math.round(115 / diff.shootRateMultiplier));
+  const speedScale = Math.min(1.55, 0.85 + (stage - 1) * 0.025);
 
-  state.enemies.push({
-    id: nextEntityId++,
-    type: 'bomber',
-    x,
-    y: -50,
-    vx: (Math.random() - 0.5) * 0.75 * speedScale,
-    vy: 1.05 * speedScale,
-    width: 48,
-    height: 44,
-    hp,
-    maxHp: hp,
-    scoreValue: 400,
-    lastShotFrame: state.currentFrame,
-    shootInterval,
-  });
+  for (let b = 0; b < bomberCount; b++) {
+    const x =
+      bomberCount === 2
+        ? b === 0
+          ? 85 + Math.random() * 75
+          : CANVAS_WIDTH - 160 + Math.random() * 75
+        : 55 + Math.random() * (CANVAS_WIDTH - 110);
+
+    state.enemies.push({
+      id: nextEntityId++,
+      type: 'bomber',
+      x,
+      y: -50 - b * 32,
+      vx: (Math.random() - 0.5) * 0.95 * speedScale,
+      vy: 1.15 * speedScale,
+      width: 48,
+      height: 44,
+      hp,
+      maxHp: hp,
+      scoreValue: 450 + (stage - 1) * 50,
+      lastShotFrame: state.currentFrame + b * 14,
+      shootInterval,
+    });
+  }
 }
 
 // 보스 출현 2초 사전 경보 시작 (2초 뒤 실제 보스 기체 스폰)
@@ -753,25 +788,25 @@ function startBossWarning(state: GameEngineState) {
   sound.playBossAlertSound();
 }
 
-// 거대 보스 전함 실제 스폰 (2초 경보 종료 시점에 호출)
+// 거대 보스 전함 실제 스폰 (2초 경보 종료 시점에 호출 — 스테이지별 고내구도 장갑 적용)
 function spawnBoss(state: GameEngineState, diff: DifficultyScale) {
   const stage = Math.max(1, Math.min(99, state.stage || 1));
-  const bossHp = Math.round((520 + (stage - 1) * 160) * diff.enemyHpMultiplier);
-  const turretHp = Math.round((120 + (stage - 1) * 40) * diff.enemyHpMultiplier);
-  const shootInterval = Math.max(32, Math.round(68 / diff.shootRateMultiplier));
+  const bossHp = Math.round((1100 + (stage - 1) * 550) * diff.enemyHpMultiplier);
+  const turretHp = Math.round((280 + (stage - 1) * 140) * diff.enemyHpMultiplier);
+  const shootInterval = Math.max(24, Math.round(58 / diff.shootRateMultiplier));
 
   state.enemies.push({
     id: nextEntityId++,
     type: 'boss',
     x: CANVAS_WIDTH / 2,
     y: -60, // 화면 바로 위에서 신속하게 진입 시작
-    vx: 1.0 * Math.min(1.5, 0.9 + (stage - 1) * 0.02),
+    vx: 1.15 * Math.min(1.8, 0.95 + (stage - 1) * 0.04),
     vy: 1.5, // 부드럽고 신속하게 화면에 안착
     width: 140,
     height: 100,
     hp: bossHp,
     maxHp: bossHp,
-    scoreValue: 3000 + (stage - 1) * 500,
+    scoreValue: 3500 + (stage - 1) * 800,
     lastShotFrame: state.currentFrame,
     shootInterval,
     turrets: [
@@ -886,17 +921,17 @@ export function updateGameEngine(
   }
 
   // 5. 적기 생성 스폰 로직 (스테이지 1~99 난이도 배율 & gameSpeed 반영)
-  const nextBossScore = state.nextBossScore || 2200;
+  const nextBossScore = state.nextBossScore || 2800;
   if (!state.bossActive && state.player.score >= nextBossScore) {
     // 보스 점수 도달 시 일반 적기 추가 스폰을 중단하고 화면이 비면 2초 보스 출현 경보 시작
     if (state.enemies.length === 0) {
       startBossWarning(state);
     }
   } else if (!state.bossActive && (!state.stageClearTimer || state.stageClearTimer <= 0)) {
-    // 초반 스테이지(Stage 1)는 스폰 주기를 여유롭게 하고, 스테이지가 올라갈수록 점진적으로 단축
-    const scoutInterval = Math.max(25, Math.round((88 / gameSpeed) / diff.spawnRateMultiplier));
-    const redInterval = Math.max(80, Math.round((250 / gameSpeed) / diff.spawnRateMultiplier));
-    const bomberInterval = Math.max(115, Math.round((360 / gameSpeed) / diff.spawnRateMultiplier));
+    // 스테이지가 올라갈수록 스폰 주기가 빠르게 단축되어 다수의 적기 편대가 출격
+    const scoutInterval = Math.max(18, Math.round((78 / gameSpeed) / diff.spawnRateMultiplier));
+    const redInterval = Math.max(55, Math.round((215 / gameSpeed) / diff.spawnRateMultiplier));
+    const bomberInterval = Math.max(75, Math.round((290 / gameSpeed) / diff.spawnRateMultiplier));
 
     if (state.currentFrame % scoutInterval === 0) {
       spawnScout(state, diff);
@@ -982,7 +1017,9 @@ export function updateGameEngine(
     }
   }
 
-  // 7. 적기 업데이트
+  // 7. 적기 업데이트 (스테이지별 정조준 저격탄 & 다연장 탄막 강화 — 제자리 캠핑 원천 차단)
+  const stageDmgBonus = Math.min(28, (currentStage - 1) * 2);
+
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
 
@@ -992,7 +1029,7 @@ export function updateGameEngine(
 
     // 이동 패턴 및 난이도별 발사 쿨다운
     const effectiveShootInterval = Math.max(
-      24,
+      18,
       Math.round(e.shootInterval / (gameSpeed * diff.shootRateMultiplier))
     );
 
@@ -1001,11 +1038,11 @@ export function updateGameEngine(
       e.y += e.vy * gameSpeed;
       if (e.x < 20 || e.x > CANVAS_WIDTH - 20) e.vx = -e.vx;
 
-      // 조준 사격 (스테이지 상승에 따른 탄속 및 고스테이지 2연사 버스트)
-      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 25 && e.y < CANVAS_HEIGHT - 120) {
+      // 플레이어 현재 좌표 정조준 사격 (스테이지 3+부터 2~3방향 압박 사격)
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 20 && e.y < CANVAS_HEIGHT - 110) {
         e.lastShotFrame = state.currentFrame;
         const angle = Math.atan2(p.y - e.y, p.x - e.x);
-        const bulletSpeed = 3.0 * diff.bulletSpeedMultiplier;
+        const bulletSpeed = 3.2 * diff.bulletSpeedMultiplier;
         state.bullets.push({
           id: nextEntityId++,
           x: e.x,
@@ -1015,23 +1052,25 @@ export function updateGameEngine(
           radius: 4,
           color: '#DC2626',
           isPlayer: false,
-          damage: 12,
+          damage: 14 + stageDmgBonus,
         });
 
-        // 스테이지 12 이상: 2연사 버스트 탄환 추가
-        if (currentStage >= 12) {
-          const spreadAngle = angle + 0.16;
-          state.bullets.push({
-            id: nextEntityId++,
-            x: e.x,
-            y: e.y + 12,
-            vx: Math.cos(spreadAngle) * bulletSpeed * 0.95,
-            vy: Math.sin(spreadAngle) * bulletSpeed * 0.95,
-            radius: 3.5,
-            color: '#EA580C',
-            isPlayer: false,
-            damage: 12,
-          });
+        if (currentStage >= 3) {
+          const spreadOffsets = currentStage >= 8 ? [-0.18, 0.18] : [0.16];
+          for (const offset of spreadOffsets) {
+            const spreadAngle = angle + offset;
+            state.bullets.push({
+              id: nextEntityId++,
+              x: e.x,
+              y: e.y + 12,
+              vx: Math.cos(spreadAngle) * bulletSpeed * 0.94,
+              vy: Math.sin(spreadAngle) * bulletSpeed * 0.94,
+              radius: 3.5,
+              color: '#EA580C',
+              isPlayer: false,
+              damage: 13 + stageDmgBonus,
+            });
+          }
         }
       }
     } else if (e.type === 'red-formation') {
@@ -1043,21 +1082,43 @@ export function updateGameEngine(
       } else {
         e.y += e.vy * gameSpeed;
       }
+
+      // 붉은 정예 편대기도 선회 중 플레이어 좌표를 겨냥해 견제 사격
+      if (
+        state.currentFrame - e.lastShotFrame > effectiveShootInterval &&
+        e.y > 35 &&
+        e.y < CANVAS_HEIGHT - 140
+      ) {
+        e.lastShotFrame = state.currentFrame;
+        const angle = Math.atan2(p.y - e.y, p.x - e.x);
+        const rSpeed = 3.1 * diff.bulletSpeedMultiplier;
+        state.bullets.push({
+          id: nextEntityId++,
+          x: e.x,
+          y: e.y + 10,
+          vx: Math.cos(angle) * rSpeed,
+          vy: Math.sin(angle) * rSpeed,
+          radius: 3.8,
+          color: '#F43F5E',
+          isPlayer: false,
+          damage: 13 + stageDmgBonus,
+        });
+      }
     } else if (e.type === 'bomber') {
       e.x += e.vx * gameSpeed;
       e.y += e.vy * gameSpeed;
       if (e.x < 40 || e.x > CANVAS_WIDTH - 40) e.vx = -e.vx;
 
-      // 부채꼴 확산 탄환 (스테이지에 따라 2-way ➔ 3-way ➔ 4-way ➔ 5-way)
-      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 40 && e.y < CANVAS_HEIGHT - 130) {
+      // 부채꼴 확산 탄환 + 플레이어 위치 정조준 탄환 동시 발사 (가만히 서 있으면 즉시 피격)
+      if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y > 35 && e.y < CANVAS_HEIGHT - 120) {
         e.lastShotFrame = state.currentFrame;
-        const bSpeed = 2.8 * diff.bulletSpeedMultiplier;
+        const bSpeed = 3.0 * diff.bulletSpeedMultiplier;
         const angles =
-          currentStage >= 15
-            ? [-0.5, -0.25, 0, 0.25, 0.5]
-            : currentStage >= 7
-            ? [-0.45, -0.15, 0.15, 0.45]
-            : currentStage >= 3
+          currentStage >= 9
+            ? [-0.52, -0.26, 0, 0.26, 0.52]
+            : currentStage >= 4
+            ? [-0.45, -0.16, 0.16, 0.45]
+            : currentStage >= 2
             ? [-0.36, 0, 0.36]
             : [-0.24, 0.24];
 
@@ -1071,9 +1132,23 @@ export function updateGameEngine(
             radius: 4.5,
             color: '#EA580C',
             isPlayer: false,
-            damage: 15,
+            damage: 16 + stageDmgBonus,
           });
         }
+
+        // 플레이어 현재 좌표 정조준 저격탄 추가
+        const aimedAngle = Math.atan2(p.y - (e.y + 20), p.x - e.x);
+        state.bullets.push({
+          id: nextEntityId++,
+          x: e.x,
+          y: e.y + 20,
+          vx: Math.cos(aimedAngle) * (bSpeed * 1.08),
+          vy: Math.sin(aimedAngle) * (bSpeed * 1.08),
+          radius: 4.5,
+          color: '#DC2626',
+          isPlayer: false,
+          damage: 16 + stageDmgBonus,
+        });
       }
     } else if (e.type === 'boss') {
       // 보스 진입 및 좌우 순항
@@ -1084,16 +1159,16 @@ export function updateGameEngine(
         if (e.x < 110 || e.x > CANVAS_WIDTH - 110) e.vx = -e.vx;
       }
 
-      // 보스 주포 사격 (스테이지 1~2: 3-way, 스테이지 3~6: 5-way, 스테이지 7+: 7-way)
+      // 보스 주포 사격 (광역 확산탄 + 플레이어 정조준 중포탄)
       if (state.currentFrame - e.lastShotFrame > effectiveShootInterval && e.y >= 85) {
         e.lastShotFrame = state.currentFrame;
-        const bossBulletSpeed = 3.1 * diff.bulletSpeedMultiplier;
+        const bossBulletSpeed = 3.3 * diff.bulletSpeedMultiplier;
         const bossAngles =
-          currentStage >= 7
-            ? [-0.6, -0.4, -0.2, 0, 0.2, 0.4, 0.6]
-            : currentStage >= 3
-            ? [-0.5, -0.25, 0, 0.25, 0.5]
-            : [-0.35, 0, 0.35];
+          currentStage >= 6
+            ? [-0.66, -0.44, -0.22, 0, 0.22, 0.44, 0.66]
+            : currentStage >= 2
+            ? [-0.52, -0.26, 0, 0.26, 0.52]
+            : [-0.36, 0, 0.36];
 
         for (const a of bossAngles) {
           state.bullets.push({
@@ -1105,15 +1180,29 @@ export function updateGameEngine(
             radius: 5,
             color: '#B91C1C',
             isPlayer: false,
-            damage: 18,
+            damage: 20 + stageDmgBonus,
           });
         }
+
+        // 플레이어 직격 조준 포탄 (제자리 정지 시 집중 타격)
+        const targetAngle = Math.atan2(p.y - (e.y + 40), p.x - e.x);
+        state.bullets.push({
+          id: nextEntityId++,
+          x: e.x,
+          y: e.y + 40,
+          vx: Math.cos(targetAngle) * (bossBulletSpeed * 1.12),
+          vy: Math.sin(targetAngle) * (bossBulletSpeed * 1.12),
+          radius: 5.5,
+          color: '#EF4444',
+          isPlayer: false,
+          damage: 22 + stageDmgBonus,
+        });
       }
 
       // 보스 포탑 독립 사격 (화면 안착 후 사격)
       if (e.turrets && e.y >= 50) {
-        const turretInterval = Math.max(32, Math.round((85 / gameSpeed) / diff.shootRateMultiplier));
-        const turretBulletSpeed = 3.2 * diff.bulletSpeedMultiplier;
+        const turretInterval = Math.max(24, Math.round((72 / gameSpeed) / diff.shootRateMultiplier));
+        const turretBulletSpeed = 3.4 * diff.bulletSpeedMultiplier;
         e.turrets.forEach((turret) => {
           if (turret.hp > 0 && state.currentFrame - turret.lastShot > turretInterval) {
             turret.lastShot = state.currentFrame;
@@ -1126,10 +1215,10 @@ export function updateGameEngine(
               y: tY,
               vx: Math.cos(angle) * turretBulletSpeed,
               vy: Math.sin(angle) * turretBulletSpeed,
-              radius: 4,
+              radius: 4.2,
               color: '#DC2626',
               isPlayer: false,
-              damage: 14,
+              damage: 16 + stageDmgBonus,
             });
           }
         });
@@ -1141,7 +1230,7 @@ export function updateGameEngine(
       const distToPlayer = Math.hypot(e.x - p.x, e.y - p.y);
       const hitRadius = e.type === 'boss' ? 52 : e.type === 'bomber' ? 28 : 20;
       if (distToPlayer < hitRadius) {
-        handlePlayerHit(state, 20);
+        handlePlayerHit(state, 24 + stageDmgBonus);
       }
     }
 
@@ -1285,9 +1374,9 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
     state.bossEncounterCount = (state.bossEncounterCount || 0) + 1;
     state.player.upgradePoints = (state.player.upgradePoints || 0) + 5; // 보스 격파 보너스 +5 개조 포인트
 
-    // 화면 내 적 탄환 모두 제거 및 플레이어 HP 회복 보상 (+35 HP)
+    // 화면 내 적 탄환 모두 제거 및 플레이어 HP 회복 보상 (+30 HP)
     state.bullets = state.bullets.filter((b) => b.isPlayer);
-    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 35);
+    state.player.hp = Math.min(state.player.maxHp, state.player.hp + 30);
 
     const clearedStage = state.stage || 1;
     state.floatingTexts.push({
@@ -1308,7 +1397,7 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
   if (e.type === 'bomber') {
     state.player.upgradePoints = (state.player.upgradePoints || 0) + 2; // 폭격기 격추 시 +2 KP
     createExplosion(state, e.x, e.y, 'medium', 18);
-    if (Math.random() < 0.65) {
+    if (Math.random() < 0.38) {
       spawnItem(state, e.x, e.y);
     }
     return;
@@ -1378,9 +1467,6 @@ function applyItem(state: GameEngineState, type: ItemType) {
     text = '엔진 스피드 업!';
     color = '#F59E0B';
   }
-
-  // 모든 아이템 획득 시 소량의 기체 수리(HP +15) 보너스 추가
-  p.hp = Math.min(p.maxHp, p.hp + 15);
 
   state.floatingTexts.push({
     id: nextEntityId++,
@@ -1475,13 +1561,78 @@ export function proceedFromHangar(state: GameEngineState) {
   state.stage = Math.min(99, clearedStage + 1);
   state.stageClearTimer = 110;
   state.player.stageKills = 0;
-  state.nextBossScore = state.player.score + 2200 + (state.stage - 1) * 350;
+  state.nextBossScore = state.player.score + 3600 + (state.stage - 1) * 1400;
   state.enemies = [];
   state.bullets = [];
   state.player.x = CANVAS_WIDTH / 2;
   state.player.y = CANVAS_HEIGHT - 90;
   state.player.isInvincible = true;
   state.player.invincibleTimer = 90;
+  state.status = 'playing';
+}
+
+// 현재 격납고(스테이지 클리어) 상태로부터 서버 세이브용 스냅샷 추출
+export function extractSaveState(state: GameEngineState): FlightSaveState {
+  const p = state.player;
+  const nextStage = state.status === 'hangar' ? Math.min(99, (state.stage || 1) + 1) : state.stage || 1;
+  return {
+    stage: nextStage,
+    score: p.score || 0,
+    kills: p.kills || 0,
+    hp: Math.max(20, p.hp || 100),
+    maxHp: p.maxHp || 100,
+    lives: Math.max(1, p.lives || 3),
+    bombs: p.bombs ?? 2,
+    rolls: p.rolls ?? 3,
+    weaponLevel: p.weaponLevel || 1,
+    missileLevel: p.missileLevel || 0,
+    plasmaLevel: p.plasmaLevel || 0,
+    firepowerLevel: p.firepowerLevel || 0,
+    speedLevel: p.speedLevel || 0,
+    hullLevel: p.hullLevel || 0,
+    upgradePoints: p.upgradePoints || 0,
+    hasEscorts: !!p.hasEscorts,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+// 저장된 세이브 스냅샷으로부터 게임 상태 복원 후 즉시 해당 스테이지 출격
+export function restoreFromSaveState(state: GameEngineState, save: FlightSaveState) {
+  const p = state.player;
+  const targetStage = Math.max(1, Math.min(99, save.stage || 2));
+  state.stage = targetStage;
+  state.stageClearTimer = 100;
+  state.bossActive = false;
+  state.bossWarningTimer = 0;
+  state.enemies = [];
+  state.bullets = [];
+  state.items = [];
+
+  p.score = save.score || 0;
+  p.highScore = Math.max(p.highScore || 0, p.score);
+  p.kills = save.kills || 0;
+  p.stageKills = 0;
+  p.maxHp = Math.max(100, save.maxHp || 100);
+  p.hp = Math.min(p.maxHp, Math.max(30, save.hp || p.maxHp));
+  p.lives = Math.max(1, save.lives || 3);
+  p.bombs = save.bombs ?? 2;
+  p.rolls = save.rolls ?? 3;
+  p.weaponLevel = Math.max(1, Math.min(4, save.weaponLevel || 1));
+  p.missileLevel = Math.max(0, Math.min(3, save.missileLevel || 0));
+  p.plasmaLevel = Math.max(0, Math.min(3, save.plasmaLevel || 0));
+  p.firepowerLevel = Math.max(0, Math.min(5, save.firepowerLevel || 0));
+  p.speedLevel = Math.max(0, Math.min(5, save.speedLevel || 0));
+  p.hullLevel = Math.max(0, Math.min(5, save.hullLevel || 0));
+  p.speed = Number(Math.min(7.2, 4.5 + p.speedLevel * 0.45).toFixed(2));
+  p.upgradePoints = Math.max(0, save.upgradePoints || 0);
+  p.hasEscorts = !!save.hasEscorts;
+
+  p.x = CANVAS_WIDTH / 2;
+  p.y = CANVAS_HEIGHT - 90;
+  p.isInvincible = true;
+  p.invincibleTimer = 120;
+
+  state.nextBossScore = p.score + 3600 + (targetStage - 1) * 1400;
   state.status = 'playing';
 }
 
@@ -1599,9 +1750,18 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
         ctx.fillStyle = '#94A3B8';
         ctx.fillRect(-6, -14, 12, 2);
       }
+      if (isHitFlash) ctx.filter = 'none';
+
+      // 정찰기 미니 체력바
+      const scoutHpPct = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+      ctx.fillRect(-13, -24, 26, 3);
+      ctx.fillStyle = scoutHpPct > 0.4 ? '#38BDF8' : '#EF4444';
+      ctx.fillRect(-13, -24, 26 * scoutHpPct, 3);
     } else if (e.type === 'red-formation') {
       // 붉은 정예 편대기 - S자 선회 뱅킹 틸트(기울임) 각도 계산
       const tilt = Math.sin((e.curveTimer || 0) * 0.08) * 0.35;
+      ctx.save();
       ctx.rotate(tilt);
 
       if (sprites.enemyRed && sprites.enemyRed.complete && sprites.enemyRed.naturalWidth > 0) {
@@ -1620,6 +1780,15 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
         ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.restore();
+      if (isHitFlash) ctx.filter = 'none';
+
+      // 붉은 편대기 미니 체력바
+      const redHpPct = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+      ctx.fillRect(-14, -25, 28, 3);
+      ctx.fillStyle = redHpPct > 0.4 ? '#F43F5E' : '#FBBF24';
+      ctx.fillRect(-14, -25, 28 * redHpPct, 3);
     } else if (e.type === 'bomber') {
       if (sprites.enemyBomber && sprites.enemyBomber.complete && sprites.enemyBomber.naturalWidth > 0) {
         ctx.drawImage(sprites.enemyBomber, -36, -34, 72, 68);
