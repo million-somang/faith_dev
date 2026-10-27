@@ -914,27 +914,28 @@ export default function LoungePage() {
                                                 key={post.id}
                                                 className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm flex flex-col gap-3"
                                             >
-                                                <div className="flex justify-between items-start">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-lg shadow-inner">
+                                                <div className="flex justify-between items-start gap-2 min-w-0">
+                                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-lg shadow-inner shrink-0">
                                                             {post.author.avatar}
                                                         </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-1.5 flex-wrap">
-                                                                <span className="font-extrabold text-sm text-slate-850">{post.author.name}</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            {/* 1행: 닉네임 + 배지 + 내글/팔로우 */}
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <span className="font-extrabold text-sm text-slate-850 truncate">{post.author.name}</span>
                                                                 {post.author.badge && (
-                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 border border-violet-200">
+                                                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700 border border-violet-200 whitespace-nowrap shrink-0">
                                                                         {post.author.badge}
                                                                     </span>
                                                                 )}
                                                                 {isMyPost(post) ? (
-                                                                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-1">
-                                                                        <i className="fas fa-check-circle text-[8px]"></i> 내 글 👤
+                                                                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 inline-flex items-center gap-1 whitespace-nowrap shrink-0">
+                                                                        <i className="fas fa-check-circle text-[9px]"></i> 내 글
                                                                     </span>
                                                                 ) : (
                                                                     <button
                                                                         onClick={() => handleFollowToggle(post.author.handle)}
-                                                                        className={`text-[9px] font-black px-2 py-0.5 rounded-full border transition-all cursor-pointer ${
+                                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-full border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                                                                             followingList.includes(post.author.handle)
                                                                                 ? 'bg-slate-100 text-slate-500 border-slate-200'
                                                                                 : 'bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100'
@@ -943,41 +944,47 @@ export default function LoungePage() {
                                                                         {followingList.includes(post.author.handle) ? '팔로잉' : '+ 팔로우'}
                                                                     </button>
                                                                 )}
+                                                            </div>
+                                                            {/* 2행: 핸들 + 작성시간 + 미니룸 바로가기 (한 줄 정렬) */}
+                                                            <div className="flex items-center gap-1.5 mt-1 min-w-0 text-[11px] text-slate-400">
+                                                                <span className="font-bold font-mono truncate max-w-[115px] sm:max-w-none">{post.author.handle}</span>
+                                                                <span className="text-slate-300 shrink-0">·</span>
+                                                                <span className="font-semibold whitespace-nowrap shrink-0">{post.createdAt}</span>
+                                                                <span className="text-slate-300 shrink-0">·</span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => router.push(`/minihome/${encodeURIComponent(post.author.handle.replace(/^@+/, ''))}`)}
-                                                                    className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 hover:bg-indigo-100 transition-all cursor-pointer"
+                                                                    className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200/80 hover:bg-indigo-100 transition-all cursor-pointer inline-flex items-center gap-1 whitespace-nowrap shrink-0"
                                                                     title={`${post.author.name}님의 미니홈피 놀러가기`}
                                                                 >
-                                                                    🏠 미니룸
+                                                                    <span>🏠</span>
+                                                                    <span>미니룸</span>
                                                                 </button>
                                                             </div>
-                                                            <p className="text-[10px] text-slate-400 font-bold font-mono mt-0.5">{post.author.handle}</p>
                                                         </div>
                                                     </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-[10px] text-slate-400 font-semibold">{post.createdAt}</span>
-                                                        {isMyPost(post) && (
-                                                            <div className="flex items-center gap-1.5 ml-1">
-                                                                <button 
-                                                                    type="button"
-                                                                    onClick={() => handleStartEdit(post.id, post.content)}
-                                                                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-xs font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
-                                                                    title="피드 수정"
-                                                                >
-                                                                    <i className="far fa-edit text-[10px]"></i> 수정
-                                                                </button>
-                                                                <button 
-                                                                    type="button"
-                                                                    onClick={() => handleDeletePost(post.id)}
-                                                                    className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-black flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95"
-                                                                    title="피드 삭제"
-                                                                >
-                                                                    <i className="far fa-trash-alt text-[10px]"></i> 삭제
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    {isMyPost(post) && (
+                                                        <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleStartEdit(post.id, post.content)}
+                                                                className="px-2 sm:px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[11px] font-black inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap shrink-0"
+                                                                title="피드 수정"
+                                                            >
+                                                                <i className="far fa-edit text-[10px]"></i>
+                                                                <span>수정</span>
+                                                            </button>
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => handleDeletePost(post.id)}
+                                                                className="px-2 sm:px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[11px] font-black inline-flex items-center gap-1 transition-all cursor-pointer shadow-2xs active:scale-95 whitespace-nowrap shrink-0"
+                                                                title="피드 삭제"
+                                                            >
+                                                                <i className="far fa-trash-alt text-[10px]"></i>
+                                                                <span>삭제</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* 피드 본문 */}
@@ -1276,18 +1283,18 @@ export default function LoungePage() {
                                         {posts.filter(isMyPost).length > 0 ? (
                                             posts.filter(isMyPost).map((post) => (
                                                 <div key={post.id} className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl relative group">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200">
-                                                                내 글 👤
+                                                    <div className="flex justify-between items-center gap-2 mb-2 min-w-0">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 border border-violet-200 inline-flex items-center gap-1 whitespace-nowrap shrink-0">
+                                                                <i className="fas fa-check-circle text-[9px]"></i> 내 글
                                                             </span>
-                                                            <span className="text-[9px] text-slate-400 font-bold">{post.createdAt}</span>
+                                                            <span className="text-[10px] text-slate-400 font-bold whitespace-nowrap shrink-0">{post.createdAt}</span>
                                                         </div>
-                                                        <div className="flex items-center gap-1.5">
+                                                        <div className="flex items-center gap-1.5 shrink-0">
                                                             <button 
                                                                 type="button"
                                                                 onClick={() => handleStartEdit(post.id, post.content)}
-                                                                className="px-2 py-0.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                                className="px-2 py-0.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[10px] font-black inline-flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
                                                                 title="피드 수정"
                                                             >
                                                                 <i className="far fa-edit text-[9px]"></i> 수정
@@ -1295,7 +1302,7 @@ export default function LoungePage() {
                                                             <button 
                                                                 type="button"
                                                                 onClick={() => handleDeletePost(post.id)}
-                                                                className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-black flex items-center gap-1 transition-all cursor-pointer"
+                                                                className="px-2 py-0.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[10px] font-black inline-flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
                                                                 title="피드 삭제"
                                                             >
                                                                 <i className="far fa-trash-alt text-[9px]"></i> 삭제
