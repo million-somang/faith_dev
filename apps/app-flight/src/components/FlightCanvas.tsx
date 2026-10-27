@@ -345,8 +345,11 @@ export const FlightCanvas: React.FC<FlightCanvasProps> = ({
           // 렌더링
           renderGameEngine(ctx, state);
 
-          // 주기적 HUD 및 상태 동기화 (물리 프레임 진행 시 매 3프레임마다 또는 상태 전환 시 즉시)
-          if ((stepRun && state.currentFrame % 3 === 0) || state.status !== prevStatus) {
+          // 주기적 HUD 및 상태 동기화 (플레이 중 물리 프레임 진행 시 매 3프레임마다 또는 상태 전환 시 즉시)
+          if (
+            (state.status === 'playing' && stepRun && state.currentFrame % 3 === 0) ||
+            state.status !== prevStatus
+          ) {
             syncHudFromEngine();
           }
 

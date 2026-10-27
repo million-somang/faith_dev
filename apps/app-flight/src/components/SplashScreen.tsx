@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ShieldCheck, Zap } from 'lucide-react';
 import { BannerSlot } from './BannerSlot';
 import { assetManager } from '../engine/assets';
@@ -9,31 +9,31 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
   const [progress, setProgress] = useState<number>(1);
+  const onFinishRef = useRef<() => void>(onFinish);
+  onFinishRef.current = onFinish;
 
   useEffect(() => {
-    // 스프라이트 에셋 즉시 백그라운드 프리로드
+    // 스프라이트 에셋 즉시 백그라운드 프리로드 (마운트 시 단 1회)
     assetManager.preloadAssets();
 
-    const duration = 4000;
-    const intervalTime = 40;
-    const step = 100 / (duration / intervalTime);
+    const duration = 2500;
+    const startTime = performance.now();
 
     const timer = setInterval(() => {
-      setProgress((prev) => {
-        const next = prev + step;
-        if (next >= 100) {
-          clearInterval(timer);
-          setTimeout(() => {
-            onFinish();
-          }, 150);
-          return 100;
-        }
-        return Math.floor(next);
-      });
-    }, intervalTime);
+      const elapsed = performance.now() - startTime;
+      const pct = Math.min(100, Math.max(1, Math.floor((elapsed / duration) * 100)));
+      setProgress(pct);
+
+      if (pct >= 100) {
+        clearInterval(timer);
+        setTimeout(() => {
+          onFinishRef.current();
+        }, 120);
+      }
+    }, 30);
 
     return () => clearInterval(timer);
-  }, [onFinish]);
+  }, []);
 
   const p38Src = `${(import.meta.env.BASE_URL || '/app/flight/').replace(/\/$/, '')}/assets/sprites/player_p38.png`;
 

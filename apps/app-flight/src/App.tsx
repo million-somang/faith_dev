@@ -128,10 +128,15 @@ export default function App() {
     setBombTriggerCount((c) => c + 1);
   }, []);
 
+  // 스플래시 로딩 완료 콜백 (참조 고정으로 타이머 초기화 방지)
+  const handleSplashFinish = useCallback(() => {
+    setIsLoading(false);
+  }, []);
+
   return (
     <ErrorBoundary>
-      {/* 4초 스플래시 인트로 (1~100% 실시간 프로그레스 바) */}
-      {isLoading && <SplashScreen onFinish={() => setIsLoading(false)} />}
+      {/* 스플래시 인트로 (1~100% 실시간 프로그레스 바) */}
+      {isLoading && <SplashScreen onFinish={handleSplashFinish} />}
 
       <div className="w-full min-h-screen bg-[#FAF8F5] text-[#2D2A26] flex flex-col justify-between py-2 sm:py-4 px-2.5 sm:px-6 select-none overflow-x-hidden">
         {/* 상단 통합 헤더 */}
