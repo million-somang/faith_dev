@@ -47,6 +47,18 @@ export const CANVAS_HEIGHT = 600;
 
 let nextEntityId = 1;
 
+// 스테이지별 보스 출현에 필요한 목표 획득 점수 산출 (기존 대비 약 3배 연장하여 충분한 교전 보장)
+export function getStageBossScoreDelta(stage = 1): number {
+  const s = Math.max(1, Math.min(99, Math.floor(stage || 1)));
+  return 6500 + (s - 1) * 1600;
+}
+
+// 스테이지별 보스 출현을 위한 최소 비행·교전 프레임 (60FPS 기준 Stage 1 약 35초 ➔ 최대 약 47초)
+export function getMinStageFrames(stage = 1): number {
+  const s = Math.max(1, Math.min(99, Math.floor(stage || 1)));
+  return Math.min(2800, 2100 + (s - 1) * 90);
+}
+
 // 스테이지(1 ~ 99) 기반 실시간 위험도 랭크 및 난이도 배율 산출 순수 함수
 export function getDifficultyScale(stage = 1): DifficultyScale {
   const clampedStage = Math.max(1, Math.min(99, Math.floor(stage || 1)));
@@ -185,9 +197,12 @@ export function createInitialState(gameSpeed = 1.0): GameEngineState {
     currentFrame: 0,
     stage: 1,
     stageClearTimer: 0,
+    bossDefeatTimer: 0,
+    stageElapsedFrames: 0,
+    minStageFrames: getMinStageFrames(1),
     bossActive: false,
     bossWarningTimer: 0,
-    nextBossScore: 2200,
+    nextBossScore: getStageBossScoreDelta(1),
     bossEncounterCount: 0,
     difficultyRank: 'NORMAL',
     lastAnnouncedRank: 'NORMAL',
@@ -836,6 +851,29 @@ export function updateGameEngine(
     state.stageClearTimer--;
   }
 
+  // 보스 격파 후 폭발 연출 및 STAGE CLEAR 메시지 배너 노출 타이머 처리
+  if (state.bossDefeatTimer && state.bossDefeatTimer > 0) {
+    state.bossDefeatTimer--;
+    state.player.isInvincible = true;
+    state.player.invincibleTimer = Math.max(state.player.invincibleTimer, 30);
+
+    // 보스 격파 위치 주변에 연속 유폭 이펙트 연출
+    if (state.bossDefeatTimer > 45 && state.bossDefeatTimer % 16 === 0 && state.bossDefeatPosition) {
+      const rx = state.bossDefeatPosition.x + (Math.random() - 0.5) * 110;
+      const ry = state.bossDefeatPosition.y + (Math.random() - 0.5) * 75;
+      createExplosion(state, rx, ry, 'medium', 16);
+      state.screenShake = Math.max(state.screenShake, 12);
+    }
+
+    // 클리어 배너 연출이 끝나면 전투기 개조 격납고(hangar)로 전환
+    if (state.bossDefeatTimer <= 0) {
+      state.bossDefeatTimer = 0;
+      state.bossDefeatPosition = undefined;
+      state.status = 'hangar';
+      return;
+    }
+  }
+
   // 랭크 상승 감지 및 경보 알림
   if (state.lastAnnouncedRank !== diff.rank) {
     if (state.lastAnnouncedRank !== undefined && state.player.score > 0) {
@@ -919,19 +957,33 @@ export function updateGameEngine(
     p.hitFlashTimer--;
   }
 
-  // 4. 플레이어 자동 사격
-  if (inputs.shoot) {
+  // 4. 플레이어 자동 사격 (보스 격파 클리어 연출 중에는 사격 중지)
+  if (inputs.shoot && (!state.bossDefeatTimer || state.bossDefeatTimer <= 0)) {
     playerShoot(state);
   }
 
-  // 5. 적기 생성 스폰 로직 (스테이지 1~99 난이도 배율 & gameSpeed 반영)
-  const nextBossScore = state.nextBossScore || 2800;
-  if (!state.bossActive && state.player.score >= nextBossScore) {
-    // 보스 점수 도달 시 일반 적기 추가 스폰을 중단하고 화면이 비면 2초 보스 출현 경보 시작
+  // 5. 적기 생성 스폰 로직 (스테이지 1~99 난이도 배율 & gameSpeed 반영 + 연장된 스테이지 길이 적용)
+  const isBossDefeatedSequence = (state.bossDefeatTimer || 0) > 0;
+  if (!state.bossActive && !isBossDefeatedSequence) {
+    state.stageElapsedFrames = (state.stageElapsedFrames || 0) + 1;
+  }
+
+  const nextBossScore = state.nextBossScore || getStageBossScoreDelta(currentStage);
+  const minStageFrames = state.minStageFrames || getMinStageFrames(currentStage);
+  const isReadyForBoss =
+    state.player.score >= nextBossScore &&
+    (state.stageElapsedFrames || 0) >= minStageFrames;
+
+  if (!state.bossActive && !isBossDefeatedSequence && isReadyForBoss) {
+    // 보스 출현 점수 및 최소 스테이지 진행 시간 도달 시 일반 적기 스폰을 중단하고 화면이 비면 2초 보스 출현 경보 시작
     if (state.enemies.length === 0) {
       startBossWarning(state);
     }
-  } else if (!state.bossActive && (!state.stageClearTimer || state.stageClearTimer <= 0)) {
+  } else if (
+    !state.bossActive &&
+    !isBossDefeatedSequence &&
+    (!state.stageClearTimer || state.stageClearTimer <= 0)
+  ) {
     // 스테이지가 올라갈수록 스폰 주기가 점진적으로 단축되어 적기 편대가 출격
     const scoutInterval = Math.max(24, Math.round((86 / gameSpeed) / diff.spawnRateMultiplier));
     const redInterval = Math.max(70, Math.round((230 / gameSpeed) / diff.spawnRateMultiplier));
@@ -1372,29 +1424,39 @@ function handleEnemyDestroyed(state: GameEngineState, e: Enemy) {
   state.player.stageKills = (state.player.stageKills || 0) + 1;
 
   if (e.type === 'boss') {
-    createExplosion(state, e.x, e.y, 'boss', 40);
-    state.screenShake = 30;
+    createExplosion(state, e.x, e.y, 'boss', 50);
+    sound.playStageClearSound();
+    state.screenShake = 32;
     state.bossActive = false;
     state.bossEncounterCount = (state.bossEncounterCount || 0) + 1;
     state.player.upgradePoints = (state.player.upgradePoints || 0) + 5; // 보스 격파 보너스 +5 개조 포인트
 
-    // 화면 내 적 탄환 모두 제거 및 플레이어 HP 회복 보상 (+30 HP)
+    // 화면 내 적 탄환 및 잔여 일반 적기 모두 유폭 제거 & 플레이어 HP 회복 보상 (+30 HP)
     state.bullets = state.bullets.filter((b) => b.isPlayer);
+    state.enemies.forEach((rem) => {
+      if (rem.id !== e.id) {
+        createExplosion(state, rem.x, rem.y, 'small', 8);
+      }
+    });
+    state.enemies = [];
     state.player.hp = Math.min(state.player.maxHp, state.player.hp + 30);
+    state.player.isInvincible = true;
+    state.player.invincibleTimer = 180;
 
     const clearedStage = state.stage || 1;
     state.floatingTexts.push({
       id: nextEntityId++,
-      text: `STAGE ${clearedStage} 보스 격파! (+5 개조 포인트)`,
+      text: `STAGE ${clearedStage} CLEAR! (+5 KP & +30 HP)`,
       x: CANVAS_WIDTH / 2,
-      y: CANVAS_HEIGHT / 2 - 55,
-      color: '#10B981',
-      alpha: 1.3,
-      vy: -0.8,
+      y: e.y,
+      color: '#FDE047',
+      alpha: 1.5,
+      vy: -0.7,
     });
 
-    // 스테이지 종료: 격추수에 따라 비행기를 개조할 수 있는 격납고(hangar) 모드로 전환
-    state.status = 'hangar';
+    // 즉시 격납고로 넘기지 않고 약 2.8초(170프레임)간 보스 대폭발 및 STAGE CLEAR 배너를 표시한 뒤 격납고로 전환
+    state.bossDefeatPosition = { x: e.x, y: e.y };
+    state.bossDefeatTimer = 170;
     return;
   }
 
@@ -1563,9 +1625,13 @@ export function applyPlayerUpgrade(state: GameEngineState, option: UpgradeOption
 export function proceedFromHangar(state: GameEngineState) {
   const clearedStage = state.stage || 1;
   state.stage = Math.min(99, clearedStage + 1);
-  state.stageClearTimer = 110;
+  state.stageClearTimer = 100;
+  state.bossDefeatTimer = 0;
+  state.bossDefeatPosition = undefined;
+  state.stageElapsedFrames = 0;
+  state.minStageFrames = getMinStageFrames(state.stage);
   state.player.stageKills = 0;
-  state.nextBossScore = state.player.score + 2800 + (state.stage - 1) * 650;
+  state.nextBossScore = state.player.score + getStageBossScoreDelta(state.stage);
   state.enemies = [];
   state.bullets = [];
   state.player.x = CANVAS_WIDTH / 2;
@@ -1606,6 +1672,10 @@ export function restoreFromSaveState(state: GameEngineState, save: FlightSaveSta
   const targetStage = Math.max(1, Math.min(99, save.stage || 2));
   state.stage = targetStage;
   state.stageClearTimer = 100;
+  state.bossDefeatTimer = 0;
+  state.bossDefeatPosition = undefined;
+  state.stageElapsedFrames = 0;
+  state.minStageFrames = getMinStageFrames(targetStage);
   state.bossActive = false;
   state.bossWarningTimer = 0;
   state.enemies = [];
@@ -1636,7 +1706,7 @@ export function restoreFromSaveState(state: GameEngineState, save: FlightSaveSta
   p.isInvincible = true;
   p.invincibleTimer = 120;
 
-  state.nextBossScore = p.score + 2800 + (targetStage - 1) * 650;
+  state.nextBossScore = p.score + getStageBossScoreDelta(targetStage);
   state.status = 'playing';
 }
 
@@ -2170,8 +2240,64 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     ctx.restore();
   }
 
-  // 8.5 스테이지 클리어 & 다음 스테이지 돌입 배너
-  if (state.stageClearTimer && state.stageClearTimer > 0 && state.bossWarningTimer <= 0) {
+  // 8.4 보스 격파 직후 STAGE CLEAR 축하 배너 오버레이 (폭발 애니메이션과 함께 2.8초간 표시)
+  if (state.bossDefeatTimer && state.bossDefeatTimer > 0) {
+    ctx.save();
+    const clearedStage = state.stage || 1;
+    const bannerW = 366;
+    const bannerH = 126;
+    const bannerX = (CANVAS_WIDTH - bannerW) / 2;
+    const bannerY = CANVAS_HEIGHT / 2 - bannerH / 2 - 15;
+
+    // 은은한 골드/에메랄드 빛 배경 후광
+    const glowAlpha = 0.12 + Math.abs(Math.sin(state.bossDefeatTimer * 0.12)) * 0.12;
+    ctx.fillStyle = `rgba(16, 185, 129, ${glowAlpha.toFixed(2)})`;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 메인 배너 카드 배경
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.beginPath();
+    safeRoundRect(ctx, bannerX, bannerY, bannerW, bannerH, 18);
+    ctx.fill();
+
+    // 반짝이는 골드/에메랄드 테두리
+    ctx.strokeStyle = Math.floor(state.bossDefeatTimer / 8) % 2 === 0 ? '#FBBF24' : '#10B981';
+    ctx.lineWidth = 3.5;
+    ctx.stroke();
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // 상단 서브 뱃지
+    ctx.font = '800 12px sans-serif';
+    ctx.fillStyle = '#6EE7B7';
+    ctx.fillText('★ MISSION ACCOMPLISHED ★', CANVAS_WIDTH / 2, bannerY + 24);
+
+    // 메인 타이틀: STAGE N CLEAR!
+    ctx.font = '900 26px sans-serif';
+    ctx.fillStyle = '#FDE047';
+    ctx.fillText(`🎉 STAGE ${clearedStage} CLEAR! 🎉`, CANVAS_WIDTH / 2, bannerY + 54);
+
+    // 보스 격파 보상 안내
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('거대 보스 격파 완료! (보너스 +5 KP & HP +30 회복)', CANVAS_WIDTH / 2, bannerY + 84);
+
+    // 하단 격납고 진입 안내
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillStyle = '#93C5FD';
+    ctx.fillText('잠시 후 전투기 개조 격납고로 이동합니다...', CANVAS_WIDTH / 2, bannerY + 107);
+
+    ctx.restore();
+  }
+
+  // 8.5 다음 스테이지 출격 돌입 배너 (격납고 개조 후 출격 시 표시)
+  if (
+    state.stageClearTimer &&
+    state.stageClearTimer > 0 &&
+    state.bossWarningTimer <= 0 &&
+    (!state.bossDefeatTimer || state.bossDefeatTimer <= 0)
+  ) {
     ctx.save();
     const bannerW = 330;
     const bannerH = 84;
@@ -2183,19 +2309,19 @@ export function renderGameEngine(ctx: CanvasRenderingContext2D, state: GameEngin
     safeRoundRect(ctx, bannerX, bannerY, bannerW, bannerH, 16);
     ctx.fill();
 
-    ctx.strokeStyle = '#10B981';
+    ctx.strokeStyle = '#38BDF8';
     ctx.lineWidth = 3;
     ctx.stroke();
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = '900 22px sans-serif';
-    ctx.fillStyle = '#6EE7B7';
-    ctx.fillText(`🎉 STAGE ${Math.max(1, state.stage - 1)} CLEAR!`, CANVAS_WIDTH / 2, bannerY + 30);
+    ctx.fillStyle = '#38BDF8';
+    ctx.fillText(`🚀 STAGE ${state.stage} / 99 출격 개시!`, CANVAS_WIDTH / 2, bannerY + 30);
 
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = 'bold 13px sans-serif';
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`➔ STAGE ${state.stage} / 99 출격 돌입!`, CANVAS_WIDTH / 2, bannerY + 60);
+    ctx.fillText(`위험도 [${state.difficultyRank}] • 적 편대 요격 작전 돌입!`, CANVAS_WIDTH / 2, bannerY + 60);
     ctx.restore();
   }
 

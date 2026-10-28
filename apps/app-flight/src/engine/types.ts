@@ -182,7 +182,11 @@ export interface GameEngineState {
   islands: Island[];
   currentFrame: number;
   stage: number;
-  stageClearTimer?: number; // 보스 격파 후 다음 스테이지 전환 배너 타이머
+  stageClearTimer?: number; // 다음 스테이지 출격 돌입 배너 타이머
+  bossDefeatTimer?: number; // 보스 격파 후 폭발 연출 및 STAGE CLEAR 배너 표시 타이머
+  bossDefeatPosition?: Position; // 보스 격파 좌표 (연쇄 폭발 연출용)
+  stageElapsedFrames?: number; // 현재 스테이지 출격 후 경과 프레임
+  minStageFrames?: number; // 현재 스테이지 보스 출현을 위한 최소 경과 프레임
   bossActive: boolean;
   bossWarningTimer: number; // 보스 경보 사이렌 카운트다운
   nextBossScore?: number; // 다음 보스 출현 목표 점수

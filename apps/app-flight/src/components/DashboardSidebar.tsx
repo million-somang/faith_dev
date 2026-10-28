@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameEngineState } from '../engine/types';
-import { getDifficultyScale } from '../engine/gameLoop';
+import { getDifficultyScale, getStageBossScoreDelta, getMinStageFrames } from '../engine/gameLoop';
 import {
   Trophy,
   Zap,
@@ -32,10 +32,15 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
   const hasEscorts = state?.player.hasEscorts || false;
   const rolls = state?.player.rolls || 0;
   const bombs = state?.player.bombs || 0;
-  const nextBossScore = state?.nextBossScore || 2200;
+  const nextBossScore = state?.nextBossScore || getStageBossScoreDelta(stage);
+  const stageElapsedFrames = state?.stageElapsedFrames || 0;
+  const minStageFrames = state?.minStageFrames || getMinStageFrames(stage);
+  const isBossDefeated = (state?.bossDefeatTimer || 0) > 0;
 
   const diff = getDifficultyScale(stage);
   const remainToBoss = Math.max(0, nextBossScore - score);
+  const remainFrames = Math.max(0, minStageFrames - stageElapsedFrames);
+  const remainSeconds = Math.ceil(remainFrames / 60);
 
   const weaponTiers = [
     { level: 1, name: '단발 기관총', desc: '전방 단발 고속 탄환' },
@@ -135,13 +140,19 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({ state }) => 
         <div className="p-2 rounded-xl bg-[#F7F4EE] border border-[#EBE6DD] flex items-center justify-between text-[11px]">
           <span className="text-[#7A756D] font-medium flex items-center gap-1">
             <Flame className="w-3.5 h-3.5 text-amber-500" />
-            {state?.bossActive
+            {isBossDefeated
+              ? `🎉 STAGE ${stage} CLEAR! (보스 격파 완료)`
+              : state?.bossActive
               ? `STAGE ${stage} 보스 교전 중! (격파 시 STAGE ${Math.min(99, stage + 1)} 진급)`
               : `STAGE ${stage} 보스 출현까지`}
           </span>
-          {!state?.bossActive && (
+          {!state?.bossActive && !isBossDefeated && (
             <span className="font-mono font-bold text-sky-700">
-              {remainToBoss > 0 ? `+${remainToBoss.toLocaleString()}점 남음` : '곧 출현!'}
+              {remainToBoss > 0
+                ? `+${remainToBoss.toLocaleString()}점${remainSeconds > 0 ? ` (${remainSeconds}초)` : ''}`
+                : remainSeconds > 0
+                ? `약 ${remainSeconds}초 후 출현`
+                : '곧 출현!'}
             </span>
           )}
         </div>

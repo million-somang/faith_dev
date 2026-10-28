@@ -297,6 +297,45 @@ class SoundEngine {
   public playPowerUpSound() {
     this.playRankUpSound();
   }
+
+  // 보스 격파 & 스테이지 클리어 축하 팡파르 사운드
+  public playStageClearSound() {
+    if (this.muted) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      // C5 - E5 - G5 - C6 - E6 - G6 승리 팡파르 아르페지오
+      const notes = [
+        { freq: 523.25, delay: 0, dur: 0.16 },
+        { freq: 659.25, delay: 0.11, dur: 0.16 },
+        { freq: 783.99, delay: 0.22, dur: 0.16 },
+        { freq: 1046.5, delay: 0.34, dur: 0.28 },
+        { freq: 783.99, delay: 0.54, dur: 0.14 },
+        { freq: 1046.5, delay: 0.68, dur: 0.55 },
+      ];
+      notes.forEach(({ freq, delay, dur }) => {
+        if (!this.ctx) return;
+        const t = this.ctx.currentTime + delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+
+        gain.gain.setValueAtTime(0.22, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(t);
+        osc.stop(t + dur);
+      });
+    } catch {
+      // ignore
+    }
+  }
 }
 
 export const sound = new SoundEngine();
