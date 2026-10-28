@@ -202,51 +202,72 @@ export default function StocksPage() {
     // 계산기 모달
     const [showCalculator, setShowCalculator] = useState(false);
 
-    // 1. 관심종목 시세 로드
+    // 1. 관심종목 시세 로드 (30초 주기 실시간 갱신)
     useEffect(() => {
         if (favorites.length === 0) {
             setFavoriteCards([]);
             return;
         }
         let cancelled = false;
-        setLoadingFav(true);
-        fetch(`${API_BASE}/api/finance/stocks?symbols=${encodeURIComponent(favorites.join(','))}`)
-            .then((r) => (r.ok ? r.json() : []))
-            .then((data) => { if (!cancelled) setFavoriteCards(Array.isArray(data) ? data : []); })
-            .catch(() => { if (!cancelled) setFavoriteCards([]); })
-            .finally(() => { if (!cancelled) setLoadingFav(false); });
-        return () => { cancelled = true; };
+        const loadFavorites = (initial = false) => {
+            if (initial) setLoadingFav(true);
+            fetch(`${API_BASE}/api/finance/stocks?symbols=${encodeURIComponent(favorites.join(','))}`)
+                .then((r) => (r.ok ? r.json() : []))
+                .then((data) => { if (!cancelled) setFavoriteCards(Array.isArray(data) ? data : []); })
+                .catch(() => { if (!cancelled && initial) setFavoriteCards([]); })
+                .finally(() => { if (!cancelled && initial) setLoadingFav(false); });
+        };
+        loadFavorites(true);
+        const timer = setInterval(() => loadFavorites(false), 30 * 1000);
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+        };
     }, [favorites]);
 
-    // 2. 리더보드 데이터 로드
+    // 2. 리더보드 데이터 로드 (30초 주기 실시간 갱신)
     useEffect(() => {
         let cancelled = false;
-        setLoadingLeaders(true);
-        fetch(`${API_BASE}/api/finance/market-leaders?type=${activeLeaderTab}`)
-            .then((r) => (r.ok ? r.json() : []))
-            .then((data) => {
-                if (!cancelled) setLeaders(Array.isArray(data) ? data : []);
-            })
-            .catch(() => { if (!cancelled) setLeaders([]); })
-            .finally(() => { if (!cancelled) setLoadingLeaders(false); });
-        return () => { cancelled = true; };
+        const loadLeaders = (initial = false) => {
+            if (initial) setLoadingLeaders(true);
+            fetch(`${API_BASE}/api/finance/market-leaders?type=${activeLeaderTab}`)
+                .then((r) => (r.ok ? r.json() : []))
+                .then((data) => {
+                    if (!cancelled) setLeaders(Array.isArray(data) ? data : []);
+                })
+                .catch(() => { if (!cancelled && initial) setLeaders([]); })
+                .finally(() => { if (!cancelled && initial) setLoadingLeaders(false); });
+        };
+        loadLeaders(true);
+        const timer = setInterval(() => loadLeaders(false), 30 * 1000);
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+        };
     }, [activeLeaderTab]);
 
-    // 3. 테마별 주도주 로드
+    // 3. 테마별 주도주 로드 (30초 주기 실시간 갱신)
     useEffect(() => {
         let cancelled = false;
-        fetch(`${API_BASE}/api/finance/themes`)
-            .then((r) => (r.ok ? r.json() : []))
-            .then((data) => {
-                if (!cancelled) {
-                    setThemes(Array.isArray(data) ? data : []);
-                    if (data.length > 0 && !selectedThemeKey) {
-                        setSelectedThemeKey(data[0].key);
+        const loadThemes = () => {
+            fetch(`${API_BASE}/api/finance/themes`)
+                .then((r) => (r.ok ? r.json() : []))
+                .then((data) => {
+                    if (!cancelled && Array.isArray(data)) {
+                        setThemes(data);
+                        if (data.length > 0 && !selectedThemeKey) {
+                            setSelectedThemeKey(data[0].key);
+                        }
                     }
-                }
-            })
-            .catch(() => { if (!cancelled) setThemes([]); });
-        return () => { cancelled = true; };
+                })
+                .catch(() => {});
+        };
+        loadThemes();
+        const timer = setInterval(loadThemes, 30 * 1000);
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+        };
     }, []);
 
     // 4. 실시간 검색 핸들러

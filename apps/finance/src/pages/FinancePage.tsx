@@ -209,7 +209,7 @@ export default function FinancePage() {
         };
         
         fetchData();
-        const interval = setInterval(fetchData, 5 * 60 * 1000);
+        const interval = setInterval(fetchData, 30 * 1000);
         return () => clearInterval(interval);
     }, []);
 
@@ -513,8 +513,8 @@ export default function FinancePage() {
                                     농산물/곡물, 원유, 귀금속, 환율 및 국채금리 등 글로벌 시장 핵심 원자재·선물 지표
                                 </p>
                             </div>
-                            <span className="text-[11px] text-gray-400 self-start sm:self-auto font-mono bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                                5분 주기 자동 갱신
+                            <span className="text-[11px] text-emerald-700 self-start sm:self-auto font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-bold">
+                                30초 주기 실시간 갱신
                             </span>
                         </div>
 
@@ -649,7 +649,7 @@ export default function FinancePage() {
                                     <p className="text-[11px] text-slate-400">대한민국 증시를 주도하는 핵심 블루칩 실시간 시세</p>
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg hidden sm:inline-block">20분 지연 시세</span>
+                            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg hidden sm:inline-block">실시간 시세 연동</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {krStocks.map((stock, idx) => renderStockCard(stock, idx, 150, 'kr'))}
@@ -672,7 +672,7 @@ export default function FinancePage() {
                                     <p className="text-[11px] text-slate-400">전 세계 인공지능과 혁신을 이끄는 매그니피센트 대표주</p>
                                 </div>
                             </div>
-                            <span className="text-xs text-gray-400 font-mono bg-slate-100 px-2.5 py-1 rounded-lg hidden sm:inline-block">15분 지연 시세</span>
+                            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg hidden sm:inline-block">실시간 시세 연동</span>
                         </div>
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                             {usStocks.map((stock, idx) => renderStockCard(stock, idx, 250, 'us'))}

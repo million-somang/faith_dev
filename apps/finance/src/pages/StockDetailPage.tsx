@@ -114,17 +114,28 @@ export default function StockDetailPage() {
         window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }, [ticker]);
 
-    // 1. 종목 상세 종합 데이터 가져오기
+    // 1. 종목 상세 종합 데이터 가져오기 (30초 주기 실시간 자동 갱신)
     useEffect(() => {
         if (!ticker) return;
-        setLoading(true);
-        fetch(`${API_BASE}/api/finance/stock-detail/${ticker}`)
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => {
-                if (data) setStock(data);
-            })
-            .catch((e) => console.warn('종목 상세 로드 실패:', e))
-            .finally(() => setLoading(false));
+        let cancelled = false;
+        const loadDetail = (initial = false) => {
+            if (initial) setLoading(true);
+            fetch(`${API_BASE}/api/finance/stock-detail/${ticker}`)
+                .then((r) => (r.ok ? r.json() : null))
+                .then((data) => {
+                    if (!cancelled && data) setStock(data);
+                })
+                .catch((e) => console.warn('종목 상세 로드 실패:', e))
+                .finally(() => {
+                    if (!cancelled && initial) setLoading(false);
+                });
+        };
+        loadDetail(true);
+        const timer = setInterval(() => loadDetail(false), 30 * 1000);
+        return () => {
+            cancelled = true;
+            clearInterval(timer);
+        };
     }, [ticker]);
 
     // 2. 멀티 타임프레임 차트 데이터 가져오기
@@ -309,8 +320,8 @@ export default function StockDetailPage() {
                                     <span>{Math.abs(stock?.change || 0).toLocaleString('ko-KR')}</span>
                                     <span>({(stock?.rate || 0) >= 0 ? '+' : ''}{(stock?.rate || 0).toFixed(2)}%)</span>
                                 </div>
-                                <span className="text-[10px] sm:text-xs text-slate-400 font-mono hidden sm:inline self-center">
-                                    {stock?.market === 'KRX' ? '20분 지연' : '15분 지연'}
+                                <span className="text-[10px] sm:text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg hidden sm:inline self-center">
+                                    실시간 시세 연동
                                 </span>
                             </div>
 

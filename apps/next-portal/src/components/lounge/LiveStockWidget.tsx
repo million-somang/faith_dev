@@ -5,6 +5,7 @@ interface LiveStockWidgetProps {
 }
 
 interface StockData {
+    ticker: string;
     price: string;
     changeRate: number;
     changePrice: string;
@@ -12,64 +13,102 @@ interface StockData {
     chartData: number[];
 }
 
+const NAME_TO_TICKER_MAP: Record<string, string> = {
+    '삼성전자': '005930',
+    'samsung': '005930',
+    'sk하이닉스': '000660',
+    '하이닉스': '000660',
+    'lg에너지솔루션': '373220',
+    '네이버': '035420',
+    'naver': '035420',
+    '카카오': '035720',
+    '현대차': '005380',
+    '기아': '000270',
+    '셀트리온': '068270',
+    '한미반도체': '042700',
+    '엔비디아': 'NVDA',
+    'nvidia': 'NVDA',
+    'nvda': 'NVDA',
+    '테슬라': 'TSLA',
+    'tesla': 'TSLA',
+    'tsla': 'TSLA',
+    '애플': 'AAPL',
+    'apple': 'AAPL',
+    'aapl': 'AAPL',
+    '마이크로소프트': 'MSFT',
+    'msft': 'MSFT',
+};
+
 export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
     const [stock, setStock] = useState<StockData | null>(null);
 
-    // 종목별 고정 모킹 데이터 (결정론적 생성)
     useEffect(() => {
+        let cancelled = false;
         const cleanName = stockName.replace('$', '').trim();
-        let price = '135.20';
-        let changeRate = 2.45;
-        let changePrice = '3.24';
-        let isUp = true;
-        let chartData = [132, 131.5, 133, 132.8, 134.1, 133.9, 135.2];
+        const lowerName = cleanName.toLowerCase();
+        const matchedTicker = NAME_TO_TICKER_MAP[lowerName] || NAME_TO_TICKER_MAP[cleanName] || (/^[A-Za-z0-9]{2,6}$/.test(cleanName) ? cleanName.toUpperCase() : '');
 
-        if (cleanName.includes('엔비디아') || cleanName.toLowerCase().includes('nvidia')) {
-            price = '127.85';
-            changeRate = 4.82;
-            changePrice = '5.88';
-            isUp = true;
-            chartData = [120, 122.1, 121.5, 123.8, 125, 124.9, 127.85];
-        } else if (cleanName.includes('삼성전자') || cleanName.toLowerCase().includes('samsung')) {
-            price = '74,200';
-            changeRate = -1.15;
-            changePrice = '800';
-            isUp = false;
-            chartData = [75800, 75400, 75100, 75300, 74900, 74600, 74200];
-        } else if (cleanName.includes('테슬라') || cleanName.toLowerCase().includes('tesla')) {
-            price = '258.40';
-            changeRate = 8.12;
-            changePrice = '19.40';
-            isUp = true;
-            chartData = [232, 235.4, 239, 244.5, 241, 248.8, 258.4];
-        } else if (cleanName.includes('애플') || cleanName.toLowerCase().includes('apple')) {
-            price = '218.30';
-            changeRate = 0.55;
-            changePrice = '1.20';
-            isUp = true;
-            chartData = [216, 217.2, 216.8, 218.1, 217.9, 218.0, 218.3];
-        } else if (cleanName.includes('비트코인') || cleanName.toLowerCase().includes('bitcoin') || cleanName.toLowerCase().includes('btc')) {
-            price = '94,850';
-            changeRate = -5.40;
-            changePrice = '5,410';
-            isUp = false;
-            chartData = [101200, 99800, 98900, 97500, 96800, 95100, 94850];
-        } else {
+        const applyFallback = () => {
+            if (cancelled) return;
             let hash = 0;
             for (let i = 0; i < cleanName.length; i++) {
                 hash = cleanName.charCodeAt(i) + ((hash << 5) - hash);
             }
             const seed = Math.abs(hash);
-            isUp = seed % 2 === 0;
-            changeRate = parseFloat(((seed % 600) / 100).toFixed(2));
-            price = String(100 + (seed % 900));
-            changePrice = String(((parseFloat(price) * changeRate) / 100).toFixed(2));
-            chartData = Array.from({ length: 7 }, (_, idx) => 
-                parseFloat(price) * (1 + ((idx - 3) * (isUp ? 0.01 : -0.01)) + (Math.sin(idx) * 0.005))
+            const isUp = seed % 2 === 0;
+            const changeRate = parseFloat(((seed % 600) / 100).toFixed(2));
+            const numPrice = 100 + (seed % 900);
+            const price = numPrice.toLocaleString('ko-KR');
+            const changePrice = ((numPrice * changeRate) / 100).toFixed(2);
+            const chartData = Array.from({ length: 7 }, (_, idx) =>
+                numPrice * (1 + ((idx - 3) * (isUp ? 0.01 : -0.01)) + (Math.sin(idx) * 0.005))
             );
+            setStock({ ticker: matchedTicker || '005930', price, changeRate, changePrice, isUp, chartData });
+        };
+
+        if (!matchedTicker) {
+            applyFallback();
+            return;
         }
 
-        setStock({ price, changeRate, changePrice, isUp, chartData });
+        fetch(`/api/finance/stock-detail/${encodeURIComponent(matchedTicker)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (cancelled) return;
+                if (data && typeof data.price === 'number') {
+                    const isUp = data.status === 'up' || data.change >= 0;
+                    const prev = data.previousClose || data.price;
+                    const priceStr = `${data.currency || ''}${data.price.toLocaleString('ko-KR')}`;
+                    const changeStr = Math.abs(data.change || 0).toLocaleString('ko-KR');
+                    const rateNum = Number((data.rate || 0).toFixed(2));
+                    const chartData = [
+                        prev * 0.99,
+                        prev * 0.995,
+                        prev,
+                        prev + (data.price - prev) * 0.4,
+                        prev + (data.price - prev) * 0.7,
+                        data.open || prev,
+                        data.price,
+                    ];
+                    setStock({
+                        ticker: data.ticker || matchedTicker,
+                        price: priceStr,
+                        changeRate: rateNum,
+                        changePrice: changeStr,
+                        isUp,
+                        chartData,
+                    });
+                } else {
+                    applyFallback();
+                }
+            })
+            .catch(() => {
+                applyFallback();
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [stockName]);
 
     if (!stock) return null;
@@ -86,7 +125,7 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
 
     const handleWidgetClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        window.location.href = '/finance';
+        window.location.href = stock.ticker ? `/finance/stock/${stock.ticker}` : '/finance';
     };
 
     return (
