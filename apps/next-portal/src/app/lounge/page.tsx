@@ -149,7 +149,8 @@ export default function LoungePage() {
     const [editHandle, setEditHandle] = useState(persona.handle);
     const [editBio, setEditBio] = useState(persona.bio);
 
-    // 4. 피드 목록 상태 & 사다리 빌더 상태
+    // 4. 피드 목록 상태 & 사다리 빌더 상태 & 별도 글쓰기 모달 상태
+    const [isWriteModalOpen, setIsWriteModalOpen] = useState(false);
     const [isLadderModalOpen, setIsLadderModalOpen] = useState(false);
     const [pendingLadderData, setPendingLadderData] = useState<CustomLadderData | null>(null);
 
@@ -435,6 +436,7 @@ export default function LoungePage() {
         setNewPostContent('');
         setSelectedImage(null);
         setPendingLadderData(null);
+        setIsWriteModalOpen(false);
         setActiveTab('home');
         alert('새 피드 글이 등록되었습니다! DB에 실시간 저장되어 모든 사용자에게 공유됩니다. 🚀');
 
@@ -686,6 +688,7 @@ export default function LoungePage() {
 
                                     <button
                                         onClick={() => {
+                                            setIsWriteModalOpen(true);
                                             setIsLadderModalOpen(true);
                                             setActiveTab('home');
                                         }}
@@ -700,6 +703,7 @@ export default function LoungePage() {
                                     <button
                                         onClick={() => {
                                             setNewPostContent('#오늘의운세 오늘 내 사주 행운 점수는 몇 점일까? 🔮');
+                                            setIsWriteModalOpen(true);
                                             setActiveTab('home');
                                         }}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
@@ -713,6 +717,7 @@ export default function LoungePage() {
                                     <button
                                         onClick={() => {
                                             setNewPostContent('#주사위굴리기 1~6 주사위 굴려서 높은 사람이 이기는 거야! 🎲');
+                                            setIsWriteModalOpen(true);
                                             setActiveTab('home');
                                         }}
                                         className="p-2.5 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-left transition-all cursor-pointer group"
@@ -759,9 +764,9 @@ export default function LoungePage() {
                                     <i className="fas fa-hashtag text-sm"></i> 트렌드 탐색
                                 </button>
                                 <button
-                                    onClick={() => setActiveTab('write')}
+                                    onClick={() => setIsWriteModalOpen(true)}
                                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all text-left cursor-pointer ${
-                                        activeTab === 'write'
+                                        isWriteModalOpen || activeTab === 'write'
                                             ? 'bg-violet-50 text-violet-600'
                                             : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                                     }`}
@@ -805,7 +810,7 @@ export default function LoungePage() {
                         <div className="flex md:hidden gap-1 bg-slate-200/70 p-1 rounded-xl mb-1">
                             <button onClick={() => setActiveTab('home')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab==='home'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>홈</button>
                             <button onClick={() => setActiveTab('search')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab==='search'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>검색</button>
-                            <button onClick={() => setActiveTab('write')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab==='write'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>글쓰기</button>
+                            <button onClick={() => setIsWriteModalOpen(true)} className={`flex-1 py-2 text-xs font-black rounded-lg ${isWriteModalOpen || activeTab==='write'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>글쓰기</button>
                             <button onClick={() => setActiveTab('notifications')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab==='notifications'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>알림</button>
                             <button onClick={() => setActiveTab('profile')} className={`flex-1 py-2 text-xs font-black rounded-lg ${activeTab==='profile'?'bg-white text-slate-800 shadow-sm':'text-slate-500'}`}>프로필</button>
                         </div>
@@ -813,116 +818,6 @@ export default function LoungePage() {
                         {/* [Home 탭 뷰] */}
                         {activeTab === 'home' && (
                             <div className="flex flex-col gap-5">
-                                
-                                {/* 피드 글쓰기 카드 (원클릭 퀵 액션 툴바 장착) */}
-                                <div className="p-5 bg-white border border-slate-200/80 rounded-2xl shadow-sm">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center text-lg shrink-0">
-                                            {persona.avatar}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <textarea
-                                                value={newPostContent}
-                                                onChange={(e) => setNewPostContent(e.target.value)}
-                                                placeholder="무슨 생각을 하고 계신가요? 아래 [☕ 사다리 만들기] 버튼으로 직접 게임을 제작하거나, 게임/운세/주식 위젯을 첨부해 보세요!"
-                                                rows={3}
-                                                className="w-full bg-transparent border-none outline-none resize-none text-slate-800 placeholder-slate-400 font-bold text-sm leading-relaxed"
-                                            />
-
-                                            {/* 첨부된 커스텀 사다리타기 미리보기 배지 */}
-                                            {pendingLadderData && (
-                                                <div className="mt-2 p-2.5 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between animate-fade-in">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-base">🪜</span>
-                                                        <div>
-                                                            <span className="text-xs font-black text-sky-850">{pendingLadderData.title}</span>
-                                                            <span className="text-[10px] text-sky-600 font-bold ml-1.5">({pendingLadderData.itemsCount}인용 사다리 첨부됨)</span>
-                                                        </div>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPendingLadderData(null)}
-                                                        className="text-slate-400 hover:text-rose-500 text-xs px-2 py-0.5 font-bold transition-colors cursor-pointer"
-                                                    >
-                                                        첨부 취소 ✖
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* 이미지 미리보기 */}
-                                            {selectedImage && (
-                                                <div className="relative mt-2 w-20 h-20 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50">
-                                                    <img src={selectedImage} alt="미리보기" className="w-full h-full object-cover" />
-                                                    <button 
-                                                        type="button" 
-                                                        onClick={handleRemoveImage}
-                                                        className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/60 text-white rounded-full flex items-center justify-center text-[9px]"
-                                                    >
-                                                        <i className="fas fa-times"></i>
-                                                    </button>
-                                                </div>
-                                            )}
-
-                                            {/* ⚡ 원클릭 스마트 액션 툴바 (Quick Action Bar) */}
-                                            <div className="flex flex-wrap gap-1.5 pt-2.5 pb-1 border-t border-slate-100">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsLadderModalOpen(true)}
-                                                    className="px-2.5 py-1 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
-                                                >
-                                                    <i className="fas fa-mug-hot text-[10px]"></i> ☕ 사다리 만들기 🪜
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #2048` : '#2048 20,480점 달성! 1:1 대결 도전해봐 🎮')}
-                                                    className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    <i className="fas fa-border-all text-[10px]"></i> 🎮 2048 배틀
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #주사위굴리기` : '#주사위굴리기 1~6 주사위 대결! 🎲')}
-                                                    className="px-2.5 py-1 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    <i className="fas fa-dice text-[10px]"></i> 🎲 주사위
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} #오늘의운세` : '#오늘의운세 오늘 내 사주 행운 지수는? 🔮')}
-                                                    className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    <i className="fas fa-sparkles text-[10px]"></i> 🔮 오늘운세
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setNewPostContent(prev => prev ? `${prev} $삼성전자` : '$삼성전자 실시간 시세 체크 📈')}
-                                                    className="px-2.5 py-1 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    <i className="fas fa-chart-line text-[10px]"></i> 📈 종목시세
-                                                </button>
-                                            </div>
-
-                                            <div className="flex justify-between items-center pt-2">
-                                                <label className="cursor-pointer text-slate-400 hover:text-violet-600 transition-colors flex items-center gap-1 text-xs font-bold">
-                                                    <i className="fas fa-camera text-sm"></i> 사진 첨부
-                                                    <input 
-                                                        type="file" 
-                                                        accept="image/*" 
-                                                        onChange={handleImageChange}
-                                                        className="hidden" 
-                                                    />
-                                                </label>
-                                                <button
-                                                    onClick={handleCreatePost}
-                                                    className="px-4.5 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs shadow transition-all cursor-pointer active:scale-95"
-                                                >
-                                                    게시하기
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 {/* 피드 필터 탭 (6개 카테고리) */}
                                 <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar border-b border-slate-200/80 pb-2.5">
                                     <button 
@@ -1341,7 +1236,7 @@ export default function LoungePage() {
                                     
                                     {/* 인스타그램 스토리 하이라이트 느낌의 원형 칩 배치 */}
                                     <div className="flex gap-4 overflow-x-auto hide-scrollbar pb-3 mb-4 border-b border-slate-100/60">
-                                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => setActiveTab('write')}>
+                                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0 cursor-pointer" onClick={() => setIsWriteModalOpen(true)}>
                                             <div className="w-12 h-12 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-violet-500 hover:text-violet-500 transition-all bg-slate-50">
                                                 <i className="fas fa-plus text-xs"></i>
                                             </div>
@@ -1488,6 +1383,7 @@ export default function LoungePage() {
                                 <div 
                                     onClick={() => {
                                         setNewPostContent('#사다리타기 오늘 커피 쏠 사람 사다리 타보자! ☕');
+                                        setIsWriteModalOpen(true);
                                         setActiveTab('home');
                                     }}
                                     className="p-2 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-100 transition-all cursor-pointer group"
@@ -1504,12 +1400,182 @@ export default function LoungePage() {
 
                 </div>
 
+                {/* 오른쪽 아래 아일랜드(Island) 형태 플로팅 글쓰기 버튼 */}
+                <button
+                    type="button"
+                    onClick={() => setIsWriteModalOpen(true)}
+                    className="fixed right-4 sm:right-6 lg:right-8 bottom-20 lg:bottom-8 z-40 flex items-center gap-2.5 px-5 py-3.5 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-violet-600/30 border border-white/25 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 cursor-pointer group"
+                    aria-label="라운지 새 글 쓰기"
+                >
+                    <span className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs group-hover:rotate-12 transition-transform">
+                        <i className="fas fa-pen"></i>
+                    </span>
+                    <span className="tracking-tight pr-0.5">글쓰기</span>
+                </button>
+
+                {/* 별도 분리된 라운지 글쓰기 모달 */}
+                {isWriteModalOpen && (
+                    <div
+                        className="fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in"
+                        onClick={() => setIsWriteModalOpen(false)}
+                    >
+                        <div
+                            className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-200 flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* 모달 상단 헤더 */}
+                            <div className="flex justify-between items-center border-b border-slate-100 pb-3.5">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center text-lg shrink-0">
+                                        {persona.avatar}
+                                    </div>
+                                    <div>
+                                        <div className="flex items-center gap-1.5">
+                                            <h3 className="font-extrabold text-slate-900 text-sm">라운지 새 글 쓰기</h3>
+                                            <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200">
+                                                {persona.name}
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 font-bold mt-0.5">
+                                            사다리 게임이나 운세·주식·배틀 위젯을 함께 첨부해 보세요
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsWriteModalOpen(false)}
+                                    className="w-8 h-8 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center text-sm cursor-pointer transition-colors"
+                                    aria-label="글쓰기 창 닫기"
+                                >
+                                    <i className="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            {/* 본문 입력 영역 */}
+                            <div className="flex flex-col gap-3">
+                                <textarea
+                                    value={newPostContent}
+                                    onChange={(e) => setNewPostContent(e.target.value)}
+                                    placeholder="무슨 생각을 하고 계신가요? 아래 [☕ 사다리 만들기] 버튼으로 직접 게임을 제작하거나, 게임/운세/주식 위젯을 첨부해 보세요!"
+                                    rows={4}
+                                    autoFocus
+                                    className="w-full p-3.5 bg-slate-50/70 border border-slate-200 rounded-2xl outline-none resize-none text-slate-800 placeholder-slate-400 font-bold text-sm leading-relaxed focus:bg-white focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 transition-all"
+                                />
+
+                                {/* 첨부된 커스텀 사다리타기 미리보기 배지 */}
+                                {pendingLadderData && (
+                                    <div className="p-2.5 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between animate-fade-in">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-base">🪜</span>
+                                            <div>
+                                                <span className="text-xs font-black text-sky-850">{pendingLadderData.title}</span>
+                                                <span className="text-[10px] text-sky-600 font-bold ml-1.5">({pendingLadderData.itemsCount}인용 사다리 첨부됨)</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPendingLadderData(null)}
+                                            className="text-slate-400 hover:text-rose-500 text-xs px-2 py-0.5 font-bold transition-colors cursor-pointer"
+                                        >
+                                            첨부 취소 ✖
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* 이미지 미리보기 */}
+                                {selectedImage && (
+                                    <div className="relative w-24 h-24 rounded-xl overflow-hidden border border-slate-200 flex items-center justify-center bg-slate-50">
+                                        <img src={selectedImage} alt="미리보기" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={handleRemoveImage}
+                                            className="absolute top-1 right-1 w-5 h-5 bg-black/60 text-white rounded-full flex items-center justify-center text-[10px] cursor-pointer"
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* ⚡ 원클릭 스마트 액션 툴바 (Quick Action Bar) */}
+                                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-slate-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsLadderModalOpen(true)}
+                                        className="px-2.5 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-600 text-white text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer shadow-xs active:scale-95"
+                                    >
+                                        <i className="fas fa-mug-hot text-[10px]"></i> ☕ 사다리 만들기 🪜
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewPostContent(prev => prev ? `${prev} #2048` : '#2048 20,480점 달성! 1:1 대결 도전해봐 🎮')}
+                                        className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                    >
+                                        <i className="fas fa-border-all text-[10px]"></i> 🎮 2048 배틀
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewPostContent(prev => prev ? `${prev} #주사위굴리기` : '#주사위굴리기 1~6 주사위 대결! 🎲')}
+                                        className="px-2.5 py-1.5 rounded-lg bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                    >
+                                        <i className="fas fa-dice text-[10px]"></i> 🎲 주사위
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewPostContent(prev => prev ? `${prev} #오늘의운세` : '#오늘의운세 오늘 내 사주 행운 지수는? 🔮')}
+                                        className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                    >
+                                        <i className="fas fa-sparkles text-[10px]"></i> 🔮 오늘운세
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setNewPostContent(prev => prev ? `${prev} $삼성전자` : '$삼성전자 실시간 시세 체크 📈')}
+                                        className="px-2.5 py-1.5 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 border border-violet-200 text-[11px] font-black flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                    >
+                                        <i className="fas fa-chart-line text-[10px]"></i> 📈 종목시세
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 모달 하단 액션 바 */}
+                            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
+                                <label className="cursor-pointer px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-violet-600 transition-colors flex items-center gap-1.5 text-xs font-extrabold">
+                                    <i className="fas fa-camera text-sm"></i> 사진 첨부
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageChange}
+                                        className="hidden"
+                                    />
+                                </label>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsWriteModalOpen(false)}
+                                        className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-xs transition-colors cursor-pointer"
+                                    >
+                                        취소
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCreatePost()}
+                                        className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs shadow-md shadow-violet-600/20 transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
+                                    >
+                                        <i className="fas fa-paper-plane text-[10px]"></i>
+                                        <span>게시하기</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* 사다리타기 직접 만들기 모달 */}
                 <CustomLadderBuilderModal
                     isOpen={isLadderModalOpen}
                     onClose={() => setIsLadderModalOpen(false)}
                     onSubmit={(ladder) => {
                         setPendingLadderData(ladder);
+                        setIsWriteModalOpen(true);
                         if (!newPostContent.trim()) {
                             setNewPostContent(`[${ladder.title}] 사다리타기 게임 시작! 번호를 골라보세요 ☕🪜`);
                         }
