@@ -11,7 +11,7 @@ interface TenpingAdBannerProps {
 export function TenpingAdBanner({
     className = '',
     adClient = '1sPlEGM1OPa%2fqKrfOfiJFkwaIKsrMIKWxlIDMXXpYhtE%2b%2fp%2b3GD6ia1%2fr90Upi7N',
-    adDisplayType = '67%2be3LHzHbblsB9oLrOpWQ%3d%3d',
+    adDisplayType = 'UD8Mia8gyIoT5Z2MT6VB3Q%3d%3d',
 }: TenpingAdBannerProps) {
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -23,7 +23,7 @@ export function TenpingAdBanner({
 
         const tenpingEl = document.createElement('tenping');
         tenpingEl.className = 'adsbytenping';
-        tenpingEl.style.cssText = 'width: 100%; margin: 0px auto; display: block; max-width: 768px;';
+        tenpingEl.style.cssText = 'width: 100%; margin: 0px auto; display: block; max-width: 580px;';
         tenpingEl.setAttribute('tenping-ad-client', adClient);
         tenpingEl.setAttribute('tenping-ad-display-type', adDisplayType);
         container.appendChild(tenpingEl);
@@ -42,7 +42,7 @@ export function TenpingAdBanner({
         <div className={`w-full flex flex-col items-center justify-center ${className}`}>
             <div
                 ref={containerRef}
-                className="w-full max-w-[768px] mx-auto overflow-hidden rounded-2xl"
+                className="w-full max-w-[580px] mx-auto overflow-hidden rounded-2xl"
             />
         </div>
     );
