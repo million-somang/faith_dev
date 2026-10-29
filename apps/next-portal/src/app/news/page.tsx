@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card, NewsCard } from '@faithportal/ui';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
+import { TenpingAdBanner } from '@/components/adsense/TenpingAdBanner';
 
 export default function NewsPage() {
     const { user } = useAuth();
@@ -283,6 +284,9 @@ export default function NewsPage() {
                     ))}
                 </div>
             </div>
+
+            {/* Tenping Ad Banner */}
+            <TenpingAdBanner className="mb-8" />
 
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Left: News List */}
