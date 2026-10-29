@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Trophy, Medal, Award, LogIn, RefreshCw, Star } from 'lucide-react';
+import { Medal, Award, LogIn, RefreshCw, Star } from 'lucide-react';
 import axios from 'axios';
 import { LeaderboardItem, TeamProfile } from '../types/baseball';
+import { BASEBALL_ASSETS } from '../utils/assets';
 
 interface LeagueLeaderboardProps {
   isMember: boolean;
@@ -33,19 +34,23 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
 
   return (
     <div className="w-full flex flex-col gap-3 py-1">
-      {/* 랭킹전 시즌 배너 */}
-      <div className="p-3 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent rounded-2xl border border-amber-300/40 flex items-center justify-between">
+      {/* 랭킹전 시즌 배너 (나노바나나 챔피언십 트로피 적용) */}
+      <div className="p-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl border border-amber-400/50 shadow-md flex items-center justify-between text-white">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold shadow-sm">
-            <Trophy className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/50 p-1 flex items-center justify-center shadow-sm shrink-0 overflow-hidden">
+            <img
+              src={BASEBALL_ASSETS.victoryTrophy}
+              alt="Season Trophy"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
-            <h3 className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+            <h3 className="text-xs font-black text-white flex items-center gap-1.5">
               2026 베라 숫자야구 정규 시즌
-              <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500 text-white font-bold">LIVE</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] bg-amber-500 text-slate-950 font-black">LIVE</span>
             </h3>
-            <p className="text-[10px] text-slate-500">
-              산정 기준: 다승 &gt; 승률(%) &gt; 완봉승 &gt; 평균 소모 이닝(낮을수록 우위)
+            <p className="text-[10px] text-slate-300 mt-0.5">
+              산정 기준: 다승 &gt; 승률(%) &gt; 완봉승 &gt; 평균 소모 이닝
             </p>
           </div>
         </div>
@@ -53,7 +58,7 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
         <button
           onClick={fetchLeaderboard}
           disabled={loading}
-          className="p-2 rounded-xl bg-white/80 text-slate-500 hover:text-slate-800 shadow-[2px_2px_5px_#cbd5e1] active:scale-95 transition-all cursor-pointer"
+          className="p-2 rounded-xl bg-white/10 text-amber-300 hover:bg-white/20 active:scale-95 transition-all cursor-pointer"
           title="새로고침"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -89,19 +94,22 @@ export const LeagueLeaderboard: React.FC<LeagueLeaderboardProps> = ({ isMember, 
       {/* 내 구단 요약 카드 (회원인 경우) */}
       {isMember && (
         <div className="p-2.5 bg-white/90 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between text-xs">
-          <div>
-            <div className="text-[10px] text-slate-400 font-bold uppercase">내 구단 성적</div>
-            <div className="font-black text-slate-800 text-sm flex items-center gap-1.5 mt-0.5">
-              <span>{profile.teamName}</span>
-              {onOpenTeamModal && (
-                <button
-                  type="button"
-                  onClick={onOpenTeamModal}
-                  className="px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 transition-all cursor-pointer"
-                >
-                  구단명 변경 ✏️
-                </button>
-              )}
+          <div className="flex items-center gap-2">
+            <img src={BASEBALL_ASSETS.emblem} alt="" className="w-8 h-8 rounded-lg object-contain bg-slate-900 p-0.5" />
+            <div>
+              <div className="text-[10px] text-slate-400 font-bold uppercase">내 구단 성적</div>
+              <div className="font-black text-slate-800 text-sm flex items-center gap-1.5 mt-0.5">
+                <span>{profile.teamName}</span>
+                {onOpenTeamModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenTeamModal}
+                    className="px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold border border-indigo-200 transition-all cursor-pointer"
+                  >
+                    구단명 변경 ✏️
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-3 text-right">

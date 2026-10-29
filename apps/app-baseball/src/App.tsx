@@ -10,6 +10,7 @@ import { BaseballKeypad } from './components/BaseballKeypad';
 import { LeagueLeaderboard } from './components/LeagueLeaderboard';
 import { BaseballGuide } from './components/BaseballGuide';
 import { GameResultModal } from './components/GameResultModal';
+import { BASEBALL_ASSETS, preloadBaseballAssets } from './utils/assets';
 
 // 세션 쿠키 자동 동기화
 axios.defaults.withCredentials = true;
@@ -74,6 +75,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    preloadBaseballAssets();
     fetchProfile();
   }, [fetchProfile]);
 
@@ -206,39 +208,54 @@ export default function App() {
     }
   };
 
-  // 스플래시 인트로 화면
+  // 스플래시 인트로 화면 (나노바나나 스타디움 배경 & 3D 리그 엠블럼 적용)
   if (showSplash) {
     return (
-      <div className="fixed inset-0 z-50 bg-[#f0f4f8] flex flex-col items-center justify-between p-6 select-none font-sans">
-        <div className="w-full text-center mt-8">
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 bg-slate-200/60 px-2.5 py-1 rounded-full">
-            VeraNex Sports Series
+      <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-between p-6 select-none font-sans overflow-hidden">
+        {/* 스타디움 배경 이미지 & 다크 그라데이션 오버레이 */}
+        <img
+          src={BASEBALL_ASSETS.stadiumBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center opacity-45 scale-105 pointer-events-none"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-900/65 to-slate-950/95 pointer-events-none" />
+
+        <div className="relative z-10 w-full text-center mt-8">
+          <span className="text-[10px] font-black uppercase tracking-widest text-amber-300 bg-white/10 border border-amber-400/30 px-3 py-1 rounded-full backdrop-blur-xs">
+            VeraNex Pro Sports Series
           </span>
         </div>
 
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="w-24 h-24 rounded-3xl bg-[#f0f4f8] shadow-[10px_10px_20px_#d1d9e6,-10px_-10px_20px_#ffffff] border border-white flex items-center justify-center text-5xl">
-            ⚾
+        <div className="relative z-10 flex flex-col items-center gap-4 text-center">
+          <div className="relative w-32 h-32 rounded-3xl bg-gradient-to-b from-slate-800/90 to-slate-950/90 p-2 shadow-[0_12px_32px_rgba(0,0,0,0.6),0_0_24px_rgba(251,191,36,0.25)] border-2 border-amber-400/60 flex items-center justify-center overflow-hidden">
+            <img
+              src={BASEBALL_ASSETS.emblem}
+              alt="Vera Baseball Emblem"
+              className="w-full h-full object-contain drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)]"
+            />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight drop-shadow">
               베라 숫자야구
             </h1>
-            <p className="text-xs font-semibold text-slate-500 mt-1">
-              9이닝 정규 리그 &amp; 랭킹전
+            <p className="text-xs font-bold text-amber-300/90 mt-1">
+              9이닝 프로야구 정규 리그 &amp; 전광판 랭킹전
             </p>
           </div>
         </div>
 
         {/* 하단 프로그레스 바 & 공식 후원사 슬롯 */}
-        <div className="w-full max-w-xs space-y-3 mb-6">
-          <div className="flex justify-between text-xs font-mono font-bold text-slate-500">
-            <span>STADIUM LOADING...</span>
-            <span>{splashProgress}%</span>
+        <div className="relative z-10 w-full max-w-xs space-y-3 mb-6">
+          <div className="flex justify-between text-xs font-mono font-bold text-slate-300">
+            <span className="flex items-center gap-1.5">
+              <img src={BASEBALL_ASSETS.ball} alt="" className="w-3.5 h-3.5 rounded-full object-contain animate-spin" />
+              STADIUM LOADING...
+            </span>
+            <span className="text-amber-400">{splashProgress}%</span>
           </div>
-          <div className="w-full h-2.5 bg-slate-200/80 rounded-full overflow-hidden shadow-inner">
+          <div className="w-full h-2.5 bg-slate-800/90 rounded-full overflow-hidden border border-white/15 shadow-inner">
             <div
-              className="h-full bg-gradient-to-r from-amber-500 to-rose-500 transition-all duration-75 rounded-full"
+              className="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 transition-all duration-75 rounded-full"
               style={{ width: `${splashProgress}%` }}
             />
           </div>
@@ -265,7 +282,7 @@ export default function App() {
         {/* 토스트 팝업 */}
         {toastMessage && (
           <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 px-3.5 py-1.5 bg-slate-900/90 text-white text-xs font-bold rounded-2xl shadow-xl backdrop-blur-xs flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2">
-            <span>⚾</span>
+            <img src={BASEBALL_ASSETS.ball} alt="" className="w-4 h-4 rounded-full object-contain" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -273,11 +290,15 @@ export default function App() {
         {/* 상단 헤더 바 (앱 타이틀, 볼륨 음소거 표시, 공유 버튼) */}
         <header className="flex items-center justify-between px-1 mb-1">
           <div className="flex items-center gap-1.5">
-            <span className="text-lg">⚾</span>
+            <img
+              src={BASEBALL_ASSETS.emblem}
+              alt="Vera Baseball"
+              className="w-6 h-6 rounded-md object-contain bg-slate-900 p-0.5 shadow-2xs"
+            />
             <div>
               <h1 className="text-xs font-black text-slate-800 tracking-tight flex items-center gap-1">
                 베라 숫자야구
-                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-200 text-slate-600 font-bold">
+                <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-slate-800 text-amber-300 font-bold">
                   9 INNINGS
                 </span>
               </h1>
@@ -314,7 +335,7 @@ export default function App() {
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            <Play className="w-3 h-3" />
+            <Play className="w-3 h-3 text-emerald-600 fill-emerald-600" />
             <span>경기장</span>
           </button>
           <button
@@ -448,9 +469,11 @@ export default function App() {
             <div className="bg-[#f0f4f8] rounded-3xl p-5 w-full max-w-xs shadow-2xl border border-white space-y-4 animate-in zoom-in-95">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
-                    ⚾
-                  </div>
+                  <img
+                    src={BASEBALL_ASSETS.emblem}
+                    alt=""
+                    className="w-7 h-7 rounded-lg bg-slate-900 p-0.5 object-contain"
+                  />
                   <h3 className="text-sm font-black text-slate-900">내 구단명 설정</h3>
                 </div>
                 <button

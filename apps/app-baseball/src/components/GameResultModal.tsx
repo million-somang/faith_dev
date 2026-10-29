@@ -1,6 +1,7 @@
 import React from 'react';
-import { Trophy, Frown, Sparkles, Flame, Shield, ArrowRight, RotateCcw } from 'lucide-react';
+import { Frown, Sparkles, Flame, Shield, ArrowRight, RotateCcw } from 'lucide-react';
 import { GameStatus, SpecialBadge, InningRecord } from '../types/baseball';
+import { BASEBALL_ASSETS } from '../utils/assets';
 
 interface GameResultModalProps {
   status: GameStatus;
@@ -28,16 +29,24 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-sm bg-[#f0f4f8] rounded-3xl p-4 sm:p-5 shadow-[12px_12px_28px_#0f172a,-6px_-6px_16px_#ffffff] border-2 border-white flex flex-col items-center text-center animate-in zoom-in-95 duration-200 max-h-[92vh] overflow-y-auto custom-scrollbar">
-        {/* 상단 아이콘 */}
+        {/* 상단 나노바나나 트로피/아이콘 */}
         <div className="relative mb-2 shrink-0">
           <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] ${
+            className={`w-16 h-16 rounded-2xl flex items-center justify-center shadow-[6px_6px_12px_#d1d9e6,-6px_-6px_12px_#ffffff] overflow-hidden p-1.5 ${
               isWon
-                ? 'bg-gradient-to-tr from-amber-400 to-amber-500 text-slate-950'
+                ? 'bg-gradient-to-b from-slate-900 to-indigo-950 border-2 border-amber-400'
                 : 'bg-gradient-to-tr from-rose-600 to-slate-800 text-white'
             }`}
           >
-            {isWon ? <Trophy className="w-8 h-8 animate-bounce" /> : <Frown className="w-8 h-8" />}
+            {isWon ? (
+              <img
+                src={BASEBALL_ASSETS.victoryTrophy}
+                alt="Victory Trophy"
+                className="w-full h-full object-contain drop-shadow-[0_2px_6px_rgba(251,191,36,0.5)]"
+              />
+            ) : (
+              <Frown className="w-8 h-8" />
+            )}
           </div>
           {isWon && (
             <div className="absolute -top-1 -right-1 text-amber-500">
@@ -46,7 +55,7 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
           )}
         </div>
 
-        {/* 타이틀 및 서브텍스트 (진한 텍스트로 가독성 강화) */}
+        {/* 타이틀 및 서브텍스트 */}
         <h2 className="text-xl font-black text-slate-950 tracking-tight">
           {isWon ? '승리! (VICTORY)' : '패배 (DEFEAT)'}
         </h2>
@@ -86,11 +95,25 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
 
         {/* 상대 투수의 비밀 구종 (정답 공개) */}
         <div className="w-full bg-[#e2eaf2] rounded-2xl p-2.5 my-1.5 shadow-[inset_3px_3px_6px_#cbd5e1,inset_-3px_-3px_6px_#ffffff] border border-slate-200/80">
-          <div className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-0.5">
+          <div className="text-[10px] font-black text-slate-700 uppercase tracking-wider mb-1">
             상대 투수의 마구 (정답)
           </div>
-          <div className="font-mono text-2xl font-black tracking-widest text-slate-950">
-            {secret.split('').join('  ')}
+          <div className="flex items-center justify-center gap-2.5">
+            {secret.split('').map((digit, idx) => (
+              <div
+                key={idx}
+                className="relative w-9 h-9 rounded-full bg-white shadow-sm ring-2 ring-amber-400 flex items-center justify-center overflow-hidden"
+              >
+                <img
+                  src={BASEBALL_ASSETS.ball}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover opacity-35"
+                />
+                <span className="relative z-10 font-mono text-lg font-black text-slate-950">
+                  {digit}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -98,7 +121,8 @@ export const GameResultModal: React.FC<GameResultModalProps> = ({
         <div className="w-full bg-[#f8fafc] rounded-2xl p-2.5 my-1.5 border border-slate-300 shadow-inner">
           <div className="flex items-center justify-between mb-1.5 px-1 border-b border-slate-200 pb-1">
             <span className="text-[11px] font-black text-slate-900 tracking-tight flex items-center gap-1">
-              <span>⚾</span> 경기 이닝별 투구 기록 ({history.length}이닝)
+              <img src={BASEBALL_ASSETS.ball} alt="" className="w-3.5 h-3.5 rounded-full object-contain" />
+              <span>경기 이닝별 투구 기록 ({history.length}이닝)</span>
             </span>
             <span className="text-[10px] font-black text-indigo-700">
               {isWon ? `${inningsTaken}회 승리` : '9회 종료'}

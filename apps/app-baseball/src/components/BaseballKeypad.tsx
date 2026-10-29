@@ -1,5 +1,6 @@
 import React from 'react';
-import { Delete, RefreshCw, Send } from 'lucide-react';
+import { Delete, RefreshCw } from 'lucide-react';
+import { BASEBALL_ASSETS } from '../utils/assets';
 
 interface BaseballKeypadProps {
   inputDigits: string[];
@@ -22,10 +23,10 @@ export const BaseballKeypad: React.FC<BaseballKeypadProps> = ({
 
   return (
     <div className="w-full flex flex-col gap-1.5">
-      {/* 3자리 투구 입력 현황판 & 투구 버튼 */}
+      {/* 3자리 투구 입력 현황판 (3D 야구공 슬롯) & 투구 버튼 */}
       <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#f0f4f8] rounded-2xl shadow-[inset_3px_3px_6px_#d1d9e6,inset_-3px_-3px_6px_#ffffff] border border-white/60">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">선택:</span>
+          <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight">구종 선택:</span>
           <div className="flex items-center gap-1.5">
             {[0, 1, 2].map((idx) => {
               const val = inputDigits[idx];
@@ -33,13 +34,22 @@ export const BaseballKeypad: React.FC<BaseballKeypadProps> = ({
               return (
                 <div
                   key={idx}
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono text-base font-black transition-all ${
+                  className={`relative w-8 h-8 rounded-full flex items-center justify-center font-mono text-base font-black transition-all overflow-hidden ${
                     isFilled
-                      ? 'bg-gradient-to-b from-amber-400 to-amber-500 text-slate-950 shadow-[2px_2px_4px_#cbd5e1,-1px_-1px_3px_#ffffff] scale-105'
+                      ? 'bg-white shadow-[0_2px_6px_rgba(15,23,42,0.22)] ring-2 ring-amber-400 scale-105'
                       : 'bg-slate-200 text-slate-500 border border-dashed border-slate-300'
                   }`}
                 >
-                  {val || '•'}
+                  {isFilled && (
+                    <img
+                      src={BASEBALL_ASSETS.ball}
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover opacity-35 pointer-events-none"
+                    />
+                  )}
+                  <span className={`relative z-10 ${isFilled ? 'text-slate-950 drop-shadow-[0_1px_1px_rgba(255,255,255,0.9)]' : ''}`}>
+                    {val || '•'}
+                  </span>
                 </div>
               );
             })}
@@ -50,13 +60,17 @@ export const BaseballKeypad: React.FC<BaseballKeypadProps> = ({
         <button
           onClick={onPitch}
           disabled={!isReadyToPitch}
-          className={`flex items-center gap-1 px-3.5 py-1.5 rounded-xl font-black text-xs tracking-tight transition-all transform active:scale-95 ${
+          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl font-black text-xs tracking-tight transition-all transform active:scale-95 ${
             isReadyToPitch
-              ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-[0_3px_10px_rgba(239,68,68,0.4)] hover:brightness-105 animate-pulse cursor-pointer'
+              ? 'bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white shadow-[0_3px_10px_rgba(239,68,68,0.45)] hover:brightness-105 animate-pulse cursor-pointer'
               : 'bg-slate-300 text-slate-500 cursor-not-allowed'
           }`}
         >
-          <Send className="w-3 h-3" />
+          <img
+            src={BASEBALL_ASSETS.ball}
+            alt=""
+            className={`w-4 h-4 rounded-full object-contain ${isReadyToPitch ? 'animate-spin' : 'opacity-60'}`}
+          />
           <span>투구 (PITCH)</span>
         </button>
       </div>
