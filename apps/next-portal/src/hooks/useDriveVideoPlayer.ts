@@ -117,6 +117,7 @@ export function useDriveVideoPlayer() {
 
     // ─── Google OAuth & Drive 연동 상태 ───
     const [googleClientId, setGoogleClientId] = useState<string>(DEFAULT_GOOGLE_CLIENT_ID);
+    const [currentOrigin, setCurrentOrigin] = useState<string>('');
     const [accessToken, setAccessToken] = useState<string>('');
     const [isDriveConnected, setIsDriveConnected] = useState<boolean>(false);
     const [isPickerOpen, setIsPickerOpen] = useState<boolean>(false);
@@ -161,6 +162,8 @@ export function useDriveVideoPlayer() {
     // ─── 초기 설정 및 저장된 재생목록/토큰 복원 ───
     useEffect(() => {
         if (typeof window === 'undefined') return;
+
+        setCurrentOrigin(window.location.origin);
 
         const savedClientId = localStorage.getItem(STORAGE_KEYS.CLIENT_ID);
         if (savedClientId && savedClientId.trim()) {
@@ -365,10 +368,16 @@ export function useDriveVideoPlayer() {
                 scope: DRIVE_READONLY_SCOPE,
                 callback: (tokenResponse) => {
                     if (tokenResponse.error || !tokenResponse.access_token) {
-                        setDriveError(
-                            tokenResponse.error_description ||
-                                '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
-                        );
+                        const errDesc = tokenResponse.error_description || tokenResponse.error || '';
+                        if (errDesc.includes('origin_mismatch') || errDesc.includes('400')) {
+                            setIsClientConfigOpen(true);
+                            showNotice(`⚠️ 구글 콘솔에 현재 도메인(${window.location.origin}) 등록이 필요합니다.`);
+                        } else {
+                            setDriveError(
+                                errDesc ||
+                                    '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
+                            );
+                        }
                         return;
                     }
                     const newToken = tokenResponse.access_token;
@@ -391,9 +400,17 @@ export function useDriveVideoPlayer() {
                     showNotice('구글 드라이브가 성공적으로 연결되었습니다!');
                 },
                 error_callback: (err) => {
-                    showNotice(
-                        err.message || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.'
-                    );
+                    const msg = err?.message || '';
+                    if (msg.includes('origin_mismatch') || msg.includes('400') || msg.includes('popup_closed_by_user')) {
+                        // origin_mismatch의 경우 구글 팝업창에서 직접 400이 발생하거나 팝업이 닫힐 수 있으므로 안내
+                        showNotice(
+                            msg.includes('origin_mismatch')
+                                ? `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin})을 등록해 주세요.`
+                                : (msg || '구글 인증 팝업이 닫혔습니다.')
+                        );
+                    } else {
+                        showNotice(msg || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.');
+                    }
                 },
             });
 
@@ -889,6 +906,7 @@ export function useDriveVideoPlayer() {
         playerContainerRef,
         // Google Drive OAuth & Picker
         googleClientId,
+        currentOrigin,
         isDriveConnected,
         isPickerOpen,
         setIsPickerOpen,

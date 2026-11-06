@@ -15,6 +15,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         videoRef,
         playerContainerRef,
         googleClientId,
+        currentOrigin,
         isDriveConnected,
         isPickerOpen,
         setIsPickerOpen,
@@ -84,6 +85,17 @@ export const DriveVideoPlayerSection: React.FC = () => {
     const [clientIdDraft, setClientIdDraft] = useState<string>(googleClientId);
     const [shareUrlDraft, setShareUrlDraft] = useState<string>('');
     const [shareTitleDraft, setShareTitleDraft] = useState<string>('');
+    const [copiedOrigin, setCopiedOrigin] = useState<boolean>(false);
+
+    const handleCopyOrigin = async () => {
+        const originToCopy = currentOrigin || (typeof window !== 'undefined' ? window.location.origin : '');
+        if (!originToCopy) return;
+        try {
+            await navigator.clipboard.writeText(originToCopy);
+            setCopiedOrigin(true);
+            setTimeout(() => setCopiedOrigin(false), 2500);
+        } catch (_) {}
+    };
 
     const effectiveVolume = isMuted ? 0 : volume;
     const volumePercent = Math.round(effectiveVolume * 100);
@@ -812,7 +824,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
             {/* ─── 모달 3: Google OAuth 2.0 Client ID 설정 ─── */}
             {isClientConfigOpen && (
                 <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+                    <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                                 <i className="fab fa-google text-indigo-600"></i>
@@ -827,16 +839,55 @@ export const DriveVideoPlayerSection: React.FC = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleSaveClientConfigSubmit} className="space-y-3.5">
-                            <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-xs text-slate-700 space-y-1 leading-relaxed">
-                                <p className="font-extrabold text-indigo-950">
-                                    💡 로그인된 구글 드라이브 폴더·파일 목록을 불러오려면 Google Cloud OAuth 2.0 클라이언트 ID가 필요합니다.
-                                </p>
-                                <p className="text-[11px] text-slate-600">
-                                    • Google Cloud Console → API 및 서비스 → 사용자 인증 정보 → 웹 애플리케이션 OAuth 클라이언트 ID 생성 후 승인된 자바스크립트 원본에 현재 도메인(예: <code className="font-mono bg-white px-1 rounded">http://localhost:3000</code>, <code className="font-mono bg-white px-1 rounded">https://veranex.app</code>)을 등록하세요.
-                                </p>
+                        {/* origin_mismatch 오류 해결 원클릭 가이드 */}
+                        <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 space-y-2.5 leading-relaxed">
+                            <div className="flex items-center gap-1.5 font-black text-amber-900">
+                                <i className="fas fa-exclamation-triangle text-amber-600"></i>
+                                <span>‘400 오류: origin_mismatch’ 해결 방법</span>
+                            </div>
+                            <p className="text-[11px] text-amber-800">
+                                구글의 보안 정책상 Google Cloud Console에 현재 사이트 주소가 <strong>‘승인된 자바스크립트 원본’</strong>으로 등록되어 있어야 로그인 팝업이 허용됩니다.
+                            </p>
+
+                            <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase">등록할 출처 URI</div>
+                                    <div className="font-mono font-black text-indigo-700 text-xs truncate">
+                                        {currentOrigin || (typeof window !== 'undefined' ? window.location.origin : 'https://veranex.app')}
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleCopyOrigin}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 cursor-pointer shrink-0 ${
+                                        copiedOrigin
+                                            ? 'bg-emerald-600 text-white'
+                                            : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200'
+                                    }`}
+                                >
+                                    <i className={`fas ${copiedOrigin ? 'fa-check' : 'fa-copy'}`}></i>
+                                    <span>{copiedOrigin ? '복사됨!' : '주소 복사'}</span>
+                                </button>
                             </div>
 
+                            <div className="text-[11px] text-slate-600 space-y-1 pt-1">
+                                <p>1. 아래 버튼을 눌러 Google Cloud Console의 <strong>‘사용자 인증 정보’</strong>로 이동합니다.</p>
+                                <p>2. <strong>Web client</strong>(웹 애플리케이션) 우측의 <strong>연필(수정) 아이콘</strong>을 클릭합니다.</p>
+                                <p>3. <strong>‘승인된 자바스크립트 원본’</strong> 항목에 위 복사한 주소를 추가하고 <strong>[저장]</strong>을 누릅니다.</p>
+                            </div>
+
+                            <a
+                                href="https://console.cloud.google.com/apis/credentials"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs shadow-xs transition-colors"
+                            >
+                                <i className="fas fa-external-link-alt text-[10px]"></i>
+                                <span>Google Cloud 사용자 인증 정보 콘솔 열기 ↗</span>
+                            </a>
+                        </div>
+
+                        <form onSubmit={handleSaveClientConfigSubmit} className="space-y-3.5 pt-1">
                             <div>
                                 <label className="block text-xs font-extrabold text-slate-700 mb-1">
                                     Google OAuth 2.0 Client ID
@@ -848,6 +899,9 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                     placeholder="1234567890-abcdefg.apps.googleusercontent.com"
                                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                 />
+                                <p className="text-[11px] text-slate-400 mt-1">
+                                    콘솔에 표시된 클라이언트 ID 전체(예: <span className="font-mono text-slate-600">715992191539-...apps.googleusercontent.com</span>)를 입력하세요.
+                                </p>
                             </div>
 
                             <div className="pt-2 flex justify-end gap-2">
