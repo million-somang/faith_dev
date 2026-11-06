@@ -224,14 +224,25 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                             <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
                                 <i className="fas fa-exclamation-triangle"></i>
                             </div>
-                            <p className="text-xs sm:text-sm font-bold text-rose-800">{error}</p>
-                            <button
-                                type="button"
-                                onClick={onRetryConnect}
-                                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black cursor-pointer"
-                            >
-                                다시 구글 계정 인증하기
-                            </button>
+                            <p className="text-xs sm:text-sm font-bold text-rose-800 leading-relaxed max-w-md mx-auto">{error}</p>
+                            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                <a
+                                    href="https://console.cloud.google.com/apis/library/drive.googleapis.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-xs transition-colors flex items-center gap-1.5"
+                                >
+                                    <i className="fas fa-external-link-alt text-[10px]"></i>
+                                    <span>Google Drive API 사용 설정 켜기 ↗</span>
+                                </a>
+                                <button
+                                    type="button"
+                                    onClick={onRetryConnect}
+                                    className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black cursor-pointer"
+                                >
+                                    다시 구글 계정 인증하기
+                                </button>
+                            </div>
                         </div>
                     ) : folders.length === 0 && videos.length === 0 ? (
                         <div className="py-16 text-center space-y-2">

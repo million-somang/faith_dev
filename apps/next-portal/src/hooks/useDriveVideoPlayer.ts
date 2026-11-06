@@ -302,7 +302,13 @@ export function useDriveVideoPlayer() {
                 });
 
                 if (!response.ok) {
-                    if (response.status === 401 || response.status === 403) {
+                    let googleErrorMsg = '';
+                    try {
+                        const errJson = await response.json();
+                        googleErrorMsg = errJson?.error?.message || '';
+                    } catch (_) {}
+
+                    if (response.status === 401) {
                         sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
                         sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
                         setIsDriveConnected(false);
@@ -311,7 +317,20 @@ export function useDriveVideoPlayer() {
                             '구글 드라이브 인증 세션이 만료되었습니다. [구글 드라이브 연결] 버튼을 다시 눌러주세요.'
                         );
                     }
-                    throw new Error(`구글 드라이브 목록 조회 실패 (HTTP ${response.status})`);
+
+                    if (response.status === 403) {
+                        if (googleErrorMsg.toLowerCase().includes('disabled') || googleErrorMsg.toLowerCase().includes('not been used')) {
+                            throw new Error(
+                                'Google Cloud Console에서 "Google Drive API"가 활성화되지 않았습니다. API 라이브러리에서 Google Drive API [사용] 버튼을 클릭해 주세요.'
+                            );
+                        }
+                        throw new Error(
+                            googleErrorMsg ||
+                            '구글 드라이브 접근 권한이 없습니다. 로그인 시 "드라이브 파일 보기" 권한을 허용했는지 확인해 주세요.'
+                        );
+                    }
+
+                    throw new Error(`구글 드라이브 목록 조회 실패 (HTTP ${response.status}: ${googleErrorMsg})`);
                 }
 
                 const data = (await response.json()) as DriveFilesListResponse;
