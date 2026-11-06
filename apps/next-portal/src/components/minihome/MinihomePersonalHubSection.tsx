@@ -106,7 +106,7 @@ export interface MinihomePersonalHubProps {
         activityRatio: number;
     };
     shoppingItems: MinihomeShoppingItem[];
-    onNavigateSection?: (section: 'dashboard' | 'schedule' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize') => void;
+    onNavigateSection?: (section: 'dashboard' | 'schedule' | 'video' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize') => void;
 }
 
 export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
@@ -182,6 +182,17 @@ export const MinihomePersonalHubSection: React.FC<MinihomePersonalHubProps> = ({
                         >
                             <i className="fas fa-sparkles text-amber-400 text-sm"></i>
                             <span>My Life</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onNavigateSection('video');
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="flex-1 min-w-[130px] py-2.5 px-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer text-slate-600 hover:bg-slate-100 font-bold"
+                        >
+                            <span>🎬</span>
+                            <span>비디오 플레이어</span>
                         </button>
                         <button
                             type="button"

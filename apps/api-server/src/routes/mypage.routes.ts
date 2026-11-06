@@ -291,4 +291,8 @@ mypage.delete('/push-subscription', async (c) => {
     }
 });
 
+// ===== Google Drive Video Stream Proxy =====
+import { DriveStreamController } from '../controllers/drive-stream.controller.js';
+mypage.get('/drive/stream/:fileId', (c) => DriveStreamController.streamVideo(c));
+
 export default mypage;

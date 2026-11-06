@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { PreferenceWizard } from '@/components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '@/components/homepage/MobileTabEditor';
 import { MyLifeSection } from '@/components/mypage/MyLifeSection';
+import { DriveVideoPlayerSection } from '@/components/mypage/DriveVideoPlayerSection';
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
@@ -288,7 +289,7 @@ export default function MyPage() {
     };
 
     // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
-    const [activeSection, setActiveSection] = useState<'dashboard' | 'schedule' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
+    const [activeSection, setActiveSection] = useState<'dashboard' | 'schedule' | 'video' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
     const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
@@ -858,12 +859,8 @@ export default function MyPage() {
                     </div>
                 </div>
 
-                {/* 히어로 배너 바로 아래: 상단 가로 탭 바 (모바일에서 내 아지트 기본 진입 시에는 '나의 아지트 다이어리 & 퍼스널 보드' 아래에 노출) */}
-                <div
-                    className={`bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80 mb-6 ${
-                        activeSection === 'dashboard' ? 'hidden lg:block' : 'block'
-                    }`}
-                >
+                {/* 히어로 배너 바로 아래: 상단 가로 탭 바 */}
+                <div className="bg-white rounded-2xl shadow-sm p-2 border border-slate-200/80 mb-6 block">
                     <nav className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar p-1">
                         <button
                             onClick={() => setActiveSection('dashboard')}
@@ -886,6 +883,17 @@ export default function MyPage() {
                         >
                             <i className="fas fa-sparkles text-amber-300 text-sm"></i>
                             <span>{t('My Life')}</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveSection('video')}
+                            className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl font-black text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                activeSection === 'video'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-100 font-bold'
+                            }`}
+                        >
+                            <span>🎬</span>
+                            <span>{t('비디오 플레이어')}</span>
                         </button>
                         <button
                             onClick={() => setActiveSection('news')}
@@ -947,7 +955,7 @@ export default function MyPage() {
 
                 {/* 메인 컨텐츠 영역 (100% 전체 너비로 확장) */}
                 <div className="w-full">
-                    {loading && activeSection !== 'dashboard' ? (
+                    {loading && activeSection !== 'dashboard' && activeSection !== 'video' ? (
                         <div className="bg-white rounded-3xl shadow-sm p-16 border border-slate-200/80 min-h-[400px] flex items-center justify-center">
                             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-slate-400"></div>
                         </div>
@@ -1100,6 +1108,14 @@ export default function MyPage() {
                                                                 💬 소셜 라운지
                                                             </Link>
                                                         </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setActiveSection('video')}
+                                                            className="w-full py-2.5 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200/70 font-extrabold text-xs text-center transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                                        >
+                                                            <i className="fab fa-google-drive"></i>
+                                                            <span>🎬 구글 드라이브 비디오 플레이어</span>
+                                                        </button>
                                                     </div>
 
                                                     {/* 나의 홈 3대 퀵 스탯 보드 (베라포인트·보유가구·오늘일정·사주행운지수 통합) */}
@@ -1437,6 +1453,11 @@ export default function MyPage() {
                                             handleRemoveAgenda={handleRemoveAgenda}
                                             SCHEDULE_COLOR_CONFIG={SCHEDULE_COLOR_CONFIG}
                                         />
+                                    )}
+
+                                    {/* ─── [신설] 🎬 구글 드라이브 연동 비디오 플레이어 섹션 ─── */}
+                                    {activeSection === 'video' && (
+                                        <DriveVideoPlayerSection />
                                     )}
 
                                     {/* 홈 꾸미기 섹션 */}
