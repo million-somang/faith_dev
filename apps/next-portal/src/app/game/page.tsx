@@ -411,6 +411,42 @@ function BilliardsThumb() {
     );
 }
 
+function SubmarineThumb() {
+    return (
+        <svg viewBox="0 0 320 120" preserveAspectRatio="xMidYMid meet" className={thumbClass}>
+            <defs>
+                <linearGradient id="subSea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0c4a6e" />
+                    <stop offset="60%" stopColor="#0f172a" />
+                    <stop offset="100%" stopColor="#020617" />
+                </linearGradient>
+                <pattern id="subGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                    <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#38bdf8" strokeWidth="0.5" strokeOpacity="0.25" />
+                </pattern>
+            </defs>
+            <rect width="320" height="120" fill="url(#subSea)" />
+            <rect width="320" height="120" fill="url(#subGrid)" />
+            <circle cx="85" cy="65" r="28" fill="none" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx="85" cy="65" r="48" fill="none" stroke="#38bdf8" strokeWidth="1" opacity="0.25" />
+            <line x1="85" y1="65" x2="135" y2="35" stroke="#38bdf8" strokeWidth="1.5" strokeOpacity="0.6" />
+            <g transform="translate(145, 55)">
+                <path d="M 0 10 C 20 0, 80 0, 110 8 C 118 10, 122 14, 110 18 C 80 24, 20 24, 0 16 Z" fill="#334155" stroke="#64748b" strokeWidth="1.5" />
+                <rect x="45" y="-6" width="18" height="10" rx="3" fill="#475569" stroke="#64748b" strokeWidth="1" />
+                <line x1="52" y1="-12" x2="52" y2="-6" stroke="#94a3b8" strokeWidth="2" />
+                <circle cx="54" cy="-12" r="2" fill="#38bdf8" />
+                <path d="M -4 6 L 0 12 L -4 18" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" />
+            </g>
+            <g transform="translate(85, 65)">
+                <circle cx="0" cy="0" r="14" fill="none" stroke="#ef4444" strokeWidth="1.8" />
+                <line x1="-18" y1="0" x2="18" y2="0" stroke="#ef4444" strokeWidth="1.8" />
+                <line x1="0" y1="-18" x2="0" y2="18" stroke="#ef4444" strokeWidth="1.8" />
+                <circle cx="0" cy="0" r="3" fill="#f59e0b" />
+                <text x="18" y="-8" fill="#fde047" fontSize="10" fontWeight="900" fontFamily="monospace">B-7 HIT!</text>
+            </g>
+        </svg>
+    );
+}
+
 export default function GamePage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -473,6 +509,44 @@ export default function GamePage() {
 
                 {activeGenre === 'mini' ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {/* 0-S. 베라 서브마린 (종이 좌표 해전) */}
+                        <div
+                            onClick={() => router.push('/game/submarine')}
+                            className="bg-white border-2 text-left border-indigo-200 rounded-2xl overflow-hidden hover:border-indigo-400 hover:shadow-xl transition-all group relative cursor-pointer flex flex-col justify-between"
+                        >
+                            <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full shadow-md animate-pulse">
+                                살보 해전 룰
+                            </div>
+                            <div>
+                                <div className="overflow-hidden bg-[#0c4a6e]"><SubmarineThumb /></div>
+                                <div className="p-4 sm:p-5 pb-2">
+                                    <h3 className="font-black text-base sm:text-xl text-indigo-900 mb-1 group-hover:text-indigo-600 transition-colors flex items-center justify-between sm:justify-start gap-1.5 sm:gap-2 min-w-0">
+                                        <span className="truncate whitespace-nowrap">Vera Submarine (베라 서브마린)</span>
+                                        <span className="text-[11px] sm:text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold shrink-0 whitespace-nowrap">좌표 해전</span>
+                                    </h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed">10×10 모눈종이 해도 위 적 정예 함대를 격침하라! 명중 시 주어지는 연속 포격권과 3×3 소나 정찰로 최소 턴수에 도전하세요.</p>
+                                </div>
+                            </div>
+                            <div className="p-4 sm:p-5 pt-0">
+                                <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 text-xs mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            launchApp('/app/submarine/', 'app-submarine');
+                                        }}
+                                        className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all shadow-sm active:scale-95 cursor-pointer"
+                                    >
+                                        <i className="fas fa-play text-[10px]"></i>
+                                        게임 시작 (팝업)
+                                    </button>
+                                    <span className="text-indigo-600 font-bold hover:underline flex items-center gap-1 whitespace-nowrap shrink-0">
+                                        규칙 & 공략 가이드 →
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* 0-A. 베라 당구 클럽 (4구 · 3구) */}
                         <div
                             onClick={() => router.push('/game/billiards')}

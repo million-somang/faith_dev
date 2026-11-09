@@ -134,6 +134,9 @@ app.route('/', sfcRoutes);
 import { baseballRoutes } from './routes/baseball.routes.js';
 app.route('/', baseballRoutes);
 
+import { submarineRoutes } from './routes/submarine.routes.js';
+app.route('/', submarineRoutes);
+
 import { gameRoutes } from './routes/game.routes.js';
 app.route('/', gameRoutes);
 
@@ -165,7 +168,7 @@ app.route('/', travelRoutes);
 const miniApps = [
     'calculator', 'text-checker', 'sudoku', 'pyeong-calc',
     '2048', 'minesweeper', 'freecell', 'age-calc', 'dday-calc', 'json-formatter',
-    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr', 'janggi', 'baseball', 'vacation-planner', 'flight', 'image-resizer', 'billiards'
+    'base64-converter', 'svg-converter', 'webp-converter', 'news', 'saju', 'novel', 'severance-calc', 'interest-calc', 'vera-pop', 'customs-calc', 'omok', 'ocr', 'janggi', 'baseball', 'vacation-planner', 'flight', 'image-resizer', 'billiards', 'submarine'
 ];
 
 miniApps.forEach(appName => {

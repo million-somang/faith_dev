@@ -223,4 +223,22 @@ export const GAME_CONFIGS: Record<string, GameConfig> = {
         appName: 'app-billiards',
         leaderboardUrl: '/api/games/billiards/leaderboard',
     },
+    submarine: {
+        label: '베라 서브마린 (Vera Submarine)',
+        icon: 'fas fa-water',
+        gradient: 'from-indigo-600 via-blue-600 to-slate-900',
+        buttonGradient: 'from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800',
+        tagline: '10×10 모눈종이 좌표 해전 & 살보 연속 공격 잠수함 격침 게임!',
+        description: '10x10 해도 위에 숨겨진 적 정예 함대(항공모함·전함·순양함·잠수함·구축함)를 추리하여 격침시키는 전략 보드게임입니다. 적함을 명중시킬 때마다 즉시 연속 사격 보너스를 획득하는 살보(Salvo) 룰과 3×3 소나 정찰 스킬을 활용하여 최소 턴수 제독 랭킹 1위에 도전하세요.',
+        controls: [
+            { keys: '10×10 좌표 터치 / 클릭', desc: 'A~J 행 및 1~10 열 교차점 어뢰 발사' },
+            { keys: '살보(Salvo) 연속 포격', desc: '적함 명중(Hit) 시 즉시 1회 추가 공격 기회 부여' },
+            { keys: '소나 정찰 (Recon)', desc: '게임당 1회, 3×3 영역 내 적함 신호 탐지 스캔' },
+            { keys: '체커보드 패리티 추론', desc: '모든 함선 2칸 이상 특성을 이용한 50% 효율 탐색' },
+            { keys: '3단계 인공지능', desc: '훈련병, 함장, 제독 난이도별 AI 대전 지원' },
+        ],
+        appUrl: '/app/submarine/',
+        appName: 'app-submarine',
+        leaderboardUrl: '/api/games/submarine/leaderboard',
+    },
 };
