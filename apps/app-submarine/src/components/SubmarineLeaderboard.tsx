@@ -2,19 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LeaderboardEntry } from '../types/submarine';
 
-const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-  { rank: 1, fleetName: '동해 제1기동전대', rating: 2890, wins: 42, losses: 3, bestTurns: 21, title: '해군 원수' },
-  { rank: 2, fleetName: '네온 서브마리너', rating: 2740, wins: 38, losses: 5, bestTurns: 23, title: '작전사령관' },
-  { rank: 3, fleetName: '블루호크 잠수전대', rating: 2610, wins: 33, losses: 7, bestTurns: 25, title: '기동제독' },
-  { rank: 4, fleetName: '베라 타이탄즈', rating: 2490, wins: 29, losses: 8, bestTurns: 27, title: '주력함장' },
-  { rank: 5, fleetName: '태평양 섀도우', rating: 2380, wins: 25, losses: 10, bestTurns: 28, title: '초계전대장' },
-  { rank: 6, fleetName: '심해 크라켄', rating: 2260, wins: 22, losses: 11, bestTurns: 30, title: '작전장교' },
-  { rank: 7, fleetName: '북극성 사냥꾼', rating: 2150, wins: 19, losses: 12, bestTurns: 32, title: '전술장교' },
-  { rank: 8, fleetName: '골드 살보함', rating: 2040, wins: 17, losses: 14, bestTurns: 34, title: '항해장교' },
-];
-
 export const SubmarineLeaderboard: React.FC = () => {
-  const [leaders, setLeaders] = useState<LeaderboardEntry[]>(MOCK_LEADERBOARD);
+  const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -24,11 +13,13 @@ export const SubmarineLeaderboard: React.FC = () => {
         const res = await axios.get<{ success: boolean; leaderboard: LeaderboardEntry[] }>(
           '/api/games/submarine/leaderboard'
         );
-        if (res.data.success && res.data.leaderboard && res.data.leaderboard.length > 0) {
+        if (res.data.success && Array.isArray(res.data.leaderboard)) {
           setLeaders(res.data.leaderboard);
+        } else {
+          setLeaders([]);
         }
       } catch (_err) {
-        // 백엔드 미구동 또는 게스트 환경 시 기본 목데이터 활용
+        setLeaders([]);
       } finally {
         setIsLoading(false);
       }
@@ -69,6 +60,14 @@ export const SubmarineLeaderboard: React.FC = () => {
         {isLoading ? (
           <div className="py-8 text-center text-xs font-bold text-[#8C8479]">
             제독 명부를 불러오는 중입니다...
+          </div>
+        ) : leaders.length === 0 ? (
+          <div className="py-10 px-4 text-center bg-[#FAF8F5] rounded-xl border border-dashed border-[#E5E0D8] space-y-2">
+            <div className="w-10 h-10 mx-auto rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-base">
+              <i className="fas fa-medal"></i>
+            </div>
+            <div className="text-xs font-black text-[#2D2A26]">아직 등록된 제독 랭킹 기록이 없습니다.</div>
+            <div className="text-[11px] font-bold text-[#8C8479]">첫 번째 해전에서 승리하여 명예의 전당 1위를 차지하세요!</div>
           </div>
         ) : (
           leaders.map((entry) => (

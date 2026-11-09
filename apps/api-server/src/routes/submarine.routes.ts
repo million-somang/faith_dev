@@ -216,24 +216,7 @@ submarineRoutes.get('/api/games/submarine/leaderboard', async (c) => {
       title: idx === 0 ? '해군 원수' : idx < 3 ? '기동제독' : '주력함장',
     }));
 
-    // 기본 랭킹 시드 데이터
-    const seedLeaders = [
-      { rank: 1, fleetName: '동해 제1기동전대', rating: 2890, wins: 42, losses: 3, bestTurns: 21, title: '해군 원수' },
-      { rank: 2, fleetName: '네온 서브마리너', rating: 2740, wins: 38, losses: 5, bestTurns: 23, title: '작전사령관' },
-      { rank: 3, fleetName: '블루호크 잠수전대', rating: 2610, wins: 33, losses: 7, bestTurns: 25, title: '기동제독' },
-      { rank: 4, fleetName: '베라 타이탄즈', rating: 2490, wins: 29, losses: 8, bestTurns: 27, title: '주력함장' },
-      { rank: 5, fleetName: '태평양 섀도우', rating: 2380, wins: 25, losses: 10, bestTurns: 28, title: '초계전대장' },
-    ];
-
-    const merged = [...dbLeaders];
-    for (const seed of seedLeaders) {
-      if (merged.length >= 10) break;
-      if (!merged.some((m) => m.fleetName === seed.fleetName)) {
-        merged.push({ ...seed, rank: merged.length + 1 });
-      }
-    }
-
-    return c.json({ success: true, leaderboard: merged });
+    return c.json({ success: true, leaderboard: dbLeaders });
   } catch (error) {
     console.error('[Submarine Leaderboard Error]', error);
     return c.json({ success: false, message: '명예의 전당 조회 실패' }, 500);
