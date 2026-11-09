@@ -162,6 +162,32 @@ class NavalSoundEngine {
   }
 
   /**
+   * 적군 조준 락온 경보음 (Lock-on Warning Beep)
+   */
+  public playLockOn() {
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    try {
+      [0, 0.15].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(960, ctx.currentTime + offset);
+        osc.frequency.exponentialRampToValueAtTime(1440, ctx.currentTime + offset + 0.08);
+
+        gain.gain.setValueAtTime(0.2, ctx.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.1);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + offset);
+        osc.stop(ctx.currentTime + offset + 0.11);
+      });
+    } catch (_e) {}
+  }
+
+  /**
    * 적함 격침 경보음 (Ship Sunk Alarm)
    */
   public playSunk() {

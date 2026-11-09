@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import {
+  AiAimingTarget,
   BattleLogItem,
   CellStatus,
   DifficultyLevel,
@@ -113,6 +114,9 @@ export function useSubmarineGame() {
   const [isSonarActive, setIsSonarActive] = useState<boolean>(false);
   const [consecutiveHits, setConsecutiveHits] = useState<number>(0);
   const [isAiThinking, setIsAiThinking] = useState<boolean>(false);
+  const [aiAimingTarget, setAiAimingTarget] = useState<AiAimingTarget | null>(null);
+  const [turnNarrative, setTurnNarrative] = useState<string>('작전 해역에 진입했습니다. 적 해역 좌표를 조준하세요.');
+  const [isTurnTransitioning, setIsTurnTransitioning] = useState<boolean>(false);
   const [battleLogs, setBattleLogs] = useState<BattleLogItem[]>([]);
   const [isResultModalOpen, setIsResultModalOpen] = useState<boolean>(false);
 
@@ -149,6 +153,9 @@ export function useSubmarineGame() {
     setIsSonarActive(false);
     setConsecutiveHits(0);
     setIsAiThinking(false);
+    setAiAimingTarget(null);
+    setTurnNarrative('작전 해역에 진입했습니다. 적 해역 좌표를 조준하세요.');
+    setIsTurnTransitioning(false);
     setIsResultModalOpen(false);
 
     setBattleLogs([
@@ -185,6 +192,7 @@ export function useSubmarineGame() {
     if (gamePhase !== 'battle') return;
 
     setIsAiThinking(true);
+    setTurnNarrative('⚠️ [적군 턴] 적 정찰기가 아군 해역을 수색 중입니다...');
 
     window.setTimeout(() => {
       // AI 사격 타겟 후보 선정
@@ -279,99 +287,121 @@ export function useSubmarineGame() {
         }
       }
 
-      setIsAiThinking(false);
-
-      if (targetX === -1 || targetY === -1) return;
-
-      // AI 사격 실행
-      navalSound.playFire();
-
-      const targetCell = playerGrid[targetY][targetX];
-      const isHit = targetCell.status === 'ship' || Boolean(targetCell.shipId);
-      const nextStatus: CellStatus = isHit ? 'hit' : 'miss';
-
-      let sunkName: string | undefined;
-      let isSunk = false;
-
-      // 아군 함선 상태 갱신
-      if (isHit && targetCell.shipId) {
-        navalSound.playExplosion();
-        setAiHits((prev) => prev + 1);
-
-        setPlayerFleet((prevFleet) => {
-          return prevFleet.map((ship) => {
-            if (ship.id === targetCell.shipId) {
-              const hits = ship.hits + 1;
-              const sunk = hits >= ship.size;
-              if (sunk) {
-                sunkName = ship.name;
-                isSunk = true;
-                navalSound.playSunk();
-              }
-              return { ...ship, hits, isSunk: sunk };
-            }
-            return ship;
-          });
-        });
-      } else {
-        navalSound.playSplash();
-        setAiMisses((prev) => prev + 1);
-      }
-
-      // 아군 격자 업데이트
-      setPlayerGrid((prev) => {
-        const next = prev.map((row) => [...row]);
-        next[targetY][targetX] = {
-          ...next[targetY][targetX],
-          status: nextStatus,
-          isRecentTarget: true,
-        };
-        return next;
-      });
-
-      // 전투 일지 기록
-      setBattleLogs((prev) => [
-        {
-          id: `log_ai_${Date.now()}`,
-          turnNumber: turnCount,
-          attacker: 'ai',
-          coordLabel: coordToLabel(targetX, targetY),
-          x: targetX,
-          y: targetY,
-          isHit,
-          isSunk,
-          sunkShipName: sunkName,
-          isBonusTurn: isHit,
-          timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        },
-        ...prev.slice(0, 49),
-      ]);
-
-      // 패배 판정 체크
-      const remainingShips = playerFleet.filter((s) => (s.id === targetCell.shipId ? s.hits + 1 < s.size : !s.isSunk));
-      if (isHit && remainingShips.length === 0) {
-        setGamePhase('defeat');
-        navalSound.playDefeat();
-        setIsResultModalOpen(true);
+      if (targetX === -1 || targetY === -1) {
+        setIsAiThinking(false);
         return;
       }
 
-      // 살보 연속 공격 룰: 적(AI)이 명중 시 연속 사격, 빗나갈 경우 플레이어 턴으로 전환
-      if (isHit) {
-        window.setTimeout(() => {
-          handleAiTurnRef.current();
-        }, 800);
-      } else {
-        setTurn('player');
-        setTurnCount((prev) => prev + 1);
-      }
-    }, 700);
+      const coordLabel = coordToLabel(targetX, targetY);
+      setAiAimingTarget({ x: targetX, y: targetY, label: coordLabel });
+      setTurnNarrative(`🚨 [경보] 적 함포가 ${coordLabel} 좌표를 조준 락온했습니다!`);
+      navalSound.playLockOn();
+
+      // 1.0초간 조준 락온 표식을 아군 레이더에 보여준 뒤 포격
+      window.setTimeout(() => {
+        setAiAimingTarget(null);
+        setIsAiThinking(false);
+
+        // AI 사격 실행
+        navalSound.playFire();
+
+        const targetCell = playerGrid[targetY][targetX];
+        const isHit = targetCell.status === 'ship' || Boolean(targetCell.shipId);
+        const nextStatus: CellStatus = isHit ? 'hit' : 'miss';
+
+        let sunkName: string | undefined;
+        let isSunk = false;
+
+        // 아군 함선 상태 갱신
+        if (isHit && targetCell.shipId) {
+          navalSound.playExplosion();
+          setAiHits((prev) => prev + 1);
+
+          setPlayerFleet((prevFleet) => {
+            return prevFleet.map((ship) => {
+              if (ship.id === targetCell.shipId) {
+                const hits = ship.hits + 1;
+                const sunk = hits >= ship.size;
+                if (sunk) {
+                  sunkName = ship.name;
+                  isSunk = true;
+                  navalSound.playSunk();
+                }
+                return { ...ship, hits, isSunk: sunk };
+              }
+              return ship;
+            });
+          });
+        } else {
+          navalSound.playSplash();
+          setAiMisses((prev) => prev + 1);
+        }
+
+        // 아군 격자 업데이트
+        setPlayerGrid((prev) => {
+          const next = prev.map((row) => [...row]);
+          next[targetY][targetX] = {
+            ...next[targetY][targetX],
+            status: nextStatus,
+            isRecentTarget: true,
+          };
+          return next;
+        });
+
+        // 전투 일지 기록
+        setBattleLogs((prev) => [
+          {
+            id: `log_ai_${Date.now()}`,
+            turnNumber: turnCount,
+            attacker: 'ai',
+            coordLabel,
+            x: targetX,
+            y: targetY,
+            isHit,
+            isSunk,
+            sunkShipName: sunkName,
+            isBonusTurn: isHit,
+            timestamp: new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+          },
+          ...prev.slice(0, 49),
+        ]);
+
+        // 패배 판정 체크
+        const remainingShips = playerFleet.filter((s) => (s.id === targetCell.shipId ? s.hits + 1 < s.size : !s.isSunk));
+        if (isHit && remainingShips.length === 0) {
+          setTurnNarrative('☠️ 전 함대 침몰... 작전에 실패했습니다.');
+          setGamePhase('defeat');
+          navalSound.playDefeat();
+          setIsResultModalOpen(true);
+          return;
+        }
+
+        // 살보 연속 공격 룰: 적(AI)이 명중 시 연속 사격, 빗나갈 경우 플레이어 턴으로 전환
+        if (isHit) {
+          if (isSunk) {
+            setTurnNarrative(`💥 아군 [${sunkName}] 격침 피격! 적이 연속 사격 기회를 얻었습니다!`);
+          } else {
+            setTurnNarrative(`💥 아군 함선 피격! (${coordLabel}) 적이 연속 사격 기회를 얻었습니다!`);
+          }
+          window.setTimeout(() => {
+            handleAiTurnRef.current();
+          }, 1500);
+        } else {
+          setTurnNarrative(`💦 적 포격 빗맞힘! (${coordLabel}) 아군 턴으로 복귀합니다...`);
+          window.setTimeout(() => {
+            setTurn('player');
+            setTurnCount((prev) => prev + 1);
+            setTurnNarrative('🎯 [아군 턴] 적 해역 좌표를 선택해 어뢰를 발사하세요!');
+          }, 1500);
+        }
+      }, 1000);
+    }, 1200);
   };
 
   // 플레이어 사격 액션
   const fireTorpedo = useCallback(
     (x: number, y: number) => {
-      if (turn !== 'player' || gamePhase !== 'battle' || isAiThinking) return;
+      if (turn !== 'player' || gamePhase !== 'battle' || isAiThinking || isTurnTransitioning) return;
 
       const cell = aiGrid[y][x];
 
@@ -402,6 +432,11 @@ export function useSubmarineGame() {
           }
           return next;
         });
+
+        const narrative = detected
+          ? `📡 소나 정찰 성공 (${coordToLabel(x, y)} 반경 3x3 적함 포착!)`
+          : `📡 소나 정찰 완료 (${coordToLabel(x, y)} 반경 3x3 적함 신호 없음)`;
+        setTurnNarrative(narrative);
 
         setBattleLogs((prev) => [
           {
@@ -454,10 +489,18 @@ export function useSubmarineGame() {
             return ship;
           });
         });
+
+        if (sunkName) {
+          setTurnNarrative(`🔥 적 함선 [${sunkName}] 격침 성공! 살보 연속 공격 턴 획득!`);
+        } else {
+          setTurnNarrative(`💥 적함 명중! (${coordToLabel(x, y)}) 살보 연속 공격 기회를 얻었습니다. 한 번 더 조준하세요!`);
+        }
       } else {
         navalSound.playSplash();
         setPlayerMisses((prev) => prev + 1);
         setConsecutiveHits(0);
+        setIsTurnTransitioning(true);
+        setTurnNarrative(`💦 아군 포격 빗맞힘! (${coordToLabel(x, y)}) 적군에게 턴이 넘어갑니다...`);
       }
 
       // 적군 격자 사격 결과 반영
@@ -492,6 +535,7 @@ export function useSubmarineGame() {
       // 승리 판정 체크
       const remainingAiShips = aiFleet.filter((s) => (s.id === cell.shipId ? s.hits + 1 < s.size : !s.isSunk));
       if (isHit && remainingAiShips.length === 0) {
+        setTurnNarrative('🏆 적 전 함대 전멸! 제독님의 완벽한 승리입니다!');
         setGamePhase('victory');
         navalSound.playVictory();
         setIsResultModalOpen(true);
@@ -505,15 +549,16 @@ export function useSubmarineGame() {
         return;
       }
 
-      // 살보 룰: 명중 시 플레이어 연속 공격 기회 부여, 빗나갈 경우 AI 턴으로 전환
+      // 살보 룰: 명중 시 플레이어 연속 공격 기회 부여, 빗나갈 경우 AI 턴으로 전환 (인지 시간 1.2초 부여)
       if (!isHit) {
-        setTurn('ai');
         window.setTimeout(() => {
+          setTurn('ai');
+          setIsTurnTransitioning(false);
           handleAiTurnRef.current();
-        }, 500);
+        }, 1200);
       }
     },
-    [turn, gamePhase, isAiThinking, isSonarActive, aiGrid, turnCount, aiFleet]
+    [turn, gamePhase, isAiThinking, isTurnTransitioning, isSonarActive, aiGrid, turnCount, aiFleet]
   );
 
   return {
@@ -534,6 +579,9 @@ export function useSubmarineGame() {
     isSonarActive,
     consecutiveHits,
     isAiThinking,
+    aiAimingTarget,
+    turnNarrative,
+    isTurnTransitioning,
     battleLogs,
     isResultModalOpen,
     setIsResultModalOpen,

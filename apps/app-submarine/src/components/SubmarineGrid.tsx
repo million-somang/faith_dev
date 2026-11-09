@@ -10,6 +10,7 @@ interface SubmarineGridProps {
   onCellClick?: (x: number, y: number) => void;
   disabled?: boolean;
   isSonarActive?: boolean;
+  aimingCoord?: { x: number; y: number } | null;
 }
 
 export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
@@ -19,6 +20,7 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
   onCellClick,
   disabled = false,
   isSonarActive = false,
+  aimingCoord = null,
 }) => {
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
 
@@ -68,6 +70,13 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
                 Math.abs(hoveredCell.x - x) <= 1 &&
                 Math.abs(hoveredCell.y - y) <= 1;
 
+              // AI 조준 락온 타겟인지 확인 (아군 레이더 뷰)
+              const isAiAimingThisCell =
+                !isTargeting &&
+                aimingCoord &&
+                aimingCoord.x === x &&
+                aimingCoord.y === y;
+
               return (
                 <button
                   key={`${x}_${y}`}
@@ -77,7 +86,9 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
                   onMouseEnter={() => setHoveredCell({ x, y })}
                   onMouseLeave={() => setHoveredCell(null)}
                   className={`relative aspect-square rounded-lg flex items-center justify-center text-xs font-bold transition-all duration-150 touch-manipulation cursor-pointer ${
-                    isHit
+                    isAiAimingThisCell
+                      ? 'bg-rose-500/25 border-2 border-rose-600 ring-4 ring-rose-400/60 animate-pulse z-10 scale-105'
+                      : isHit
                       ? 'bg-gradient-to-br from-rose-500 to-amber-600 text-white shadow-xs animate-explosion'
                       : isMiss
                       ? 'bg-blue-100/90 text-blue-600 border border-blue-200 shadow-2xs'
@@ -95,6 +106,13 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
                   }`}
                   aria-label={`${ROW_LABELS[y]}-${x + 1} 좌표 ${isHit ? '명중' : isMiss ? '빗나감' : '사격 가능'}`}
                 >
+                  {/* AI 조준 락온 마커 */}
+                  {isAiAimingThisCell && (
+                    <span className="absolute inset-0 flex items-center justify-center text-rose-600 drop-shadow">
+                      <i className="fas fa-crosshairs text-base animate-spin"></i>
+                    </span>
+                  )}
+
                   {/* 피격 명중 폭발 마커 */}
                   {isHit && (
                     <span className="flex items-center justify-center">

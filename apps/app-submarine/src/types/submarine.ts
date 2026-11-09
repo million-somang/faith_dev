@@ -73,6 +73,12 @@ export type TurnOwner = 'player' | 'ai';
 export type GamePhase = 'battle' | 'victory' | 'defeat';
 export type DifficultyLevel = 'recruit' | 'captain' | 'admiral';
 
+export interface AiAimingTarget {
+  x: number;
+  y: number;
+  label: string;
+}
+
 export interface BattleLogItem {
   id: string;
   turnNumber: number;
