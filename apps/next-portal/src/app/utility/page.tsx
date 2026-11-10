@@ -85,6 +85,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
     }
 ];
 
+const ITEMS_PER_PAGE = 9;
+
 export default function UtilityPage() {
     const { user } = useAuth();
     const { launchApp } = useAppLauncher();
@@ -94,7 +96,12 @@ export default function UtilityPage() {
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedGuideCategory, setSelectedGuideCategory] = useState('calc');
     const [searchQuery, setSearchQuery] = useState('');
+    const [currentPage, setCurrentPage] = useState<number>(1);
     const [showSoftLock, setShowSoftLock] = useState(false);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [selectedCategory, searchQuery]);
 
     const handleLaunchUtility = async (app: MiniApp) => {
         if (app.require_auth === 1 && !user) {
@@ -186,6 +193,13 @@ export default function UtilityPage() {
             app.slug.toLowerCase().includes(q)
         );
     });
+
+    const totalPages = Math.max(1, Math.ceil(filteredApps.length / ITEMS_PER_PAGE));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const paginatedApps = filteredApps.slice(
+        (safeCurrentPage - 1) * ITEMS_PER_PAGE,
+        safeCurrentPage * ITEMS_PER_PAGE
+    );
 
     // 이용 가이드 데이터 정의 (카테고리별 분류)
     const GUIDE_CARDS = [
@@ -346,7 +360,7 @@ export default function UtilityPage() {
     const subSpotApps = frequentApps.slice(1, 5);
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-2 sm:px-4 py-6 sm:py-8 w-full space-y-8">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full space-y-8">
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -563,6 +577,11 @@ export default function UtilityPage() {
 
                         <div className="text-xs font-semibold text-slate-400 shrink-0">
                             총 <strong className="text-slate-800 font-black">{filteredApps.length}</strong>개의 스마트 도구
+                            {totalPages > 1 && (
+                                <span className="ml-1.5 text-slate-400 font-bold">
+                                    ({safeCurrentPage} / {totalPages} 페이지)
+                                </span>
+                            )}
                         </div>
                     </div>
 
@@ -583,101 +602,143 @@ export default function UtilityPage() {
                             ))}
                         </div>
                     ) : filteredApps.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                            {filteredApps.map(app => {
-                                const meta = getUtilityVisualMeta(app.slug, app.description);
-                                return (
-                                    <div
-                                        key={app.id}
-                                        onClick={() => handleLaunchUtility(app)}
-                                        className={`group relative rounded-2xl bg-white border border-slate-200/90 ${meta.borderHover} hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer hover:-translate-y-0.5`}
-                                    >
-                                        <div>
-                                            {/* 상단 3D 비주얼 헤더 */}
-                                            <div className={`relative bg-gradient-to-br ${meta.visualBg} px-5 pt-4 pb-3.5 border-b border-slate-100 flex items-center justify-between gap-3`}>
-                                                <div className="space-y-1.5 min-w-0 flex-1">
-                                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-white/90 text-slate-700 border border-slate-200/70 shadow-2xs">
-                                                            {meta.categoryLabel}
-                                                        </span>
-                                                        {meta.badge && (
-                                                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${meta.badgeStyle}`}>
-                                                                {meta.badge}
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                                {paginatedApps.map(app => {
+                                    const meta = getUtilityVisualMeta(app.slug, app.description);
+                                    return (
+                                        <div
+                                            key={app.id}
+                                            onClick={() => handleLaunchUtility(app)}
+                                            className={`group relative rounded-2xl bg-white border border-slate-200/90 ${meta.borderHover} hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden cursor-pointer hover:-translate-y-0.5`}
+                                        >
+                                            <div>
+                                                {/* 상단 3D 비주얼 헤더 */}
+                                                <div className={`relative bg-gradient-to-br ${meta.visualBg} px-5 pt-4 pb-3.5 border-b border-slate-100 flex items-center justify-between gap-3`}>
+                                                    <div className="space-y-1.5 min-w-0 flex-1">
+                                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                                            <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-white/90 text-slate-700 border border-slate-200/70 shadow-2xs">
+                                                                {meta.categoryLabel}
                                                             </span>
-                                                        )}
-                                                        {app.require_auth === 1 && (
-                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">
-                                                                <i className="fas fa-lock mr-1"></i>회원전용
-                                                            </span>
-                                                        )}
+                                                            {meta.badge && (
+                                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${meta.badgeStyle}`}>
+                                                                    {meta.badge}
+                                                                </span>
+                                                            )}
+                                                            {app.require_auth === 1 && (
+                                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">
+                                                                    <i className="fas fa-lock mr-1"></i>회원전용
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-blue-700 transition-colors truncate">
+                                                            {app.name}
+                                                        </h3>
                                                     </div>
 
-                                                    <h3 className="text-base sm:text-lg font-black text-slate-900 group-hover:text-blue-700 transition-colors truncate">
-                                                        {app.name}
-                                                    </h3>
+                                                    {/* 나노바나나 3D 아이콘 */}
+                                                    <div className="w-16 h-16 sm:w-18 sm:h-18 shrink-0 flex items-center justify-center">
+                                                        <img
+                                                            src={meta.image}
+                                                            alt={app.name}
+                                                            className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
+                                                        />
+                                                    </div>
                                                 </div>
 
-                                                {/* 나노바나나 3D 아이콘 */}
-                                                <div className="w-16 h-16 sm:w-18 sm:h-18 shrink-0 flex items-center justify-center">
-                                                    <img
-                                                        src={meta.image}
-                                                        alt={app.name}
-                                                        className="w-full h-full object-contain drop-shadow-md transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
-                                                    />
-                                                </div>
-                                            </div>
+                                                {/* 본문 설명 & 하이라이트 칩 */}
+                                                <div className="p-4 sm:p-5 pb-3 space-y-3">
+                                                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 min-h-[2.5rem]">
+                                                        {meta.shortDesc}
+                                                    </p>
 
-                                            {/* 본문 설명 & 하이라이트 칩 */}
-                                            <div className="p-4 sm:p-5 pb-3 space-y-3">
-                                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 min-h-[2.5rem]">
-                                                    {meta.shortDesc}
-                                                </p>
-
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    {meta.highlights.map((tag, idx) => (
-                                                        <span
-                                                            key={idx}
-                                                            className="text-[10px] font-semibold text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded-md"
-                                                        >
-                                                            • {tag}
-                                                        </span>
-                                                    ))}
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        {meta.highlights.map((tag, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="text-[10px] font-semibold text-slate-500 bg-slate-100/80 px-2 py-0.5 rounded-md"
+                                                            >
+                                                                • {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* 카드 하단 액션 버튼 & 가이드 링크 */}
-                                        <div className="px-4 sm:px-5 pb-4 pt-2 flex items-center justify-between gap-2 border-t border-slate-100/80">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleLaunchUtility(app);
-                                                }}
-                                                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer ${meta.buttonStyle}`}
-                                            >
-                                                <i className="fas fa-play text-[9px]"></i>
-                                                <span>도구 실행</span>
-                                            </button>
-
-                                            {meta.guideSlug ? (
-                                                <Link
-                                                    href={`/tools/${meta.guideSlug}`}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    className="text-[11px] font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition-colors py-1 px-2 rounded-lg hover:bg-slate-50"
+                                            {/* 카드 하단 액션 버튼 & 가이드 링크 */}
+                                            <div className="px-4 sm:px-5 pb-4 pt-2 flex items-center justify-between gap-2 border-t border-slate-100/80">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleLaunchUtility(app);
+                                                    }}
+                                                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer ${meta.buttonStyle}`}
                                                 >
-                                                    <span>공식 · 활용 가이드</span>
-                                                    <i className="fas fa-chevron-right text-[9px]"></i>
-                                                </Link>
-                                            ) : (
-                                                <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                                                    <i className="fas fa-bolt text-amber-400"></i> 즉시 실행
-                                                </span>
-                                            )}
+                                                    <i className="fas fa-play text-[9px]"></i>
+                                                    <span>도구 실행</span>
+                                                </button>
+
+                                                {meta.guideSlug ? (
+                                                    <Link
+                                                        href={`/tools/${meta.guideSlug}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="text-[11px] font-bold text-slate-500 hover:text-blue-600 flex items-center gap-1 transition-colors py-1 px-2 rounded-lg hover:bg-slate-50"
+                                                    >
+                                                        <span>공식 · 활용 가이드</span>
+                                                        <i className="fas fa-chevron-right text-[9px]"></i>
+                                                    </Link>
+                                                ) : (
+                                                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                                                        <i className="fas fa-bolt text-amber-400"></i> 즉시 실행
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
+
+                            {/* 9개 이상 도구가 있을 때 페이지네이션 컨트롤 노출 */}
+                            {filteredApps.length >= ITEMS_PER_PAGE && (
+                                <div className="pt-2 flex items-center justify-center gap-1.5 select-none">
+                                    <button
+                                        type="button"
+                                        disabled={safeCurrentPage <= 1}
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                                        aria-label="이전 페이지"
+                                    >
+                                        <i className="fas fa-chevron-left"></i>
+                                    </button>
+
+                                    {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(pageNum => (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            onClick={() => setCurrentPage(pageNum)}
+                                            className={`w-9 h-9 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                                                safeCurrentPage === pageNum
+                                                    ? 'bg-slate-900 text-white shadow-sm'
+                                                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        type="button"
+                                        disabled={safeCurrentPage >= totalPages}
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        className="w-9 h-9 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center text-xs font-bold transition-all cursor-pointer"
+                                        aria-label="다음 페이지"
+                                    >
+                                        <i className="fas fa-chevron-right"></i>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center py-14 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 space-y-2">
