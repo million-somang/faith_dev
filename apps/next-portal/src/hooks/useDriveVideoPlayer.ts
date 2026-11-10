@@ -20,6 +20,7 @@ const STORAGE_KEYS = {
     VOLUME: 'vera_mypage_video_volume',
     SHUFFLE: 'vera_mypage_video_shuffle',
     REPEAT: 'vera_mypage_video_repeat',
+    AUDIO_ONLY: 'vera_mypage_video_audio_only',
     ACCESS_TOKEN: 'vera_gdrive_access_token',
     TOKEN_EXPIRY: 'vera_gdrive_token_expiry',
 } as const;
@@ -148,9 +149,13 @@ export function useDriveVideoPlayer() {
     const [duration, setDuration] = useState<number>(0);
     const [playbackRate, setPlaybackRate] = useState<number>(1);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+    const [isAudioOnlyMode, setIsAudioOnlyMode] = useState<boolean>(false);
+    const [isPipActive, setIsPipActive] = useState<boolean>(false);
     const [isBuffering, setIsBuffering] = useState<boolean>(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [toastNotice, setToastNotice] = useState<string | null>(null);
+    const userWantsPlayRef = useRef<boolean>(false);
+    const pendingResumeTimeRef = useRef<number | null>(null);
 
     const showNotice = useCallback((msg: string) => {
         setToastNotice(msg);
@@ -186,6 +191,11 @@ export function useDriveVideoPlayer() {
         const savedRepeat = localStorage.getItem(STORAGE_KEYS.REPEAT);
         if (savedRepeat === 'off' || savedRepeat === 'all' || savedRepeat === 'one') {
             setRepeatMode(savedRepeat);
+        }
+
+        const savedAudioOnly = localStorage.getItem(STORAGE_KEYS.AUDIO_ONLY);
+        if (savedAudioOnly === 'true') {
+            setIsAudioOnlyMode(true);
         }
 
         const savedToken = sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -726,10 +736,13 @@ export function useDriveVideoPlayer() {
         const video = videoRef.current;
         if (!video || !currentTrack) return;
         if (video.paused) {
+            userWantsPlayRef.current = true;
             video.play().catch(() => {
+                userWantsPlayRef.current = false;
                 setIsPlaying(false);
             });
         } else {
+            userWantsPlayRef.current = false;
             video.pause();
         }
     }, [currentTrack]);
@@ -738,6 +751,8 @@ export function useDriveVideoPlayer() {
         (index: number) => {
             if (index < 0 || index >= playlist.length) return;
             setPlayerError(null);
+            pendingResumeTimeRef.current = null;
+            userWantsPlayRef.current = true;
             setCurrentIndex(index);
             setCurrentTime(0);
             setIsPlaying(true);
@@ -763,9 +778,11 @@ export function useDriveVideoPlayer() {
     const playNext = useCallback(() => {
         if (playlist.length === 0) return;
         setPlayerError(null);
+        pendingResumeTimeRef.current = null;
 
         if (isShuffle && playlist.length > 1) {
             const nextIdx = pickRandomNextIndex(playlist.length, currentIndex);
+            userWantsPlayRef.current = true;
             setCurrentIndex(nextIdx);
             setCurrentTime(0);
             setIsPlaying(true);
@@ -774,14 +791,17 @@ export function useDriveVideoPlayer() {
 
         const nextIdx = currentIndex + 1;
         if (nextIdx < playlist.length) {
+            userWantsPlayRef.current = true;
             setCurrentIndex(nextIdx);
             setCurrentTime(0);
             setIsPlaying(true);
         } else if (repeatMode === 'all') {
+            userWantsPlayRef.current = true;
             setCurrentIndex(0);
             setCurrentTime(0);
             setIsPlaying(true);
         } else {
+            userWantsPlayRef.current = false;
             setIsPlaying(false);
         }
     }, [playlist.length, isShuffle, currentIndex, repeatMode, pickRandomNextIndex]);
@@ -795,6 +815,8 @@ export function useDriveVideoPlayer() {
             return;
         }
         setPlayerError(null);
+        pendingResumeTimeRef.current = null;
+        userWantsPlayRef.current = true;
         if (isShuffle && playlist.length > 1) {
             const randomIdx = pickRandomNextIndex(playlist.length, currentIndex);
             setCurrentIndex(randomIdx);
@@ -894,7 +916,165 @@ export function useDriveVideoPlayer() {
         }
     }, []);
 
-    // 트랙 변경 시 자동 재생 및 볼륨/배속 동기화
+    // ─── 백그라운드 오디오 전용 모드 전환 (화면 끄고 듣기) ───
+    const toggleAudioOnlyMode = useCallback(() => {
+        if (videoRef.current) {
+            pendingResumeTimeRef.current = videoRef.current.currentTime || currentTime;
+        } else if (currentTime > 0) {
+            pendingResumeTimeRef.current = currentTime;
+        }
+        setIsAudioOnlyMode((prev) => {
+            const next = !prev;
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, String(next));
+            }
+            if (next) {
+                showNotice(
+                    '🎧 화면 끄고 듣기(백그라운드 오디오) 모드가 켜졌습니다. 핸드폰 화면을 닫아도 끊김 없이 재생됩니다.'
+                );
+            } else {
+                showNotice('🎬 일반 비디오 화면 모드로 전환되었습니다.');
+            }
+            return next;
+        });
+    }, [currentTime, showNotice]);
+
+    // ─── 미니 팝업 플레이어 (Picture-in-Picture) 전환 ───
+    const togglePip = useCallback(async () => {
+        const video = videoRef.current as (HTMLVideoElement & {
+            webkitPresentationMode?: string;
+            webkitSupportsPresentationMode?: (mode: string) => boolean;
+            webkitSetPresentationMode?: (mode: string) => void;
+        }) | null;
+
+        if (!video) return;
+
+        if (isAudioOnlyMode) {
+            showNotice('미니창(PIP)을 사용하려면 먼저 비디오 화면 모드로 전환해 주세요.');
+            return;
+        }
+
+        try {
+            if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+                setIsPipActive(false);
+            } else if (typeof video.requestPictureInPicture === 'function') {
+                await video.requestPictureInPicture();
+                setIsPipActive(true);
+            } else if (
+                typeof video.webkitSupportsPresentationMode === 'function' &&
+                video.webkitSupportsPresentationMode('picture-in-picture') &&
+                typeof video.webkitSetPresentationMode === 'function'
+            ) {
+                const nextMode =
+                    video.webkitPresentationMode === 'picture-in-picture'
+                        ? 'inline'
+                        : 'picture-in-picture';
+                video.webkitSetPresentationMode(nextMode);
+                setIsPipActive(nextMode === 'picture-in-picture');
+            } else {
+                showNotice('현재 브라우저에서는 미니 팝업(PIP) 기능을 지원하지 않습니다.');
+            }
+        } catch (_) {
+            showNotice('미니 팝업(PIP) 모드를 실행할 수 없습니다.');
+        }
+    }, [isAudioOnlyMode, showNotice]);
+
+    // ─── 미디어 메타데이터 로드 및 재생 위치 복원 ───
+    const handleLoadedMetadata = useCallback(
+        (e: React.SyntheticEvent<HTMLMediaElement>) => {
+            const media = e.currentTarget;
+            setDuration(media.duration || 0);
+            media.volume = volume;
+            media.muted = isMuted;
+            media.playbackRate = playbackRate;
+
+            if (pendingResumeTimeRef.current !== null && pendingResumeTimeRef.current > 0) {
+                const resumeTarget = pendingResumeTimeRef.current;
+                pendingResumeTimeRef.current = null;
+                try {
+                    media.currentTime = Math.min(
+                        resumeTarget,
+                        Math.max(0, (media.duration || resumeTarget) - 0.25)
+                    );
+                    setCurrentTime(media.currentTime);
+                } catch (_) {
+                    // seek 예외 무시
+                }
+            }
+
+            if (userWantsPlayRef.current || isPlaying) {
+                media.play().catch(() => {
+                    setIsPlaying(false);
+                });
+            }
+        },
+        [volume, isMuted, playbackRate, isPlaying]
+    );
+
+    const handleMediaPlay = useCallback(() => {
+        userWantsPlayRef.current = true;
+        setIsPlaying(true);
+        setPlayerError(null);
+    }, []);
+
+    // 모바일 화면 잠금 시 OS가 강제로 <video>를 일시정지시키면 자동으로 오디오 모드로 전환/재개
+    const handleMediaPause = useCallback(
+        (e: React.SyntheticEvent<HTMLMediaElement>) => {
+            const media = e.currentTarget;
+            if (media.ended) return;
+
+            if (
+                typeof document !== 'undefined' &&
+                document.visibilityState === 'hidden' &&
+                userWantsPlayRef.current
+            ) {
+                pendingResumeTimeRef.current = media.currentTime || currentTime;
+                if (!isAudioOnlyMode) {
+                    setIsAudioOnlyMode(true);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
+                    }
+                    return;
+                }
+                media.play().catch(() => {
+                    // 백그라운드 자동 재개 시도
+                });
+                return;
+            }
+
+            userWantsPlayRef.current = false;
+            setIsPlaying(false);
+        },
+        [currentTime, isAudioOnlyMode]
+    );
+
+    // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+
+        const handleVisibilityChange = () => {
+            const media = videoRef.current;
+            if (!media || !currentTrack) return;
+
+            if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
+                if (!isAudioOnlyMode) {
+                    pendingResumeTimeRef.current = media.currentTime || 0;
+                    setIsAudioOnlyMode(true);
+                    localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
+                } else if (media.paused) {
+                    media.play().catch(() => {});
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [currentTrack, isAudioOnlyMode]);
+
+    // 트랙 변경 또는 모드 전환 시 자동 재생 및 볼륨/배속 동기화
     useEffect(() => {
         const video = videoRef.current;
         if (!video || !currentTrack) return;
@@ -903,22 +1083,134 @@ export function useDriveVideoPlayer() {
         video.muted = isMuted;
         video.playbackRate = playbackRate;
 
-        if (isPlaying) {
+        if (isPlaying || userWantsPlayRef.current) {
             video.play().catch(() => {
                 setIsPlaying(false);
             });
         }
-    }, [currentTrack, isPlaying, volume, isMuted, playbackRate]);
+    }, [currentTrack, isAudioOnlyMode, isPlaying, volume, isMuted, playbackRate]);
 
     const handleVideoEnded = useCallback(() => {
         const video = videoRef.current;
         if (repeatMode === 'one' && video) {
             video.currentTime = 0;
+            userWantsPlayRef.current = true;
             video.play().catch(() => setIsPlaying(false));
             return;
         }
         playNext();
     }, [repeatMode, playNext]);
+
+    // ─── 스마트폰 잠금화면 / 블루투스 이어폰 / 차량 미디어 컨트롤러 (Media Session API) ───
+    useEffect(() => {
+        if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+        if (!currentTrack) {
+            navigator.mediaSession.metadata = null;
+            navigator.mediaSession.playbackState = 'none';
+            return;
+        }
+
+        try {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: currentTrack.name,
+                artist: currentTrack.folderName || 'VeraNex 클라우드 플레이어',
+                album: isAudioOnlyMode ? '🎧 백그라운드 오디오 모드' : 'VeraNex Drive Video',
+                artwork: currentTrack.thumbnailUrl
+                    ? [{ src: currentTrack.thumbnailUrl, sizes: '512x512', type: 'image/jpeg' }]
+                    : [
+                          {
+                              src: '/icons/icon-192x192.png',
+                              sizes: '192x192',
+                              type: 'image/png',
+                          },
+                      ],
+            });
+        } catch (_) {
+            // MediaMetadata 미지원 구형 브라우저 예외 무시
+        }
+
+        navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+
+        const safeSetHandler = (
+            action: MediaSessionAction,
+            handler: MediaSessionActionHandler | null
+        ) => {
+            try {
+                navigator.mediaSession.setActionHandler(action, handler);
+            } catch (_) {
+                // 지원하지 않는 액션 무시
+            }
+        };
+
+        safeSetHandler('play', () => {
+            userWantsPlayRef.current = true;
+            setIsPlaying(true);
+            videoRef.current?.play().catch(() => {});
+        });
+
+        safeSetHandler('pause', () => {
+            userWantsPlayRef.current = false;
+            setIsPlaying(false);
+            videoRef.current?.pause();
+        });
+
+        safeSetHandler('previoustrack', () => {
+            playPrev();
+        });
+
+        safeSetHandler('nexttrack', () => {
+            playNext();
+        });
+
+        safeSetHandler('seekbackward', (details) => {
+            seekRelative(-(details.seekOffset || 10));
+        });
+
+        safeSetHandler('seekforward', (details) => {
+            seekRelative(details.seekOffset || 10);
+        });
+
+        safeSetHandler('seekto', (details) => {
+            if (typeof details.seekTime === 'number') {
+                handleSeekChange(details.seekTime);
+            }
+        });
+
+        return () => {
+            safeSetHandler('play', null);
+            safeSetHandler('pause', null);
+            safeSetHandler('previoustrack', null);
+            safeSetHandler('nexttrack', null);
+            safeSetHandler('seekbackward', null);
+            safeSetHandler('seekforward', null);
+            safeSetHandler('seekto', null);
+        };
+    }, [
+        currentTrack,
+        isPlaying,
+        isAudioOnlyMode,
+        playPrev,
+        playNext,
+        seekRelative,
+        handleSeekChange,
+    ]);
+
+    // 잠금화면 재생바(진행률) 실시간 동기화
+    useEffect(() => {
+        if (typeof navigator === 'undefined' || !('mediaSession' in navigator)) return;
+        if (!('setPositionState' in navigator.mediaSession)) return;
+        if (!duration || !Number.isFinite(duration) || duration <= 0) return;
+
+        try {
+            navigator.mediaSession.setPositionState({
+                duration: Math.max(0, duration),
+                playbackRate: playbackRate || 1,
+                position: Math.min(Math.max(0, currentTime), duration),
+            });
+        } catch (_) {
+            // position 범위 오류 무시
+        }
+    }, [currentTime, duration, playbackRate]);
 
     return {
         videoRef,
@@ -971,6 +1263,8 @@ export function useDriveVideoPlayer() {
         setDuration,
         playbackRate,
         isFullscreen,
+        isAudioOnlyMode,
+        isPipActive,
         isBuffering,
         setIsBuffering,
         playerError,
@@ -988,6 +1282,11 @@ export function useDriveVideoPlayer() {
         toggleMute,
         handlePlaybackRateChange,
         toggleFullscreen,
+        toggleAudioOnlyMode,
+        togglePip,
+        handleLoadedMetadata,
+        handleMediaPlay,
+        handleMediaPause,
         handleVideoEnded,
         removePlaylistItem,
         clearPlaylist,

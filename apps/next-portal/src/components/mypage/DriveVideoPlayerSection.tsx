@@ -59,6 +59,8 @@ export const DriveVideoPlayerSection: React.FC = () => {
         setDuration,
         playbackRate,
         isFullscreen,
+        isAudioOnlyMode,
+        isPipActive,
         isBuffering,
         setIsBuffering,
         playerError,
@@ -76,6 +78,11 @@ export const DriveVideoPlayerSection: React.FC = () => {
         toggleMute,
         handlePlaybackRateChange,
         toggleFullscreen,
+        toggleAudioOnlyMode,
+        togglePip,
+        handleLoadedMetadata,
+        handleMediaPlay,
+        handleMediaPause,
         handleVideoEnded,
         removePlaylistItem,
         clearPlaylist,
@@ -247,6 +254,12 @@ export const DriveVideoPlayerSection: React.FC = () => {
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
+                            {isAudioOnlyMode && (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black flex items-center gap-1">
+                                    <i className="fas fa-headphones-alt text-[9px]"></i>
+                                    <span>화면 끄고 듣기 ON</span>
+                                </span>
+                            )}
                             {isShuffle && (
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black flex items-center gap-1">
                                     <i className="fas fa-random text-[9px]"></i>
@@ -261,7 +274,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* 중앙 비디오 렌더링 영역 */}
+                    {/* 중앙 비디오 / 백그라운드 오디오 렌더링 영역 */}
                     <div
                         className={`relative bg-black flex items-center justify-center select-none ${
                             isFullscreen ? 'flex-1 min-h-0' : 'aspect-video w-full'
@@ -269,41 +282,115 @@ export const DriveVideoPlayerSection: React.FC = () => {
                     >
                         {currentTrack ? (
                             <>
-                                <video
-                                    ref={videoRef}
-                                    key={currentTrack.id}
-                                    src={currentTrack.streamUrl}
-                                    className="w-full h-full max-h-full object-contain cursor-pointer"
-                                    playsInline
-                                    onClick={togglePlayPause}
-                                    onDoubleClick={toggleFullscreen}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
-                                    onWaiting={() => setIsBuffering(true)}
-                                    onPlaying={() => {
-                                        setIsBuffering(false);
-                                        setPlayerError(null);
-                                    }}
-                                    onCanPlay={() => setIsBuffering(false)}
-                                    onLoadedMetadata={(e) => {
-                                        const vid = e.currentTarget;
-                                        setDuration(vid.duration || 0);
-                                        vid.volume = volume;
-                                        vid.muted = isMuted;
-                                        vid.playbackRate = playbackRate;
-                                    }}
-                                    onTimeUpdate={(e) => {
-                                        setCurrentTime(e.currentTarget.currentTime || 0);
-                                    }}
-                                    onEnded={handleVideoEnded}
-                                    onError={() => {
-                                        setIsBuffering(false);
-                                        setIsPlaying(false);
-                                        setPlayerError(
-                                            '동영상 스트림을 불러올 수 없습니다. 구글 드라이브 접근 권한을 다시 연결하거나 파일 공유 상태를 확인해 주세요.'
-                                        );
-                                    }}
-                                />
+                                {isAudioOnlyMode ? (
+                                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-slate-950 via-indigo-950/70 to-slate-900">
+                                        <audio
+                                            ref={videoRef as React.RefObject<HTMLAudioElement>}
+                                            key={`audio-${currentTrack.id}`}
+                                            src={currentTrack.streamUrl}
+                                            playsInline
+                                            preload="auto"
+                                            onPlay={handleMediaPlay}
+                                            onPause={handleMediaPause}
+                                            onWaiting={() => setIsBuffering(true)}
+                                            onPlaying={() => {
+                                                setIsBuffering(false);
+                                                setPlayerError(null);
+                                            }}
+                                            onCanPlay={() => setIsBuffering(false)}
+                                            onLoadedMetadata={handleLoadedMetadata}
+                                            onTimeUpdate={(e) => {
+                                                setCurrentTime(e.currentTarget.currentTime || 0);
+                                            }}
+                                            onEnded={handleVideoEnded}
+                                            onError={() => {
+                                                setIsBuffering(false);
+                                                setIsPlaying(false);
+                                                setPlayerError(
+                                                    '오디오 스트림을 불러올 수 없습니다. 구글 드라이브 접근 권한을 다시 연결하거나 파일 공유 상태를 확인해 주세요.'
+                                                );
+                                            }}
+                                        />
+
+                                        <div
+                                            onClick={togglePlayPause}
+                                            className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl shadow-2xl border-2 cursor-pointer transition-all ${
+                                                isPlaying
+                                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white border-amber-300/60 scale-105 shadow-amber-500/30'
+                                                    : 'bg-slate-800/90 text-slate-300 border-slate-600 hover:bg-slate-700'
+                                            }`}
+                                            title={isPlaying ? '일시정지' : '재생'}
+                                        >
+                                            <i
+                                                className={`fas ${
+                                                    isPlaying ? 'fa-headphones-alt animate-pulse' : 'fa-play ml-1'
+                                                }`}
+                                            ></i>
+                                        </div>
+
+                                        <div className="mt-4 space-y-1.5 max-w-md px-2">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[11px] font-black">
+                                                <span
+                                                    className={`w-2 h-2 rounded-full ${
+                                                        isPlaying
+                                                            ? 'bg-emerald-400 animate-ping'
+                                                            : 'bg-slate-400'
+                                                    }`}
+                                                ></span>
+                                                <span>
+                                                    🎧 백그라운드 오디오 전용 모드 (화면 잠금 연속재생)
+                                                </span>
+                                            </div>
+                                            <h4 className="text-sm sm:text-base font-black text-white line-clamp-1">
+                                                {currentTrack.name}
+                                            </h4>
+                                            <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
+                                                스마트폰 화면을 닫거나 다른 앱을 열어도 소리가 끊기지 않고 다음 곡까지 자동 재생됩니다. 잠금화면과 블루투스 이어폰에서도 곡 넘김·일시정지가 가능합니다.
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={toggleAudioOnlyMode}
+                                                className="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <i className="fas fa-video text-indigo-400"></i>
+                                                <span>비디오 화면 다시 켜기</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <video
+                                        ref={videoRef}
+                                        key={`video-${currentTrack.id}`}
+                                        src={currentTrack.streamUrl}
+                                        className="w-full h-full max-h-full object-contain cursor-pointer"
+                                        playsInline
+                                        onClick={togglePlayPause}
+                                        onDoubleClick={toggleFullscreen}
+                                        onPlay={handleMediaPlay}
+                                        onPause={handleMediaPause}
+                                        onWaiting={() => setIsBuffering(true)}
+                                        onPlaying={() => {
+                                            setIsBuffering(false);
+                                            setPlayerError(null);
+                                        }}
+                                        onCanPlay={() => setIsBuffering(false)}
+                                        onLoadedMetadata={handleLoadedMetadata}
+                                        onTimeUpdate={(e) => {
+                                            setCurrentTime(e.currentTarget.currentTime || 0);
+                                        }}
+                                        onEnded={handleVideoEnded}
+                                        onError={() => {
+                                            setIsBuffering(false);
+                                            setIsPlaying(false);
+                                            setPlayerError(
+                                                '동영상 스트림을 불러올 수 없습니다. 구글 드라이브 접근 권한을 다시 연결하거나 파일 공유 상태를 확인해 주세요.'
+                                            );
+                                        }}
+                                    />
+                                )}
 
                                 {/* 버퍼링 로딩 스피너 */}
                                 {isBuffering && (
@@ -315,8 +402,8 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* 일시정지 시 중앙 대형 재생 버튼 오버레이 */}
-                                {!isPlaying && !isBuffering && !playerError && (
+                                {/* 일시정지 시 중앙 대형 재생 버튼 오버레이 (비디오 모드일 때만) */}
+                                {!isAudioOnlyMode && !isPlaying && !isBuffering && !playerError && (
                                     <button
                                         type="button"
                                         onClick={togglePlayPause}
@@ -516,9 +603,24 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                             : '반복꺼짐'}
                                     </span>
                                 </button>
+
+                                {/* 🎧 핸드폰 화면 끄고 듣기 (백그라운드 오디오 모드) 토글 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={toggleAudioOnlyMode}
+                                    className={`px-3 h-9 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 cursor-pointer ${
+                                        isAudioOnlyMode
+                                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                                            : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-amber-500/30'
+                                    }`}
+                                    title="핸드폰 화면을 닫거나 잠가도 소리가 끊기지 않고 계속 재생됩니다"
+                                >
+                                    <i className="fas fa-headphones-alt text-xs"></i>
+                                    <span>{isAudioOnlyMode ? '화면 끄고 듣기 ON' : '화면 끄고 듣기'}</span>
+                                </button>
                             </div>
 
-                            {/* 우측: 볼륨 컨트롤 바 + 배속 + 전체화면 버튼 */}
+                            {/* 우측: 볼륨 컨트롤 바 + 배속 + 미니창(PIP) + 전체화면 버튼 */}
                             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                 {/* 🔊 볼륨 조절 바 */}
                                 <div className="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
@@ -568,6 +670,24 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         </option>
                                     ))}
                                 </select>
+
+                                {/* 📺 미니 팝업(PIP) 버튼 */}
+                                {!isAudioOnlyMode && (
+                                    <button
+                                        type="button"
+                                        onClick={togglePip}
+                                        disabled={!currentTrack}
+                                        className={`px-3 h-9 rounded-xl text-xs font-extrabold border flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 ${
+                                            isPipActive
+                                                ? 'bg-violet-600 text-white border-violet-400'
+                                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                                        }`}
+                                        title="다른 앱이나 화면 위에 작은 미니 팝업창으로 동영상 띄우기 (PIP)"
+                                    >
+                                        <i className="fas fa-external-link-square-alt text-xs"></i>
+                                        <span className="hidden sm:inline">미니창(PIP)</span>
+                                    </button>
+                                )}
 
                                 {/* ⛶ 전체화면 버튼 */}
                                 <button
