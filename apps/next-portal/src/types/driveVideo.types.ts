@@ -1,6 +1,6 @@
 export type RepeatMode = 'off' | 'all' | 'one';
 
-export type DriveExplorerTab = 'my-drive' | 'shared' | 'all-videos';
+export type DriveExplorerTab = 'my-drive' | 'shared' | 'all-videos' | 'all-audio';
 
 export type MyPageSectionId =
     | 'dashboard'

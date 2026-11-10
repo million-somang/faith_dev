@@ -112,6 +112,13 @@ export function formatFileSize(bytes: number | null | undefined): string {
     return `${size.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+export function isAudioMedia(mimeType?: string, fileName?: string): boolean {
+    const lowerMime = (mimeType || '').toLowerCase();
+    if (lowerMime.startsWith('audio/')) return true;
+    const lowerName = (fileName || '').toLowerCase();
+    return /\.(mp3|m4a|flac|wav|ogg|aac|wma|opus|aiff|alac)$/.test(lowerName);
+}
+
 export function useDriveVideoPlayer() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
     const playerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -254,7 +261,12 @@ export function useDriveVideoPlayer() {
         return playlist[safeIdx] || null;
     }, [playlist, currentIndex]);
 
-    // ─── Google Drive API 파일 목록 조회 ───
+    const isCurrentTrackAudio = useMemo(() => {
+        if (!currentTrack) return false;
+        return isAudioMedia(currentTrack.mimeType, currentTrack.name);
+    }, [currentTrack]);
+
+    // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
     const fetchDriveFiles = useCallback(
         async (
             tokenToUse: string,
@@ -269,26 +281,23 @@ export function useDriveVideoPlayer() {
             try {
                 const queryParts: string[] = ['trashed = false'];
                 const trimmedKeyword = searchKeyword.trim().replace(/'/g, "\\'");
+                const mediaOrFolderClause = `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/' or mimeType contains 'audio/')`;
 
                 if (trimmedKeyword) {
                     queryParts.push(`name contains '${trimmedKeyword}'`);
-                    queryParts.push(
-                        `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/')`
-                    );
+                    queryParts.push(mediaOrFolderClause);
                 } else if (tab === 'my-drive') {
                     queryParts.push(`'${folderId}' in parents`);
-                    queryParts.push(
-                        `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/')`
-                    );
+                    queryParts.push(mediaOrFolderClause);
                 } else if (tab === 'shared') {
                     if (folderId !== 'root') {
                         queryParts.push(`'${folderId}' in parents`);
                     } else {
                         queryParts.push('sharedWithMe = true');
                     }
-                    queryParts.push(
-                        `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/')`
-                    );
+                    queryParts.push(mediaOrFolderClause);
+                } else if (tab === 'all-audio') {
+                    queryParts.push(`mimeType contains 'audio/'`);
                 } else {
                     queryParts.push(`mimeType contains 'video/'`);
                 }
@@ -477,6 +486,8 @@ export function useDriveVideoPlayer() {
             setBreadcrumbs([{ id: 'root', name: '내 드라이브' }]);
         } else if (tab === 'shared') {
             setBreadcrumbs([{ id: 'root', name: '공유 문서함' }]);
+        } else if (tab === 'all-audio') {
+            setBreadcrumbs([{ id: 'root', name: '전체 음악' }]);
         } else {
             setBreadcrumbs([{ id: 'root', name: '전체 동영상' }]);
         }
@@ -580,7 +591,7 @@ export function useDriveVideoPlayer() {
         appendItemsToPlaylist(mapped);
         setSelectedDriveMap({});
         setIsPickerOpen(false);
-        showNotice(`🎬 선택한 동영상 ${mapped.length}개를 재생목록에 추가했습니다.`);
+        showNotice(`🎵 선택한 미디어(영상·음악) ${mapped.length}개를 재생목록에 추가했습니다.`);
     }, [
         selectedDriveMap,
         breadcrumbs,
@@ -594,7 +605,7 @@ export function useDriveVideoPlayer() {
             if (!accessToken || folder.mimeType !== FOLDER_MIME_TYPE) return;
             setIsLoadingFolderBatch(folder.id);
             try {
-                const q = `'${folder.id}' in parents and trashed = false and mimeType contains 'video/'`;
+                const q = `'${folder.id}' in parents and trashed = false and (mimeType contains 'video/' or mimeType contains 'audio/')`;
                 const fields =
                     'files(id,name,mimeType,size,thumbnailLink,modifiedTime,videoMediaMetadata)';
                 const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
@@ -609,24 +620,24 @@ export function useDriveVideoPlayer() {
                     },
                 });
                 if (!response.ok) {
-                    throw new Error(`폴더 내 동영상 조회 실패 (HTTP ${response.status})`);
+                    throw new Error(`폴더 내 미디어 조회 실패 (HTTP ${response.status})`);
                 }
                 const data = (await response.json()) as DriveFilesListResponse;
-                const videoFiles = data.files || [];
-                if (videoFiles.length === 0) {
-                    showNotice(`'${folder.name}' 폴더 안에 재생 가능한 비디오 파일이 없습니다.`);
+                const mediaFiles = data.files || [];
+                if (mediaFiles.length === 0) {
+                    showNotice(`'${folder.name}' 폴더 안에 재생 가능한 동영상이나 음악 파일이 없습니다.`);
                     return;
                 }
-                const mapped = videoFiles.map((v) =>
+                const mapped = mediaFiles.map((v) =>
                     convertDriveItemToPlaylistItem(v, folder.name)
                 );
                 appendItemsToPlaylist(mapped);
                 showNotice(
-                    `📁 '${folder.name}' 폴더의 동영상 ${mapped.length}개를 모두 추가했습니다!`
+                    `📁 '${folder.name}' 폴더의 영상·음악 ${mapped.length}개를 모두 추가했습니다!`
                 );
             } catch (err: unknown) {
                 const msg =
-                    err instanceof Error ? err.message : '폴더 내 동영상을 불러오지 못했습니다.';
+                    err instanceof Error ? err.message : '폴더 내 미디어 파일을 불러오지 못했습니다.';
                 showNotice(msg);
             } finally {
                 setIsLoadingFolderBatch(null);
@@ -635,7 +646,7 @@ export function useDriveVideoPlayer() {
         [accessToken, convertDriveItemToPlaylistItem, appendItemsToPlaylist, showNotice]
     );
 
-    // ─── 보조 소스: 구글 드라이브 공유 링크 & 로컬 비디오 파일 추가 ───
+    // ─── 보조 소스: 구글 드라이브 공유 링크 & 로컬 비디오/음악 파일 추가 ───
     const addDriveSharedLink = useCallback(
         (rawUrlOrId: string, customName?: string): boolean => {
             const fileId = extractDriveFileId(rawUrlOrId);
@@ -646,12 +657,12 @@ export function useDriveVideoPlayer() {
             const label =
                 customName && customName.trim()
                     ? customName.trim()
-                    : `Google Drive Video (${fileId.slice(0, 8)})`;
+                    : `Google Drive Media (${fileId.slice(0, 8)})`;
 
             const newItem: VideoPlaylistItem = {
                 id: fileId,
                 name: label,
-                mimeType: 'video/mp4',
+                mimeType: isAudioMedia('', label) ? 'audio/mpeg' : 'video/mp4',
                 sizeBytes: null,
                 durationMs: null,
                 thumbnailUrl: null,
@@ -661,7 +672,7 @@ export function useDriveVideoPlayer() {
             };
             appendItemsToPlaylist([newItem]);
             setIsShareLinkModalOpen(false);
-            showNotice(`🔗 '${label}' 동영상이 재생목록에 추가되었습니다.`);
+            showNotice(`🔗 '${label}' 미디어가 재생목록에 추가되었습니다.`);
             return true;
         },
         [accessToken, appendItemsToPlaylist, showNotice]
@@ -673,12 +684,18 @@ export function useDriveVideoPlayer() {
             const added: VideoPlaylistItem[] = [];
             for (let i = 0; i < files.length; i += 1) {
                 const file = files[i];
-                if (!file || !file.type.startsWith('video/')) continue;
+                if (!file) continue;
+                const isAudio = isAudioMedia(file.type, file.name);
+                const isVideo =
+                    file.type.startsWith('video/') ||
+                    /\.(mp4|mkv|webm|mov|avi|m4v|ts)$/i.test(file.name);
+                if (!isAudio && !isVideo) continue;
+
                 const objectUrl = URL.createObjectURL(file);
                 added.push({
                     id: `local_${Date.now()}_${i}_${file.name}`,
                     name: file.name,
-                    mimeType: file.type || 'video/mp4',
+                    mimeType: file.type || (isAudio ? 'audio/mpeg' : 'video/mp4'),
                     sizeBytes: file.size,
                     durationMs: null,
                     thumbnailUrl: null,
@@ -689,7 +706,7 @@ export function useDriveVideoPlayer() {
             }
             if (added.length > 0) {
                 appendItemsToPlaylist(added);
-                showNotice(`💻 내 기기에서 동영상 ${added.length}개를 불러왔습니다.`);
+                showNotice(`💻 내 기기에서 영상·음악 파일 ${added.length}개를 불러왔습니다.`);
             }
         },
         [appendItemsToPlaylist, showNotice]
@@ -1251,6 +1268,7 @@ export function useDriveVideoPlayer() {
         playlist,
         currentIndex,
         currentTrack,
+        isCurrentTrackAudio,
         isPlaying,
         setIsPlaying,
         isShuffle,

@@ -5,6 +5,7 @@ import {
     useDriveVideoPlayer,
     formatDuration,
     formatFileSize,
+    isAudioMedia,
 } from '@/hooks/useDriveVideoPlayer';
 import { DriveFilePickerModal } from './DriveFilePickerModal';
 
@@ -47,6 +48,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         playlist,
         currentIndex,
         currentTrack,
+        isCurrentTrackAudio,
         isPlaying,
         setIsPlaying,
         isShuffle,
@@ -106,6 +108,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
 
     const effectiveVolume = isMuted ? 0 : volume;
     const volumePercent = Math.round(effectiveVolume * 100);
+    const isEffectiveAudioMode = isAudioOnlyMode || isCurrentTrackAudio;
 
     const handleOpenClientConfig = () => {
         setClientIdDraft(googleClientId);
@@ -128,7 +131,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
 
     return (
         <section
-            aria-label="구글 드라이브 연동 멀티 비디오 플레이어"
+            aria-label="구글 드라이브 연동 멀티 비디오 및 음악 플레이어"
             className="animate-fade-in space-y-6"
         >
             {/* 토스트 알림 */}
@@ -147,7 +150,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                     <div>
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-                                구글 드라이브 비디오 플레이어
+                                구글 드라이브 비디오 · 음악 플레이어
                             </h2>
                             <span
                                 className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border flex items-center gap-1.5 ${
@@ -169,7 +172,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                             </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-1 font-medium">
-                            로그인된 구글 드라이브에서 폴더 및 여러 비디오 파일을 선택해 재생목록을 구성하고 랜덤 재생·전체화면으로 감상하세요.
+                            로그인된 구글 드라이브에서 폴더 및 여러 동영상·음악(MP3·FLAC·M4A 등) 파일을 선택해 연속·랜덤·백그라운드 재생으로 감상하세요.
                         </p>
                     </div>
                 </div>
@@ -204,12 +207,12 @@ export const DriveVideoPlayerSection: React.FC = () => {
                         className="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                         <i className="fas fa-folder-plus text-emerald-600"></i>
-                        <span>내 기기 비디오 선택</span>
+                        <span>내 기기 영상·음악 선택</span>
                     </button>
                     <input
                         ref={localFileInputRef}
                         type="file"
-                        accept="video/*"
+                        accept="video/*,audio/*,.mp3,.m4a,.flac,.wav,.ogg,.aac,.wma,.opus,.mp4,.mkv,.webm,.mov"
                         multiple
                         onChange={(e) => {
                             handleAddLocalFiles(e.target.files);
@@ -249,16 +252,23 @@ export const DriveVideoPlayerSection: React.FC = () => {
                             <h3 className="text-xs sm:text-sm font-extrabold text-white truncate">
                                 {currentTrack
                                     ? currentTrack.name
-                                    : '재생할 비디오 파일을 구글 드라이브에서 선택해 주세요'}
+                                    : '재생할 동영상·음악 파일을 구글 드라이브에서 선택해 주세요'}
                             </h3>
                         </div>
 
                         <div className="flex items-center gap-2 shrink-0">
-                            {isAudioOnlyMode && (
+                            {isCurrentTrackAudio ? (
                                 <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black flex items-center gap-1">
-                                    <i className="fas fa-headphones-alt text-[9px]"></i>
-                                    <span>화면 끄고 듣기 ON</span>
+                                    <i className="fas fa-music text-[9px]"></i>
+                                    <span>음악 스트리밍</span>
                                 </span>
+                            ) : (
+                                isAudioOnlyMode && (
+                                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] font-black flex items-center gap-1">
+                                        <i className="fas fa-headphones-alt text-[9px]"></i>
+                                        <span>화면 끄고 듣기 ON</span>
+                                    </span>
+                                )
                             )}
                             {isShuffle && (
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black flex items-center gap-1">
@@ -282,7 +292,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                     >
                         {currentTrack ? (
                             <>
-                                {isAudioOnlyMode ? (
+                                {isEffectiveAudioMode ? (
                                     <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-slate-950 via-indigo-950/70 to-slate-900">
                                         <audio
                                             ref={videoRef as React.RefObject<HTMLAudioElement>}
@@ -323,7 +333,11 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         >
                                             <i
                                                 className={`fas ${
-                                                    isPlaying ? 'fa-headphones-alt animate-pulse' : 'fa-play ml-1'
+                                                    isPlaying
+                                                        ? isCurrentTrackAudio
+                                                            ? 'fa-music animate-bounce'
+                                                            : 'fa-headphones-alt animate-pulse'
+                                                        : 'fa-play ml-1'
                                                 }`}
                                             ></i>
                                         </div>
@@ -338,7 +352,9 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                     }`}
                                                 ></span>
                                                 <span>
-                                                    🎧 백그라운드 오디오 전용 모드 (화면 잠금 연속재생)
+                                                    {isCurrentTrackAudio
+                                                        ? '🎵 뮤직·오디오 스트리밍 모드 (화면 잠금 연속재생)'
+                                                        : '🎧 백그라운드 오디오 전용 모드 (화면 잠금 연속재생)'}
                                                 </span>
                                             </div>
                                             <h4 className="text-sm sm:text-base font-black text-white line-clamp-1">
@@ -349,16 +365,18 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                             </p>
                                         </div>
 
-                                        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={toggleAudioOnlyMode}
-                                                className="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
-                                            >
-                                                <i className="fas fa-video text-indigo-400"></i>
-                                                <span>비디오 화면 다시 켜기</span>
-                                            </button>
-                                        </div>
+                                        {!isCurrentTrackAudio && (
+                                            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={toggleAudioOnlyMode}
+                                                    className="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                                                >
+                                                    <i className="fas fa-video text-indigo-400"></i>
+                                                    <span>비디오 화면 다시 켜기</span>
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <video
@@ -403,7 +421,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 )}
 
                                 {/* 일시정지 시 중앙 대형 재생 버튼 오버레이 (비디오 모드일 때만) */}
-                                {!isAudioOnlyMode && !isPlaying && !isBuffering && !playerError && (
+                                {!isEffectiveAudioMode && !isPlaying && !isBuffering && !playerError && (
                                     <button
                                         type="button"
                                         onClick={togglePlayPause}
@@ -708,13 +726,13 @@ export const DriveVideoPlayerSection: React.FC = () => {
                     </div>
                 </div>
 
-                {/* 2) 우측 멀티 비디오 재생목록(Playlist) 패널 */}
+                {/* 2) 우측 멀티 비디오·음악 재생목록(Playlist) 패널 */}
                 <aside className="lg:col-span-4 bg-white rounded-3xl border border-slate-200/90 shadow-sm flex flex-col overflow-hidden">
                     <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
                         <div>
                             <h3 className="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
                                 <i className="fas fa-list-ul text-indigo-600"></i>
-                                <span>선택된 비디오 목록</span>
+                                <span>선택된 영상 · 음악 목록</span>
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black">
                                     {playlist.length}
                                 </span>
@@ -740,18 +758,19 @@ export const DriveVideoPlayerSection: React.FC = () => {
                         {playlist.length === 0 ? (
                             <div className="py-12 px-4 text-center space-y-3">
                                 <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-lg">
-                                    <i className="fas fa-video"></i>
+                                    <i className="fas fa-music"></i>
                                 </div>
                                 <div className="text-xs font-bold text-slate-600">
-                                    아직 선택된 비디오 파일이 없습니다.
+                                    아직 선택된 동영상·음악 파일이 없습니다.
                                 </div>
                                 <p className="text-[11px] text-slate-400 leading-relaxed">
-                                    [구글 드라이브 폴더·파일 선택] 버튼을 눌러 여러 개의 비디오나 폴더 전체를 담아보세요!
+                                    [구글 드라이브 폴더·파일 선택] 버튼을 눌러 여러 개의 동영상·음악(MP3 등)이나 폴더 전체를 담아보세요!
                                 </p>
                             </div>
                         ) : (
                             playlist.map((item, idx) => {
                                 const isActive = idx === currentIndex;
+                                const itemIsAudio = isAudioMedia(item.mimeType, item.name);
                                 return (
                                     <div
                                         key={item.id}
@@ -788,7 +807,17 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                     {item.name}
                                                 </div>
                                                 <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-semibold mt-0.5">
-                                                    <span className="text-indigo-600">
+                                                    <span
+                                                        className={
+                                                            itemIsAudio
+                                                                ? 'text-amber-600 font-extrabold'
+                                                                : 'text-indigo-600 font-bold'
+                                                        }
+                                                    >
+                                                        {itemIsAudio ? '🎵 음악' : '🎬 영상'}
+                                                    </span>
+                                                    <span>
+                                                        •{' '}
                                                         {item.sourceType === 'google-drive'
                                                             ? 'Google Drive'
                                                             : '내 기기'}

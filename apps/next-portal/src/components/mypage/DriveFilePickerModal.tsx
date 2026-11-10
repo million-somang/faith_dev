@@ -6,7 +6,7 @@ import type {
     DriveFolderBreadcrumb,
     DriveItem,
 } from '@/types/driveVideo.types';
-import { formatDuration, formatFileSize } from '@/hooks/useDriveVideoPlayer';
+import { formatDuration, formatFileSize, isAudioMedia } from '@/hooks/useDriveVideoPlayer';
 
 const FOLDER_MIME_TYPE = 'application/vnd.google-apps.folder';
 
@@ -75,14 +75,14 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                         <div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-base sm:text-lg font-black tracking-tight">
-                                    Google 드라이브 폴더 · 비디오 선택
+                                    Google 드라이브 폴더 · 영상 · 음악 선택
                                 </h3>
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-black">
                                     로그인 연동됨
                                 </span>
                             </div>
                             <p className="text-xs text-slate-300 mt-0.5">
-                                폴더를 통째로 담거나 여러 비디오 파일을 체크하여 플레이리스트에 추가하세요.
+                                폴더를 통째로 담거나 여러 동영상·음악(MP3·FLAC·M4A 등) 파일을 체크하여 플레이리스트에 추가하세요.
                             </p>
                         </div>
                     </div>
@@ -99,7 +99,7 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                 {/* ─── 상단 탭 & 검색바 ─── */}
                 <div className="p-4 bg-slate-50 border-b border-slate-200/80 space-y-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
+                        <div className="flex flex-wrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200">
                             <button
                                 type="button"
                                 onClick={() => onChangeTab('my-drive')}
@@ -136,6 +136,18 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                 <i className="fas fa-film"></i>
                                 <span>전체 동영상</span>
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => onChangeTab('all-audio')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer flex items-center gap-1.5 ${
+                                    explorerTab === 'all-audio'
+                                        ? 'bg-amber-500 text-slate-950 shadow-xs'
+                                        : 'text-slate-600 hover:bg-slate-100'
+                                }`}
+                            >
+                                <i className="fas fa-music"></i>
+                                <span>전체 음악</span>
+                            </button>
                         </div>
 
                         {/* 검색창 */}
@@ -145,7 +157,7 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => onChangeSearchQuery(e.target.value)}
-                                placeholder="폴더 또는 동영상 이름 검색..."
+                                placeholder="폴더·동영상·음악 이름 검색..."
                                 className="w-full pl-9 pr-8 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                             />
                             {searchQuery && (
@@ -202,21 +214,21 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                 ></i>
                                 <span>
                                     {allCurrentVideosSelected
-                                        ? '현재 폴더 비디오 전체 해제'
-                                        : `현재 폴더 비디오 전체 선택 (${videos.length}개)`}
+                                        ? '현재 목록 전체 해제'
+                                        : `현재 폴더 영상·음악 전체 선택 (${videos.length}개)`}
                                 </span>
                             </button>
                         )}
                     </div>
                 </div>
 
-                {/* ─── 본문: 폴더 및 동영상 목록 ─── */}
+                {/* ─── 본문: 폴더 및 동영상·음악 목록 ─── */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[300px]">
                     {isLoading ? (
                         <div className="py-16 text-center space-y-3">
                             <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
                             <p className="text-xs font-bold text-slate-500">
-                                구글 드라이브에서 폴더와 동영상을 불러오는 중입니다...
+                                구글 드라이브에서 폴더와 동영상·음악을 불러오는 중입니다...
                             </p>
                         </div>
                     ) : error ? (
@@ -250,10 +262,10 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                 <i className="fas fa-folder-open"></i>
                             </div>
                             <p className="text-sm font-extrabold text-slate-700">
-                                이 위치에 표시할 폴더나 비디오 파일이 없습니다.
+                                이 위치에 표시할 폴더나 동영상·음악 파일이 없습니다.
                             </p>
                             <p className="text-xs text-slate-400">
-                                상단 경로를 이동하거나 [전체 동영상] 탭을 선택해 보세요.
+                                상단 경로를 이동하거나 [전체 동영상] / [전체 음악] 탭을 선택해 보세요.
                             </p>
                         </div>
                     ) : (
@@ -295,7 +307,7 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                                         disabled={isBatchLoading}
                                                         onClick={() => onAddEntireFolder(folder)}
                                                         className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 text-[11px] font-extrabold shrink-0 transition-colors cursor-pointer disabled:opacity-50"
-                                                        title="이 폴더 안의 모든 동영상을 한 번에 추가합니다"
+                                                        title="이 폴더 안의 모든 동영상·음악을 한 번에 추가합니다"
                                                     >
                                                         {isBatchLoading ? (
                                                             <span>
@@ -313,19 +325,26 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                 </div>
                             )}
 
-                            {/* 2) 동영상 파일 목록 */}
+                            {/* 2) 동영상 & 음악 파일 목록 */}
                             {videos.length > 0 && (
                                 <div className="space-y-2">
                                     <div className="text-[11px] font-black text-slate-400 uppercase tracking-wider px-1">
-                                        비디오 파일 ({videos.length})
+                                        미디어 파일 · 영상/음악 ({videos.length})
                                     </div>
                                     <div className="space-y-1.5">
                                         {videos.map((video) => {
                                             const isSelected = Boolean(selectedDriveMap[video.id]);
+                                            const isAudio = isAudioMedia(video.mimeType, video.name);
                                             const sizeNum = video.size ? Number(video.size) : null;
                                             const durationSecs = video.videoMediaMetadata?.durationMillis
                                                 ? Number(video.videoMediaMetadata.durationMillis) / 1000
                                                 : null;
+                                            const formatBadge = video.mimeType
+                                                .replace('video/', '')
+                                                .replace('audio/', '')
+                                                .replace('x-m4a', 'M4A')
+                                                .replace('mpeg', 'MP3')
+                                                .toUpperCase();
 
                                             return (
                                                 <div
@@ -355,6 +374,10 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                                                 className="w-12 h-8 rounded-lg object-cover bg-slate-900 shrink-0 border border-slate-200"
                                                                 referrerPolicy="no-referrer"
                                                             />
+                                                        ) : isAudio ? (
+                                                            <div className="w-12 h-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                                                <i className="fas fa-music text-xs"></i>
+                                                            </div>
                                                         ) : (
                                                             <div className="w-12 h-8 rounded-lg bg-slate-900 text-indigo-400 flex items-center justify-center shrink-0">
                                                                 <i className="fas fa-play text-xs"></i>
@@ -366,7 +389,15 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                                                                 {video.name}
                                                             </div>
                                                             <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                                                                <span>{video.mimeType.replace('video/', '').toUpperCase()}</span>
+                                                                <span
+                                                                    className={
+                                                                        isAudio
+                                                                            ? 'text-amber-600 font-extrabold'
+                                                                            : 'text-indigo-600 font-bold'
+                                                                    }
+                                                                >
+                                                                    {isAudio ? `🎵 ${formatBadge}` : `🎬 ${formatBadge}`}
+                                                                </span>
                                                                 {durationSecs !== null && durationSecs > 0 && (
                                                                     <span>• ⏱ {formatDuration(durationSecs)}</span>
                                                                 )}
@@ -400,7 +431,7 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                 <div className="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-extrabold text-slate-700">
-                            선택된 비디오:{' '}
+                            선택된 미디어:{' '}
                             <strong className="text-indigo-600 font-black">{selectedCount}개</strong>
                         </span>
                         {selectedCount > 0 && (
@@ -429,7 +460,7 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                             className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-40 text-white text-xs sm:text-sm font-black shadow-md transition-all flex items-center gap-2 cursor-pointer"
                         >
                             <i className="fas fa-plus-circle"></i>
-                            <span>선택한 {selectedCount}개 비디오 재생목록에 추가</span>
+                            <span>선택한 {selectedCount}개 파일 재생목록에 추가</span>
                         </button>
                     </div>
                 </div>
