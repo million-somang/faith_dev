@@ -84,6 +84,11 @@ const nextConfig = {
         destination: '/entertainment/saju',
         permanent: true,
       },
+      {
+        source: '/game/tetris',
+        destination: '/game/vera-pop',
+        permanent: true,
+      },
     ];
   },
 };

@@ -5,18 +5,19 @@ import { GAME_CONFIGS } from '@/data/gameConfigs';
 import { GUIDES_DATA } from '@/data/guidesData';
 
 const API_SERVER_URL = process.env.API_SERVER_URL || 'http://127.0.0.1:4200';
+const STATIC_LAST_MOD = '2026-11-10T00:00:00.000Z';
 
-export const revalidate = 600;
+export const revalidate = 3600;
 
-async function fetchLatestNewsForSitemap(): Promise<{ id: number; published_at?: string; created_at?: string }[]> {
+async function fetchTravelArticlesForSitemap(): Promise<{ id: number; published_at?: string }[]> {
   try {
-    const res = await fetch(`${API_SERVER_URL}/api/news?limit=50`, {
-      next: { revalidate: 600 },
+    const res = await fetch(`${API_SERVER_URL}/api/travel?limit=100&sort=popular`, {
+      next: { revalidate: 3600 },
     });
     if (!res.ok) return [];
     const data = await res.json();
-    if (data?.success && Array.isArray(data.news)) {
-      return data.news;
+    if (data?.success && Array.isArray(data.articles)) {
+      return data.articles;
     }
     return [];
   } catch {
@@ -26,168 +27,164 @@ async function fetchLatestNewsForSitemap(): Promise<{ id: number; published_at?:
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://veranex.app';
-  const currentDate = new Date().toISOString();
 
-  // 1. 핵심 허브 및 정책 페이지
+  // 1. 핵심 허브 및 정책 페이지 (중복 Canonical URL인 /utility, /entertainment 제외하여 색인 집중)
   const staticRoutes: MetadataRoute.Sitemap = [
     {
       url: `${baseUrl}/`,
-      lastModified: currentDate,
-      changeFrequency: 'hourly',
-      priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/news`,
-      lastModified: currentDate,
-      changeFrequency: 'hourly',
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/guides`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'daily',
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/lifestyle`,
-      lastModified: currentDate,
+      url: `${baseUrl}/guides`,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'weekly',
+      priority: 1.0,
+    },
+    {
+      url: `${baseUrl}/lifestyle`,
+      lastModified: STATIC_LAST_MOD,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/game`,
+      lastModified: STATIC_LAST_MOD,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/entertainment/saju`,
+      lastModified: STATIC_LAST_MOD,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/entertainment/travel`,
+      lastModified: STATIC_LAST_MOD,
+      changeFrequency: 'daily',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/utility`,
-      lastModified: currentDate,
+      url: `${baseUrl}/entertainment/novel`,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'weekly',
       priority: 0.85,
     },
     {
       url: `${baseUrl}/finance`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
       url: `${baseUrl}/finance/util`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'weekly',
       priority: 0.9,
     },
     {
-      url: `${baseUrl}/game`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/entertainment`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/entertainment/saju`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/entertainment/travel`,
-      lastModified: currentDate,
-      changeFrequency: 'daily',
-      priority: 0.85,
-    },
-    {
-      url: `${baseUrl}/entertainment/novel`,
-      lastModified: currentDate,
-      changeFrequency: 'weekly',
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/lounge`,
-      lastModified: currentDate,
+      url: `${baseUrl}/news`,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'hourly',
       priority: 0.85,
     },
     {
+      url: `${baseUrl}/lounge`,
+      lastModified: STATIC_LAST_MOD,
+      changeFrequency: 'daily',
+      priority: 0.8,
+    },
+    {
       url: `${baseUrl}/about`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${baseUrl}/editorial-policy`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'monthly',
-      priority: 0.8,
+      priority: 0.7,
     },
     {
       url: `${baseUrl}/privacy`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/terms`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/contact`,
-      lastModified: currentDate,
+      lastModified: STATIC_LAST_MOD,
       changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.6,
     },
   ];
 
   // 2. 25편 지식 가이드 & 전문 칼럼 개별 페이지 (E-E-A-T 핵심)
-  const guideRoutes: MetadataRoute.Sitemap = GUIDES_DATA.map((guide) => ({
-    url: `${baseUrl}/guides/${guide.slug}`,
-    lastModified: guide.updatedAt || guide.publishedAt || currentDate,
+  const guideRoutes: MetadataRoute.Sitemap = GUIDES_DATA.map((guide) => {
+    const rawDate = guide.updatedAt || guide.publishedAt;
+    let lastMod = STATIC_LAST_MOD;
+    if (rawDate) {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime())) {
+        lastMod = parsed.toISOString();
+      }
+    }
+    return {
+      url: `${baseUrl}/guides/${guide.slug}`,
+      lastModified: lastMod,
+      changeFrequency: 'monthly' as const,
+      priority: 0.95,
+    };
+  });
+
+  // 3. 도구(미니앱) 개별 SEO 페이지
+  const toolRoutes: MetadataRoute.Sitemap = TOOLS_DATA.map((tool) => ({
+    url: `${baseUrl}/tools/${tool.slug}`,
+    lastModified: STATIC_LAST_MOD,
     changeFrequency: 'weekly',
     priority: 0.95,
   }));
 
-  // 3. 도구(미니앱) 개별 SEO 페이지 (image-resizer, webp-converter 포함 14종 전체)
-  const toolRoutes: MetadataRoute.Sitemap = TOOLS_DATA.map((tool) => ({
-    url: `${baseUrl}/tools/${tool.slug}`,
-    lastModified: currentDate,
-    changeFrequency: 'weekly',
-    priority: 0.9,
-  }));
-
-  // 4. 게임 개별 SEO 페이지 (베라 플라이트, 장기, 오목, 스도쿠 등 전체)
+  // 4. 게임 개별 SEO 페이지
   const allGameSlugs = Array.from(
     new Set([...Object.keys(GAMES_DATA), ...Object.keys(GAME_CONFIGS)])
   ).filter((slug) => slug !== 'comboy' && slug !== 'sfc');
 
   const gameRoutes: MetadataRoute.Sitemap = allGameSlugs.map((slug) => ({
     url: `${baseUrl}/game/${slug}`,
-    lastModified: currentDate,
+    lastModified: STATIC_LAST_MOD,
     changeFrequency: 'weekly',
-    priority: 0.9,
+    priority: 0.95,
   }));
 
-  // 5. 실시간 최신 뉴스 브리핑 상위 50건 동적 포함 (존재하는 유효 ID만 색인 유도)
-  const latestNews = await fetchLatestNewsForSitemap();
-  const newsRoutes: MetadataRoute.Sitemap = latestNews
+  // 5. 영구 보존 여행 명소 상세 페이지 (/entertainment/travel/[id])
+  const travelArticles = await fetchTravelArticlesForSitemap();
+  const travelRoutes: MetadataRoute.Sitemap = travelArticles
     .filter((item) => item && item.id)
     .map((item) => {
-      let lastMod = currentDate;
-      const rawDate = item.published_at || item.created_at;
-      if (rawDate) {
-        const parsed = new Date(rawDate);
+      let lastMod = STATIC_LAST_MOD;
+      if (item.published_at) {
+        const parsed = new Date(item.published_at);
         if (!isNaN(parsed.getTime())) {
           lastMod = parsed.toISOString();
         }
       }
       return {
-        url: `${baseUrl}/news/${item.id}`,
+        url: `${baseUrl}/entertainment/travel/${item.id}`,
         lastModified: lastMod,
-        changeFrequency: 'daily' as const,
-        priority: 0.8,
+        changeFrequency: 'monthly' as const,
+        priority: 0.85,
       };
     });
 
-  return [...staticRoutes, ...guideRoutes, ...gameRoutes, ...toolRoutes, ...newsRoutes];
+  return [...staticRoutes, ...toolRoutes, ...gameRoutes, ...guideRoutes, ...travelRoutes];
 }
