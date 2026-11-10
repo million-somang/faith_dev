@@ -79,6 +79,11 @@ const nextConfig = {
         destination: '/entertainment/travel',
         permanent: true,
       },
+      {
+        source: '/saju',
+        destination: '/entertainment/saju',
+        permanent: true,
+      },
     ];
   },
 };

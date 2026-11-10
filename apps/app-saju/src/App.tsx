@@ -61,12 +61,12 @@ export default function App() {
   const [revealedLotto, setRevealedLotto] = useState<number[] | null>(null);
   const [isLottoDrawing, setIsLottoDrawing] = useState(false);
 
-  // 4초(4000ms) 실시간 1~100% 프로그레스 스플래시
+  // 0.8초(800ms) 실시간 1~100% 고속 프로그레스 스플래시
   useEffect(() => {
     if (step !== 'splash') return;
 
-    const duration = 4000;
-    const intervalTime = 40;
+    const duration = 800;
+    const intervalTime = 20;
     const stepIncrement = 100 / (duration / intervalTime);
 
     const timer = setInterval(() => {
@@ -74,7 +74,7 @@ export default function App() {
         const next = prev + stepIncrement;
         if (next >= 100) {
           clearInterval(timer);
-          setTimeout(() => setStep('input'), 250);
+          setTimeout(() => setStep('input'), 100);
           return 100;
         }
         return Math.floor(next);
@@ -262,10 +262,17 @@ export default function App() {
                   ></div>
                 </div>
               </div>
-              <div className="flex items-center justify-center gap-1.5 text-[11px] font-black text-indigo-600">
+              <div className="flex items-center justify-center gap-1.5 text-[11px] font-black text-indigo-600 mb-3">
                 <i className="fas fa-spinner fa-spin text-indigo-500 text-xs"></i>
                 <span>천문 데이터 로딩 중... ({loadingProgress}%)</span>
               </div>
+              <button
+                type="button"
+                onClick={() => setStep('input')}
+                className="px-4 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+              >
+                바로 시작하기 →
+              </button>
             </div>
 
             {/* 3. 하단 필수 광고 / 스폰서 배너 슬롯 (miniapp.md 의무) */}

@@ -27,14 +27,14 @@ export function useAppLauncher() {
             }
 
             if (!popup) {
-                alert('브라우저의 팝업 차단을 해제해주세요. 시스템 기능을 사용하기 위해 팝업 허용이 필요합니다.');
+                window.location.href = url;
                 return;
             }
 
             popup.focus();
         } catch (error) {
-            console.error('Failed to launch app:', error);
-            alert('앱 실행 중 오류가 발생했습니다.');
+            console.error('Failed to launch app, falling back to direct navigation:', error);
+            window.location.href = url;
         }
     }, []);
 

@@ -175,11 +175,12 @@ miniApps.forEach(appName => {
     const basePath = `/app/${appName}`;
     const distPath = `./apps/app-${appName}/dist`;
     
+    app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
+    app.get(`${basePath}/`, serveStatic({ path: `${distPath}/index.html` }));
     app.use(`${basePath}/*`, serveStatic({ 
         root: distPath,
         rewriteRequestPath: (path) => path.replace(new RegExp(`^${basePath}`), '')
     }));
-    app.get(basePath, serveStatic({ path: `${distPath}/index.html` }));
 });
 
 // 아케이드 에뮬레이터 (comboy, sfc)

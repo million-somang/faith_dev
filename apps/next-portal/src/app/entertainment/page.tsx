@@ -73,7 +73,7 @@ export default function EntertainmentPage() {
         <div className="flex flex-col min-h-screen bg-slate-100 font-sans">
             <EntertainmentSubMenu />
 
-            <main className="flex-1 max-w-6xl mx-auto px-4 py-8 w-full space-y-8">
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-8 w-full space-y-8">
                 {/* 1. 상단 섹션: 핫토픽 & 사이드 프로모션 배너 */}
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="lg:col-span-3 bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
@@ -104,7 +104,7 @@ export default function EntertainmentPage() {
                                             생년월일로 푸는<br />나의 전통 사주팔자
                                         </h3>
                                         <p className="text-violet-100 text-[10px] font-medium opacity-90">
-                                            {!user ? '로그인 후 이용 가능' : '음양오행 균형 및 분석 시작'}
+                                            로그인 없이 즉시 무료 음양오행 균형 및 사주 분석
                                         </p>
                                     </div>
                                 </div>
@@ -155,7 +155,7 @@ export default function EntertainmentPage() {
                             onClick={handleSajuNavigation}
                             className="relative z-10 w-full py-3 bg-white text-violet-700 hover:bg-violet-50 transition-colors font-black text-xs rounded-xl shadow-sm mt-4 text-center cursor-pointer"
                         >
-                            {!user ? '로그인 후 무료 분석' : '행운 아이템 무료 진단'}
+                            행운 아이템 무료 진단 시작
                         </button>
                     </div>
                 </div>
@@ -200,7 +200,11 @@ export default function EntertainmentPage() {
 
                     <div className="divide-y divide-slate-100">
                         {tabContents[activeTab].map((item, idx) => (
-                            <div key={idx} className="py-4 flex justify-between items-center hover:bg-slate-50 px-2 rounded-xl transition-colors">
+                            <div
+                                key={idx}
+                                onClick={handleSajuNavigation}
+                                className="py-4 flex justify-between items-center hover:bg-slate-50 px-2 rounded-xl transition-colors cursor-pointer"
+                            >
                                 <div>
                                     <span className="text-[10px] font-bold text-violet-600 bg-violet-50 px-2 py-0.5 rounded-full mr-2">
                                         {item.category}
