@@ -14,21 +14,8 @@ export default function SajuInfoPage() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<'pillars' | 'elements' | 'faq'>('pillars');
     const [showSoftLock, setShowSoftLock] = useState(false);
-    const [showInlineSaju, setShowInlineSaju] = useState(true);
 
     const handleStartSaju = () => {
-        setShowInlineSaju(true);
-        if (typeof window !== 'undefined') {
-            const el = document.getElementById('saju-live-viewer');
-            if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-        }
-        launchApp('/app/saju/', 'app-saju');
-    };
-
-    const handleOpenPopupSaju = () => {
         launchApp('/app/saju/', 'app-saju');
     };
 
@@ -126,14 +113,6 @@ export default function SajuInfoPage() {
                                 <span>만세력 및 사주 풀이 시작하기</span>
                                 <i className="fas fa-arrow-right text-xs text-stone-400"></i>
                             </button>
-
-                            <button
-                                onClick={handleOpenPopupSaju}
-                                className="px-5 py-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-800 text-sm font-semibold border border-indigo-200/80 transition-all flex items-center gap-2 cursor-pointer"
-                            >
-                                <i className="fas fa-up-right-from-square text-indigo-600 text-xs"></i>
-                                <span>새 창(팝업)으로 열기</span>
-                            </button>
                             
                             <button
                                 onClick={handleNudgeClick}
@@ -173,55 +152,6 @@ export default function SajuInfoPage() {
                         </button>
                     </div>
                 </section>
-
-                {/* 1-B. 인페이지 즉시 실행 만세력 & 사주 분석기 뷰어 */}
-                {showInlineSaju && (
-                    <section id="saju-live-viewer" className="bg-white rounded-3xl border border-indigo-200/80 p-4 sm:p-8 shadow-md space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-stone-100 pb-4">
-                            <div className="flex items-center gap-3">
-                                <span className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg shadow-xs">
-                                    <i className="fas fa-yin-yang"></i>
-                                </span>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h2 className="text-lg sm:text-xl font-bold text-stone-900">베라 정통 만세력 &amp; 사주 실시간 분석기</h2>
-                                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-                                            무료 즉시 실행
-                                        </span>
-                                    </div>
-                                    <p className="text-xs text-stone-500">생년월일시를 입력하시면 팝업 없이 이 화면에서 바로 사주 원국과 오행 분석 결과를 확인하실 수 있습니다.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2 self-end sm:self-auto">
-                                <button
-                                    onClick={handleOpenPopupSaju}
-                                    className="px-3.5 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200/70 transition-colors flex items-center gap-1.5 cursor-pointer"
-                                >
-                                    <i className="fas fa-up-right-from-square text-[11px]"></i>
-                                    <span>새 창으로 크게 보기</span>
-                                </button>
-                                <a
-                                    href="/app/saju/"
-                                    className="px-3.5 py-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white text-xs font-bold transition-colors flex items-center gap-1.5"
-                                >
-                                    <span>전체 화면 이동</span>
-                                    <i className="fas fa-arrow-right text-[10px]"></i>
-                                </a>
-                            </div>
-                        </div>
-
-                        <div className="w-full flex justify-center bg-slate-100/80 rounded-2xl p-2 sm:p-4 border border-slate-200/70">
-                            <div className="w-full max-w-[460px] h-[760px] bg-white rounded-2xl overflow-hidden shadow-lg border border-slate-200">
-                                <iframe
-                                    src="/app/saju/"
-                                    title="베라 정통 만세력 & 사주 분석기"
-                                    className="w-full h-full border-0"
-                                    allow="clipboard-write; clipboard-read"
-                                />
-                            </div>
-                        </div>
-                    </section>
-                )}
 
                 {/* 2. 네 가지 깊이 있는 풀이 영역 (정갈한 그리드) */}
                 <section className="space-y-6">
