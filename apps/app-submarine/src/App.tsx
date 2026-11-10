@@ -205,14 +205,18 @@ export default function App() {
               <div className="w-full md:grid md:grid-cols-12 md:gap-4 md:items-start flex-1">
                 {/* 좌측 컬럼 (PC): 아군 레이더 및 교전 일지 & 함대 패널 */}
                 <div className={`space-y-2 md:col-span-5 ${mobileViewMode === 'radar' ? 'block' : 'hidden md:block'}`}>
-                  <div className="bg-white rounded-2xl p-2 border border-[#EBE6DD] shadow-2xs flex flex-col items-center">
-                    <div className="w-full flex items-center justify-between text-xs font-black text-[#2D2A26] px-1 mb-1">
-                      <span className="flex items-center gap-1 text-indigo-700">
+                  <div className="bg-white rounded-2xl p-2 sm:p-2.5 border border-[#EBE6DD] shadow-2xs flex flex-col items-center">
+                    <div className="w-full flex items-center justify-between text-xs font-black text-[#2D2A26] px-1 mb-1.5">
+                      <span className="flex items-center gap-1.5 text-indigo-700 font-extrabold">
                         <i className="fas fa-shield"></i>
-                        <span>아군 함대 배치 현황</span>
+                        <span>아군 기동 작전 해역</span>
                       </span>
-                      <span className="text-[10px] text-[#8C8479]">
-                        {game.aiAimingTarget ? '🚨 적 조준 감지!' : '적 포격 방어망'}
+                      <span className="text-[10px] font-mono text-[#8C8479] flex items-center gap-1">
+                        {game.aiAimingTarget ? (
+                          <span className="text-rose-600 font-black animate-pulse">🚨 적 조준 감지!</span>
+                        ) : (
+                          <span>수심 920M</span>
+                        )}
                       </span>
                     </div>
                     <SubmarineGrid
@@ -231,13 +235,14 @@ export default function App() {
                 {/* 우측 컬럼 (PC) / 메인 컬럼 (모바일): 적 해역 10x10 사격 그리드 */}
                 <div className={`space-y-2 md:col-span-7 ${mobileViewMode === 'targeting' ? 'block' : 'hidden md:block'}`}>
                   <div className="bg-white rounded-2xl p-2 sm:p-3 border border-[#EBE6DD] shadow-2xs flex flex-col items-center relative">
-                    <div className="w-full flex items-center justify-between text-xs font-black text-[#2D2A26] px-1 mb-1">
-                      <span className="flex items-center gap-1.5 text-rose-600">
+                    <div className="w-full flex items-center justify-between text-xs font-black text-[#2D2A26] px-1 mb-1.5">
+                      <span className="flex items-center gap-1.5 text-rose-600 font-extrabold">
                         <i className="fas fa-crosshairs"></i>
-                        <span>적 함대 해역 (어뢰 발사 좌표 선택)</span>
+                        <span>적 함대 초계 해역</span>
                       </span>
-                      <span className="text-[10px] font-mono text-[#8C8479]">
-                        {game.isSonarActive ? '📡 소나 스캔 구역 터치' : '터치 시 즉시 포격'}
+                      <span className="text-[10px] font-mono text-[#8C8479] flex items-center gap-1">
+                        <i className="fas fa-water text-cyan-600"></i>
+                        <span>{game.isSonarActive ? '소나 탐지 모드' : '수심 1,450M'}</span>
                       </span>
                     </div>
 
