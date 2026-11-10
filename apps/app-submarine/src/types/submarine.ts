@@ -79,6 +79,15 @@ export interface AiAimingTarget {
   label: string;
 }
 
+export interface ActiveMissileStrike {
+  targetGrid: 'targeting' | 'radar';
+  x: number;
+  y: number;
+  isHit: boolean;
+  phase: 'flight' | 'impact';
+  sunkShipName?: string;
+}
+
 export interface BattleLogItem {
   id: string;
   turnNumber: number;

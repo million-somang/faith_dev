@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GridCell, PlacedShip } from '../types/submarine';
+import { ActiveMissileStrike, GridCell, PlacedShip } from '../types/submarine';
 
 const ROW_LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 
@@ -11,6 +11,7 @@ interface SubmarineGridProps {
   disabled?: boolean;
   isSonarActive?: boolean;
   aimingCoord?: { x: number; y: number } | null;
+  activeMissile?: ActiveMissileStrike | null;
 }
 
 export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
@@ -21,6 +22,7 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
   disabled = false,
   isSonarActive = false,
   aimingCoord = null,
+  activeMissile = null,
 }) => {
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
 
@@ -103,6 +105,13 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
                 aimingCoord.x === x &&
                 aimingCoord.y === y;
 
+              // 현재 이 셀에 미사일 타격(비행 or 임팩트)이 진행 중인지 확인
+              const isCurrentMissile =
+                activeMissile &&
+                activeMissile.targetGrid === mode &&
+                activeMissile.x === x &&
+                activeMissile.y === y;
+
               return (
                 <button
                   key={`${x}_${y}`}
@@ -132,6 +141,54 @@ export const SubmarineGrid: React.FC<SubmarineGridProps> = ({
                   }`}
                   aria-label={`${ROW_LABELS[y]}-${x + 1} 좌표 ${isHit ? '명중' : isMiss ? '빗나감' : '사격 가능'}`}
                 >
+                  {/* 정밀 유도 미사일 급강하 비행 애니메이션 */}
+                  {isCurrentMissile && activeMissile.phase === 'flight' && (
+                    <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-visible">
+                      {/* 목표 좌표 락온 링 */}
+                      <div className="absolute w-7 h-7 rounded-full border-2 border-rose-500 animate-target-lock flex items-center justify-center">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,1)]"></span>
+                      </div>
+                      {/* 상공에서 대각선 급강하하는 미사일 및 부스터 화염 */}
+                      <div className="relative animate-missile-strike flex items-center justify-center pointer-events-none">
+                        <div className="absolute -left-3 w-5 h-1.5 bg-gradient-to-r from-transparent via-amber-400 to-rose-500 rounded-full blur-[0.5px]"></div>
+                        <span className="text-base text-rose-500 drop-shadow-[0_0_10px_rgba(239,68,68,1)] transform rotate-45 inline-block">
+                          🚀
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 임팩트 1: 빗맞힘 (MISS) 시 거대한 하얀 물기둥 솟구침 */}
+                  {isCurrentMissile && activeMissile.phase === 'impact' && !activeMissile.isHit && (
+                    <div className="absolute inset-0 pointer-events-none z-30 flex flex-col items-center justify-end overflow-visible">
+                      {/* 수면 충격파 링 확산 */}
+                      <div className="absolute bottom-0 w-8 h-3.5 rounded-[50%] border-2 border-cyan-200/90 animate-shockwave-ring bg-cyan-300/30"></div>
+                      {/* 하늘 높이 솟구치는 거대한 하얀 물기둥 및 포말 */}
+                      <div className="relative flex flex-col items-center animate-water-geyser origin-bottom mb-0.5">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-t from-cyan-100 to-white opacity-95 blur-[0.5px] shadow-[0_0_16px_rgba(255,255,255,0.95)]"></div>
+                        <div className="w-3.5 h-9 bg-gradient-to-t from-cyan-400 via-sky-100 to-white rounded-t-full shadow-[0_0_12px_rgba(56,189,248,0.9)]"></div>
+                        <div className="flex gap-1 -mt-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-white shadow-xs"></span>
+                          <span className="w-3 h-3 rounded-full bg-cyan-100 shadow-xs"></span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-white shadow-xs"></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 임팩트 2: 명중 (HIT) 시 거대한 화염 폭발 (Fireball Blast) */}
+                  {isCurrentMissile && activeMissile.phase === 'impact' && activeMissile.isHit && (
+                    <div className="absolute inset-0 pointer-events-none z-30 flex items-center justify-center overflow-visible">
+                      {/* 충격파 링 */}
+                      <div className="absolute w-9 h-9 rounded-full border-2 border-amber-400 animate-shockwave-ring"></div>
+                      {/* 대형 화염구 폭발 본체 */}
+                      <div className="relative animate-fiery-detonation flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-200 via-amber-500 to-rose-600 shadow-[0_0_28px_rgba(249,115,22,1)] flex items-center justify-center">
+                          <span className="text-sm text-white font-black drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">💥</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* AI 조준 락온 마커 */}
                   {isAiAimingThisCell && (
                     <span className="absolute inset-0 flex items-center justify-center text-rose-500 drop-shadow-[0_0_6px_rgba(244,63,94,0.9)]">

@@ -224,6 +224,7 @@ export default function App() {
                       grid={game.playerGrid}
                       fleet={game.playerFleet}
                       aimingCoord={game.aiAimingTarget}
+                      activeMissile={game.activeMissileStrike}
                       disabled
                     />
                   </div>
@@ -252,6 +253,7 @@ export default function App() {
                       onCellClick={game.fireTorpedo}
                       disabled={game.turn !== 'player' || game.isAiThinking || game.isTurnTransitioning}
                       isSonarActive={game.isSonarActive}
+                      activeMissile={game.activeMissileStrike}
                     />
 
                     {/* 모바일 뷰일 때만 아래에 간소화 함대 상태 패널 노출 */}

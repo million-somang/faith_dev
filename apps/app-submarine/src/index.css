@@ -136,3 +136,117 @@
 .animate-radar {
   animation: radarSweep 3.5s linear infinite;
 }
+
+/* 상공에서 대각선 급강하 미사일 궤적 */
+@keyframes missileAirStrike {
+  0% {
+    transform: translate(-160px, -220px) rotate(40deg) scale(0.6);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-10px, -15px) rotate(45deg) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(0, 0) rotate(45deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-missile-strike {
+  animation: missileAirStrike 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* 목표 지점 락온 조준선 점멸 */
+@keyframes targetLockRing {
+  0% { transform: scale(1.8); opacity: 0.3; }
+  50% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.animate-target-lock {
+  animation: targetLockRing 0.5s ease-out infinite alternate;
+}
+
+/* 거대한 하얀 물기둥 솟구침 (Water Geyser / Spout) */
+@keyframes waterGeyserRise {
+  0% {
+    transform: scaleX(0.4) scaleY(0.1) translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: scaleX(0.9) scaleY(2.2) translateY(-26px);
+    opacity: 1;
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.9));
+  }
+  65% {
+    transform: scaleX(1.3) scaleY(2.4) translateY(-32px);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.8));
+  }
+  100% {
+    transform: scaleX(1.6) scaleY(1.4) translateY(-14px);
+    opacity: 0;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0));
+  }
+}
+
+.animate-water-geyser {
+  animation: waterGeyserRise 0.8s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+  transform-origin: bottom center;
+}
+
+/* 대형 화염구 폭발 (Fiery Fireball Detonation) */
+@keyframes fireballBlast {
+  0% {
+    transform: scale(0.2);
+    opacity: 0.9;
+    filter: brightness(2) contrast(1.5);
+  }
+  35% {
+    transform: scale(1.85);
+    opacity: 1;
+    filter: brightness(1.6) drop-shadow(0 0 24px rgba(239, 68, 68, 0.95));
+  }
+  70% {
+    transform: scale(1.5);
+    opacity: 0.85;
+    filter: brightness(1.2) drop-shadow(0 0 14px rgba(245, 158, 11, 0.8));
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+    filter: brightness(0.9);
+  }
+}
+
+.animate-fiery-detonation {
+  animation: fireballBlast 0.8s cubic-bezier(0.12, 0.9, 0.3, 1) forwards;
+}
+
+/* 타격 충격파 링 확산 */
+@keyframes shockwaveExpand {
+  0% {
+    transform: scale(0.1);
+    opacity: 1;
+    border-width: 5px;
+  }
+  60% {
+    transform: scale(2.4);
+    opacity: 0.8;
+    border-width: 3px;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+.animate-shockwave-ring {
+  animation: shockwaveExpand 0.75s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+}
+
