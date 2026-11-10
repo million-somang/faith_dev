@@ -3,6 +3,8 @@ import NewsHubClient from './NewsHubClient';
 
 const API_SERVER_URL = process.env.API_SERVER_URL || 'http://127.0.0.1:4200';
 
+export const dynamic = 'force-dynamic';
+
 async function fetchInitialNewsServer(): Promise<any[]> {
   try {
     const res = await fetch(`${API_SERVER_URL}/api/news?limit=10&includeStocks=true`, {

@@ -7,6 +7,7 @@ import { GUIDES_DATA } from '@/data/guidesData';
 const API_SERVER_URL = process.env.API_SERVER_URL || 'http://127.0.0.1:4200';
 const STATIC_LAST_MOD = '2026-11-10T00:00:00.000Z';
 
+export const dynamic = 'force-dynamic';
 export const revalidate = 3600;
 
 async function fetchTravelArticlesForSitemap(): Promise<{ id: number; published_at?: string }[]> {
