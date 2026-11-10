@@ -106,7 +106,7 @@ export const PortalFooter: React.FC = () => {
 
   return (
     <footer className="bg-white border-t border-gray-200 mt-20 py-12">
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4">
         {/* PWA 설치 배너 카드 */}
         {!isInstalled && (
           <div className="mb-10 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 border border-blue-100 shadow-sm">
@@ -161,36 +161,123 @@ export const PortalFooter: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8">
             <div>
-              <h4 className="font-bold text-gray-900 mb-4 text-sm">주요 서비스</h4>
-              <ul className="space-y-2 text-sm text-gray-500">
+              <h4 className="font-bold text-gray-900 mb-3 text-sm">주요 서비스</h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-gray-500">
                 <li>
                   <Link href="/guides" className="hover:text-blue-600 font-semibold text-slate-800 transition-colors">
                     지식 가이드 & 칼럼
                   </Link>
                 </li>
                 <li>
-                  <Link href="/game" className="hover:text-blue-600 transition-colors">
-                    미니게임 센터
+                  <Link href="/entertainment/saju" className="hover:text-blue-600 transition-colors">
+                    무료 만세력 & 사주풀이
                   </Link>
                 </li>
                 <li>
-                  <Link href="/utility" className="hover:text-blue-600 transition-colors">
+                  <Link href="/lifestyle" className="hover:text-blue-600 transition-colors">
                     스마트 생활도구
                   </Link>
                 </li>
                 <li>
-                  <Link href="/finance" className="hover:text-blue-600 transition-colors">
-                    금융 대시보드
+                  <Link href="/game" className="hover:text-blue-600 transition-colors">
+                    무설치 미니게임
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/entertainment/travel" className="hover:text-blue-600 transition-colors">
+                    전국 & 해외 여행 가이드
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/entertainment/novel" className="hover:text-blue-600 transition-colors">
+                    웹소설 연재관
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/finance/util" className="hover:text-blue-600 transition-colors">
+                    배당·DSR 금융계산기
                   </Link>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-gray-900 mb-4 text-sm">약관 및 신뢰성 정책</h4>
-              <ul className="space-y-2 text-sm text-gray-500">
+              <h4 className="font-bold text-gray-900 mb-3 text-sm">인기 계산기 & 도구</h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-gray-500">
+                <li>
+                  <Link href="/tools/severance-calc" className="hover:text-blue-600 transition-colors">
+                    퇴직금 & 실업급여 계산기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tools/pyeong-calc" className="hover:text-blue-600 transition-colors">
+                    아파트 평수 계산기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tools/age-calc" className="hover:text-blue-600 transition-colors">
+                    만나이 & 띠 계산기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tools/interest-calc" className="hover:text-blue-600 transition-colors">
+                    예적금 복리 이자 계산기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tools/loan-calc" className="hover:text-blue-600 transition-colors">
+                    대출 원리금 상환 계산기
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/tools/image-resizer" className="hover:text-blue-600 transition-colors">
+                    이미지 크기 조절 & 변환
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-gray-900 mb-3 text-sm">인기 무료 웹게임</h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-gray-500">
+                <li>
+                  <Link href="/game/sudoku" className="hover:text-blue-600 transition-colors">
+                    무료 스도쿠 퍼즐
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/game/janggi" className="hover:text-blue-600 transition-colors">
+                    베라장기 & 묘수풀이
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/game/omok" className="hover:text-blue-600 transition-colors">
+                    베라오목 AI 대국
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/game/billiards" className="hover:text-blue-600 transition-colors">
+                    베라 당구 (4구·3쿠션)
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/game/submarine" className="hover:text-blue-600 transition-colors">
+                    베라 서브마린 해전
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/game/freecell" className="hover:text-blue-600 transition-colors">
+                    클래식 프리셀
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-gray-900 mb-3 text-sm">약관 및 신뢰성 정책</h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-gray-500">
                 <li>
                   <Link href="/editorial-policy" className="hover:text-blue-600 font-semibold text-teal-800 transition-colors">
                     편집 및 팩트체크 정책

@@ -59,10 +59,6 @@ const nextConfig = {
         destination: `${backendUrl}/finance/stock/:path*`,
       },
       {
-        source: '/rss.xml',
-        destination: `${backendUrl}/rss.xml`,
-      },
-      {
         source: '/admin',
         destination: `${backendUrl}/admin`,
       },
@@ -82,6 +78,16 @@ const nextConfig = {
       {
         source: '/saju',
         destination: '/entertainment/saju',
+        permanent: true,
+      },
+      {
+        source: '/utility',
+        destination: '/lifestyle',
+        permanent: true,
+      },
+      {
+        source: '/novel',
+        destination: '/entertainment/novel',
         permanent: true,
       },
       {

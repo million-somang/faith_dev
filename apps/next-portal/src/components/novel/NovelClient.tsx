@@ -727,7 +727,7 @@ export default function NovelClient({ initialNovelId }: { initialNovelId?: numbe
   };
 
   // 로딩바
-  if (isAuthLoading || !user) {
+  if (false) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-violet-600"></div>
@@ -746,7 +746,7 @@ export default function NovelClient({ initialNovelId }: { initialNovelId?: numbe
       <EntertainmentSubMenu />
       
       {/* C. 메인 콘텐츠 (사주 페이지와 100% 동일한 2컬럼 레이아웃 & 폰트 스케일 구조) */}
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-10 w-full flex flex-col">
+      <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-10 w-full flex flex-col">
         
         {/* 상단 히어로 메인 카드 (사주 페이지와 1:1 매칭) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
