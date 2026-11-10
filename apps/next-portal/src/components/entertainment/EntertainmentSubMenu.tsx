@@ -31,7 +31,9 @@ export default function EntertainmentSubMenu() {
             <div className="max-w-6xl mx-auto px-3 sm:px-4">
                 <div className="flex gap-2 py-3 overflow-x-auto hide-scrollbar">
                     {menuItems.map((item) => {
-                        const isActive = pathname === item.path;
+                        const isActive =
+                            pathname === item.path ||
+                            (item.path === '/entertainment/saju' && pathname === '/entertainment');
                         return (
                             <Link
                                 key={item.path}
