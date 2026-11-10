@@ -480,7 +480,7 @@ export default function GamePage() {
                             ? '소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행'
                             : activeGenre === 'online'
                             ? '베라오목 온라인 — 실시간 매칭과 대기실 기능으로 다른 플레이어와 1:1 두뇌 승부를 펼쳐보세요'
-                            : '베라 당구 클럽 · 베라 플라이트 · 베라장기 · 숫자야구 · 베라오목 · 베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 팝업 창에서 자유롭게 플레이하세요'}
+                            : '베라 서브마린 · 베라 당구 클럽 · 베라 플라이트 · 베라장기 · 숫자야구 · 베라오목 · 베라 팝 · 클래식 프리셀 · 스도쿠 · 2048 · 지뢰찾기 — 팝업 창에서 자유롭게 플레이하세요'}
                     </p>
                 </div>
             </section>
@@ -1055,6 +1055,51 @@ export default function GamePage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-indigo-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-crosshairs text-indigo-600"></i> 베라 서브마린 (Vera Submarine)
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            10×10 해상 격자에서 적 함대의 좌표를 추리해 순항 미사일로 타격하는 전략 해전입니다. 명중 시 연속 포격권이 주어지는 살보(Salvo) 룰과 3×3 소나 스캔으로 최소 턴 승리에 도전하세요.
+                        </p>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-blue-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-bullseye text-blue-600"></i> 베라 당구 클럽 (4구 · 3쿠션)
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            한국식 4구와 국제식 3구(3쿠션) 물리 엔진을 구현한 당구 게임입니다. 3D 당점 조절(밀어치기·끌어치기·히네리 회전)과 고스트볼 두께 가이드, 쿠션 반사각을 계산해 하이런을 달성하세요.
+                        </p>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-sky-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-plane text-sky-600"></i> 베라 플라이트 (1942)
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            태평양 상공을 가르는 정통 종스크롤 비행 슈팅 게임입니다. 360° 롤링 무적 회피와 전면 폭탄, 4단계 무기 파워업 아이템으로 거대 보스 전함을 공략하세요.
+                        </p>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-cyan-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-chess-knight text-cyan-600"></i> 베라장기 (Vera Janggi) 전략
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            9×10 장기판 위에서 펼쳐지는 정통 한국 장기입니다. 마상상마·원앙마 등 4대 상차림과 공식 73.5점 덤 규정, 1일 1외통수 묘수풀이로 기력을 연마해 보세요.
+                        </p>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-red-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-baseball text-red-600"></i> 베라 숫자야구 (9 Innings)
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            서로 다른 3자리 비밀 숫자를 9회말 이내에 추리하는 두뇌 게임입니다. 스트라이크(숫자·위치 일치)와 볼(숫자만 일치) 단서를 조합해 3이닝 이내 완봉승에 도전하세요.
+                        </p>
+                    </div>
+
                     <div className="bg-slate-50 p-5 rounded-2xl border border-amber-200/80 space-y-2">
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                             <i className="fas fa-circle-dot text-amber-600"></i> 베라오목 (Vera Omok) 전략
@@ -1064,25 +1109,34 @@ export default function GamePage() {
                         </p>
                     </div>
 
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-purple-200/80 space-y-2">
+                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                            <i className="fas fa-wand-magic-sparkles text-purple-600"></i> 베라 팝 (Vera Pop) 매치-3
+                        </h3>
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                            60초 제한 시간 안에 같은 블록 3개 이상을 매치해 점수를 획득하는 스피드 퍼즐입니다. 목표 점수 돌파 시 시간이 충전되며, 라인 레이저와 2배 피버 모드로 고득점을 노리세요.
+                        </p>
+                    </div>
+
                     <div className="bg-slate-50 p-5 rounded-2xl border border-emerald-200/80 space-y-2">
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                            <i className="fas fa-spade text-emerald-600"></i> 클래식 프리셀 전략
+                            <i className="fas fa-clone text-emerald-600"></i> 클래식 프리셀 전략
                         </h3>
                         <p className="text-xs text-slate-600 leading-relaxed">
                             4개의 프리셀과 빈 열을 전략적으로 활용해 52장의 트럼프 카드를 에이스(A)부터 킹(K)까지 4개 홈셀로 수집하는 정통 솔리테어입니다.
                         </p>
                     </div>
 
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-violet-200/80 space-y-2">
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                            <i className="fas fa-grip-nine text-violet-600"></i> 스도쿠 규칙 및 해법
+                            <i className="fas fa-table-cells text-violet-600"></i> 스도쿠 규칙 및 해법
                         </h3>
                         <p className="text-xs text-slate-600 leading-relaxed">
                             9×9 격자판의 가로줄, 세로줄, 3×3 소형 격자 안에 1부터 9까지의 숫자가 중복 없이 들어가도록 채우는 논리 퍼즐입니다.
                         </p>
                     </div>
 
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-cyan-200/80 space-y-2">
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                             <i className="fas fa-layer-group text-cyan-600"></i> 2048 퍼즐 공략법
                         </h3>
@@ -1091,21 +1145,12 @@ export default function GamePage() {
                         </p>
                     </div>
 
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200/80 space-y-2">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-rose-200/80 space-y-2">
                         <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
                             <i className="fas fa-bomb text-red-500"></i> 스피드 지뢰찾기
                         </h3>
                         <p className="text-xs text-slate-600 leading-relaxed">
                             숫자가 의미하는 주변 8칸의 지뢰 개수를 추론하여 안전한 칸을 빠르게 열어가는 고전 명작입니다.
-                        </p>
-                    </div>
-
-                    <div className="bg-slate-50 p-5 rounded-2xl border border-sky-200/80 space-y-2">
-                        <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-                            <i className="fas fa-plane text-sky-600"></i> 베라 플라이트 (1942)
-                        </h3>
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                            태평양 상공을 가르는 정통 종스크롤 비행 슈팅 게임입니다. 롤링 회피와 전면 폭탄, 파워업 아이템으로 보스를 공략하세요.
                         </p>
                     </div>
                 </div>
