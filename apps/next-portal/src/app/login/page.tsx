@@ -27,7 +27,13 @@ export default function LoginPage() {
 
             if (data.success) {
                 login(data.user);
-                router.push('/');
+                const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+                const redirectTo = params?.get('redirect');
+                if (redirectTo && redirectTo.startsWith('/')) {
+                    window.location.href = redirectTo;
+                } else {
+                    router.push('/');
+                }
             } else {
                 setError(data.message || '로그인에 실패했습니다.');
             }

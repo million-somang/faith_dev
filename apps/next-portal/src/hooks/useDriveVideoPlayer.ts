@@ -440,51 +440,88 @@ export function useDriveVideoPlayer() {
         );
     }, []);
 
-    // ─── 백그라운드 토큰 자동 갱신 (연속 재생 중 1시간 토큰 만료 방지) ───
+    // ─── 백그라운드 토큰 갱신 (팝업 차단 방지를 위해 자동 타이머 대신 수동/사용자 액션 시에만 사용) ───
     const refreshDriveTokenSilently = useCallback(async () => {
-        const activeClientId = googleClientId.trim();
-        if (!activeClientId) return;
-        try {
-            await loadGsiScript();
-            const win = window as WindowWithGoogleGsi;
-            const oauth2 = win.google?.accounts?.oauth2;
-            if (!oauth2) return;
+        // 모바일/사파리 등에서 비사용자 제스처 시점에 requestAccessToken 호출 시 팝업 차단 경고가 발생할 수 있으므로
+        // 백그라운드 강제 팝업 호출은 수행하지 않고 기존 유효 토큰을 유지합니다.
+    }, []);
 
-            const tokenClient = oauth2.initTokenClient({
-                client_id: activeClientId,
-                scope: DRIVE_READONLY_SCOPE,
-                callback: (tokenResponse) => {
-                    if (tokenResponse && tokenResponse.access_token && !tokenResponse.error) {
+    const requestGoogleDriveAuth = useCallback(
+        async (forceSelectAccount: boolean) => {
+            const activeClientId = googleClientId.trim();
+            if (!activeClientId) {
+                setIsClientConfigOpen(true);
+                return;
+            }
+
+            try {
+                await loadGsiScript();
+                const win = window as WindowWithGoogleGsi;
+                const oauth2 = win.google?.accounts?.oauth2;
+                if (!oauth2) {
+                    showNotice('구글 OAuth 모듈을 초기화할 수 없습니다.');
+                    return;
+                }
+
+                const tokenClient = oauth2.initTokenClient({
+                    client_id: activeClientId,
+                    scope: DRIVE_READONLY_SCOPE,
+                    callback: (tokenResponse) => {
+                        if (tokenResponse.error || !tokenResponse.access_token) {
+                            const errDesc =
+                                tokenResponse.error_description || tokenResponse.error || '';
+                            if (errDesc.includes('origin_mismatch') || errDesc.includes('400')) {
+                                setIsClientConfigOpen(true);
+                                showNotice(
+                                    `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin}) 등록이 필요합니다.`
+                                );
+                            } else {
+                                setDriveError(
+                                    errDesc ||
+                                        '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
+                                );
+                            }
+                            return;
+                        }
                         applyNewAccessToken(
                             tokenResponse.access_token,
                             tokenResponse.expires_in || 3500
                         );
                         setRetryNonce((n) => n + 1);
-                    }
-                },
-                error_callback: () => {
-                    // 백그라운드 자동 갱신 실패 시 조용히 무시
-                },
-            });
-            tokenClient.requestAccessToken({ prompt: '' });
-        } catch (_) {
-            // 스크립트 로드 예외 무시
-        }
-    }, [googleClientId, applyNewAccessToken]);
+                        setIsPickerOpen(true);
+                        showNotice('구글 드라이브가 성공적으로 연결되었습니다!');
+                    },
+                    error_callback: (err) => {
+                        const msg = err?.message || '';
+                        if (
+                            msg.includes('origin_mismatch') ||
+                            msg.includes('400') ||
+                            msg.includes('popup_closed_by_user')
+                        ) {
+                            showNotice(
+                                msg.includes('origin_mismatch')
+                                    ? `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin})을 등록해 주세요.`
+                                    : msg || '구글 인증 팝업이 닫혔습니다.'
+                            );
+                        } else {
+                            showNotice(msg || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.');
+                        }
+                    },
+                });
 
-    // 토큰 만료 5분 전 자동 갱신 타이머
-    useEffect(() => {
-        if (typeof window === 'undefined' || !isDriveConnected) return;
-        const timer = window.setInterval(() => {
-            const expiry =
-                tokenExpiryRef.current ||
-                Number(localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY) || '0');
-            if (expiry > 0 && Date.now() > expiry - 5 * 60 * 1000) {
-                refreshDriveTokenSilently();
+                tokenClient.requestAccessToken({
+                    prompt: forceSelectAccount ? 'select_account' : '',
+                });
+            } catch (err: unknown) {
+                const msg =
+                    err instanceof Error
+                        ? err.message
+                        : '구글 드라이브 연결 중 오류가 발생했습니다.';
+                showNotice(msg);
             }
-        }, 60_000);
-        return () => window.clearInterval(timer);
-    }, [isDriveConnected, refreshDriveTokenSilently]);
+        },
+        [googleClientId, applyNewAccessToken, showNotice]
+    );
 
     // ─── Google OAuth 로그인 & 드라이브 모달 열기 ───
     const connectAndOpenDrivePicker = useCallback(async () => {
@@ -498,68 +535,22 @@ export function useDriveVideoPlayer() {
             return;
         }
 
-        const activeClientId = googleClientId.trim();
-        if (!activeClientId) {
-            setIsClientConfigOpen(true);
-            return;
+        await requestGoogleDriveAuth(false);
+    }, [accessToken, isDriveConnected, requestGoogleDriveAuth]);
+
+    // ─── Google 계정 강제 재인증 / 계정 전환 팝업 열기 ───
+    const forceReconnectDrive = useCallback(async () => {
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
         }
-
-        try {
-            await loadGsiScript();
-            const win = window as WindowWithGoogleGsi;
-            const oauth2 = win.google?.accounts?.oauth2;
-            if (!oauth2) {
-                showNotice('구글 OAuth 모듈을 초기화할 수 없습니다.');
-                return;
-            }
-
-            const tokenClient = oauth2.initTokenClient({
-                client_id: activeClientId,
-                scope: DRIVE_READONLY_SCOPE,
-                callback: (tokenResponse) => {
-                    if (tokenResponse.error || !tokenResponse.access_token) {
-                        const errDesc = tokenResponse.error_description || tokenResponse.error || '';
-                        if (errDesc.includes('origin_mismatch') || errDesc.includes('400')) {
-                            setIsClientConfigOpen(true);
-                            showNotice(`⚠️ 구글 콘솔에 현재 도메인(${window.location.origin}) 등록이 필요합니다.`);
-                        } else {
-                            setDriveError(
-                                errDesc ||
-                                    '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
-                            );
-                        }
-                        return;
-                    }
-                    applyNewAccessToken(
-                        tokenResponse.access_token,
-                        tokenResponse.expires_in || 3500
-                    );
-                    setRetryNonce((n) => n + 1);
-                    setIsPickerOpen(true);
-                    showNotice('구글 드라이브가 성공적으로 연결되었습니다!');
-                },
-                error_callback: (err) => {
-                    const msg = err?.message || '';
-                    if (msg.includes('origin_mismatch') || msg.includes('400') || msg.includes('popup_closed_by_user')) {
-                        showNotice(
-                            msg.includes('origin_mismatch')
-                                ? `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin})을 등록해 주세요.`
-                                : (msg || '구글 인증 팝업이 닫혔습니다.')
-                        );
-                    } else {
-                        showNotice(msg || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.');
-                    }
-                },
-            });
-
-            // 이미 구글에 로그인되어 있는 상태라면 계정 선택/동의 후 즉시 토큰 발급
-            tokenClient.requestAccessToken({ prompt: '' });
-        } catch (err: unknown) {
-            const msg =
-                err instanceof Error ? err.message : '구글 드라이브 연결 중 오류가 발생했습니다.';
-            showNotice(msg);
-        }
-    }, [accessToken, isDriveConnected, googleClientId, applyNewAccessToken, showNotice]);
+        tokenExpiryRef.current = 0;
+        setAccessToken('');
+        setIsDriveConnected(false);
+        await requestGoogleDriveAuth(true);
+    }, [requestGoogleDriveAuth]);
 
     const saveGoogleClientId = useCallback(
         (newClientId: string) => {
@@ -1457,6 +1448,7 @@ export function useDriveVideoPlayer() {
         isShareLinkModalOpen,
         setIsShareLinkModalOpen,
         connectAndOpenDrivePicker,
+        forceReconnectDrive,
         saveGoogleClientId,
         // Explorer Modal
         explorerTab,

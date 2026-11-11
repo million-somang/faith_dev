@@ -25,6 +25,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         isShareLinkModalOpen,
         setIsShareLinkModalOpen,
         connectAndOpenDrivePicker,
+        forceReconnectDrive,
         saveGoogleClientId,
         explorerTab,
         handleChangeExplorerTab,
@@ -200,6 +201,16 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 ? '구글 드라이브 폴더·파일 선택'
                                 : '구글 드라이브 연결 및 파일 선택'}
                         </span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={forceReconnectDrive}
+                        className="px-3.5 py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-extrabold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                        title="구글 드라이브 계정을 다시 로그인하거나 다른 구글 계정으로 전환합니다"
+                    >
+                        <i className="fas fa-sync-alt text-amber-600"></i>
+                        <span>구글 재로그인</span>
                     </button>
 
                     <button
@@ -415,7 +426,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         <div className="flex items-center gap-2 pt-1">
                                             <button
                                                 type="button"
-                                                onClick={connectAndOpenDrivePicker}
+                                                onClick={forceReconnectDrive}
                                                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black cursor-pointer"
                                             >
                                                 구글 드라이브 다시 연결
@@ -874,7 +885,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                 isLoading={isLoadingDrive}
                 isLoadingFolderBatch={isLoadingFolderBatch}
                 error={driveError}
-                onRetryConnect={connectAndOpenDrivePicker}
+                onRetryConnect={forceReconnectDrive}
             />
 
             {/* ─── 모달 2: 구글 드라이브 공유 링크 / 파일 ID 직접 추가 ─── */}

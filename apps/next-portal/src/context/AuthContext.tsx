@@ -39,6 +39,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 if (data.success && data.user) {
                     const fetchedUser: User = data.user;
 
+                    try {
+                        const token = btoa(fetchedUser.id + ':faith');
+                        localStorage.setItem('auth_token', token);
+                        localStorage.setItem('user_id', String(fetchedUser.id));
+                        localStorage.setItem('user_email', fetchedUser.email);
+                        localStorage.setItem('user_role', fetchedUser.role || 'user');
+                        localStorage.setItem('user_level', String(fetchedUser.level || 1));
+                    } catch (_) {}
+
                     if (fetchedUser.birth_date) {
                         localStorage.setItem('user_birth_date', fetchedUser.birth_date);
                         localStorage.setItem('faith_saju_birth_date', fetchedUser.birth_date);
@@ -73,9 +82,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = (userData: User) => {
         setUser(userData);
-        if (userData.birth_date) {
-            localStorage.setItem('user_birth_date', userData.birth_date);
-            localStorage.setItem('faith_saju_birth_date', userData.birth_date);
+        if (typeof window !== 'undefined') {
+            try {
+                const token = btoa(userData.id + ':faith');
+                localStorage.setItem('auth_token', token);
+                localStorage.setItem('user_id', String(userData.id));
+                localStorage.setItem('user_email', userData.email);
+                localStorage.setItem('user_role', userData.role || 'user');
+                localStorage.setItem('user_level', String(userData.level || 1));
+            } catch (_) {}
+            if (userData.birth_date) {
+                localStorage.setItem('user_birth_date', userData.birth_date);
+                localStorage.setItem('faith_saju_birth_date', userData.birth_date);
+            }
         }
     };
 
@@ -84,6 +103,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             await axios.post('/api/auth/logout', {}, { withCredentials: true });
         } catch (error) {
             console.error("Logout failed:", error);
+        }
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('user_email');
+            localStorage.removeItem('user_role');
+            localStorage.removeItem('user_level');
         }
         setUser(null);
     };

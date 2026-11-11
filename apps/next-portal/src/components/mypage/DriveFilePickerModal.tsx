@@ -86,14 +86,25 @@ export const DriveFilePickerModal: React.FC<DriveFilePickerModalProps> = ({
                             </p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-                        aria-label="닫기"
-                    >
-                        <i className="fas fa-times text-sm"></i>
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onRetryConnect}
+                            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-xs font-extrabold text-amber-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+                            title="구글 드라이브 계정을 다시 로그인하거나 전환합니다"
+                        >
+                            <i className="fas fa-sync-alt text-[11px]"></i>
+                            <span className="hidden sm:inline">구글 계정 재로그인</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                            aria-label="닫기"
+                        >
+                            <i className="fas fa-times text-sm"></i>
+                        </button>
+                    </div>
                 </div>
 
                 {/* ─── 상단 탭 & 검색바 ─── */}
