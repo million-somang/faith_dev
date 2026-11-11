@@ -85,7 +85,9 @@ export const DriveVideoPlayerSection: React.FC = () => {
         handleLoadedMetadata,
         handleTimeUpdate,
         handleMediaPlay,
+        handleMediaPlaying,
         handleMediaPause,
+        handleMediaError,
         handleVideoEnded,
         removePlaylistItem,
         clearPlaylist,
@@ -361,30 +363,21 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 ) : (
                                     <video
                                         ref={videoRef}
-                                        key={`video-${currentTrack.id}`}
                                         src={currentTrack.streamUrl}
                                         className="w-full h-full max-h-full object-contain cursor-pointer"
                                         playsInline
+                                        preload="auto"
                                         onClick={togglePlayPause}
                                         onDoubleClick={toggleFullscreen}
                                         onPlay={handleMediaPlay}
                                         onPause={handleMediaPause}
                                         onWaiting={() => setIsBuffering(true)}
-                                        onPlaying={() => {
-                                            setIsBuffering(false);
-                                            setPlayerError(null);
-                                        }}
+                                        onPlaying={handleMediaPlaying}
                                         onCanPlay={() => setIsBuffering(false)}
                                         onLoadedMetadata={handleLoadedMetadata}
                                         onTimeUpdate={handleTimeUpdate}
                                         onEnded={handleVideoEnded}
-                                        onError={() => {
-                                            setIsBuffering(false);
-                                            setIsPlaying(false);
-                                            setPlayerError(
-                                                '동영상 스트림을 불러올 수 없습니다. 구글 드라이브 접근 권한을 다시 연결하거나 파일 공유 상태를 확인해 주세요.'
-                                            );
-                                        }}
+                                        onError={handleMediaError}
                                     />
                                 )}
 

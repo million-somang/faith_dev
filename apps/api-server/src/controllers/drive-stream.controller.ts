@@ -12,10 +12,45 @@ const FORWARDED_RESPONSE_HEADERS = [
     'last-modified',
 ] as const;
 
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchUpstreamWithRetry(
+    url: string,
+    headers: Headers,
+    maxRetries = 2
+): Promise<Response> {
+    let lastError: unknown = null;
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                headers,
+                redirect: 'follow',
+            });
+            if (
+                (res.status === 429 || res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504) &&
+                attempt < maxRetries
+            ) {
+                await delay(250 * (attempt + 1));
+                continue;
+            }
+            return res;
+        } catch (err) {
+            lastError = err;
+            if (attempt < maxRetries) {
+                await delay(250 * (attempt + 1));
+            }
+        }
+    }
+    throw lastError instanceof Error ? lastError : new Error('Upstream fetch failed');
+}
+
 export class DriveStreamController {
     /**
      * GET /api/user/drive/stream/:fileId
-     * 구글 드라이브 비디오 파일을 HTML5 <video>에서 Range(206 Partial Content) 탐색이 가능하도록 스트리밍 프록시합니다.
+     * 구글 드라이브 비디오·오디오 파일을 HTML5 <video>/<audio>에서 Range(206 Partial Content) 탐색이 가능하도록 스트리밍 프록시합니다.
      */
     static async streamVideo(c: Context): Promise<Response> {
         try {
@@ -41,19 +76,42 @@ export class DriveStreamController {
                 upstreamHeaders.set('Range', rangeHeader);
             }
 
-            let upstreamUrl: string;
+            const publicFallbackUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+            let upstreamResponse: Response;
+
             if (token) {
-                upstreamHeaders.set('Authorization', `Bearer ${token}`);
-                upstreamUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
+                const authHeaders = new Headers(upstreamHeaders);
+                authHeaders.set('Authorization', `Bearer ${token}`);
+                const driveApiUrl = `https://www.googleapis.com/drive/v3/files/${encodeURIComponent(fileId)}?alt=media&supportsAllDrives=true`;
+                upstreamResponse = await fetchUpstreamWithRetry(driveApiUrl, authHeaders, 2);
+
+                // 토큰이 만료되었더라도 공유 링크가 열려있는 파일일 수 있으므로 공개 URL로 1회 폴백 시도
+                if (upstreamResponse.status === 401 || upstreamResponse.status === 403) {
+                    const fallbackRes = await fetchUpstreamWithRetry(publicFallbackUrl, upstreamHeaders, 1);
+                    const fallbackContentType = (fallbackRes.headers.get('content-type') || '').toLowerCase();
+                    if ((fallbackRes.ok || fallbackRes.status === 206) && !fallbackContentType.includes('text/html')) {
+                        upstreamResponse = fallbackRes;
+                    }
+                }
             } else {
-                upstreamUrl = `https://drive.usercontent.google.com/download?id=${encodeURIComponent(fileId)}&export=download&confirm=t`;
+                upstreamResponse = await fetchUpstreamWithRetry(publicFallbackUrl, upstreamHeaders, 2);
             }
 
-            const upstreamResponse = await fetch(upstreamUrl, {
-                method: 'GET',
-                headers: upstreamHeaders,
-                redirect: 'follow',
-            });
+            const upstreamContentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
+
+            // 구글 드라이브가 인증 필요/권한 부족으로 로그인 HTML 페이지(text/html)를 200 OK로 반환한 경우 차단
+            if (upstreamContentType.includes('text/html')) {
+                return c.json(
+                    {
+                        success: false,
+                        error: {
+                            code: 401,
+                            message: '구글 드라이브 인증 토큰이 만료되었거나 비공개 파일입니다. 다시 연동해 주세요.',
+                        },
+                    },
+                    401
+                );
+            }
 
             if (!upstreamResponse.ok && upstreamResponse.status !== 206) {
                 const status = upstreamResponse.status;
@@ -75,7 +133,7 @@ export class DriveStreamController {
                             success: false,
                             error: {
                                 code: 404,
-                                message: '요청한 구글 드라이브 비디오 파일을 찾을 수 없습니다.',
+                                message: '요청한 구글 드라이브 미디어 파일을 찾을 수 없습니다.',
                             },
                         },
                         404
@@ -104,8 +162,11 @@ export class DriveStreamController {
             if (!responseHeaders.has('accept-ranges')) {
                 responseHeaders.set('accept-ranges', 'bytes');
             }
+            if (!responseHeaders.has('cache-control')) {
+                responseHeaders.set('cache-control', 'private, max-age=3600');
+            }
             if (!responseHeaders.has('content-type')) {
-                responseHeaders.set('content-type', 'video/mp4');
+                responseHeaders.set('content-type', 'application/octet-stream');
             }
 
             return new Response(upstreamResponse.body, {
@@ -120,7 +181,7 @@ export class DriveStreamController {
                     success: false,
                     error: {
                         code: 500,
-                        message: '구글 드라이브 비디오 스트리밍 중 서버 오류가 발생했습니다.',
+                        message: '구글 드라이브 미디어 스트리밍 중 서버 오류가 발생했습니다.',
                     },
                 },
                 500
