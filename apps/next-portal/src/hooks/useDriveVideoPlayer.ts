@@ -158,11 +158,14 @@ export function useDriveVideoPlayer() {
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
     const [isAudioOnlyMode, setIsAudioOnlyMode] = useState<boolean>(false);
     const [isPipActive, setIsPipActive] = useState<boolean>(false);
+    const [isFullStageMounted, setIsFullStageMounted] = useState<boolean>(false);
+    const [isMiniBarDismissed, setIsMiniBarDismissed] = useState<boolean>(false);
     const [isBuffering, setIsBuffering] = useState<boolean>(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [toastNotice, setToastNotice] = useState<string | null>(null);
     const userWantsPlayRef = useRef<boolean>(false);
     const pendingResumeTimeRef = useRef<number | null>(null);
+    const lastKnownTimeRef = useRef<number>(0);
 
     const showNotice = useCallback((msg: string) => {
         setToastNotice(msg);
@@ -566,11 +569,13 @@ export function useDriveVideoPlayer() {
     const appendItemsToPlaylist = useCallback(
         (newItems: VideoPlaylistItem[]) => {
             if (newItems.length === 0) return;
+            setIsMiniBarDismissed(false);
             setPlaylist((prev) => {
                 const existingIds = new Set(prev.map((p) => p.id));
                 const deduped = newItems.filter((item) => !existingIds.has(item.id));
                 const merged = [...prev, ...deduped];
                 if (prev.length === 0 && merged.length > 0) {
+                    userWantsPlayRef.current = true;
                     setCurrentIndex(0);
                     setIsPlaying(true);
                 }
@@ -1014,6 +1019,7 @@ export function useDriveVideoPlayer() {
                         resumeTarget,
                         Math.max(0, (media.duration || resumeTarget) - 0.25)
                     );
+                    lastKnownTimeRef.current = media.currentTime;
                     setCurrentTime(media.currentTime);
                 } catch (_) {
                     // seek 예외 무시
@@ -1029,24 +1035,39 @@ export function useDriveVideoPlayer() {
         [volume, isMuted, playbackRate, isPlaying]
     );
 
+    const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLMediaElement>) => {
+        const t = e.currentTarget.currentTime || 0;
+        lastKnownTimeRef.current = t;
+        setCurrentTime(t);
+    }, []);
+
     const handleMediaPlay = useCallback(() => {
         userWantsPlayRef.current = true;
+        setIsMiniBarDismissed(false);
         setIsPlaying(true);
         setPlayerError(null);
     }, []);
 
-    // 모바일 화면 잠금 시 OS가 강제로 <video>를 일시정지시키면 자동으로 오디오 모드로 전환/재개
+    // 모바일 화면 잠금 또는 페이지 이동(DOM 언마운트) 시 강제 일시정지 방지 및 자동 백그라운드 인계
     const handleMediaPause = useCallback(
         (e: React.SyntheticEvent<HTMLMediaElement>) => {
             const media = e.currentTarget;
             if (media.ended) return;
+
+            // 다른 페이지로 이동하면서 <video> 태그가 언마운트될 때 발생하는 자동 pause 이벤트는 무시하고 재생 위치만 보존
+            if (!media.isConnected) {
+                if (userWantsPlayRef.current) {
+                    pendingResumeTimeRef.current = media.currentTime || lastKnownTimeRef.current || currentTime;
+                }
+                return;
+            }
 
             if (
                 typeof document !== 'undefined' &&
                 document.visibilityState === 'hidden' &&
                 userWantsPlayRef.current
             ) {
-                pendingResumeTimeRef.current = media.currentTime || currentTime;
+                pendingResumeTimeRef.current = media.currentTime || lastKnownTimeRef.current || currentTime;
                 if (!isAudioOnlyMode) {
                     setIsAudioOnlyMode(true);
                     if (typeof window !== 'undefined') {
@@ -1066,6 +1087,34 @@ export function useDriveVideoPlayer() {
         [currentTime, isAudioOnlyMode]
     );
 
+    // ─── 마이페이지 전체 플레이어 화면 마운트/언마운트 시 무손실 인계 ───
+    const mountFullStage = useCallback(() => {
+        if (videoRef.current && videoRef.current.currentTime > 0) {
+            pendingResumeTimeRef.current = videoRef.current.currentTime;
+        } else if (lastKnownTimeRef.current > 0) {
+            pendingResumeTimeRef.current = lastKnownTimeRef.current;
+        }
+        setIsFullStageMounted(true);
+    }, []);
+
+    const unmountFullStage = useCallback(() => {
+        if (videoRef.current && videoRef.current.currentTime > 0) {
+            pendingResumeTimeRef.current = videoRef.current.currentTime;
+        } else if (lastKnownTimeRef.current > 0) {
+            pendingResumeTimeRef.current = lastKnownTimeRef.current;
+        }
+        setIsFullStageMounted(false);
+    }, []);
+
+    const dismissMiniBar = useCallback(() => {
+        userWantsPlayRef.current = false;
+        setIsPlaying(false);
+        if (videoRef.current) {
+            videoRef.current.pause();
+        }
+        setIsMiniBarDismissed(true);
+    }, []);
+
     // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호
     useEffect(() => {
         if (typeof document === 'undefined') return;
@@ -1075,8 +1124,8 @@ export function useDriveVideoPlayer() {
             if (!media || !currentTrack) return;
 
             if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
-                if (!isAudioOnlyMode) {
-                    pendingResumeTimeRef.current = media.currentTime || 0;
+                if (!isAudioOnlyMode && !isCurrentTrackAudio && isFullStageMounted) {
+                    pendingResumeTimeRef.current = media.currentTime || lastKnownTimeRef.current || 0;
                     setIsAudioOnlyMode(true);
                     localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
                 } else if (media.paused) {
@@ -1089,9 +1138,9 @@ export function useDriveVideoPlayer() {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [currentTrack, isAudioOnlyMode]);
+    }, [currentTrack, isAudioOnlyMode, isCurrentTrackAudio, isFullStageMounted]);
 
-    // 트랙 변경 또는 모드 전환 시 자동 재생 및 볼륨/배속 동기화
+    // 트랙 변경 또는 모드/페이지 전환 시 자동 재생 및 볼륨/배속 동기화
     useEffect(() => {
         const video = videoRef.current;
         if (!video || !currentTrack) return;
@@ -1105,7 +1154,16 @@ export function useDriveVideoPlayer() {
                 setIsPlaying(false);
             });
         }
-    }, [currentTrack, isAudioOnlyMode, isPlaying, volume, isMuted, playbackRate]);
+    }, [
+        currentTrack,
+        isAudioOnlyMode,
+        isCurrentTrackAudio,
+        isFullStageMounted,
+        isPlaying,
+        volume,
+        isMuted,
+        playbackRate,
+    ]);
 
     const handleVideoEnded = useCallback(() => {
         const video = videoRef.current;
@@ -1283,6 +1341,11 @@ export function useDriveVideoPlayer() {
         isFullscreen,
         isAudioOnlyMode,
         isPipActive,
+        isFullStageMounted,
+        mountFullStage,
+        unmountFullStage,
+        isMiniBarDismissed,
+        dismissMiniBar,
         isBuffering,
         setIsBuffering,
         playerError,
@@ -1303,6 +1366,7 @@ export function useDriveVideoPlayer() {
         toggleAudioOnlyMode,
         togglePip,
         handleLoadedMetadata,
+        handleTimeUpdate,
         handleMediaPlay,
         handleMediaPause,
         handleVideoEnded,

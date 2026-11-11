@@ -6,6 +6,8 @@ import { PortalFooter } from "@/components/layout/PortalFooter";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { AuthProvider } from "@/context/AuthContext";
 import { UserPreferenceProvider } from "@/context/UserPreferenceContext";
+import { DrivePlayerProvider } from "@/context/DrivePlayerContext";
+import { GlobalMiniPlayerBar } from "@/components/mypage/GlobalMiniPlayerBar";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 
 export const viewport: Viewport = {
@@ -72,13 +74,16 @@ export default function RootLayout({
       <body className="bg-[#f5f6f7] min-h-screen text-gray-900 antialiased selection:bg-blue-100 selection:text-blue-900 flex flex-col">
         <AuthProvider>
           <UserPreferenceProvider>
-            <PageViewTracker />
-            <PortalNavbar />
-            <div className="flex-1 flex flex-col">
-              {children}
-            </div>
-            <PortalFooter />
-            <MobileTabBar />
+            <DrivePlayerProvider>
+              <PageViewTracker />
+              <PortalNavbar />
+              <div className="flex-1 flex flex-col">
+                {children}
+              </div>
+              <GlobalMiniPlayerBar />
+              <PortalFooter />
+              <MobileTabBar />
+            </DrivePlayerProvider>
           </UserPreferenceProvider>
         </AuthProvider>
       </body>

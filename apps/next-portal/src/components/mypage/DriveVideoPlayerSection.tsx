@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    useDriveVideoPlayer,
     formatDuration,
     formatFileSize,
     isAudioMedia,
 } from '@/hooks/useDriveVideoPlayer';
+import { useDrivePlayerContext } from '@/context/DrivePlayerContext';
 import { DriveFilePickerModal } from './DriveFilePickerModal';
 
 const PLAYBACK_RATES: readonly number[] = [0.5, 1, 1.25, 1.5, 2];
@@ -56,13 +56,13 @@ export const DriveVideoPlayerSection: React.FC = () => {
         volume,
         isMuted,
         currentTime,
-        setCurrentTime,
         duration,
-        setDuration,
         playbackRate,
         isFullscreen,
         isAudioOnlyMode,
         isPipActive,
+        mountFullStage,
+        unmountFullStage,
         isBuffering,
         setIsBuffering,
         playerError,
@@ -83,12 +83,20 @@ export const DriveVideoPlayerSection: React.FC = () => {
         toggleAudioOnlyMode,
         togglePip,
         handleLoadedMetadata,
+        handleTimeUpdate,
         handleMediaPlay,
         handleMediaPause,
         handleVideoEnded,
         removePlaylistItem,
         clearPlaylist,
-    } = useDriveVideoPlayer();
+    } = useDrivePlayerContext();
+
+    useEffect(() => {
+        mountFullStage();
+        return () => {
+            unmountFullStage();
+        };
+    }, [mountFullStage, unmountFullStage]);
 
     const localFileInputRef = useRef<HTMLInputElement | null>(null);
     const [clientIdDraft, setClientIdDraft] = useState<string>(googleClientId);
@@ -294,34 +302,6 @@ export const DriveVideoPlayerSection: React.FC = () => {
                             <>
                                 {isEffectiveAudioMode ? (
                                     <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-gradient-to-br from-slate-950 via-indigo-950/70 to-slate-900">
-                                        <audio
-                                            ref={videoRef as React.RefObject<HTMLAudioElement>}
-                                            key={`audio-${currentTrack.id}`}
-                                            src={currentTrack.streamUrl}
-                                            playsInline
-                                            preload="auto"
-                                            onPlay={handleMediaPlay}
-                                            onPause={handleMediaPause}
-                                            onWaiting={() => setIsBuffering(true)}
-                                            onPlaying={() => {
-                                                setIsBuffering(false);
-                                                setPlayerError(null);
-                                            }}
-                                            onCanPlay={() => setIsBuffering(false)}
-                                            onLoadedMetadata={handleLoadedMetadata}
-                                            onTimeUpdate={(e) => {
-                                                setCurrentTime(e.currentTarget.currentTime || 0);
-                                            }}
-                                            onEnded={handleVideoEnded}
-                                            onError={() => {
-                                                setIsBuffering(false);
-                                                setIsPlaying(false);
-                                                setPlayerError(
-                                                    '오디오 스트림을 불러올 수 없습니다. 구글 드라이브 접근 권한을 다시 연결하거나 파일 공유 상태를 확인해 주세요.'
-                                                );
-                                            }}
-                                        />
-
                                         <div
                                             onClick={togglePlayPause}
                                             className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl shadow-2xl border-2 cursor-pointer transition-all ${
@@ -353,15 +333,15 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                 ></span>
                                                 <span>
                                                     {isCurrentTrackAudio
-                                                        ? '🎵 뮤직·오디오 스트리밍 모드 (화면 잠금 연속재생)'
-                                                        : '🎧 백그라운드 오디오 전용 모드 (화면 잠금 연속재생)'}
+                                                        ? '🎵 뮤직·오디오 스트리밍 모드 (다른 페이지 이동·화면 잠금 연속재생)'
+                                                        : '🎧 백그라운드 오디오 전용 모드 (다른 페이지 이동·화면 잠금 연속재생)'}
                                                 </span>
                                             </div>
                                             <h4 className="text-sm sm:text-base font-black text-white line-clamp-1">
                                                 {currentTrack.name}
                                             </h4>
                                             <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
-                                                스마트폰 화면을 닫거나 다른 앱을 열어도 소리가 끊기지 않고 다음 곡까지 자동 재생됩니다. 잠금화면과 블루투스 이어폰에서도 곡 넘김·일시정지가 가능합니다.
+                                                베라 홈페이지의 다른 메뉴(홈·뉴스·게임·가이드)로 이동하거나 핸드폰 화면을 닫아도 끊김 없이 연속 재생됩니다.
                                             </p>
                                         </div>
 
@@ -396,9 +376,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         }}
                                         onCanPlay={() => setIsBuffering(false)}
                                         onLoadedMetadata={handleLoadedMetadata}
-                                        onTimeUpdate={(e) => {
-                                            setCurrentTime(e.currentTarget.currentTime || 0);
-                                        }}
+                                        onTimeUpdate={handleTimeUpdate}
                                         onEnded={handleVideoEnded}
                                         onError={() => {
                                             setIsBuffering(false);

@@ -290,6 +290,15 @@ export default function MyPage() {
 
     // ─── activeSection 디폴트를 dashboard(나의 홈)로 개편 ───
     const [activeSection, setActiveSection] = useState<'dashboard' | 'schedule' | 'video' | 'news' | 'stocks' | 'games' | 'utils' | 'home-customize'>('dashboard');
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const sec = params.get('section');
+        if (sec === 'video' || sec === 'schedule' || sec === 'dashboard' || sec === 'home-customize') {
+            setActiveSection(sec);
+        }
+    }, []);
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();
     const [mobileTabsSaved, setMobileTabsSaved] = useState(false);
