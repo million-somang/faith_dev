@@ -16,6 +16,7 @@ const DEFAULT_GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
 
 const STORAGE_KEYS = {
     CLIENT_ID: 'vera_google_drive_client_id',
+    CLIENT_SECRET: 'vera_google_drive_client_secret',
     PLAYLIST: 'vera_mypage_drive_playlist_v1',
     VOLUME: 'vera_mypage_video_volume',
     SHUFFLE: 'vera_mypage_video_shuffle',
@@ -125,6 +126,8 @@ export function useDriveVideoPlayer() {
 
     // ─── Google OAuth & Drive 연동 상태 ───
     const [googleClientId, setGoogleClientId] = useState<string>(DEFAULT_GOOGLE_CLIENT_ID);
+    const [googleClientSecret, setGoogleClientSecret] = useState<string>('');
+    const [isPermanentConnected, setIsPermanentConnected] = useState<boolean>(false);
     const [currentOrigin, setCurrentOrigin] = useState<string>('');
     const [accessToken, setAccessToken] = useState<string>('');
     const [isDriveConnected, setIsDriveConnected] = useState<boolean>(false);
@@ -189,6 +192,11 @@ export function useDriveVideoPlayer() {
             setGoogleClientId(savedClientId.trim());
         }
 
+        const savedClientSecret = localStorage.getItem(STORAGE_KEYS.CLIENT_SECRET);
+        if (savedClientSecret && savedClientSecret.trim()) {
+            setGoogleClientSecret(savedClientSecret.trim());
+        }
+
         const savedVolume = localStorage.getItem(STORAGE_KEYS.VOLUME);
         if (savedVolume !== null) {
             const parsedVol = Number(savedVolume);
@@ -226,6 +234,12 @@ export function useDriveVideoPlayer() {
             tokenExpiryRef.current = savedExpiry;
             setAccessToken(savedToken);
             setIsDriveConnected(true);
+        } else if (savedToken) {
+            // 만료된 구 토큰은 로컬 스토리지에서 즉시 정리하여 401 전송 방지
+            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
         }
 
         const savedPlaylistRaw = localStorage.getItem(STORAGE_KEYS.PLAYLIST);
@@ -276,13 +290,16 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
-            const freshToken =
-                accessToken ||
-                (typeof window !== 'undefined'
-                    ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                      sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                      ''
-                    : '');
+            const isLocalValid =
+                tokenExpiryRef.current === 0 || tokenExpiryRef.current > Date.now() + 10_000;
+            const freshToken = isLocalValid
+                ? accessToken ||
+                  (typeof window !== 'undefined'
+                      ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                        sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                        ''
+                      : '')
+                : '';
             const baseStreamUrl = buildStreamUrl(raw.id, freshToken);
             const finalStreamUrl =
                 retryNonce > 0
@@ -364,6 +381,47 @@ export function useDriveVideoPlayer() {
                     } catch (_) {}
 
                     if (response.status === 401) {
+                        // 토큰이 만료된 경우 서버에 저장된 refresh_token으로 1회 자동 갱신 후 재조회 시도
+                        try {
+                            const refreshRes = await fetch(
+                                `${API_BASE_URL}/api/user/drive/token?refresh=1`,
+                                { credentials: 'include' }
+                            );
+                            if (refreshRes.ok) {
+                                const refreshJson = (await refreshRes.json()) as {
+                                    success?: boolean;
+                                    data?: {
+                                        accessToken?: string;
+                                        expiryDate?: number;
+                                        isPermanentConnected?: boolean;
+                                    };
+                                };
+                                const refreshedToken = refreshJson.data?.accessToken || '';
+                                if (refreshedToken && refreshedToken !== tokenToUse) {
+                                    const retryRes = await fetch(url, {
+                                        headers: {
+                                            Authorization: `Bearer ${refreshedToken}`,
+                                        },
+                                    });
+                                    if (retryRes.ok) {
+                                        const retryData = (await retryRes.json()) as DriveFilesListResponse;
+                                        setDriveItems(retryData.files || []);
+                                        const nextExpiry =
+                                            refreshJson.data?.expiryDate ||
+                                            Date.now() + 3500 * 1000;
+                                        tokenExpiryRef.current = nextExpiry;
+                                        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, refreshedToken);
+                                        localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(nextExpiry));
+                                        sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, refreshedToken);
+                                        sessionStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(nextExpiry));
+                                        setAccessToken(refreshedToken);
+                                        setIsDriveConnected(true);
+                                        return;
+                                    }
+                                }
+                            }
+                        } catch (_) {}
+
                         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
                         localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
                         sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -440,15 +498,90 @@ export function useDriveVideoPlayer() {
         );
     }, []);
 
-    // ─── 백그라운드 토큰 갱신 (팝업 차단 방지를 위해 자동 타이머 대신 수동/사용자 액션 시에만 사용) ───
-    const refreshDriveTokenSilently = useCallback(async () => {
-        // 모바일/사파리 등에서 비사용자 제스처 시점에 requestAccessToken 호출 시 팝업 차단 경고가 발생할 수 있으므로
-        // 백그라운드 강제 팝업 호출은 수행하지 않고 기존 유효 토큰을 유지합니다.
-    }, []);
+    // ─── 서버 기반 무음(Zero-Popup) 토큰 자동 갱신 & 동기화 ───
+    const refreshDriveTokenSilently = useCallback(
+        async (forceRefresh = true): Promise<string> => {
+            try {
+                const res = await fetch(
+                    `${API_BASE_URL}/api/user/drive/token${forceRefresh ? '?refresh=1' : ''}`,
+                    { credentials: 'include' }
+                );
+                if (!res.ok) return '';
+                const json = (await res.json()) as {
+                    success?: boolean;
+                    data?: {
+                        clientId?: string;
+                        hasClientSecret?: boolean;
+                        accessToken?: string;
+                        expiryDate?: number;
+                        hasRefreshToken?: boolean;
+                        isPermanentConnected?: boolean;
+                    };
+                };
+                if (!json.success || !json.data) return '';
+
+                const {
+                    clientId: serverClientId,
+                    accessToken: serverToken,
+                    expiryDate: serverExpiry,
+                    isPermanentConnected: permConnected,
+                } = json.data;
+
+                if (serverClientId) {
+                    setGoogleClientId((prev) => prev || serverClientId);
+                    if (typeof window !== 'undefined' && !localStorage.getItem(STORAGE_KEYS.CLIENT_ID)) {
+                        localStorage.setItem(STORAGE_KEYS.CLIENT_ID, serverClientId);
+                    }
+                }
+                setIsPermanentConnected(Boolean(permConnected));
+
+                if (serverToken && (!serverExpiry || serverExpiry > Date.now() + 15_000)) {
+                    const remainingSec = serverExpiry
+                        ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
+                        : 3500;
+                    applyNewAccessToken(serverToken, remainingSec);
+                    return serverToken;
+                }
+            } catch (_) {
+                // 비로그인 또는 네트워크 일시 오류 무시
+            }
+            return '';
+        },
+        [applyNewAccessToken]
+    );
+
+    // 마운트 시 서버에 저장된 영구 연결 토큰 자동 복원 + 4분 주기 선제적 백그라운드 무음 리프레시
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        // 1) 최초 마운트 시 서버에서 유효 토큰 동기화
+        refreshDriveTokenSilently(false);
+
+        // 2) 4분마다 토큰 만료 10분 전 여부를 체크하여 팝업 없이 서버에서 자동 리프레시
+        const timer = window.setInterval(() => {
+            const now = Date.now();
+            if (tokenExpiryRef.current > 0 && now >= tokenExpiryRef.current - 10 * 60 * 1000) {
+                refreshDriveTokenSilently(true);
+            } else if (tokenExpiryRef.current > 0 && now > tokenExpiryRef.current) {
+                // 만료된 로컬 토큰 정리 후 서버 리프레시 시도
+                localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                setAccessToken('');
+                refreshDriveTokenSilently(true);
+            }
+        }, 4 * 60 * 1000);
+
+        return () => {
+            window.clearInterval(timer);
+        };
+    }, [refreshDriveTokenSilently]);
 
     const requestGoogleDriveAuth = useCallback(
         async (forceSelectAccount: boolean) => {
             const activeClientId = googleClientId.trim();
+            const activeClientSecret = googleClientSecret.trim();
             if (!activeClientId) {
                 setIsClientConfigOpen(true);
                 return;
@@ -463,55 +596,150 @@ export function useDriveVideoPlayer() {
                     return;
                 }
 
-                const tokenClient = oauth2.initTokenClient({
-                    client_id: activeClientId,
-                    scope: DRIVE_READONLY_SCOPE,
-                    callback: (tokenResponse) => {
-                        if (tokenResponse.error || !tokenResponse.access_token) {
-                            const errDesc =
-                                tokenResponse.error_description || tokenResponse.error || '';
-                            if (errDesc.includes('origin_mismatch') || errDesc.includes('400')) {
-                                setIsClientConfigOpen(true);
+                const runTokenClientFallback = () => {
+                    const tokenClient = oauth2.initTokenClient({
+                        client_id: activeClientId,
+                        scope: DRIVE_READONLY_SCOPE,
+                        callback: async (tokenResponse) => {
+                            if (tokenResponse.error || !tokenResponse.access_token) {
+                                const errDesc =
+                                    tokenResponse.error_description || tokenResponse.error || '';
+                                if (errDesc.includes('origin_mismatch') || errDesc.includes('400')) {
+                                    setIsClientConfigOpen(true);
+                                    showNotice(
+                                        `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin}) 등록이 필요합니다.`
+                                    );
+                                } else {
+                                    setDriveError(
+                                        errDesc ||
+                                            '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
+                                    );
+                                }
+                                return;
+                            }
+                            const expiresIn = tokenResponse.expires_in || 3500;
+                            applyNewAccessToken(tokenResponse.access_token, expiresIn);
+
+                            // 발급된 토큰을 백엔드 DB에도 동기화하여 스트리밍 프록시가 즉시 사용하도록 보장
+                            try {
+                                const syncRes = await fetch(
+                                    `${API_BASE_URL}/api/user/drive/oauth/exchange`,
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({
+                                            accessToken: tokenResponse.access_token,
+                                            expiresIn,
+                                            clientId: activeClientId,
+                                            clientSecret: activeClientSecret || undefined,
+                                        }),
+                                    }
+                                );
+                                if (syncRes.ok) {
+                                    const syncJson = (await syncRes.json()) as {
+                                        data?: { isPermanentConnected?: boolean };
+                                    };
+                                    if (syncJson.data?.isPermanentConnected) {
+                                        setIsPermanentConnected(true);
+                                    }
+                                }
+                            } catch (_) {}
+
+                            setRetryNonce((n) => n + 1);
+                            setIsPickerOpen(true);
+                            showNotice('구글 드라이브가 성공적으로 연결되었습니다!');
+                        },
+                        error_callback: (err) => {
+                            const msg = err?.message || '';
+                            if (
+                                msg.includes('origin_mismatch') ||
+                                msg.includes('400') ||
+                                msg.includes('popup_closed_by_user')
+                            ) {
                                 showNotice(
-                                    `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin}) 등록이 필요합니다.`
+                                    msg.includes('origin_mismatch')
+                                        ? `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin})을 등록해 주세요.`
+                                        : msg || '구글 인증 팝업이 닫혔습니다.'
                                 );
                             } else {
-                                setDriveError(
-                                    errDesc ||
-                                        '구글 드라이브 접근 권한 승인이 취소되었거나 실패했습니다.'
-                                );
+                                showNotice(msg || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.');
                             }
-                            return;
-                        }
-                        applyNewAccessToken(
-                            tokenResponse.access_token,
-                            tokenResponse.expires_in || 3500
-                        );
-                        setRetryNonce((n) => n + 1);
-                        setIsPickerOpen(true);
-                        showNotice('구글 드라이브가 성공적으로 연결되었습니다!');
-                    },
-                    error_callback: (err) => {
-                        const msg = err?.message || '';
-                        if (
-                            msg.includes('origin_mismatch') ||
-                            msg.includes('400') ||
-                            msg.includes('popup_closed_by_user')
-                        ) {
-                            showNotice(
-                                msg.includes('origin_mismatch')
-                                    ? `⚠️ 구글 콘솔에 현재 도메인(${window.location.origin})을 등록해 주세요.`
-                                    : msg || '구글 인증 팝업이 닫혔습니다.'
-                            );
-                        } else {
-                            showNotice(msg || '구글 계정 인증 팝업이 닫혔거나 차단되었습니다.');
-                        }
-                    },
-                });
+                        },
+                    });
 
-                tokenClient.requestAccessToken({
-                    prompt: forceSelectAccount ? 'select_account' : '',
-                });
+                    tokenClient.requestAccessToken({
+                        prompt: forceSelectAccount ? 'select_account' : '',
+                    });
+                };
+
+                // Client Secret이 등록된 경우: Offline Authorization Code 플로우로 영구 refresh_token 발급!
+                if (activeClientSecret && typeof oauth2.initCodeClient === 'function') {
+                    const codeClient = oauth2.initCodeClient({
+                        client_id: activeClientId,
+                        scope: DRIVE_READONLY_SCOPE,
+                        ux_mode: 'popup',
+                        access_type: 'offline',
+                        prompt: forceSelectAccount ? 'consent select_account' : 'consent',
+                        callback: async (codeResponse) => {
+                            if (codeResponse.error || !codeResponse.code) {
+                                runTokenClientFallback();
+                                return;
+                            }
+                            try {
+                                const exRes = await fetch(
+                                    `${API_BASE_URL}/api/user/drive/oauth/exchange`,
+                                    {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include',
+                                        body: JSON.stringify({
+                                            code: codeResponse.code,
+                                            clientId: activeClientId,
+                                            clientSecret: activeClientSecret,
+                                            redirectUri: 'postmessage',
+                                        }),
+                                    }
+                                );
+                                const exJson = (await exRes.json()) as {
+                                    success?: boolean;
+                                    data?: {
+                                        accessToken?: string;
+                                        expiryDate?: number;
+                                        isPermanentConnected?: boolean;
+                                    };
+                                };
+                                if (exRes.ok && exJson.success && exJson.data?.accessToken) {
+                                    const remSec = exJson.data.expiryDate
+                                        ? Math.max(
+                                              60,
+                                              Math.floor((exJson.data.expiryDate - Date.now()) / 1000)
+                                          )
+                                        : 3500;
+                                    applyNewAccessToken(exJson.data.accessToken, remSec);
+                                    setIsPermanentConnected(Boolean(exJson.data.isPermanentConnected));
+                                    setRetryNonce((n) => n + 1);
+                                    setIsPickerOpen(true);
+                                    showNotice(
+                                        '🔒 구글 드라이브 영구 자동연결이 활성화되었습니다! (끊김 시 자동 재연결)'
+                                    );
+                                    return;
+                                }
+                                runTokenClientFallback();
+                            } catch (_) {
+                                runTokenClientFallback();
+                            }
+                        },
+                        error_callback: () => {
+                            runTokenClientFallback();
+                        },
+                    });
+
+                    codeClient.requestCode();
+                    return;
+                }
+
+                runTokenClientFallback();
             } catch (err: unknown) {
                 const msg =
                     err instanceof Error
@@ -520,7 +748,7 @@ export function useDriveVideoPlayer() {
                 showNotice(msg);
             }
         },
-        [googleClientId, applyNewAccessToken, showNotice]
+        [googleClientId, googleClientSecret, applyNewAccessToken, showNotice]
     );
 
     // ─── Google OAuth 로그인 & 드라이브 모달 열기 ───
@@ -535,8 +763,15 @@ export function useDriveVideoPlayer() {
             return;
         }
 
+        // 팝업을 띄우기 전에 먼저 서버에 저장된 영구 refresh_token으로 무음 갱신이 가능한지 확인!
+        const silentlyRefreshed = await refreshDriveTokenSilently(true);
+        if (silentlyRefreshed) {
+            setIsPickerOpen(true);
+            return;
+        }
+
         await requestGoogleDriveAuth(false);
-    }, [accessToken, isDriveConnected, requestGoogleDriveAuth]);
+    }, [accessToken, isDriveConnected, refreshDriveTokenSilently, requestGoogleDriveAuth]);
 
     // ─── Google 계정 강제 재인증 / 계정 전환 팝업 열기 ───
     const forceReconnectDrive = useCallback(async () => {
@@ -553,20 +788,50 @@ export function useDriveVideoPlayer() {
     }, [requestGoogleDriveAuth]);
 
     const saveGoogleClientId = useCallback(
-        (newClientId: string) => {
-            const trimmed = newClientId.trim();
-            setGoogleClientId(trimmed);
+        async (newClientId: string, newClientSecret?: string) => {
+            const trimmedId = newClientId.trim();
+            const trimmedSecret = (newClientSecret ?? googleClientSecret).trim();
+            setGoogleClientId(trimmedId);
+            setGoogleClientSecret(trimmedSecret);
             if (typeof window !== 'undefined') {
-                if (trimmed) {
-                    localStorage.setItem(STORAGE_KEYS.CLIENT_ID, trimmed);
+                if (trimmedId) {
+                    localStorage.setItem(STORAGE_KEYS.CLIENT_ID, trimmedId);
                 } else {
                     localStorage.removeItem(STORAGE_KEYS.CLIENT_ID);
                 }
+                if (trimmedSecret) {
+                    localStorage.setItem(STORAGE_KEYS.CLIENT_SECRET, trimmedSecret);
+                } else {
+                    localStorage.removeItem(STORAGE_KEYS.CLIENT_SECRET);
+                }
             }
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/user/drive/config`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        clientId: trimmedId,
+                        clientSecret: trimmedSecret,
+                    }),
+                });
+                if (res.ok) {
+                    const json = (await res.json()) as {
+                        data?: { isPermanentConnected?: boolean };
+                    };
+                    if (json.data?.isPermanentConnected !== undefined) {
+                        setIsPermanentConnected(Boolean(json.data.isPermanentConnected));
+                    }
+                }
+            } catch (_) {}
             setIsClientConfigOpen(false);
-            showNotice('구글 OAuth Client ID 설정이 저장되었습니다.');
+            showNotice(
+                trimmedSecret
+                    ? '🔒 구글 OAuth Client ID 및 보안 비밀번호(영구 자동연결용)가 저장되었습니다.'
+                    : '구글 OAuth Client ID 설정이 저장되었습니다.'
+            );
         },
-        [showNotice]
+        [googleClientSecret, showNotice]
     );
 
     // ─── 폴더 탐색 제어 ───
@@ -1175,17 +1440,15 @@ export function useDriveVideoPlayer() {
             errorRetryCountRef.current += 1;
             const attempt = errorRetryCountRef.current;
 
-            const now = Date.now();
-            if (tokenExpiryRef.current > 0 && now >= tokenExpiryRef.current - 10 * 60 * 1000) {
-                refreshDriveTokenSilently();
-            }
-
-            setTimeout(() => {
-                setRetryNonce((prev) => prev + 1);
-                if (userWantsPlayRef.current) {
-                    setIsPlaying(true);
-                }
-            }, 600 * attempt);
+            void (async () => {
+                await refreshDriveTokenSilently(true);
+                setTimeout(() => {
+                    setRetryNonce((prev) => prev + 1);
+                    if (userWantsPlayRef.current) {
+                        setIsPlaying(true);
+                    }
+                }, 400 * attempt);
+            })();
             return;
         }
 
@@ -1454,8 +1717,10 @@ export function useDriveVideoPlayer() {
         playerContainerRef,
         // Google Drive OAuth & Picker
         googleClientId,
+        googleClientSecret,
         currentOrigin,
         isDriveConnected,
+        isPermanentConnected,
         isPickerOpen,
         setIsPickerOpen,
         isClientConfigOpen,

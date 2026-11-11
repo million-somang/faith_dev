@@ -16,8 +16,10 @@ export const DriveVideoPlayerSection: React.FC = () => {
         videoRef,
         playerContainerRef,
         googleClientId,
+        googleClientSecret,
         currentOrigin,
         isDriveConnected,
+        isPermanentConnected,
         isPickerOpen,
         setIsPickerOpen,
         isClientConfigOpen,
@@ -104,6 +106,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
 
     const localFileInputRef = useRef<HTMLInputElement | null>(null);
     const [clientIdDraft, setClientIdDraft] = useState<string>(googleClientId);
+    const [clientSecretDraft, setClientSecretDraft] = useState<string>(googleClientSecret);
     const [shareUrlDraft, setShareUrlDraft] = useState<string>('');
     const [shareTitleDraft, setShareTitleDraft] = useState<string>('');
     const [copiedOrigin, setCopiedOrigin] = useState<boolean>(false);
@@ -124,12 +127,13 @@ export const DriveVideoPlayerSection: React.FC = () => {
 
     const handleOpenClientConfig = () => {
         setClientIdDraft(googleClientId);
+        setClientSecretDraft(googleClientSecret);
         setIsClientConfigOpen(true);
     };
 
     const handleSaveClientConfigSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        saveGoogleClientId(clientIdDraft);
+        saveGoogleClientId(clientIdDraft, clientSecretDraft);
     };
 
     const handleAddShareLinkSubmit = (e: React.FormEvent) => {
@@ -178,7 +182,9 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 ></span>
                                 <span>
                                     {isDriveConnected
-                                        ? 'Google 드라이브 로그인 연동됨'
+                                        ? isPermanentConnected
+                                            ? 'Google 드라이브 영구 자동연결 활성'
+                                            : 'Google 드라이브 로그인 연동됨'
                                         : 'Google 드라이브 연동 가능'}
                                 </span>
                             </span>
@@ -1084,6 +1090,29 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 />
                                 <p className="text-[11px] text-slate-400 mt-1">
                                     콘솔에 표시된 클라이언트 ID 전체(예: <span className="font-mono text-slate-600">715992191539-...apps.googleusercontent.com</span>)를 입력하세요.
+                                </p>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center justify-between mb-1">
+                                    <label className="block text-xs font-extrabold text-slate-700">
+                                        Google OAuth Client Secret <span className="text-indigo-600 font-black">(1시간 끊김 없는 영구 자동연결용 · 권장)</span>
+                                    </label>
+                                    {isPermanentConnected && (
+                                        <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black">
+                                            영구 토큰 활성됨
+                                        </span>
+                                    )}
+                                </div>
+                                <input
+                                    type="password"
+                                    value={clientSecretDraft}
+                                    onChange={(e) => setClientSecretDraft(e.target.value)}
+                                    placeholder="GOCSPX-..."
+                                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                    콘솔 우측의 <strong>클라이언트 보안 비밀번호(<span className="font-mono">GOCSPX-...</span>)</strong>를 함께 저장한 뒤 <strong>[구글 재로그인]</strong>을 1회 완료하면, 서버가 오프라인 갱신 토큰(<span className="font-mono">refresh_token</span>)을 보관하여 <strong>1시간이 지나도 재로그인 없이 영구적으로 자동 연결</strong>됩니다.
                                 </p>
                             </div>
 

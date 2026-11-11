@@ -58,8 +58,19 @@ export interface GoogleTokenResponse {
     error_description?: string;
 }
 
+export interface GoogleCodeResponse {
+    code?: string;
+    scope?: string;
+    error?: string;
+    error_description?: string;
+}
+
 export interface GoogleTokenClient {
     requestAccessToken: (overrideConfig?: { prompt?: string }) => void;
+}
+
+export interface GoogleCodeClient {
+    requestCode: () => void;
 }
 
 export interface GoogleAccountsOAuth2 {
@@ -69,6 +80,15 @@ export interface GoogleAccountsOAuth2 {
         callback: (response: GoogleTokenResponse) => void;
         error_callback?: (error: { type?: string; message?: string }) => void;
     }) => GoogleTokenClient;
+    initCodeClient?: (config: {
+        client_id: string;
+        scope: string;
+        ux_mode?: 'popup' | 'redirect';
+        access_type?: 'offline' | 'online';
+        prompt?: string;
+        callback: (response: GoogleCodeResponse) => void;
+        error_callback?: (error: { type?: string; message?: string }) => void;
+    }) => GoogleCodeClient;
     revoke: (token: string, done?: () => void) => void;
 }
 

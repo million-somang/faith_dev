@@ -291,8 +291,11 @@ mypage.delete('/push-subscription', async (c) => {
     }
 });
 
-// ===== Google Drive Video Stream Proxy =====
+// ===== Google Drive Video Stream Proxy & Permanent Auth =====
 import { DriveStreamController } from '../controllers/drive-stream.controller.js';
+mypage.get('/drive/token', (c) => DriveStreamController.getDriveToken(c));
+mypage.post('/drive/oauth/exchange', (c) => DriveStreamController.exchangeOrSaveToken(c));
+mypage.post('/drive/config', (c) => DriveStreamController.saveDriveConfig(c));
 mypage.get('/drive/stream/:fileId', (c) => DriveStreamController.streamVideo(c));
 
 export default mypage;
