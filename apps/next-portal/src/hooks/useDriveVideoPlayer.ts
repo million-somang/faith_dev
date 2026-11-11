@@ -857,6 +857,21 @@ export function useDriveVideoPlayer() {
         }
     }, [currentTrack]);
 
+    const stopPlayback = useCallback(() => {
+        userWantsPlayRef.current = false;
+        pendingResumeTimeRef.current = null;
+        lastKnownTimeRef.current = 0;
+        setIsPlaying(false);
+        setCurrentTime(0);
+        const video = videoRef.current;
+        if (video) {
+            video.pause();
+            try {
+                video.currentTime = 0;
+            } catch (_) {}
+        }
+    }, []);
+
     const playTrackAtIndex = useCallback(
         (index: number) => {
             if (index < 0 || index >= playlist.length) return;
@@ -1500,6 +1515,7 @@ export function useDriveVideoPlayer() {
         setPlayerError,
         toastNotice,
         togglePlayPause,
+        stopPlayback,
         playTrackAtIndex,
         playNext,
         playPrev,

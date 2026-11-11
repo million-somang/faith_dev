@@ -70,6 +70,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         setPlayerError,
         toastNotice,
         togglePlayPause,
+        stopPlayback,
         playTrackAtIndex,
         playNext,
         playPrev,
@@ -480,13 +481,22 @@ export const DriveVideoPlayerSection: React.FC = () => {
                         )}
                     </div>
 
-                    {/* ─── 하단 비디오 컨트롤 바 (진행 바 + 재생/랜덤/볼륨/전체화면) ─── */}
-                    <div className="p-4 sm:p-5 bg-slate-900 border-t border-slate-800 space-y-3.5">
-                        {/* 1단: 동영상 진행 바 (Seek / Progress Bar) */}
-                        <div className="flex items-center gap-3">
-                            <span className="text-[11px] font-mono font-bold text-indigo-300 w-12 text-right shrink-0">
-                                {formatDuration(currentTime)}
-                            </span>
+                    {/* ─── 곰플레이어(GOM Player) 스타일 통합 하단 컨트롤 데크 ─── */}
+                    <div className="bg-slate-950 border-t border-slate-800/90 select-none">
+                        {/* 1단: 풀와이드 정밀 시크바 (Progress Scrub Bar) */}
+                        <div className="relative group h-4 flex items-center px-3 sm:px-4 pt-1.5 cursor-pointer">
+                            <div className="relative w-full h-1.5 group-hover:h-2 bg-slate-800 rounded-full overflow-hidden transition-all">
+                                <div
+                                    className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-indigo-500 rounded-full transition-all duration-100"
+                                    style={{
+                                        width: `${
+                                            duration > 0
+                                                ? Math.min(100, Math.max(0, (currentTime / duration) * 100))
+                                                : 0
+                                        }%`,
+                                    }}
+                                />
+                            </div>
                             <input
                                 type="range"
                                 aria-label="동영상 진행 바"
@@ -496,138 +506,106 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                 disabled={!currentTrack}
                                 value={duration > 0 ? Math.min(currentTime, duration) : 0}
                                 onChange={(e) => handleSeekChange(Number(e.target.value))}
-                                className="w-full h-2 bg-slate-700 rounded-lg cursor-pointer accent-indigo-500 disabled:opacity-40"
+                                className="absolute inset-x-3 sm:inset-x-4 inset-y-0 w-[calc(100%-1.5rem)] sm:w-[calc(100%-2rem)] h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
                             />
-                            <span className="text-[11px] font-mono font-bold text-slate-400 w-12 shrink-0">
-                                {formatDuration(duration)}
-                            </span>
                         </div>
 
-                        {/* 2단: 재생/탐색, 랜덤 재생, 볼륨 조절 바, 배속, 전체화면 버튼 */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            {/* 좌측: 재생·이전·다음·10초 이동·랜덤 재생·반복 */}
-                            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                                {/* 이전 비디오 */}
-                                <button
-                                    type="button"
-                                    onClick={playPrev}
-                                    disabled={playlist.length === 0}
-                                    className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors cursor-pointer"
-                                    title="이전 동영상"
-                                >
-                                    <i className="fas fa-step-backward text-xs"></i>
-                                </button>
+                        {/* 2단: 단일 수평선(1-Row) 정밀 컨트롤 데크 */}
+                        <div className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
+                            {/* 좌측: 메인 재생/정지 + 탐색 캡슐 + 디지털 타임코드 */}
+                            <div className="flex items-center gap-2 shrink-0">
+                                {/* 재생/일시정지 & 정지 버튼 그룹 */}
+                                <div className="inline-flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 shadow-inner">
+                                    <button
+                                        type="button"
+                                        onClick={togglePlayPause}
+                                        disabled={!currentTrack}
+                                        className={`w-9 h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer disabled:opacity-35 ${
+                                            isPlaying
+                                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-xs'
+                                                : 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                                        }`}
+                                        title={isPlaying ? '일시정지 (Space)' : '재생 (Space)'}
+                                    >
+                                        <i
+                                            className={`fas ${
+                                                isPlaying ? 'fa-pause' : 'fa-play ml-0.5'
+                                            } text-xs`}
+                                        ></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={stopPlayback}
+                                        disabled={!currentTrack}
+                                        className="w-8 h-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-35 flex items-center justify-center transition-colors cursor-pointer"
+                                        title="정지 (처음 위치로 초기화)"
+                                    >
+                                        <i className="fas fa-stop text-[10px]"></i>
+                                    </button>
+                                </div>
 
-                                {/* 10초 뒤로 */}
-                                <button
-                                    type="button"
-                                    onClick={() => seekRelative(-10)}
-                                    disabled={!currentTrack}
-                                    className="px-2.5 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
-                                    title="10초 뒤로"
-                                >
-                                    <i className="fas fa-undo text-[10px]"></i>
-                                    <span>10s</span>
-                                </button>
+                                {/* 트랙 이동 & 10초 탐색 캡슐 */}
+                                <div className="inline-flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={playPrev}
+                                        disabled={playlist.length === 0}
+                                        className="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-35 flex items-center justify-center transition-colors cursor-pointer"
+                                        title="이전 트랙"
+                                    >
+                                        <i className="fas fa-step-backward text-[11px]"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => seekRelative(-10)}
+                                        disabled={!currentTrack}
+                                        className="px-2 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-35 text-[10px] font-mono font-extrabold flex items-center gap-0.5 transition-colors cursor-pointer"
+                                        title="10초 뒤로"
+                                    >
+                                        <i className="fas fa-backward text-[9px]"></i>
+                                        <span>10</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => seekRelative(10)}
+                                        disabled={!currentTrack}
+                                        className="px-2 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-35 text-[10px] font-mono font-extrabold flex items-center gap-0.5 transition-colors cursor-pointer"
+                                        title="10초 앞으로"
+                                    >
+                                        <span>10</span>
+                                        <i className="fas fa-forward text-[9px]"></i>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={playNext}
+                                        disabled={playlist.length === 0}
+                                        className="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-35 flex items-center justify-center transition-colors cursor-pointer"
+                                        title="다음 트랙"
+                                    >
+                                        <i className="fas fa-step-forward text-[11px]"></i>
+                                    </button>
+                                </div>
 
-                                {/* 재생 / 일시정지 메인 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={togglePlayPause}
-                                    disabled={!currentTrack}
-                                    className="w-11 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shadow-md transition-colors cursor-pointer"
-                                    title={isPlaying ? '일시정지' : '재생'}
-                                >
-                                    <i
-                                        className={`fas ${
-                                            isPlaying ? 'fa-pause' : 'fa-play'
-                                        } text-sm`}
-                                    ></i>
-                                </button>
-
-                                {/* 10초 앞으로 */}
-                                <button
-                                    type="button"
-                                    onClick={() => seekRelative(10)}
-                                    disabled={!currentTrack}
-                                    className="px-2.5 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-[11px] font-extrabold flex items-center gap-1 transition-colors cursor-pointer"
-                                    title="10초 앞으로"
-                                >
-                                    <span>10s</span>
-                                    <i className="fas fa-redo text-[10px]"></i>
-                                </button>
-
-                                {/* 다음 비디오 */}
-                                <button
-                                    type="button"
-                                    onClick={playNext}
-                                    disabled={playlist.length === 0}
-                                    className="w-9 h-9 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-white flex items-center justify-center transition-colors cursor-pointer"
-                                    title="다음 동영상"
-                                >
-                                    <i className="fas fa-step-forward text-xs"></i>
-                                </button>
-
-                                {/* 🎲 랜덤 재생 (Shuffle) 토글 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={toggleShuffle}
-                                    className={`px-3 h-9 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 cursor-pointer ${
-                                        isShuffle
-                                            ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
-                                    }`}
-                                    title="랜덤 재생(셔플) 켜기/끄기"
-                                >
-                                    <i className="fas fa-random text-xs"></i>
-                                    <span>{isShuffle ? '랜덤 재생 ON' : '랜덤 재생'}</span>
-                                </button>
-
-                                {/* 🔁 반복 모드 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={cycleRepeatMode}
-                                    className={`px-2.5 h-9 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1 cursor-pointer ${
-                                        repeatMode !== 'off'
-                                            ? 'bg-indigo-950/90 text-indigo-300 border-indigo-500/50'
-                                            : 'bg-slate-800 text-slate-400 border-slate-700'
-                                    }`}
-                                    title="반복 재생 설정"
-                                >
-                                    <i className="fas fa-redo-alt text-[11px]"></i>
-                                    <span className="text-[11px]">
-                                        {repeatMode === 'all'
-                                            ? '전체반복'
-                                            : repeatMode === 'one'
-                                            ? '1곡반복'
-                                            : '반복꺼짐'}
+                                {/* 곰플레이어 스타일 디지털 타임코드 표시창 */}
+                                <div className="hidden xs:flex items-center gap-1 px-2.5 h-8 rounded-xl bg-slate-900/90 border border-slate-800/90 font-mono text-[11px] tabular-nums tracking-tight">
+                                    <span className="font-extrabold text-amber-400">
+                                        {formatDuration(currentTime)}
                                     </span>
-                                </button>
-
-                                {/* 🎧 핸드폰 화면 끄고 듣기 (백그라운드 오디오 모드) 토글 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={toggleAudioOnlyMode}
-                                    className={`px-3 h-9 rounded-xl text-xs font-extrabold border transition-all flex items-center gap-1.5 cursor-pointer ${
-                                        isAudioOnlyMode
-                                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
-                                            : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-amber-500/30'
-                                    }`}
-                                    title="핸드폰 화면을 닫거나 잠가도 소리가 끊기지 않고 계속 재생됩니다"
-                                >
-                                    <i className="fas fa-headphones-alt text-xs"></i>
-                                    <span>{isAudioOnlyMode ? '화면 끄고 듣기 ON' : '화면 끄고 듣기'}</span>
-                                </button>
+                                    <span className="text-slate-600">/</span>
+                                    <span className="font-semibold text-slate-400">
+                                        {formatDuration(duration)}
+                                    </span>
+                                </div>
                             </div>
 
-                            {/* 우측: 볼륨 컨트롤 바 + 배속 + 미니창(PIP) + 전체화면 버튼 */}
-                            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                                {/* 🔊 볼륨 조절 바 */}
-                                <div className="flex items-center gap-2 bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                            {/* 우측: 슬림 볼륨 슬라이더 + 통일된 유틸리티 아이콘 독 */}
+                            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                {/* 🔊 슬림 볼륨 컨트롤 캡슐 */}
+                                <div className="hidden md:flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 h-8 rounded-xl">
                                     <button
                                         type="button"
                                         onClick={toggleMute}
-                                        className="text-slate-200 hover:text-white w-5 text-center cursor-pointer"
+                                        className="text-slate-300 hover:text-white w-4 text-center cursor-pointer"
                                         title={isMuted ? '음소거 해제' : '음소거'}
                                     >
                                         <i
@@ -635,9 +613,9 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                 effectiveVolume === 0
                                                     ? 'fa-volume-mute text-rose-400'
                                                     : effectiveVolume < 0.5
-                                                    ? 'fa-volume-down text-emerald-400'
-                                                    : 'fa-volume-up text-emerald-400'
-                                            } text-xs`}
+                                                    ? 'fa-volume-down text-amber-400'
+                                                    : 'fa-volume-up text-amber-400'
+                                            } text-[11px]`}
                                         ></i>
                                     </button>
                                     <input
@@ -648,61 +626,130 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         step={0.01}
                                         value={effectiveVolume}
                                         onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                                        className="w-20 sm:w-24 h-1.5 bg-slate-600 rounded-lg cursor-pointer accent-emerald-400"
+                                        className="w-16 lg:w-20 h-1 bg-slate-700 rounded-lg cursor-pointer accent-amber-400"
                                     />
-                                    <span className="text-[11px] font-mono font-bold text-slate-300 w-8 text-right">
+                                    <span className="text-[10px] font-mono font-bold text-slate-400 w-7 text-right tabular-nums">
                                         {volumePercent}%
                                     </span>
                                 </div>
 
-                                {/* 재생 배속 선택 */}
-                                <select
-                                    aria-label="재생 배속"
-                                    value={playbackRate}
-                                    onChange={(e) =>
-                                        handlePlaybackRateChange(Number(e.target.value))
-                                    }
-                                    className="h-9 px-2.5 rounded-xl bg-slate-800 text-slate-200 border border-slate-700 text-xs font-extrabold focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-                                >
-                                    {PLAYBACK_RATES.map((rate) => (
-                                        <option key={rate} value={rate}>
-                                            {rate}x
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {/* 📺 미니 팝업(PIP) 버튼 */}
-                                {!isAudioOnlyMode && (
+                                {/* 🎛️ 모드 & 화면 기능 통합 툴바 (단일 규격 다크 독) */}
+                                <div className="inline-flex items-center bg-slate-900 border border-slate-800 rounded-xl p-0.5 gap-0.5">
+                                    {/* 랜덤(셔플) 토글 */}
                                     <button
                                         type="button"
-                                        onClick={togglePip}
-                                        disabled={!currentTrack}
-                                        className={`px-3 h-9 rounded-xl text-xs font-extrabold border flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-40 ${
-                                            isPipActive
-                                                ? 'bg-violet-600 text-white border-violet-400'
-                                                : 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                                        onClick={toggleShuffle}
+                                        className={`relative px-2.5 h-8 rounded-lg text-[11px] font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                                            isShuffle
+                                                ? 'bg-slate-800 text-emerald-400'
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                                         }`}
-                                        title="다른 앱이나 화면 위에 작은 미니 팝업창으로 동영상 띄우기 (PIP)"
+                                        title={isShuffle ? '랜덤 재생(셔플) 켜짐' : '랜덤 재생(셔플) 켜기'}
                                     >
-                                        <i className="fas fa-external-link-square-alt text-xs"></i>
-                                        <span className="hidden sm:inline">미니창(PIP)</span>
+                                        <i className="fas fa-random text-[11px]"></i>
+                                        <span className="hidden xl:inline">셔플</span>
+                                        {isShuffle && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                        )}
                                     </button>
-                                )}
 
-                                {/* ⛶ 전체화면 버튼 */}
-                                <button
-                                    type="button"
-                                    onClick={toggleFullscreen}
-                                    className="px-3.5 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-                                    title={isFullscreen ? '전체화면 종료 (ESC)' : '전체화면으로 보기'}
-                                >
-                                    <i
-                                        className={`fas ${
-                                            isFullscreen ? 'fa-compress' : 'fa-expand'
-                                        } text-xs`}
-                                    ></i>
-                                    <span>{isFullscreen ? '전체화면 종료' : '전체화면'}</span>
-                                </button>
+                                    {/* 반복 모드 토글 */}
+                                    <button
+                                        type="button"
+                                        onClick={cycleRepeatMode}
+                                        className={`relative px-2.5 h-8 rounded-lg text-[11px] font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                                            repeatMode !== 'off'
+                                                ? 'bg-slate-800 text-indigo-300'
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                        }`}
+                                        title={
+                                            repeatMode === 'all'
+                                                ? '전체 반복 중'
+                                                : repeatMode === 'one'
+                                                ? '한 곡 반복 중'
+                                                : '반복 꺼짐'
+                                        }
+                                    >
+                                        <i className="fas fa-redo-alt text-[10px]"></i>
+                                        <span className="text-[10px] font-mono">
+                                            {repeatMode === 'all'
+                                                ? 'ALL'
+                                                : repeatMode === 'one'
+                                                ? '1'
+                                                : 'OFF'}
+                                        </span>
+                                    </button>
+
+                                    {/* 화면 끄고 듣기(백그라운드 오디오) 토글 */}
+                                    <button
+                                        type="button"
+                                        onClick={toggleAudioOnlyMode}
+                                        className={`relative px-2.5 h-8 rounded-lg text-[11px] font-extrabold flex items-center gap-1 transition-all cursor-pointer ${
+                                            isAudioOnlyMode
+                                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                                        }`}
+                                        title="핸드폰 화면을 닫거나 다른 페이지로 이동해도 백그라운드에서 계속 재생합니다"
+                                    >
+                                        <i className="fas fa-headphones-alt text-[11px]"></i>
+                                        <span className="hidden sm:inline text-[11px]">백그라운드</span>
+                                        {isAudioOnlyMode && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        )}
+                                    </button>
+
+                                    {/* 배속 선택 */}
+                                    <select
+                                        aria-label="재생 배속"
+                                        value={playbackRate}
+                                        onChange={(e) =>
+                                            handlePlaybackRateChange(Number(e.target.value))
+                                        }
+                                        className="h-8 px-1.5 rounded-lg bg-transparent hover:bg-slate-800 text-slate-300 text-[11px] font-mono font-extrabold focus:outline-none cursor-pointer"
+                                        title="재생 배속 선택"
+                                    >
+                                        {PLAYBACK_RATES.map((rate) => (
+                                            <option
+                                                key={rate}
+                                                value={rate}
+                                                className="bg-slate-900 text-slate-200"
+                                            >
+                                                {rate}x
+                                            </option>
+                                        ))}
+                                    </select>
+
+                                    {/* 미니창(PIP) 버튼 */}
+                                    {!isAudioOnlyMode && !isCurrentTrackAudio && (
+                                        <button
+                                            type="button"
+                                            onClick={togglePip}
+                                            disabled={!currentTrack}
+                                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors cursor-pointer disabled:opacity-35 ${
+                                                isPipActive
+                                                    ? 'bg-violet-600 text-white'
+                                                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                                            }`}
+                                            title="미니 팝업창(PIP) 띄우기"
+                                        >
+                                            <i className="fas fa-clone text-[11px]"></i>
+                                        </button>
+                                    )}
+
+                                    {/* 전체화면 버튼 */}
+                                    <button
+                                        type="button"
+                                        onClick={toggleFullscreen}
+                                        className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-indigo-600 text-slate-200 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                                        title={isFullscreen ? '전체화면 종료 (ESC)' : '전체화면 (더블클릭)'}
+                                    >
+                                        <i
+                                            className={`fas ${
+                                                isFullscreen ? 'fa-compress' : 'fa-expand'
+                                            } text-xs`}
+                                        ></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
