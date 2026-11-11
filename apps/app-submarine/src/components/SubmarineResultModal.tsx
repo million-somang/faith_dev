@@ -7,7 +7,16 @@ interface SubmarineResultModalProps {
   turnCount: number;
   playerHits: number;
   playerMisses: number;
+  isMember?: boolean;
+  isSavingRecord?: boolean;
+  savedRecordInfo?: {
+    rating?: number;
+    ratingDelta?: number;
+    earnedPoints?: number;
+    saved: boolean;
+  } | null;
   onRestart: () => void;
+  onViewLeaderboard?: () => void;
   onShare: () => void;
 }
 
@@ -17,7 +26,11 @@ export const SubmarineResultModal: React.FC<SubmarineResultModalProps> = ({
   turnCount,
   playerHits,
   playerMisses,
+  isMember = false,
+  isSavingRecord = false,
+  savedRecordInfo = null,
   onRestart,
+  onViewLeaderboard,
   onShare,
 }) => {
   if (!isOpen || gamePhase === 'battle') return null;
@@ -86,8 +99,43 @@ export const SubmarineResultModal: React.FC<SubmarineResultModalProps> = ({
           </div>
         </div>
 
+        {/* 명예의 전당 점수 반영 상태 배지 */}
+        <div
+          className={`px-3 py-2 rounded-xl text-[11px] font-bold border flex items-center justify-center gap-1.5 ${
+            isSavingRecord
+              ? 'bg-indigo-50/70 border-indigo-200 text-indigo-700'
+              : isMember && savedRecordInfo?.saved
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-amber-50/80 border-amber-200 text-amber-800'
+          }`}
+        >
+          {isSavingRecord ? (
+            <>
+              <i className="fas fa-spinner fa-spin text-indigo-600"></i>
+              <span>전적 및 랭킹 점수를 기록하는 중입니다...</span>
+            </>
+          ) : isMember && savedRecordInfo?.saved ? (
+            <>
+              <i className="fas fa-circle-check text-emerald-600"></i>
+              <span>
+                명예의 전당 반영 완료! (레이팅{' '}
+                {(savedRecordInfo.ratingDelta ?? 0) >= 0
+                  ? `+${savedRecordInfo.ratingDelta}`
+                  : savedRecordInfo.ratingDelta}
+                {savedRecordInfo.rating ? ` → ${savedRecordInfo.rating}P` : ''}
+                {savedRecordInfo.earnedPoints ? ` · +${savedRecordInfo.earnedPoints} 베라P` : ''})
+              </span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-circle-info text-amber-600"></i>
+              <span>게스트 전적 반영됨 (로그인 시 명예의 전당 랭킹에 공식 등재)</span>
+            </>
+          )}
+        </div>
+
         {/* 버튼 액션 */}
-        <div className="space-y-2 pt-2">
+        <div className="space-y-2 pt-1">
           <button
             type="button"
             onClick={onRestart}
@@ -96,14 +144,28 @@ export const SubmarineResultModal: React.FC<SubmarineResultModalProps> = ({
             <i className="fas fa-rotate-right"></i>
             <span>새로운 작전 구역 출격</span>
           </button>
-          <button
-            type="button"
-            onClick={onShare}
-            className="w-full py-2.5 rounded-2xl bg-[#FAF8F5] hover:bg-[#F2EDE4] text-[#2D2A26] border border-[#EBE6DD] font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-          >
-            <i className="fas fa-share-nodes text-indigo-600"></i>
-            <span>작전 결과 공유하기</span>
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {onViewLeaderboard && (
+              <button
+                type="button"
+                onClick={onViewLeaderboard}
+                className="w-full py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <i className="fas fa-trophy text-amber-500"></i>
+                <span>명예의 전당 보기</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onShare}
+              className={`w-full py-2.5 rounded-2xl bg-[#FAF8F5] hover:bg-[#F2EDE4] text-[#2D2A26] border border-[#EBE6DD] font-bold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                onViewLeaderboard ? '' : 'col-span-2'
+              }`}
+            >
+              <i className="fas fa-share-nodes text-indigo-600"></i>
+              <span>작전 결과 공유</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

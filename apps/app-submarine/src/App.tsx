@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { useSubmarineGame } from './hooks/useSubmarineGame';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SplashScreen } from './components/SplashScreen';
@@ -10,7 +11,9 @@ import { SubmarineResultModal } from './components/SubmarineResultModal';
 import { SubmarineLeaderboard } from './components/SubmarineLeaderboard';
 import { SubmarineGuide } from './components/SubmarineGuide';
 import { BannerSlot } from './components/BannerSlot';
-import { DifficultyLevel } from './types/submarine';
+import { DifficultyLevel, SubmarineProfile } from './types/submarine';
+
+axios.defaults.withCredentials = true;
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
@@ -18,7 +21,76 @@ export default function App() {
   const [mobileViewMode, setMobileViewMode] = useState<'targeting' | 'radar'>('targeting');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const [isMember, setIsMember] = useState(false);
+  const [profile, setProfile] = useState<SubmarineProfile>({
+    fleetName: '베라 제독전대',
+    rating: 1200,
+    wins: 0,
+    losses: 0,
+    bestTurns: 0,
+    totalMatches: 0,
+    hitRate: 0,
+  });
+  const [isSavingRecord, setIsSavingRecord] = useState(false);
+  const [savedRecordInfo, setSavedRecordInfo] = useState<{
+    rating?: number;
+    ratingDelta?: number;
+    earnedPoints?: number;
+    saved: boolean;
+  } | null>(null);
+  const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState(0);
+
+  // 함대명 변경 모달 상태
+  const [isFleetModalOpen, setIsFleetModalOpen] = useState(false);
+  const [newFleetName, setNewFleetName] = useState('베라 제독전대');
+  const [isSubmittingFleetName, setIsSubmittingFleetName] = useState(false);
+
   const game = useSubmarineGame();
+  const reportedRef = useRef(false);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    window.setTimeout(() => setToastMessage(null), 2500);
+  }, []);
+
+  // 제독 프로필 조회
+  const fetchProfile = useCallback(async () => {
+    try {
+      const res = await axios.get<{
+        success: boolean;
+        isMember: boolean;
+        profile: {
+          fleetName: string;
+          wins: number;
+          losses: number;
+          bestTurns: number;
+          totalMatches: number;
+          rating: number;
+        };
+      }>('/api/games/submarine/profile');
+      if (res.data?.success) {
+        setIsMember(Boolean(res.data.isMember));
+        if (res.data.profile) {
+          setProfile((prev) => ({
+            ...prev,
+            fleetName: res.data.profile.fleetName || '베라 제독전대',
+            wins: Number(res.data.profile.wins) || 0,
+            losses: Number(res.data.profile.losses) || 0,
+            bestTurns: Number(res.data.profile.bestTurns) || 0,
+            totalMatches: Number(res.data.profile.totalMatches) || 0,
+            rating: Number(res.data.profile.rating) || 1200,
+          }));
+          setNewFleetName(res.data.profile.fleetName || '베라 제독전대');
+        }
+      }
+    } catch (_err) {
+      setIsMember(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   // 턴 전환 시 모바일 뷰 자동 포커스 (아군 턴: 타겟 조준 / 적 턴: 아군 방어 레이더)
   useEffect(() => {
@@ -29,10 +101,142 @@ export default function App() {
     }
   }, [game.turn]);
 
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    window.setTimeout(() => setToastMessage(null), 2500);
-  }, []);
+  // 게임 종료(victory / defeat) 시 자동으로 점수 및 전적 서버 기록
+  useEffect(() => {
+    if (
+      (game.gamePhase === 'victory' || game.gamePhase === 'defeat') &&
+      !reportedRef.current
+    ) {
+      reportedRef.current = true;
+      const isVictory = game.gamePhase === 'victory';
+      const totalShots = game.playerHits + game.playerMisses;
+      const accuracy = totalShots > 0 ? Math.round((game.playerHits / totalShots) * 100) : 0;
+      const ratingScore = isVictory
+        ? Math.max(1200, 3000 - game.turnCount * 45 + accuracy * 10)
+        : 850;
+
+      setIsSavingRecord(true);
+      axios
+        .post('/api/games/submarine/record', {
+          isVictory,
+          won: isVictory,
+          turns: game.turnCount,
+          accuracy,
+          score: ratingScore,
+          difficulty: game.difficulty,
+        })
+        .then((res) => {
+          const data = res.data;
+          if (data?.isMember && data?.profile) {
+            setIsMember(true);
+            setProfile((prev) => ({
+              ...prev,
+              fleetName: data.profile.fleetName || prev.fleetName,
+              wins: Number(data.profile.wins) || 0,
+              losses: Number(data.profile.losses) || 0,
+              bestTurns: Number(data.profile.bestTurns) || 0,
+              totalMatches: Number(data.profile.totalMatches) || 0,
+              rating: Number(data.profile.rating) || prev.rating,
+              hitRate: accuracy,
+            }));
+            setSavedRecordInfo({
+              saved: true,
+              rating: data.rating,
+              ratingDelta: data.ratingDelta,
+              earnedPoints: data.earnedPoints,
+            });
+          } else {
+            // 게스트 로컬 세션 전적 반영
+            setProfile((prev) => {
+              const nextWins = prev.wins + (isVictory ? 1 : 0);
+              const nextLosses = prev.losses + (isVictory ? 0 : 1);
+              const nextBestTurns = isVictory
+                ? prev.bestTurns === 0
+                  ? game.turnCount
+                  : Math.min(prev.bestTurns, game.turnCount)
+                : prev.bestTurns;
+              const delta = isVictory ? Math.max(15, 50 - game.turnCount) : -15;
+              return {
+                ...prev,
+                wins: nextWins,
+                losses: nextLosses,
+                bestTurns: nextBestTurns,
+                totalMatches: prev.totalMatches + 1,
+                rating: Math.max(800, prev.rating + delta),
+                hitRate: accuracy,
+              };
+            });
+            setSavedRecordInfo({
+              saved: false,
+            });
+          }
+          setLeaderboardRefreshKey((k) => k + 1);
+
+          // 부모/오프너 포털 창 리더보드 실시간 갱신 알림
+          try {
+            window.opener?.postMessage({ type: 'GAME_SCORE_UPDATED', gameId: 'submarine' }, '*');
+          } catch (_e) {}
+          try {
+            if (window.parent && window.parent !== window) {
+              window.parent.postMessage({ type: 'GAME_SCORE_UPDATED', gameId: 'submarine' }, '*');
+            }
+          } catch (_e) {}
+        })
+        .catch((err) => {
+          console.error('[Submarine] Record save error:', err);
+          setSavedRecordInfo({ saved: false });
+        })
+        .finally(() => {
+          setIsSavingRecord(false);
+        });
+    } else if (game.gamePhase === 'battle') {
+      reportedRef.current = false;
+      setSavedRecordInfo(null);
+    }
+  }, [
+    game.gamePhase,
+    game.turnCount,
+    game.playerHits,
+    game.playerMisses,
+    game.difficulty,
+  ]);
+
+  const handleOpenFleetModal = useCallback(() => {
+    if (!isMember) {
+      showToast('로그인 회원만 함대명을 변경하여 명예의 전당에 등록할 수 있습니다.');
+      return;
+    }
+    setNewFleetName(profile.fleetName);
+    setIsFleetModalOpen(true);
+  }, [isMember, profile.fleetName, showToast]);
+
+  const handleSaveFleetName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newFleetName.trim();
+    if (trimmed.length < 2 || trimmed.length > 15) {
+      showToast('함대명은 2자 이상 15자 이내로 입력해주세요.');
+      return;
+    }
+    setIsSubmittingFleetName(true);
+    try {
+      const res = await axios.put<{ success: boolean; fleetName: string }>(
+        '/api/games/submarine/fleet-name',
+        { fleetName: trimmed }
+      );
+      if (res.data?.success) {
+        setProfile((prev) => ({ ...prev, fleetName: res.data.fleetName }));
+        setIsFleetModalOpen(false);
+        setLeaderboardRefreshKey((k) => k + 1);
+        showToast(`⚓ 함대명이 '${res.data.fleetName}'(으)로 변경되었습니다!`);
+      } else {
+        showToast('함대명 변경에 실패했습니다.');
+      }
+    } catch (_err) {
+      showToast('함대명 변경 중 오류가 발생했습니다.');
+    } finally {
+      setIsSubmittingFleetName(false);
+    }
+  };
 
   const handleShare = useCallback(async () => {
     const shareData = {
@@ -165,6 +369,32 @@ export default function App() {
                   ></i>
                   <span className="truncate">{game.turnNarrative}</span>
                 </div>
+
+                {/* 내 함대 전적 요약 바 */}
+                <div className="flex items-center justify-between pt-1.5 border-t border-[#F2EDE4] text-[11px]">
+                  <button
+                    type="button"
+                    onClick={handleOpenFleetModal}
+                    className="flex items-center gap-1.5 font-black text-[#2D2A26] hover:text-indigo-600 transition-colors cursor-pointer"
+                    title="함대명 변경"
+                  >
+                    <i className="fas fa-anchor text-indigo-600 text-[10px]"></i>
+                    <span className="truncate max-w-[140px] sm:max-w-[200px]">{profile.fleetName}</span>
+                    {isMember && <i className="fas fa-pen text-[9px] text-[#8C8479]"></i>}
+                  </button>
+                  <div className="flex items-center gap-2 font-mono font-bold text-[#7A756D]">
+                    <span>
+                      <strong className="text-indigo-700">{profile.wins}</strong>승{' '}
+                      <strong className="text-rose-600">{profile.losses}</strong>패
+                    </span>
+                    {profile.bestTurns > 0 && (
+                      <span className="hidden sm:inline text-[#8C8479]">· 최소 {profile.bestTurns}턴</span>
+                    )}
+                    <span className="px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-800 font-black">
+                      {profile.rating.toLocaleString()}P
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* 모바일 화면 뷰 모드 탭 (타겟 사격 vs 아군 레이더 - 턴에 따라 자동 전환) */}
@@ -274,7 +504,12 @@ export default function App() {
           {/* 2. 명예의 전당 탭 */}
           {activeTab === 'leaderboard' && (
             <main className="flex-1">
-              <SubmarineLeaderboard />
+              <SubmarineLeaderboard
+                refreshKey={leaderboardRefreshKey}
+                profile={profile}
+                isMember={isMember}
+                onEditFleetName={handleOpenFleetModal}
+              />
             </main>
           )}
 
@@ -285,6 +520,57 @@ export default function App() {
             </main>
           )}
 
+          {/* 함대명 변경 모달 */}
+          {isFleetModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 select-none">
+              <form
+                onSubmit={handleSaveFleetName}
+                className="w-full max-w-xs bg-white rounded-3xl p-5 border-2 border-[#EBE6DD] shadow-2xl space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
+                    <i className="fas fa-anchor text-indigo-600"></i>
+                    <span>기동함대 명칭 변경</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setIsFleetModalOpen(false)}
+                    className="text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                  >
+                    <i className="fas fa-xmark"></i>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#7A756D]">
+                  명예의 전당 랭킹에 등재될 공식 함대명을 입력하세요 (2~15자).
+                </p>
+                <input
+                  type="text"
+                  value={newFleetName}
+                  onChange={(e) => setNewFleetName(e.target.value)}
+                  maxLength={15}
+                  placeholder="예: 베라 기동전대"
+                  className="w-full px-3 py-2 rounded-xl border border-[#EBE6DD] bg-[#FAF8F5] text-xs font-bold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsFleetModalOpen(false)}
+                    className="flex-1 py-2 rounded-xl bg-[#FAF8F5] text-[#7A756D] border border-[#EBE6DD] text-xs font-bold cursor-pointer"
+                  >
+                    취소
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingFleetName}
+                    className="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black cursor-pointer disabled:opacity-50"
+                  >
+                    {isSubmittingFleetName ? '저장 중...' : '확정'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {/* 결과 모달 */}
           <SubmarineResultModal
             isOpen={game.isResultModalOpen}
@@ -292,7 +578,14 @@ export default function App() {
             turnCount={game.turnCount}
             playerHits={game.playerHits}
             playerMisses={game.playerMisses}
+            isMember={isMember}
+            isSavingRecord={isSavingRecord}
+            savedRecordInfo={savedRecordInfo}
             onRestart={game.initGame}
+            onViewLeaderboard={() => {
+              game.initGame();
+              setActiveTab('leaderboard');
+            }}
             onShare={handleShare}
           />
         </div>

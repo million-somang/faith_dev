@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { LeaderboardEntry } from '../types/submarine';
+import { LeaderboardEntry, SubmarineProfile } from '../types/submarine';
 
-export const SubmarineLeaderboard: React.FC = () => {
+interface SubmarineLeaderboardProps {
+  refreshKey?: number;
+  profile?: SubmarineProfile;
+  isMember?: boolean;
+  onEditFleetName?: () => void;
+}
+
+export const SubmarineLeaderboard: React.FC<SubmarineLeaderboardProps> = ({
+  refreshKey = 0,
+  profile,
+  isMember = false,
+  onEditFleetName,
+}) => {
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -11,7 +23,8 @@ export const SubmarineLeaderboard: React.FC = () => {
       try {
         setIsLoading(true);
         const res = await axios.get<{ success: boolean; leaderboard: LeaderboardEntry[] }>(
-          '/api/games/submarine/leaderboard'
+          '/api/games/submarine/leaderboard',
+          { withCredentials: true }
         );
         if (res.data.success && Array.isArray(res.data.leaderboard)) {
           setLeaders(res.data.leaderboard);
@@ -26,7 +39,7 @@ export const SubmarineLeaderboard: React.FC = () => {
     };
 
     fetchLeaderboard();
-  }, []);
+  }, [refreshKey]);
 
   return (
     <div className="w-full max-w-[450px] md:max-w-2xl mx-auto space-y-3 p-1">
@@ -47,6 +60,41 @@ export const SubmarineLeaderboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 내 함대 전적 카드 */}
+      {profile && (
+        <div className="bg-white rounded-2xl p-3.5 border border-indigo-200/80 shadow-2xs flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                {isMember ? '내 함대 기록' : '게스트 세션 전적'}
+              </span>
+              {onEditFleetName && (
+                <button
+                  type="button"
+                  onClick={onEditFleetName}
+                  className="text-[10px] font-bold text-[#7A756D] hover:text-indigo-600 underline cursor-pointer"
+                >
+                  함대명 변경
+                </button>
+              )}
+            </div>
+            <div className="text-sm font-black text-[#2D2A26] mt-1 truncate">
+              {profile.fleetName}
+            </div>
+            <div className="text-[11px] font-bold text-[#7A756D] mt-0.5">
+              {profile.wins}승 {profile.losses}패 · 최소 격침{' '}
+              {profile.bestTurns > 0 ? `${profile.bestTurns}턴` : '-'}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-[10px] font-bold text-[#8C8479]">전술 레이팅</div>
+            <div className="text-base font-black font-mono text-amber-600">
+              {profile.rating.toLocaleString()}P
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 랭킹 리스트 */}
       <div className="bg-white rounded-2xl p-3 border border-[#EBE6DD] shadow-2xs space-y-2">

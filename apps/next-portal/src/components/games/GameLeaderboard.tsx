@@ -13,8 +13,12 @@ interface ScoreEntry {
     score?: number;
     email: string | null;
     created_at: string;
-    // 숫자야구 / 장기 승패 전용 필드
+    // 숫자야구 / 장기 / 서브마린 승패 전용 필드
     teamName?: string;
+    fleetName?: string;
+    title?: string;
+    bestTurns?: number;
+    rating?: number;
     playerName?: string;
     wins?: number;
     losses?: number;
@@ -50,6 +54,7 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
 
     const isBaseball = gameId === 'baseball';
     const isJanggi = gameId === 'janggi';
+    const isSubmarine = gameId === 'submarine';
     const targetUrl = apiUrl || (gameId ? `/api/games/${gameId}/leaderboard` : '');
 
     useEffect(() => {
@@ -94,14 +99,21 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
                         <i className="fas fa-baseball-bat-ball text-amber-500"></i>
                     ) : isJanggi ? (
                         <i className="fas fa-chess-knight text-amber-500"></i>
+                    ) : isSubmarine ? (
+                        <i className="fas fa-water text-indigo-500"></i>
                     ) : (
                         <i className="fas fa-trophy text-amber-500"></i>
                     )}
-                    {isBaseball ? 'TOP TEAMS' : isJanggi ? '대국 다승 랭킹' : 'TOP PLAYERS'}
+                    {isBaseball ? 'TOP TEAMS' : isJanggi ? '대국 다승 랭킹' : isSubmarine ? '제독 명예의 전당' : 'TOP PLAYERS'}
                 </h3>
                 {(isBaseball || isJanggi) && (
                     <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-300">
                         다승·승률 순
+                    </span>
+                )}
+                {isSubmarine && (
+                    <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                        레이팅·최소턴 순
                     </span>
                 )}
             </div>
@@ -150,7 +162,8 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
                             : '';
 
                         const isJanggiEntry = isJanggi && (entry.wins !== undefined || !!entry.tierRecords);
-                        const isBaseballEntry = !isJanggiEntry && (isBaseball || entry.wins !== undefined);
+                        const isSubmarineEntry = !isJanggiEntry && (isSubmarine || !!entry.fleetName);
+                        const isBaseballEntry = !isJanggiEntry && !isSubmarineEntry && (isBaseball || entry.wins !== undefined);
 
                         return (
                             <div
@@ -163,7 +176,25 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
                                             {Icon ? Icon : index + 1}
                                         </div>
                                         <div className="flex flex-col min-w-0">
-                                            {isBaseballEntry ? (
+                                            {isSubmarineEntry ? (
+                                                <>
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        <span className="text-slate-900 font-extrabold text-sm truncate">
+                                                            {entry.fleetName || '베라 제독전대'}
+                                                        </span>
+                                                        {entry.title && (
+                                                            <span className="px-1.5 py-0.2 rounded text-[9px] bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold shrink-0">
+                                                                {entry.title}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[10px] text-slate-400 tracking-wider">
+                                                        {entry.wins ?? 0}승 {entry.losses ?? 0}패
+                                                        {(entry.bestTurns ?? 0) > 0 ? ` · 최소 ${entry.bestTurns}턴` : ''}{' '}
+                                                        {dateStr}
+                                                    </span>
+                                                </>
+                                            ) : isBaseballEntry ? (
                                                 <>
                                                     <div className="flex items-center gap-1.5 flex-wrap">
                                                         <span className="text-slate-900 font-extrabold text-sm truncate">
@@ -201,6 +232,15 @@ const GameLeaderboard: React.FC<GameLeaderboardProps> = ({ apiUrl, gameId }) => 
                                             </div>
                                             <div className="text-[10px] font-mono text-slate-500 font-bold mt-0.5">
                                                 승률 {Number(entry.winRate || 0).toFixed(0)}%
+                                            </div>
+                                        </div>
+                                    ) : isSubmarineEntry ? (
+                                        <div className="text-right flex flex-col items-end shrink-0 pl-2">
+                                            <div className="text-amber-600 font-mono font-extrabold text-sm sm:text-base leading-tight">
+                                                {(entry.rating ?? entry.score ?? 1200).toLocaleString()}P
+                                            </div>
+                                            <div className="text-[10px] font-mono text-indigo-600 font-bold mt-0.5">
+                                                {(entry.bestTurns ?? 0) > 0 ? `${entry.bestTurns}턴 격침` : `승률 ${Number(entry.winRate || 0).toFixed(0)}%`}
                                             </div>
                                         </div>
                                     ) : isBaseballEntry ? (
