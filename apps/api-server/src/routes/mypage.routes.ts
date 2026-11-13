@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, optionalAuth } from '../middleware/auth.js';
 import { MyPageService } from '../services/mypage.service.js';
 import { HomepageConfigService } from '../services/homepage-config.service.js';
 import { SessionUser } from '../middleware/auth.js';
@@ -11,7 +11,12 @@ type Variables = {
 const mypage = new Hono<{ Variables: Variables }>();
 
 // Apply requireAuth to all mypage routes
-mypage.use('*', requireAuth);
+mypage.use('*', async (c, next) => {
+    if (c.req.path.includes('/drive/stream/')) {
+        return optionalAuth(c, next);
+    }
+    return requireAuth(c, next);
+});
 
 // ===== News Keywords =====
 mypage.get('/keywords', async (c) => {

@@ -122,7 +122,6 @@ export function isAudioMedia(mimeType?: string, fileName?: string): boolean {
 
 export function useDriveVideoPlayer() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
-    const previewVideoRef = useRef<HTMLVideoElement | null>(null);
     const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
     // ─── Google OAuth & Drive 연동 상태 ───
@@ -305,16 +304,6 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
-            if (
-                activeStreamLockRef.current.trackId === raw.id &&
-                activeStreamLockRef.current.retry === retryNonce &&
-                activeStreamLockRef.current.url
-            ) {
-                return {
-                    ...raw,
-                    streamUrl: activeStreamLockRef.current.url,
-                };
-            }
             const isLocalValid =
                 tokenExpiryRef.current === 0 || tokenExpiryRef.current > Date.now() + 10_000;
             const freshToken = isLocalValid
@@ -325,6 +314,17 @@ export function useDriveVideoPlayer() {
                         ''
                       : '')
                 : '';
+            if (
+                activeStreamLockRef.current.trackId === raw.id &&
+                activeStreamLockRef.current.retry === retryNonce &&
+                activeStreamLockRef.current.url &&
+                (activeStreamLockRef.current.url.includes('token=') || !freshToken)
+            ) {
+                return {
+                    ...raw,
+                    streamUrl: activeStreamLockRef.current.url,
+                };
+            }
             const baseStreamUrl = buildStreamUrl(raw.id, freshToken);
             const finalStreamUrl =
                 retryNonce > 0
@@ -347,14 +347,6 @@ export function useDriveVideoPlayer() {
     const isCurrentTrackAudio = useMemo(() => {
         if (!currentTrack) return false;
         return isAudioMedia(currentTrack.mimeType, currentTrack.name);
-    }, [currentTrack]);
-
-    const previewStreamUrl = useMemo(() => {
-        if (!currentTrack) return '';
-        if (currentTrack.sourceType === 'google-drive') {
-            return `${currentTrack.streamUrl}${currentTrack.streamUrl.includes('?') ? '&' : '?'}visual=1`;
-        }
-        return currentTrack.streamUrl;
     }, [currentTrack]);
 
     // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
@@ -1154,21 +1146,10 @@ export function useDriveVideoPlayer() {
                 userWantsPlayRef.current = false;
                 setIsPlaying(false);
             });
-            if (
-                previewVideoRef.current &&
-                typeof document !== 'undefined' &&
-                document.visibilityState === 'visible'
-            ) {
-                try {
-                    previewVideoRef.current.currentTime = video.currentTime || 0;
-                } catch (_) {}
-                previewVideoRef.current.play().catch(() => {});
-            }
         } else {
             clearResumeRetryTimers();
             userWantsPlayRef.current = false;
             video.pause();
-            previewVideoRef.current?.pause();
         }
     }, [currentTrack, clearResumeRetryTimers]);
 
@@ -1184,12 +1165,6 @@ export function useDriveVideoPlayer() {
             video.pause();
             try {
                 video.currentTime = 0;
-            } catch (_) {}
-        }
-        if (previewVideoRef.current) {
-            previewVideoRef.current.pause();
-            try {
-                previewVideoRef.current.currentTime = 0;
             } catch (_) {}
         }
     }, [clearResumeRetryTimers]);
@@ -1309,11 +1284,6 @@ export function useDriveVideoPlayer() {
         if (!video || !Number.isFinite(newTimeSeconds)) return;
         const clamped = Math.max(0, Math.min(newTimeSeconds, video.duration || newTimeSeconds));
         video.currentTime = clamped;
-        if (previewVideoRef.current) {
-            try {
-                previewVideoRef.current.currentTime = clamped;
-            } catch (_) {}
-        }
         setCurrentTime(clamped);
     }, []);
 
@@ -1325,11 +1295,6 @@ export function useDriveVideoPlayer() {
             Math.min(video.duration || 0, video.currentTime + deltaSeconds)
         );
         video.currentTime = target;
-        if (previewVideoRef.current) {
-            try {
-                previewVideoRef.current.currentTime = target;
-            } catch (_) {}
-        }
         setCurrentTime(target);
     }, []);
 
@@ -1361,14 +1326,11 @@ export function useDriveVideoPlayer() {
         if (videoRef.current) {
             videoRef.current.playbackRate = rate;
         }
-        if (previewVideoRef.current) {
-            previewVideoRef.current.playbackRate = rate;
-        }
     }, []);
 
     const toggleFullscreen = useCallback(async () => {
         const container = playerContainerRef.current;
-        const video = previewVideoRef.current || videoRef.current;
+        const video = videoRef.current;
         try {
             if (document.fullscreenElement) {
                 await document.exitFullscreen();
@@ -1407,7 +1369,7 @@ export function useDriveVideoPlayer() {
 
     // ─── 미니 팝업 플레이어 (Picture-in-Picture) 전환 ───
     const togglePip = useCallback(async () => {
-        const video = (previewVideoRef.current || videoRef.current) as (HTMLVideoElement & {
+        const video = videoRef.current as (HTMLVideoElement & {
             webkitPresentationMode?: string;
             webkitSupportsPresentationMode?: (mode: string) => boolean;
             webkitSetPresentationMode?: (mode: string) => void;
@@ -1492,18 +1454,6 @@ export function useDriveVideoPlayer() {
         const t = e.currentTarget.currentTime || 0;
         lastKnownTimeRef.current = t;
         setCurrentTime(t);
-
-        const preview = previewVideoRef.current;
-        if (preview && typeof document !== 'undefined' && document.visibilityState === 'visible') {
-            if (Math.abs((preview.currentTime || 0) - t) > 0.45) {
-                try {
-                    preview.currentTime = t;
-                } catch (_) {}
-            }
-            if (userWantsPlayRef.current && preview.paused) {
-                preview.play().catch(() => {});
-            }
-        }
     }, []);
 
     const handleMediaPlay = useCallback(() => {
@@ -1522,15 +1472,6 @@ export function useDriveVideoPlayer() {
                     navWithAudioSession.audioSession.type = 'playback';
                 } catch (_) {}
             }
-        }
-
-        if (
-            previewVideoRef.current &&
-            typeof document !== 'undefined' &&
-            document.visibilityState === 'visible' &&
-            previewVideoRef.current.paused
-        ) {
-            previewVideoRef.current.play().catch(() => {});
         }
     }, [clearResumeRetryTimers]);
 
@@ -1632,7 +1573,6 @@ export function useDriveVideoPlayer() {
                 return;
             }
 
-            previewVideoRef.current?.pause();
             setIsPlaying(false);
         },
         [currentTime, clearResumeRetryTimers]
@@ -1664,7 +1604,6 @@ export function useDriveVideoPlayer() {
         if (videoRef.current) {
             videoRef.current.pause();
         }
-        previewVideoRef.current?.pause();
         setIsMiniBarDismissed(true);
     }, [clearResumeRetryTimers]);
 
@@ -1676,42 +1615,29 @@ export function useDriveVideoPlayer() {
             const media = videoRef.current;
             if (!media || !currentTrack) return;
 
-            if (document.visibilityState === 'hidden') {
-                // 화면이 꺼질 때 무음 비디오 프리뷰는 정지하고, 마스터 <audio>만 백그라운드 재생 유지
-                previewVideoRef.current?.pause();
-                if (userWantsPlayRef.current) {
-                    if (media.paused) {
-                        media.play().catch(() => {});
-                    }
-                    if (typeof window !== 'undefined') {
-                        clearResumeRetryTimers();
-                        const delays = [80, 250, 600];
-                        for (const delay of delays) {
-                            const timerId = window.setTimeout(() => {
-                                if (
-                                    userWantsPlayRef.current &&
-                                    videoRef.current &&
-                                    videoRef.current.paused
-                                ) {
-                                    videoRef.current.play().catch(() => {});
-                                }
-                            }, delay);
-                            resumeRetryTimersRef.current.push(timerId);
-                        }
+            if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
+                if (media.paused) {
+                    media.play().catch(() => {});
+                }
+                if (typeof window !== 'undefined') {
+                    clearResumeRetryTimers();
+                    const delays = [80, 250, 600];
+                    for (const delay of delays) {
+                        const timerId = window.setTimeout(() => {
+                            if (
+                                userWantsPlayRef.current &&
+                                videoRef.current &&
+                                videoRef.current.paused
+                            ) {
+                                videoRef.current.play().catch(() => {});
+                            }
+                        }, delay);
+                        resumeRetryTimersRef.current.push(timerId);
                     }
                 }
-            } else if (document.visibilityState === 'visible') {
-                if (userWantsPlayRef.current) {
-                    if (media.paused) {
-                        media.play().catch(() => {});
-                    }
-                    if (previewVideoRef.current) {
-                        try {
-                            previewVideoRef.current.currentTime =
-                                media.currentTime || lastKnownTimeRef.current || 0;
-                        } catch (_) {}
-                        previewVideoRef.current.play().catch(() => {});
-                    }
+            } else if (document.visibilityState === 'visible' && userWantsPlayRef.current) {
+                if (media.paused) {
+                    media.play().catch(() => {});
                 }
             }
         };
@@ -1822,7 +1748,6 @@ export function useDriveVideoPlayer() {
             userWantsPlayRef.current = false;
             setIsPlaying(false);
             videoRef.current?.pause();
-            previewVideoRef.current?.pause();
         });
 
         safeSetHandler('previoustrack', () => {
@@ -1886,7 +1811,6 @@ export function useDriveVideoPlayer() {
 
     return {
         videoRef,
-        previewVideoRef,
         playerContainerRef,
         // Google Drive OAuth & Picker
         googleClientId,
@@ -1927,7 +1851,6 @@ export function useDriveVideoPlayer() {
         playlist,
         currentIndex,
         currentTrack,
-        previewStreamUrl,
         isCurrentTrackAudio,
         isPlaying,
         setIsPlaying,

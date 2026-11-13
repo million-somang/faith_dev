@@ -13,6 +13,9 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const {
         videoRef,
         currentTrack,
+        isAudioOnlyMode,
+        isCurrentTrackAudio,
+        isFullStageMounted,
         setIsBuffering,
         handleLoadedMetadata,
         handleTimeUpdate,
@@ -23,9 +26,11 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         handleVideoEnded,
     } = player;
 
-    // 음악·비디오 구분 및 페이지 이동과 무관하게 전역 마스터 <audio> 엔진이 항상 마운트되어 사운드를 전담 출력합니다.
-    // 모바일 OS는 화면을 끄면 <video> 태그를 강제 정지시키지만, 이미 재생 중인 <audio> 태그는 백그라운드에서 계속 재생됩니다.
-    const shouldRenderGlobalAudio = Boolean(currentTrack);
+    // 음악 파일이거나, '화면 끄고 듣기' 모드이거나, 마이페이지 비디오 탭이 아닌 다른 페이지(베라 홈/뉴스/게임 등)로 이동한 경우
+    // 전역 Provider 내부의 단일 <audio> 엔진이 언마운트 없이 계속 스트리밍을 유지합니다.
+    const shouldRenderGlobalAudio =
+        Boolean(currentTrack) &&
+        (isAudioOnlyMode || isCurrentTrackAudio || !isFullStageMounted);
 
     return (
         <DrivePlayerContext.Provider value={player}>
@@ -36,7 +41,7 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     src={currentTrack.streamUrl}
                     playsInline
                     preload="auto"
-                    className="w-0 h-0 opacity-0 pointer-events-none fixed -z-10"
+                    className="hidden"
                     onPlay={handleMediaPlay}
                     onPause={handleMediaPause}
                     onWaiting={() => setIsBuffering(true)}
