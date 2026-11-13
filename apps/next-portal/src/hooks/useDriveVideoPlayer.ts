@@ -122,6 +122,7 @@ export function isAudioMedia(mimeType?: string, fileName?: string): boolean {
 
 export function useDriveVideoPlayer() {
     const videoRef = useRef<HTMLVideoElement | null>(null);
+    const previewVideoRef = useRef<HTMLVideoElement | null>(null);
     const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
     // ─── Google OAuth & Drive 연동 상태 ───
@@ -173,6 +174,20 @@ export function useDriveVideoPlayer() {
     const errorRetryCountRef = useRef<number>(0);
     const consecutiveTrackSkipRef = useRef<number>(0);
     const tokenExpiryRef = useRef<number>(0);
+    const activeStreamLockRef = useRef<{ trackId: string; retry: number; url: string }>({
+        trackId: '',
+        retry: -1,
+        url: '',
+    });
+    const resumeRetryTimersRef = useRef<number[]>([]);
+
+    const clearResumeRetryTimers = useCallback(() => {
+        if (typeof window === 'undefined') return;
+        for (const timerId of resumeRetryTimersRef.current) {
+            window.clearTimeout(timerId);
+        }
+        resumeRetryTimersRef.current = [];
+    }, []);
 
     const showNotice = useCallback((msg: string) => {
         setToastNotice(msg);
@@ -290,6 +305,16 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
+            if (
+                activeStreamLockRef.current.trackId === raw.id &&
+                activeStreamLockRef.current.retry === retryNonce &&
+                activeStreamLockRef.current.url
+            ) {
+                return {
+                    ...raw,
+                    streamUrl: activeStreamLockRef.current.url,
+                };
+            }
             const isLocalValid =
                 tokenExpiryRef.current === 0 || tokenExpiryRef.current > Date.now() + 10_000;
             const freshToken = isLocalValid
@@ -305,6 +330,11 @@ export function useDriveVideoPlayer() {
                 retryNonce > 0
                     ? `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}retry=${retryNonce}`
                     : baseStreamUrl;
+            activeStreamLockRef.current = {
+                trackId: raw.id,
+                retry: retryNonce,
+                url: finalStreamUrl,
+            };
             return {
                 ...raw,
                 streamUrl: finalStreamUrl,
@@ -317,6 +347,14 @@ export function useDriveVideoPlayer() {
     const isCurrentTrackAudio = useMemo(() => {
         if (!currentTrack) return false;
         return isAudioMedia(currentTrack.mimeType, currentTrack.name);
+    }, [currentTrack]);
+
+    const previewStreamUrl = useMemo(() => {
+        if (!currentTrack) return '';
+        if (currentTrack.sourceType === 'google-drive') {
+            return `${currentTrack.streamUrl}${currentTrack.streamUrl.includes('?') ? '&' : '?'}visual=1`;
+        }
+        return currentTrack.streamUrl;
     }, [currentTrack]);
 
     // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
@@ -1116,13 +1154,26 @@ export function useDriveVideoPlayer() {
                 userWantsPlayRef.current = false;
                 setIsPlaying(false);
             });
+            if (
+                previewVideoRef.current &&
+                typeof document !== 'undefined' &&
+                document.visibilityState === 'visible'
+            ) {
+                try {
+                    previewVideoRef.current.currentTime = video.currentTime || 0;
+                } catch (_) {}
+                previewVideoRef.current.play().catch(() => {});
+            }
         } else {
+            clearResumeRetryTimers();
             userWantsPlayRef.current = false;
             video.pause();
+            previewVideoRef.current?.pause();
         }
-    }, [currentTrack]);
+    }, [currentTrack, clearResumeRetryTimers]);
 
     const stopPlayback = useCallback(() => {
+        clearResumeRetryTimers();
         userWantsPlayRef.current = false;
         pendingResumeTimeRef.current = null;
         lastKnownTimeRef.current = 0;
@@ -1135,7 +1186,13 @@ export function useDriveVideoPlayer() {
                 video.currentTime = 0;
             } catch (_) {}
         }
-    }, []);
+        if (previewVideoRef.current) {
+            previewVideoRef.current.pause();
+            try {
+                previewVideoRef.current.currentTime = 0;
+            } catch (_) {}
+        }
+    }, [clearResumeRetryTimers]);
 
     const playTrackAtIndex = useCallback(
         (index: number) => {
@@ -1252,6 +1309,11 @@ export function useDriveVideoPlayer() {
         if (!video || !Number.isFinite(newTimeSeconds)) return;
         const clamped = Math.max(0, Math.min(newTimeSeconds, video.duration || newTimeSeconds));
         video.currentTime = clamped;
+        if (previewVideoRef.current) {
+            try {
+                previewVideoRef.current.currentTime = clamped;
+            } catch (_) {}
+        }
         setCurrentTime(clamped);
     }, []);
 
@@ -1263,6 +1325,11 @@ export function useDriveVideoPlayer() {
             Math.min(video.duration || 0, video.currentTime + deltaSeconds)
         );
         video.currentTime = target;
+        if (previewVideoRef.current) {
+            try {
+                previewVideoRef.current.currentTime = target;
+            } catch (_) {}
+        }
         setCurrentTime(target);
     }, []);
 
@@ -1294,11 +1361,14 @@ export function useDriveVideoPlayer() {
         if (videoRef.current) {
             videoRef.current.playbackRate = rate;
         }
+        if (previewVideoRef.current) {
+            previewVideoRef.current.playbackRate = rate;
+        }
     }, []);
 
     const toggleFullscreen = useCallback(async () => {
         const container = playerContainerRef.current;
-        const video = videoRef.current;
+        const video = previewVideoRef.current || videoRef.current;
         try {
             if (document.fullscreenElement) {
                 await document.exitFullscreen();
@@ -1337,7 +1407,7 @@ export function useDriveVideoPlayer() {
 
     // ─── 미니 팝업 플레이어 (Picture-in-Picture) 전환 ───
     const togglePip = useCallback(async () => {
-        const video = videoRef.current as (HTMLVideoElement & {
+        const video = (previewVideoRef.current || videoRef.current) as (HTMLVideoElement & {
             webkitPresentationMode?: string;
             webkitSupportsPresentationMode?: (mode: string) => boolean;
             webkitSetPresentationMode?: (mode: string) => void;
@@ -1404,6 +1474,13 @@ export function useDriveVideoPlayer() {
                 media.play().catch((err) => {
                     // 다음 곡으로 넘어갈 때 src 변경으로 인한 AbortError는 정상 동작이므로 무시
                     if (err instanceof Error && err.name === 'AbortError') return;
+                    if (
+                        typeof document !== 'undefined' &&
+                        document.visibilityState === 'hidden' &&
+                        userWantsPlayRef.current
+                    ) {
+                        return;
+                    }
                     setIsPlaying(false);
                 });
             }
@@ -1415,14 +1492,47 @@ export function useDriveVideoPlayer() {
         const t = e.currentTarget.currentTime || 0;
         lastKnownTimeRef.current = t;
         setCurrentTime(t);
+
+        const preview = previewVideoRef.current;
+        if (preview && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+            if (Math.abs((preview.currentTime || 0) - t) > 0.45) {
+                try {
+                    preview.currentTime = t;
+                } catch (_) {}
+            }
+            if (userWantsPlayRef.current && preview.paused) {
+                preview.play().catch(() => {});
+            }
+        }
     }, []);
 
     const handleMediaPlay = useCallback(() => {
+        clearResumeRetryTimers();
         userWantsPlayRef.current = true;
         setIsMiniBarDismissed(false);
         setIsPlaying(true);
         setPlayerError(null);
-    }, []);
+
+        if (typeof navigator !== 'undefined') {
+            const navWithAudioSession = navigator as Navigator & {
+                audioSession?: { type: string };
+            };
+            if (navWithAudioSession.audioSession) {
+                try {
+                    navWithAudioSession.audioSession.type = 'playback';
+                } catch (_) {}
+            }
+        }
+
+        if (
+            previewVideoRef.current &&
+            typeof document !== 'undefined' &&
+            document.visibilityState === 'visible' &&
+            previewVideoRef.current.paused
+        ) {
+            previewVideoRef.current.play().catch(() => {});
+        }
+    }, [clearResumeRetryTimers]);
 
     const handleMediaPlaying = useCallback(() => {
         errorRetryCountRef.current = 0;
@@ -1439,6 +1549,9 @@ export function useDriveVideoPlayer() {
         if (errorRetryCountRef.current < 2) {
             errorRetryCountRef.current += 1;
             const attempt = errorRetryCountRef.current;
+            if (lastKnownTimeRef.current > 0) {
+                pendingResumeTimeRef.current = lastKnownTimeRef.current;
+            }
 
             void (async () => {
                 await refreshDriveTokenSilently(true);
@@ -1482,29 +1595,47 @@ export function useDriveVideoPlayer() {
                 return;
             }
 
-            if (
-                typeof document !== 'undefined' &&
-                document.visibilityState === 'hidden' &&
-                userWantsPlayRef.current
-            ) {
-                pendingResumeTimeRef.current = media.currentTime || lastKnownTimeRef.current || currentTime;
-                if (!isAudioOnlyMode) {
-                    setIsAudioOnlyMode(true);
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
-                    }
+            if (userWantsPlayRef.current) {
+                if (
+                    typeof document !== 'undefined' &&
+                    document.visibilityState === 'visible' &&
+                    document.pictureInPictureElement === media
+                ) {
+                    clearResumeRetryTimers();
+                    userWantsPlayRef.current = false;
+                    setIsPlaying(false);
                     return;
                 }
-                media.play().catch(() => {
-                    // 백그라운드 자동 재개 시도
-                });
+
+                // 스마트폰 전원 버튼(화면 잠금) 또는 백그라운드 전환 시 OS가 강제한 일시정지 복구
+                // <video>/<audio> 엘리먼트를 언마운트하지 않고 기존 미디어 인스턴스에서 즉시 재개합니다.
+                userWantsPlayRef.current = true;
+                setIsPlaying(true);
+                media.play().catch(() => {});
+
+                if (typeof window !== 'undefined') {
+                    clearResumeRetryTimers();
+                    const delays = [80, 220, 500];
+                    for (const delay of delays) {
+                        const timerId = window.setTimeout(() => {
+                            if (
+                                userWantsPlayRef.current &&
+                                videoRef.current &&
+                                videoRef.current.paused
+                            ) {
+                                videoRef.current.play().catch(() => {});
+                            }
+                        }, delay);
+                        resumeRetryTimersRef.current.push(timerId);
+                    }
+                }
                 return;
             }
 
-            userWantsPlayRef.current = false;
+            previewVideoRef.current?.pause();
             setIsPlaying(false);
         },
-        [currentTime, isAudioOnlyMode]
+        [currentTime, clearResumeRetryTimers]
     );
 
     // ─── 마이페이지 전체 플레이어 화면 마운트/언마운트 시 무손실 인계 ───
@@ -1527,13 +1658,15 @@ export function useDriveVideoPlayer() {
     }, []);
 
     const dismissMiniBar = useCallback(() => {
+        clearResumeRetryTimers();
         userWantsPlayRef.current = false;
         setIsPlaying(false);
         if (videoRef.current) {
             videoRef.current.pause();
         }
+        previewVideoRef.current?.pause();
         setIsMiniBarDismissed(true);
-    }, []);
+    }, [clearResumeRetryTimers]);
 
     // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호
     useEffect(() => {
@@ -1543,13 +1676,42 @@ export function useDriveVideoPlayer() {
             const media = videoRef.current;
             if (!media || !currentTrack) return;
 
-            if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
-                if (!isAudioOnlyMode && !isCurrentTrackAudio && isFullStageMounted) {
-                    pendingResumeTimeRef.current = media.currentTime || lastKnownTimeRef.current || 0;
-                    setIsAudioOnlyMode(true);
-                    localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
-                } else if (media.paused) {
-                    media.play().catch(() => {});
+            if (document.visibilityState === 'hidden') {
+                // 화면이 꺼질 때 무음 비디오 프리뷰는 정지하고, 마스터 <audio>만 백그라운드 재생 유지
+                previewVideoRef.current?.pause();
+                if (userWantsPlayRef.current) {
+                    if (media.paused) {
+                        media.play().catch(() => {});
+                    }
+                    if (typeof window !== 'undefined') {
+                        clearResumeRetryTimers();
+                        const delays = [80, 250, 600];
+                        for (const delay of delays) {
+                            const timerId = window.setTimeout(() => {
+                                if (
+                                    userWantsPlayRef.current &&
+                                    videoRef.current &&
+                                    videoRef.current.paused
+                                ) {
+                                    videoRef.current.play().catch(() => {});
+                                }
+                            }, delay);
+                            resumeRetryTimersRef.current.push(timerId);
+                        }
+                    }
+                }
+            } else if (document.visibilityState === 'visible') {
+                if (userWantsPlayRef.current) {
+                    if (media.paused) {
+                        media.play().catch(() => {});
+                    }
+                    if (previewVideoRef.current) {
+                        try {
+                            previewVideoRef.current.currentTime =
+                                media.currentTime || lastKnownTimeRef.current || 0;
+                        } catch (_) {}
+                        previewVideoRef.current.play().catch(() => {});
+                    }
                 }
             }
         };
@@ -1558,7 +1720,7 @@ export function useDriveVideoPlayer() {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [currentTrack, isAudioOnlyMode, isCurrentTrackAudio, isFullStageMounted]);
+    }, [currentTrack, clearResumeRetryTimers]);
 
     // 트랙 변경 또는 모드/페이지 전환 시 자동 재생 및 볼륨/배속 동기화
     useEffect(() => {
@@ -1573,6 +1735,13 @@ export function useDriveVideoPlayer() {
             video.play().catch((err) => {
                 // 다음 곡 전환 시 이전 스트림 로드가 취소되면서 발생하는 AbortError는 정상 동작이므로 무시
                 if (err instanceof Error && err.name === 'AbortError') return;
+                if (
+                    typeof document !== 'undefined' &&
+                    document.visibilityState === 'hidden' &&
+                    userWantsPlayRef.current
+                ) {
+                    return;
+                }
                 setIsPlaying(false);
             });
         }
@@ -1649,9 +1818,11 @@ export function useDriveVideoPlayer() {
         });
 
         safeSetHandler('pause', () => {
+            clearResumeRetryTimers();
             userWantsPlayRef.current = false;
             setIsPlaying(false);
             videoRef.current?.pause();
+            previewVideoRef.current?.pause();
         });
 
         safeSetHandler('previoustrack', () => {
@@ -1693,6 +1864,7 @@ export function useDriveVideoPlayer() {
         playNext,
         seekRelative,
         handleSeekChange,
+        clearResumeRetryTimers,
     ]);
 
     // 잠금화면 재생바(진행률) 실시간 동기화
@@ -1714,6 +1886,7 @@ export function useDriveVideoPlayer() {
 
     return {
         videoRef,
+        previewVideoRef,
         playerContainerRef,
         // Google Drive OAuth & Picker
         googleClientId,
@@ -1754,6 +1927,7 @@ export function useDriveVideoPlayer() {
         playlist,
         currentIndex,
         currentTrack,
+        previewStreamUrl,
         isCurrentTrackAudio,
         isPlaying,
         setIsPlaying,

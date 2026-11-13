@@ -14,6 +14,7 @@ const PLAYBACK_RATES: readonly number[] = [0.5, 1, 1.25, 1.5, 2];
 export const DriveVideoPlayerSection: React.FC = () => {
     const {
         videoRef,
+        previewVideoRef,
         playerContainerRef,
         googleClientId,
         googleClientSecret,
@@ -51,6 +52,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         playlist,
         currentIndex,
         currentTrack,
+        previewStreamUrl,
         isCurrentTrackAudio,
         isPlaying,
         setIsPlaying,
@@ -67,9 +69,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         mountFullStage,
         unmountFullStage,
         isBuffering,
-        setIsBuffering,
         playerError,
-        setPlayerError,
         toastNotice,
         togglePlayPause,
         stopPlayback,
@@ -86,13 +86,6 @@ export const DriveVideoPlayerSection: React.FC = () => {
         toggleFullscreen,
         toggleAudioOnlyMode,
         togglePip,
-        handleLoadedMetadata,
-        handleTimeUpdate,
-        handleMediaPlay,
-        handleMediaPlaying,
-        handleMediaPause,
-        handleMediaError,
-        handleVideoEnded,
         removePlaylistItem,
         clearPlaylist,
     } = useDrivePlayerContext();
@@ -380,22 +373,32 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                     </div>
                                 ) : (
                                     <video
-                                        ref={videoRef}
-                                        src={currentTrack.streamUrl}
+                                        ref={previewVideoRef}
+                                        src={previewStreamUrl}
+                                        muted
                                         className="w-full h-full max-h-full object-contain cursor-pointer"
                                         playsInline
-                                        preload="auto"
+                                        preload="metadata"
                                         onClick={togglePlayPause}
                                         onDoubleClick={toggleFullscreen}
-                                        onPlay={handleMediaPlay}
-                                        onPause={handleMediaPause}
-                                        onWaiting={() => setIsBuffering(true)}
-                                        onPlaying={handleMediaPlaying}
-                                        onCanPlay={() => setIsBuffering(false)}
-                                        onLoadedMetadata={handleLoadedMetadata}
-                                        onTimeUpdate={handleTimeUpdate}
-                                        onEnded={handleVideoEnded}
-                                        onError={handleMediaError}
+                                        onLoadedMetadata={(e) => {
+                                            const vid = e.currentTarget;
+                                            vid.muted = true;
+                                            vid.playbackRate = playbackRate;
+                                            const masterTime = videoRef.current?.currentTime || currentTime || 0;
+                                            if (masterTime > 0) {
+                                                try {
+                                                    vid.currentTime = masterTime;
+                                                } catch (_) {}
+                                            }
+                                            if (
+                                                isPlaying &&
+                                                typeof document !== 'undefined' &&
+                                                document.visibilityState === 'visible'
+                                            ) {
+                                                vid.play().catch(() => {});
+                                            }
+                                        }}
                                     />
                                 )}
 
