@@ -21,7 +21,7 @@ const STORAGE_KEYS = {
     VOLUME: 'vera_mypage_video_volume',
     SHUFFLE: 'vera_mypage_video_shuffle',
     REPEAT: 'vera_mypage_video_repeat',
-    AUDIO_ONLY: 'vera_mypage_video_audio_only',
+    AUDIO_ONLY: 'vera_mypage_video_audio_only_v2',
     ACCESS_TOKEN: 'vera_gdrive_access_token',
     TOKEN_EXPIRY: 'vera_gdrive_token_expiry',
     MINI_BAR_DISMISSED: 'vera_mypage_mini_bar_dismissed',
@@ -160,7 +160,7 @@ export function useDriveVideoPlayer() {
     const [duration, setDuration] = useState<number>(0);
     const [playbackRate, setPlaybackRate] = useState<number>(1);
     const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-    const [isAudioOnlyMode, setIsAudioOnlyMode] = useState<boolean>(false);
+    const [isAudioOnlyMode, setIsAudioOnlyMode] = useState<boolean>(true);
     const [isPipActive, setIsPipActive] = useState<boolean>(false);
     const [isFullStageMounted, setIsFullStageMounted] = useState<boolean>(false);
     const [isMiniBarDismissed, setIsMiniBarDismissed] = useState<boolean>(true);
@@ -174,12 +174,40 @@ export function useDriveVideoPlayer() {
     const errorRetryCountRef = useRef<number>(0);
     const consecutiveTrackSkipRef = useRef<number>(0);
     const tokenExpiryRef = useRef<number>(0);
+    const isSwitchingTrackRef = useRef<boolean>(false);
+    const switchTrackTimerRef = useRef<number | null>(null);
+    const isPlaylistHydratedRef = useRef<boolean>(false);
+    const lastSyncedPlaylistJsonRef = useRef<string>('');
+    const googleClientIdRef = useRef<string>(DEFAULT_GOOGLE_CLIENT_ID);
+    const googleClientSecretRef = useRef<string>('');
+    const silentGsiInflightRef = useRef<Promise<string> | null>(null);
     const activeStreamLockRef = useRef<{ trackId: string; retry: number; url: string }>({
         trackId: '',
         retry: -1,
         url: '',
     });
     const resumeRetryTimersRef = useRef<number[]>([]);
+
+    useEffect(() => {
+        googleClientIdRef.current = googleClientId;
+    }, [googleClientId]);
+
+    useEffect(() => {
+        googleClientSecretRef.current = googleClientSecret;
+    }, [googleClientSecret]);
+
+    const markTrackSwitching = useCallback(() => {
+        isSwitchingTrackRef.current = true;
+        if (typeof window !== 'undefined') {
+            if (switchTrackTimerRef.current !== null) {
+                window.clearTimeout(switchTrackTimerRef.current);
+            }
+            switchTrackTimerRef.current = window.setTimeout(() => {
+                isSwitchingTrackRef.current = false;
+                switchTrackTimerRef.current = null;
+            }, 900);
+        }
+    }, []);
 
     const clearResumeRetryTimers = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -231,7 +259,9 @@ export function useDriveVideoPlayer() {
         }
 
         const savedAudioOnly = localStorage.getItem(STORAGE_KEYS.AUDIO_ONLY);
-        if (savedAudioOnly === 'true') {
+        if (savedAudioOnly === 'false') {
+            setIsAudioOnlyMode(false);
+        } else {
             setIsAudioOnlyMode(true);
         }
 
@@ -244,17 +274,11 @@ export function useDriveVideoPlayer() {
                 '0'
         );
         let activeToken = '';
-        if (savedToken && savedExpiry > Date.now() + 30_000) {
+        if (savedToken) {
             activeToken = savedToken;
             tokenExpiryRef.current = savedExpiry;
             setAccessToken(savedToken);
             setIsDriveConnected(true);
-        } else if (savedToken) {
-            // 만료된 구 토큰은 로컬 스토리지에서 즉시 정리하여 401 전송 방지
-            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
         }
 
         const savedPlaylistRaw = localStorage.getItem(STORAGE_KEYS.PLAYLIST);
@@ -269,6 +293,7 @@ export function useDriveVideoPlayer() {
                             streamUrl: buildStreamUrl(item.id, activeToken),
                         }));
                     if (hydrated.length > 0) {
+                        lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
                         setPlaylist(hydrated);
                     }
                 }
@@ -276,13 +301,25 @@ export function useDriveVideoPlayer() {
                 // 손상된 로컬 스토리지 무시
             }
         }
+        isPlaylistHydratedRef.current = true;
     }, []);
 
-    // 구글 드라이브 항목만 로컬스토리지에 보존 (로컬 Object URL 제외)
+    // 구글 드라이브 항목만 로컬스토리지 및 서버 DB에 보존 (로컬 Object URL 제외)
     useEffect(() => {
-        if (typeof window === 'undefined') return;
+        if (typeof window === 'undefined' || !isPlaylistHydratedRef.current) return;
         const driveOnly = playlist.filter((item) => item.sourceType === 'google-drive');
-        localStorage.setItem(STORAGE_KEYS.PLAYLIST, JSON.stringify(driveOnly));
+        const serialized = JSON.stringify(driveOnly);
+        localStorage.setItem(STORAGE_KEYS.PLAYLIST, serialized);
+
+        if (serialized !== lastSyncedPlaylistJsonRef.current) {
+            lastSyncedPlaylistJsonRef.current = serialized;
+            void fetch(`${API_BASE_URL}/api/user/drive/config`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ playlist: driveOnly }),
+            }).catch(() => {});
+        }
     }, [playlist]);
 
     // ─── 전체화면 상태 변화 감지 ───
@@ -297,6 +334,42 @@ export function useDriveVideoPlayer() {
         };
     }, []);
 
+    // ─── 트랙의 실시간 스트림 URL 계산 헬퍼 ───
+    const getStreamUrlForTrack = useCallback(
+        (raw: VideoPlaylistItem, retry = 0): string => {
+            if (raw.sourceType !== 'google-drive') {
+                return raw.streamUrl;
+            }
+            const freshToken =
+                accessToken ||
+                (typeof window !== 'undefined'
+                    ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                      sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                      ''
+                    : '');
+            if (
+                activeStreamLockRef.current.trackId === raw.id &&
+                activeStreamLockRef.current.retry === retry &&
+                activeStreamLockRef.current.url &&
+                (activeStreamLockRef.current.url.includes('token=') || !freshToken)
+            ) {
+                return activeStreamLockRef.current.url;
+            }
+            const baseStreamUrl = buildStreamUrl(raw.id, freshToken);
+            const finalStreamUrl =
+                retry > 0
+                    ? `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}retry=${retry}`
+                    : baseStreamUrl;
+            activeStreamLockRef.current = {
+                trackId: raw.id,
+                retry,
+                url: finalStreamUrl,
+            };
+            return finalStreamUrl;
+        },
+        [accessToken]
+    );
+
     // ─── 현재 재생 중인 트랙 (최신 Google Drive 토큰 및 재시도 시퀀스를 실시간 주입) ───
     const currentTrack: VideoPlaylistItem | null = useMemo(() => {
         if (playlist.length === 0) return null;
@@ -305,45 +378,14 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
-            const isLocalValid =
-                tokenExpiryRef.current === 0 || tokenExpiryRef.current > Date.now() + 10_000;
-            const freshToken = isLocalValid
-                ? accessToken ||
-                  (typeof window !== 'undefined'
-                      ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                        sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                        ''
-                      : '')
-                : '';
-            if (
-                activeStreamLockRef.current.trackId === raw.id &&
-                activeStreamLockRef.current.retry === retryNonce &&
-                activeStreamLockRef.current.url &&
-                (activeStreamLockRef.current.url.includes('token=') || !freshToken)
-            ) {
-                return {
-                    ...raw,
-                    streamUrl: activeStreamLockRef.current.url,
-                };
-            }
-            const baseStreamUrl = buildStreamUrl(raw.id, freshToken);
-            const finalStreamUrl =
-                retryNonce > 0
-                    ? `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}retry=${retryNonce}`
-                    : baseStreamUrl;
-            activeStreamLockRef.current = {
-                trackId: raw.id,
-                retry: retryNonce,
-                url: finalStreamUrl,
-            };
             return {
                 ...raw,
-                streamUrl: finalStreamUrl,
+                streamUrl: getStreamUrlForTrack(raw, retryNonce),
             };
         }
 
         return raw;
-    }, [playlist, currentIndex, accessToken, retryNonce]);
+    }, [playlist, currentIndex, retryNonce, getStreamUrlForTrack]);
 
     const isCurrentTrackAudio = useMemo(() => {
         if (!currentTrack) return false;
@@ -529,6 +571,88 @@ export function useDriveVideoPlayer() {
         );
     }, []);
 
+    // ─── 브라우저 Google Identity Services 무음 토큰 자동 갱신 (prompt: 'none') ───
+    const silentGsiTokenRefresh = useCallback(async (): Promise<string> => {
+        if (typeof window === 'undefined') return '';
+        if (silentGsiInflightRef.current) {
+            return silentGsiInflightRef.current;
+        }
+
+        const activeClientId = (
+            googleClientIdRef.current ||
+            localStorage.getItem(STORAGE_KEYS.CLIENT_ID) ||
+            DEFAULT_GOOGLE_CLIENT_ID
+        ).trim();
+        if (!activeClientId) return '';
+
+        const task = (async (): Promise<string> => {
+            try {
+                await loadGsiScript();
+                const win = window as WindowWithGoogleGsi;
+                const oauth2 = win.google?.accounts?.oauth2;
+                if (!oauth2) return '';
+
+                return await new Promise<string>((resolve) => {
+                    let settled = false;
+                    const timeoutId = window.setTimeout(() => {
+                        if (!settled) {
+                            settled = true;
+                            resolve('');
+                        }
+                    }, 6000);
+
+                    const finish = (token: string) => {
+                        if (!settled) {
+                            settled = true;
+                            window.clearTimeout(timeoutId);
+                            resolve(token);
+                        }
+                    };
+
+                    try {
+                        const tokenClient = oauth2.initTokenClient({
+                            client_id: activeClientId,
+                            scope: DRIVE_READONLY_SCOPE,
+                            callback: (tokenResponse) => {
+                                if (tokenResponse.error || !tokenResponse.access_token) {
+                                    finish('');
+                                    return;
+                                }
+                                const expiresIn = tokenResponse.expires_in || 3500;
+                                applyNewAccessToken(tokenResponse.access_token, expiresIn);
+                                void fetch(`${API_BASE_URL}/api/user/drive/oauth/exchange`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'include',
+                                    body: JSON.stringify({
+                                        accessToken: tokenResponse.access_token,
+                                        expiresIn,
+                                        clientId: activeClientId,
+                                        clientSecret: googleClientSecretRef.current || undefined,
+                                    }),
+                                }).catch(() => {});
+                                finish(tokenResponse.access_token);
+                            },
+                            error_callback: () => {
+                                finish('');
+                            },
+                        });
+                        tokenClient.requestAccessToken({ prompt: 'none' });
+                    } catch (_) {
+                        finish('');
+                    }
+                });
+            } catch (_) {
+                return '';
+            } finally {
+                silentGsiInflightRef.current = null;
+            }
+        })();
+
+        silentGsiInflightRef.current = task;
+        return task;
+    }, [applyNewAccessToken]);
+
     // ─── 서버 기반 무음(Zero-Popup) 토큰 자동 갱신 & 동기화 ───
     const refreshDriveTokenSilently = useCallback(
         async (forceRefresh = true): Promise<string> => {
@@ -547,6 +671,8 @@ export function useDriveVideoPlayer() {
                         expiryDate?: number;
                         hasRefreshToken?: boolean;
                         isPermanentConnected?: boolean;
+                        hasEverConnected?: boolean;
+                        playlist?: VideoPlaylistItem[];
                     };
                 };
                 if (!json.success || !json.data) return '';
@@ -556,6 +682,8 @@ export function useDriveVideoPlayer() {
                     accessToken: serverToken,
                     expiryDate: serverExpiry,
                     isPermanentConnected: permConnected,
+                    hasEverConnected,
+                    playlist: serverPlaylist,
                 } = json.data;
 
                 if (serverClientId) {
@@ -565,11 +693,53 @@ export function useDriveVideoPlayer() {
                     }
                 }
                 setIsPermanentConnected(Boolean(permConnected));
+                if (hasEverConnected) {
+                    setIsDriveConnected(true);
+                }
 
-                if (serverToken && (!serverExpiry || serverExpiry > Date.now() + 15_000)) {
+                // 서버 DB에 백업된 재생목록이 있고 현재 로컬 재생목록이 비어 있으면 자동 복원
+                if (Array.isArray(serverPlaylist) && serverPlaylist.length > 0) {
+                    setPlaylist((prev) => {
+                        if (prev.length > 0) return prev;
+                        const hydrated = serverPlaylist
+                            .filter((item) => item && item.sourceType === 'google-drive')
+                            .map((item) => ({
+                                ...item,
+                                streamUrl: buildStreamUrl(item.id, serverToken || ''),
+                            }));
+                        if (hydrated.length > 0) {
+                            lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
+                            return hydrated;
+                        }
+                        return prev;
+                    });
+                }
+
+                if (serverToken && (!serverExpiry || serverExpiry > Date.now() + 3 * 60 * 1000)) {
                     const remainingSec = serverExpiry
                         ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
                         : 3500;
+                    applyNewAccessToken(serverToken, remainingSec);
+                    return serverToken;
+                }
+
+                // refresh_token이 없어 서버가 만료 토큰을 갱신하지 못했고, 화면이 보이는 상태라면 브라우저 GIS 무음 갱신 시도
+                if (
+                    !permConnected &&
+                    typeof document !== 'undefined' &&
+                    document.visibilityState === 'visible' &&
+                    (!serverToken || (serverExpiry && serverExpiry <= Date.now() + 12 * 60 * 1000))
+                ) {
+                    const silentToken = await silentGsiTokenRefresh();
+                    if (silentToken) {
+                        return silentToken;
+                    }
+                }
+
+                if (serverToken) {
+                    const remainingSec = serverExpiry
+                        ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
+                        : 300;
                     applyNewAccessToken(serverToken, remainingSec);
                     return serverToken;
                 }
@@ -578,29 +748,21 @@ export function useDriveVideoPlayer() {
             }
             return '';
         },
-        [applyNewAccessToken]
+        [applyNewAccessToken, silentGsiTokenRefresh]
     );
 
     // 마운트 시 서버에 저장된 영구 연결 토큰 자동 복원 + 4분 주기 선제적 백그라운드 무음 리프레시
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
-        // 1) 최초 마운트 시 서버에서 유효 토큰 동기화
+        // 1) 최초 마운트 시 서버에서 유효 토큰 & 재생목록 동기화
         refreshDriveTokenSilently(false);
 
-        // 2) 4분마다 토큰 만료 10분 전 여부를 체크하여 팝업 없이 서버에서 자동 리프레시
+        // 2) 4분마다 토큰 만료 12분 전 여부를 체크하여 팝업 없이 서버 또는 브라우저 GIS 무음 리프레시
         const timer = window.setInterval(() => {
             const now = Date.now();
-            if (tokenExpiryRef.current > 0 && now >= tokenExpiryRef.current - 10 * 60 * 1000) {
-                refreshDriveTokenSilently(true);
-            } else if (tokenExpiryRef.current > 0 && now > tokenExpiryRef.current) {
-                // 만료된 로컬 토큰 정리 후 서버 리프레시 시도
-                localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-                localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-                sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-                sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-                setAccessToken('');
-                refreshDriveTokenSilently(true);
+            if (tokenExpiryRef.current === 0 || now >= tokenExpiryRef.current - 12 * 60 * 1000) {
+                void refreshDriveTokenSilently(true);
             }
         }, 4 * 60 * 1000);
 
@@ -1185,9 +1347,10 @@ export function useDriveVideoPlayer() {
         }
     }, [clearResumeRetryTimers]);
 
-    const playTrackAtIndex = useCallback(
-        (index: number) => {
-            if (index < 0 || index >= playlist.length) return;
+    const switchAndPlayAtIndex = useCallback(
+        (targetIndex: number) => {
+            if (targetIndex < 0 || targetIndex >= playlist.length) return;
+            markTrackSwitching();
             setPlayerError(null);
             errorRetryCountRef.current = 0;
             setRetryNonce(0);
@@ -1197,11 +1360,32 @@ export function useDriveVideoPlayer() {
             if (typeof window !== 'undefined') {
                 localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
             }
-            setCurrentIndex(index);
+            setCurrentIndex(targetIndex);
             setCurrentTime(0);
             setIsPlaying(true);
+
+            const media = videoRef.current;
+            const nextTrack = playlist[targetIndex];
+            if (media && nextTrack) {
+                const nextUrl = getStreamUrlForTrack(nextTrack, 0);
+                if (media.getAttribute('src') !== nextUrl) {
+                    media.src = nextUrl;
+                    media.load();
+                }
+                const playPromise = media.play();
+                if (playPromise && typeof playPromise.catch === 'function') {
+                    playPromise.catch(() => {});
+                }
+            }
         },
-        [playlist.length]
+        [playlist, markTrackSwitching, getStreamUrlForTrack]
+    );
+
+    const playTrackAtIndex = useCallback(
+        (index: number) => {
+            switchAndPlayAtIndex(index);
+        },
+        [switchAndPlayAtIndex]
     );
 
     const pickRandomNextIndex = useCallback(
@@ -1221,36 +1405,22 @@ export function useDriveVideoPlayer() {
 
     const playNext = useCallback(() => {
         if (playlist.length === 0) return;
-        setPlayerError(null);
-        errorRetryCountRef.current = 0;
-        setRetryNonce(0);
-        pendingResumeTimeRef.current = null;
-
         if (isShuffle && playlist.length > 1) {
             const nextIdx = pickRandomNextIndex(playlist.length, currentIndex);
-            userWantsPlayRef.current = true;
-            setCurrentIndex(nextIdx);
-            setCurrentTime(0);
-            setIsPlaying(true);
+            switchAndPlayAtIndex(nextIdx);
             return;
         }
 
         const nextIdx = currentIndex + 1;
         if (nextIdx < playlist.length) {
-            userWantsPlayRef.current = true;
-            setCurrentIndex(nextIdx);
-            setCurrentTime(0);
-            setIsPlaying(true);
+            switchAndPlayAtIndex(nextIdx);
         } else if (repeatMode === 'all') {
-            userWantsPlayRef.current = true;
-            setCurrentIndex(0);
-            setCurrentTime(0);
-            setIsPlaying(true);
+            switchAndPlayAtIndex(0);
         } else {
             userWantsPlayRef.current = false;
             setIsPlaying(false);
         }
-    }, [playlist.length, isShuffle, currentIndex, repeatMode, pickRandomNextIndex]);
+    }, [playlist.length, isShuffle, currentIndex, repeatMode, pickRandomNextIndex, switchAndPlayAtIndex]);
 
     const playPrev = useCallback(() => {
         if (playlist.length === 0) return;
@@ -1260,23 +1430,14 @@ export function useDriveVideoPlayer() {
             setCurrentTime(0);
             return;
         }
-        setPlayerError(null);
-        errorRetryCountRef.current = 0;
-        setRetryNonce(0);
-        pendingResumeTimeRef.current = null;
-        userWantsPlayRef.current = true;
         if (isShuffle && playlist.length > 1) {
             const randomIdx = pickRandomNextIndex(playlist.length, currentIndex);
-            setCurrentIndex(randomIdx);
-            setCurrentTime(0);
-            setIsPlaying(true);
+            switchAndPlayAtIndex(randomIdx);
             return;
         }
         const prevIdx = currentIndex - 1 >= 0 ? currentIndex - 1 : playlist.length - 1;
-        setCurrentIndex(prevIdx);
-        setCurrentTime(0);
-        setIsPlaying(true);
-    }, [playlist.length, isShuffle, currentIndex, pickRandomNextIndex]);
+        switchAndPlayAtIndex(prevIdx);
+    }, [playlist.length, isShuffle, currentIndex, pickRandomNextIndex, switchAndPlayAtIndex]);
 
     const toggleShuffle = useCallback(() => {
         setIsShuffle((prev) => {
@@ -1518,7 +1679,13 @@ export function useDriveVideoPlayer() {
             }
 
             void (async () => {
-                await refreshDriveTokenSilently(true);
+                const prevExpiry = tokenExpiryRef.current;
+                const refreshed = await refreshDriveTokenSilently(true);
+                if (!refreshed || tokenExpiryRef.current <= prevExpiry) {
+                    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                        await silentGsiTokenRefresh();
+                    }
+                }
                 setTimeout(() => {
                     setRetryNonce((prev) => prev + 1);
                     if (userWantsPlayRef.current) {
@@ -1543,13 +1710,13 @@ export function useDriveVideoPlayer() {
         setPlayerError(
             '구글 드라이브 스트리밍 연결이 원활하지 않습니다. 드라이브 다시 연결 또는 파일 공유 권한을 확인해 주세요.'
         );
-    }, [currentTrack, playlist.length, playNext, refreshDriveTokenSilently, showNotice]);
+    }, [currentTrack, playlist.length, playNext, refreshDriveTokenSilently, silentGsiTokenRefresh, showNotice]);
 
     // 모바일 화면 잠금 또는 페이지 이동(DOM 언마운트) 시 강제 일시정지 방지 및 자동 백그라운드 인계
     const handleMediaPause = useCallback(
         (e: React.SyntheticEvent<HTMLMediaElement>) => {
             const media = e.currentTarget;
-            if (media.ended) return;
+            if (media.ended || isSwitchingTrackRef.current) return;
 
             // 다른 페이지로 이동하면서 <video> 태그가 언마운트될 때 발생하는 자동 pause 이벤트는 무시하고 재생 위치만 보존
             if (!media.isConnected) {
@@ -1639,16 +1806,29 @@ export function useDriveVideoPlayer() {
         }
     }, [clearResumeRetryTimers]);
 
-    // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호
+    // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호 및 비디오->오디오 자동 인계
     useEffect(() => {
         if (typeof document === 'undefined') return;
 
         const handleVisibilityChange = () => {
             const media = videoRef.current;
-            if (!media || !currentTrack) return;
+            if (!currentTrack) return;
 
             if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
-                if (media.paused) {
+                // 만약 사용자가 '비디오 화면 보기'(<video>) 상태였다면 화면 꺼짐 순간 <audio> 백그라운드 모드로 자동 인계!
+                if (!isAudioOnlyMode && !isCurrentTrackAudio) {
+                    if (media && media.currentTime > 0) {
+                        pendingResumeTimeRef.current = media.currentTime;
+                    } else if (lastKnownTimeRef.current > 0) {
+                        pendingResumeTimeRef.current = lastKnownTimeRef.current;
+                    }
+                    setIsAudioOnlyMode(true);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
+                    }
+                }
+
+                if (media && media.paused) {
                     media.play().catch(() => {});
                 }
                 if (typeof window !== 'undefined') {
@@ -1667,8 +1847,14 @@ export function useDriveVideoPlayer() {
                         resumeRetryTimersRef.current.push(timerId);
                     }
                 }
-            } else if (document.visibilityState === 'visible' && userWantsPlayRef.current) {
-                if (media.paused) {
+            } else if (document.visibilityState === 'visible') {
+                if (
+                    tokenExpiryRef.current > 0 &&
+                    Date.now() >= tokenExpiryRef.current - 15 * 60 * 1000
+                ) {
+                    void refreshDriveTokenSilently(true);
+                }
+                if (userWantsPlayRef.current && media && media.paused) {
                     media.play().catch(() => {});
                 }
             }
@@ -1678,7 +1864,13 @@ export function useDriveVideoPlayer() {
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [currentTrack, clearResumeRetryTimers]);
+    }, [
+        currentTrack,
+        isAudioOnlyMode,
+        isCurrentTrackAudio,
+        clearResumeRetryTimers,
+        refreshDriveTokenSilently,
+    ]);
 
     // 트랙 변경 또는 모드/페이지 전환 시 자동 재생 및 볼륨/배속 동기화
     useEffect(() => {

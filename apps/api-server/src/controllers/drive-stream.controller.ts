@@ -154,7 +154,19 @@ export class DriveStreamController {
             const body = (await c.req.json()) as {
                 clientId?: string;
                 clientSecret?: string;
+                playlist?: unknown[];
             };
+
+            if (Array.isArray(body.playlist)) {
+                await DriveAuthService.savePlaylist(user.id, JSON.stringify(body.playlist));
+                if (body.clientId === undefined && body.clientSecret === undefined) {
+                    const status = await DriveAuthService.getConnectionStatus(user.id);
+                    return c.json({
+                        success: true,
+                        data: status,
+                    });
+                }
+            }
 
             const status = await DriveAuthService.saveClientConfig(
                 user.id,

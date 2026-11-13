@@ -353,15 +353,15 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                 ></span>
                                                 <span>
                                                     {isCurrentTrackAudio
-                                                        ? '🎵 뮤직·오디오 스트리밍 모드 (다른 페이지 이동·화면 잠금 연속재생)'
-                                                        : '🎧 백그라운드 오디오 전용 모드 (다른 페이지 이동·화면 잠금 연속재생)'}
+                                                        ? '🎵 뮤직·오디오 스트리밍 모드 (화면 잠금·다른 페이지 백그라운드 연속재생)'
+                                                        : '🎧 백그라운드 오디오 재생 모드 (화면 꺼짐·다른 페이지 이동 시에도 무중단 재생)'}
                                                 </span>
                                             </div>
                                             <h4 className="text-sm sm:text-base font-black text-white line-clamp-1">
                                                 {currentTrack.name}
                                             </h4>
                                             <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">
-                                                베라 홈페이지의 다른 메뉴(홈·뉴스·게임·가이드)로 이동하거나 핸드폰 화면을 닫아도 끊김 없이 연속 재생됩니다.
+                                                핸드폰 전원 버튼으로 화면을 끄거나 베라 홈페이지 다른 메뉴로 이동해도 끊김 없이 다음 곡까지 계속 재생됩니다.
                                             </p>
                                         </div>
 
@@ -370,10 +370,10 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                                 <button
                                                     type="button"
                                                     onClick={toggleAudioOnlyMode}
-                                                    className="px-4 py-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-extrabold flex items-center gap-1.5 cursor-pointer"
+                                                    className="px-4 py-2 rounded-xl bg-indigo-600/90 hover:bg-indigo-500 text-white border border-indigo-400/50 text-xs font-extrabold flex items-center gap-1.5 shadow-md cursor-pointer transition-colors"
                                                 >
-                                                    <i className="fas fa-video text-indigo-400"></i>
-                                                    <span>비디오 화면 다시 켜기</span>
+                                                    <i className="fas fa-video"></i>
+                                                    <span>🎬 비디오 영상 화면으로 보기</span>
                                                 </button>
                                             </div>
                                         )}

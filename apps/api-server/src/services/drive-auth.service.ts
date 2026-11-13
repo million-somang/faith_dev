@@ -7,6 +7,7 @@ export interface DriveTokenRow {
     access_token: string;
     refresh_token: string;
     expiry_date: number;
+    playlist_json?: string;
     updated_at?: string;
 }
 
@@ -17,6 +18,8 @@ export interface DriveConnectionStatus {
     expiryDate: number;
     hasRefreshToken: boolean;
     isPermanentConnected: boolean;
+    hasEverConnected?: boolean;
+    playlist?: unknown[];
 }
 
 interface GoogleOAuthTokenPayload {
@@ -42,9 +45,17 @@ export class DriveAuthService {
                     access_token TEXT DEFAULT '',
                     refresh_token TEXT DEFAULT '',
                     expiry_date INTEGER DEFAULT 0,
+                    playlist_json TEXT DEFAULT '[]',
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
+            try {
+                await pool.query(
+                    "ALTER TABLE user_drive_tokens ADD COLUMN playlist_json TEXT DEFAULT '[]'"
+                );
+            } catch (_) {
+                // 이미 playlist_json 컬럼이 존재하면 무시
+            }
             isTableReady = true;
         } catch (err) {
             console.error('[DriveAuthService.ensureTable] Error:', err);
@@ -66,8 +77,32 @@ export class DriveAuthService {
             access_token: String(raw.access_token || ''),
             refresh_token: String(raw.refresh_token || ''),
             expiry_date: Number(raw.expiry_date) || 0,
+            playlist_json: typeof raw.playlist_json === 'string' ? raw.playlist_json : '[]',
             updated_at: raw.updated_at ? String(raw.updated_at) : undefined,
         };
+    }
+
+    static async savePlaylist(userId: number, playlistJson: string): Promise<void> {
+        await this.ensureTable();
+        const existing = await this.getRow(userId);
+        await pool.query(
+            `
+            INSERT INTO user_drive_tokens (user_id, client_id, client_secret, access_token, refresh_token, expiry_date, playlist_json, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                playlist_json = excluded.playlist_json,
+                updated_at = CURRENT_TIMESTAMP
+            `,
+            [
+                userId,
+                existing?.client_id || '',
+                existing?.client_secret || '',
+                existing?.access_token || '',
+                existing?.refresh_token || '',
+                existing?.expiry_date || 0,
+                playlistJson,
+            ]
+        );
     }
 
     static async saveClientConfig(
@@ -324,7 +359,10 @@ export class DriveAuthService {
             ) {
                 return row.access_token;
             }
-            return '';
+            if (row?.access_token) {
+                return row.access_token;
+            }
+            return (fallbackQueryToken || '').trim();
         }
 
         // 1. DB에 유효한 토큰이 남아있는 경우 (만료 3분 전까지)
@@ -349,7 +387,7 @@ export class DriveAuthService {
             return trimmed;
         }
 
-        return row?.access_token && row.expiry_date > now ? row.access_token : '';
+        return row?.access_token || '';
     }
 
     static async getConnectionStatus(
@@ -363,6 +401,15 @@ export class DriveAuthService {
                 process.env.GOOGLE_CLIENT_SECRET
         );
         const hasRefreshToken = Boolean(row?.refresh_token && row.refresh_token.length > 0);
+        let parsedPlaylist: unknown[] = [];
+        if (row?.playlist_json) {
+            try {
+                const parsed = JSON.parse(row.playlist_json);
+                if (Array.isArray(parsed)) {
+                    parsedPlaylist = parsed;
+                }
+            } catch (_) {}
+        }
 
         return {
             clientId:
@@ -371,10 +418,12 @@ export class DriveAuthService {
                 process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
                 '',
             hasClientSecret,
-            accessToken: validToken,
+            accessToken: validToken || row?.access_token || '',
             expiryDate: row?.expiry_date || 0,
             hasRefreshToken,
             isPermanentConnected: hasRefreshToken && hasClientSecret,
+            hasEverConnected: Boolean(row?.access_token || row?.refresh_token || row?.client_id),
+            playlist: parsedPlaylist,
         };
     }
 }
