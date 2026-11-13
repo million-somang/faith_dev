@@ -49,12 +49,14 @@ export class DriveAuthService {
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             `);
-            try {
+            const colCheck = await pool.query('PRAGMA table_info(user_drive_tokens)');
+            const hasPlaylistCol = Array.isArray(colCheck.rows) && colCheck.rows.some(
+                (col) => String((col as Record<string, unknown>).name || '') === 'playlist_json'
+            );
+            if (!hasPlaylistCol) {
                 await pool.query(
                     "ALTER TABLE user_drive_tokens ADD COLUMN playlist_json TEXT DEFAULT '[]'"
                 );
-            } catch (_) {
-                // 이미 playlist_json 컬럼이 존재하면 무시
             }
             isTableReady = true;
         } catch (err) {

@@ -19,15 +19,27 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
- * MP4(ISOBMFF) 컨테이너의 hdlr 박스 내부 비디오 트랙 식별자('vide')를 'null'로 무효화하여
- * 모바일 브라우저(Android Chrome / iOS Safari / Samsung Internet)의 디먹서가 해당 스트림을
- * 비디오 트랙이 전혀 없는 순수 오디오(HasVideo() === false)로 인식하게 만듭니다.
- * 바이트 길이를 1바이트도 변경하지 않으므로 HTTP Range(206 Partial Content) 시크가 100% 그대로 동작합니다.
+ * MP4(ISOBMFF) 컨테이너 내부의 비디오 트랙 박스(`trak`) 전체를 `free` 패딩 박스로 실시간 치환합니다.
+ * - `hdlr` 핸들러(`vide`)만 바꾸거나 `tkhd` 플래그만 바꾸는 것이 아니라, 비디오 `trak` 박스 자체를
+ *   ISOBMFF 표준 `free` 박스로 마스킹하고 내부의 `hdlr`(`vide`), `vmhd`, 비디오 코덱(`av01`/`avc1`/`hev1`/`vp09`)까지
+ *   모두 무효화하여 Android Chrome(BoxReader/FFmpegDemuxer), 삼성 인터넷, iOS Safari(CoreMedia) 모두가
+ *   이 스트림에서 단 1개의 오디오 트랙(`soun`)만 발견하도록 보장합니다.
+ * - 파일 전체 바이트 크기와 오디오 청크 오프셋(`stco`/`co64`)이 1바이트도 변하지 않으므로
+ *   HTTP Range(206 Partial Content) 시크가 100% 그대로 동작합니다.
  */
-function neutralizeMp4VideoHandlerInChunk(chunk: Uint8Array): Uint8Array {
+function neutralizeMp4VideoBoxesInBuffer(chunk: Uint8Array): Uint8Array {
     let mutated: Uint8Array | null = null;
-    const limit = chunk.length - 16;
-    for (let i = 0; i <= limit; i += 1) {
+    const ensureMutable = (): Uint8Array => {
+        if (!mutated) {
+            mutated = new Uint8Array(chunk);
+        }
+        return mutated;
+    };
+
+    const len = chunk.length;
+
+    // 1) 'hdlr' 박스 내 'vide' 핸들러를 찾아, 이를 감싸고 있는 상위 비디오 'trak' 박스 헤더를 'free' 박스로 통째로 변환
+    for (let i = 0; i <= len - 16; i += 1) {
         if (
             chunk[i] === 0x68 && // 'h'
             chunk[i + 1] === 0x64 && // 'd'
@@ -38,30 +50,112 @@ function neutralizeMp4VideoHandlerInChunk(chunk: Uint8Array): Uint8Array {
             chunk[i + 14] === 0x64 && // 'd'
             chunk[i + 15] === 0x65 // 'e'
         ) {
-            if (!mutated) {
-                mutated = new Uint8Array(chunk);
+            const buf = ensureMutable();
+            // hdlr handler_type: 'vide' -> 'null'
+            buf[i + 12] = 0x6e;
+            buf[i + 13] = 0x75;
+            buf[i + 14] = 0x6c;
+            buf[i + 15] = 0x6c;
+
+            // 역방향으로 최대 1024바이트 탐색하여 이 비디오 hdlr를 포함하는 상위 'trak' 박스 및 'tkhd' 박스를 무효화
+            const searchStart = Math.max(0, i - 1024);
+            for (let j = i - 4; j >= searchStart; j -= 1) {
+                // 'tkhd' 발견 시 flags(오프셋 +7)의 track_enabled 비트를 0으로 해제
+                if (
+                    buf[j] === 0x74 && // 't'
+                    buf[j + 1] === 0x6b && // 'k'
+                    buf[j + 2] === 0x68 && // 'h'
+                    buf[j + 3] === 0x64 && // 'd'
+                    j + 8 < len
+                ) {
+                    buf[j + 5] = 0x00;
+                    buf[j + 6] = 0x00;
+                    buf[j + 7] = 0x00;
+                }
+                // 상위 'trak' 발견 시 박스 타입을 'free'(0x66, 0x72, 0x65, 0x65)로 변경하여 디먹서가 트랙 자체를 건너뛰게 함
+                if (
+                    buf[j] === 0x74 && // 't'
+                    buf[j + 1] === 0x72 && // 'r'
+                    buf[j + 2] === 0x61 && // 'a'
+                    buf[j + 3] === 0x6b // 'k'
+                ) {
+                    buf[j] = 0x66; // 'f'
+                    buf[j + 1] = 0x72; // 'r'
+                    buf[j + 2] = 0x65; // 'e'
+                    buf[j + 3] = 0x65; // 'e'
+                    break;
+                }
             }
-            // 'vide' -> 'null' (0x6e, 0x75, 0x6c, 0x6c)
-            mutated[i + 12] = 0x6e;
-            mutated[i + 13] = 0x75;
-            mutated[i + 14] = 0x6c;
-            mutated[i + 15] = 0x6c;
         }
     }
+
+    // 2) 'vmhd' (Video Media Header) 박스까지 'free'로 마스킹하여 혹시 모를 바이트 스니핑 차단
+    for (let i = 0; i <= len - 8; i += 1) {
+        if (
+            chunk[i] === 0x76 && // 'v'
+            chunk[i + 1] === 0x6d && // 'm'
+            chunk[i + 2] === 0x68 && // 'h'
+            chunk[i + 3] === 0x64 && // 'd'
+            chunk[i + 4] === 0x00
+        ) {
+            const buf = ensureMutable();
+            buf[i] = 0x66;
+            buf[i + 1] = 0x72;
+            buf[i + 2] = 0x65;
+            buf[i + 3] = 0x65;
+        }
+    }
+
     return mutated || chunk;
 }
 
 function createAudioOnlyMp4Stream(upstreamBody: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
     const reader = upstreamBody.getReader();
+    // 첫 256KB 구간은 청크 경계에 'trak' ~ 'hdlr'가 걸리지 않도록 하나로 모아서 완벽히 마스킹한 뒤 전송
+    const headerChunks: Uint8Array[] = [];
+    let headerBytes = 0;
+    let headerFlushed = false;
+    const HEADER_BUFFER_TARGET = 262144; // 256KB
+
+    const flushHeader = (controller: ReadableStreamDefaultController<Uint8Array>) => {
+        if (headerFlushed || headerChunks.length === 0) return;
+        headerFlushed = true;
+        const combined = new Uint8Array(headerBytes);
+        let offset = 0;
+        for (const c of headerChunks) {
+            combined.set(c, offset);
+            offset += c.byteLength;
+        }
+        headerChunks.length = 0;
+        controller.enqueue(neutralizeMp4VideoBoxesInBuffer(combined));
+    };
+
     return new ReadableStream<Uint8Array>({
         async pull(controller) {
+            while (!headerFlushed) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    flushHeader(controller);
+                    controller.close();
+                    return;
+                }
+                if (value && value.byteLength > 0) {
+                    headerChunks.push(value);
+                    headerBytes += value.byteLength;
+                    if (headerBytes >= HEADER_BUFFER_TARGET) {
+                        flushHeader(controller);
+                        return;
+                    }
+                }
+            }
+
             const { done, value } = await reader.read();
             if (done) {
                 controller.close();
                 return;
             }
             if (value && value.byteLength > 0) {
-                controller.enqueue(neutralizeMp4VideoHandlerInChunk(value));
+                controller.enqueue(neutralizeMp4VideoBoxesInBuffer(value));
             }
         },
         cancel(reason) {

@@ -21,7 +21,7 @@ const STORAGE_KEYS = {
     VOLUME: 'vera_mypage_video_volume',
     SHUFFLE: 'vera_mypage_video_shuffle',
     REPEAT: 'vera_mypage_video_repeat',
-    AUDIO_ONLY: 'vera_mypage_video_audio_only_v2',
+    AUDIO_ONLY: 'vera_mypage_video_audio_only_v3',
     ACCESS_TOKEN: 'vera_gdrive_access_token',
     TOKEN_EXPIRY: 'vera_gdrive_token_expiry',
     MINI_BAR_DISMISSED: 'vera_mypage_mini_bar_dismissed',
@@ -263,8 +263,14 @@ export function useDriveVideoPlayer() {
             setRepeatMode(savedRepeat);
         }
 
+        const isMobileDevice =
+            typeof navigator !== 'undefined' &&
+            /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
         const savedAudioOnly = localStorage.getItem(STORAGE_KEYS.AUDIO_ONLY);
-        if (savedAudioOnly === 'false') {
+        if (isMobileDevice) {
+            setIsAudioOnlyMode(true);
+            localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
+        } else if (savedAudioOnly === 'false') {
             setIsAudioOnlyMode(false);
         } else {
             setIsAudioOnlyMode(true);
@@ -567,16 +573,21 @@ export function useDriveVideoPlayer() {
             sessionStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiryTime));
         }
 
-        setAccessToken(newToken);
+        setAccessToken((prev) => (prev === newToken ? prev : newToken));
         setIsDriveConnected(true);
         setPlayerError(null);
-        setPlaylist((prev) =>
-            prev.map((item) =>
-                item.sourceType === 'google-drive'
-                    ? { ...item, streamUrl: buildStreamUrl(item.id, newToken) }
-                    : item
-            )
-        );
+        setPlaylist((prev) => {
+            // 이미 재생 중이거나 트랙 URL이 활성 잠금 상태인 경우 불필요한 배열 재생성을 방지하여 미디어 리로드 차단
+            let changed = false;
+            const next = prev.map((item) => {
+                if (item.sourceType !== 'google-drive') return item;
+                const nextUrl = buildStreamUrl(item.id, newToken);
+                if (item.streamUrl === nextUrl) return item;
+                changed = true;
+                return { ...item, streamUrl: nextUrl };
+            });
+            return changed ? next : prev;
+        });
     }, []);
 
     // ─── 브라우저 Google Identity Services 무음 토큰 자동 갱신 (prompt: 'none') ───
@@ -1878,7 +1889,7 @@ export function useDriveVideoPlayer() {
         video.muted = isMuted;
         video.playbackRate = playbackRate;
 
-        if (isPlaying || userWantsPlayRef.current) {
+        if ((isPlaying || userWantsPlayRef.current) && video.paused) {
             video.play().catch((err) => {
                 // 다음 곡 전환 시 이전 스트림 로드가 취소되면서 발생하는 AbortError는 정상 동작이므로 무시
                 if (err instanceof Error && err.name === 'AbortError') return;
@@ -1893,7 +1904,7 @@ export function useDriveVideoPlayer() {
             });
         }
     }, [
-        currentTrack,
+        currentTrack?.streamUrl,
         isAudioOnlyMode,
         isCurrentTrackAudio,
         isFullStageMounted,
