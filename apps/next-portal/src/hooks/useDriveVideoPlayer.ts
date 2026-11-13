@@ -57,12 +57,17 @@ function loadGsiScript(): Promise<void> {
     });
 }
 
-function buildStreamUrl(fileId: string, accessToken: string): string {
+function buildStreamUrl(fileId: string, accessToken: string, audioOnly = false): string {
     const base = `${API_BASE_URL}/api/user/drive/stream/${encodeURIComponent(fileId)}`;
+    const params = new URLSearchParams();
     if (accessToken) {
-        return `${base}?token=${encodeURIComponent(accessToken)}`;
+        params.set('token', accessToken);
     }
-    return base;
+    if (audioOnly) {
+        params.set('mode', 'audio');
+    }
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
 }
 
 function extractDriveFileId(rawInput: string): string | null {
@@ -336,7 +341,7 @@ export function useDriveVideoPlayer() {
 
     // ─── 트랙의 실시간 스트림 URL 계산 헬퍼 ───
     const getStreamUrlForTrack = useCallback(
-        (raw: VideoPlaylistItem, retry = 0): string => {
+        (raw: VideoPlaylistItem, retry = 0, audioMode = true): string => {
             if (raw.sourceType !== 'google-drive') {
                 return raw.streamUrl;
             }
@@ -347,21 +352,22 @@ export function useDriveVideoPlayer() {
                       sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
                       ''
                     : '');
+            const lockKey = `${raw.id}:${audioMode ? 'audio' : 'video'}`;
             if (
-                activeStreamLockRef.current.trackId === raw.id &&
+                activeStreamLockRef.current.trackId === lockKey &&
                 activeStreamLockRef.current.retry === retry &&
                 activeStreamLockRef.current.url &&
                 (activeStreamLockRef.current.url.includes('token=') || !freshToken)
             ) {
                 return activeStreamLockRef.current.url;
             }
-            const baseStreamUrl = buildStreamUrl(raw.id, freshToken);
+            const baseStreamUrl = buildStreamUrl(raw.id, freshToken, audioMode);
             const finalStreamUrl =
                 retry > 0
                     ? `${baseStreamUrl}${baseStreamUrl.includes('?') ? '&' : '?'}retry=${retry}`
                     : baseStreamUrl;
             activeStreamLockRef.current = {
-                trackId: raw.id,
+                trackId: lockKey,
                 retry,
                 url: finalStreamUrl,
             };
@@ -378,14 +384,16 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
+            const useAudioStream =
+                isAudioOnlyMode || !isFullStageMounted || isAudioMedia(raw.mimeType, raw.name);
             return {
                 ...raw,
-                streamUrl: getStreamUrlForTrack(raw, retryNonce),
+                streamUrl: getStreamUrlForTrack(raw, retryNonce, useAudioStream),
             };
         }
 
         return raw;
-    }, [playlist, currentIndex, retryNonce, getStreamUrlForTrack]);
+    }, [playlist, currentIndex, retryNonce, isAudioOnlyMode, isFullStageMounted, getStreamUrlForTrack]);
 
     const isCurrentTrackAudio = useMemo(() => {
         if (!currentTrack) return false;
@@ -1367,7 +1375,11 @@ export function useDriveVideoPlayer() {
             const media = videoRef.current;
             const nextTrack = playlist[targetIndex];
             if (media && nextTrack) {
-                const nextUrl = getStreamUrlForTrack(nextTrack, 0);
+                const useAudioStream =
+                    isAudioOnlyMode ||
+                    !isFullStageMounted ||
+                    isAudioMedia(nextTrack.mimeType, nextTrack.name);
+                const nextUrl = getStreamUrlForTrack(nextTrack, 0, useAudioStream);
                 if (media.getAttribute('src') !== nextUrl) {
                     media.src = nextUrl;
                     media.load();
@@ -1378,7 +1390,7 @@ export function useDriveVideoPlayer() {
                 }
             }
         },
-        [playlist, markTrackSwitching, getStreamUrlForTrack]
+        [playlist, isAudioOnlyMode, isFullStageMounted, markTrackSwitching, getStreamUrlForTrack]
     );
 
     const playTrackAtIndex = useCallback(
@@ -1806,7 +1818,7 @@ export function useDriveVideoPlayer() {
         }
     }, [clearResumeRetryTimers]);
 
-    // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호 및 비디오->오디오 자동 인계
+    // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호
     useEffect(() => {
         if (typeof document === 'undefined') return;
 
@@ -1815,19 +1827,6 @@ export function useDriveVideoPlayer() {
             if (!currentTrack) return;
 
             if (document.visibilityState === 'hidden' && userWantsPlayRef.current) {
-                // 만약 사용자가 '비디오 화면 보기'(<video>) 상태였다면 화면 꺼짐 순간 <audio> 백그라운드 모드로 자동 인계!
-                if (!isAudioOnlyMode && !isCurrentTrackAudio) {
-                    if (media && media.currentTime > 0) {
-                        pendingResumeTimeRef.current = media.currentTime;
-                    } else if (lastKnownTimeRef.current > 0) {
-                        pendingResumeTimeRef.current = lastKnownTimeRef.current;
-                    }
-                    setIsAudioOnlyMode(true);
-                    if (typeof window !== 'undefined') {
-                        localStorage.setItem(STORAGE_KEYS.AUDIO_ONLY, 'true');
-                    }
-                }
-
                 if (media && media.paused) {
                     media.play().catch(() => {});
                 }
@@ -1866,8 +1865,6 @@ export function useDriveVideoPlayer() {
         };
     }, [
         currentTrack,
-        isAudioOnlyMode,
-        isCurrentTrackAudio,
         clearResumeRetryTimers,
         refreshDriveTokenSilently,
     ]);

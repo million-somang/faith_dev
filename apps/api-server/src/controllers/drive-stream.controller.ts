@@ -18,6 +18,58 @@ function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * MP4(ISOBMFF) 컨테이너의 hdlr 박스 내부 비디오 트랙 식별자('vide')를 'null'로 무효화하여
+ * 모바일 브라우저(Android Chrome / iOS Safari / Samsung Internet)의 디먹서가 해당 스트림을
+ * 비디오 트랙이 전혀 없는 순수 오디오(HasVideo() === false)로 인식하게 만듭니다.
+ * 바이트 길이를 1바이트도 변경하지 않으므로 HTTP Range(206 Partial Content) 시크가 100% 그대로 동작합니다.
+ */
+function neutralizeMp4VideoHandlerInChunk(chunk: Uint8Array): Uint8Array {
+    let mutated: Uint8Array | null = null;
+    const limit = chunk.length - 16;
+    for (let i = 0; i <= limit; i += 1) {
+        if (
+            chunk[i] === 0x68 && // 'h'
+            chunk[i + 1] === 0x64 && // 'd'
+            chunk[i + 2] === 0x6c && // 'l'
+            chunk[i + 3] === 0x72 && // 'r'
+            chunk[i + 12] === 0x76 && // 'v'
+            chunk[i + 13] === 0x69 && // 'i'
+            chunk[i + 14] === 0x64 && // 'd'
+            chunk[i + 15] === 0x65 // 'e'
+        ) {
+            if (!mutated) {
+                mutated = new Uint8Array(chunk);
+            }
+            // 'vide' -> 'null' (0x6e, 0x75, 0x6c, 0x6c)
+            mutated[i + 12] = 0x6e;
+            mutated[i + 13] = 0x75;
+            mutated[i + 14] = 0x6c;
+            mutated[i + 15] = 0x6c;
+        }
+    }
+    return mutated || chunk;
+}
+
+function createAudioOnlyMp4Stream(upstreamBody: ReadableStream<Uint8Array>): ReadableStream<Uint8Array> {
+    const reader = upstreamBody.getReader();
+    return new ReadableStream<Uint8Array>({
+        async pull(controller) {
+            const { done, value } = await reader.read();
+            if (done) {
+                controller.close();
+                return;
+            }
+            if (value && value.byteLength > 0) {
+                controller.enqueue(neutralizeMp4VideoHandlerInChunk(value));
+            }
+        },
+        cancel(reason) {
+            return reader.cancel(reason);
+        },
+    });
+}
+
 async function fetchUpstreamWithRetry(
     url: string,
     headers: Headers,
@@ -339,6 +391,26 @@ export class DriveStreamController {
             }
             if (!responseHeaders.has('content-type')) {
                 responseHeaders.set('content-type', 'application/octet-stream');
+            }
+
+            const modeParam = (c.req.query('mode') || '').trim().toLowerCase();
+            const currentContentType = (responseHeaders.get('content-type') || '').toLowerCase();
+            const isMp4Video =
+                currentContentType.includes('video/mp4') ||
+                currentContentType.includes('video/quicktime') ||
+                currentContentType.includes('application/mp4');
+
+            // 백그라운드 오디오 모드(mode=audio) 요청 시:
+            // 1) Content-Type을 audio/mp4로 전환하고
+            // 2) MP4(ISOBMFF) 컨테이너 내 비디오 트랙 핸들러('vide')를 실시간 무효화하여
+            //    모바일 OS/브라우저가 화면 잠금(OnFrameHidden) 시 비디오로 오인해 강제 일시정지하는 현상을 원천 차단합니다.
+            if (modeParam === 'audio' && isMp4Video && upstreamResponse.body) {
+                responseHeaders.set('content-type', 'audio/mp4');
+                const audioOnlyStream = createAudioOnlyMp4Stream(upstreamResponse.body);
+                return new Response(audioOnlyStream, {
+                    status: upstreamResponse.status,
+                    headers: responseHeaders,
+                });
             }
 
             return new Response(upstreamResponse.body, {

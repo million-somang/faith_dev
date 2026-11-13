@@ -42,8 +42,8 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     ref={videoRef as React.RefObject<HTMLAudioElement>}
                     src={currentTrack.streamUrl}
                     playsInline
-                    preload={isMiniBarDismissed && !isPlaying ? 'none' : 'auto'}
-                    className="hidden"
+                    preload={isMiniBarDismissed && !isFullStageMounted && !isPlaying ? 'none' : 'auto'}
+                    className="fixed -bottom-20 left-0 w-px h-px opacity-0 pointer-events-none"
                     onPlay={handleMediaPlay}
                     onPause={handleMediaPause}
                     onWaiting={() => setIsBuffering(true)}
