@@ -29,6 +29,10 @@
    - (3) **엠프티 스테이트(Empty State) 필수화**: 데이터가 0건(비어 있는 초기 상태)일 때는 가짜 데이터를 채워 넣지 말고, 반드시 정직하고 완성도 높은 **엠프티 스테이트 UI(예: "아직 등록된 기록이 없습니다. 첫 번째로 도전해 보세요!", 빈 목록 아이콘 및 안내 문구)** 또는 스켈레톤 로딩으로 상태를 표현해야 함.
    - (4) **오직 실제 DB/API 연동만 허용**: 모든 동적 데이터 표시는 실제 사용자의 플레이/작업 결과 및 DB 트랜잭션으로 축적된 데이터만을 신뢰 원천(Source of Truth)으로 삼아 화면에 표시해야 함.
 
+### 10. Google Drive 백그라운드 오디오 스트리밍 엔진 절대 수정 금지 (DO NOT TOUCH) 🔒
+   - (1) `apps/api-server/src/controllers/drive-stream.controller.ts`의 `neutralizeMp4VideoBoxesInBuffer()`, `createAudioOnlyMp4Stream()`, 그리고 `DriveStreamController.streamVideo()` 내 `mode === 'audio'` 처리부(`Content-Type: audio/mp4` 변환 및 MP4 내부 `trak` -> `free`, `hdlr` `vide` -> `null`, `tkhd` 비활성화, `vmhd` -> `free` 마스킹 + HTTP 206 Range 스트리밍)는 모바일 화면 잠금 백그라운드 재생을 보장하는 핵심 엔진이므로 **어떠한 경우에도 수정, 삭제, 리팩토링, 간소화해서는 안 됨.**
+   - (2) `apps/next-portal/src/context/DrivePlayerContext.tsx`의 전역 단일 `<audio>` 엘리먼트 유지 구조(`display: none` 금지)와 모바일 기본 `isAudioOnlyMode = true`(`?mode=audio`) 연결 구조를 절대 훼손하지 말 것.
+
 
 
 # CRITICAL SAFETY RULES (최고 수준 안전/보안 규칙) 🚨

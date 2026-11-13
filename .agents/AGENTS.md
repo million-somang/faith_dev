@@ -12,3 +12,7 @@
 - NEVER generate fake, mock, dummy, or seed data (`MOCK_*`, fake leaderboards, hardcoded dummy lists) in any frontend components, sub-apps, or backend API responses.
 - All dynamic data MUST be backed by real database records or authentic API integrations.
 - When no data exists (initial state or empty query), you MUST render a clean, honest, and polished Empty State UI (e.g., "아직 등록된 기록이 없습니다.") or skeleton loading, NEVER fake entries.
+
+## 4. Protected Google Drive Background Audio Streaming Engine (절대 수정 금지 🔒)
+- NEVER modify, refactor, or remove the MP4 audio-only streaming engine in `apps/api-server/src/controllers/drive-stream.controller.ts` (`neutralizeMp4VideoBoxesInBuffer`, `createAudioOnlyMp4Stream`, and the `mode === 'audio'` `audio/mp4` + HTTP 206 Range streaming handler in `DriveStreamController.streamVideo`).
+- NEVER unmount or replace the global `<audio>` element in `apps/next-portal/src/context/DrivePlayerContext.tsx` during mobile screen lock (`visibilitychange`), and NEVER apply `display: none` (`className="hidden"`) to it.

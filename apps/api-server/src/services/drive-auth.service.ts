@@ -125,8 +125,8 @@ export class DriveAuthService {
             INSERT INTO user_drive_tokens (user_id, client_id, client_secret, access_token, refresh_token, expiry_date, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
             ON CONFLICT(user_id) DO UPDATE SET
-                client_id = excluded.client_id,
-                client_secret = excluded.client_secret,
+                client_id = CASE WHEN excluded.client_id != '' THEN excluded.client_id ELSE user_drive_tokens.client_id END,
+                client_secret = CASE WHEN excluded.client_secret != '' THEN excluded.client_secret ELSE user_drive_tokens.client_secret END,
                 updated_at = CURRENT_TIMESTAMP
             `,
             [
@@ -350,21 +350,23 @@ export class DriveAuthService {
     ): Promise<string> {
         const row = await this.getRow(userId);
         const now = Date.now();
+        const trimmedFallback = (fallbackQueryToken || '').trim();
 
         if (forceRefresh) {
             const refreshed = await this.refreshAccessToken(userId);
             if (refreshed) return refreshed;
             if (
                 row?.access_token &&
-                row.access_token !== fallbackQueryToken &&
+                row.access_token !== trimmedFallback &&
                 row.expiry_date > now + 30_000
             ) {
                 return row.access_token;
             }
-            if (row?.access_token) {
+            // 이미 만료된 토큰(expiry_date <= now)은 절대 반환하지 않음
+            if (row?.access_token && row.expiry_date > now) {
                 return row.access_token;
             }
-            return (fallbackQueryToken || '').trim();
+            return '';
         }
 
         // 1. DB에 유효한 토큰이 남아있는 경우 (만료 3분 전까지)
@@ -380,16 +382,19 @@ export class DriveAuthService {
             }
         }
 
-        // 3. 쿼리로 전달된 토큰이 있으면 사용 (그리고 DB 토큰이 비어있다면 캐싱)
-        if (fallbackQueryToken && fallbackQueryToken.trim()) {
-            const trimmed = fallbackQueryToken.trim();
-            if (!row?.access_token) {
-                await this.saveDirectAccessToken(userId, trimmed, 3000);
-            }
-            return trimmed;
+        // 3. DB 토큰이 아직 만료 전(now < expiry_date <= now + 3분)이면 일단 사용 허용
+        if (row?.access_token && row.expiry_date > now) {
+            return row.access_token;
         }
 
-        return row?.access_token || '';
+        // 4. 쿼리로 전달된 토큰이 DB의 만료된 토큰과 다른 새 토큰이라면 사용 및 캐싱
+        if (trimmedFallback && trimmedFallback !== row?.access_token) {
+            await this.saveDirectAccessToken(userId, trimmedFallback, 3000);
+            return trimmedFallback;
+        }
+
+        // 5. 만료된 토큰은 빈 문자열을 반환하여 프론트엔드가 죽은 토큰을 재사용하지 않고 즉시 무음 갱신하도록 유도
+        return '';
     }
 
     static async getConnectionStatus(
@@ -398,6 +403,7 @@ export class DriveAuthService {
     ): Promise<DriveConnectionStatus> {
         const validToken = await this.getValidAccessToken(userId, undefined, forceRefresh);
         const row = await this.getRow(userId);
+        const now = Date.now();
         const hasClientSecret = Boolean(
             (row?.client_secret && row.client_secret.length > 0) ||
                 process.env.GOOGLE_CLIENT_SECRET
@@ -413,6 +419,8 @@ export class DriveAuthService {
             } catch (_) {}
         }
 
+        const isRowTokenValid = Boolean(row?.access_token && row.expiry_date > now);
+
         return {
             clientId:
                 row?.client_id ||
@@ -420,11 +428,16 @@ export class DriveAuthService {
                 process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
                 '',
             hasClientSecret,
-            accessToken: validToken || row?.access_token || '',
-            expiryDate: row?.expiry_date || 0,
+            accessToken: validToken || (isRowTokenValid ? row?.access_token || '' : ''),
+            expiryDate: validToken || isRowTokenValid ? row?.expiry_date || 0 : 0,
             hasRefreshToken,
             isPermanentConnected: hasRefreshToken && hasClientSecret,
-            hasEverConnected: Boolean(row?.access_token || row?.refresh_token || row?.client_id),
+            hasEverConnected: Boolean(
+                row?.access_token ||
+                    row?.refresh_token ||
+                    row?.client_id ||
+                    parsedPlaylist.length > 0
+            ),
             playlist: parsedPlaylist,
         };
     }

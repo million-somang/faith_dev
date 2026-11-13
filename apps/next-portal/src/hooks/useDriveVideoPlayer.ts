@@ -285,10 +285,18 @@ export function useDriveVideoPlayer() {
                 '0'
         );
         let activeToken = '';
-        if (savedToken) {
+        if (savedToken && savedExpiry > Date.now() + 60_000) {
             activeToken = savedToken;
             tokenExpiryRef.current = savedExpiry;
             setAccessToken(savedToken);
+            setIsDriveConnected(true);
+        } else if (savedToken) {
+            // 만료된 좀비 토큰은 즉시 폐기하여 스트리밍 URL(?token=...)에 죽은 토큰이 주입되는 것을 원천 차단
+            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            tokenExpiryRef.current = 0;
             setIsDriveConnected(true);
         }
 
@@ -306,6 +314,7 @@ export function useDriveVideoPlayer() {
                     if (hydrated.length > 0) {
                         lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
                         setPlaylist(hydrated);
+                        setIsDriveConnected(true);
                     }
                 }
             } catch (_) {
@@ -351,13 +360,15 @@ export function useDriveVideoPlayer() {
             if (raw.sourceType !== 'google-drive') {
                 return raw.streamUrl;
             }
-            const freshToken =
-                accessToken ||
-                (typeof window !== 'undefined'
-                    ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                      sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
-                      ''
-                    : '');
+            const isTokenStillValid = tokenExpiryRef.current > Date.now() + 10_000;
+            const freshToken = isTokenStillValid
+                ? accessToken ||
+                  (typeof window !== 'undefined'
+                      ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                        sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
+                        ''
+                      : '')
+                : '';
             const lockKey = `${raw.id}:${audioMode ? 'audio' : 'video'}`;
             if (
                 activeStreamLockRef.current.trackId === lockKey &&
@@ -405,162 +416,6 @@ export function useDriveVideoPlayer() {
         if (!currentTrack) return false;
         return isAudioMedia(currentTrack.mimeType, currentTrack.name);
     }, [currentTrack]);
-
-    // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
-    const fetchDriveFiles = useCallback(
-        async (
-            tokenToUse: string,
-            tab: DriveExplorerTab,
-            folderId: string,
-            searchKeyword: string
-        ) => {
-            if (!tokenToUse) return;
-            setIsLoadingDrive(true);
-            setDriveError(null);
-
-            try {
-                const queryParts: string[] = ['trashed = false'];
-                const trimmedKeyword = searchKeyword.trim().replace(/'/g, "\\'");
-                const mediaOrFolderClause = `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/' or mimeType contains 'audio/')`;
-
-                if (trimmedKeyword) {
-                    queryParts.push(`name contains '${trimmedKeyword}'`);
-                    queryParts.push(mediaOrFolderClause);
-                } else if (tab === 'my-drive') {
-                    queryParts.push(`'${folderId}' in parents`);
-                    queryParts.push(mediaOrFolderClause);
-                } else if (tab === 'shared') {
-                    if (folderId !== 'root') {
-                        queryParts.push(`'${folderId}' in parents`);
-                    } else {
-                        queryParts.push('sharedWithMe = true');
-                    }
-                    queryParts.push(mediaOrFolderClause);
-                } else if (tab === 'all-audio') {
-                    queryParts.push(`mimeType contains 'audio/'`);
-                } else {
-                    queryParts.push(`mimeType contains 'video/'`);
-                }
-
-                const q = queryParts.join(' and ');
-                const fields =
-                    'files(id,name,mimeType,size,thumbnailLink,iconLink,modifiedTime,videoMediaMetadata)';
-                const orderBy = 'folder,name_natural';
-                const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
-                    q
-                )}&fields=${encodeURIComponent(
-                    fields
-                )}&orderBy=${encodeURIComponent(
-                    orderBy
-                )}&pageSize=100&includeItemsFromAllDrives=true&supportsAllDrives=true`;
-
-                const response = await fetch(url, {
-                    headers: {
-                        Authorization: `Bearer ${tokenToUse}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    let googleErrorMsg = '';
-                    try {
-                        const errJson = await response.json();
-                        googleErrorMsg = errJson?.error?.message || '';
-                    } catch (_) {}
-
-                    if (response.status === 401) {
-                        // 토큰이 만료된 경우 서버에 저장된 refresh_token으로 1회 자동 갱신 후 재조회 시도
-                        try {
-                            const refreshRes = await fetch(
-                                `${API_BASE_URL}/api/user/drive/token?refresh=1`,
-                                { credentials: 'include' }
-                            );
-                            if (refreshRes.ok) {
-                                const refreshJson = (await refreshRes.json()) as {
-                                    success?: boolean;
-                                    data?: {
-                                        accessToken?: string;
-                                        expiryDate?: number;
-                                        isPermanentConnected?: boolean;
-                                    };
-                                };
-                                const refreshedToken = refreshJson.data?.accessToken || '';
-                                if (refreshedToken && refreshedToken !== tokenToUse) {
-                                    const retryRes = await fetch(url, {
-                                        headers: {
-                                            Authorization: `Bearer ${refreshedToken}`,
-                                        },
-                                    });
-                                    if (retryRes.ok) {
-                                        const retryData = (await retryRes.json()) as DriveFilesListResponse;
-                                        setDriveItems(retryData.files || []);
-                                        const nextExpiry =
-                                            refreshJson.data?.expiryDate ||
-                                            Date.now() + 3500 * 1000;
-                                        tokenExpiryRef.current = nextExpiry;
-                                        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, refreshedToken);
-                                        localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(nextExpiry));
-                                        sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, refreshedToken);
-                                        sessionStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(nextExpiry));
-                                        setAccessToken(refreshedToken);
-                                        setIsDriveConnected(true);
-                                        return;
-                                    }
-                                }
-                            }
-                        } catch (_) {}
-
-                        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-                        localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-                        sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-                        sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-                        setIsDriveConnected(false);
-                        setAccessToken('');
-                        throw new Error(
-                            '구글 드라이브 인증 세션이 만료되었습니다. [구글 드라이브 연결] 버튼을 다시 눌러주세요.'
-                        );
-                    }
-
-                    if (response.status === 403) {
-                        if (googleErrorMsg.toLowerCase().includes('disabled') || googleErrorMsg.toLowerCase().includes('not been used')) {
-                            throw new Error(
-                                'Google Cloud Console에서 "Google Drive API"가 활성화되지 않았습니다. API 라이브러리에서 Google Drive API [사용] 버튼을 클릭해 주세요.'
-                            );
-                        }
-                        throw new Error(
-                            googleErrorMsg ||
-                            '구글 드라이브 접근 권한이 없습니다. 로그인 시 "드라이브 파일 보기" 권한을 허용했는지 확인해 주세요.'
-                        );
-                    }
-
-                    throw new Error(`구글 드라이브 목록 조회 실패 (HTTP ${response.status}: ${googleErrorMsg})`);
-                }
-
-                const data = (await response.json()) as DriveFilesListResponse;
-                setDriveItems(data.files || []);
-            } catch (err: unknown) {
-                const msg =
-                    err instanceof Error
-                        ? err.message
-                        : '구글 드라이브 파일 목록을 불러오지 못했습니다.';
-                setDriveError(msg);
-            } finally {
-                setIsLoadingDrive(false);
-            }
-        },
-        []
-    );
-
-    const currentFolderId = useMemo(() => {
-        const last = breadcrumbs[breadcrumbs.length - 1];
-        return last ? last.id : 'root';
-    }, [breadcrumbs]);
-
-    // 모달이 열려 있고 토큰이 있을 때 탭/폴더 변경 시 자동 조회
-    useEffect(() => {
-        if (isPickerOpen && accessToken) {
-            fetchDriveFiles(accessToken, explorerTab, currentFolderId, driveSearchQuery);
-        }
-    }, [isPickerOpen, accessToken, explorerTab, currentFolderId, driveSearchQuery, fetchDriveFiles]);
 
     const applyNewAccessToken = useCallback((newToken: string, expiresInSec = 3500) => {
         const expiryTime = Date.now() + expiresInSec * 1000;
@@ -716,6 +571,10 @@ export function useDriveVideoPlayer() {
                     setIsDriveConnected(true);
                 }
 
+                const isServerTokenValid =
+                    Boolean(serverToken) && (!serverExpiry || serverExpiry > Date.now() + 60_000);
+                const validServerToken = isServerTokenValid ? serverToken || '' : '';
+
                 // 서버 DB에 백업된 재생목록이 있고 현재 로컬 재생목록이 비어 있으면 자동 복원
                 if (Array.isArray(serverPlaylist) && serverPlaylist.length > 0) {
                     setPlaylist((prev) => {
@@ -724,7 +583,7 @@ export function useDriveVideoPlayer() {
                             .filter((item) => item && item.sourceType === 'google-drive')
                             .map((item) => ({
                                 ...item,
-                                streamUrl: buildStreamUrl(item.id, serverToken || ''),
+                                streamUrl: buildStreamUrl(item.id, validServerToken),
                             }));
                         if (hydrated.length > 0) {
                             lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
@@ -732,22 +591,26 @@ export function useDriveVideoPlayer() {
                         }
                         return prev;
                     });
+                    setIsDriveConnected(true);
                 }
 
-                if (serverToken && (!serverExpiry || serverExpiry > Date.now() + 3 * 60 * 1000)) {
+                if (
+                    validServerToken &&
+                    (!serverExpiry || serverExpiry > Date.now() + 3 * 60 * 1000)
+                ) {
                     const remainingSec = serverExpiry
                         ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
                         : 3500;
-                    applyNewAccessToken(serverToken, remainingSec);
-                    return serverToken;
+                    applyNewAccessToken(validServerToken, remainingSec);
+                    return validServerToken;
                 }
 
-                // refresh_token이 없어 서버가 만료 토큰을 갱신하지 못했고, 화면이 보이는 상태라면 브라우저 GIS 무음 갱신 시도
+                // 서버 토큰이 만료되었거나 만료 임박(12분 이내)이고 화면이 보이는 상태라면 브라우저 GIS 무음 갱신 시도
                 if (
-                    !permConnected &&
                     typeof document !== 'undefined' &&
                     document.visibilityState === 'visible' &&
-                    (!serverToken || (serverExpiry && serverExpiry <= Date.now() + 12 * 60 * 1000))
+                    (!validServerToken ||
+                        (serverExpiry && serverExpiry <= Date.now() + 12 * 60 * 1000))
                 ) {
                     const silentToken = await silentGsiTokenRefresh();
                     if (silentToken) {
@@ -755,12 +618,25 @@ export function useDriveVideoPlayer() {
                     }
                 }
 
-                if (serverToken) {
+                if (validServerToken) {
                     const remainingSec = serverExpiry
                         ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
                         : 300;
-                    applyNewAccessToken(serverToken, remainingSec);
-                    return serverToken;
+                    applyNewAccessToken(validServerToken, remainingSec);
+                    return validServerToken;
+                }
+
+                // 서버와 무음 GIS 모두에서 유효한 토큰을 얻지 못했고 기존 로컬 토큰도 만료된 경우 좀비 토큰 즉시 폐기
+                if (tokenExpiryRef.current <= Date.now() + 10_000) {
+                    if (typeof window !== 'undefined') {
+                        localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                        localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                        sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                        sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                    }
+                    tokenExpiryRef.current = 0;
+                    activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
+                    setAccessToken('');
                 }
             } catch (_) {
                 // 비로그인 또는 네트워크 일시 오류 무시
@@ -769,6 +645,138 @@ export function useDriveVideoPlayer() {
         },
         [applyNewAccessToken, silentGsiTokenRefresh]
     );
+
+    // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
+    const fetchDriveFiles = useCallback(
+        async (
+            tokenToUse: string,
+            tab: DriveExplorerTab,
+            folderId: string,
+            searchKeyword: string
+        ) => {
+            if (!tokenToUse) return;
+            setIsLoadingDrive(true);
+            setDriveError(null);
+
+            try {
+                const queryParts: string[] = ['trashed = false'];
+                const trimmedKeyword = searchKeyword.trim().replace(/'/g, "\\'");
+                const mediaOrFolderClause = `(mimeType = '${FOLDER_MIME_TYPE}' or mimeType contains 'video/' or mimeType contains 'audio/')`;
+
+                if (trimmedKeyword) {
+                    queryParts.push(`name contains '${trimmedKeyword}'`);
+                    queryParts.push(mediaOrFolderClause);
+                } else if (tab === 'my-drive') {
+                    queryParts.push(`'${folderId}' in parents`);
+                    queryParts.push(mediaOrFolderClause);
+                } else if (tab === 'shared') {
+                    if (folderId !== 'root') {
+                        queryParts.push(`'${folderId}' in parents`);
+                    } else {
+                        queryParts.push('sharedWithMe = true');
+                    }
+                    queryParts.push(mediaOrFolderClause);
+                } else if (tab === 'all-audio') {
+                    queryParts.push(`mimeType contains 'audio/'`);
+                } else {
+                    queryParts.push(`mimeType contains 'video/'`);
+                }
+
+                const q = queryParts.join(' and ');
+                const fields =
+                    'files(id,name,mimeType,size,thumbnailLink,iconLink,modifiedTime,videoMediaMetadata)';
+                const orderBy = 'folder,name_natural';
+                const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(
+                    q
+                )}&fields=${encodeURIComponent(
+                    fields
+                )}&orderBy=${encodeURIComponent(
+                    orderBy
+                )}&pageSize=100&includeItemsFromAllDrives=true&supportsAllDrives=true`;
+
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: `Bearer ${tokenToUse}`,
+                    },
+                });
+
+                if (!response.ok) {
+                    let googleErrorMsg = '';
+                    try {
+                        const errJson = await response.json();
+                        googleErrorMsg = errJson?.error?.message || '';
+                    } catch (_) {}
+
+                    if (response.status === 401) {
+                        // 토큰이 만료된 경우 서버 refresh_token 및 브라우저 무음 GIS로 자동 갱신 후 재조회 시도
+                        const refreshedToken = await refreshDriveTokenSilently(true);
+                        if (refreshedToken && refreshedToken !== tokenToUse) {
+                            const retryRes = await fetch(url, {
+                                headers: {
+                                    Authorization: `Bearer ${refreshedToken}`,
+                                },
+                            });
+                            if (retryRes.ok) {
+                                const retryData = (await retryRes.json()) as DriveFilesListResponse;
+                                setDriveItems(retryData.files || []);
+                                return;
+                            }
+                        }
+
+                        if (typeof window !== 'undefined') {
+                            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+                            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+                        }
+                        tokenExpiryRef.current = 0;
+                        setAccessToken('');
+                        throw new Error(
+                            '구글 드라이브 인증 토큰을 갱신할 수 없습니다. 상단 [구글 재로그인] 버튼을 한 번 눌러주세요.'
+                        );
+                    }
+
+                    if (response.status === 403) {
+                        if (googleErrorMsg.toLowerCase().includes('disabled') || googleErrorMsg.toLowerCase().includes('not been used')) {
+                            throw new Error(
+                                'Google Cloud Console에서 "Google Drive API"가 활성화되지 않았습니다. API 라이브러리에서 Google Drive API [사용] 버튼을 클릭해 주세요.'
+                            );
+                        }
+                        throw new Error(
+                            googleErrorMsg ||
+                            '구글 드라이브 접근 권한이 없습니다. 로그인 시 "드라이브 파일 보기" 권한을 허용했는지 확인해 주세요.'
+                        );
+                    }
+
+                    throw new Error(`구글 드라이브 목록 조회 실패 (HTTP ${response.status}: ${googleErrorMsg})`);
+                }
+
+                const data = (await response.json()) as DriveFilesListResponse;
+                setDriveItems(data.files || []);
+            } catch (err: unknown) {
+                const msg =
+                    err instanceof Error
+                        ? err.message
+                        : '구글 드라이브 파일 목록을 불러오지 못했습니다.';
+                setDriveError(msg);
+            } finally {
+                setIsLoadingDrive(false);
+            }
+        },
+        [refreshDriveTokenSilently]
+    );
+
+    const currentFolderId = useMemo(() => {
+        const last = breadcrumbs[breadcrumbs.length - 1];
+        return last ? last.id : 'root';
+    }, [breadcrumbs]);
+
+    // 모달이 열려 있고 토큰이 있을 때 탭/폴더 변경 시 자동 조회
+    useEffect(() => {
+        if (isPickerOpen && accessToken) {
+            fetchDriveFiles(accessToken, explorerTab, currentFolderId, driveSearchQuery);
+        }
+    }, [isPickerOpen, accessToken, explorerTab, currentFolderId, driveSearchQuery, fetchDriveFiles]);
 
     // 마운트 시 서버에 저장된 영구 연결 토큰 자동 복원 + 4분 주기 선제적 백그라운드 무음 리프레시
     useEffect(() => {
@@ -985,17 +993,8 @@ export function useDriveVideoPlayer() {
         await requestGoogleDriveAuth(false);
     }, [accessToken, isDriveConnected, refreshDriveTokenSilently, requestGoogleDriveAuth]);
 
-    // ─── Google 계정 강제 재인증 / 계정 전환 팝업 열기 ───
+    // ─── Google 계정 강제 재인증 / 계정 전환 팝업 열기 (팝업을 닫더라도 기존 연동 상태가 끊기지 않도록 보호) ───
     const forceReconnectDrive = useCallback(async () => {
-        if (typeof window !== 'undefined') {
-            localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-            sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-            sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
-        }
-        tokenExpiryRef.current = 0;
-        setAccessToken('');
-        setIsDriveConnected(false);
         await requestGoogleDriveAuth(true);
     }, [requestGoogleDriveAuth]);
 
@@ -1187,11 +1186,21 @@ export function useDriveVideoPlayer() {
                     fields
                 )}&orderBy=name_natural&pageSize=100&includeItemsFromAllDrives=true&supportsAllDrives=true`;
 
-                const response = await fetch(url, {
+                let response = await fetch(url, {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
                     },
                 });
+                if (response.status === 401) {
+                    const refreshedToken = await refreshDriveTokenSilently(true);
+                    if (refreshedToken) {
+                        response = await fetch(url, {
+                            headers: {
+                                Authorization: `Bearer ${refreshedToken}`,
+                            },
+                        });
+                    }
+                }
                 if (!response.ok) {
                     throw new Error(`폴더 내 미디어 조회 실패 (HTTP ${response.status})`);
                 }
@@ -1216,7 +1225,7 @@ export function useDriveVideoPlayer() {
                 setIsLoadingFolderBatch(null);
             }
         },
-        [accessToken, convertDriveItemToPlaylistItem, appendItemsToPlaylist, showNotice]
+        [accessToken, refreshDriveTokenSilently, convertDriveItemToPlaylistItem, appendItemsToPlaylist, showNotice]
     );
 
     // ─── 보조 소스: 구글 드라이브 공유 링크 & 로컬 비디오/음악 파일 추가 ───
@@ -1702,6 +1711,8 @@ export function useDriveVideoPlayer() {
             }
 
             void (async () => {
+                // 에러 재시도 시 이전 스트림 잠금(만료된 토큰 URL)을 초기화하여 최신 토큰 URL로 재연결 보장
+                activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
                 const prevExpiry = tokenExpiryRef.current;
                 const refreshed = await refreshDriveTokenSilently(true);
                 if (!refreshed || tokenExpiryRef.current <= prevExpiry) {
@@ -1710,6 +1721,7 @@ export function useDriveVideoPlayer() {
                     }
                 }
                 setTimeout(() => {
+                    activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
                     setRetryNonce((prev) => prev + 1);
                     if (userWantsPlayRef.current) {
                         setIsPlaying(true);
