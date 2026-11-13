@@ -24,6 +24,7 @@ const STORAGE_KEYS = {
     AUDIO_ONLY: 'vera_mypage_video_audio_only',
     ACCESS_TOKEN: 'vera_gdrive_access_token',
     TOKEN_EXPIRY: 'vera_gdrive_token_expiry',
+    MINI_BAR_DISMISSED: 'vera_mypage_mini_bar_dismissed',
 } as const;
 
 const DRIVE_READONLY_SCOPE = 'https://www.googleapis.com/auth/drive.readonly';
@@ -162,7 +163,7 @@ export function useDriveVideoPlayer() {
     const [isAudioOnlyMode, setIsAudioOnlyMode] = useState<boolean>(false);
     const [isPipActive, setIsPipActive] = useState<boolean>(false);
     const [isFullStageMounted, setIsFullStageMounted] = useState<boolean>(false);
-    const [isMiniBarDismissed, setIsMiniBarDismissed] = useState<boolean>(false);
+    const [isMiniBarDismissed, setIsMiniBarDismissed] = useState<boolean>(true);
     const [isBuffering, setIsBuffering] = useState<boolean>(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [toastNotice, setToastNotice] = useState<string | null>(null);
@@ -952,13 +953,16 @@ export function useDriveVideoPlayer() {
     const appendItemsToPlaylist = useCallback(
         (newItems: VideoPlaylistItem[]) => {
             if (newItems.length === 0) return;
-            setIsMiniBarDismissed(false);
             setPlaylist((prev) => {
                 const existingIds = new Set(prev.map((p) => p.id));
                 const deduped = newItems.filter((item) => !existingIds.has(item.id));
                 const merged = [...prev, ...deduped];
                 if (prev.length === 0 && merged.length > 0) {
                     userWantsPlayRef.current = true;
+                    setIsMiniBarDismissed(false);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
+                    }
                     setCurrentIndex(0);
                     setIsPlaying(true);
                 }
@@ -1134,6 +1138,10 @@ export function useDriveVideoPlayer() {
         setCurrentTime(0);
         setDuration(0);
         setPlayerError(null);
+        setIsMiniBarDismissed(true);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'true');
+        }
     }, []);
 
     // ─── 비디오 플레이어 컨트롤 (재생/일시정지/랜덤/볼륨/진행바/전체화면) ───
@@ -1142,6 +1150,10 @@ export function useDriveVideoPlayer() {
         if (!video || !currentTrack) return;
         if (video.paused) {
             userWantsPlayRef.current = true;
+            setIsMiniBarDismissed(false);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
+            }
             video.play().catch(() => {
                 userWantsPlayRef.current = false;
                 setIsPlaying(false);
@@ -1160,6 +1172,10 @@ export function useDriveVideoPlayer() {
         lastKnownTimeRef.current = 0;
         setIsPlaying(false);
         setCurrentTime(0);
+        setIsMiniBarDismissed(true);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'true');
+        }
         const video = videoRef.current;
         if (video) {
             video.pause();
@@ -1177,6 +1193,10 @@ export function useDriveVideoPlayer() {
             setRetryNonce(0);
             pendingResumeTimeRef.current = null;
             userWantsPlayRef.current = true;
+            setIsMiniBarDismissed(false);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
+            }
             setCurrentIndex(index);
             setCurrentTime(0);
             setIsPlaying(true);
@@ -1460,6 +1480,9 @@ export function useDriveVideoPlayer() {
         clearResumeRetryTimers();
         userWantsPlayRef.current = true;
         setIsMiniBarDismissed(false);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
+        }
         setIsPlaying(true);
         setPlayerError(null);
 
@@ -1600,11 +1623,20 @@ export function useDriveVideoPlayer() {
     const dismissMiniBar = useCallback(() => {
         clearResumeRetryTimers();
         userWantsPlayRef.current = false;
+        pendingResumeTimeRef.current = null;
+        lastKnownTimeRef.current = 0;
         setIsPlaying(false);
+        setCurrentTime(0);
         if (videoRef.current) {
             videoRef.current.pause();
+            try {
+                videoRef.current.currentTime = 0;
+            } catch (_) {}
         }
         setIsMiniBarDismissed(true);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'true');
+        }
     }, [clearResumeRetryTimers]);
 
     // 화면 잠금(visibilitychange) 시 백그라운드 재생 보호

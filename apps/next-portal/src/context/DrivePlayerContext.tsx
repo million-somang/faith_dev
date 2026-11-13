@@ -16,6 +16,7 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isAudioOnlyMode,
         isCurrentTrackAudio,
         isFullStageMounted,
+        isMiniBarDismissed,
         setIsBuffering,
         handleLoadedMetadata,
         handleTimeUpdate,
@@ -28,8 +29,10 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     // 음악 파일이거나, '화면 끄고 듣기' 모드이거나, 마이페이지 비디오 탭이 아닌 다른 페이지(베라 홈/뉴스/게임 등)로 이동한 경우
     // 전역 Provider 내부의 단일 <audio> 엔진이 언마운트 없이 계속 스트리밍을 유지합니다.
+    // 단, 미니바가 닫혀 있고 전체 플레이어도 마운트되지 않은 상태에서는 <audio>를 마운트하지 않습니다.
     const shouldRenderGlobalAudio =
         Boolean(currentTrack) &&
+        (!isMiniBarDismissed || isFullStageMounted) &&
         (isAudioOnlyMode || isCurrentTrackAudio || !isFullStageMounted);
 
     return (

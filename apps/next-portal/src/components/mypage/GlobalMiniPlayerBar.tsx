@@ -25,7 +25,12 @@ export const GlobalMiniPlayerBar: React.FC = () => {
         dismissMiniBar,
     } = useDrivePlayerContext();
 
-    if (!currentTrack || isFullStageMounted || isMiniBarDismissed) {
+    if (
+        !currentTrack ||
+        isFullStageMounted ||
+        isMiniBarDismissed ||
+        (!isPlaying && currentTime <= 0)
+    ) {
         return null;
     }
 
