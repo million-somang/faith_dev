@@ -90,6 +90,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         handleTimeUpdate,
         handleMediaPlay,
         handleMediaPlaying,
+        handleMediaCanPlay,
         handleMediaPause,
         handleMediaError,
         handleVideoEnded,
@@ -391,7 +392,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         onPause={handleMediaPause}
                                         onWaiting={() => setIsBuffering(true)}
                                         onPlaying={handleMediaPlaying}
-                                        onCanPlay={() => setIsBuffering(false)}
+                                        onCanPlay={handleMediaCanPlay}
                                         onLoadedMetadata={handleLoadedMetadata}
                                         onTimeUpdate={handleTimeUpdate}
                                         onEnded={handleVideoEnded}

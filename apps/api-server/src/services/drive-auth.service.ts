@@ -87,6 +87,27 @@ export class DriveAuthService {
     static async savePlaylist(userId: number, playlistJson: string): Promise<void> {
         await this.ensureTable();
         const existing = await this.getRow(userId);
+
+        let sanitizedJson = playlistJson;
+        try {
+            const parsed = JSON.parse(playlistJson);
+            if (Array.isArray(parsed)) {
+                const cleaned = parsed.map((item) => {
+                    if (!item || typeof item !== 'object') return item;
+                    const rec = item as Record<string, unknown>;
+                    const id = typeof rec.id === 'string' ? rec.id.trim() : '';
+                    if (rec.sourceType === 'google-drive' && id) {
+                        return {
+                            ...rec,
+                            streamUrl: `/api/user/drive/stream/${encodeURIComponent(id)}`,
+                        };
+                    }
+                    return rec;
+                });
+                sanitizedJson = JSON.stringify(cleaned);
+            }
+        } catch (_) {}
+
         await pool.query(
             `
             INSERT INTO user_drive_tokens (user_id, client_id, client_secret, access_token, refresh_token, expiry_date, playlist_json, updated_at)
@@ -102,7 +123,7 @@ export class DriveAuthService {
                 existing?.access_token || '',
                 existing?.refresh_token || '',
                 existing?.expiry_date || 0,
-                playlistJson,
+                sanitizedJson,
             ]
         );
     }
@@ -362,19 +383,15 @@ export class DriveAuthService {
             ) {
                 return row.access_token;
             }
-            // 이미 만료된 토큰(expiry_date <= now)은 절대 반환하지 않음
-            if (row?.access_token && row.expiry_date > now) {
-                return row.access_token;
-            }
             return '';
         }
 
-        // 1. DB에 유효한 토큰이 남아있는 경우 (만료 3분 전까지)
-        if (row?.access_token && row.expiry_date > now + 3 * 60 * 1000) {
+        // 1. DB에 유효한 토큰이 충분한 여유 시간(10분 이상)과 함께 남아있는 경우 즉시 반환
+        if (row?.access_token && row.expiry_date > now + 10 * 60 * 1000) {
             return row.access_token;
         }
 
-        // 2. 만료 임박 또는 만료되었고 refresh_token이 있는 경우 즉시 서버 자동 갱신
+        // 2. 만료 10분 전이거나 이미 만료되었고 refresh_token이 있는 경우 즉시 서버 자동 갱신
         if (row?.refresh_token) {
             const refreshed = await this.refreshAccessToken(userId);
             if (refreshed) {
@@ -382,18 +399,23 @@ export class DriveAuthService {
             }
         }
 
-        // 3. DB 토큰이 아직 만료 전(now < expiry_date <= now + 3분)이면 일단 사용 허용
+        // 3. DB 토큰이 아직 만료 전(now < expiry_date <= now + 10분)이면 일단 사용 허용
         if (row?.access_token && row.expiry_date > now) {
             return row.access_token;
         }
 
-        // 4. 쿼리로 전달된 토큰이 DB의 만료된 토큰과 다른 새 토큰이라면 사용 및 캐싱
+        // 4. 쿼리로 전달된 토큰이 DB의 만료된 토큰과 다른 새 토큰이라면 즉시 DB 저장 및 사용
         if (trimmedFallback && trimmedFallback !== row?.access_token) {
-            await this.saveDirectAccessToken(userId, trimmedFallback, 3000);
+            await this.saveDirectAccessToken(userId, trimmedFallback, 3550);
             return trimmedFallback;
         }
 
-        // 5. 만료된 토큰은 빈 문자열을 반환하여 프론트엔드가 죽은 토큰을 재사용하지 않고 즉시 무음 갱신하도록 유도
+        // 5. 스트리밍 연속성 보장: 보수적으로 잡은 expiry_date(58분)가 막 지났더라도
+        // 구글 실제 서버 토큰 수명(60분+) 동안은 스트리밍 프록시가 Authorization 헤더로 시도할 수 있도록 유예 허용
+        if (row?.access_token && row.expiry_date > now - 15 * 60 * 1000) {
+            return row.access_token;
+        }
+
         return '';
     }
 
@@ -401,9 +423,18 @@ export class DriveAuthService {
         userId: number,
         forceRefresh = false
     ): Promise<DriveConnectionStatus> {
-        const validToken = await this.getValidAccessToken(userId, undefined, forceRefresh);
-        const row = await this.getRow(userId);
+        const initialRow = await this.getRow(userId);
         const now = Date.now();
+
+        if (
+            initialRow?.refresh_token &&
+            (forceRefresh || !initialRow.access_token || initialRow.expiry_date <= now + 10 * 60 * 1000)
+        ) {
+            await this.refreshAccessToken(userId);
+        }
+
+        const row = await this.getRow(userId);
+        const currentNow = Date.now();
         const hasClientSecret = Boolean(
             (row?.client_secret && row.client_secret.length > 0) ||
                 process.env.GOOGLE_CLIENT_SECRET
@@ -419,7 +450,7 @@ export class DriveAuthService {
             } catch (_) {}
         }
 
-        const isRowTokenValid = Boolean(row?.access_token && row.expiry_date > now);
+        const isRowTokenValid = Boolean(row?.access_token && row.expiry_date > currentNow + 60_000);
 
         return {
             clientId:
@@ -428,8 +459,8 @@ export class DriveAuthService {
                 process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
                 '',
             hasClientSecret,
-            accessToken: validToken || (isRowTokenValid ? row?.access_token || '' : ''),
-            expiryDate: validToken || isRowTokenValid ? row?.expiry_date || 0 : 0,
+            accessToken: isRowTokenValid ? row?.access_token || '' : '',
+            expiryDate: isRowTokenValid ? row?.expiry_date || 0 : 0,
             hasRefreshToken,
             isPermanentConnected: hasRefreshToken && hasClientSecret,
             hasEverConnected: Boolean(

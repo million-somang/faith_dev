@@ -23,6 +23,7 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         handleTimeUpdate,
         handleMediaPlay,
         handleMediaPlaying,
+        handleMediaCanPlay,
         handleMediaPause,
         handleMediaError,
         handleVideoEnded,
@@ -48,7 +49,7 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     onPause={handleMediaPause}
                     onWaiting={() => setIsBuffering(true)}
                     onPlaying={handleMediaPlaying}
-                    onCanPlay={() => setIsBuffering(false)}
+                    onCanPlay={handleMediaCanPlay}
                     onLoadedMetadata={handleLoadedMetadata}
                     onTimeUpdate={handleTimeUpdate}
                     onEnded={handleVideoEnded}
