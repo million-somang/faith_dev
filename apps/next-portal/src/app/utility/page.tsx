@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card } from '@faithportal/ui';
 import { useAuth } from '@/context/AuthContext';
 import { SoftLockModal } from '@/components/common/SoftLockModal';
@@ -82,6 +83,16 @@ const ESSENTIAL_APPS: MiniApp[] = [
         app_url: '/finance/util?tab=dsr',
         require_auth: 0,
         category: 'finance'
+    },
+    {
+        id: 995,
+        name: 'QR코드 생성기 & 디자인 스튜디오',
+        slug: 'qr-generator',
+        icon_url: '/images/utility/icon_dev_studio.png',
+        description: 'URL, 매장 와이파이(Wi-Fi) 자동연결, 전자명함(vCard) QR코드를 커스텀 로고·컬러와 함께 PNG/SVG 벡터로 즉시 생성',
+        app_url: '/app/qr-generator/',
+        require_auth: 0,
+        category: 'dev'
     }
 ];
 
@@ -89,6 +100,7 @@ const ITEMS_PER_PAGE = 9;
 
 export default function UtilityPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const { launchApp } = useAppLauncher();
     const [apps, setApps] = useState<MiniApp[]>([]);
     const [frequentApps, setFrequentApps] = useState<MiniApp[]>([]);
@@ -103,20 +115,23 @@ export default function UtilityPage() {
         setCurrentPage(1);
     }, [selectedCategory, searchQuery]);
 
-    const handleLaunchUtility = async (app: MiniApp) => {
+    const handleLaunchUtility = (app: MiniApp) => {
         if (app.require_auth === 1 && !user) {
             alert(`${app.name} 앱을 사용하려면 로그인이 필요합니다.`);
-            window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/lifestyle';
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
 
         const appIdStr = String(app.id);
         recordAppUsage(appIdStr);
 
-        try {
-            await axios.post(`/api/mini-apps/${appIdStr}/log`, { action_type: 'LAUNCH' });
-        } catch {
-            // ignore logging error
+        // 비동기 로깅으로 사용자 클릭 제스처(Transient User Activation) 만료 및 팝업 차단 방지
+        void axios.post(`/api/mini-apps/${appIdStr}/log`, { action_type: 'LAUNCH' }).catch(() => {});
+
+        if (app.app_url.startsWith('/finance/') || app.app_url.startsWith('/tools/')) {
+            router.push(app.app_url);
+            return;
         }
 
         launchApp(app.app_url, appIdStr);
@@ -314,6 +329,14 @@ export default function UtilityPage() {
             iconColor: 'text-rose-500',
             title: 'Vector Studio (이미지 to SVG 변환)',
             desc: '픽셀이 깨지는 비트맵 이미지(PNG, JPG, WEBP)를 확대해도 깨지지 않는 깨끗한 SVG 벡터 그래픽으로 실시간 변환합니다. 로고, 아이콘, 서명 이미지의 배경을 투명화하고 최적화된 SVG 코드 및 Data URI를 다운로드할 수 있습니다.'
+        },
+        {
+            slug: 'qr-generator',
+            category: 'dev',
+            icon: 'fas fa-qrcode',
+            iconColor: 'text-indigo-600',
+            title: '스마트 QR코드 생성기 & 와이파이·명함 QR 제작',
+            desc: '유효기간 없는 평생 무료 고화질 QR코드를 생성합니다. 웹사이트 URL, 매장 와이파이(Wi-Fi) 자동 연결, 스마트 전자명함(vCard 3.0)을 커스텀 도트·컬러·중앙 로고와 함께 PNG 및 인쇄용 SVG 벡터로 즉시 저장하세요.'
         }
     ];
 
@@ -857,7 +880,7 @@ export default function UtilityPage() {
                         if (!user) {
                             setShowSoftLock(true);
                         } else {
-                            window.location.href = '/mypage';
+                            router.push('/mypage');
                         }
                     }}
                     className="px-6 py-3.5 bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black text-xs rounded-2xl shadow-lg transition-all whitespace-nowrap cursor-pointer shrink-0 flex items-center gap-2"

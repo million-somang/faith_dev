@@ -108,6 +108,30 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
+        // 스마트 QR코드 생성기(qr-generator)가 DB에 없으면 자동 시딩
+        const hasQrGenerator = apps.results.some((a: any) => a.slug === 'qr-generator');
+        if (!hasQrGenerator) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    'QR코드 생성기 & 디자인 스튜디오',
+                    'qr-generator',
+                    'fas fa-qrcode',
+                    'URL, 매장 와이파이(Wi-Fi) 자동연결, 전자명함(vCard) QR코드를 커스텀 로고·컬러와 함께 PNG/SVG 벡터로 즉시 생성',
+                    '/app/qr-generator/',
+                    0,
+                    2,
+                    'dev',
+                    'active'
+                ).run();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+            } catch (seedErr) {
+                console.error('Failed to auto-seed qr-generator:', seedErr);
+            }
+        }
+
         // ocr 이름이 긴 경우('브라우저 OCR (이미지 글자 추출기)') 간결화('이미지 글자 추출기') 자동 마이그레이션
         const ocrApp = apps.results.find((a: any) => a.slug === 'ocr' && a.name !== '이미지 글자 추출기');
         if (ocrApp) {

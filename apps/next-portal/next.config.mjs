@@ -35,30 +35,6 @@ const nextConfig = {
         destination: `${backendUrl}/onlinegame/:path*`,
       },
       {
-        source: '/finance',
-        destination: `${backendUrl}/finance`,
-      },
-      {
-        source: '/finance/assets/:path*',
-        destination: `${backendUrl}/finance/assets/:path*`,
-      },
-      {
-        source: '/finance/stocks',
-        destination: `${backendUrl}/finance/stocks`,
-      },
-      {
-        source: '/finance/exchange',
-        destination: `${backendUrl}/finance/exchange`,
-      },
-      {
-        source: '/finance/banking',
-        destination: `${backendUrl}/finance/banking`,
-      },
-      {
-        source: '/finance/stock/:path*',
-        destination: `${backendUrl}/finance/stock/:path*`,
-      },
-      {
         source: '/admin',
         destination: `${backendUrl}/admin`,
       },

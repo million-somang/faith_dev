@@ -1,4 +1,4 @@
-const CACHE_NAME = 'faithportal-v9';
+const CACHE_NAME = 'faithportal-v10';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -34,8 +34,17 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 개발 및 실시간 배포 동기화를 위해 정적 캐싱을 완전히 우회하고 네트워크에서 최신 데이터만 로드하도록 강제 적용
-  event.respondWith(fetch(event.request));
+  // 오디오·비디오 Range 스트리밍(/api/user/drive/stream/ 등), API 호출, Next.js RSC 라우트 전환 요청은
+  // 서비스 워커가 가로채지 않고 브라우저 네이티브 네트워크 스택이 직접 처리하도록 우회
+  const req = event.request;
+  if (
+    req.method !== 'GET' ||
+    req.headers.has('range') ||
+    req.url.includes('/api/') ||
+    req.url.includes('/_next/')
+  ) {
+    return;
+  }
 });
 
 // ===== Web Push Notifications =====

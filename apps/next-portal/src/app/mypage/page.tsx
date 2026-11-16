@@ -293,11 +293,23 @@ export default function MyPage() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        const params = new URLSearchParams(window.location.search);
-        const sec = params.get('section');
-        if (sec === 'video' || sec === 'schedule' || sec === 'dashboard' || sec === 'home-customize') {
-            setActiveSection(sec);
-        }
+        const syncSectionFromUrl = () => {
+            const params = new URLSearchParams(window.location.search);
+            const sec = params.get('section');
+            if (sec === 'video' || sec === 'schedule' || sec === 'dashboard' || sec === 'home-customize') {
+                setActiveSection(sec);
+            }
+        };
+        const handleOpenVideoPlayer = () => {
+            setActiveSection('video');
+        };
+        syncSectionFromUrl();
+        window.addEventListener('popstate', syncSectionFromUrl);
+        window.addEventListener('vera:open-video-player', handleOpenVideoPlayer);
+        return () => {
+            window.removeEventListener('popstate', syncSectionFromUrl);
+            window.removeEventListener('vera:open-video-player', handleOpenVideoPlayer);
+        };
     }, []);
     const [showWizard, setShowWizard] = useState(false);
     const { config: homeConfig, isSaving: isHomeSaving, updateConfig: updateHomeConfig, saveConfig: saveHomeConfig } = useUserPreferenceContext();

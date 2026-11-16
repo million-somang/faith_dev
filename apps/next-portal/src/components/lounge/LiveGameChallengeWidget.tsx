@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export interface BattleRecord {
     wins: number;
@@ -77,6 +78,7 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
 
     const [challengeCount, setChallengeCount] = useState(14);
     const [record, setRecord] = useState<BattleRecord>(getStoredBattleRecord);
+    const router = useRouter();
 
     useEffect(() => {
         setRecord(getStoredBattleRecord());
@@ -103,7 +105,7 @@ export const LiveGameChallengeWidget: React.FC<LiveGameChallengeWidgetProps> = (
             if (clean.includes('스도쿠')) path = '/game/sudoku';
             else if (clean.includes('지뢰찾기')) path = '/game/minesweeper';
             else if (clean.includes('프리셀')) path = '/game/freecell';
-            window.location.href = path;
+            router.push(path);
         }
     };
 

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export const FULL_MENU_ITEMS = [
@@ -53,10 +53,11 @@ export const PortalNavbar: React.FC = () => {
   const { user, logout } = useAuth();
   const [activeMode, setActiveMode] = useState<'general' | 'lounge'>('general');
   const pathname = usePathname();
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
+      const path = pathname || window.location.pathname;
       let mode: 'general' | 'lounge' = 'general';
       if (path.startsWith('/lounge')) mode = 'lounge';
       setActiveMode(mode);
@@ -70,9 +71,9 @@ export const PortalNavbar: React.FC = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('vera_portal_mode', mode);
       if (mode === 'lounge') {
-        window.location.href = '/lounge';
+        router.push('/lounge');
       } else {
-        window.location.href = '/';
+        router.push('/');
       }
     }
   };

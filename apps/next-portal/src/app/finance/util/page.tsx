@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import FinanceSubMenu from '@/components/finance/FinanceSubMenu';
 import DividendTaxCalculator from '@/components/finance/DividendTaxCalculator';
 import MortgageDsrCalculator from '@/components/finance/MortgageDsrCalculator';
 import SeveranceCalculator from '@/components/finance/SeveranceCalculator';
@@ -45,7 +46,9 @@ export default function FinanceUtilPage() {
     const relatedGuide = seoData ? getGuideBySlug(seoData.relatedGuideSlug) : undefined;
 
     return (
-        <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-8 sm:py-10 space-y-8">
+        <div className="flex flex-col flex-1">
+            <FinanceSubMenu />
+            <main className="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-8 sm:py-10 space-y-8">
             <Suspense fallback={null}>
                 <TabParamWatcher onSelect={setActiveTab} />
             </Suspense>
@@ -202,6 +205,7 @@ export default function FinanceUtilPage() {
                 onClose={() => setShowSoftLock(false)}
                 type="finance"
             />
-        </main>
+            </main>
+        </div>
     );
 }

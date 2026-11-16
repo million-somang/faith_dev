@@ -175,6 +175,7 @@ export function useDriveVideoPlayer() {
     const [toastNotice, setToastNotice] = useState<string | null>(null);
     const [retryNonce, setRetryNonce] = useState<number>(0);
     const userWantsPlayRef = useRef<boolean>(false);
+    const isFullStageMountedRef = useRef<boolean>(false);
     const pendingResumeTimeRef = useRef<number | null>(null);
     const lastKnownTimeRef = useRef<number>(0);
     const errorRetryCountRef = useRef<number>(0);
@@ -395,14 +396,6 @@ export function useDriveVideoPlayer() {
                 return raw.streamUrl;
             }
             const lockKey = `${raw.id}:${audioMode ? 'audio' : 'video'}`;
-            // 현재 재생 중인 트랙/모드/재시도 시퀀스가 잠금 상태라면 토큰 변동과 무관하게 기존 스트림 URL을 유지하여 곡 중간 리로드 원천 차단
-            if (
-                activeStreamLockRef.current.trackId === lockKey &&
-                activeStreamLockRef.current.retry === retry &&
-                activeStreamLockRef.current.url
-            ) {
-                return activeStreamLockRef.current.url;
-            }
             const isTokenStillValid = tokenExpiryRef.current > Date.now() + 10_000;
             const freshToken = isTokenStillValid
                 ? accessToken ||
@@ -412,6 +405,18 @@ export function useDriveVideoPlayer() {
                         ''
                       : '')
                 : '';
+            // 현재 재생 중인 트랙/모드/재시도 시퀀스가 잠금 상태라면 토큰 변동과 무관하게 기존 스트림 URL을 유지하여 곡 중간 리로드 원천 차단
+            // 단, 아직 재생 시작 전(!userWantsPlayRef.current)이고 초기 마운트 시 토큰 없이 잠긴 URL에 새 유효 토큰이 도착한 경우에는 최신 토큰 URL로 갱신 허용
+            if (
+                activeStreamLockRef.current.trackId === lockKey &&
+                activeStreamLockRef.current.retry === retry &&
+                activeStreamLockRef.current.url &&
+                (userWantsPlayRef.current ||
+                    activeStreamLockRef.current.url.includes('token=') ||
+                    !freshToken)
+            ) {
+                return activeStreamLockRef.current.url;
+            }
             const baseStreamUrl = buildStreamUrl(raw.id, freshToken, audioMode);
             const finalStreamUrl =
                 retry > 0
@@ -427,6 +432,16 @@ export function useDriveVideoPlayer() {
         [accessToken]
     );
 
+    const isCurrentRawAudio = useMemo(() => {
+        if (playlist.length === 0) return false;
+        const safeIdx = Math.min(Math.max(0, currentIndex), playlist.length - 1);
+        const raw = playlist[safeIdx];
+        if (!raw) return false;
+        return isAudioMedia(raw.mimeType, raw.name);
+    }, [playlist, currentIndex]);
+
+    const useAudioStreamForCurrent = isAudioOnlyMode || !isFullStageMounted || isCurrentRawAudio;
+
     // ─── 현재 재생 중인 트랙 (최신 Google Drive 토큰 및 재시도 시퀀스를 실시간 주입) ───
     const currentTrack: VideoPlaylistItem | null = useMemo(() => {
         if (playlist.length === 0) return null;
@@ -435,21 +450,16 @@ export function useDriveVideoPlayer() {
         if (!raw) return null;
 
         if (raw.sourceType === 'google-drive') {
-            const useAudioStream =
-                isAudioOnlyMode || !isFullStageMounted || isAudioMedia(raw.mimeType, raw.name);
             return {
                 ...raw,
-                streamUrl: getStreamUrlForTrack(raw, retryNonce, useAudioStream),
+                streamUrl: getStreamUrlForTrack(raw, retryNonce, useAudioStreamForCurrent),
             };
         }
 
         return raw;
-    }, [playlist, currentIndex, retryNonce, isAudioOnlyMode, isFullStageMounted, getStreamUrlForTrack]);
+    }, [playlist, currentIndex, retryNonce, useAudioStreamForCurrent, getStreamUrlForTrack]);
 
-    const isCurrentTrackAudio = useMemo(() => {
-        if (!currentTrack) return false;
-        return isAudioMedia(currentTrack.mimeType, currentTrack.name);
-    }, [currentTrack]);
+    const isCurrentTrackAudio = isCurrentRawAudio;
 
     const applyNewAccessToken = useCallback((newToken: string, expiresInSec = 3500) => {
         const expiryTime = Date.now() + expiresInSec * 1000;
@@ -1467,6 +1477,7 @@ export function useDriveVideoPlayer() {
             errorRetryCountRef.current = 0;
             setRetryNonce(0);
             pendingResumeTimeRef.current = null;
+            lastKnownTimeRef.current = 0;
             userWantsPlayRef.current = true;
             setIsMiniBarDismissed(false);
             if (typeof window !== 'undefined') {
@@ -1488,7 +1499,7 @@ export function useDriveVideoPlayer() {
             if (media && nextTrack) {
                 const useAudioStream =
                     isAudioOnlyMode ||
-                    !isFullStageMounted ||
+                    !isFullStageMountedRef.current ||
                     isAudioMedia(nextTrack.mimeType, nextTrack.name);
                 const nextUrl = getStreamUrlForTrack(nextTrack, 0, useAudioStream);
                 if (media.getAttribute('src') !== nextUrl) {
@@ -1521,7 +1532,6 @@ export function useDriveVideoPlayer() {
         [
             playlist,
             isAudioOnlyMode,
-            isFullStageMounted,
             clearResumeRetryTimers,
             markTrackSwitching,
             getStreamUrlForTrack,
@@ -1675,10 +1685,29 @@ export function useDriveVideoPlayer() {
 
     // ─── 백그라운드 오디오 전용 모드 전환 (화면 끄고 듣기) ───
     const toggleAudioOnlyMode = useCallback(() => {
-        if (videoRef.current) {
-            pendingResumeTimeRef.current = videoRef.current.currentTime || currentTime;
+        markTrackSwitching();
+        if (videoRef.current && videoRef.current.currentTime > 0) {
+            pendingResumeTimeRef.current = videoRef.current.currentTime;
+        } else if (lastKnownTimeRef.current > 0) {
+            pendingResumeTimeRef.current = lastKnownTimeRef.current;
         } else if (currentTime > 0) {
             pendingResumeTimeRef.current = currentTime;
+        }
+        if (userWantsPlayRef.current && typeof window !== 'undefined') {
+            clearResumeRetryTimers();
+            const delays = [80, 220, 500, 1100, 2000];
+            for (const delay of delays) {
+                const timerId = window.setTimeout(() => {
+                    if (
+                        userWantsPlayRef.current &&
+                        videoRef.current &&
+                        videoRef.current.paused
+                    ) {
+                        videoRef.current.play().catch(() => {});
+                    }
+                }, delay);
+                resumeRetryTimersRef.current.push(timerId);
+            }
         }
         setIsAudioOnlyMode((prev) => {
             const next = !prev;
@@ -1694,7 +1723,7 @@ export function useDriveVideoPlayer() {
             }
             return next;
         });
-    }, [currentTime, showNotice]);
+    }, [currentTime, markTrackSwitching, clearResumeRetryTimers, showNotice]);
 
     // ─── 미니 팝업 플레이어 (Picture-in-Picture) 전환 ───
     const togglePip = useCallback(async () => {
@@ -1765,11 +1794,7 @@ export function useDriveVideoPlayer() {
                 media.play().catch((err) => {
                     // 다음 곡으로 넘어갈 때 src 변경으로 인한 AbortError는 정상 동작이므로 무시
                     if (err instanceof Error && err.name === 'AbortError') return;
-                    if (
-                        typeof document !== 'undefined' &&
-                        document.visibilityState === 'hidden' &&
-                        userWantsPlayRef.current
-                    ) {
+                    if (userWantsPlayRef.current) {
                         return;
                     }
                     setIsPlaying(false);
@@ -1960,22 +1985,70 @@ export function useDriveVideoPlayer() {
 
     // ─── 마이페이지 전체 플레이어 화면 마운트/언마운트 시 무손실 인계 ───
     const mountFullStage = useCallback(() => {
-        if (videoRef.current && videoRef.current.currentTime > 0) {
-            pendingResumeTimeRef.current = videoRef.current.currentTime;
-        } else if (lastKnownTimeRef.current > 0) {
-            pendingResumeTimeRef.current = lastKnownTimeRef.current;
+        isFullStageMountedRef.current = true;
+        // 오디오 전용 모드이거나 음악 파일인 경우 전역 <audio>가 언마운트 없이 그대로 재생을 유지하므로
+        // pendingResumeTimeRef를 덮어쓰지 않아 다음 곡 전환 시 시크 점프 오염을 원천 차단합니다.
+        if (!isAudioOnlyMode && !isCurrentRawAudio) {
+            markTrackSwitching();
+            if (videoRef.current && videoRef.current.currentTime > 0) {
+                pendingResumeTimeRef.current = videoRef.current.currentTime;
+            } else if (lastKnownTimeRef.current > 0) {
+                pendingResumeTimeRef.current = lastKnownTimeRef.current;
+            }
+            if (userWantsPlayRef.current && typeof window !== 'undefined') {
+                clearResumeRetryTimers();
+                const delays = [80, 220, 500, 1100, 2000];
+                for (const delay of delays) {
+                    const timerId = window.setTimeout(() => {
+                        if (
+                            userWantsPlayRef.current &&
+                            videoRef.current &&
+                            videoRef.current.paused
+                        ) {
+                            videoRef.current.play().catch(() => {});
+                        }
+                    }, delay);
+                    resumeRetryTimersRef.current.push(timerId);
+                }
+            }
         }
         setIsFullStageMounted(true);
-    }, []);
+    }, [isAudioOnlyMode, isCurrentRawAudio, markTrackSwitching, clearResumeRetryTimers]);
 
     const unmountFullStage = useCallback(() => {
-        if (videoRef.current && videoRef.current.currentTime > 0) {
-            pendingResumeTimeRef.current = videoRef.current.currentTime;
-        } else if (lastKnownTimeRef.current > 0) {
-            pendingResumeTimeRef.current = lastKnownTimeRef.current;
+        isFullStageMountedRef.current = false;
+        if (!isAudioOnlyMode && !isCurrentRawAudio) {
+            markTrackSwitching();
+            if (videoRef.current && videoRef.current.currentTime > 0) {
+                pendingResumeTimeRef.current = videoRef.current.currentTime;
+            } else if (lastKnownTimeRef.current > 0) {
+                pendingResumeTimeRef.current = lastKnownTimeRef.current;
+            }
+            if (userWantsPlayRef.current && typeof window !== 'undefined') {
+                clearResumeRetryTimers();
+                const delays = [80, 220, 500, 1100, 2000, 3200];
+                for (const delay of delays) {
+                    const timerId = window.setTimeout(() => {
+                        if (
+                            userWantsPlayRef.current &&
+                            videoRef.current &&
+                            videoRef.current.paused
+                        ) {
+                            videoRef.current.play().catch(() => {});
+                        }
+                    }, delay);
+                    resumeRetryTimersRef.current.push(timerId);
+                }
+            }
+        } else if (
+            userWantsPlayRef.current &&
+            videoRef.current &&
+            videoRef.current.paused
+        ) {
+            videoRef.current.play().catch(() => {});
         }
         setIsFullStageMounted(false);
-    }, []);
+    }, [isAudioOnlyMode, isCurrentRawAudio, markTrackSwitching, clearResumeRetryTimers]);
 
     const dismissMiniBar = useCallback(() => {
         clearResumeRetryTimers();
@@ -2060,11 +2133,7 @@ export function useDriveVideoPlayer() {
             video.play().catch((err) => {
                 // 다음 곡 전환 시 이전 스트림 로드가 취소되면서 발생하는 AbortError는 정상 동작이므로 무시
                 if (err instanceof Error && err.name === 'AbortError') return;
-                if (
-                    typeof document !== 'undefined' &&
-                    document.visibilityState === 'hidden' &&
-                    userWantsPlayRef.current
-                ) {
+                if (userWantsPlayRef.current) {
                     return;
                 }
                 setIsPlaying(false);
@@ -2072,9 +2141,7 @@ export function useDriveVideoPlayer() {
         }
     }, [
         currentTrack?.streamUrl,
-        isAudioOnlyMode,
-        isCurrentTrackAudio,
-        isFullStageMounted,
+        useAudioStreamForCurrent,
         isPlaying,
         volume,
         isMuted,

@@ -215,6 +215,18 @@ export const UTILITY_VISUAL_MAP: Record<string, UtilityVisualMeta> = {
         buttonStyle: 'bg-cyan-700 hover:bg-cyan-600 text-white',
         shortDesc: '서버 업로드 없이 브라우저 로컬에서 초고속 무손실 WebP 포맷 변환 및 최대 80% 이미지 용량 다이어트',
         highlights: ['초고속 WebP 압축', '서버 전송 0% 보안']
+    },
+    'qr-generator': {
+        image: '/images/utility/icon_dev_studio.png',
+        categoryLabel: '개발 · 마케팅',
+        badge: 'NEW · 로컬보안 ✨',
+        badgeStyle: 'bg-indigo-600 text-white border-indigo-500 shadow-xs',
+        visualBg: 'from-indigo-50 via-amber-50/60 to-emerald-50/70',
+        borderHover: 'hover:border-indigo-300',
+        buttonStyle: 'bg-indigo-600 hover:bg-indigo-500 text-white',
+        shortDesc: '웹사이트 URL, 매장 와이파이(Wi-Fi) 자동연결, 전자명함(vCard) QR코드를 커스텀 로고·컬러와 함께 PNG/SVG 벡터로 즉시 생성',
+        guideSlug: 'qr-generator',
+        highlights: ['Wi-Fi · 명함 QR', 'PNG · SVG 벡터 저장', '평생 유효기간 무제한']
     }
 };
 

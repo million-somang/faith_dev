@@ -38,22 +38,31 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return (
         <DrivePlayerContext.Provider value={player}>
             {children}
-            {shouldRenderGlobalAudio && currentTrack && (
+            {Boolean(currentTrack) && currentTrack && (
                 <audio
-                    ref={videoRef as React.RefObject<HTMLAudioElement>}
-                    src={currentTrack.streamUrl}
+                    ref={
+                        shouldRenderGlobalAudio
+                            ? (videoRef as React.RefObject<HTMLAudioElement>)
+                            : undefined
+                    }
+                    src={shouldRenderGlobalAudio ? currentTrack.streamUrl : undefined}
                     playsInline
-                    preload={isMiniBarDismissed && !isFullStageMounted && !isPlaying ? 'none' : 'auto'}
+                    preload={
+                        !shouldRenderGlobalAudio ||
+                        (isMiniBarDismissed && !isFullStageMounted && !isPlaying)
+                            ? 'none'
+                            : 'auto'
+                    }
                     className="fixed -bottom-20 left-0 w-px h-px opacity-0 pointer-events-none"
-                    onPlay={handleMediaPlay}
-                    onPause={handleMediaPause}
-                    onWaiting={() => setIsBuffering(true)}
-                    onPlaying={handleMediaPlaying}
-                    onCanPlay={handleMediaCanPlay}
-                    onLoadedMetadata={handleLoadedMetadata}
-                    onTimeUpdate={handleTimeUpdate}
-                    onEnded={handleVideoEnded}
-                    onError={handleMediaError}
+                    onPlay={shouldRenderGlobalAudio ? handleMediaPlay : undefined}
+                    onPause={shouldRenderGlobalAudio ? handleMediaPause : undefined}
+                    onWaiting={shouldRenderGlobalAudio ? () => setIsBuffering(true) : undefined}
+                    onPlaying={shouldRenderGlobalAudio ? handleMediaPlaying : undefined}
+                    onCanPlay={shouldRenderGlobalAudio ? handleMediaCanPlay : undefined}
+                    onLoadedMetadata={shouldRenderGlobalAudio ? handleLoadedMetadata : undefined}
+                    onTimeUpdate={shouldRenderGlobalAudio ? handleTimeUpdate : undefined}
+                    onEnded={shouldRenderGlobalAudio ? handleVideoEnded : undefined}
+                    onError={shouldRenderGlobalAudio ? handleMediaError : undefined}
                 />
             )}
         </DrivePlayerContext.Provider>

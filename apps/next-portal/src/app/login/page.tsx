@@ -30,7 +30,7 @@ export default function LoginPage() {
                 const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
                 const redirectTo = params?.get('redirect');
                 if (redirectTo && redirectTo.startsWith('/')) {
-                    window.location.href = redirectTo;
+                    router.push(redirectTo);
                 } else {
                     router.push('/');
                 }

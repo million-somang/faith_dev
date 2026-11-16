@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { useAppLauncher } from '../../hooks/useAppLauncher';
 import { recordAppUsage } from '../../hooks/useFrequentApps';
 import axios from 'axios';
@@ -16,21 +17,19 @@ interface MiniAppButtonProps {
 
 export const MiniAppButton: React.FC<MiniAppButtonProps> = ({ appId, icon, title, url, requireAuth, isLoggedIn }) => {
     const { launchApp } = useAppLauncher();
+    const router = useRouter();
 
-    const handleClick = async () => {
+    const handleClick = () => {
         if (requireAuth && !isLoggedIn) {
             alert(`${title} 앱을 사용하려면 로그인이 필요합니다.`);
-            window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+            router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
             return;
         }
 
         recordAppUsage(appId);
 
-        try {
-            await axios.post(`/api/mini-apps/${appId}/log`, { action_type: 'LAUNCH' });
-        } catch (e) {
-            // ignore logging error
-        }
+        void axios.post(`/api/mini-apps/${appId}/log`, { action_type: 'LAUNCH' }).catch(() => {});
 
         launchApp(url, appId);
     };

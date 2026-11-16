@@ -1,0 +1,959 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Card } from '@faithportal/ui';
+import { getTimeAgo, decodeHtmlEntities } from '@faithportal/core-utils';
+import FinanceSubMenu from '@/components/finance/FinanceSubMenu';
+import ProfitCalculator from '@/components/finance/ProfitCalculator';
+import SparklineChart from '@/components/finance/SparklineChart';
+import { BannerSlot } from '@/components/BannerSlot';
+
+interface StockCard {
+    ticker: string;
+    name: string;
+    price: number;
+    change: number;
+    rate: number;
+    status: 'up' | 'down';
+    currency: string;
+    sparkline: number[];
+}
+
+interface MacroIndicator {
+    symbol: string;
+    name: string;
+    icon: string;
+    price: number;
+    change: number;
+    rate: number;
+    status: 'up' | 'down';
+    currency: string;
+    unit?: string;
+    category?: 'agri' | 'energy' | 'metal' | 'forex' | 'crypto';
+    description?: string;
+    updatedAt: string;
+}
+
+interface IndexData {
+    symbol?: string;
+    name: string;
+    value: number;
+    change: number;
+    rate: number;
+    status: 'up' | 'down';
+    country?: string;
+    flag?: string;
+    currency?: string;
+    description?: string;
+    updatedAt?: string;
+}
+
+interface NewsItem {
+    id: number;
+    title: string;
+    summary?: string;
+    published_at?: string;
+    created_at?: string;
+    thumbnail?: string;
+    link?: string;
+    source?: string;
+    category?: string;
+}
+
+type CountryKey = 'kr' | 'us' | 'cn' | 'jp' | 'fr';
+
+const COUNTRY_TABS: {
+    key: CountryKey;
+    label: string;
+    flag: string;
+    title: string;
+    desc: string;
+}[] = [
+    {
+        key: 'kr',
+        label: '대한민국',
+        flag: '🇰🇷',
+        title: '대한민국 주요 지수',
+        desc: '코스피, 코스닥, 코스피 200, 원/달러 환율',
+    },
+    {
+        key: 'us',
+        label: '미국',
+        flag: '🇺🇸',
+        title: '미국 3대 & 대표 지수',
+        desc: '다우존스, S&P 500, 나스닥 종합, 필라델피아 반도체',
+    },
+    {
+        key: 'cn',
+        label: '중국',
+        flag: '🇨🇳',
+        title: '중화권 대표 지수',
+        desc: '상해 종합, 홍콩 항셍, 심천 종합',
+    },
+    {
+        key: 'jp',
+        label: '일본',
+        flag: '🇯🇵',
+        title: '일본 대표 지수',
+        desc: '닛케이 225 (Nikkei 225)',
+    },
+    {
+        key: 'fr',
+        label: '프랑스',
+        flag: '🇫🇷',
+        title: '프랑스 & 유럽 대표 지수',
+        desc: '프랑스 CAC 40, 유로 스톡스 50',
+    },
+];
+
+type MacroCategory = 'agri' | 'energy' | 'metal' | 'forex' | 'crypto' | 'all';
+
+const MACRO_CATEGORY_TABS: {
+    key: MacroCategory;
+    label: string;
+    icon: string;
+    highlight: string;
+    insight: string;
+}[] = [
+    {
+        key: 'agri',
+        label: '농산물/곡물',
+        icon: '🌾',
+        highlight: '대두·밀·옥수수',
+        insight: '곡물 가격은 글로벌 사료, 바이오에너지 및 밥상 물가(애그플레이션)의 척도입니다.',
+    },
+    {
+        key: 'energy',
+        label: '에너지/원유',
+        icon: '⚡',
+        highlight: 'WTI·천연가스',
+        insight: '원유 및 천연가스는 생산·운송 원가와 글로벌 인플레이션을 이끄는 핵심 동력입니다.',
+    },
+    {
+        key: 'metal',
+        label: '귀금속/산업재',
+        icon: '🥇',
+        highlight: '금·은·구리',
+        insight:
+            '금은 대표적 안전자산이며, 닥터 코퍼(구리)는 실물 경기의 확장과 침체를 가장 먼저 선행합니다.',
+    },
+    {
+        key: 'forex',
+        label: '환율/국채금리',
+        icon: '💵',
+        highlight: '달러·미10년국채',
+        insight: '원/달러 환율과 미국 국채금리는 전 세계 자산 가격과 외국인 수급의 결정적 기준입니다.',
+    },
+    {
+        key: 'crypto',
+        label: '가상자산',
+        icon: '₿',
+        highlight: '비트코인·이더',
+        insight: '디지털 금으로 불리는 비트코인과 주요 레이어1 코인의 24시간 실시간 시세입니다.',
+    },
+    {
+        key: 'all',
+        label: '전체 지표',
+        icon: '🌐',
+        highlight: '종합 보기',
+        insight: '글로벌 원자재, 에너지, 금속, 환율 및 가상자산 등 핵심 지표를 종합 조망합니다.',
+    },
+];
+
+function isKoreanMarketOpen(): boolean {
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const kst = new Date(utc + 9 * 60 * 60000);
+    const day = kst.getDay();
+    if (day === 0 || day === 6) return false;
+    const totalMinutes = kst.getHours() * 60 + kst.getMinutes();
+    return totalMinutes >= 540 && totalMinutes <= 930;
+}
+
+export default function FinancePage() {
+    const [showCalculator, setShowCalculator] = useState(false);
+    const [indices, setIndices] = useState<IndexData[]>([]);
+    const [selectedCountry, setSelectedCountry] = useState<CountryKey>('kr');
+    const [selectedMacroCategory, setSelectedMacroCategory] = useState<MacroCategory>('agri');
+    const [krStocks, setKrStocks] = useState<StockCard[]>([]);
+    const [usStocks, setUsStocks] = useState<StockCard[]>([]);
+    const [macro, setMacro] = useState<MacroIndicator[]>([]);
+    const [stockNews, setStockNews] = useState<NewsItem[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const [isMarketOpen, setIsMarketOpen] = useState(isKoreanMarketOpen());
+    const [lastUpdatedTime, setLastUpdatedTime] = useState<string>('');
+    const [flashHighlight, setFlashHighlight] = useState(false);
+
+    useEffect(() => {
+        const checkOpen = () => setIsMarketOpen(isKoreanMarketOpen());
+        const id = setInterval(checkOpen, 30000);
+        return () => clearInterval(id);
+    }, []);
+
+    useEffect(() => {
+        let intervalId: ReturnType<typeof setInterval> | null = null;
+
+        const updateIndices = async (isPeriodic = false) => {
+            const openNow = isKoreanMarketOpen();
+            setIsMarketOpen(openNow);
+
+            if (isPeriodic && selectedCountry === 'kr' && !openNow) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/finance/indices?country=${selectedCountry}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        setIndices((prev) => {
+                            const others = prev.filter((i) => i.country !== selectedCountry);
+                            return [...others, ...data];
+                        });
+                        setLoading(false);
+                        const now = new Date();
+                        setLastUpdatedTime(
+                            now.toLocaleTimeString('ko-KR', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                            })
+                        );
+                        if (isPeriodic) {
+                            setFlashHighlight(true);
+                            setTimeout(() => setFlashHighlight(false), 900);
+                        }
+                    }
+                }
+            } catch {
+                // ignore
+            }
+        };
+
+        void updateIndices(false);
+
+        const openNow = isKoreanMarketOpen();
+        if (selectedCountry === 'kr' && openNow) {
+            intervalId = setInterval(() => void updateIndices(true), 10000);
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [selectedCountry, isMarketOpen]);
+
+    useEffect(() => {
+        const fetchData = () => {
+            fetch('/api/finance/indices')
+                .then((res) => (res.ok ? res.json() : null))
+                .then((data) => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        setIndices(data);
+                    }
+                })
+                .catch(() => {})
+                .finally(() => setLoading(false));
+
+            fetch('/api/finance/kr-stocks')
+                .then((res) => (res.ok ? res.json() : null))
+                .then((data) => {
+                    if (Array.isArray(data) && data.length > 0) setKrStocks(data);
+                })
+                .catch(() => {});
+
+            fetch('/api/finance/us-stocks')
+                .then((res) => (res.ok ? res.json() : null))
+                .then((data) => {
+                    if (Array.isArray(data) && data.length > 0) setUsStocks(data);
+                })
+                .catch(() => {});
+
+            fetch('/api/finance/macro')
+                .then((res) => (res.ok ? res.json() : null))
+                .then((data) => {
+                    if (Array.isArray(data) && data.length > 0) setMacro(data);
+                })
+                .catch(() => {});
+
+            fetch('/api/news?category=economy&limit=4')
+                .then((res) => (res.ok ? res.json() : null))
+                .then((newsData) => {
+                    if (newsData?.success && Array.isArray(newsData.news) && newsData.news.length > 0) {
+                        setStockNews(newsData.news.slice(0, 4));
+                    }
+                })
+                .catch(() => {});
+        };
+
+        fetchData();
+        const interval = setInterval(fetchData, 30 * 1000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const currentTabInfo =
+        COUNTRY_TABS.find((t) => t.key === selectedCountry) || COUNTRY_TABS[0];
+    const filteredIndices = indices.filter((idx) => idx.country === selectedCountry);
+
+    const renderStockCard = (stock: StockCard, market: 'kr' | 'us' = 'kr') => {
+        const isKR = market === 'kr';
+        return (
+            <Link
+                key={stock.ticker}
+                href={`/finance/stock/${encodeURIComponent(stock.ticker)}`}
+                className={`animate-fade-in bg-white rounded-2xl p-3.5 sm:p-5 border shadow-sm hover:shadow-xl transition-all duration-300 group hover:-translate-y-1 flex flex-col justify-between ${
+                    isKR
+                        ? 'border-slate-200/90 border-t-4 border-t-blue-500 hover:border-blue-400'
+                        : 'border-slate-200/90 border-t-4 border-t-rose-500 hover:border-rose-400'
+                }`}
+            >
+                <div>
+                    <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                        <div className="min-w-0 flex-1">
+                            <div
+                                className="font-extrabold text-gray-900 text-sm sm:text-base group-hover:text-blue-600 transition-colors truncate"
+                                title={stock.name}
+                            >
+                                {stock.name}
+                            </div>
+                            <div className="mt-0.5">
+                                <span
+                                    className={`text-[10px] font-bold px-1.5 py-0.5 rounded font-mono inline-block truncate max-w-full ${
+                                        isKR
+                                            ? 'bg-blue-50 text-blue-700'
+                                            : 'bg-rose-50 text-rose-700'
+                                    }`}
+                                >
+                                    {stock.ticker}
+                                </span>
+                            </div>
+                        </div>
+                        <span
+                            className={`text-[11px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-lg shrink-0 whitespace-nowrap ${
+                                stock.status === 'up'
+                                    ? 'bg-red-50 text-red-600'
+                                    : 'bg-blue-50 text-blue-600'
+                            }`}
+                        >
+                            {stock.status === 'up' ? '▲' : '▼'} {Math.abs(stock.rate).toFixed(2)}%
+                        </span>
+                    </div>
+
+                    <div className="font-mono text-lg sm:text-2xl font-black text-gray-900 mt-2 whitespace-nowrap">
+                        {stock.currency}
+                        {stock.price.toLocaleString('ko-KR')}
+                    </div>
+
+                    <div
+                        className={`font-mono text-[11px] sm:text-xs font-semibold mt-1 whitespace-nowrap truncate ${
+                            stock.status === 'up' ? 'text-red-500' : 'text-blue-500'
+                        }`}
+                    >
+                        {stock.change >= 0 ? '+' : ''}
+                        {stock.currency === '$' ? '$' : ''}
+                        {Math.abs(stock.change).toLocaleString('ko-KR')} (
+                        {stock.rate >= 0 ? '+' : ''}
+                        {stock.rate.toFixed(2)}%)
+                    </div>
+                </div>
+
+                <div
+                    className={`mt-3 pt-2 border-t border-slate-100 rounded-xl p-1.5 flex justify-center w-full overflow-hidden ${
+                        isKR ? 'bg-slate-50/80' : 'bg-rose-50/20'
+                    }`}
+                >
+                    <SparklineChart
+                        data={stock.sparkline}
+                        status={stock.status}
+                        height={34}
+                        className="w-full"
+                    />
+                </div>
+            </Link>
+        );
+    };
+
+    return (
+        <div className="flex flex-col flex-1">
+            <FinanceSubMenu />
+
+            <div className="bg-white border-b border-gray-100">
+                <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 w-full">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Link href="/" className="hover:text-green-600 transition-colors">
+                            홈
+                        </Link>
+                        <i className="fas fa-chevron-right text-xs text-gray-300"></i>
+                        <Link href="/finance" className="hover:text-green-600 transition-colors">
+                            금융
+                        </Link>
+                        <i className="fas fa-chevron-right text-xs text-gray-300"></i>
+                        <span className="text-gray-900 font-medium">주식</span>
+                    </div>
+                </div>
+            </div>
+
+            <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10 w-full">
+                <header className="sr-only">
+                    <h1>VERA 실시간 글로벌 증시 · 거시경제 지표 · 주식 시세 포털</h1>
+                </header>
+
+                {/* 국가별 주식 지수 섹션 */}
+                <section className="mb-8 sm:mb-10 bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/80 shadow-xs">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-100">
+                        <div>
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                                <span className="text-xl">{currentTabInfo.flag}</span>
+                                <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                    {currentTabInfo.title}
+                                </h2>
+                                {selectedCountry === 'kr' &&
+                                    (isMarketOpen ? (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                            </span>
+                                            실시간 (10초 갱신)
+                                            {lastUpdatedTime && (
+                                                <span className="text-[10px] text-emerald-600/80 font-mono ml-0.5">
+                                                    {lastUpdatedTime}
+                                                </span>
+                                            )}
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-500 border border-slate-200">
+                                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                                            장마감 (15:30 확정 종가)
+                                        </span>
+                                    ))}
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                                {currentTabInfo.desc}
+                                {selectedCountry === 'kr' && (
+                                    <span className="text-[11px] text-slate-400 ml-1.5 hidden sm:inline">
+                                        • 정규장 거래시간: 평일 09:00 ~ 15:30
+                                    </span>
+                                )}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 p-1 sm:p-1.5 bg-slate-100 rounded-2xl border border-slate-200/60 overflow-x-auto self-start sm:self-auto max-w-full">
+                            {COUNTRY_TABS.map((tab) => {
+                                const isActive = selectedCountry === tab.key;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setSelectedCountry(tab.key)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                                            isActive
+                                                ? 'bg-blue-600 text-white shadow-sm font-black'
+                                                : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+                                        }`}
+                                    >
+                                        <span className="text-sm">{tab.flag}</span>
+                                        <span>{tab.label}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+                        {loading && filteredIndices.length === 0 ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="p-2.5 sm:p-5 border border-slate-200/90 bg-white rounded-xl sm:rounded-2xl animate-pulse space-y-2 sm:space-y-3"
+                                >
+                                    <div className="flex justify-between items-center">
+                                        <div className="h-3.5 sm:h-4 bg-slate-200 rounded w-16 sm:w-24"></div>
+                                        <div className="h-3.5 sm:h-4 bg-slate-100 rounded w-8 sm:w-12"></div>
+                                    </div>
+                                    <div className="h-5 sm:h-7 bg-slate-200 rounded w-20 sm:w-32"></div>
+                                    <div className="h-2.5 sm:h-3 bg-slate-100 rounded w-14 sm:w-20"></div>
+                                </div>
+                            ))
+                        ) : filteredIndices.length > 0 ? (
+                            filteredIndices.map((index) => (
+                                <div
+                                    key={index.symbol || index.name}
+                                    className={`p-2.5 sm:p-5 hover:shadow-md transition-all duration-300 border bg-gradient-to-b from-white to-slate-50/50 rounded-xl sm:rounded-2xl ${
+                                        flashHighlight
+                                            ? 'border-emerald-400/90 shadow-sm ring-2 ring-emerald-300/40'
+                                            : 'border-slate-200/90'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between mb-1 sm:mb-2 gap-1 sm:gap-2">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-1 sm:gap-1.5">
+                                                {index.flag && (
+                                                    <span className="text-xs sm:text-base shrink-0">
+                                                        {index.flag}
+                                                    </span>
+                                                )}
+                                                <h3
+                                                    className="text-xs sm:text-sm font-bold text-gray-900 truncate"
+                                                    title={index.name}
+                                                >
+                                                    {index.name}
+                                                </h3>
+                                            </div>
+                                            {index.description && (
+                                                <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1 hidden sm:block">
+                                                    {index.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span
+                                            className={`text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-md shrink-0 whitespace-nowrap ${
+                                                index.status === 'up'
+                                                    ? 'bg-red-50 text-red-600'
+                                                    : 'bg-blue-50 text-blue-600'
+                                            }`}
+                                        >
+                                            {index.status === 'up' ? '▲' : '▼'}
+                                            <span className="hidden sm:inline">
+                                                {' '}
+                                                {index.status === 'up' ? '상승' : '하락'}
+                                            </span>
+                                        </span>
+                                    </div>
+
+                                    <div className="font-mono text-base sm:text-xl lg:text-2xl font-black text-gray-900 my-0.5 sm:my-1 whitespace-nowrap tracking-tight">
+                                        {index.value.toLocaleString('ko-KR', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                        {index.currency && (
+                                            <span className="text-[10px] sm:text-xs font-bold text-gray-400 ml-0.5 sm:ml-1">
+                                                {index.currency}
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 text-[11px] sm:text-xs">
+                                        <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap font-mono">
+                                            <span
+                                                className={`font-extrabold ${
+                                                    index.status === 'up'
+                                                        ? 'text-red-600'
+                                                        : 'text-blue-600'
+                                                }`}
+                                            >
+                                                {index.status === 'up' ? '+' : ''}
+                                                {index.change.toLocaleString('ko-KR', {
+                                                    minimumFractionDigits: 2,
+                                                })}
+                                            </span>
+                                            <span
+                                                className={`font-bold text-[10px] sm:text-[11px] ${
+                                                    index.status === 'up'
+                                                        ? 'text-red-600'
+                                                        : 'text-blue-600'
+                                                }`}
+                                            >
+                                                ({index.rate > 0 ? '+' : ''}
+                                                {index.rate.toFixed(2)}%)
+                                            </span>
+                                        </div>
+                                        {index.updatedAt && (
+                                            <span className="text-[10px] text-gray-400 font-mono hidden sm:inline">
+                                                {index.updatedAt}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="col-span-full py-8 text-center text-xs text-slate-400">
+                                지수 데이터를 불러오는 중입니다.
+                            </div>
+                        )}
+                    </div>
+                </section>
+
+                {/* 금융Util 3대 계산기 섹션 */}
+                <div className="mb-10 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 rounded-3xl p-6 border border-amber-200/80">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-lg font-black shadow-sm">
+                                📊
+                            </div>
+                            <div>
+                                <h2 className="text-lg sm:text-xl font-black text-slate-900">
+                                    스마트 금융Util 시뮬레이터
+                                </h2>
+                                <p className="text-xs text-slate-600">
+                                    세금, 대출 한도, 퇴직금/실업급여를 1초 만에 무료로 자동 계산해보세요.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/finance/util"
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold rounded-xl transition-all shadow-sm w-fit"
+                        >
+                            <span>금융Util 전체보기</span>
+                            <i className="fas fa-arrow-right text-[10px]"></i>
+                        </Link>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <Link
+                            href="/finance/util?tab=dividend"
+                            className="p-4 bg-white rounded-2xl border border-amber-200/60 hover:border-amber-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">💵</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-amber-600 transition-colors">
+                                    미국 배당주 &amp; 세금 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                SCHD, JEPI 등 배당소득세(15.4%) 공제 후 실제 월 수령액 및 12개월 캘린더
+                            </p>
+                        </Link>
+
+                        <Link
+                            href="/finance/util?tab=dsr"
+                            className="p-4 bg-white rounded-2xl border border-blue-200/60 hover:border-blue-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">🏠</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors">
+                                    주담대 DSR / LTV 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                2026 스트레스 DSR 2단계 적용 최대 한도 및 상환방식별 이자 총액 비교
+                            </p>
+                        </Link>
+
+                        <Link
+                            href="/finance/util?tab=severance"
+                            className="p-4 bg-white rounded-2xl border border-teal-200/60 hover:border-teal-400 hover:shadow-md transition-all group"
+                        >
+                            <div className="flex items-center gap-2 mb-1.5">
+                                <span className="text-lg">💼</span>
+                                <h3 className="text-sm font-extrabold text-slate-900 group-hover:text-teal-600 transition-colors">
+                                    퇴직금 &amp; 실업급여 계산기
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                                근속연수별 법정 퇴직금 세후 실수령액 및 2026 고용보험 구직급여 총액
+                            </p>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* 글로벌 거시 경제 지표 대시보드 */}
+                {macro.length > 0 && (
+                    <div className="mb-8 bg-gradient-to-b from-slate-50/90 via-slate-100/40 to-emerald-50/25 rounded-3xl p-5 sm:p-7 border border-slate-200/90 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                            <div>
+                                <h2 className="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                                    <span className="text-2xl">🌍</span>
+                                    <span>글로벌 거시 경제 지표</span>
+                                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-300">
+                                        실시간 연동
+                                    </span>
+                                </h2>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    농산물/곡물, 원유, 귀금속, 환율 및 국채금리 등 글로벌 시장 핵심 원자재·선물 지표
+                                </p>
+                            </div>
+                            <span className="text-[11px] text-emerald-700 self-start sm:self-auto font-mono bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-bold">
+                                30초 주기 실시간 갱신
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 hide-scrollbar mb-4">
+                            {MACRO_CATEGORY_TABS.map((tab) => {
+                                const count =
+                                    tab.key === 'all'
+                                        ? macro.length
+                                        : macro.filter((m) => m.category === tab.key).length;
+                                const isSelected = selectedMacroCategory === tab.key;
+                                return (
+                                    <button
+                                        key={tab.key}
+                                        type="button"
+                                        onClick={() => setSelectedMacroCategory(tab.key)}
+                                        className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
+                                            isSelected
+                                                ? 'bg-slate-900 text-white border-slate-900 shadow-md scale-[1.02]'
+                                                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        <span className="text-sm">{tab.icon}</span>
+                                        <span>{tab.label}</span>
+                                        <span
+                                            className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                                                isSelected
+                                                    ? 'bg-white/20 text-white'
+                                                    : 'bg-slate-100 text-slate-500'
+                                            }`}
+                                        >
+                                            {count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {(() => {
+                            const currentTab =
+                                MACRO_CATEGORY_TABS.find((t) => t.key === selectedMacroCategory) ||
+                                MACRO_CATEGORY_TABS[0];
+                            return (
+                                <div className="mb-5 p-3.5 bg-white rounded-2xl border border-slate-200 flex items-center gap-2.5 text-xs text-slate-700 shadow-xs">
+                                    <span className="text-base shrink-0">{currentTab.icon}</span>
+                                    <div className="leading-relaxed">
+                                        <span className="font-extrabold text-slate-900 mr-1.5">
+                                            [{currentTab.label}]
+                                        </span>
+                                        <span className="text-slate-600">{currentTab.insight}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                            {(selectedMacroCategory === 'all'
+                                ? macro
+                                : macro.filter((m) => m.category === selectedMacroCategory)
+                            ).map((item) => (
+                                <div
+                                    key={item.symbol}
+                                    className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-5 hover:shadow-lg hover:border-emerald-400 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                                >
+                                    <div>
+                                        <div className="flex items-start justify-between gap-1.5 mb-1.5">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-1">
+                                                <span className="text-lg sm:text-xl shrink-0">
+                                                    {item.icon}
+                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <div
+                                                        className="font-extrabold text-gray-900 text-xs sm:text-sm truncate"
+                                                        title={item.name}
+                                                    >
+                                                        {item.name}
+                                                    </div>
+                                                    <div className="text-[10px] text-gray-400 font-mono truncate">
+                                                        {item.symbol}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {item.unit && (
+                                                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap hidden sm:inline-block">
+                                                    {item.unit}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="font-mono text-base sm:text-2xl font-black text-gray-900 mt-1 sm:mt-2 whitespace-nowrap">
+                                            {item.currency}
+                                            {item.price >= 1000
+                                                ? item.price.toLocaleString('ko-KR')
+                                                : item.price.toLocaleString('ko-KR', {
+                                                      minimumFractionDigits: 2,
+                                                      maximumFractionDigits: 2,
+                                                  })}
+                                        </div>
+
+                                        <div className="flex items-center gap-1 mt-1 flex-wrap font-mono">
+                                            <span
+                                                className={`inline-flex items-center gap-0.5 text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded-md whitespace-nowrap ${
+                                                    item.status === 'up'
+                                                        ? 'bg-red-50 text-red-600'
+                                                        : 'bg-blue-50 text-blue-600'
+                                                }`}
+                                            >
+                                                <span>{item.status === 'up' ? '▲' : '▼'}</span>
+                                                <span>
+                                                    {Math.abs(item.change).toLocaleString('ko-KR', {
+                                                        maximumFractionDigits: 2,
+                                                    })}
+                                                </span>
+                                                <span>
+                                                    ({item.rate >= 0 ? '+' : ''}
+                                                    {item.rate.toFixed(2)}%)
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[10px] sm:text-[11px] text-slate-400">
+                                        <span
+                                            className="truncate pr-1 text-slate-500"
+                                            title={item.description}
+                                        >
+                                            {item.description || '글로벌 주요 지표'}
+                                        </span>
+                                        {item.updatedAt && (
+                                            <span className="shrink-0 font-mono text-[9px] sm:text-[10px] text-slate-400 hidden sm:inline">
+                                                {item.updatedAt}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <BannerSlot slotKey="finance_middle" fallbackSlotKey="main_center" className="my-8" />
+
+                {/* KR 국내 대표 기업 */}
+                {krStocks.length > 0 && (
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                                    KRX
+                                </span>
+                                <div>
+                                    <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                        국내 대표 기업{' '}
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                                            (KOSPI 200 대형주)
+                                        </span>
+                                    </h2>
+                                    <p className="text-[11px] text-slate-400">
+                                        대한민국 증시를 주도하는 핵심 블루칩 실시간 시세
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg hidden sm:inline-block">
+                                실시간 시세 연동
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                            {krStocks.map((stock) => renderStockCard(stock, 'kr'))}
+                        </div>
+                    </div>
+                )}
+
+                {/* US 미국 빅테크 */}
+                {usStocks.length > 0 && (
+                    <div className="mb-10">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <span className="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-black text-xs shadow-xs">
+                                    US
+                                </span>
+                                <div>
+                                    <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                                        미국 빅테크 주도주{' '}
+                                        <span className="text-xs sm:text-sm font-semibold text-slate-500">
+                                            (Global Tech Leaders)
+                                        </span>
+                                    </h2>
+                                    <p className="text-[11px] text-slate-400">
+                                        전 세계 인공지능과 혁신을 이끄는 매그니피센트 대표주
+                                    </p>
+                                </div>
+                            </div>
+                            <span className="text-xs text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg hidden sm:inline-block">
+                                실시간 시세 연동
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                            {usStocks.map((stock) => renderStockCard(stock, 'us'))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 뉴스 + 빠른 링크 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <Card className="p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-xl font-bold text-gray-900">
+                                <i className="fas fa-newspaper text-blue-500 mr-2"></i>
+                                증시 뉴스
+                            </h2>
+                            <Link
+                                href="/news"
+                                className="text-sm text-green-600 hover:text-green-700 font-medium"
+                            >
+                                더보기 <i className="fas fa-chevron-right text-xs"></i>
+                            </Link>
+                        </div>
+                        <div className="space-y-4">
+                            {stockNews.length > 0 ? (
+                                stockNews.map((news) => (
+                                    <Link
+                                        key={news.id}
+                                        href={`/news/${news.id}`}
+                                        className="block p-4 rounded-lg hover:bg-gray-50 transition-all duration-300 border border-transparent hover:border-gray-100 group"
+                                    >
+                                        <div className="font-medium text-gray-900 mb-1 line-clamp-2 group-hover:text-green-700 transition-colors">
+                                            {decodeHtmlEntities(news.title)}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                                            {news.source && <span>{news.source}</span>}
+                                            {news.source && <span>·</span>}
+                                            <span>
+                                                {getTimeAgo(
+                                                    news.created_at || news.published_at || ''
+                                                )}
+                                            </span>
+                                        </div>
+                                    </Link>
+                                ))
+                            ) : loading ? (
+                                Array.from({ length: 4 }).map((_, i) => (
+                                    <div key={i} className="p-4 animate-pulse space-y-2">
+                                        <div className="h-4 bg-slate-200 rounded w-4/5"></div>
+                                        <div className="h-3 bg-slate-100 rounded w-1/3"></div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="p-6 text-center text-slate-400 text-xs">
+                                    등록된 증시 뉴스가 없습니다.
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+
+                    <div className="grid grid-cols-2 gap-4 content-start">
+                        <Link
+                            href="/finance/exchange"
+                            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow text-center border border-gray-100"
+                        >
+                            <i className="fas fa-exchange-alt text-3xl text-blue-600 mb-3"></i>
+                            <div className="font-semibold text-gray-900">환율</div>
+                        </Link>
+                        <Link
+                            href="/finance/banking"
+                            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow text-center border border-gray-100"
+                        >
+                            <i className="fas fa-university text-3xl text-indigo-600 mb-3"></i>
+                            <div className="font-semibold text-gray-900">은행</div>
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={() => setShowCalculator(true)}
+                            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow text-center w-full border border-gray-100 cursor-pointer"
+                        >
+                            <i className="fas fa-calculator text-3xl text-green-600 mb-3"></i>
+                            <div className="font-semibold text-gray-900">수익률 계산기</div>
+                        </button>
+                        <Link
+                            href="/guides"
+                            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow text-center border border-gray-100 block"
+                        >
+                            <i className="fas fa-book-open text-3xl text-purple-600 mb-3"></i>
+                            <div className="font-semibold text-gray-900">금융 가이드</div>
+                        </Link>
+                    </div>
+                </div>
+            </main>
+
+            <ProfitCalculator isOpen={showCalculator} onClose={() => setShowCalculator(false)} />
+        </div>
+    );
+}

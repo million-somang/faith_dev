@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface LiveStockWidgetProps {
     stockName: string;
@@ -41,6 +42,7 @@ const NAME_TO_TICKER_MAP: Record<string, string> = {
 
 export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
     const [stock, setStock] = useState<StockData | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         let cancelled = false;
@@ -125,7 +127,7 @@ export function LiveStockWidget({ stockName }: LiveStockWidgetProps) {
 
     const handleWidgetClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        window.location.href = stock.ticker ? `/finance/stock/${stock.ticker}` : '/finance';
+        router.push(stock.ticker ? `/finance/stock/${stock.ticker}` : '/finance');
     };
 
     return (

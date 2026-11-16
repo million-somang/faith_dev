@@ -153,6 +153,11 @@ export const GlobalMiniPlayerBar: React.FC = () => {
 
                             <Link
                                 href="/mypage?section=video"
+                                onClick={() => {
+                                    if (typeof window !== 'undefined') {
+                                        window.dispatchEvent(new CustomEvent('vera:open-video-player'));
+                                    }
+                                }}
                                 className="px-2.5 sm:px-3 h-8 sm:h-9 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/30 text-[11px] font-extrabold flex items-center gap-1 transition-colors"
                                 title="전체 플레이어 화면 열기"
                             >

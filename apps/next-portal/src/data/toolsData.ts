@@ -816,6 +816,67 @@ export const TOOLS_DATA: ToolDetailItem[] = [
             }
         ],
         appUrl: '/app/image-resizer/'
+    },
+
+    // 15. 스마트 QR코드 생성기 & 디자인 스튜디오
+    {
+        slug: 'qr-generator',
+        name: 'QR코드 생성기 & 디자인 스튜디오',
+        title: '무료 QR코드 생성기 - 와이파이·명함(vCard)·로고 삽입 고화질 PNG/SVG 제작 | VERA',
+        description: '유효기간 없는 평생 무료 고화질 QR코드 생성기입니다. 웹사이트 URL, 매장 와이파이(Wi-Fi) 자동 연결, 스마트 전자명함(vCard 3.0), 텍스트, SMS, 이메일 QR코드를 커스텀 도트 모양·컬러·중앙 로고와 함께 PNG, SVG 벡터, WebP로 즉시 다운로드하세요. 100% 로컬 브라우저 보안 처리.',
+        keywords: [
+            'QR코드 생성기',
+            '무료 QR코드 만들기',
+            '와이파이 QR코드 만들기',
+            '명함 QR코드',
+            'vCard QR코드',
+            '로고 QR코드 제작',
+            'SVG QR코드 다운로드',
+            '유효기간 없는 QR코드'
+        ],
+        category: 'dev',
+        categoryLabel: '개발 도구',
+        icon: 'fas fa-qrcode',
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-600',
+        directAnswer: '웹사이트 URL, 매장 와이파이 자동 연결(WIFI 스키마), 스마트 전자명함(vCard 3.0) 데이터를 외부 서버 경유 없이 ISO/IEC 18004 표준 행렬에 직접 인코딩하여 평생 유효기간 없이 작동하는 고해상도 PNG·SVG 벡터 QR코드를 즉시 생성합니다.',
+        formula: {
+            title: 'ISO/IEC 18004 행렬 규격 및 Reed-Solomon 오류 복원 공식',
+            expression: 'Grid Size = (Version × 4) + 17 / ECC Recovery = L(7%), M(15%), Q(25%), H(30%)',
+            explanation: 'QR코드는 버전 1(21×21 모듈)부터 버전 40(177×177 모듈)까지 데이터 바이트 길이에 맞춰 격자 크기가 결정됩니다. 갈루아 필드 GF(256) 기반의 Reed-Solomon 다항식 오류 정정 코드워드를 함께 배치하여, 중앙에 브랜드 로고를 삽입해 면적의 최대 30%(Level H)가 가려지더라도 스캐너가 원본 데이터를 100% 복원합니다.',
+            variables: [
+                { name: 'Version (1~40)', desc: '데이터 용량에 따라 자동 확장되는 격자 크기 (4V + 17 모듈)' },
+                { name: 'Reed-Solomon ECC', desc: '오염·로고 오버레이 시 데이터를 복구하는 다항식 잉여 코드워드' },
+                { name: 'Quiet Zone (여백)', desc: '카메라가 QR 경계를 분리하기 위해 필요한 최소 2~4 모듈 외곽 여백' },
+                { name: 'WCAG 명암 대비', desc: '스캔 인식률 보장을 위한 전경 도트와 배경 간 명암비 (4.5:1 이상 권장)' }
+            ]
+        },
+        example: {
+            scenario: '카페 매장 카운터에 비치할 5GHz 와이파이(SSID: Cafe_VeraNex_5G, 암호: americano2026) 자동 연결 안내 카드 및 인쇄용 벡터 파일 제작',
+            calculation: 'WIFI:T:WPA;S:Cafe_VeraNex_5G;P:americano2026;H:false;; 문자열 인코딩 -> 중앙 Wi-Fi 배지 삽입 및 ECC Level H(30% 복원) 자동 적용 -> 상·하단 안내 프레임 결합',
+            result: '아이폰·갤럭시 기본 카메라 스캔 즉시 비밀번호 입력 없이 와이파이에 자동 접속되는 1024px PNG 및 무한 해상도 SVG 벡터 파일 생성'
+        },
+        howToSteps: [
+            { name: 'QR코드 데이터 유형 선택', text: '상단 탭에서 웹사이트 URL, 와이파이(Wi-Fi), 스마트 명함(vCard), 텍스트, SMS, 이메일 중 용도를 선택합니다.' },
+            { name: '연결 정보 입력 및 프리셋 적용', text: '이동할 주소나 매장 와이파이 이름·비밀번호, 명함 연락처를 입력하거나 원클릭 샘플 칩을 클릭합니다.' },
+            { name: '도트·컬러·중앙 로고 커스텀', text: '브랜드 컬러 테마, 도트 모양(사각형·라운드·원형), 모서리 프레임 및 중앙 심볼/로고 이미지를 지정합니다.' },
+            { name: 'PNG·SVG 벡터 저장 및 스캔 테스트', text: '화면의 프리뷰를 스마트폰 카메라로 스캔해 확인한 후 PNG, 인쇄용 SVG 벡터 또는 클립보드 이미지 복사로 저장합니다.' }
+        ],
+        faqs: [
+            {
+                question: '생성된 QR코드에 유효기간이나 스캔 횟수 제한이 있나요?',
+                answer: '전혀 없습니다. 외부 리다이렉트 서버를 거치지 않고 원문 데이터를 표준 행렬에 직접 기록하는 정적(Static) QR코드이므로 한 번 생성하면 평생 무료·무제한으로 작동합니다.'
+            },
+            {
+                question: '매장 와이파이 비밀번호나 명함 정보를 입력해도 유출 걱정이 없나요?',
+                answer: '네, 모든 QR 인코딩과 이미지 렌더링이 서버 전송 없이 100% 사용자의 웹 브라우저 메모리 내부에서만 이루어지므로 개인정보 유출 위험이 전혀 없습니다.'
+            },
+            {
+                question: '인쇄소 명함이나 대형 현수막 제작 시에는 어떤 포맷으로 저장해야 하나요?',
+                answer: '웹 게시용으로는 1024px 이상의 PNG 포맷이 적합하며, 일러스트레이터 편집이나 대형 인쇄물 제작 시에는 확대해도 전혀 깨지지 않는 SVG 벡터 저장 버튼을 사용하시기 바랍니다.'
+            }
+        ],
+        appUrl: '/app/qr-generator/'
     }
 ];
 
