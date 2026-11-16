@@ -499,45 +499,45 @@ export default function GamePage() {
     const currentGenreMeta = ALL_GENRES.find(g => g.id === activeGenre) || ALL_GENRES[0];
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full space-y-8">
-            {/* 1. 나노바나나 3D 아케이드 히어로 배너 */}
-            <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white p-6 sm:p-8 shadow-xl border border-white/10">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8 w-full space-y-4 sm:space-y-8">
+            {/* 1. 나노바나나 3D 아케이드 히어로 배너 (모바일: 초슬림 1줄 가로 배너 / 데스크톱: 풀 3D 쇼케이스) */}
+            <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 text-white p-4 sm:p-8 shadow-xl border border-white/10">
                 <div className="absolute -top-24 -right-20 w-80 h-80 rounded-full bg-violet-500/25 blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-24 -left-20 w-80 h-80 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
 
-                <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-6">
-                    <div className="w-full lg:max-w-2xl space-y-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-black bg-violet-400/20 text-violet-200 border border-violet-400/30">
-                                <i className={currentGenreMeta.icon}></i> VERA ARCADE LOUNGE · {currentGenreMeta.label}
+                <div className="relative z-10 flex flex-row items-center justify-between gap-3 sm:gap-6">
+                    <div className="min-w-0 flex-1 lg:max-w-2xl space-y-1.5 sm:space-y-4">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full text-[10px] sm:text-[11px] font-black bg-violet-400/20 text-violet-200 border border-violet-400/30">
+                                <i className={currentGenreMeta.icon}></i> VERA ARCADE · {currentGenreMeta.label}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-cyan-200 border border-white/10">
+                            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-cyan-200 border border-white/10">
                                 <i className="fas fa-bolt text-amber-300"></i> 100% 무료 · 무설치 즉시 실행
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-emerald-300 border border-white/10">
+                            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 text-emerald-300 border border-white/10">
                                 <i className="fas fa-trophy text-amber-400"></i> 실시간 랭킹 연동
                             </span>
                         </div>
 
                         <div>
-                            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+                            <h1 className="text-lg sm:text-3xl font-black tracking-tight text-white leading-tight truncate sm:whitespace-normal">
                                 {activeGenre === 'emulator'
-                                    ? '추억의 8비트 & 16비트 레트로 콘솔 에뮬레이터'
+                                    ? '추억의 8·16비트 레트로 에뮬레이터'
                                     : activeGenre === 'online'
-                                    ? '실시간 1:1 대국, 플레이어와 함께하는 온라인 게임'
-                                    : '틈날 때 가볍게, 무료로 즐기는 스마트 아케이드'}
+                                    ? '실시간 1:1 온라인 대국 & RPG'
+                                    : '무료로 즐기는 스마트 아케이드'}
                             </h1>
-                            <p className="text-slate-300 text-xs sm:text-sm mt-1.5 leading-relaxed">
+                            <p className="text-slate-300 text-[11px] sm:text-sm mt-0.5 sm:mt-1.5 leading-snug sm:leading-relaxed line-clamp-1 sm:line-clamp-none">
                                 {activeGenre === 'emulator'
-                                    ? '개인 소장 ROM 파일을 브라우저에 드래그 앤 드롭하여 별도 설치 없이 즉시 추억의 명작을 플레이하세요.'
+                                    ? '소장 ROM 파일 드래그 앤 드롭으로 브라우저에서 즉시 실행하세요.'
                                     : activeGenre === 'online'
-                                    ? '실시간 대기실 매칭과 1:1 오목 대국, 온라인 파티 던전 RPG까지 웹 브라우저에서 바로 승부를 펼쳐보세요.'
-                                    : '베라 서브마린 · 당구 클럽(4구/3쿠션) · 베라 플라이트 · 정통 장기 · 숫자야구 · 오목 · 베라 팝 · 프리셀 · 스도쿠 · 2048 · 지뢰찾기'}
+                                    ? '실시간 대기실 매칭과 1:1 오목 대국, 온라인 파티 던전 RPG를 즐겨보세요.'
+                                    : '서브마린 · 당구 클럽 · 플라이트 · 장기 · 숫자야구 · 오목 · 베라 팝 · 프리셀 · 스도쿠 · 2048'}
                             </p>
                         </div>
 
-                        {/* 인기 게임 퀵 점프 칩 */}
-                        <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        {/* 인기 게임 퀵 점프 칩 (데스크톱/태블릿 전용 노출로 모바일 스크롤 길이 최소화) */}
+                        <div className="hidden sm:flex flex-wrap items-center gap-1.5 pt-1">
                             <span className="text-[11px] font-extrabold text-indigo-300 mr-1">
                                 <i className="fas fa-fire text-amber-400 mr-1"></i>인기 추천:
                             </span>
@@ -553,15 +553,15 @@ export default function GamePage() {
                         </div>
                     </div>
 
-                    {/* 우측 나노바나나 3D 히어로 일러스트 쇼케이스 */}
-                    <div className="hidden sm:flex items-center justify-center shrink-0">
-                        <div className="relative w-56 h-40 lg:w-72 lg:h-48 rounded-3xl bg-white/5 border border-white/15 backdrop-blur-md p-2 flex items-center justify-center shadow-2xl group overflow-hidden">
+                    {/* 우측 나노바나나 3D 히어로 일러스트 (모바일: 64px 미니 썸네일 / 데스크톱: 대형 쇼케이스) */}
+                    <div className="flex items-center justify-center shrink-0">
+                        <div className="relative w-16 h-16 sm:w-56 sm:h-40 lg:w-72 lg:h-48 rounded-2xl sm:rounded-3xl bg-white/5 border border-white/15 backdrop-blur-md p-1 sm:p-2 flex items-center justify-center shadow-xl sm:shadow-2xl group overflow-hidden">
                             <img
                                 src="/images/game/game_hero_banner.png"
                                 alt="VERA 아케이드 3D 게임 라운지 일러스트"
-                                className="w-full h-full object-cover rounded-2xl drop-shadow-[0_12px_24px_rgba(139,92,246,0.4)] transition-transform duration-500 group-hover:scale-105"
+                                className="w-full h-full object-cover rounded-xl sm:rounded-2xl drop-shadow-[0_12px_24px_rgba(139,92,246,0.4)] transition-transform duration-500 group-hover:scale-105"
                             />
-                            <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-slate-950/80 border border-white/20 backdrop-blur-md text-[10px] font-black text-cyan-300 flex items-center gap-1">
+                            <div className="hidden sm:flex absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-slate-950/80 border border-white/20 backdrop-blur-md text-[10px] font-black text-cyan-300 items-center gap-1">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                                 <span>INSTANT PLAY</span>
                             </div>
@@ -570,37 +570,37 @@ export default function GamePage() {
                 </div>
             </section>
 
-            {/* 2. 게임 선택 & 3D 장르 스위처 박스 */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-200/90 p-4 sm:p-7 space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
-                            <i className="fas fa-gamepad text-base"></i>
+            {/* 2. 게임 선택 & 3D 장르 스위처 박스 (모바일: 가로 1줄 3탭 초슬림 / 데스크톱: 3D 카드 독) */}
+            <div className="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/90 p-3.5 sm:p-7 space-y-3 sm:space-y-6">
+                <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2.5 sm:pb-4">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-sm shrink-0">
+                            <i className="fas fa-gamepad text-xs sm:text-base"></i>
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
+                                <h2 className="text-base sm:text-xl font-black text-slate-900 tracking-tight">
                                     게임 선택
                                 </h2>
-                                <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
+                                <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-full bg-violet-50 text-violet-700 border border-violet-200">
                                     {currentGenreMeta.badge}
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-500 mt-0.5">
+                            <p className="hidden sm:block text-xs text-slate-500 mt-0.5">
                                 카드를 클릭하면 공략 가이드와 랭킹을 볼 수 있으며, [게임 시작] 버튼으로 즉시 팝업 플레이가 가능합니다.
                             </p>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200/70 shrink-0">
+                    <div className="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50 px-3 py-2 rounded-2xl border border-slate-200/70 shrink-0">
                         <i className="fas fa-bolt text-amber-500"></i>
                         <span>현재 선택: <strong className="text-slate-900 font-black">{currentGenreMeta.label}</strong></span>
                     </div>
                 </div>
 
-                {/* 나노바나나 3D 아이콘이 적용된 프리미엄 장르 선택 독 */}
+                {/* 나노바나나 3D 장르 선택 독 (모바일: 가로 1줄 3등분 슬림 탭 / 데스크톱: 3D 상세 카드) */}
                 {user && (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/90 p-2 rounded-2xl border border-slate-200/70">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-3 bg-slate-50/90 p-1.5 sm:p-2 rounded-xl sm:rounded-2xl border border-slate-200/70">
                         {genres.map(g => {
                             const isSelected = activeGenre === g.id;
                             return (
@@ -608,21 +608,21 @@ export default function GamePage() {
                                     key={g.id}
                                     type="button"
                                     onClick={() => setGenre(g.id)}
-                                    className={`group relative rounded-xl p-3 text-left transition-all duration-200 flex items-center gap-3.5 border cursor-pointer ${
+                                    className={`group relative rounded-lg sm:rounded-xl py-2 px-2 sm:p-3 text-left transition-all duration-200 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-3.5 border cursor-pointer ${
                                         isSelected
                                             ? g.activeRing
                                             : 'border-transparent bg-white/60 hover:bg-white hover:border-slate-200/90'
                                     }`}
                                 >
-                                    <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${g.visualBg} p-1 shrink-0 overflow-hidden border border-white shadow-xs flex items-center justify-center`}>
+                                    <div className={`w-6 h-6 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-gradient-to-br ${g.visualBg} p-0.5 sm:p-1 shrink-0 overflow-hidden border border-white shadow-2xs sm:shadow-xs flex items-center justify-center`}>
                                         <img
                                             src={g.image}
                                             alt={g.label}
-                                            className="w-full h-full object-cover rounded-lg transition-transform duration-300 group-hover:scale-110"
+                                            className="w-full h-full object-cover rounded-md sm:rounded-lg transition-transform duration-300 group-hover:scale-110"
                                         />
                                     </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                    <div className="min-w-0 sm:flex-1">
+                                        <div className="hidden sm:flex items-center gap-1.5 mb-0.5">
                                             <span className={`text-[10px] font-black px-1.5 py-0.2 rounded border ${g.badgeClass}`}>
                                                 {g.badge}
                                             </span>
@@ -632,10 +632,10 @@ export default function GamePage() {
                                                 </span>
                                             )}
                                         </div>
-                                        <div className={`text-sm sm:text-base font-black truncate ${isSelected ? 'text-slate-900' : 'text-slate-700 group-hover:text-slate-900'}`}>
+                                        <div className={`text-xs sm:text-base font-black truncate ${isSelected ? 'text-violet-700 sm:text-slate-900' : 'text-slate-600 sm:text-slate-700 group-hover:text-slate-900'}`}>
                                             {g.label}
                                         </div>
-                                        <div className="text-[11px] text-slate-500 truncate mt-0.5">
+                                        <div className="hidden sm:block text-[11px] text-slate-500 truncate mt-0.5">
                                             {g.subLabel}
                                         </div>
                                     </div>
