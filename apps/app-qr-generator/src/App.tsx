@@ -33,9 +33,9 @@ const DEFAULT_DESIGN: QrDesignSettings = {
 };
 
 const WIZARD_STEPS: { step: WizardStep; title: string; subtitle: string }[] = [
-  { step: 1, title: '1. QR 용도 및 데이터', subtitle: '주소 · 와이파이 · 명함 입력' },
-  { step: 2, title: '2. 컬러 · 도트 모양', subtitle: '색상 · 점 모양 · 로고 꾸미기' },
-  { step: 3, title: '3. QR코드 생성 완료', subtitle: '스캔 테스트 및 고화질 저장' },
+  { step: 1, title: '용도 · 데이터', subtitle: '내용 입력하기' },
+  { step: 2, title: '컬러 · 도트 모양', subtitle: '디자인 꾸미기' },
+  { step: 3, title: 'QR코드 완성', subtitle: '스캔 · 파일 저장' },
 ];
 
 export function App() {
@@ -140,65 +140,10 @@ export function App() {
     }
   }, [payloadText, design.ecLevel]);
 
-  // 원클릭 샘플 프리셋 로더
   const handleLoadPreset = (presetKey: string) => {
     if (presetKey === 'portal') {
       setDataType('url');
       setUrlValue('https://veranex.app/lifestyle');
-      handleUpdateDesign({
-        fgColor: '#3730A3',
-        bgColor: '#FFFFFF',
-        dotStyle: 'rounded',
-        eyeStyle: 'rounded',
-        centerBadge: 'link',
-        ecLevel: 'H',
-        showFrameLabel: true,
-        frameTitle: 'VERANEX SMART HUB',
-        frameSubtitle: '스캔하여 스마트 생활도구를 만나보세요',
-      });
-      showToast('🌐 웹사이트 예시 데이터가 입력되었습니다.');
-    } else if (presetKey === 'cafe-wifi') {
-      setDataType('wifi');
-      setWifiValue({
-        ssid: 'Cafe_VeraNex_5G',
-        password: 'americano2026',
-        encryption: 'WPA',
-        hidden: false,
-      });
-      handleUpdateDesign({
-        fgColor: '#065F46',
-        bgColor: '#FFFFFF',
-        dotStyle: 'rounded',
-        eyeStyle: 'circle',
-        centerBadge: 'wifi',
-        ecLevel: 'H',
-        showFrameLabel: true,
-        frameTitle: '무료 와이파이 연결',
-        frameSubtitle: '카메라로 스캔하면 비밀번호 없이 즉시 연결됩니다',
-      });
-      showToast('📶 카페 와이파이 예시 데이터가 입력되었습니다.');
-    } else if (presetKey === 'biz-vcard') {
-      setDataType('vcard');
-      setVcardValue({
-        fullName: '이현우 대표',
-        phone: '010-9876-5432',
-        organization: 'VeraNex Studio',
-        title: 'CEO / Founder',
-        email: 'ceo@veranex.app',
-        website: 'https://veranex.app',
-      });
-      handleUpdateDesign({
-        fgColor: '#111827',
-        bgColor: '#FFFFFF',
-        dotStyle: 'square',
-        eyeStyle: 'rounded',
-        centerBadge: 'vcard',
-        ecLevel: 'H',
-        showFrameLabel: true,
-        frameTitle: '스마트 전자명함',
-        frameSubtitle: '스캔하여 연락처를 휴대폰에 바로 저장하세요',
-      });
-      showToast('👤 스마트 명함 예시 데이터가 입력되었습니다.');
     }
   };
 
@@ -247,102 +192,76 @@ export function App() {
         )}
 
         <div className="max-w-3xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col">
-          {/* 상단 공식 VERANEX 헤더 */}
-          <Header onShare={handleShare} />
-
-          {/* 3단 메뉴 탭 (QR 만들기 / 사용 가이드 / 자주 묻는 질문) */}
-          <nav className="flex items-center gap-1 border-b border-[#EBE6DD] mb-4">
-            <button
-              type="button"
-              onClick={() => setActiveTab('app')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer ${
-                activeTab === 'app'
-                  ? 'border-indigo-600 text-indigo-600 bg-white/80 rounded-t-xl'
-                  : 'border-transparent text-stone-500 hover:text-[#2D2A26]'
-              }`}
-            >
-              <i className="fas fa-qrcode"></i>
-              <span>QR코드 만들기</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('guide')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer ${
-                activeTab === 'guide'
-                  ? 'border-indigo-600 text-indigo-600 bg-white/80 rounded-t-xl'
-                  : 'border-transparent text-stone-500 hover:text-[#2D2A26]'
-              }`}
-            >
-              <i className="fas fa-book-open"></i>
-              <span>사용 가이드</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('faq')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-black border-b-2 transition-all cursor-pointer ${
-                activeTab === 'faq'
-                  ? 'border-indigo-600 text-indigo-600 bg-white/80 rounded-t-xl'
-                  : 'border-transparent text-stone-500 hover:text-[#2D2A26]'
-              }`}
-            >
-              <i className="far fa-circle-question"></i>
-              <span>자주 묻는 질문</span>
-            </button>
-          </nav>
+          {/* Zone 1: 상단 공식 헤더 & 메뉴 탭 통합 컨테이너 (샌드 베이지 배경으로 메인 영역과 확실히 분리) */}
+          <Header
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            onShare={handleShare}
+          />
 
           {/* 메인 콘텐츠 영역 */}
-          <main className="flex-1 pb-8 space-y-4">
+          <main className="flex-1 pb-8 space-y-5">
             {activeTab === 'app' && (
               <>
-                {/* 상단 3단계 프로그레스 스텝 바 (클릭하여 단계 이동 가능) */}
-                <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-2xl border border-[#EBE6DD] shadow-2xs">
-                  {WIZARD_STEPS.map((item) => {
-                    const isCurrent = currentStep === item.step;
-                    const isDone = currentStep > item.step;
-                    return (
-                      <button
-                        key={item.step}
-                        type="button"
-                        onClick={() => handleGoToStep(item.step)}
-                        className={`p-2.5 sm:p-3 rounded-xl text-left transition-all cursor-pointer flex items-center gap-2.5 border ${
-                          isCurrent
-                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                            : isDone
-                            ? 'bg-emerald-50/70 text-emerald-900 border-emerald-200 hover:bg-emerald-50'
-                            : 'bg-[#FAF8F5] text-stone-500 border-transparent hover:bg-stone-100'
-                        }`}
-                      >
-                        <div
-                          className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
-                            isCurrent
-                              ? 'bg-white text-indigo-600'
-                              : isDone
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-stone-200 text-stone-600'
-                          }`}
+                {/* Zone 2: 연결선형 3단계 진행 표시줄 (버튼들과 헷갈리지 않고 글자가 잘리지 않는 정통 스텝퍼) */}
+                <div className="relative px-3 sm:px-8 py-3.5 bg-gradient-to-r from-indigo-50/70 via-white to-emerald-50/60 rounded-2xl border border-indigo-100/90 shadow-2xs">
+                  {/* 뒤쪽 연결 진행선 */}
+                  <div className="absolute top-7 left-[18%] right-[18%] h-1 bg-[#E5E0D5] rounded-full overflow-hidden pointer-events-none">
+                    <div
+                      className="h-full bg-indigo-600 transition-all duration-300"
+                      style={{
+                        width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%',
+                      }}
+                    />
+                  </div>
+
+                  <div className="relative z-10 grid grid-cols-3 text-center">
+                    {WIZARD_STEPS.map((item) => {
+                      const isCurrent = currentStep === item.step;
+                      const isDone = currentStep > item.step;
+                      return (
+                        <button
+                          key={item.step}
+                          type="button"
+                          onClick={() => handleGoToStep(item.step)}
+                          className="group flex flex-col items-center cursor-pointer focus:outline-none"
                         >
-                          {isDone ? <i className="fas fa-check text-[10px]"></i> : item.step}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[11px] sm:text-xs font-black truncate">
-                            {item.title}
-                          </div>
                           <div
-                            className={`text-[10px] truncate hidden sm:block ${
-                              isCurrent ? 'text-indigo-100' : isDone ? 'text-emerald-700' : 'text-stone-400'
+                            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full text-xs font-black flex items-center justify-center transition-all border-2 ${
+                              isCurrent
+                                ? 'bg-indigo-600 text-white border-indigo-600 ring-4 ring-indigo-100 scale-105 shadow-xs'
+                                : isDone
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs'
+                                : 'bg-white text-stone-400 border-[#D8D1C5] group-hover:border-indigo-300 group-hover:text-stone-600'
+                            }`}
+                          >
+                            {isDone ? <i className="fas fa-check text-[10px]"></i> : item.step}
+                          </div>
+                          <span
+                            className={`mt-1.5 text-[11px] sm:text-xs font-black tracking-tight whitespace-nowrap ${
+                              isCurrent
+                                ? 'text-indigo-700'
+                                : isDone
+                                ? 'text-emerald-800'
+                                : 'text-stone-500'
+                            }`}
+                          >
+                            {item.title}
+                          </span>
+                          <span
+                            className={`text-[10px] font-medium hidden sm:block ${
+                              isCurrent ? 'text-indigo-500 font-bold' : 'text-stone-400'
                             }`}
                           >
                             {item.subtitle}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* 단계별 단일 화면 렌더링 (Step 1 / Step 2 / Step 3) */}
+                {/* Zone 3: 단계별 메인 작업 영역 카드 (상단 굵은 인디고 보더로 주인공 작업창 강조) */}
                 {currentStep !== 3 ? (
                   <QrInputPanel
                     step={currentStep}
@@ -382,10 +301,10 @@ export function App() {
                 {/* 하단 스폰서 광고 슬롯 (CLS 제로) */}
                 <div
                   aria-label="SPONSORED AD"
-                  className="bg-white border border-[#EBE6DD] rounded-2xl p-3.5 shadow-2xs flex items-center justify-between gap-3"
+                  className="bg-[#EFECE6]/70 border border-[#DFD9CE] rounded-2xl p-3.5 flex items-center justify-between gap-3"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-[9px] font-black text-stone-600 bg-white border border-[#DFD9CE] px-1.5 py-0.5 rounded shrink-0">
                       SPONSORED AD
                     </span>
                     <span className="text-xs font-bold text-[#2D2A26] truncate">

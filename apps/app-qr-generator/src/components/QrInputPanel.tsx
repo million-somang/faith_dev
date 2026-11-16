@@ -78,7 +78,6 @@ export default function QrInputPanel({
   onChangeEmail,
   design,
   onUpdateDesign,
-  onLoadPreset,
   onReset,
 }: QrInputPanelProps) {
   const logoInputRef = useRef<HTMLInputElement | null>(null);
@@ -111,22 +110,22 @@ export default function QrInputPanel({
   };
 
   // ============================================================================
-  // [STEP 1] QR 용도 선택 및 데이터 입력 화면
+  // [STEP 1] QR 용도 선택 및 데이터 입력 화면 (메인 작업창 강조)
   // ============================================================================
   if (step === 1) {
     return (
-      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] shadow-xs space-y-6 animate-fade-in">
-        {/* 상단 헤더 */}
+      <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-6 animate-fade-in">
+        {/* 상단 메인 작업창 헤더 */}
         <div className="flex items-start justify-between gap-3 border-b border-[#EBE6DD] pb-4">
           <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-black border border-indigo-200 mb-1.5">
-              STEP 1 OF 3
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black mb-1.5 shadow-2xs">
+              STEP 1 · 데이터 입력
             </span>
-            <h2 className="text-base sm:text-lg font-black text-[#2D2A26]">
+            <h2 className="text-lg sm:text-xl font-black text-[#2D2A26]">
               어떤 용도의 QR코드를 만드시겠어요?
             </h2>
             <p className="text-xs text-stone-500 mt-0.5">
-              원하는 용도를 고르고 내용을 입력한 뒤 아래 <strong>[다음 스텝]</strong> 버튼을 눌러주세요.
+              종류를 선택하고 아래 입력창에 내용을 적은 뒤 <strong>[다음 스텝]</strong> 버튼을 눌러주세요.
             </p>
           </div>
           <button
@@ -138,10 +137,10 @@ export default function QrInputPanel({
           </button>
         </div>
 
-        {/* 1. 6대 QR 용도 선택 그리드 (2x3 큼직한 카드) */}
+        {/* 1. 6대 QR 용도 선택 그리드 (소프트 인디고 테두리 + 체크 배지로 하단 메인 CTA와 구분) */}
         <div>
           <label className="block text-xs font-black text-[#2D2A26] mb-2.5">
-            1. QR코드 종류 선택
+            1. QR코드 종류를 선택하세요
           </label>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {DATA_TYPE_TABS.map((tab) => {
@@ -152,24 +151,31 @@ export default function QrInputPanel({
                   type="button"
                   data-screenshot-click={tab.key === 'url' ? 'action' : undefined}
                   onClick={() => onChangeDataType(tab.key)}
-                  className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3 ${
+                  className={`relative p-3.5 rounded-2xl text-left transition-all cursor-pointer flex items-start gap-3 ${
                     active
-                      ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                      : 'bg-[#FAF8F5] text-[#2D2A26] border-[#EBE6DD] hover:bg-stone-100'
+                      ? 'bg-indigo-50/90 text-indigo-950 border-2 border-indigo-600 shadow-xs'
+                      : 'bg-[#FAF8F5] text-[#2D2A26] border border-[#EBE6DD] hover:bg-stone-100'
                   }`}
                 >
+                  {active && (
+                    <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center">
+                      <i className="fas fa-check"></i>
+                    </span>
+                  )}
                   <div
                     className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm ${
-                      active ? 'bg-white/20 text-white' : 'bg-white text-indigo-600 border border-[#EBE6DD]'
+                      active
+                        ? 'bg-indigo-600 text-white shadow-2xs'
+                        : 'bg-white text-stone-600 border border-[#EBE6DD]'
                     }`}
                   >
                     <i className={tab.icon}></i>
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 pr-3">
                     <div className="text-xs sm:text-sm font-black truncate">{tab.label}</div>
                     <div
                       className={`text-[10px] mt-0.5 line-clamp-1 ${
-                        active ? 'text-indigo-100' : 'text-stone-500'
+                        active ? 'text-indigo-700 font-semibold' : 'text-stone-500'
                       }`}
                     >
                       {tab.desc}
@@ -181,14 +187,14 @@ export default function QrInputPanel({
           </div>
         </div>
 
-        {/* 3. 선택된 용도별 입력 폼 */}
-        <div className="bg-[#FAF8F5] rounded-2xl p-4 sm:p-5 border border-[#EBE6DD] space-y-4">
+        {/* 2. 선택된 용도별 입력 폼 */}
+        <div className="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-[#2D2A26] flex items-center gap-1.5">
+            <span className="text-xs font-black text-indigo-950 flex items-center gap-1.5">
               <i className="fas fa-pen-to-square text-indigo-600"></i>
-              <span>2. QR코드에 담을 내용 입력</span>
+              <span>2. QR코드에 담을 내용을 입력하세요</span>
             </span>
-            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+            <span className="text-[11px] font-bold text-emerald-700 bg-white px-2.5 py-0.5 rounded-full border border-emerald-200">
               유효기간 평생 무제한
             </span>
           </div>
@@ -199,14 +205,14 @@ export default function QrInputPanel({
                 연결할 인터넷 주소 (URL)
               </label>
               <div className="relative">
-                <i className="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i>
+                <i className="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500 text-sm"></i>
                 <input
                   type="url"
                   value={urlValue}
                   onChange={(e) => onChangeUrl(e.target.value)}
                   data-screenshot-input="https://veranex.app"
                   placeholder="예: https://veranex.app"
-                  className="w-full pl-10 pr-4 py-3.5 bg-white border border-[#EBE6DD] rounded-xl text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none transition-all shadow-2xs"
+                  className="w-full pl-10 pr-4 py-3.5 bg-white border-2 border-indigo-200 rounded-xl text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none transition-all shadow-2xs"
                 />
               </div>
               <p className="text-[11px] text-stone-500">
@@ -227,7 +233,7 @@ export default function QrInputPanel({
                     value={wifiValue.ssid}
                     onChange={(e) => onChangeWifi({ ...wifiValue, ssid: e.target.value })}
                     placeholder="예: Cafe_VeraNex_5G"
-                    className="w-full px-3.5 py-3 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                    className="w-full px-3.5 py-3 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                   />
                 </div>
                 <div>
@@ -240,13 +246,13 @@ export default function QrInputPanel({
                     onChange={(e) => onChangeWifi({ ...wifiValue, password: e.target.value })}
                     disabled={wifiValue.encryption === 'nopass'}
                     placeholder={wifiValue.encryption === 'nopass' ? '비밀번호 없음' : '비밀번호 입력'}
-                    className="w-full px-3.5 py-3 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none disabled:opacity-50"
+                    className="w-full px-3.5 py-3 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none disabled:opacity-50"
                   />
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-bold text-stone-500 mr-1">보안 방식:</span>
+                  <span className="text-[11px] font-bold text-stone-600 mr-1">보안 방식:</span>
                   {(['WPA', 'WEP', 'nopass'] as const).map((enc) => (
                     <button
                       key={enc}
@@ -255,7 +261,7 @@ export default function QrInputPanel({
                       className={`px-3 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
                         wifiValue.encryption === enc
                           ? 'bg-indigo-600 border-indigo-600 text-white'
-                          : 'bg-white border-[#EBE6DD] text-stone-600'
+                          : 'bg-white border-indigo-200 text-stone-600'
                       }`}
                     >
                       {enc === 'WPA' ? '일반 (WPA/WPA2)' : enc === 'WEP' ? 'WEP' : '암호 없음'}
@@ -275,7 +281,7 @@ export default function QrInputPanel({
                   value={vcardValue.fullName}
                   onChange={(e) => onChangeVcard({ ...vcardValue, fullName: e.target.value })}
                   placeholder="홍길동"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -285,7 +291,7 @@ export default function QrInputPanel({
                   value={vcardValue.phone}
                   onChange={(e) => onChangeVcard({ ...vcardValue, phone: e.target.value })}
                   placeholder="010-1234-5678"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -295,7 +301,7 @@ export default function QrInputPanel({
                   value={vcardValue.organization}
                   onChange={(e) => onChangeVcard({ ...vcardValue, organization: e.target.value })}
                   placeholder="VeraNex"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -305,7 +311,7 @@ export default function QrInputPanel({
                   value={vcardValue.title}
                   onChange={(e) => onChangeVcard({ ...vcardValue, title: e.target.value })}
                   placeholder="대표 / 매니저"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -315,7 +321,7 @@ export default function QrInputPanel({
                   value={vcardValue.email}
                   onChange={(e) => onChangeVcard({ ...vcardValue, email: e.target.value })}
                   placeholder="contact@veranex.app"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -325,7 +331,7 @@ export default function QrInputPanel({
                   value={vcardValue.website}
                   onChange={(e) => onChangeVcard({ ...vcardValue, website: e.target.value })}
                   placeholder="https://veranex.app"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
             </div>
@@ -341,7 +347,7 @@ export default function QrInputPanel({
                 value={textValue}
                 onChange={(e) => onChangeText(e.target.value)}
                 placeholder="스캔했을 때 화면에 보여줄 문구를 자유롭게 입력하세요."
-                className="w-full px-3.5 py-3 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none resize-none leading-relaxed"
+                className="w-full px-3.5 py-3 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none resize-none leading-relaxed"
               />
             </div>
           )}
@@ -355,7 +361,7 @@ export default function QrInputPanel({
                   value={smsValue.phone}
                   onChange={(e) => onChangeSms({ ...smsValue, phone: e.target.value })}
                   placeholder="010-1234-5678"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
               <div>
@@ -365,7 +371,7 @@ export default function QrInputPanel({
                   value={smsValue.message}
                   onChange={(e) => onChangeSms({ ...smsValue, message: e.target.value })}
                   placeholder="예: 이벤트 신청합니다!"
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
             </div>
@@ -381,7 +387,7 @@ export default function QrInputPanel({
                     value={emailValue.email}
                     onChange={(e) => onChangeEmail({ ...emailValue, email: e.target.value })}
                     placeholder="contact@veranex.app"
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                   />
                 </div>
                 <div>
@@ -391,7 +397,7 @@ export default function QrInputPanel({
                     value={emailValue.subject}
                     onChange={(e) => onChangeEmail({ ...emailValue, subject: e.target.value })}
                     placeholder="문의드립니다"
-                    className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                    className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                   />
                 </div>
               </div>
@@ -402,7 +408,7 @@ export default function QrInputPanel({
                   value={emailValue.body}
                   onChange={(e) => onChangeEmail({ ...emailValue, body: e.target.value })}
                   placeholder="내용을 입력하세요."
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#EBE6DD] rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-white border border-indigo-200 rounded-xl text-xs sm:text-sm font-bold text-[#2D2A26] focus:border-indigo-600 outline-none"
                 />
               </div>
             </div>
@@ -437,12 +443,12 @@ export default function QrInputPanel({
   // [STEP 2] 컬러 · 도트 모양 · 로고 설정 화면
   // ============================================================================
   return (
-    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] shadow-xs space-y-6 animate-fade-in">
+    <div className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-6 animate-fade-in">
       {/* 상단 헤더 + 실시간 미니 프리뷰 박스 */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#FAF8F5] p-4 rounded-2xl border border-[#EBE6DD]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100">
         <div className="space-y-1">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-black border border-indigo-200">
-            STEP 2 OF 3
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black shadow-2xs">
+            STEP 2 · 디자인 꾸미기
           </span>
           <h2 className="text-base sm:text-lg font-black text-[#2D2A26]">
             컬러와 도트 모양을 선택해 주세요
@@ -456,7 +462,7 @@ export default function QrInputPanel({
         </div>
 
         {/* 실시간 미니 QR 미리보기 */}
-        <div className="flex items-center gap-3 self-center sm:self-auto bg-white p-2.5 rounded-2xl border border-[#EBE6DD] shadow-2xs shrink-0">
+        <div className="flex items-center gap-3 self-center sm:self-auto bg-white p-2.5 rounded-2xl border border-indigo-200 shadow-xs shrink-0">
           <canvas
             ref={miniCanvasRef}
             className="w-20 h-20 rounded-lg object-contain border border-stone-100"
@@ -509,7 +515,7 @@ export default function QrInputPanel({
                 onClick={() => onUpdateDesign({ fgColor: preset.fg, bgColor: preset.bg })}
                 className={`py-2.5 px-3 rounded-xl text-xs font-bold border flex items-center gap-2.5 cursor-pointer transition-all ${
                   isSelected
-                    ? 'bg-indigo-50 border-indigo-500 text-indigo-950 shadow-2xs'
+                    ? 'bg-indigo-50 border-2 border-indigo-600 text-indigo-950 shadow-2xs'
                     : 'bg-[#FAF8F5] border-[#EBE6DD] text-[#2D2A26] hover:bg-stone-100'
                 }`}
               >
@@ -543,13 +549,13 @@ export default function QrInputPanel({
                 key={item.key}
                 type="button"
                 onClick={() => onUpdateDesign({ dotStyle: item.key })}
-                className={`py-3 px-2 rounded-xl text-xs font-bold border cursor-pointer transition-all flex flex-col items-center gap-1.5 ${
+                className={`py-3 px-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex flex-col items-center gap-1.5 ${
                   design.dotStyle === item.key
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-[#FAF8F5] text-stone-700 border-[#EBE6DD] hover:bg-stone-100'
+                    ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                    : 'bg-[#FAF8F5] text-stone-700 border border-[#EBE6DD] hover:bg-stone-100'
                 }`}
               >
-                <i className={`${item.icon} text-xs`}></i>
+                <i className={`${item.icon} text-xs ${design.dotStyle === item.key ? 'text-indigo-600' : ''}`}></i>
                 <span>{item.label}</span>
               </button>
             ))}
@@ -572,13 +578,13 @@ export default function QrInputPanel({
                 key={item.key}
                 type="button"
                 onClick={() => onUpdateDesign({ eyeStyle: item.key })}
-                className={`py-3 px-2 rounded-xl text-xs font-bold border cursor-pointer transition-all flex flex-col items-center gap-1.5 ${
+                className={`py-3 px-2 rounded-xl text-xs font-bold cursor-pointer transition-all flex flex-col items-center gap-1.5 ${
                   design.eyeStyle === item.key
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
-                    : 'bg-[#FAF8F5] text-stone-700 border-[#EBE6DD] hover:bg-stone-100'
+                    ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                    : 'bg-[#FAF8F5] text-stone-700 border border-[#EBE6DD] hover:bg-stone-100'
                 }`}
               >
-                <i className={`${item.icon} text-xs`}></i>
+                <i className={`${item.icon} text-xs ${design.eyeStyle === item.key ? 'text-indigo-600' : ''}`}></i>
                 <span>{item.label}</span>
               </button>
             ))}
@@ -629,10 +635,10 @@ export default function QrInputPanel({
                   ecLevel: badge.key === 'none' ? 'M' : 'H',
                 })
               }
-              className={`py-2 px-2 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
+              className={`py-2 px-2 rounded-xl text-xs font-bold cursor-pointer transition-all ${
                 design.centerBadge === badge.key
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-2xs'
-                  : 'bg-[#FAF8F5] border-[#EBE6DD] text-stone-700 hover:bg-stone-100'
+                  ? 'bg-indigo-50 border-2 border-indigo-600 text-indigo-950 shadow-2xs'
+                  : 'bg-[#FAF8F5] border border-[#EBE6DD] text-stone-700 hover:bg-stone-100'
               }`}
             >
               {badge.label}

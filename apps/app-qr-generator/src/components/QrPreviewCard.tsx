@@ -100,15 +100,15 @@ export default function QrPreviewCard({
   return (
     <div
       data-screenshot-point="result"
-      className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] shadow-xs flex flex-col justify-between space-y-5 animate-fade-in"
+      className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-emerald-600 shadow-md flex flex-col justify-between space-y-5 animate-fade-in"
     >
       {/* 상단 완성 헤더 */}
       <div className="flex items-start justify-between border-b border-[#EBE6DD] pb-4 gap-3">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-black border border-emerald-200 mb-1.5">
-            <i className="fas fa-circle-check"></i> STEP 3 OF 3 · 생성 완료
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-[11px] font-black mb-1.5 shadow-2xs">
+            <i className="fas fa-circle-check"></i> STEP 3 · QR코드 완성
           </span>
-          <h2 className="text-base sm:text-lg font-black text-[#2D2A26]">
+          <h2 className="text-lg sm:text-xl font-black text-[#2D2A26]">
             나만의 QR코드가 완성되었습니다!
           </h2>
           <p className="text-xs text-stone-500 mt-0.5">
@@ -150,10 +150,10 @@ export default function QrPreviewCard({
               key={item.sz}
               type="button"
               onClick={() => onUpdateDesign({ size: item.sz })}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer transition-all ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
                 design.size === item.sz
-                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
-                  : 'bg-white text-stone-600 border-[#EBE6DD] hover:bg-stone-100'
+                  ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                  : 'bg-white text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
               }`}
             >
               {item.label}
