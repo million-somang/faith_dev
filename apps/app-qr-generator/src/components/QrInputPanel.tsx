@@ -138,39 +138,7 @@ export default function QrInputPanel({
           </button>
         </div>
 
-        {/* 1. 원클릭 예시 샘플 버튼 바 */}
-        <div className="bg-[#FAF8F5] rounded-2xl p-3.5 border border-[#EBE6DD] flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-extrabold text-[#2D2A26] flex items-center gap-1.5">
-            <i className="fas fa-wand-magic-sparkles text-indigo-600"></i>
-            <span>빠른 예시 자동 입력:</span>
-          </span>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              data-screenshot-click="action"
-              onClick={() => onLoadPreset('portal')}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border bg-white border-[#EBE6DD] text-[#2D2A26] hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
-            >
-              🌐 웹사이트 예시
-            </button>
-            <button
-              type="button"
-              onClick={() => onLoadPreset('cafe-wifi')}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border bg-white border-[#EBE6DD] text-[#2D2A26] hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
-            >
-              📶 카페 와이파이 예시
-            </button>
-            <button
-              type="button"
-              onClick={() => onLoadPreset('biz-vcard')}
-              className="px-3 py-1.5 text-xs font-bold rounded-xl border bg-white border-[#EBE6DD] text-[#2D2A26] hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 transition-all cursor-pointer shadow-2xs"
-            >
-              👤 명함(연락처) 예시
-            </button>
-          </div>
-        </div>
-
-        {/* 2. 6대 QR 용도 선택 그리드 (2x3 큼직한 카드) */}
+        {/* 1. 6대 QR 용도 선택 그리드 (2x3 큼직한 카드) */}
         <div>
           <label className="block text-xs font-black text-[#2D2A26] mb-2.5">
             1. QR코드 종류 선택
@@ -182,6 +150,7 @@ export default function QrInputPanel({
                 <button
                   key={tab.key}
                   type="button"
+                  data-screenshot-click={tab.key === 'url' ? 'action' : undefined}
                   onClick={() => onChangeDataType(tab.key)}
                   className={`p-3.5 rounded-2xl text-left border transition-all cursor-pointer flex items-start gap-3 ${
                     active
