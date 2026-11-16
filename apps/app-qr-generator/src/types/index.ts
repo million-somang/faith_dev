@@ -1,5 +1,7 @@
 export type QrDataType = 'url' | 'wifi' | 'vcard' | 'text' | 'sms' | 'email';
 
+export type WizardStep = 1 | 2 | 3;
+
 export type ErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
 
 export type DotStyle = 'square' | 'rounded' | 'dots';

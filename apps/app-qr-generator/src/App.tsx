@@ -6,6 +6,7 @@ import {
   SmsPayload,
   VCardPayload,
   WifiPayload,
+  WizardStep,
 } from './types';
 import { encodeQrMatrix } from './utils/qrMatrixEncoder';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -31,9 +32,16 @@ const DEFAULT_DESIGN: QrDesignSettings = {
   frameSubtitle: '스마트폰 카메라로 스캔해 주세요',
 };
 
+const WIZARD_STEPS: { step: WizardStep; title: string; subtitle: string }[] = [
+  { step: 1, title: '1. QR 용도 및 데이터', subtitle: '주소 · 와이파이 · 명함 입력' },
+  { step: 2, title: '2. 컬러 · 도트 모양', subtitle: '색상 · 점 모양 · 로고 꾸미기' },
+  { step: 3, title: '3. QR코드 생성 완료', subtitle: '스캔 테스트 및 고화질 저장' },
+];
+
 export function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [activeTab, setActiveTab] = useState<'app' | 'guide' | 'faq'>('app');
+  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
   const [toastMessage, setToastMessage] = useState('');
 
   const [dataType, setDataType] = useState<QrDataType>('url');
@@ -70,6 +78,11 @@ export function App() {
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 2600);
+  };
+
+  const handleGoToStep = (nextStep: WizardStep) => {
+    setCurrentStep(nextStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleUpdateDesign = (partial: Partial<QrDesignSettings>) => {
@@ -143,7 +156,7 @@ export function App() {
         frameTitle: 'VERANEX SMART HUB',
         frameSubtitle: '스캔하여 스마트 생활도구를 만나보세요',
       });
-      showToast('🌐 베라넥스 포털 QR 프리셋이 적용되었습니다.');
+      showToast('🌐 웹사이트 예시 데이터가 입력되었습니다.');
     } else if (presetKey === 'cafe-wifi') {
       setDataType('wifi');
       setWifiValue({
@@ -163,7 +176,7 @@ export function App() {
         frameTitle: '무료 와이파이 연결',
         frameSubtitle: '카메라로 스캔하면 비밀번호 없이 즉시 연결됩니다',
       });
-      showToast('📶 매장 와이파이 자동연결 프리셋이 적용되었습니다.');
+      showToast('📶 카페 와이파이 예시 데이터가 입력되었습니다.');
     } else if (presetKey === 'biz-vcard') {
       setDataType('vcard');
       setVcardValue({
@@ -185,22 +198,7 @@ export function App() {
         frameTitle: '스마트 전자명함',
         frameSubtitle: '스캔하여 연락처를 휴대폰에 바로 저장하세요',
       });
-      showToast('👤 비즈니스 스마트 명함(vCard) 프리셋이 적용되었습니다.');
-    } else if (presetKey === 'event-coupon') {
-      setDataType('text');
-      setTextValue('[VeraNex VIP 쿠폰] 코드번호: VERA-2026-FREE-PASS (결제 시 제시해 주세요)');
-      handleUpdateDesign({
-        fgColor: '#9F1239',
-        bgColor: '#FFFFFF',
-        dotStyle: 'dots',
-        eyeStyle: 'circle',
-        centerBadge: 'star',
-        ecLevel: 'H',
-        showFrameLabel: true,
-        frameTitle: 'VIP EVENT COUPON',
-        frameSubtitle: '카운터에서 QR코드를 스캔해 주세요',
-      });
-      showToast('🎁 이벤트 쿠폰 QR 프리셋이 적용되었습니다.');
+      showToast('👤 스마트 명함 예시 데이터가 입력되었습니다.');
     }
   };
 
@@ -208,7 +206,8 @@ export function App() {
     setDataType('url');
     setUrlValue('https://veranex.app');
     setDesign(DEFAULT_DESIGN);
-    showToast('초기 설정으로 복원되었습니다.');
+    setCurrentStep(1);
+    showToast('처음 상태로 초기화되었습니다.');
   };
 
   const handleShare = async () => {
@@ -247,12 +246,12 @@ export function App() {
           </div>
         )}
 
-        <div className="max-w-6xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col">
+        <div className="max-w-3xl w-full mx-auto px-3 sm:px-6 pt-4 flex-1 flex flex-col">
           {/* 상단 공식 VERANEX 헤더 */}
           <Header onShare={handleShare} />
 
-          {/* 3단 탭 네비게이션 */}
-          <nav className="flex items-center gap-1 border-b border-[#EBE6DD] mb-5">
+          {/* 3단 메뉴 탭 (QR 만들기 / 사용 가이드 / 자주 묻는 질문) */}
+          <nav className="flex items-center gap-1 border-b border-[#EBE6DD] mb-4">
             <button
               type="button"
               onClick={() => setActiveTab('app')}
@@ -263,7 +262,7 @@ export function App() {
               }`}
             >
               <i className="fas fa-qrcode"></i>
-              <span>QR 생성 스튜디오</span>
+              <span>QR코드 만들기</span>
             </button>
 
             <button
@@ -294,12 +293,62 @@ export function App() {
           </nav>
 
           {/* 메인 콘텐츠 영역 */}
-          <main className="flex-1 pb-8">
+          <main className="flex-1 pb-8 space-y-4">
             {activeTab === 'app' && (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start animate-fade-in">
-                {/* 좌측 패널: 데이터 입력 및 디자인 커스텀 (7열) */}
-                <div className="lg:col-span-7">
+              <>
+                {/* 상단 3단계 프로그레스 스텝 바 (클릭하여 단계 이동 가능) */}
+                <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-2xl border border-[#EBE6DD] shadow-2xs">
+                  {WIZARD_STEPS.map((item) => {
+                    const isCurrent = currentStep === item.step;
+                    const isDone = currentStep > item.step;
+                    return (
+                      <button
+                        key={item.step}
+                        type="button"
+                        onClick={() => handleGoToStep(item.step)}
+                        className={`p-2.5 sm:p-3 rounded-xl text-left transition-all cursor-pointer flex items-center gap-2.5 border ${
+                          isCurrent
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                            : isDone
+                            ? 'bg-emerald-50/70 text-emerald-900 border-emerald-200 hover:bg-emerald-50'
+                            : 'bg-[#FAF8F5] text-stone-500 border-transparent hover:bg-stone-100'
+                        }`}
+                      >
+                        <div
+                          className={`w-6 h-6 rounded-full text-xs font-black flex items-center justify-center shrink-0 ${
+                            isCurrent
+                              ? 'bg-white text-indigo-600'
+                              : isDone
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-stone-200 text-stone-600'
+                          }`}
+                        >
+                          {isDone ? <i className="fas fa-check text-[10px]"></i> : item.step}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] sm:text-xs font-black truncate">
+                            {item.title}
+                          </div>
+                          <div
+                            className={`text-[10px] truncate hidden sm:block ${
+                              isCurrent ? 'text-indigo-100' : isDone ? 'text-emerald-700' : 'text-stone-400'
+                            }`}
+                          >
+                            {item.subtitle}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 단계별 단일 화면 렌더링 (Step 1 / Step 2 / Step 3) */}
+                {currentStep !== 3 ? (
                   <QrInputPanel
+                    step={currentStep}
+                    onGoToStep={handleGoToStep}
+                    matrix={matrix}
+                    payloadText={payloadText}
                     dataType={dataType}
                     onChangeDataType={setDataType}
                     urlValue={urlValue}
@@ -319,40 +368,39 @@ export function App() {
                     onLoadPreset={handleLoadPreset}
                     onReset={handleReset}
                   />
-                </div>
-
-                {/* 우측 패널: 실시간 고해상도 QR 캔버스 프리뷰 & 다운로드/분석 리포트 (5열) */}
-                <div className="lg:col-span-5 lg:sticky lg:top-4 space-y-4">
+                ) : (
                   <QrPreviewCard
                     matrix={matrix}
                     payloadText={payloadText}
                     design={design}
+                    onUpdateDesign={handleUpdateDesign}
+                    onGoToStep={handleGoToStep}
                     onShowToast={showToast}
                   />
+                )}
 
-                  {/* 하단 스폰서 광고 슬롯 (CLS 제로) */}
-                  <div
-                    aria-label="SPONSORED AD"
-                    className="bg-white border border-[#EBE6DD] rounded-2xl p-3.5 shadow-2xs flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded shrink-0">
-                        SPONSORED AD
-                      </span>
-                      <span className="text-xs font-bold text-[#2D2A26] truncate">
-                        고해상도 명함·배너 디자인은 VeraNex 이미지 리사이저와 함께!
-                      </span>
-                    </div>
-                    <a
-                      href="https://veranex.app/lifestyle"
-                      target="_top"
-                      className="text-[11px] font-extrabold text-indigo-600 hover:underline shrink-0"
-                    >
-                      열기 →
-                    </a>
+                {/* 하단 스폰서 광고 슬롯 (CLS 제로) */}
+                <div
+                  aria-label="SPONSORED AD"
+                  className="bg-white border border-[#EBE6DD] rounded-2xl p-3.5 shadow-2xs flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded shrink-0">
+                      SPONSORED AD
+                    </span>
+                    <span className="text-xs font-bold text-[#2D2A26] truncate">
+                      고해상도 명함·배너 디자인은 VeraNex 이미지 리사이저와 함께!
+                    </span>
                   </div>
+                  <a
+                    href="https://veranex.app/lifestyle"
+                    target="_top"
+                    className="text-[11px] font-extrabold text-indigo-600 hover:underline shrink-0"
+                  >
+                    열기 →
+                  </a>
                 </div>
-              </div>
+              </>
             )}
 
             {activeTab === 'guide' && <HowToGuide />}
@@ -362,7 +410,7 @@ export function App() {
 
         {/* 하단 공식 저작권 및 E-E-A-T 보안 고지 푸터 */}
         <footer className="mt-auto border-t border-[#EBE6DD] bg-white/70 py-4 px-4 text-center text-xs text-stone-500">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="font-bold text-[#2D2A26]">
               © 2026 VeraNex. All rights reserved. (100% Client-Side QR Matrix Engine)
             </p>

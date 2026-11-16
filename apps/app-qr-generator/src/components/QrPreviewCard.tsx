@@ -1,11 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { QrDesignSettings, QrMatrixResult } from '../types';
+import { QrDesignSettings, QrMatrixResult, WizardStep } from '../types';
 import { getContrastRatio, renderQrToCanvas, renderQrToSvgString } from '../utils/qrRenderer';
 
 interface QrPreviewCardProps {
   matrix: QrMatrixResult;
   payloadText: string;
   design: QrDesignSettings;
+  onUpdateDesign: (partial: Partial<QrDesignSettings>) => void;
+  onGoToStep: (step: WizardStep) => void;
   onShowToast: (msg: string) => void;
 }
 
@@ -13,6 +15,8 @@ export default function QrPreviewCard({
   matrix,
   payloadText,
   design,
+  onUpdateDesign,
+  onGoToStep,
   onShowToast,
 }: QrPreviewCardProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -96,87 +100,112 @@ export default function QrPreviewCard({
   return (
     <div
       data-screenshot-point="result"
-      className="bg-white rounded-3xl p-4 sm:p-6 border border-[#EBE6DD] shadow-xs flex flex-col justify-between space-y-4"
+      className="bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] shadow-xs flex flex-col justify-between space-y-5 animate-fade-in"
     >
-      {/* 상단 프리뷰 헤더 */}
-      <div className="flex items-center justify-between border-b border-[#EBE6DD] pb-3">
+      {/* 상단 완성 헤더 */}
+      <div className="flex items-start justify-between border-b border-[#EBE6DD] pb-4 gap-3">
         <div>
-          <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">
-            LIVE VECTOR &amp; CANVAS PREVIEW
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-black border border-emerald-200 mb-1.5">
+            <i className="fas fa-circle-check"></i> STEP 3 OF 3 · 생성 완료
           </span>
-          <h2 className="text-sm sm:text-base font-black text-[#2D2A26]">
-            실시간 QR코드 프리뷰 &amp; 다운로드
+          <h2 className="text-base sm:text-lg font-black text-[#2D2A26]">
+            나만의 QR코드가 완성되었습니다!
           </h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            스마트폰 카메라로 스캔해 확인하고 원하는 파일 형식으로 다운로드하세요.
+          </p>
         </div>
+
         <span
-          className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${
+          className={`text-[11px] font-black px-3 py-1 rounded-full border shrink-0 ${
             isGoodContrast
               ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
               : 'bg-amber-50 text-amber-700 border-amber-300'
           }`}
         >
-          {isGoodContrast ? `스캔 적합도 최상 (${contrastRatio}:1)` : `명암 대비 주의 (${contrastRatio}:1)`}
+          {isGoodContrast ? `스캔 인식률 최상 (${contrastRatio}:1)` : `명암 대비 주의 (${contrastRatio}:1)`}
         </span>
       </div>
 
-      {/* 중앙 캔버스 프리뷰 영역 */}
-      <div className="bg-[#FAF8F5] border border-[#EBE6DD] rounded-2xl p-4 sm:p-6 flex flex-col items-center justify-center">
-        <div className="bg-white p-3 rounded-2xl shadow-sm border border-[#EBE6DD] flex items-center justify-center">
+      {/* 중앙 대형 QR 캔버스 프리뷰 영역 */}
+      <div className="bg-[#FAF8F5] border border-[#EBE6DD] rounded-2xl p-6 flex flex-col items-center justify-center">
+        <div className="bg-white p-4 rounded-2xl shadow-sm border border-[#EBE6DD] flex items-center justify-center">
           <canvas
             ref={canvasRef}
-            className="w-56 h-auto sm:w-64 max-w-full rounded-lg object-contain"
+            className="w-60 h-auto sm:w-72 max-w-full rounded-lg object-contain"
           />
         </div>
-        <p className="text-[11px] font-medium text-stone-500 mt-3 text-center">
-          스마트폰 기본 카메라로 위 화면을 비추면 즉시 스캔 테스트를 할 수 있습니다.
-        </p>
+
+        {/* 저장 해상도 빠른 선택 칩 */}
+        <div className="flex items-center gap-2 mt-4">
+          <span className="text-[11px] font-bold text-stone-500">저장 화질:</span>
+          {(
+            [
+              { sz: 512, label: '512px (웹용)' },
+              { sz: 1024, label: '1024px (고화질 권장)' },
+              { sz: 2048, label: '2048px (인쇄용)' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.sz}
+              type="button"
+              onClick={() => onUpdateDesign({ size: item.sz })}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer transition-all ${
+                design.size === item.sz
+                  ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                  : 'bg-white text-stone-600 border-[#EBE6DD] hover:bg-stone-100'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* 다운로드 & 복사 액션 버튼 그리드 */}
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
+      {/* 다운로드 & 복사 대형 액션 버튼 그리드 */}
+      <div className="space-y-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <button
             type="button"
-            data-screenshot-click="result"
             onClick={() => handleDownloadRaster('png')}
-            className="py-3 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+            className="py-4 px-4 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
-            <i className="fas fa-download text-xs"></i>
-            <span>PNG 고화질 저장</span>
+            <i className="fas fa-download"></i>
+            <span>PNG 고화질 이미지 다운로드</span>
           </button>
           <button
             type="button"
             onClick={handleDownloadSvg}
-            className="py-3 px-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+            className="py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
           >
-            <i className="fas fa-bezier-curve text-xs"></i>
-            <span>SVG 벡터 저장 (인쇄용)</span>
+            <i className="fas fa-bezier-curve"></i>
+            <span>SVG 벡터 다운로드 (인쇄소용)</span>
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => handleDownloadRaster('webp')}
-            className="py-2.5 px-3 bg-[#FAF8F5] hover:bg-stone-100 text-[#2D2A26] border border-[#EBE6DD] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <i className="fas fa-file-image text-indigo-600 text-xs"></i>
-            <span>WebP 경량 저장</span>
-          </button>
+        <div className="grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={handleCopyImage}
-            className="py-2.5 px-3 bg-[#FAF8F5] hover:bg-stone-100 text-[#2D2A26] border border-[#EBE6DD] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+            className="py-3 px-3 bg-[#FAF8F5] hover:bg-stone-200/60 text-[#2D2A26] border border-[#EBE6DD] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <i className="fas fa-copy text-indigo-600 text-xs"></i>
-            <span>클립보드 이미지 복사</span>
+            <i className="fas fa-copy text-indigo-600"></i>
+            <span>클립보드에 이미지 복사</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDownloadRaster('webp')}
+            className="py-3 px-3 bg-[#FAF8F5] hover:bg-stone-200/60 text-[#2D2A26] border border-[#EBE6DD] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <i className="fas fa-file-image text-indigo-600"></i>
+            <span>WebP 경량 포맷 저장</span>
           </button>
         </div>
       </div>
 
-      {/* 4대 실시간 QR 행렬 스펙 & 보안 진단 메트릭 바 */}
-      <div className="pt-2 border-t border-[#EBE6DD] space-y-2.5">
-        <div className="grid grid-cols-4 gap-1.5 text-center">
+      {/* 생성된 QR 요약 스펙 */}
+      <div className="pt-2 border-t border-[#EBE6DD] space-y-2">
+        <div className="grid grid-cols-4 gap-2 text-center">
           <div className="bg-[#FAF8F5] border border-[#EBE6DD] rounded-xl p-2">
             <span className="block text-[9px] font-bold text-stone-400">QR 규격</span>
             <span className="text-[11px] font-mono font-black text-[#2D2A26]">
@@ -196,20 +225,31 @@ export default function QrPreviewCard({
             </span>
           </div>
           <div className="bg-[#FAF8F5] border border-[#EBE6DD] rounded-xl p-2">
-            <span className="block text-[9px] font-bold text-stone-400">출력 해상도</span>
-            <span className="text-[11px] font-mono font-black text-[#2D2A26]">
-              {design.size}px
-            </span>
+            <span className="block text-[9px] font-bold text-stone-400">유효기간</span>
+            <span className="text-[11px] font-black text-emerald-700">평생 무제한</span>
           </div>
         </div>
+      </div>
 
-        {/* 인코딩된 원문 페이로드 요약 */}
-        <div className="bg-[#FAF8F5] border border-[#EBE6DD] rounded-xl px-3 py-2 flex items-center justify-between gap-2 text-[11px]">
-          <span className="font-bold text-stone-500 shrink-0">인코딩 원문:</span>
-          <code className="font-mono text-stone-700 truncate flex-1 text-right">
-            {payloadText}
-          </code>
-        </div>
+      {/* 하단 스텝 이동 네비게이션 버튼 */}
+      <div className="pt-2 flex flex-col sm:flex-row gap-2.5 border-t border-[#EBE6DD]">
+        <button
+          type="button"
+          onClick={() => onGoToStep(2)}
+          className="flex-1 py-3.5 px-4 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <i className="fas fa-palette text-indigo-600"></i>
+          <span>← 이전 스텝: 컬러 · 도트 모양 다시 꾸미기</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onGoToStep(1)}
+          className="flex-1 py-3.5 px-4 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs font-black rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+        >
+          <i className="fas fa-rotate-right text-emerald-600"></i>
+          <span>처음부터 다른 QR코드 만들기 (Step 1)</span>
+        </button>
       </div>
     </div>
   );
