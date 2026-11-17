@@ -279,42 +279,42 @@ export default function NewsHubClient({ initialNews = [], initialHotNews = [] }:
     };
 
     return (
-        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8 w-full">
+        <main className="flex-1 max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-5 w-full">
             {/* 시맨틱 H1 헤더 */}
-            <header className="mb-6">
-                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+            <header className="mb-3.5">
+                <h1 className="text-lg sm:text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                     <i className="fas fa-newspaper text-emerald-600"></i>
                     실시간 뉴스 & 분야별 팩트 브리핑
                 </h1>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                <p className="text-xs text-gray-500 mt-0.5">
                     경제, 금융·주식, IT·과학, 정치, 사회 등 주요 분야별 핵심 이슈를 실시간으로 확인하세요.
                 </p>
             </header>
 
             {/* Search & Categories */}
-            <div className="mb-8">
-                <form onSubmit={handleSearch} className="relative mb-6">
+            <div className="mb-3.5">
+                <form onSubmit={handleSearch} className="relative mb-2.5">
                     <input
                         type="text"
                         placeholder="뉴스 검색..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-6 py-4 rounded-2xl border-none shadow-sm text-lg focus:ring-2 focus:ring-emerald-500 bg-white transition-all"
+                        className="w-full px-4 py-2.5 sm:py-3 rounded-xl border border-gray-200/80 shadow-xs text-sm sm:text-base focus:ring-2 focus:ring-emerald-500 outline-none bg-white transition-all pr-12"
                     />
-                    <button type="submit" className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center">
-                        <i className="fas fa-search"></i>
+                    <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center transition-colors">
+                        <i className="fas fa-search text-xs sm:text-sm"></i>
                     </button>
                 </form>
 
-                <div className="flex gap-2 overflow-x-auto pb-2 hide-scrollbar">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 hide-scrollbar">
                     {categories.map((cat) => (
                         <button
                             key={cat.id}
                             onClick={() => setCategory(cat.id)}
-                            className={`whitespace-nowrap flex-shrink-0 px-5 py-2 rounded-full font-bold text-sm transition-all ${
+                            className={`whitespace-nowrap flex-shrink-0 px-3.5 sm:px-4 py-1.5 rounded-full font-bold text-xs sm:text-sm transition-all ${
                                 category === cat.id
-                                    ? 'bg-emerald-600 text-white shadow-md'
-                                    : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-100'
+                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200/80'
                             }`}
                         >
                             {cat.name}
@@ -324,101 +324,101 @@ export default function NewsHubClient({ initialNews = [], initialHotNews = [] }:
             </div>
 
             {/* Tenping Ad Banner */}
-            <TenpingAdBanner className="mb-8" />
+            <TenpingAdBanner className="mb-3" />
 
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex flex-col lg:flex-row gap-4">
                 {/* Left: News List */}
-                <div className="flex-1 min-w-0 flex flex-col gap-6">
+                <div className="flex-1 min-w-0 flex flex-col gap-3.5">
                     {/* Tabbed Card for Keyword Subscription and Hot Issues (Mobile Only) */}
                     <Card className="!p-0 overflow-hidden lg:hidden">
                         <div className="flex bg-gray-50 border-b border-gray-100">
                             <button
                                 onClick={() => setActiveTab('keyword')}
-                                className={`flex-1 py-4 text-center font-bold text-sm transition-colors ${activeTab === 'keyword' ? 'bg-white text-emerald-600 border-t-2 border-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`flex-1 py-2.5 text-center font-bold text-xs sm:text-sm transition-colors ${activeTab === 'keyword' ? 'bg-white text-emerald-600 border-t-2 border-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                <i className="fas fa-bookmark mr-2 text-purple-500"></i>키워드 구독
+                                <i className="fas fa-bookmark mr-1.5 text-purple-500"></i>키워드 구독
                             </button>
                             <button
                                 onClick={() => setActiveTab('hot')}
-                                className={`flex-1 py-4 text-center font-bold text-sm transition-colors ${activeTab === 'hot' ? 'bg-white text-emerald-600 border-t-2 border-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`flex-1 py-2.5 text-center font-bold text-xs sm:text-sm transition-colors ${activeTab === 'hot' ? 'bg-white text-emerald-600 border-t-2 border-emerald-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                <i className="fas fa-fire mr-2 text-red-500"></i>실시간 HOT 이슈
+                                <i className="fas fa-fire mr-1.5 text-red-500"></i>실시간 HOT 이슈
                             </button>
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-3.5">
                             {activeTab === 'keyword' && (
                                 <div>
-                                    <div className="mb-4 relative">
+                                    <div className="mb-2.5 relative">
                                         <form onSubmit={handleAddKeyword}>
                                             <input
                                                 type="text"
                                                 placeholder="키워드 입력..."
                                                 value={newKeyword}
                                                 onChange={(e) => setNewKeyword(e.target.value)}
-                                                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 pr-10 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                                             />
-                                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                            <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors">
                                                 <i className="fas fa-plus text-xs"></i>
                                             </button>
                                         </form>
                                     </div>
 
-                                    <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
                                         {!isLoggedIn ? (
-                                            <p className="text-sm text-gray-500 text-center py-4">로그인이 필요합니다</p>
+                                            <p className="text-xs text-gray-500 text-center py-2.5">로그인이 필요합니다</p>
                                         ) : subscribedKeywords.length > 0 ? (
                                             subscribedKeywords.map((kw) => (
-                                                <div key={kw.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                                    <span className="text-sm font-medium text-gray-700 break-all pr-2">#{kw.keyword}</span>
+                                                <div key={kw.id} className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                                    <span className="text-xs font-medium text-gray-700 break-all pr-2">#{kw.keyword}</span>
                                                     <button
                                                         onClick={() => handleRemoveKeyword(kw.id)}
-                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0"
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-0.5 flex-shrink-0"
                                                         title="삭제"
                                                     >
-                                                        <i className="fas fa-times text-sm"></i>
+                                                        <i className="fas fa-times text-xs"></i>
                                                     </button>
                                                 </div>
                                             ))
                                         ) : (
-                                            <p className="text-sm text-gray-500 text-center py-4">구독한 키워드가 없습니다</p>
+                                            <p className="text-xs text-gray-500 text-center py-2.5">구독한 키워드가 없습니다</p>
                                         )}
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'hot' && (
-                                <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1 custom-scrollbar">
                                     {hotNews.map((n, idx) => (
-                                        <Link key={n.id} href={`/news/${n.id}`} className="flex items-start gap-3 group bg-gray-50 p-3 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <span className={`text-sm font-black mt-0.5 ${idx < 3 ? 'text-red-500' : 'text-gray-400'}`}>{idx + 1}</span>
-                                            <p className="text-sm text-gray-700 font-medium line-clamp-2 group-hover:text-emerald-600 leading-snug flex-1">
+                                        <Link key={n.id} href={`/news/${n.id}`} className="flex items-start gap-2.5 group bg-gray-50 py-2 px-2.5 rounded-lg hover:bg-gray-100 transition-colors">
+                                            <span className={`text-xs font-black mt-0.5 ${idx < 3 ? 'text-red-500' : 'text-gray-400'}`}>{idx + 1}</span>
+                                            <p className="text-xs text-gray-700 font-medium line-clamp-1 group-hover:text-emerald-600 leading-snug flex-1">
                                                 {n.title}
                                             </p>
                                         </Link>
                                     ))}
                                     {hotNews.length === 0 && (
-                                        <p className="text-sm text-gray-500 text-center py-4">현재 많이 읽은 뉴스가 없습니다</p>
+                                        <p className="text-xs text-gray-500 text-center py-2.5">현재 많이 읽은 뉴스가 없습니다</p>
                                     )}
                                 </div>
                             )}
                         </div>
                     </Card>
 
-                    <Card className="!p-0 sm:!p-6 overflow-hidden">
-                        <div className="bg-white p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h2 className="text-xl font-bold text-gray-900">최신 뉴스</h2>
-                            <button onClick={() => { setNews([]); setPage(1); setHasMore(true); loadNews(1, true); }} className="text-gray-400 hover:text-emerald-600 transition-colors">
+                    <Card className="!p-0 overflow-hidden">
+                        <div className="bg-white px-4 sm:px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <h2 className="text-base sm:text-lg font-extrabold text-gray-900">최신 뉴스</h2>
+                            <button onClick={() => { setNews([]); setPage(1); setHasMore(true); loadNews(1, true); }} className="text-gray-400 hover:text-emerald-600 transition-colors text-sm">
                                 <i className="fas fa-sync-alt"></i>
                             </button>
                         </div>
 
-                        <div className="divide-y divide-gray-50">
+                        <div className="divide-y divide-gray-100">
                             {category === 'keyword' && !isLoggedIn && (
-                                <div className="p-12 text-center">
-                                    <i className="fas fa-lock text-5xl text-gray-300 mb-4"></i>
-                                    <p className="text-gray-700 font-bold mb-2">로그인이 필요한 서비스입니다</p>
-                                    <p className="text-gray-500 text-sm mb-4">키워드 뉴스를 보려면 먼저 로그인해주세요</p>
+                                <div className="p-8 text-center">
+                                    <i className="fas fa-lock text-4xl text-gray-300 mb-3"></i>
+                                    <p className="text-gray-700 font-bold mb-1 text-sm">로그인이 필요한 서비스입니다</p>
+                                    <p className="text-gray-500 text-xs">키워드 뉴스를 보려면 먼저 로그인해주세요</p>
                                 </div>
                             )}
 
@@ -433,27 +433,27 @@ export default function NewsHubClient({ initialNews = [], initialHotNews = [] }:
                             ))}
 
                             {loading && (
-                                <div className="p-12 text-center text-gray-400">
-                                    <div className="animate-spin w-8 h-8 border-4 border-emerald-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                                <div className="p-8 text-center text-gray-400 text-sm">
+                                    <div className="animate-spin w-6 h-6 border-3 border-emerald-600 border-t-transparent rounded-full mx-auto mb-2.5"></div>
                                     <p>뉴스를 불러오는 중입니다...</p>
                                 </div>
                             )}
 
                             {!loading && news.length === 0 && (
-                                <div className="p-12 text-center text-gray-400">
-                                    <i className="fas fa-newspaper text-5xl mb-4 opacity-20"></i>
+                                <div className="p-8 text-center text-gray-400 text-sm">
+                                    <i className="fas fa-newspaper text-4xl mb-2.5 opacity-20"></i>
                                     <p>검색 결과가 없습니다.</p>
                                 </div>
                             )}
 
                             {hasMore && !loading && category !== 'keyword' && news.length > 0 && (
-                                <div className="p-4">
+                                <div className="p-3">
                                     <button
                                         onClick={() => setPage(prev => prev + 1)}
-                                        className="w-full py-3.5 flex items-center justify-center gap-2 text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-600 transition-all"
+                                        className="w-full py-2.5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-bold text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 hover:text-emerald-600 hover:border-emerald-600 transition-all"
                                     >
                                         기사 더보기
-                                        <i className="fas fa-chevron-down text-xs"></i>
+                                        <i className="fas fa-chevron-down text-[10px]"></i>
                                     </button>
                                 </div>
                             )}
@@ -462,62 +462,62 @@ export default function NewsHubClient({ initialNews = [], initialHotNews = [] }:
                 </div>
 
                 {/* Right: Sidebar */}
-                <aside className="w-full lg:w-80 space-y-6">
+                <aside className="w-full lg:w-72 xl:w-80 space-y-3.5">
                     {/* Keyword Subscription (PC Only) */}
-                    <div className="hidden lg:block space-y-6">
-                        <Card className="p-6">
-                            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                    <div className="hidden lg:block space-y-3.5">
+                        <Card className="!p-4">
+                            <h3 className="text-sm sm:text-base font-extrabold text-gray-900 mb-3 flex items-center">
                                 <i className="fas fa-bookmark text-purple-500 mr-2"></i>
                                 <span>키워드 구독</span>
                             </h3>
-                            <div className="mb-4 relative">
+                            <div className="mb-2.5 relative">
                                 <form onSubmit={handleAddKeyword}>
                                     <input
                                         type="text"
                                         placeholder="키워드 입력..."
                                         value={newKeyword}
                                         onChange={(e) => setNewKeyword(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 pr-12 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                                        className="w-full bg-gray-50 border border-gray-200 rounded-lg py-2 px-3 pr-10 text-xs sm:text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
                                     />
-                                    <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors">
+                                    <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors">
                                         <i className="fas fa-plus text-xs"></i>
                                     </button>
                                 </form>
                             </div>
 
-                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1 custom-scrollbar">
                                 {!isLoggedIn ? (
-                                    <p className="text-sm text-gray-500 text-center py-4">로그인이 필요합니다</p>
+                                    <p className="text-xs text-gray-500 text-center py-2.5">로그인이 필요합니다</p>
                                 ) : subscribedKeywords.length > 0 ? (
                                     subscribedKeywords.map((kw) => (
-                                        <div key={kw.id} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            <span className="text-sm font-medium text-gray-700 break-all pr-2">#{kw.keyword}</span>
+                                        <div key={kw.id} className="flex items-center justify-between py-1.5 px-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                            <span className="text-xs font-medium text-gray-700 break-all pr-2">#{kw.keyword}</span>
                                             <button
                                                 onClick={() => handleRemoveKeyword(kw.id)}
-                                                className="text-gray-400 hover:text-red-500 transition-colors p-1 flex-shrink-0"
+                                                className="text-gray-400 hover:text-red-500 transition-colors p-0.5 flex-shrink-0"
                                                 title="삭제"
                                             >
-                                                <i className="fas fa-times text-sm"></i>
+                                                <i className="fas fa-times text-xs"></i>
                                             </button>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-sm text-gray-500 text-center py-4">구독한 키워드가 없습니다</p>
+                                    <p className="text-xs text-gray-500 text-center py-2.5">구독한 키워드가 없습니다</p>
                                 )}
                             </div>
                         </Card>
 
                         {/* Hot Issues (PC Only) */}
-                        <Card className="p-6">
-                            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
+                        <Card className="!p-4">
+                            <h3 className="text-sm sm:text-base font-extrabold text-gray-900 mb-3 flex items-center">
                                 <i className="fas fa-fire text-red-500 mr-2"></i>
                                 <span>실시간 HOT 이슈</span>
                             </h3>
-                            <div className="space-y-4">
+                            <div className="space-y-2">
                                 {hotNews.map((n, idx) => (
-                                    <Link key={n.id} href={`/news/${n.id}`} className="flex items-start gap-3 group">
-                                        <span className={`text-sm font-black ${idx < 3 ? 'text-red-500' : 'text-gray-400'}`}>{idx + 1}</span>
-                                        <p className="text-sm text-gray-700 font-medium line-clamp-2 group-hover:text-emerald-600 leading-snug">
+                                    <Link key={n.id} href={`/news/${n.id}`} className="flex items-start gap-2.5 group py-0.5">
+                                        <span className={`text-xs font-black mt-0.5 w-4 shrink-0 ${idx < 3 ? 'text-red-500' : 'text-gray-400'}`}>{idx + 1}</span>
+                                        <p className="text-xs sm:text-[13px] text-gray-700 font-medium line-clamp-2 group-hover:text-emerald-600 leading-snug">
                                             {n.title}
                                         </p>
                                     </Link>

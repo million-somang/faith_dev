@@ -44,11 +44,11 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
     }
 
     return (
-        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-200 sm:border-gray-100 last:border-0 p-4 sm:p-5 hover:bg-gray-50 transition-colors group relative cursor-pointer group">
-            <div className="flex gap-3 sm:gap-4 items-start sm:items-center">
+        <a href={`/news/${news.news_id || news.id}`} data-index={index} className="news-card block border-b border-gray-100 last:border-0 px-3.5 py-2.5 sm:px-4 sm:py-3 hover:bg-gray-50/80 transition-colors group relative cursor-pointer">
+            <div className="flex gap-3 sm:gap-3.5 items-start sm:items-center">
                 {/* 썸네일 (이미지가 없어도 동일 크기 유지 → 카드 높이 통일) */}
-                <div className="relative w-24 h-24 sm:w-32 sm:h-[84px] flex-shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <i className="far fa-newspaper text-gray-300 text-2xl"></i>
+                <div className="relative w-20 h-20 sm:w-28 sm:h-[76px] flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <i className="far fa-newspaper text-gray-300 text-xl"></i>
                     {news.thumbnail && (
                         <img
                             src={news.thumbnail}
@@ -60,17 +60,17 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                     )}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
                         {categories.slice(0, 3).map((cat) => (
                             <span key={cat} className={`badge ${getCategoryColor(cat)}`}>{getCategoryName(cat)}</span>
                         ))}
-                        <span className="text-gray-600 sm:text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
+                        <span className="text-gray-500 text-[11px] font-bold flex-shrink-0">{timeAgo}</span>
                         {isAnalyzed && (
-                            <span className="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
-                                <i className="fas fa-chart-line mr-1"></i>분석됨
+                            <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-200">
+                                <i className="fas fa-chart-line mr-0.5"></i>분석됨
                             </span>
                         )}
-                        {/* 모바일: 언론사를 메타 줄에 인라인 표시 (별도 컬럼 제거로 본문 공간 확보) */}
+                        {/* 모바일: 언론사를 메타 줄에 인라인 표시 */}
                         {publisher && (
                             <span className="sm:hidden text-[11px] font-bold text-gray-500 truncate max-w-[45%]">· {publisher}</span>
                         )}
@@ -79,74 +79,75 @@ export const NewsCard = ({ news, index, isBookmarked = false, onBookmarkToggle, 
                     <p className="text-gray-900 group-hover:text-brand-green-hover font-bold sm:font-semibold text-sm sm:text-[15px] leading-snug line-clamp-2 sm:line-clamp-1">
                         {displayTitle}
                     </p>
-                    {/* 요약: 모바일 2줄, 데스크탑 1줄 (길면 ...으로 표시) */}
+                    {/* 요약: 1줄 컴팩트 표시 */}
                     {(news.summary || news.description) && (
-                        <p className="text-gray-700 sm:text-gray-500 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
+                        <p className="text-gray-600 sm:text-gray-500 text-xs mt-0.5 line-clamp-1">
                             {decodeHtmlEntities(news.summary || news.description)}
                         </p>
                     )}
+
+                    {/* 키워드 및 액션 버튼: 본문 컬럼 하단에 인라인 통합하여 카드 하단 들뜬 여백 제거 */}
+                    {(keywords.length > 0 || !hideActions) && (
+                        <div className="flex items-center justify-between mt-1.5 gap-2">
+                            <div className="flex flex-wrap items-center gap-1 min-w-0 overflow-hidden">
+                                {keywords.slice(0, 3).map((kw, i) => (
+                                    <span key={i} className="px-1.5 py-0.2 bg-gray-50 text-gray-500 rounded text-[10px] font-medium whitespace-nowrap border border-gray-200/80">
+                                        #{kw}
+                                    </span>
+                                ))}
+                            </div>
+
+                            {!hideActions && (
+                                <div className="flex items-center justify-end gap-2.5 flex-shrink-0 text-xs">
+                                    <div className="flex items-center gap-2.5 border-r border-gray-200 pr-2.5">
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); if (onVote) onVote(news.news_id || news.id, 'up'); }}
+                                            className={`transition-transform hover:scale-110 flex items-center gap-1 ${(news.vote_up || 0) > 0 ? 'text-red-500 font-bold' : 'text-gray-400 hover:text-red-500'}`}
+                                            title="좋아요"
+                                        >
+                                            <i className={`${(news.vote_up || 0) > 0 ? 'fas' : 'far'} fa-thumbs-up text-[11px]`}></i>
+                                            {news.vote_up > 0 && <span className="text-[10px]">{news.vote_up}</span>}
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.preventDefault(); if (onVote) onVote(news.news_id || news.id, 'down'); }}
+                                            className={`transition-transform hover:scale-110 flex items-center gap-1 ${(news.vote_down || 0) > 0 ? 'text-blue-500 font-bold' : 'text-gray-400 hover:text-blue-500'}`}
+                                            title="싫어요"
+                                        >
+                                            <i className={`${(news.vote_down || 0) > 0 ? 'fas' : 'far'} fa-thumbs-down text-[11px]`}></i>
+                                            {news.vote_down > 0 && <span className="text-[10px]">{news.vote_down}</span>}
+                                        </button>
+                                    </div>
+                                    <button
+                                        onClick={(e) => { e.preventDefault(); if (onBookmarkToggle) onBookmarkToggle(news.news_id || news.id); }}
+                                        className={`text-gray-400 hover:text-yellow-500 transition-transform hover:scale-110 ${isBookmarked ? 'text-yellow-500' : ''}`}
+                                        title="북마크"
+                                    >
+                                        <i className={`${isBookmarked ? 'fas' : 'far'} fa-bookmark text-[11px]`}></i>
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            if (navigator.share) {
+                                                navigator.share({ title: news.title, url: `/news/${news.news_id || news.id}` });
+                                            }
+                                        }}
+                                        className="text-gray-400 hover:text-blue-500 transition-transform hover:scale-110"
+                                        title="공유"
+                                    >
+                                        <i className="fas fa-share-alt text-[11px]"></i>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
                 {/* 언론사 (데스크탑 전용: 카드 오른쪽 끝 독립 컬럼) */}
-                <div className="hidden sm:flex w-24 flex-shrink-0 items-center justify-center border-l border-gray-100 pl-3 self-stretch">
-                    <span className="text-sm font-extrabold text-gray-900 leading-tight text-center break-keep">
+                <div className="hidden sm:flex w-22 flex-shrink-0 items-center justify-center border-l border-gray-100 pl-3 self-stretch">
+                    <span className="text-xs font-extrabold text-gray-800 leading-tight text-center break-keep">
                         {publisher || '뉴스'}
                     </span>
                 </div>
             </div>
-
-            {(keywords.length > 0 || !hideActions) && (
-                <div className="flex items-center justify-between mt-3 pt-2 border-t border-transparent group-hover:border-gray-100 transition-colors">
-                    <div className="flex flex-wrap items-center gap-1.5 flex-1 pr-4">
-                        {keywords.slice(0, 3).map((kw, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-gray-50 text-gray-500 hover:bg-gray-100 transition-colors rounded text-[10px] font-medium whitespace-nowrap border border-gray-200">
-                                #{kw}
-                            </span>
-                        ))}
-                    </div>
-
-                    {!hideActions && (
-                        <div className="flex items-center justify-end gap-3 flex-shrink-0">
-                            <div className="flex items-center gap-3 mr-2 border-r border-gray-200 pr-3">
-                                <button
-                                    onClick={(e) => { e.preventDefault(); if (onVote) onVote(news.news_id || news.id, 'up'); }}
-                                    className={`transition-transform hover:scale-110 flex items-center gap-1 ${(news.vote_up || 0) > 0 ? 'text-red-500 font-bold' : 'text-gray-400 hover:text-red-500'}`}
-                                    title="좋아요"
-                                >
-                                    <i className={`${(news.vote_up || 0) > 0 ? 'fas' : 'far'} fa-thumbs-up`}></i>
-                                    {news.vote_up > 0 && <span className="text-[10px]">{news.vote_up}</span>}
-                                </button>
-                                <button
-                                    onClick={(e) => { e.preventDefault(); if (onVote) onVote(news.news_id || news.id, 'down'); }}
-                                    className={`transition-transform hover:scale-110 flex items-center gap-1 ${(news.vote_down || 0) > 0 ? 'text-blue-500 font-bold' : 'text-gray-400 hover:text-blue-500'}`}
-                                    title="싫어요"
-                                >
-                                    <i className={`${(news.vote_down || 0) > 0 ? 'fas' : 'far'} fa-thumbs-down`}></i>
-                                    {news.vote_down > 0 && <span className="text-[10px]">{news.vote_down}</span>}
-                                </button>
-                            </div>
-                            <button
-                                onClick={(e) => { e.preventDefault(); if (onBookmarkToggle) onBookmarkToggle(news.news_id || news.id); }}
-                                className={`text-gray-400 hover:text-yellow-500 transition-transform hover:scale-110 ${isBookmarked ? 'text-yellow-500' : ''}`}
-                                title="북마크"
-                            >
-                                <i className={`${isBookmarked ? 'fas' : 'far'} fa-bookmark`}></i>
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (navigator.share) {
-                                        navigator.share({ title: news.title, url: `/news/${news.news_id || news.id}` });
-                                    }
-                                }}
-                                className="text-gray-400 hover:text-blue-500 transition-transform hover:scale-110"
-                                title="공유"
-                            >
-                                <i className="fas fa-share-alt"></i>
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
         </a>
     );
 };
