@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ResizeSettings, ImageFileItem } from './types/index';
 import {
   loadImageDimensions,
   resizeSingleImage,
-  createZipArchive,
   getOutputFilename,
 } from './utils/imageResizer';
 import SplashScreen from './components/SplashScreen';
@@ -38,21 +37,26 @@ export const App: React.FC = () => {
   const [items, setItems] = useState<ImageFileItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isZipping, setIsZipping] = useState(false);
+  const itemsRef = useRef<ImageFileItem[]>([]);
+
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   // 설정 부분 업데이트 헬퍼
   const handleUpdateSettings = (updated: Partial<ResizeSettings>) => {
     setSettings((prev) => ({ ...prev, ...updated }));
   };
 
-  // 컴포넌트 언마운트 시 ObjectURL 정리
+  // 컴포넌트 언마운트 시에만 ObjectURL 정리 (상태 변경 시 previewUrl이 파기되던 버그 수정)
   useEffect(() => {
     return () => {
-      items.forEach((item) => {
+      itemsRef.current.forEach((item) => {
         if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
         if (item.resizedUrl) URL.revokeObjectURL(item.resizedUrl);
       });
     };
-  }, [items]);
+  }, []);
 
   // 파일 추가 핸들러
   const handleFilesAdded = async (newFiles: File[]) => {
@@ -159,35 +163,34 @@ export const App: React.FC = () => {
     setIsProcessing(false);
   };
 
-  // 개별 이미지 다운로드
+  // 개별 이미지 파일 그대로 다운로드
   const handleDownloadSingle = (item: ImageFileItem) => {
-    if (!item.resizedBlob || !item.resizedUrl) return;
+    if (!item.resizedBlob) return;
     const filename = getOutputFilename(item.name, settings);
+    const downloadUrl = URL.createObjectURL(item.resizedBlob);
     const link = document.createElement('a');
-    link.href = item.resizedUrl;
+    link.href = downloadUrl;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
   };
 
-  // ZIP 일괄 다운로드
+  // ZIP 압축 없이 변환된 이미지 파일들을 원본 파일 형태 그대로 일괄 저장
   const handleDownloadZip = async () => {
     if (isZipping) return;
+    const doneItems = items.filter((it) => it.status === 'done' && it.resizedBlob);
+    if (doneItems.length === 0) return;
+
     setIsZipping(true);
     try {
-      const zipBlob = await createZipArchive(items, settings);
-      const url = URL.createObjectURL(zipBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `veranex_resized_images_${Date.now()}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch (err) {
-      console.error('ZIP creation error:', err);
-      alert('ZIP 파일 생성 중 오류가 발생했습니다.');
+      for (let i = 0; i < doneItems.length; i++) {
+        handleDownloadSingle(doneItems[i]);
+        if (i < doneItems.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+      }
     } finally {
       setIsZipping(false);
     }

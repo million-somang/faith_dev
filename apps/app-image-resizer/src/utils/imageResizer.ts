@@ -147,6 +147,7 @@ export async function resizeSingleImage(
   settings: ResizeSettings
 ): Promise<{ blob: Blob; url: string; width: number; height: number; size: number }> {
   return new Promise((resolve, reject) => {
+    const sourceUrl = URL.createObjectURL(item.file);
     const img = new Image();
     img.onload = async () => {
       try {
@@ -201,6 +202,7 @@ export async function resizeSingleImage(
           blob = await canvasToBlob(canvas, mimeType, settings.quality);
         }
 
+        URL.revokeObjectURL(sourceUrl);
         const url = URL.createObjectURL(blob);
         resolve({
           blob,
@@ -210,11 +212,15 @@ export async function resizeSingleImage(
           size: blob.size,
         });
       } catch (err) {
+        URL.revokeObjectURL(sourceUrl);
         reject(err);
       }
     };
-    img.onerror = () => reject(new Error('이미지 소스를 로드하지 못했습니다.'));
-    img.src = item.previewUrl;
+    img.onerror = () => {
+      URL.revokeObjectURL(sourceUrl);
+      reject(new Error('이미지 소스를 로드하지 못했습니다.'));
+    };
+    img.src = sourceUrl;
   });
 }
 

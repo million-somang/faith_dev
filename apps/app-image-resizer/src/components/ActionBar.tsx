@@ -91,17 +91,17 @@ export const ActionBar: React.FC<ActionBarProps> = ({
             type="button"
             onClick={onDownloadZip}
             disabled={isZipping}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 active:scale-[0.98] rounded-xl transition-all disabled:opacity-50"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] rounded-xl shadow-md shadow-emerald-200 transition-all disabled:opacity-50 cursor-pointer"
           >
             {isZipping ? (
               <>
                 <i className="fa-solid fa-spinner fa-spin"></i>
-                ZIP 압축 중...
+                파일 저장 중...
               </>
             ) : (
               <>
-                <i className="fa-solid fa-file-zipper"></i>
-                ZIP 일괄 다운로드
+                <i className="fa-solid fa-download"></i>
+                {doneCount > 1 ? `이미지 파일 그대로 모두 저장 (${doneCount}장)` : '이미지 파일 저장'}
               </>
             )}
           </button>
