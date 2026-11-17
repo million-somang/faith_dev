@@ -33,6 +33,12 @@
    - (1) `apps/api-server/src/controllers/drive-stream.controller.ts`의 `neutralizeMp4VideoBoxesInBuffer()`, `createAudioOnlyMp4Stream()`, 그리고 `DriveStreamController.streamVideo()` 내 `mode === 'audio'` 처리부(`Content-Type: audio/mp4` 변환 및 MP4 내부 `trak` -> `free`, `hdlr` `vide` -> `null`, `tkhd` 비활성화, `vmhd` -> `free` 마스킹 + HTTP 206 Range 스트리밍)는 모바일 화면 잠금 백그라운드 재생을 보장하는 핵심 엔진이므로 **어떠한 경우에도 수정, 삭제, 리팩토링, 간소화해서는 안 됨.**
    - (2) `apps/next-portal/src/context/DrivePlayerContext.tsx`의 전역 단일 `<audio>` 엘리먼트 유지 구조(`display: none` 금지)와 모바일 기본 `isAudioOnlyMode = true`(`?mode=audio`) 연결 구조를 절대 훼손하지 말 것.
 
+### 11. 요청 프롬프트 외 타 코드·파일·서버 프로세스 절대 간섭 금지 (STRICT SCOPE LOCK) 🔒
+   - (1) **프롬프트 외 수정 영구 금지**: 사용자가 현재 프롬프트에서 명시적으로 요청한 기능·화면·버그와 직접 관련 없는 다른 파일, 다른 페이지, 공통 패키지(`packages/*`), 백엔드 라우트/서비스는 "코드 정리", "린트/타입 개선", "사전 리팩토링" 등 **어떠한 이유로도 단 1줄도 건드리지 말 것.**
+   - (2) **화이트리스트(Whitelist) 기반 최소 라인 패치**: 사전에 승인받은 파일 목록(Whitelist) 외의 파일은 절대 편집(`edit_file`/`write_file`)하지 않으며, 승인된 파일 안에서도 요청받은 함수/UI 블록의 최소 라인만 정확히 패치(Surgical Patch)할 것.
+   - (3) **커밋 및 배포 전 `git diff --stat` 의무 검증**: `git commit` 및 서버 배포 전 반드시 `git status`와 `git diff --stat`을 확인하여 사용자가 요청하지 않은 파일이 단 1개라도 포함되었는지 검증하고, 무관한 변경은 즉시 원복할 것.
+   - (4) **배포 시 무관한 서버 프로세스 재시작 금지**: 프론트엔드(`apps/next-portal` 또는 개별 미니앱)만 수정한 작업에서는 백엔드 API 서버(`faith-api`)를 절대 재시작하지 말 것. 백엔드 수정이 명시적으로 승인되어 `faith-api`를 재시작할 때에도 반드시 `faith-api` 단독 재시작 후 `http://127.0.0.1:4200/health` 정상 응답을 확인한 뒤에 `faith-portal`을 재시작하여 뉴스·금융 등 실시간 데이터의 순간 끊김(`ECONNREFUSED`)을 원천 차단할 것.
+
 
 
 # CRITICAL SAFETY RULES (최고 수준 안전/보안 규칙) 🚨
@@ -43,6 +49,7 @@
 * **임의 수정 및 리팩토링 절대 금지:** 사용자가 명시적으로 지시한 파일, 함수, 기능 외에는 **절대** 기존 코드를 건드리지 마십시오. 코드를 "더 깔끔하게 만든다"는 명목으로 묻지 않은 변수명 변경, 파일 이동, 로직 수정을 강행해서는 안 됩니다.
 * **부분 업데이트 (Patch):** 전체 파일을 다시 작성하지 마십시오. 변경이 필요한 부분만 정확히 수정하거나 추가하십시오.
 * **사전 승인 필수 (Ask First):** 지시받은 새로운 기능을 구현하기 위해 기존 공통 함수나 다른 컴포넌트의 수정이 불가피하다면, 코드를 수정하기 전에 **반드시 "이 목표를 위해 [파일명]의 [특정 부분]을 수정해야 하는데 진행할까요?"라고 먼저 물어보고 사용자의 명시적인 승인(Yes)을 받으십시오.**
+* **커밋 전 Diff 감사 및 프로세스 격리:** 커밋/배포 전 `git diff --stat`으로 승인된 화이트리스트 파일만 변경되었는지 검증하고, 수정하지 않은 백엔드(`faith-api`) 등 무관한 PM2 프로세스를 임의로 재시작하지 마십시오.
 
 ## 2. Database Protection (데이터베이스 및 데이터 파괴 원천 차단)
 * **Hard Delete 절대 금지 (FATAL):** 어떠한 경우에도 데이터베이스 레코드를 영구적으로 삭제하는 SQL 쿼리(`DELETE`, `DROP`, `TRUNCATE`)나 ORM의 파괴적 메서드(예: Prisma의 `.delete()`, Sequelize의 `.destroy()`)를 작성하거나 실행하지 마십시오.
