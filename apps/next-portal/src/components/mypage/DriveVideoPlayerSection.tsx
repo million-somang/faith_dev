@@ -91,6 +91,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
         handleMediaPlay,
         handleMediaPlaying,
         handleMediaCanPlay,
+        handleMediaStalled,
         handleMediaPause,
         handleMediaError,
         handleVideoEnded,
@@ -385,7 +386,7 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         src={currentTrack.streamUrl}
                                         className="w-full h-full max-h-full object-contain cursor-pointer"
                                         playsInline
-                                        preload="auto"
+                                        preload={isPlaying ? 'auto' : 'none'}
                                         onClick={togglePlayPause}
                                         onDoubleClick={toggleFullscreen}
                                         onPlay={handleMediaPlay}
@@ -393,8 +394,11 @@ export const DriveVideoPlayerSection: React.FC = () => {
                                         onWaiting={() => setIsBuffering(true)}
                                         onPlaying={handleMediaPlaying}
                                         onCanPlay={handleMediaCanPlay}
+                                        onCanPlayThrough={handleMediaCanPlay}
+                                        onLoadedData={handleMediaCanPlay}
                                         onLoadedMetadata={handleLoadedMetadata}
                                         onTimeUpdate={handleTimeUpdate}
+                                        onStalled={handleMediaStalled}
                                         onEnded={handleVideoEnded}
                                         onError={handleMediaError}
                                     />

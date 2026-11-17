@@ -181,6 +181,15 @@ export function useDriveVideoPlayer() {
     const errorRetryCountRef = useRef<number>(0);
     const consecutiveTrackSkipRef = useRef<number>(0);
     const tokenExpiryRef = useRef<number>(0);
+    const accessTokenRef = useRef<string>('');
+    const playlistRef = useRef<VideoPlaylistItem[]>([]);
+    const currentIndexRef = useRef<number>(0);
+    const isShuffleRef = useRef<boolean>(false);
+    const repeatModeRef = useRef<RepeatMode>('all');
+    const endedTrackLockRef = useRef<string>('');
+    const endedTrackLockTimerRef = useRef<number | null>(null);
+    const prewarmedTrackKeyRef = useRef<string>('');
+    const lastTokenPrecheckAtRef = useRef<number>(0);
     const isSwitchingTrackRef = useRef<boolean>(false);
     const switchTrackTimerRef = useRef<number | null>(null);
     const isPlaylistHydratedRef = useRef<boolean>(false);
@@ -196,6 +205,26 @@ export function useDriveVideoPlayer() {
         url: '',
     });
     const resumeRetryTimersRef = useRef<number[]>([]);
+
+    useEffect(() => {
+        playlistRef.current = playlist;
+    }, [playlist]);
+
+    useEffect(() => {
+        currentIndexRef.current = currentIndex;
+    }, [currentIndex]);
+
+    useEffect(() => {
+        isShuffleRef.current = isShuffle;
+    }, [isShuffle]);
+
+    useEffect(() => {
+        repeatModeRef.current = repeatMode;
+    }, [repeatMode]);
+
+    useEffect(() => {
+        accessTokenRef.current = accessToken;
+    }, [accessToken]);
 
     useEffect(() => {
         googleClientIdRef.current = googleClientId;
@@ -296,6 +325,7 @@ export function useDriveVideoPlayer() {
         let activeToken = '';
         if (savedToken && savedExpiry > Date.now() + 60_000) {
             activeToken = savedToken;
+            accessTokenRef.current = savedToken;
             tokenExpiryRef.current = savedExpiry;
             setAccessToken(savedToken);
             setIsDriveConnected(true);
@@ -305,6 +335,7 @@ export function useDriveVideoPlayer() {
             localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
             sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
             sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+            accessTokenRef.current = '';
             tokenExpiryRef.current = 0;
             setIsDriveConnected(true);
         }
@@ -322,6 +353,7 @@ export function useDriveVideoPlayer() {
                         }));
                     if (hydrated.length > 0) {
                         lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
+                        playlistRef.current = hydrated;
                         setPlaylist(hydrated);
                         setIsDriveConnected(true);
                     }
@@ -396,9 +428,11 @@ export function useDriveVideoPlayer() {
                 return raw.streamUrl;
             }
             const lockKey = `${raw.id}:${audioMode ? 'audio' : 'video'}`;
-            const isTokenStillValid = tokenExpiryRef.current > Date.now() + 10_000;
+            // 보수적 만료 시각(tokenExpiryRef)이 막 지났더라도 15분 유예 동안은 백엔드 프록시에 토큰을 전달하여 끊김 없는 검증·갱신 보장
+            const isTokenStillValid = tokenExpiryRef.current > Date.now() - 15 * 60 * 1000;
             const freshToken = isTokenStillValid
-                ? accessToken ||
+                ? accessTokenRef.current ||
+                  accessToken ||
                   (typeof window !== 'undefined'
                       ? localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
                         sessionStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) ||
@@ -406,14 +440,12 @@ export function useDriveVideoPlayer() {
                       : '')
                 : '';
             // 현재 재생 중인 트랙/모드/재시도 시퀀스가 잠금 상태라면 토큰 변동과 무관하게 기존 스트림 URL을 유지하여 곡 중간 리로드 원천 차단
-            // 단, 아직 재생 시작 전(!userWantsPlayRef.current)이고 초기 마운트 시 토큰 없이 잠긴 URL에 새 유효 토큰이 도착한 경우에는 최신 토큰 URL로 갱신 허용
+            // 단, 초기 마운트 시 토큰 없이 잠긴 URL(!url.includes('token='))에 새 유효 토큰(freshToken)이 도착한 경우에는 최신 토큰 URL로 갱신 허용
             if (
                 activeStreamLockRef.current.trackId === lockKey &&
                 activeStreamLockRef.current.retry === retry &&
                 activeStreamLockRef.current.url &&
-                (userWantsPlayRef.current ||
-                    activeStreamLockRef.current.url.includes('token=') ||
-                    !freshToken)
+                (activeStreamLockRef.current.url.includes('token=') || !freshToken)
             ) {
                 return activeStreamLockRef.current.url;
             }
@@ -461,23 +493,34 @@ export function useDriveVideoPlayer() {
 
     const isCurrentTrackAudio = isCurrentRawAudio;
 
-    const applyNewAccessToken = useCallback((newToken: string, expiresInSec = 3500) => {
-        const expiryTime = Date.now() + expiresInSec * 1000;
-        tokenExpiryRef.current = expiryTime;
+    const applyNewAccessToken = useCallback(
+        (newToken: string, expiresInSec = 3500, exactExpiryMs?: number) => {
+            const computedExpiry = exactExpiryMs && exactExpiryMs > Date.now()
+                ? exactExpiryMs
+                : Date.now() + expiresInSec * 1000;
+            const expiryTime =
+                newToken === accessTokenRef.current && tokenExpiryRef.current > computedExpiry
+                    ? tokenExpiryRef.current
+                    : computedExpiry;
 
-        if (typeof window !== 'undefined') {
-            localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
-            localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiryTime));
-            sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
-            sessionStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiryTime));
-        }
+            accessTokenRef.current = newToken;
+            tokenExpiryRef.current = expiryTime;
 
-        setAccessToken((prev) => (prev === newToken ? prev : newToken));
-        setIsDriveConnected(true);
-        setPlayerError(null);
-    }, []);
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
+                localStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiryTime));
+                sessionStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, newToken);
+                sessionStorage.setItem(STORAGE_KEYS.TOKEN_EXPIRY, String(expiryTime));
+            }
 
-    // ─── 브라우저 Google Identity Services 무음 토큰 자동 갱신 (prompt: 'none') ───
+            setAccessToken((prev) => (prev === newToken ? prev : newToken));
+            setIsDriveConnected(true);
+            setPlayerError(null);
+        },
+        []
+    );
+
+    // ─── 브라우저 Google Identity Services 무음 토큰 자동 갱신 (사용자가 명시적으로 드라이브 파일 탐색기를 열 때만 보조 사용) ───
     const silentGsiTokenRefresh = useCallback(async (): Promise<string> => {
         if (typeof window === 'undefined') return '';
         if (silentGsiInflightRef.current) {
@@ -561,14 +604,21 @@ export function useDriveVideoPlayer() {
     }, [applyNewAccessToken]);
 
     // ─── 서버 기반 무음(Zero-Popup) 토큰 자동 갱신 & 동기화 ───
+    // 주의: 재생 중이거나 백그라운드 상태에서는 절대 브라우저 GIS 팝업(silentGsiTokenRefresh)을 호출하지 않음 (증상 4 원천 해결)
     const refreshDriveTokenSilently = useCallback(
         async (forceRefresh = true): Promise<string> => {
+            const hasFreshLocalToken =
+                Boolean(accessTokenRef.current) &&
+                tokenExpiryRef.current > Date.now() + 2 * 60 * 1000;
+
             try {
                 const res = await fetch(
                     `${API_BASE_URL}/api/user/drive/token${forceRefresh ? '?refresh=1' : ''}`,
                     { credentials: 'include' }
                 );
-                if (!res.ok) return '';
+                if (!res.ok) {
+                    return hasFreshLocalToken ? accessTokenRef.current : '';
+                }
                 const json = (await res.json()) as {
                     success?: boolean;
                     data?: {
@@ -582,7 +632,9 @@ export function useDriveVideoPlayer() {
                         playlist?: VideoPlaylistItem[];
                     };
                 };
-                if (!json.success || !json.data) return '';
+                if (!json.success || !json.data) {
+                    return hasFreshLocalToken ? accessTokenRef.current : '';
+                }
 
                 isServerHydratedRef.current = true;
 
@@ -627,6 +679,7 @@ export function useDriveVideoPlayer() {
                             }));
                         if (hydrated.length > 0) {
                             lastSyncedPlaylistJsonRef.current = JSON.stringify(hydrated);
+                            playlistRef.current = hydrated;
                             return hydrated;
                         }
                         return prev;
@@ -634,39 +687,44 @@ export function useDriveVideoPlayer() {
                     setIsDriveConnected(true);
                 }
 
+                // 만약 로컬 브라우저에 방금 로그인한 더 최신 토큰이 있다면 로컬 토큰을 유지하고 서버에 역동기화
                 if (
-                    validServerToken &&
-                    (!serverExpiry || serverExpiry > Date.now() + 3 * 60 * 1000)
-                ) {
-                    const remainingSec = serverExpiry
-                        ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
-                        : 3500;
-                    applyNewAccessToken(validServerToken, remainingSec);
-                    return validServerToken;
-                }
-
-                // 서버 토큰이 만료되었거나 만료 임박(12분 이내)이고 화면이 보이는 상태라면 브라우저 GIS 무음 갱신 시도
-                if (
-                    typeof document !== 'undefined' &&
-                    document.visibilityState === 'visible' &&
+                    hasFreshLocalToken &&
                     (!validServerToken ||
-                        (serverExpiry && serverExpiry <= Date.now() + 12 * 60 * 1000))
+                        (serverExpiry && tokenExpiryRef.current > serverExpiry + 30_000))
                 ) {
-                    const silentToken = await silentGsiTokenRefresh();
-                    if (silentToken) {
-                        return silentToken;
-                    }
+                    const remainingLocalSec = Math.max(
+                        60,
+                        Math.ceil((tokenExpiryRef.current - Date.now()) / 1000)
+                    );
+                    void fetch(`${API_BASE_URL}/api/user/drive/oauth/exchange`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        keepalive: true,
+                        body: JSON.stringify({
+                            accessToken: accessTokenRef.current,
+                            expiresIn: remainingLocalSec,
+                            clientId: googleClientIdRef.current || undefined,
+                            clientSecret: googleClientSecretRef.current || undefined,
+                        }),
+                    }).catch(() => {});
+                    return accessTokenRef.current;
                 }
 
                 if (validServerToken) {
                     const remainingSec = serverExpiry
-                        ? Math.max(60, Math.floor((serverExpiry - Date.now()) / 1000))
-                        : 300;
-                    applyNewAccessToken(validServerToken, remainingSec);
+                        ? Math.max(60, Math.ceil((serverExpiry - Date.now()) / 1000))
+                        : 3500;
+                    applyNewAccessToken(validServerToken, remainingSec, serverExpiry);
                     return validServerToken;
                 }
 
-                // 서버와 무음 GIS 모두에서 유효한 토큰을 얻지 못했고 기존 로컬 토큰도 만료된 경우 만료 토큰 정리 (단, 현재 재생 중인 곡의 스트림 잠금은 건드리지 않음)
+                if (hasFreshLocalToken) {
+                    return accessTokenRef.current;
+                }
+
+                // 서버와 로컬 모두에서 유효한 토큰이 없고 기존 로컬 토큰도 만료된 경우 정리
                 if (tokenExpiryRef.current <= Date.now() + 10_000) {
                     if (typeof window !== 'undefined') {
                         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
@@ -674,6 +732,7 @@ export function useDriveVideoPlayer() {
                         sessionStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
                         sessionStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
                     }
+                    accessTokenRef.current = '';
                     tokenExpiryRef.current = 0;
                     if (!userWantsPlayRef.current) {
                         activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
@@ -681,11 +740,13 @@ export function useDriveVideoPlayer() {
                     setAccessToken('');
                 }
             } catch (_) {
-                // 비로그인 또는 네트워크 일시 오류 무시
+                if (hasFreshLocalToken) {
+                    return accessTokenRef.current;
+                }
             }
             return '';
         },
-        [applyNewAccessToken, silentGsiTokenRefresh]
+        [applyNewAccessToken]
     );
 
     // ─── Google Drive API 파일 목록 조회 (폴더 + 동영상 + 음악 통합 지원) ───
@@ -880,6 +941,9 @@ export function useDriveVideoPlayer() {
                                 return;
                             }
                             const expiresIn = tokenResponse.expires_in || 3500;
+                            activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
+                            errorRetryCountRef.current = 0;
+                            consecutiveTrackSkipRef.current = 0;
                             applyNewAccessToken(tokenResponse.access_token, expiresIn);
 
                             // 발급된 토큰을 백엔드 DB에도 동기화하여 스트리밍 프록시가 즉시 사용하도록 보장
@@ -980,10 +1044,17 @@ export function useDriveVideoPlayer() {
                                     const remSec = exJson.data.expiryDate
                                         ? Math.max(
                                               60,
-                                              Math.floor((exJson.data.expiryDate - Date.now()) / 1000)
+                                              Math.ceil((exJson.data.expiryDate - Date.now()) / 1000)
                                           )
                                         : 3500;
-                                    applyNewAccessToken(exJson.data.accessToken, remSec);
+                                    activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
+                                    errorRetryCountRef.current = 0;
+                                    consecutiveTrackSkipRef.current = 0;
+                                    applyNewAccessToken(
+                                        exJson.data.accessToken,
+                                        remSec,
+                                        exJson.data.expiryDate
+                                    );
                                     setIsPermanentConnected(Boolean(exJson.data.isPermanentConnected));
                                     setRetryNonce((n) => n + 1);
                                     setIsPickerOpen(true);
@@ -1470,11 +1541,13 @@ export function useDriveVideoPlayer() {
 
     const switchAndPlayAtIndex = useCallback(
         (targetIndex: number) => {
-            if (targetIndex < 0 || targetIndex >= playlist.length) return;
+            const list = playlistRef.current.length > 0 ? playlistRef.current : playlist;
+            if (targetIndex < 0 || targetIndex >= list.length) return;
             clearResumeRetryTimers();
             markTrackSwitching();
             setPlayerError(null);
             errorRetryCountRef.current = 0;
+            endedTrackLockRef.current = '';
             setRetryNonce(0);
             pendingResumeTimeRef.current = null;
             lastKnownTimeRef.current = 0;
@@ -1483,19 +1556,42 @@ export function useDriveVideoPlayer() {
             if (typeof window !== 'undefined') {
                 localStorage.setItem(STORAGE_KEYS.MINI_BAR_DISMISSED, 'false');
             }
+            currentIndexRef.current = targetIndex;
             setCurrentIndex(targetIndex);
             setCurrentTime(0);
             setIsPlaying(true);
 
+            const media = videoRef.current;
+            const nextTrack = list[targetIndex];
+
             if (
                 tokenExpiryRef.current === 0 ||
-                Date.now() >= tokenExpiryRef.current - 10 * 60 * 1000
+                Date.now() >= tokenExpiryRef.current - 12 * 60 * 1000
             ) {
-                void refreshDriveTokenSilently(true);
+                void refreshDriveTokenSilently(true).then((refreshedToken) => {
+                    // 만약 트랙 전환 직후 토큰이 비어있던 상태에서 새 토큰이 도착했고 아직 재생 시작 전(paused)이라면 즉시 새 토큰 URL로 재점화
+                    if (
+                        refreshedToken &&
+                        userWantsPlayRef.current &&
+                        currentIndexRef.current === targetIndex &&
+                        videoRef.current &&
+                        videoRef.current.paused &&
+                        nextTrack
+                    ) {
+                        const useAudio =
+                            isAudioOnlyMode ||
+                            !isFullStageMountedRef.current ||
+                            isAudioMedia(nextTrack.mimeType, nextTrack.name);
+                        activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
+                        const updatedUrl = getStreamUrlForTrack(nextTrack, 0, useAudio);
+                        if (videoRef.current.getAttribute('src') !== updatedUrl) {
+                            videoRef.current.src = updatedUrl;
+                        }
+                        videoRef.current.play().catch(() => {});
+                    }
+                });
             }
 
-            const media = videoRef.current;
-            const nextTrack = playlist[targetIndex];
             if (media && nextTrack) {
                 const useAudioStream =
                     isAudioOnlyMode ||
@@ -1511,9 +1607,9 @@ export function useDriveVideoPlayer() {
                     playPromise.catch(() => {});
                 }
 
-                // 백그라운드(화면 잠금) 상태에서 다음 곡 MP4 헤더 파싱(0.8~2.3초) 완료 즉시 재생이 이어지도록 다중 보장 타이머 가동
+                // 백그라운드(화면 잠금) 상태에서 대용량 MP4 헤더 파싱(0.8~8초) 완료 즉시 재생이 이어지도록 다중 보장 타이머 가동
                 if (typeof window !== 'undefined') {
-                    const delays = [150, 450, 1000, 2000, 3200];
+                    const delays = [150, 450, 1000, 2000, 3200, 4800, 6500, 8500];
                     for (const delay of delays) {
                         const timerId = window.setTimeout(() => {
                             if (
@@ -1562,40 +1658,49 @@ export function useDriveVideoPlayer() {
     );
 
     const playNext = useCallback(() => {
-        if (playlist.length === 0) return;
-        if (isShuffle && playlist.length > 1) {
-            const nextIdx = pickRandomNextIndex(playlist.length, currentIndex);
+        const list = playlistRef.current.length > 0 ? playlistRef.current : playlist;
+        if (list.length === 0) return;
+        const activeIdx = currentIndexRef.current;
+        const shuffleActive = isShuffleRef.current;
+        const repeatActive = repeatModeRef.current;
+
+        if (shuffleActive && list.length > 1) {
+            const nextIdx = pickRandomNextIndex(list.length, activeIdx);
             switchAndPlayAtIndex(nextIdx);
             return;
         }
 
-        const nextIdx = currentIndex + 1;
-        if (nextIdx < playlist.length) {
+        const nextIdx = activeIdx + 1;
+        if (nextIdx < list.length) {
             switchAndPlayAtIndex(nextIdx);
-        } else if (repeatMode === 'all') {
+        } else if (repeatActive === 'all') {
             switchAndPlayAtIndex(0);
         } else {
             userWantsPlayRef.current = false;
             setIsPlaying(false);
         }
-    }, [playlist.length, isShuffle, currentIndex, repeatMode, pickRandomNextIndex, switchAndPlayAtIndex]);
+    }, [playlist, pickRandomNextIndex, switchAndPlayAtIndex]);
 
     const playPrev = useCallback(() => {
-        if (playlist.length === 0) return;
+        const list = playlistRef.current.length > 0 ? playlistRef.current : playlist;
+        if (list.length === 0) return;
+        const activeIdx = currentIndexRef.current;
+        const shuffleActive = isShuffleRef.current;
+
         const video = videoRef.current;
         if (video && video.currentTime > 4) {
             video.currentTime = 0;
             setCurrentTime(0);
             return;
         }
-        if (isShuffle && playlist.length > 1) {
-            const randomIdx = pickRandomNextIndex(playlist.length, currentIndex);
+        if (shuffleActive && list.length > 1) {
+            const randomIdx = pickRandomNextIndex(list.length, activeIdx);
             switchAndPlayAtIndex(randomIdx);
             return;
         }
-        const prevIdx = currentIndex - 1 >= 0 ? currentIndex - 1 : playlist.length - 1;
+        const prevIdx = activeIdx - 1 >= 0 ? activeIdx - 1 : list.length - 1;
         switchAndPlayAtIndex(prevIdx);
-    }, [playlist.length, isShuffle, currentIndex, pickRandomNextIndex, switchAndPlayAtIndex]);
+    }, [playlist, pickRandomNextIndex, switchAndPlayAtIndex]);
 
     const toggleShuffle = useCallback(() => {
         setIsShuffle((prev) => {
@@ -1766,6 +1871,50 @@ export function useDriveVideoPlayer() {
         }
     }, [isAudioOnlyMode, showNotice]);
 
+    // ─── 현재 곡 재생 중 다음 예정 곡 사전 워밍업 & 토큰 선제 갱신 (백그라운드 곡 전환 무음 공백 제거) ───
+    const prewarmNextTrack = useCallback(() => {
+        if (!userWantsPlayRef.current) return;
+        const list = playlistRef.current;
+        if (list.length === 0) return;
+
+        const now = Date.now();
+        if (
+            now - lastTokenPrecheckAtRef.current > 60_000 &&
+            (tokenExpiryRef.current === 0 || now >= tokenExpiryRef.current - 15 * 60 * 1000)
+        ) {
+            lastTokenPrecheckAtRef.current = now;
+            void refreshDriveTokenSilently(true);
+        }
+
+        if (list.length <= 1 || isShuffleRef.current) return;
+        const nextIdx =
+            currentIndexRef.current + 1 < list.length
+                ? currentIndexRef.current + 1
+                : repeatModeRef.current === 'all'
+                ? 0
+                : -1;
+        if (nextIdx < 0) return;
+        const nextItem = list[nextIdx];
+        if (!nextItem || nextItem.sourceType !== 'google-drive') return;
+
+        const useAudio =
+            isAudioOnlyMode ||
+            !isFullStageMountedRef.current ||
+            isAudioMedia(nextItem.mimeType, nextItem.name);
+        const isTokenValid = tokenExpiryRef.current > now - 15 * 60 * 1000;
+        const tokenToUse = isTokenValid ? accessTokenRef.current : '';
+        const prewarmKey = `${nextItem.id}:${useAudio ? 'audio' : 'video'}:${tokenToUse.slice(-12)}`;
+        if (prewarmedTrackKeyRef.current === prewarmKey) return;
+        prewarmedTrackKeyRef.current = prewarmKey;
+
+        const prewarmUrl = buildStreamUrl(nextItem.id, tokenToUse, useAudio);
+        void fetch(prewarmUrl, {
+            method: 'GET',
+            headers: { Range: 'bytes=0-262143' },
+            credentials: 'include',
+        }).catch(() => {});
+    }, [isAudioOnlyMode, refreshDriveTokenSilently]);
+
     // ─── 미디어 메타데이터 로드 및 재생 위치 복원 ───
     const handleLoadedMetadata = useCallback(
         (e: React.SyntheticEvent<HTMLMediaElement>) => {
@@ -1804,12 +1953,6 @@ export function useDriveVideoPlayer() {
         [volume, isMuted, playbackRate, isPlaying]
     );
 
-    const handleTimeUpdate = useCallback((e: React.SyntheticEvent<HTMLMediaElement>) => {
-        const t = e.currentTarget.currentTime || 0;
-        lastKnownTimeRef.current = t;
-        setCurrentTime(t);
-    }, []);
-
     const handleMediaPlay = useCallback(() => {
         clearResumeRetryTimers();
         userWantsPlayRef.current = true;
@@ -1839,7 +1982,7 @@ export function useDriveVideoPlayer() {
         setPlayerError(null);
     }, []);
 
-    // 백그라운드(화면 잠금)에서 다음 곡 MP4 헤더 로드 완료(canplay) 시 즉시 재생 시작 보장
+    // 백그라운드(화면 잠금)에서 다음 곡 MP4 헤더 로드 완료(canplay / loadeddata / canplaythrough) 시 즉시 재생 시작 보장
     const handleMediaCanPlay = useCallback(
         (e: React.SyntheticEvent<HTMLMediaElement>) => {
             const media = e.currentTarget;
@@ -1854,8 +1997,31 @@ export function useDriveVideoPlayer() {
     );
 
     const handleVideoEnded = useCallback(() => {
+        const list = playlistRef.current.length > 0 ? playlistRef.current : playlist;
+        const activeIdx = currentIndexRef.current;
+        const activeItem = list[activeIdx];
+        const endLockKey = `${activeIdx}:${activeItem?.id || ''}`;
+
+        // 동일 곡 끝부분에서 pause(조기 종료 감지)와 ended 이벤트가 연달아 발생해 2곡이 스킵되는 현상 차단
+        if (endedTrackLockRef.current === endLockKey) {
+            return;
+        }
+        endedTrackLockRef.current = endLockKey;
+        if (typeof window !== 'undefined') {
+            if (endedTrackLockTimerRef.current !== null) {
+                window.clearTimeout(endedTrackLockTimerRef.current);
+            }
+            endedTrackLockTimerRef.current = window.setTimeout(() => {
+                if (endedTrackLockRef.current === endLockKey) {
+                    endedTrackLockRef.current = '';
+                }
+                endedTrackLockTimerRef.current = null;
+            }, 1500);
+        }
+
         const video = videoRef.current;
-        if (repeatMode === 'one' && video) {
+        if (repeatModeRef.current === 'one' && video) {
+            endedTrackLockRef.current = '';
             video.currentTime = 0;
             userWantsPlayRef.current = true;
             video.play().catch((err) => {
@@ -1865,13 +2031,70 @@ export function useDriveVideoPlayer() {
             return;
         }
         playNext();
-    }, [repeatMode, playNext]);
+    }, [playlist, playNext]);
+
+    const handleTimeUpdate = useCallback(
+        (e: React.SyntheticEvent<HTMLMediaElement>) => {
+            const media = e.currentTarget;
+            const t = media.currentTime || 0;
+            const d = media.duration || 0;
+            lastKnownTimeRef.current = t;
+            setCurrentTime(t);
+
+            if (userWantsPlayRef.current && (t >= 8 || (d > 10 && d - t <= 30))) {
+                prewarmNextTrack();
+            }
+
+            // 곡 최후반부(종료 0.25초 이내)에서 ended 이벤트 없이 멈춰있는 경우 즉시 다음 곡으로 인계
+            if (
+                userWantsPlayRef.current &&
+                !isSwitchingTrackRef.current &&
+                d > 5 &&
+                Number.isFinite(d) &&
+                t >= d - 0.25 &&
+                media.paused
+            ) {
+                handleVideoEnded();
+            }
+        },
+        [prewarmNextTrack, handleVideoEnded]
+    );
+
+    // 백그라운드 스트리밍 중 버퍼 지연(stalled) 또는 오디오 트랙 끝부분 도달 시 자동 복구 및 다음 곡 전환
+    const handleMediaStalled = useCallback(
+        (e: React.SyntheticEvent<HTMLMediaElement>) => {
+            if (!userWantsPlayRef.current || isSwitchingTrackRef.current) return;
+            const media = e.currentTarget;
+            if (
+                media.duration > 5 &&
+                Number.isFinite(media.duration) &&
+                media.currentTime >= media.duration - 1.5
+            ) {
+                handleVideoEnded();
+                return;
+            }
+            if (media.paused) {
+                media.play().catch(() => {});
+            }
+        },
+        [handleVideoEnded]
+    );
 
     const handleMediaError = useCallback(() => {
         setIsBuffering(false);
-        if (!currentTrack) return;
+        const list = playlistRef.current.length > 0 ? playlistRef.current : playlist;
+        const activeIdx = currentIndexRef.current;
+        const activeTrack = list[activeIdx] || currentTrack;
+        if (!activeTrack) return;
 
-        // 1) 현재 곡 최대 2회 자동 재시도 (구글 드라이브 일시적 연결 끊김 및 토큰 갱신 대응)
+        // [증상 5 원천 차단] 사용자가 재생 버튼을 누르지 않은 상태(초기 화면 진입·로그아웃 대기 상태)에서는
+        // 절대 재시도하거나 다음 곡으로 자동 스킵하지 않음
+        if (!userWantsPlayRef.current) {
+            setIsPlaying(false);
+            return;
+        }
+
+        // 1) 현재 곡 최대 2회 자동 재시도 (구글 드라이브 일시적 연결 끊김 및 서버 토큰 갱신 대응)
         if (errorRetryCountRef.current < 2) {
             errorRetryCountRef.current += 1;
             const attempt = errorRetryCountRef.current;
@@ -1882,39 +2105,111 @@ export function useDriveVideoPlayer() {
             void (async () => {
                 // 에러 재시도 시 이전 스트림 잠금(만료된 토큰 URL)을 초기화하여 최신 토큰 URL로 재연결 보장
                 activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
-                const prevExpiry = tokenExpiryRef.current;
                 const refreshed = await refreshDriveTokenSilently(true);
-                if (!refreshed || tokenExpiryRef.current <= prevExpiry) {
-                    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-                        await silentGsiTokenRefresh();
-                    }
+                const hasValidAuth =
+                    Boolean(refreshed || accessTokenRef.current) &&
+                    tokenExpiryRef.current > Date.now() + 15_000;
+
+                // [증상 5 원천 차단] 로그인이 풀려있거나 토큰이 완전히 만료되어 갱신할 수 없는 경우:
+                // 다음 곡으로 넘어가지 않고 즉시 정지 후 재로그인 안내 표시
+                if (!hasValidAuth && activeTrack.sourceType === 'google-drive') {
+                    clearResumeRetryTimers();
+                    userWantsPlayRef.current = false;
+                    setIsPlaying(false);
+                    setPlayerError(
+                        '구글 드라이브 로그인 세션이 만료되었습니다. [구글 드라이브 다시 연결] 버튼을 눌러 로그인해 주세요.'
+                    );
+                    showNotice('🔒 구글 드라이브 로그인이 만료되어 재생이 중지되었습니다.');
+                    return;
                 }
-                setTimeout(() => {
+
+                window.setTimeout(() => {
+                    if (!userWantsPlayRef.current) return;
                     activeStreamLockRef.current = { trackId: '', retry: -1, url: '' };
                     setRetryNonce((prev) => prev + 1);
-                    if (userWantsPlayRef.current) {
-                        setIsPlaying(true);
+                    setIsPlaying(true);
+
+                    // [증상 1·2·3 해결] 화면이 꺼진 백그라운드에서는 React 리렌더링(useEffect)이 지연되므로
+                    // 미디어 엘리먼트에 직접 새 스트림 URL을 주입하고 명령형으로 play()를 즉시 호출
+                    const media = videoRef.current;
+                    const currentItem =
+                        (playlistRef.current.length > 0
+                            ? playlistRef.current[currentIndexRef.current]
+                            : null) || activeTrack;
+                    if (media && currentItem) {
+                        const useAudio =
+                            isAudioOnlyMode ||
+                            !isFullStageMountedRef.current ||
+                            isAudioMedia(currentItem.mimeType, currentItem.name);
+                        const retryUrl = getStreamUrlForTrack(currentItem, attempt, useAudio);
+                        if (media.getAttribute('src') !== retryUrl) {
+                            media.src = retryUrl;
+                        }
+                        media.play().catch(() => {});
+
+                        clearResumeRetryTimers();
+                        const delays = [200, 600, 1400, 2800, 4500];
+                        for (const delay of delays) {
+                            const timerId = window.setTimeout(() => {
+                                if (
+                                    userWantsPlayRef.current &&
+                                    videoRef.current &&
+                                    videoRef.current.paused
+                                ) {
+                                    videoRef.current.play().catch(() => {});
+                                }
+                            }, delay);
+                            resumeRetryTimersRef.current.push(timerId);
+                        }
                     }
                 }, 400 * attempt);
             })();
             return;
         }
 
-        // 2) 2회 재시도 후에도 특정 파일 스트림이 실패하면 재생이 멈추지 않도록 다음 곡으로 자동 스킵
-        const maxSkips = Math.min(playlist.length, 5);
-        if (playlist.length > 1 && consecutiveTrackSkipRef.current < maxSkips) {
-            consecutiveTrackSkipRef.current += 1;
-            showNotice(`⚠️ "${currentTrack.name}" 연결이 지연되어 다음 곡으로 자동 이동합니다.`);
-            setTimeout(() => {
-                playNext();
-            }, 800);
+        // 2) 2회 재시도 실패 후: 인증 자체가 만료된 상태라면 절대 다음 곡으로 스킵하지 않고 즉시 정지
+        const hasValidAuthAfterRetries =
+            Boolean(accessTokenRef.current) && tokenExpiryRef.current > Date.now() + 15_000;
+        if (!hasValidAuthAfterRetries && activeTrack.sourceType === 'google-drive') {
+            clearResumeRetryTimers();
+            userWantsPlayRef.current = false;
+            setIsPlaying(false);
+            setPlayerError(
+                '구글 드라이브 로그인 세션이 만료되었습니다. [구글 드라이브 다시 연결] 버튼을 눌러 로그인해 주세요.'
+            );
+            showNotice('🔒 구글 드라이브 로그인이 만료되어 재생이 중지되었습니다.');
             return;
         }
 
+        // 인증은 유효하나 특정 파일만 손상·권한 오류인 경우에 한해 다음 곡으로 자동 스킵
+        const maxSkips = Math.min(list.length, 3);
+        if (list.length > 1 && consecutiveTrackSkipRef.current < maxSkips) {
+            consecutiveTrackSkipRef.current += 1;
+            showNotice(`⚠️ "${activeTrack.name}" 파일 스트리밍에 실패하여 다음 곡으로 이동합니다.`);
+            window.setTimeout(() => {
+                if (userWantsPlayRef.current) {
+                    playNext();
+                }
+            }, 600);
+            return;
+        }
+
+        clearResumeRetryTimers();
+        userWantsPlayRef.current = false;
+        setIsPlaying(false);
         setPlayerError(
             '구글 드라이브 스트리밍 연결이 원활하지 않습니다. 드라이브 다시 연결 또는 파일 공유 권한을 확인해 주세요.'
         );
-    }, [currentTrack, playlist.length, playNext, refreshDriveTokenSilently, silentGsiTokenRefresh, showNotice]);
+    }, [
+        playlist,
+        currentTrack,
+        isAudioOnlyMode,
+        playNext,
+        clearResumeRetryTimers,
+        getStreamUrlForTrack,
+        refreshDriveTokenSilently,
+        showNotice,
+    ]);
 
     // 모바일 화면 잠금 또는 페이지 이동(DOM 언마운트) 시 강제 일시정지 방지 및 자동 백그라운드 인계
     const handleMediaPause = useCallback(
@@ -1922,12 +2217,12 @@ export function useDriveVideoPlayer() {
             const media = e.currentTarget;
             if (media.ended || isSwitchingTrackRef.current) return;
 
-            // 오디오 전용 MP4에서 오디오 트랙(soun)이 컨테이너 전체 길이(mvhd)보다 0.1~0.45초 먼저 끝날 때 ended 대신 pause가 발생하는 경우 즉시 다음 곡으로 전환!
+            // 오디오 전용 MP4에서 오디오 트랙(soun)이 컨테이너 전체 길이(mvhd)보다 최대 1.5초 먼저 끝날 때 ended 대신 pause가 발생하는 경우 즉시 다음 곡으로 전환!
             if (
                 userWantsPlayRef.current &&
                 media.duration > 5 &&
                 Number.isFinite(media.duration) &&
-                media.currentTime >= media.duration - 0.45
+                media.currentTime >= media.duration - 1.5
             ) {
                 handleVideoEnded();
                 return;
@@ -1961,7 +2256,7 @@ export function useDriveVideoPlayer() {
 
                 if (typeof window !== 'undefined') {
                     clearResumeRetryTimers();
-                    const delays = [80, 220, 500, 1100];
+                    const delays = [80, 220, 500, 1100, 2200];
                     for (const delay of delays) {
                         const timerId = window.setTimeout(() => {
                             if (
@@ -2349,6 +2644,7 @@ export function useDriveVideoPlayer() {
         handleMediaPlay,
         handleMediaPlaying,
         handleMediaCanPlay,
+        handleMediaStalled,
         handleMediaPause,
         handleMediaError,
         handleVideoEnded,

@@ -17,13 +17,13 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         isAudioOnlyMode,
         isCurrentTrackAudio,
         isFullStageMounted,
-        isMiniBarDismissed,
         setIsBuffering,
         handleLoadedMetadata,
         handleTimeUpdate,
         handleMediaPlay,
         handleMediaPlaying,
         handleMediaCanPlay,
+        handleMediaStalled,
         handleMediaPause,
         handleMediaError,
         handleVideoEnded,
@@ -47,20 +47,18 @@ export const DrivePlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     }
                     src={shouldRenderGlobalAudio ? currentTrack.streamUrl : undefined}
                     playsInline
-                    preload={
-                        !shouldRenderGlobalAudio ||
-                        (isMiniBarDismissed && !isFullStageMounted && !isPlaying)
-                            ? 'none'
-                            : 'auto'
-                    }
+                    preload={!shouldRenderGlobalAudio || !isPlaying ? 'none' : 'auto'}
                     className="fixed -bottom-20 left-0 w-px h-px opacity-0 pointer-events-none"
                     onPlay={shouldRenderGlobalAudio ? handleMediaPlay : undefined}
                     onPause={shouldRenderGlobalAudio ? handleMediaPause : undefined}
                     onWaiting={shouldRenderGlobalAudio ? () => setIsBuffering(true) : undefined}
                     onPlaying={shouldRenderGlobalAudio ? handleMediaPlaying : undefined}
                     onCanPlay={shouldRenderGlobalAudio ? handleMediaCanPlay : undefined}
+                    onCanPlayThrough={shouldRenderGlobalAudio ? handleMediaCanPlay : undefined}
+                    onLoadedData={shouldRenderGlobalAudio ? handleMediaCanPlay : undefined}
                     onLoadedMetadata={shouldRenderGlobalAudio ? handleLoadedMetadata : undefined}
                     onTimeUpdate={shouldRenderGlobalAudio ? handleTimeUpdate : undefined}
+                    onStalled={shouldRenderGlobalAudio ? handleMediaStalled : undefined}
                     onEnded={shouldRenderGlobalAudio ? handleVideoEnded : undefined}
                     onError={shouldRenderGlobalAudio ? handleMediaError : undefined}
                 />

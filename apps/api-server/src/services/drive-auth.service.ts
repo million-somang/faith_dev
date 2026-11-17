@@ -383,7 +383,18 @@ export class DriveAuthService {
             ) {
                 return row.access_token;
             }
+            if (trimmedFallback && trimmedFallback !== row?.access_token) {
+                await this.saveDirectAccessToken(userId, trimmedFallback, 3550);
+                return trimmedFallback;
+            }
             return '';
+        }
+
+        // 0. 서버에 refresh_token이 없는 상태에서 프론트엔드가 DB와 다른 새 토큰(?token=...)을 전달했다면
+        // 프론트엔드에서 방금 새로 로그인하여 발급받은 최신 토큰이므로 즉시 DB에 동기화 후 최우선 사용
+        if (!row?.refresh_token && trimmedFallback && trimmedFallback !== row?.access_token) {
+            await this.saveDirectAccessToken(userId, trimmedFallback, 3550);
+            return trimmedFallback;
         }
 
         // 1. DB에 유효한 토큰이 충분한 여유 시간(10분 이상)과 함께 남아있는 경우 즉시 반환
