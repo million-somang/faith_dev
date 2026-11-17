@@ -1,16 +1,76 @@
 import React, { useState } from 'react';
-import { ResizeSettings, ResizeUnit, FitMode, SNS_PRESETS, PresetOption } from '../types/index';
+import {
+  ResizeSettings,
+  OutputFormat,
+  SNS_PRESETS,
+  PresetOption,
+} from '../types/index';
 
 interface ResizeOptionsPanelProps {
   settings: ResizeSettings;
   onChange: (updated: Partial<ResizeSettings>) => void;
+  itemCount: number;
+  isProcessing: boolean;
+  onBackToStep1: () => void;
+  onStartProcess: () => void;
 }
 
-export default function ResizeOptionsPanel({ settings, onChange }: ResizeOptionsPanelProps) {
+const FORMAT_CARDS: {
+  value: OutputFormat;
+  label: string;
+  badge: string;
+  desc: string;
+  icon: string;
+}[] = [
+  {
+    value: 'original',
+    label: '원본 형식 그대로',
+    badge: '확장자 유지',
+    desc: '올린 사진의 원래 확장자(JPG/PNG) 그대로 저장',
+    icon: 'fas fa-file-image',
+  },
+  {
+    value: 'image/jpeg',
+    label: 'JPG (JPEG) 변환',
+    badge: '호환성 최고',
+    desc: '블로그·쇼핑몰·문서 어디서나 열리는 표준 사진 파일',
+    icon: 'fas fa-camera',
+  },
+  {
+    value: 'image/png',
+    label: 'PNG 고화질 변환',
+    badge: '투명 배경 보존',
+    desc: '로고·아이콘·글자가 들어간 캡처 이미지에 최적',
+    icon: 'fas fa-layer-group',
+  },
+  {
+    value: 'image/webp',
+    label: 'WebP 압축 변환',
+    badge: '용량 80% 절감',
+    desc: '화질은 선명하게 유지하면서 용량만 확 줄이는 웹 표준',
+    icon: 'fas fa-bolt',
+  },
+];
+
+export default function ResizeOptionsPanel({
+  settings,
+  onChange,
+  itemCount,
+  isProcessing,
+  onBackToStep1,
+  onStartProcess,
+}: ResizeOptionsPanelProps) {
   const [selectedPresetId, setSelectedPresetId] = useState<string>('custom');
 
-  const handleUnitChange = (unit: ResizeUnit) => {
-    onChange({ unit });
+  // '원본 크기 그대로(100%)' 상태 판별
+  const isKeepOriginalSize = settings.unit === 'percent' && settings.percent === 100;
+
+  const handleSelectKeepOriginalSize = () => {
+    onChange({ unit: 'percent', percent: 100 });
+  };
+
+  const handleSelectPercentScale = () => {
+    onChange({ unit: 'percent', percent: settings.percent === 100 ? 75 : settings.percent });
   };
 
   const handlePresetSelect = (preset: PresetOption) => {
@@ -56,391 +116,441 @@ export default function ResizeOptionsPanel({ settings, onChange }: ResizeOptions
   return (
     <div
       data-screenshot-point="action"
-      className="w-full bg-white rounded-3xl p-6 sm:p-7 border border-[#EBE6DD] shadow-xs space-y-6"
+      className="w-full bg-white rounded-3xl p-5 sm:p-7 border border-[#EBE6DD] border-t-4 border-t-indigo-600 shadow-md space-y-6 animate-fade-in"
     >
-      <h3 className="text-lg font-black text-[#2D2A26] flex items-center gap-2">
-        <i className="fas fa-sliders text-indigo-600 text-sm"></i>
-        <span>크기 조정 옵션</span>
-      </h3>
-
-      {/* 4대 모드 탭 (스크린샷 일치) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-[#FAF8F5] rounded-2xl border border-[#EBE6DD]">
-        <button
-          type="button"
-          onClick={() => handleUnitChange('pixel')}
-          className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-            settings.unit === 'pixel'
-              ? 'bg-white text-indigo-700 shadow-2xs border border-[#EBE6DD]'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <i className="fas fa-th-large text-sm mb-1"></i>
-          <span>픽셀 단위</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleUnitChange('percent')}
-          className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-            settings.unit === 'percent'
-              ? 'bg-white text-indigo-700 shadow-2xs border border-[#EBE6DD]'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <i className="fas fa-percent text-sm mb-1"></i>
-          <span>백분율 단위</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleUnitChange('longest')}
-          className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-            settings.unit === 'longest'
-              ? 'bg-white text-indigo-700 shadow-2xs border border-[#EBE6DD]'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <i className="fas fa-ruler-horizontal text-sm mb-1"></i>
-          <span>긴 변 단위</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleUnitChange('target_kb')}
-          className={`flex flex-col items-center justify-center py-2.5 px-2 rounded-xl text-xs font-bold transition-all ${
-            settings.unit === 'target_kb'
-              ? 'bg-white text-indigo-700 shadow-2xs border border-[#EBE6DD]'
-              : 'text-stone-500 hover:text-stone-800'
-          }`}
-        >
-          <i className="fas fa-file-shield text-sm mb-1"></i>
-          <span>목표 용량 (KB)</span>
-        </button>
+      {/* 상단 스텝 헤더 */}
+      <div className="flex items-start justify-between gap-3 border-b border-[#EBE6DD] pb-4">
+        <div>
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-indigo-600 text-white text-[11px] font-black mb-1.5 shadow-2xs">
+            STEP 2 · 옵션 선택 (총 {itemCount}장 준비됨)
+          </span>
+          <h2 className="text-lg sm:text-xl font-black text-[#2D2A26]">
+            저장할 파일 형식과 크기를 선택해 주세요
+          </h2>
+          <p className="text-xs text-stone-500 mt-0.5">
+            아래에서 <strong>1. 파일 형식</strong>과 <strong>2. 이미지 크기</strong>를 고른 뒤 하단의 <strong>[변환 시작하기]</strong> 버튼을 누르세요.
+          </p>
+        </div>
       </div>
 
-      <p className="text-xs text-stone-500 font-medium">
-        {settings.unit === 'pixel' && '모든 이미지를 다음 정확한 크기로 조정합니다:'}
-        {settings.unit === 'percent' && '원본 크기에 백분율 비율을 곱해 축소 또는 확대합니다:'}
-        {settings.unit === 'longest' && '가로·세로 중 더 긴 축을 지정된 픽셀로 맞추고 비율을 자동 유지합니다:'}
-        {settings.unit === 'target_kb' && '목표 파일 용량 이하가 되도록 해상도 및 화질을 자동 최적화합니다:'}
-      </p>
+      {/* ===================================================================== */}
+      {/* 1. 파일 형식(확장자) 선택 — 숨김 없이 가장 먼저 한눈에 보이도록 배치 */}
+      {/* ===================================================================== */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs sm:text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
+              1
+            </span>
+            <span>저장할 파일 형식(확장자) 선택</span>
+          </label>
+          <span className="text-[11px] font-bold text-indigo-600">
+            현재: {FORMAT_CARDS.find((f) => f.value === settings.format)?.label}
+          </span>
+        </div>
 
-      {/* ── 1. 픽셀 모드 세부 컨트롤 ── */}
-      {settings.unit === 'pixel' && (
-        <div className="space-y-4 animate-fade-in">
-          {/* 자주 쓰는 프리셋 선택 & 플랫폼 아이콘들 */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-bold text-stone-700">자주 쓰는 프리셋 선택</label>
-              {/* 플랫폼 빠른 선택 아이콘 버튼들 */}
-              <div className="flex items-center gap-1.5 text-stone-500 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(SNS_PRESETS[0]!)}
-                  title="네이버 블로그 썸네일 (800x800)"
-                  className="w-6 h-6 rounded-md hover:bg-emerald-50 hover:text-emerald-700 font-black flex items-center justify-center transition-colors"
-                >
-                  N
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(SNS_PRESETS[2]!)}
-                  title="유튜브 썸네일 (1280x720)"
-                  className="w-6 h-6 rounded-md hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition-colors"
-                >
-                  <i className="fab fa-youtube"></i>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(SNS_PRESETS[4]!)}
-                  title="인스타그램 피드 (1080x1080)"
-                  className="w-6 h-6 rounded-md hover:bg-pink-50 hover:text-pink-600 flex items-center justify-center transition-colors"
-                >
-                  <i className="fab fa-instagram"></i>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(SNS_PRESETS[7]!)}
-                  title="카카오톡 프로필 (800x800)"
-                  className="w-6 h-6 rounded-md hover:bg-amber-50 hover:text-amber-700 flex items-center justify-center transition-colors"
-                >
-                  <i className="fas fa-comment"></i>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handlePresetSelect(SNS_PRESETS[9]!)}
-                  title="페이스북 포스트 (1200x630)"
-                  className="w-6 h-6 rounded-md hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition-colors"
-                >
-                  <i className="fab fa-facebook-f"></i>
-                </button>
-              </div>
-            </div>
-
-            {/* 프리셋 드롭다운 */}
-            <select
-              value={selectedPresetId}
-              onChange={handleCustomPresetDropdown}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#EBE6DD] bg-white text-xs font-semibold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option value="custom">직접 픽셀 입력...</option>
-              <optgroup label="네이버">
-                <option value="naver_thumb">네이버 블로그 썸네일 (800×800)</option>
-                <option value="naver_body">네이버 블로그 본문 (860×573)</option>
-              </optgroup>
-              <optgroup label="유튜브">
-                <option value="yt_thumb">유튜브 썸네일 (1280×720 HD)</option>
-                <option value="yt_banner">유튜브 채널 아트 (2560×1440)</option>
-              </optgroup>
-              <optgroup label="인스타그램">
-                <option value="insta_square">인스타그램 정사각형 (1080×1080)</option>
-                <option value="insta_portrait">인스타그램 세로 피드 (1080×1350)</option>
-                <option value="insta_story">인스타그램 스토리/릴스 (1080×1920)</option>
-              </optgroup>
-              <optgroup label="카카오톡 / 페이스북">
-                <option value="kakao_profile">카카오톡 프로필 (800×800)</option>
-                <option value="kakao_share">카카오톡 공유 썸네일 (800×400)</option>
-                <option value="fb_post">페이스북 피드 포스트 (1200×630)</option>
-              </optgroup>
-              <optgroup label="일반 표준 규격">
-                <option value="gen_fhd">Full HD 웹 표준 (1920×1080)</option>
-                <option value="gen_hd">HD 컴팩트 (1280×720)</option>
-                <option value="gen_800">기본 웹 배너 (800×600)</option>
-              </optgroup>
-            </select>
-          </div>
-
-          {/* 너비 & 높이 입력창 */}
-          <div className="grid grid-cols-2 gap-3 items-center">
-            <div>
-              <label className="block text-xs font-bold text-stone-700 mb-1">너비 (픽셀):</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  max="10000"
-                  value={settings.width}
-                  onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#EBE6DD] bg-white text-xs font-mono font-bold text-right pr-9 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">
-                  px
-                </span>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-bold text-stone-700">높이 (픽셀):</label>
-                <button
-                  type="button"
-                  onClick={() => onChange({ lockAspectRatio: !settings.lockAspectRatio })}
-                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${
-                    settings.lockAspectRatio
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                      : 'text-stone-400 hover:text-stone-600'
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {FORMAT_CARDS.map((fmt) => {
+            const active = settings.format === fmt.value;
+            return (
+              <button
+                key={fmt.value}
+                type="button"
+                onClick={() => onChange({ format: fmt.value })}
+                className={`relative p-3.5 rounded-2xl text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  active
+                    ? 'bg-indigo-50/90 text-indigo-950 border-2 border-indigo-600 shadow-xs'
+                    : 'bg-[#FAF8F5] text-[#2D2A26] border border-[#EBE6DD] hover:bg-stone-100'
+                }`}
+              >
+                {active && (
+                  <span className="absolute top-2.5 right-2.5 w-4 h-4 rounded-full bg-indigo-600 text-white text-[9px] flex items-center justify-center">
+                    <i className="fas fa-check"></i>
+                  </span>
+                )}
+                <div>
+                  <span
+                    className={`inline-block text-[10px] font-black px-2 py-0.5 rounded-md mb-1.5 ${
+                      active
+                        ? 'bg-indigo-600 text-white'
+                        : 'bg-white text-stone-600 border border-[#EBE6DD]'
+                    }`}
+                  >
+                    {fmt.badge}
+                  </span>
+                  <div className="text-xs sm:text-sm font-black flex items-center gap-1.5">
+                    <i className={`${fmt.icon} text-xs ${active ? 'text-indigo-600' : 'text-stone-500'}`}></i>
+                    <span>{fmt.label}</span>
+                  </div>
+                </div>
+                <p
+                  className={`text-[10px] mt-1.5 leading-snug line-clamp-2 ${
+                    active ? 'text-indigo-800 font-semibold' : 'text-stone-500'
                   }`}
-                  title="가로/세로 비율 연동 토글"
                 >
-                  <i className={`fas ${settings.lockAspectRatio ? 'fa-link' : 'fa-unlink'} mr-0.5`}></i>
-                  {settings.lockAspectRatio ? '비율 고정됨' : '비율 해제'}
-                </button>
-              </div>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="1"
-                  max="10000"
-                  value={settings.height}
-                  onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-[#EBE6DD] bg-white text-xs font-mono font-bold text-right pr-9 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">
-                  px
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── 2. 백분율 모드 세부 컨트롤 ── */}
-      {settings.unit === 'percent' && (
-        <div className="space-y-3 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-stone-700">크기 비율 (Scale %)</label>
-            <span className="font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200 text-xs">
-              {settings.percent}%
-            </span>
-          </div>
-
-          <div className="flex gap-2">
-            {[25, 50, 75, 100].map((pct) => (
-              <button
-                key={pct}
-                type="button"
-                onClick={() => onChange({ percent: pct })}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                  settings.percent === pct
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                    : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-                }`}
-              >
-                {pct}%
+                  {fmt.desc}
+                </p>
               </button>
-            ))}
-          </div>
-
-          <input
-            type="range"
-            min="10"
-            max="200"
-            step="5"
-            value={settings.percent}
-            onChange={(e) => onChange({ percent: parseInt(e.target.value) || 100 })}
-            className="w-full accent-indigo-600 cursor-pointer"
-          />
+            );
+          })}
         </div>
-      )}
-
-      {/* ── 3. 긴 변 기준 모드 세부 컨트롤 ── */}
-      {settings.unit === 'longest' && (
-        <div className="space-y-3 animate-fade-in">
-          <label className="block text-xs font-bold text-stone-700">긴 변 최대 길이 (픽셀)</label>
-          <div className="flex gap-2 mb-2">
-            {[800, 1080, 1280, 1920].map((sz) => (
-              <button
-                key={sz}
-                type="button"
-                onClick={() => onChange({ longestSide: sz })}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                  settings.longestSide === sz
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                    : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-                }`}
-              >
-                {sz}px
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              min="100"
-              max="10000"
-              value={settings.longestSide}
-              onChange={(e) => onChange({ longestSide: parseInt(e.target.value) || 800 })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#EBE6DD] bg-white text-xs font-mono font-bold text-right pr-9 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">
-              px
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ── 4. 목표 용량 (KB) 모드 세부 컨트롤 ── */}
-      {settings.unit === 'target_kb' && (
-        <div className="space-y-3 animate-fade-in">
-          <label className="block text-xs font-bold text-stone-700">목표 파일 용량 (최대 한도)</label>
-          <div className="flex gap-2 mb-2">
-            {[100, 300, 500, 1000].map((kb) => (
-              <button
-                key={kb}
-                type="button"
-                onClick={() => onChange({ targetKb: kb })}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
-                  settings.targetKb === kb
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
-                    : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-                }`}
-              >
-                {kb >= 1000 ? `${kb / 1000}MB` : `${kb}KB`}
-              </button>
-            ))}
-          </div>
-          <div className="relative">
-            <input
-              type="number"
-              min="20"
-              max="50000"
-              value={settings.targetKb}
-              onChange={(e) => onChange({ targetKb: parseInt(e.target.value) || 300 })}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-[#EBE6DD] bg-white text-xs font-mono font-bold text-right pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-mono">
-              KB 이하
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ── 이미지 비율 및 맞춤 방식 (Fit Mode - 스크린샷 100% 일치) ── */}
-      <div className="pt-4 border-t border-[#EBE6DD]">
-        <label className="block text-xs font-bold text-stone-700 mb-2">이미지 비율 및 맞춤 방식:</label>
-        <div className="grid grid-cols-3 gap-2 mb-2">
-          <button
-            type="button"
-            onClick={() => onChange({ fitMode: 'cover' })}
-            className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-              settings.fitMode === 'cover'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs'
-                : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-            }`}
-          >
-            <i className="fas fa-crop-alt text-xs"></i>
-            <span>중앙 크롭 (Cover)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange({ fitMode: 'contain' })}
-            className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-              settings.fitMode === 'contain'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs'
-                : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-            }`}
-          >
-            <i className="fas fa-compress-arrows-alt text-xs"></i>
-            <span>비율 유지 (Contain)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onChange({ fitMode: 'stretch' })}
-            className={`py-2 px-1 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border transition-all ${
-              settings.fitMode === 'stretch'
-                ? 'border-indigo-600 bg-indigo-50 text-indigo-900 shadow-2xs'
-                : 'border-[#EBE6DD] bg-white text-stone-600 hover:border-stone-300'
-            }`}
-          >
-            <i className="fas fa-arrows-alt text-xs"></i>
-            <span>강제 맞춤 (Stretch)</span>
-          </button>
-        </div>
-
-        {/* 맞춤 방식 실시간 설명 문구 */}
-        <p className="text-[11px] text-stone-500 leading-relaxed font-medium">
-          {settings.fitMode === 'cover' && '비율을 유지하며 설정 영역을 가득 채우도록 중앙 기준 크롭합니다 (권장).'}
-          {settings.fitMode === 'contain' && '설정 크기 안에 원본 이미지가 모두 들어가도록 여백을 두고 크기를 맞춥니다.'}
-          {settings.fitMode === 'stretch' && '비율과 상관없이 입력한 너비와 높이에 정확히 일치하도록 강제 변형합니다.'}
-        </p>
       </div>
 
-      {/* ── 원본보다 크게 확대 금지 체크박스 (스크린샷 일치) ── */}
-      <div className="pt-3 border-t border-[#EBE6DD]">
-        <label className="flex items-center gap-2 text-xs font-bold text-stone-700 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={settings.preventUpscale}
-            onChange={(e) => onChange({ preventUpscale: e.target.checked })}
-            className="w-4 h-4 rounded text-indigo-600 accent-indigo-600 cursor-pointer"
-          />
-          <span>원본보다 크게 확대 금지</span>
+      {/* ===================================================================== */}
+      {/* 2. 이미지 크기(해상도) 조절 방식 선택 */}
+      {/* ===================================================================== */}
+      <div className="pt-4 border-t border-[#EBE6DD] space-y-4">
+        <label className="text-xs sm:text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
+          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
+            2
+          </span>
+          <span>이미지 크기(해상도)는 어떻게 맞출까요?</span>
         </label>
-        <p className="text-[10px] text-stone-400 pl-6 mt-0.5">
-          원본 해상도가 목표 설정값보다 작을 경우 화질 저하를 방지하기 위해 강제로 늘리지 않습니다.
-        </p>
+
+        {/* 4대 크기 조절 모드 버튼 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <button
+            type="button"
+            onClick={handleSelectKeepOriginalSize}
+            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+              isKeepOriginalSize
+                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
+            }`}
+          >
+            <i className={`fas fa-expand text-sm ${isKeepOriginalSize ? 'text-indigo-600' : 'text-stone-400'}`}></i>
+            <span>원본 크기 그대로</span>
+            <span className="text-[10px] font-normal text-stone-500">크기 변경 안 함</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSelectPercentScale}
+            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+              settings.unit === 'percent' && settings.percent !== 100
+                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
+            }`}
+          >
+            <i
+              className={`fas fa-percent text-sm ${
+                settings.unit === 'percent' && settings.percent !== 100 ? 'text-indigo-600' : 'text-stone-400'
+              }`}
+            ></i>
+            <span>비율로 축소 (%)</span>
+            <span className="text-[10px] font-normal text-stone-500">50% · 75% 축소</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onChange({ unit: 'pixel' })}
+            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+              settings.unit === 'pixel'
+                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
+            }`}
+          >
+            <i className={`fas fa-th-large text-sm ${settings.unit === 'pixel' ? 'text-indigo-600' : 'text-stone-400'}`}></i>
+            <span>픽셀 · SNS 규격</span>
+            <span className="text-[10px] font-normal text-stone-500">블로그·유튜브·직접입력</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onChange({ unit: 'target_kb' })}
+            className={`py-3 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
+              settings.unit === 'target_kb'
+                ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                : 'bg-[#FAF8F5] text-stone-600 border border-[#EBE6DD] hover:bg-stone-100'
+            }`}
+          >
+            <i
+              className={`fas fa-weight-hanging text-sm ${
+                settings.unit === 'target_kb' ? 'text-indigo-600' : 'text-stone-400'
+              }`}
+            ></i>
+            <span>목표 용량 맞춤</span>
+            <span className="text-[10px] font-normal text-stone-500">300KB · 500KB 이하</span>
+          </button>
+        </div>
+
+        {/* 선택된 크기 모드별 세부 설정 박스 */}
+        <div className="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4">
+          {isKeepOriginalSize && (
+            <div className="flex items-center gap-3 text-xs sm:text-sm text-indigo-950 font-bold">
+              <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                <i className="fas fa-check"></i>
+              </div>
+              <div>
+                <p className="font-black">가로 × 세로 해상도는 원본 그대로(100%) 유지합니다.</p>
+                <p className="text-xs text-stone-500 font-medium mt-0.5">
+                  위에서 선택한 <strong>파일 형식({FORMAT_CARDS.find((f) => f.value === settings.format)?.label})</strong>과 화질 설정만 적용하여 변환합니다.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {settings.unit === 'percent' && !isKeepOriginalSize && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-indigo-950">원본 대비 축소 비율 선택</span>
+                <span className="font-mono font-black text-indigo-700 bg-white px-2.5 py-0.5 rounded-lg border border-indigo-200 text-xs">
+                  원본의 {settings.percent}% 크기
+                </span>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {[25, 50, 75, 90].map((pct) => (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => onChange({ percent: pct })}
+                    className={`py-2.5 rounded-xl text-xs font-black border cursor-pointer transition-all ${
+                      settings.percent === pct
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white text-stone-700 border-indigo-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {pct}% {pct === 50 ? '(절반)' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {settings.unit === 'pixel' && (
+            <div className="space-y-4">
+              {/* 빠른 SNS 규격 선택 칩 */}
+              <div>
+                <label className="block text-xs font-black text-indigo-950 mb-2">
+                  자주 쓰는 SNS · 블로그 규격 원클릭 선택
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  {[
+                    { id: 'naver_thumb', label: '🟢 네이버 썸네일 (800×800)' },
+                    { id: 'naver_body', label: '🟢 블로그 본문 (860×573)' },
+                    { id: 'yt_thumb', label: '🔴 유튜브 썸네일 (1280×720)' },
+                    { id: 'insta_square', label: '🟣 인스타 정사각 (1080×1080)' },
+                    { id: 'gen_fhd', label: '💻 Full HD (1920×1080)' },
+                  ].map((chip) => {
+                    const preset = SNS_PRESETS.find((p) => p.id === chip.id);
+                    if (!preset) return null;
+                    const active =
+                      settings.width === preset.width && settings.height === preset.height;
+                    return (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => handlePresetSelect(preset)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border cursor-pointer transition-all ${
+                          active
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-2xs'
+                            : 'bg-white text-stone-700 border-indigo-200 hover:bg-indigo-50'
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <select
+                  value={selectedPresetId}
+                  onChange={handleCustomPresetDropdown}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-white text-xs font-bold text-[#2D2A26] focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                >
+                  <option value="custom">직접 가로·세로 픽셀 입력 또는 전체 규격 보기...</option>
+                  <optgroup label="네이버 블로그">
+                    <option value="naver_thumb">네이버 블로그 썸네일 (800×800)</option>
+                    <option value="naver_body">네이버 블로그 본문 (860×573)</option>
+                  </optgroup>
+                  <optgroup label="유튜브">
+                    <option value="yt_thumb">유튜브 썸네일 (1280×720 HD)</option>
+                    <option value="yt_banner">유튜브 채널 배너 (2560×1440)</option>
+                  </optgroup>
+                  <optgroup label="인스타그램">
+                    <option value="insta_square">인스타그램 정사각형 (1080×1080)</option>
+                    <option value="insta_portrait">인스타그램 세로 피드 (1080×1350)</option>
+                    <option value="insta_story">인스타그램 스토리/릴스 (1080×1920)</option>
+                  </optgroup>
+                  <optgroup label="카카오톡 / 페이스북 / 웹 표준">
+                    <option value="kakao_profile">카카오톡 프로필 (800×800)</option>
+                    <option value="fb_post">페이스북 포스트 (1200×630)</option>
+                    <option value="gen_fhd">Full HD 웹 표준 (1920×1080)</option>
+                    <option value="gen_800">기본 웹 배너 (800×600)</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* 가로 / 세로 픽셀 입력 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-stone-700 mb-1">가로 너비 (px)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={settings.width}
+                    onChange={(e) => handleWidthChange(parseInt(e.target.value) || 0)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-white text-sm font-mono font-bold text-[#2D2A26] focus:outline-none focus:border-indigo-600"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-stone-700">세로 높이 (px)</label>
+                    <button
+                      type="button"
+                      onClick={() => onChange({ lockAspectRatio: !settings.lockAspectRatio })}
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer ${
+                        settings.lockAspectRatio
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-white text-stone-500 border border-stone-200'
+                      }`}
+                    >
+                      <i className={`fas ${settings.lockAspectRatio ? 'fa-link' : 'fa-unlink'} mr-1`}></i>
+                      {settings.lockAspectRatio ? '비율 잠금' : '비율 자유'}
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10000"
+                    value={settings.height}
+                    onChange={(e) => handleHeightChange(parseInt(e.target.value) || 0)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-white text-sm font-mono font-bold text-[#2D2A26] focus:outline-none focus:border-indigo-600"
+                  />
+                </div>
+              </div>
+
+              {/* 비율 맞춤 방식 */}
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                {(
+                  [
+                    { mode: 'cover', label: '중앙 꽉 채우기 (권장)' },
+                    { mode: 'contain', label: '잘림 없이 전체 포함' },
+                    { mode: 'stretch', label: '비율 무시 꽉 맞춤' },
+                  ] as const
+                ).map((m) => (
+                  <button
+                    key={m.mode}
+                    type="button"
+                    onClick={() => onChange({ fitMode: m.mode })}
+                    className={`py-2 px-2 rounded-xl text-[11px] font-bold border cursor-pointer ${
+                      settings.fitMode === m.mode
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-stone-600 border-indigo-200'
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {settings.unit === 'target_kb' && (
+            <div className="space-y-3">
+              <label className="block text-xs font-black text-indigo-950">
+                최대 몇 KB 이하로 용량을 줄일까요?
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                {[100, 300, 500, 1000].map((kb) => (
+                  <button
+                    key={kb}
+                    type="button"
+                    onClick={() => onChange({ targetKb: kb })}
+                    className={`py-2.5 rounded-xl text-xs font-black border cursor-pointer transition-all ${
+                      settings.targetKb === kb
+                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                        : 'bg-white text-stone-700 border-indigo-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {kb >= 1000 ? '1MB 이하' : `${kb}KB 이하`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* 3. 화질(Quality) 선택 — 누구나 쉽게 고르는 3단 버튼 */}
+      {/* ===================================================================== */}
+      <div className="pt-4 border-t border-[#EBE6DD] space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-xs sm:text-sm font-black text-[#2D2A26] flex items-center gap-1.5">
+            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white text-[11px] font-black flex items-center justify-center">
+              3
+            </span>
+            <span>저장 화질 선택</span>
+          </label>
+          <span className="text-xs font-mono font-bold text-indigo-600">
+            {Math.round(settings.quality * 100)}% 화질
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {(
+            [
+              { q: 0.95, label: '선명한 최고 화질 (95%)', sub: '인쇄 · 포트폴리오용' },
+              { q: 0.85, label: '표준 권장 화질 (85%)', sub: '화질 유지 + 용량 절약' },
+              { q: 0.7, label: '가벼운 용량 우선 (70%)', sub: '빠른 웹 업로드용' },
+            ] as const
+          ).map((item) => {
+            const active = Math.abs(settings.quality - item.q) < 0.03;
+            return (
+              <button
+                key={item.q}
+                type="button"
+                onClick={() => onChange({ quality: item.q })}
+                className={`py-2.5 px-2 rounded-xl text-center border cursor-pointer transition-all ${
+                  active
+                    ? 'bg-indigo-50 text-indigo-950 border-2 border-indigo-600 shadow-2xs'
+                    : 'bg-[#FAF8F5] text-stone-700 border-[#EBE6DD] hover:bg-stone-100'
+                }`}
+              >
+                <div className="text-xs font-black">{item.label}</div>
+                <div className="text-[10px] text-stone-500 mt-0.5">{item.sub}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* 하단 이전 스텝 / 지금 변환 시작하기 대형 CTA 버튼 */}
+      {/* ===================================================================== */}
+      <div className="pt-4 border-t border-[#EBE6DD] flex flex-col sm:flex-row gap-2.5">
+        <button
+          type="button"
+          onClick={onBackToStep1}
+          disabled={isProcessing}
+          className="py-4 px-5 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs sm:text-sm font-black rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 disabled:opacity-50"
+        >
+          <i className="fas fa-arrow-left"></i>
+          <span>이전 스텝 (이미지 추가/삭제)</span>
+        </button>
+
+        <button
+          type="button"
+          data-screenshot-click="result"
+          onClick={onStartProcess}
+          disabled={isProcessing || itemCount === 0}
+          className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white text-sm sm:text-base font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+        >
+          {isProcessing ? (
+            <>
+              <i className="fas fa-spinner fa-spin"></i>
+              <span>이미지 변환 중입니다... 잠시만 기다려 주세요</span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-wand-magic-sparkles text-amber-300"></i>
+              <span>지금 변환 시작하기 ({itemCount}장)</span>
+              <i className="fas fa-arrow-right"></i>
+            </>
+          )}
+        </button>
       </div>
     </div>
   );
