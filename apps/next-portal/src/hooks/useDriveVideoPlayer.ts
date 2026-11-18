@@ -186,6 +186,8 @@ export function useDriveVideoPlayer() {
     const currentIndexRef = useRef<number>(0);
     const isShuffleRef = useRef<boolean>(false);
     const repeatModeRef = useRef<RepeatMode>('all');
+    const playedTrackIdsRef = useRef<Set<string>>(new Set());
+    const nextShuffleTargetIdRef = useRef<string | null>(null);
     const endedTrackLockRef = useRef<string>('');
     const endedTrackLockTimerRef = useRef<number | null>(null);
     const prewarmedTrackKeyRef = useRef<string>('');
@@ -1445,6 +1447,10 @@ export function useDriveVideoPlayer() {
     // ─── 재생목록 편집 ───
     const removePlaylistItem = useCallback(
         (id: string) => {
+            playedTrackIdsRef.current.delete(id);
+            if (nextShuffleTargetIdRef.current === id) {
+                nextShuffleTargetIdRef.current = null;
+            }
             setPlaylist((prev) => {
                 const idx = prev.findIndex((item) => item.id === id);
                 if (idx === -1) return prev;
@@ -1472,6 +1478,8 @@ export function useDriveVideoPlayer() {
     );
 
     const clearPlaylist = useCallback(() => {
+        playedTrackIdsRef.current.clear();
+        nextShuffleTargetIdRef.current = null;
         setPlaylist((prev) => {
             for (const item of prev) {
                 if (item.sourceType === 'local' && item.streamUrl.startsWith('blob:')) {
@@ -1497,6 +1505,7 @@ export function useDriveVideoPlayer() {
         const video = videoRef.current;
         if (!video || !currentTrack) return;
         if (video.paused) {
+            playedTrackIdsRef.current.add(currentTrack.id);
             userWantsPlayRef.current = true;
             setIsMiniBarDismissed(false);
             if (typeof window !== 'undefined') {
@@ -1563,6 +1572,12 @@ export function useDriveVideoPlayer() {
 
             const media = videoRef.current;
             const nextTrack = list[targetIndex];
+            if (nextTrack) {
+                playedTrackIdsRef.current.add(nextTrack.id);
+                if (nextShuffleTargetIdRef.current === nextTrack.id) {
+                    nextShuffleTargetIdRef.current = null;
+                }
+            }
 
             if (
                 tokenExpiryRef.current === 0 ||
@@ -1642,17 +1657,62 @@ export function useDriveVideoPlayer() {
         [switchAndPlayAtIndex]
     );
 
+    // ─── 이미 재생된 곡을 제외하고 미재생 곡 중에서만 랜덤 선택 (전 곡 1회 재생 완료 시 라운드 리셋) ───
     const pickRandomNextIndex = useCallback(
-        (totalLength: number, currentIdx: number): number => {
+        (list: VideoPlaylistItem[], currentIdx: number, allowCycleReset = true): number => {
+            const totalLength = list.length;
             if (totalLength <= 1) return 0;
-            const candidates: number[] = [];
-            for (let i = 0; i < totalLength; i += 1) {
-                if (i !== currentIdx) {
-                    candidates.push(i);
+
+            const currentItem = list[currentIdx];
+            if (currentItem) {
+                playedTrackIdsRef.current.add(currentItem.id);
+            }
+
+            // 사전 워밍업(prewarmNextTrack)에서 미리 뽑아둔 미재생 랜덤 곡이 있으면 우선 사용
+            if (nextShuffleTargetIdRef.current) {
+                const prewarmedIdx = list.findIndex(
+                    (item, idx) =>
+                        item.id === nextShuffleTargetIdRef.current &&
+                        idx !== currentIdx &&
+                        !playedTrackIdsRef.current.has(item.id)
+                );
+                nextShuffleTargetIdRef.current = null;
+                if (prewarmedIdx !== -1) {
+                    return prewarmedIdx;
                 }
             }
-            const randomPos = Math.floor(Math.random() * candidates.length);
-            return candidates[randomPos] ?? 0;
+
+            const unplayedCandidates: number[] = [];
+            for (let i = 0; i < totalLength; i += 1) {
+                const item = list[i];
+                if (i !== currentIdx && item && !playedTrackIdsRef.current.has(item.id)) {
+                    unplayedCandidates.push(i);
+                }
+            }
+
+            if (unplayedCandidates.length > 0) {
+                const randomPos = Math.floor(Math.random() * unplayedCandidates.length);
+                return unplayedCandidates[randomPos] ?? 0;
+            }
+
+            // 목록의 모든 곡이 1번씩 재생 완료된 경우
+            if (!allowCycleReset) {
+                return -1;
+            }
+
+            // 새 랜덤 라운드 시작: 방금 재생된 현재 곡만 직후 연속 중복 방지를 위해 기록하고 나머지 전체를 미재생 상태로 복원
+            playedTrackIdsRef.current.clear();
+            if (currentItem) {
+                playedTrackIdsRef.current.add(currentItem.id);
+            }
+            const freshCandidates: number[] = [];
+            for (let i = 0; i < totalLength; i += 1) {
+                if (i !== currentIdx) {
+                    freshCandidates.push(i);
+                }
+            }
+            const randomPos = Math.floor(Math.random() * freshCandidates.length);
+            return freshCandidates[randomPos] ?? 0;
         },
         []
     );
@@ -1665,8 +1725,17 @@ export function useDriveVideoPlayer() {
         const repeatActive = repeatModeRef.current;
 
         if (shuffleActive && list.length > 1) {
-            const nextIdx = pickRandomNextIndex(list.length, activeIdx);
-            switchAndPlayAtIndex(nextIdx);
+            const allowReset = repeatActive !== 'off';
+            const nextIdx = pickRandomNextIndex(list, activeIdx, allowReset);
+            if (nextIdx >= 0) {
+                switchAndPlayAtIndex(nextIdx);
+            } else {
+                // 반복꺼짐(off) 상태에서 목록 내 모든 곡을 1번씩 다 재생한 경우 깔끔하게 종료
+                playedTrackIdsRef.current.clear();
+                nextShuffleTargetIdRef.current = null;
+                userWantsPlayRef.current = false;
+                setIsPlaying(false);
+            }
             return;
         }
 
@@ -1694,7 +1763,7 @@ export function useDriveVideoPlayer() {
             return;
         }
         if (shuffleActive && list.length > 1) {
-            const randomIdx = pickRandomNextIndex(list.length, activeIdx);
+            const randomIdx = pickRandomNextIndex(list, activeIdx, true);
             switchAndPlayAtIndex(randomIdx);
             return;
         }
@@ -1705,10 +1774,24 @@ export function useDriveVideoPlayer() {
     const toggleShuffle = useCallback(() => {
         setIsShuffle((prev) => {
             const next = !prev;
+            isShuffleRef.current = next;
+            playedTrackIdsRef.current.clear();
+            nextShuffleTargetIdRef.current = null;
+            if (next) {
+                const list = playlistRef.current;
+                const currentItem = list[currentIndexRef.current];
+                if (currentItem) {
+                    playedTrackIdsRef.current.add(currentItem.id);
+                }
+            }
             if (typeof window !== 'undefined') {
                 localStorage.setItem(STORAGE_KEYS.SHUFFLE, String(next));
             }
-            showNotice(next ? '🎲 랜덤 재생(셔플)이 켜졌습니다.' : '➡️ 순차 재생 모드로 전환되었습니다.');
+            showNotice(
+                next
+                    ? '🎲 랜덤 재생이 켜졌습니다. (이미 재생된 곡은 제외하고 재생됩니다)'
+                    : '➡️ 순차 재생 모드로 전환되었습니다.'
+            );
             return next;
         });
     }, [showNotice]);
@@ -1886,13 +1969,46 @@ export function useDriveVideoPlayer() {
             void refreshDriveTokenSilently(true);
         }
 
-        if (list.length <= 1 || isShuffleRef.current) return;
-        const nextIdx =
-            currentIndexRef.current + 1 < list.length
-                ? currentIndexRef.current + 1
-                : repeatModeRef.current === 'all'
-                ? 0
-                : -1;
+        if (list.length <= 1) return;
+
+        let nextIdx = -1;
+        if (isShuffleRef.current) {
+            const activeIdx = currentIndexRef.current;
+            const currentItem = list[activeIdx];
+            if (currentItem) {
+                playedTrackIdsRef.current.add(currentItem.id);
+            }
+            if (nextShuffleTargetIdRef.current) {
+                nextIdx = list.findIndex(
+                    (item, idx) =>
+                        item.id === nextShuffleTargetIdRef.current &&
+                        idx !== activeIdx &&
+                        !playedTrackIdsRef.current.has(item.id)
+                );
+            }
+            if (nextIdx < 0) {
+                const unplayedIndices: number[] = [];
+                for (let i = 0; i < list.length; i += 1) {
+                    const item = list[i];
+                    if (i !== activeIdx && item && !playedTrackIdsRef.current.has(item.id)) {
+                        unplayedIndices.push(i);
+                    }
+                }
+                if (unplayedIndices.length > 0) {
+                    const picked =
+                        unplayedIndices[Math.floor(Math.random() * unplayedIndices.length)] ?? -1;
+                    nextIdx = picked;
+                    nextShuffleTargetIdRef.current = list[picked]?.id || null;
+                }
+            }
+        } else {
+            nextIdx =
+                currentIndexRef.current + 1 < list.length
+                    ? currentIndexRef.current + 1
+                    : repeatModeRef.current === 'all'
+                    ? 0
+                    : -1;
+        }
         if (nextIdx < 0) return;
         const nextItem = list[nextIdx];
         if (!nextItem || nextItem.sourceType !== 'google-drive') return;
@@ -1976,6 +2092,10 @@ export function useDriveVideoPlayer() {
     }, [clearResumeRetryTimers]);
 
     const handleMediaPlaying = useCallback(() => {
+        const activeItem = playlistRef.current[currentIndexRef.current];
+        if (activeItem) {
+            playedTrackIdsRef.current.add(activeItem.id);
+        }
         errorRetryCountRef.current = 0;
         consecutiveTrackSkipRef.current = 0;
         setIsBuffering(false);
