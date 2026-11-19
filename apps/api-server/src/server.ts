@@ -138,6 +138,12 @@ app.route('/', bannerRoutes);
 import { bannerAdminUi } from './routes/banner-admin-ui.js';
 app.route('/', bannerAdminUi);
 
+import { watchdogRoutes } from './routes/watchdog.routes.js';
+app.route('/', watchdogRoutes);
+
+import { watchdogAdminUi } from './routes/watchdog-admin-ui.js';
+app.route('/', watchdogAdminUi);
+
 import { marketingRoutes } from './routes/marketing.routes.js';
 app.route('/', marketingRoutes);
 
@@ -364,4 +370,8 @@ startSchedulePushScheduler();
 // SNS 자동/반자동 마케팅 스케줄러 시작
 import { startMarketingScheduler } from './services/marketing/marketingScheduler.service.js';
 startMarketingScheduler();
+
+// 기능별 와치독 스케줄러 시작 (기동 15초 후 첫 점검 · 5분 주기)
+import { startWatchdogScheduler } from './services/watchdog.service.js';
+startWatchdogScheduler();
 

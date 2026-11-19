@@ -479,6 +479,7 @@ export function getAdminNavigation(currentPage: string): string {
         { path: '/admin/notifications', label: '알림 센터', icon: 'fa-bell', shortLabel: '알림' },
         { path: '/admin/mini-apps', label: '미니앱 관리', icon: 'fa-th-large', shortLabel: '미니앱' },
         { path: '/admin/marketing', label: 'SNS 마케팅', icon: 'fa-paper-plane', shortLabel: '마케팅' },
+        { path: '/admin/watchdog', label: '와치독', icon: 'fa-heartbeat', shortLabel: '와치독' },
     ]
     let navHtml = '<div class="flex flex-wrap items-center space-x-2 sm:space-x-4 lg:space-x-8 py-2">'
     for (const item of menuItems) {
@@ -589,6 +590,19 @@ adminUi.get('/admin', async (c) => {
 
         <!-- 메인 컨텐츠 -->
         <main class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+            <!-- 실시간 와치독 한 줄 요약 배너 -->
+            <div id="watchdog-summary-banner" class="bg-white border border-gray-200 rounded-xl shadow-sm px-4 py-3 mb-5 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-2.5 text-xs sm:text-sm text-gray-600">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+                        <i class="fas fa-heartbeat mr-1 text-blue-600"></i>와치독 점검중...
+                    </span>
+                    <span id="watchdog-summary-text" class="text-xs text-gray-500">전체 기능 상태 확인 중입니다.</span>
+                </div>
+                <a href="/admin/watchdog" class="text-xs sm:text-sm font-bold text-blue-600 hover:text-blue-800 whitespace-nowrap">
+                    와치독 관제 보기 <i class="fas fa-arrow-right ml-1 text-[11px]"></i>
+                </a>
+            </div>
+
             <!-- 통계 카드 -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- 오늘 방문자 (신규 추가) -->
@@ -936,8 +950,39 @@ adminUi.get('/admin', async (c) => {
                 \`).join('');
             }
 
+            async function loadWatchdogSummary() {
+                var banner = document.getElementById('watchdog-summary-banner');
+                if (!banner) return;
+                try {
+                    var res = await fetch('/api/admin/watchdog/status', { credentials: 'include' });
+                    var data = await res.json();
+                    if (!data || !data.success) return;
+                    var counts = data.counts || { ok: 0, total: 0, degraded: 0, down: 0 };
+                    var tgText = data.telegramConfigured ? '텔레그램 연동됨' : '텔레그램 미설정';
+                    var badgeCls = 'bg-emerald-600 text-white';
+                    var wrapCls = 'bg-emerald-50/70 border border-emerald-200';
+                    var statusText = '🟢 전체 정상 (' + counts.ok + '/' + counts.total + ')';
+                    if (data.overallStatus === 'down') {
+                        badgeCls = 'bg-red-600 text-white';
+                        wrapCls = 'bg-red-50 border border-red-200';
+                        statusText = '🔴 장애 감지 (' + counts.down + '건 장애 · ' + counts.degraded + '건 주의)';
+                    } else if (data.overallStatus === 'degraded') {
+                        badgeCls = 'bg-amber-500 text-white';
+                        wrapCls = 'bg-amber-50 border border-amber-200';
+                        statusText = '🟡 일부 주의 (' + counts.ok + '/' + counts.total + ' 정상 · ' + counts.degraded + '건 주의)';
+                    }
+                    banner.className = wrapCls + ' rounded-xl shadow-sm px-4 py-3 mb-5 flex flex-wrap items-center justify-between gap-3';
+                    banner.innerHTML = '<div class="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm">' +
+                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold ' + badgeCls + '">' + statusText + '</span>' +
+                        '<span class="text-xs text-gray-600 font-medium">최근 점검: ' + ((data.scheduler && data.scheduler.lastRunAt) || '-') + ' · ' + tgText + '</span>' +
+                        '</div>' +
+                        '<a href="/admin/watchdog" class="text-xs sm:text-sm font-extrabold text-blue-700 hover:text-blue-900 whitespace-nowrap">와치독 관제 보기 <i class="fas fa-arrow-right ml-1 text-[11px]"></i></a>';
+                } catch (_e) {}
+            }
+
             // 페이지 로드 시 통계 로드
             loadStats();
+            loadWatchdogSummary();
         </script>
     </body>
     </html>
