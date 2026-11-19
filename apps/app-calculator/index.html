@@ -2,246 +2,249 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Pretendard 웹폰트 -->
+    <!-- 웹폰트: Pretendard + JetBrains Mono -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700;800&display=swap"
+    />
 
     <!-- SEO: Title & Meta Description -->
-    <title>스마트 다기능 계산기 - 대출이자, BMI, 만나이, 날짜, 단위, 백분율 | VERA</title>
-    <meta name="description" content="기본 사칙연산부터 공학 계산, 원리금균등 대출이자, 대한비만학회 기준 BMI, 정밀 만나이, 날짜 차이, 단위 변환, 백분율 계산까지 지원하는 VERA 다기능 계산기입니다." />
-    <meta name="keywords" content="계산기, 대출이자계산기, BMI계산기, 만나이계산기, 날짜계산기, 단위변환, 백분율계산기, 공학계산기, 온라인계산기" />
+    <title>스마트 계산기 - 일반 사칙연산 · 공학용 삼각함수·로그 정밀 계산기 | VeraNex</title>
+    <meta
+      name="description"
+      content="부동소수점 오차 없는 일반 사칙연산·메모리(M+/MR)·백분율 계산부터 DEG/RAD 삼각함수·역삼각함수·로그·거듭제곱·팩토리얼을 지원하는 VeraNex 무료 온라인 일반·공학 계산기입니다."
+    />
+    <meta
+      name="keywords"
+      content="웹 계산기, 일반 계산기, 공학용 계산기, 공학 계산기, 삼각함수 계산기, 로그 계산기, 온라인 계산기, 키보드 숫자패드 계산기, VeraNex"
+    />
     <link rel="canonical" href="https://veranex.app/app/calculator/" data-rh="true" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta
+      name="robots"
+      content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    />
 
-    <!-- Open Graph (카카오톡, 페이스북) -->
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="스마트 다기능 계산기 | 대출·BMI·만나이·날짜·단위·백분율" />
-    <meta property="og:description" content="기본 연산부터 대출 이자, BMI, 만나이, 날짜, 단위 변환, 백분율까지 한 곳에서. 무료 온라인 계산기." />
+    <meta property="og:title" content="스마트 계산기 (일반 · 공학) | VeraNex" />
+    <meta
+      property="og:description"
+      content="일반 사칙연산·메모리 계산부터 공학용 삼각함수(DEG/RAD)·로그·거듭제곱·팩토리얼까지 키보드 숫자패드와 계산 히스토리를 지원하는 무료 웹 계산기."
+    />
     <meta property="og:url" content="https://veranex.app/app/calculator/" />
-    <meta property="og:site_name" content="VERA" />
+    <meta property="og:site_name" content="VeraNex" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="스마트 다기능 계산기 | 대출·BMI·만나이·날짜·단위·백분율" />
-    <meta name="twitter:description" content="기본 연산부터 대출 이자, BMI, 만나이, 날짜, 단위 변환, 백분율까지 한 곳에서. 무료 온라인 계산기." />
+    <meta name="twitter:title" content="스마트 계산기 (일반 · 공학) | VeraNex" />
+    <meta
+      name="twitter:description"
+      content="부동소수점 오차 보정 엔진을 탑재한 무료 일반·공학 웹 계산기. 키보드 숫자패드 및 로컬 기록 보관 지원."
+    />
 
     <!-- Schema.org JSON-LD: WebApplication -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "스마트 다기능 계산기",
-      "alternateName": "Smart Multi-Calculator",
-      "description": "기본 계산, 공학 계산, 원리금균등 대출 이자, 대한비만학회 기준 BMI, 정밀 만나이, 날짜 차이, 5개 물리량 단위 변환, 백분율 등 8가지 전문 계산 기능을 아우르는 통합 무료 온라인 계산기 애플리케이션",
-      "url": "https://veranex.app/app/calculator/",
-      "applicationCategory": "UtilityApplication",
-      "applicationSubCategory": "EducationalApplication, FinancialApplication",
-      "operatingSystem": "All",
-      "browserRequirements": "Requires HTML5, CSS3, and JavaScript support.",
-      "featureList": "기본 사칙연산 계산기, 삼각함수 공학 계산기, 원리금균등분할 대출 계산기, 대한비만학회 기준 BMI 계산기, 만나이 D-day 계산기, 날짜 차이 계산기, 길이/무게/넓이/부피/온도 단위 변환기, 백분율 증감 계산기",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "KRW"
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "스마트 계산기 (일반 · 공학)",
+        "alternateName": "VeraNex Smart Calculator",
+        "description": "일반 사칙연산, 메모리(MC/MR/M+/M-), 백분율 계산과 공학용 삼각·역삼각함수(DEG/RAD), 상용·자연로그, 제곱근·세제곱근, 거듭제곱, 팩토리얼 연산을 지원하는 무료 웹 계산기",
+        "url": "https://veranex.app/app/calculator/",
+        "applicationCategory": "UtilityApplication",
+        "applicationSubCategory": "EducationalApplication, ScientificCalculator",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires HTML5, CSS3, and JavaScript support.",
+        "featureList": "일반 사칙연산 계산기, 메모리 기능(MC/MR/M+/M-), 실시간 중간 계산 미리보기, 공학용 계산기(DEG/RAD, 2nd 역함수), 삼각함수·로그·제곱근·팩토리얼, 키보드 숫자패드 입력, 로컬 계산 히스토리",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "KRW"
+        }
       }
-    }
     </script>
 
-    <!-- Schema.org JSON-LD: HowTo (신규 신설: AEO 인용 최적화) -->
+    <!-- Schema.org JSON-LD: HowTo -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "HowTo",
-      "name": "스마트 다기능 계산기 사용 방법",
-      "description": "다기능 계산기를 사용하여 대출이자, BMI, 만나이 등을 빠르고 정확하게 계산하는 단계별 가이드",
-      "step": [
-        {
-          "@type": "HowToStep",
-          "name": "원하는 계산기 탭 선택",
-          "text": "화면 상단에서 제공하는 8개의 탭(기본, 공학, 대출, BMI, 나이, 날짜, 단위, 백분율) 중 필요한 계산 도구를 선택합니다.",
-          "url": "https://veranex.app/app/calculator/"
-        },
-        {
-          "@type": "HowToStep",
-          "name": "필요한 정보 입력",
-          "text": "선택한 계산기에 매칭되는 입력 필드(예: 대출의 경우 대출 원금, 연 이자율, 대출 기간)에 올바른 값을 정교하게 기입합니다.",
-          "url": "https://veranex.app/app/calculator/"
-        },
-        {
-          "@type": "HowToStep",
-          "name": "계산 결과 확인",
-          "text": "'계산하기' 또는 '=' 버튼을 클릭하면 화면 전환 및 새로고침 없이 즉시 계산 결과와 세부 리포트(상환 스케줄, 비만 판정 단계 등)가 표출됩니다.",
-          "url": "https://veranex.app/app/calculator/"
-        }
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "VeraNex 스마트 일반 · 공학 계산기 사용 방법",
+        "description": "일반 사칙연산과 공학용 수식을 키보드 숫자패드 또는 터치 버튼으로 빠르고 정확하게 계산하는 단계별 가이드",
+        "step": [
+          {
+            "@type": "HowToStep",
+            "name": "일반 또는 공학 모드 선택",
+            "text": "상단 모드 토글에서 일반 계산기(사칙연산·메모리·백분율) 또는 공학 계산기(DEG/RAD 삼각함수·로그·제곱근·팩토리얼)를 선택합니다.",
+            "url": "https://veranex.app/app/calculator/"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "수식 입력 및 실시간 미리보기",
+            "text": "화면 버튼이나 PC 키보드 숫자패드로 수식을 입력하면 디스플레이 하단에서 중간 계산값을 실시간으로 확인할 수 있습니다.",
+            "url": "https://veranex.app/app/calculator/"
+          },
+          {
+            "@type": "HowToStep",
+            "name": "결과 확정 및 히스토리 재사용",
+            "text": "= 버튼 또는 Enter 키를 눌러 결과를 확정하면 로컬 계산 기록에 자동 저장되며, 클릭 시 이전 수식 결과를 즉시 다시 불러올 수 있습니다.",
+            "url": "https://veranex.app/app/calculator/"
+          }
+        ]
+      }
     </script>
 
-    <!-- Schema.org JSON-LD: FAQPage (AEO 답변용 고도화) -->
+    <!-- Schema.org JSON-LD: FAQPage -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "대출 이자 및 월 상환액은 어떤 수식으로 계산하나요?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "본 다기능 계산기는 가장 널리 사용되는 '원리금 균등상환' 방식을 적용합니다. 공식은 [월 상환액 = P * r * (1 + r)^n / ((1 + r)^n - 1)] 입니다. 여기서 P는 대출 원금, r은 월 이자율(연 이자율 / 12), n은 총 상환 개월수입니다. 총 상환액은 월 상환액에 총 상환 개월수를 곱한 값이며, 총 이자는 총 상환액에서 대출 원금을 뺀 금액입니다."
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "0.1 + 0.2나 삼각함수 계산 시 부동소수점 오차가 발생하나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "발생하지 않습니다. VeraNex 스마트 계산기는 이진 부동소수점 잔여 오차(0.30000000000000004 등)를 정밀 보정하여 0.1 + 0.2 = 0.3, sin(30°) = 0.5, cos(90°) = 0처럼 수학적으로 정확한 결과를 출력합니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "공학 계산기의 DEG와 RAD 모드는 어떻게 다르나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "DEG(도)는 360도 각도 단위로 삼각함수를 계산하며, RAD(라디안)는 호도법(π = 180°) 기준으로 계산합니다. 공학 계산기 상단의 각도 단위 버튼을 눌러 한 번에 전환할 수 있습니다."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "입력한 계산 수식과 기록이 외부 서버로 전송되나요?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "아니요. 모든 수식 파싱과 연산, 최근 30건 히스토리 저장은 사용자의 웹 브라우저 로컬 환경에서만 100% 독립적으로 처리됩니다."
+            }
           }
-        },
-        {
-          "@type": "Question",
-          "name": "BMI 체질량지수 계산 공식과 공식 판정 기준은 무엇인가요?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "BMI(Body Mass Index)는 [체중(kg) / 신장(m)^2]의 수식으로 계산됩니다. 대한비만학회(KSSO) 공식 가이드라인에 따른 성인 판정 기준은 다음과 같습니다: BMI 18.5 미만은 '저체중', 18.5 이상 23 미만은 '정상체중', 23 이상 25 미만은 '비만전단계(과체중)', 25 이상 30 미만은 '1단계 비만', 30 이상 35 미만은 '2단계 비만', 35 이상은 '3단계 고도비만'에 해당합니다."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "대한민국 만 나이 계산법의 기준과 법적 효력은 어떻게 되나요?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "2023년 6월 28일 개정 만 나이 통일법 시행에 따라, 행정 및 민사상 모든 나이는 '만 나이'로 계산하는 것이 원칙입니다. 만 나이는 올해 연도에서 태어난 연도를 뺀 후, 생일이 지났다면 그대로 해당 나이가 되며 생일이 지나지 않았다면 추가로 1세를 더 뺍니다. 출생일은 0세로 시작하며, 출생 후 1년 미만일 때는 개월수로 나이를 표시합니다."
-          }
-        }
-      ]
-    }
+        ]
+      }
     </script>
-  
-  <!-- PWA Manifest & App Icons -->
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="VERA" />
-  <link rel="apple-touch-icon" href="/logo-192.png" />
-  <link rel="icon" type="image/png" href="/logo-192.png" />
 
-  <script>
-    window.deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      window.deferredPrompt = e;
-    });
-  </script>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-J62JHHDLRY"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="VeraNex" />
+    <link rel="apple-touch-icon" href="/logo-192.png" />
+    <link rel="icon" type="image/png" href="/logo-192.png" />
 
-    gtag('config', 'G-J62JHHDLRY');
-  </script>
-
-</head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-J62JHHDLRY"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag('js', new Date());
+      gtag('config', 'G-J62JHHDLRY');
+    </script>
+  </head>
   <body>
     <div id="root">
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;">
-      <header style="background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: sticky; top: 0; z-index: 30;">
-        <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <a href="/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERA</a>
-            <span style="color: #cbd5e1;">|</span>
-            <a href="/lifestyle" style="font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none;">VERA 스마트 생활도구</a>
+      <!-- Thin Content 방지용 사전렌더링 시맨틱 본문 -->
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #faf8f5; color: #2d2a26; min-height: 100vh;">
+        <header style="background: #ffffff; border-bottom: 1px solid #ebe6dd; padding: 14px 20px;">
+          <div style="max-width: 1024px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <a href="https://veranex.app/" style="font-size: 20px; font-weight: 900; color: #4f46e5; text-decoration: none;">VERANEX</a>
+              <span style="color: #d6cfc2;">|</span>
+              <a href="https://veranex.app/lifestyle" style="font-size: 13px; font-weight: 700; color: #6b645b; text-decoration: none;">VeraNex 스마트 생활도구</a>
+            </div>
+            <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
+              <a href="https://veranex.app/" style="color: #4b453e; text-decoration: none;">홈</a>
+              <a href="https://veranex.app/lifestyle" style="color: #4b453e; text-decoration: none;">생활도구</a>
+              <a href="https://veranex.app/tools/calculator" style="color: #4b453e; text-decoration: none;">상세 가이드</a>
+            </nav>
           </div>
-          <nav style="display: flex; gap: 14px; font-size: 13px; font-weight: 600;">
-            <a href="/" style="color: #475569; text-decoration: none;">홈</a>
-            <a href="/lifestyle" style="color: #475569; text-decoration: none;">생활도구</a>
-            <a href="/game" style="color: #475569; text-decoration: none;">게임</a>
-            <a href="/guides" style="color: #475569; text-decoration: none;">지식가이드</a>
-          </nav>
-        </div>
-      </header>
+        </header>
 
-      <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
-        <div style="margin-bottom: 24px;">
-          <span style="font-size: 11px; font-weight: 800; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
-            VERA Verified Utility
-          </span>
-          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-top: 10px; margin-bottom: 8px;">
-            스마트 다기능 계산기 & 종합 연산 센터
-          </h1>
-          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
-            기본 사칙연산부터 공학 계산, 원리금균등 대출이자, 대한비만학회 기준 BMI, 정밀 만나이, 날짜 차이, 단위 변환, 백분율 계산까지 지원하는 VERA 다기능 계산기입니다.
+        <main style="max-width: 1024px; margin: 0 auto; padding: 28px 16px;">
+          <div style="margin-bottom: 24px;">
+            <span style="font-size: 11px; font-weight: 800; color: #4f46e5; background: #eef2ff; padding: 4px 10px; border-radius: 9999px; border: 1px solid #e0e7ff;">
+              VeraNex Smart Utility
+            </span>
+            <h1 style="font-size: 26px; font-weight: 800; color: #2d2a26; margin-top: 10px; margin-bottom: 8px;">
+              스마트 계산기 - 일반 사칙연산 · 공학용 삼각함수·로그 정밀 계산기
+            </h1>
+            <p style="color: #6b645b; font-size: 14px; line-height: 1.7; margin: 0;">
+              VeraNex 스마트 계산기는 부동소수점 오차 없는 정확한 일반 사칙연산·메모리(M+/M-/MR/MC)·백분율 계산과 더불어, 공학용 삼각·역삼각함수(DEG/RAD), 상용로그(log), 자연로그(ln), 거듭제곱(xʸ), 제곱근(√), 팩토리얼(n!)을 하나로 통합한 무료 온라인 계산 도구입니다.
+            </p>
+          </div>
+
+          <section style="margin-bottom: 28px;">
+            <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #ebe6dd; margin-bottom: 16px;">
+              <h2 style="font-size: 17px; font-weight: 700; color: #2d2a26; margin-bottom: 8px;">1. 일반 계산기 — 실무 사칙연산 · 메모리 · 실시간 미리보기</h2>
+              <p style="font-size: 13.5px; color: #4b453e; line-height: 1.7; margin: 0;">
+                덧셈, 뺄셈, 곱셈, 나눗셈과 백분율(예: 200+10% = 220), 부호전환(±)은 물론 MC·MR·M+·M- 메모리 저장 기능과 직전 결과(Ans) 이어 계산을 지원합니다. 수식을 입력하는 즉시 중간 계산 결과를 미리 보여주며, PC 키보드 숫자패드(0~9, +, -, *, /, Enter, Backspace, Esc)와 완벽히 연동됩니다.
+              </p>
+            </article>
+
+            <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #ebe6dd; margin-bottom: 16px;">
+              <h2 style="font-size: 17px; font-weight: 700; color: #2d2a26; margin-bottom: 8px;">2. 공학 계산기 — DEG/RAD 삼각함수 · 역삼각함수 · 로그 · 팩토리얼</h2>
+              <p style="font-size: 13.5px; color: #4b453e; line-height: 1.7; margin: 0;">
+                각도 단위(DEG 도 / RAD 라디안) 원클릭 전환과 2nd 역함수 토글을 통해 sin, cos, tan 및 sin⁻¹, cos⁻¹, tan⁻¹ 역삼각함수, 상용로그(log)·자연로그(ln)·지수(10ˣ, eˣ), 제곱·세제곱(x², x³), 제곱근·세제곱근(√, ∛), 팩토리얼(n!), 괄호 및 수학 상수(π, e)를 복합 수식 그대로 정확하게 계산합니다.
+              </p>
+            </article>
+
+            <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #ebe6dd; margin-bottom: 16px;">
+              <h2 style="font-size: 17px; font-weight: 700; color: #2d2a26; margin-bottom: 8px;">3. 100% 브라우저 로컬 정밀 파서 및 계산 기록 보관</h2>
+              <p style="font-size: 13.5px; color: #4b453e; line-height: 1.7; margin: 0;">
+                위험한 동적 문자열 실행(eval)을 사용하지 않고 자체 수식 토크나이저와 후위 표기법(Shunting-Yard) 연산 엔진으로 안전하게 계산하며, 최근 계산 기록 최대 30건을 사용자 브라우저 로컬 환경에만 보관하여 원클릭으로 다시 불러올 수 있습니다.
+              </p>
+            </article>
+          </section>
+
+          <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #ebe6dd; margin-bottom: 28px;">
+            <h2 style="font-size: 18px; font-weight: 800; color: #2d2a26; margin-bottom: 12px;">자주 묻는 질문 (FAQ)</h2>
+            <div style="padding: 14px 0; border-bottom: 1px solid #f2ede4;">
+              <h3 style="font-size: 14px; font-weight: 700; color: #2d2a26; margin-bottom: 6px;">Q. 0.1 + 0.2를 계산할 때 부동소수점 오차가 없나요?</h3>
+              <p style="font-size: 13px; color: #4b453e; line-height: 1.6; margin: 0;">A. 네. 유효숫자 정밀 보정 엔진이 내장되어 0.1 + 0.2 = 0.3, sin(30°) = 0.5, cos(90°) = 0으로 정확하게 출력됩니다.</p>
+            </div>
+            <div style="padding: 14px 0;">
+              <h3 style="font-size: 14px; font-weight: 700; color: #2d2a26; margin-bottom: 6px;">Q. 입력한 수식이나 계산 기록이 서버에 저장되나요?</h3>
+              <p style="font-size: 13px; color: #4b453e; line-height: 1.6; margin: 0;">A. 아닙니다. 모든 연산과 히스토리 저장은 사용자의 웹 브라우저 메모리와 로컬 저장소에서만 독립 처리됩니다.</p>
+            </div>
+          </section>
+        </main>
+
+        <footer style="background: #ffffff; border-top: 1px solid #ebe6dd; padding: 22px 16px; text-align: center; font-size: 12px; color: #8c8479;">
+          <p style="margin-bottom: 8px;">© 2026 VeraNex (베라넥스) · 스마트 일반·공학 계산기</p>
+          <p>
+            <a href="https://veranex.app/about" style="color: #6b645b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
+            <a href="https://veranex.app/privacy" style="color: #6b645b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
+            <a href="https://veranex.app/terms" style="color: #6b645b; margin: 0 8px; text-decoration: none;">이용약관</a> |
+            <a href="https://veranex.app/contact" style="color: #6b645b; margin: 0 8px; text-decoration: none;">문의하기</a>
           </p>
-        </div>
-
-        <section style="margin-bottom: 28px;">
-          
-      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
-        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">🧮 8가지 전문 계산 모드 통합 지원</h2>
-        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">일상에서 자주 필요한 기본 사칙연산부터 공학용 삼각함수, 원리금균등분할 대출이자, 대한비만학회 기준 BMI 체질량지수, 2023년 개정 만 나이, 디데이 날짜 차이, 5대 물리량 단위 변환, 백분율 증감 계산까지 별도 앱 설치 없이 웹에서 즉시 무료로 이용할 수 있습니다.</p>
-      </article>
-    
-
-      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
-        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">💵 대출이자 상환 방식 공식 해설</h2>
-        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">원리금 균등상환 공식 [월 상환액 = P * r * (1 + r)^n / ((1 + r)^n - 1)]을 기반으로 대출 원금, 연 이자율, 대출 기간에 따른 매월 상환액과 총 이자 비용을 정밀 산출합니다. 가계 예산 설계 시 회차별 원금과 이자 비중을 사전에 파악하여 최적의 부채 상환 계획을 수립하세요.</p>
-      </article>
-    
-
-      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
-        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">⚖️ 대한비만학회(KSSO) BMI 판정 기준</h2>
-        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">체중(kg)을 신장(m)의 제곱으로 나눈 체질량지수를 통해 저체중(18.5 미만), 정상체중(18.5~22.9), 비만 전단계(23~24.9), 1단계 비만(25~29.9), 2단계 비만(30~34.9), 3단계 고도비만(35 이상) 등 한국인 체형에 특화된 6단계 건강 지표를 즉각 제시합니다.</p>
-      </article>
-    
-
-      <article style="background: #ffffff; padding: 22px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 16px;">
-        <h2 style="font-size: 17px; font-weight: 700; color: #1e293b; margin-bottom: 8px;">📅 2023 개정 만 나이 및 날짜 차이 계산</h2>
-        <p style="font-size: 13.5px; color: #475569; line-height: 1.7; margin: 0;">법제처 행정기본법 기준에 따라 생일 도래 여부를 정밀 계산하여 법률, 행정, 금융 계약상 공식 효력을 갖는 만 나이를 산출합니다. 또한 두 날짜 사이의 일수, 주수, 개월수를 오차 없이 계산하여 프로젝트 일정 및 기념일 관리를 돕습니다.</p>
-      </article>
-    
-        </section>
-
-        <section style="background: #ffffff; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 28px;">
-          <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 12px;">
-            💬 자주 묻는 질문 (FAQ)
-          </h2>
-          
-      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
-        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 대출이자 계산 시 어떤 상환 방식이 적용되나요?</h3>
-        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 기본적으로 가장 널리 활용되는 원리금균등분할상환 공식을 적용하여 매월 균등하게 납입할 금액과 총 이자를 계산합니다.</p>
+        </footer>
       </div>
-    
-
-      <div style="padding: 16px 0; border-bottom: 1px solid #f1f5f9;">
-        <h3 style="font-size: 14px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Q. 계산 결과가 서버로 전송되나요?</h3>
-        <p style="font-size: 13px; color: #475569; line-height: 1.6; margin: 0;">A. 아닙니다. VERA의 모든 계산 도구는 사용자의 웹 브라우저 로컬 메모리에서 100% 독립 연산되므로 금융 및 개인 신체 정보가 외부에 노출되지 않습니다.</p>
-      </div>
-    
-        </section>
-      </main>
-
-      <footer style="background: #ffffff; border-top: 1px solid #e2e8f0; padding: 24px 16px; text-align: center; font-size: 12px; color: #94a3b8;">
-        <p style="margin-bottom: 8px;">© 2026 VERA (베라) - 세상의 모든 정보를 하나로 잇는 라이프 포털</p>
-        <p>
-          <a href="/about" style="color: #64748b; margin: 0 8px; text-decoration: none;">서비스 소개</a> |
-          <a href="/privacy" style="color: #64748b; margin: 0 8px; text-decoration: none;">개인정보처리방침</a> |
-          <a href="/terms" style="color: #64748b; margin: 0 8px; text-decoration: none;">이용약관</a> |
-          <a href="/contact" style="color: #64748b; margin: 0 8px; text-decoration: none;">문의하기</a>
-        </p>
-      </footer>
-    </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>
-  
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-          console.log('SW registered: ', registration);
-        }).catch(registrationError => {
-          console.log('SW registration failed: ', registrationError);
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
         });
-      });
-    }
-  </script>
-</body>
+      }
+    </script>
+  </body>
 </html>

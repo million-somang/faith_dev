@@ -46,9 +46,9 @@ export const UTILITY_VISUAL_MAP: Record<string, UtilityVisualMeta> = {
         visualBg: 'from-blue-50 via-sky-50/80 to-cyan-50',
         borderHover: 'hover:border-blue-300',
         buttonStyle: 'bg-blue-600 hover:bg-blue-500 text-white',
-        shortDesc: '사칙연산·공학 계산부터 쇼핑 할인율, 부가세(VAT), 비만도(BMI), 단위 변환까지 원스톱 통합 계산',
+        shortDesc: '일반 사칙연산·메모리(M+/MR)부터 공학용 삼각함수(DEG/RAD)·로그·거듭제곱·팩토리얼까지 정밀 계산',
         guideSlug: 'calculator',
-        highlights: ['할인율 · VAT 계산', '연산 히스토리 보관']
+        highlights: ['일반 · 공학 2모드', '키보드 릴레이 · 히스토리']
     },
     'text-checker': {
         image: '/images/utility/icon_text_ocr.png',

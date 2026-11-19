@@ -347,8 +347,8 @@ export default function UtilityPage() {
             category: 'calc',
             icon: 'fas fa-calculator',
             iconColor: 'text-indigo-500',
-            title: '다기능 스마트 계산기 활용법',
-            desc: '일상적인 사칙연산뿐만 아니라 할인율(세일가) 계산, 백분율(%), 부가세(VAT), 비만도(BMI)까지 원스톱으로 지원합니다. 직관적인 키패드와 계산 기록 히스토리 저장 기능을 제공하여 복잡한 영수증 정산이나 쇼핑 시 유용하게 사용할 수 있습니다.'
+            title: '스마트 일반 · 공학 계산기 활용법',
+            desc: '일상적인 사칙연산·퍼센트·메모리 기능부터 공학용 삼각함수(DEG/RAD), 역삼각함수, 로그, 제곱근, 팩토리얼까지 부동소수점 오차 없이 정밀하게 계산합니다. 키보드 숫자패드 입력과 로컬 계산 기록 재호출을 지원합니다.'
         },
         {
             slug: 'text-checker',
