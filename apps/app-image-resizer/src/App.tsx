@@ -5,6 +5,9 @@ import {
   resizeSingleImage,
   getOutputFilename,
   formatBytes,
+  supportsDirectoryPicker,
+  saveAllToSingleDirectory,
+  downloadAllAsSingleZip,
 } from './utils/imageResizer';
 import SplashScreen from './components/SplashScreen';
 import Header from './components/Header';
@@ -45,6 +48,9 @@ export const App: React.FC = () => {
   const [items, setItems] = useState<ImageFileItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
+  const [isZipping, setIsZipping] = useState(false);
+  const [saveProgress, setSaveProgress] = useState<{ current: number; total: number } | null>(null);
+  const [saveNotice, setSaveNotice] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
   const itemsRef = useRef<ImageFileItem[]>([]);
 
   useEffect(() => {
@@ -126,6 +132,7 @@ export const App: React.FC = () => {
       if (it.previewUrl) URL.revokeObjectURL(it.previewUrl);
       if (it.resizedUrl) URL.revokeObjectURL(it.resizedUrl);
     });
+    setSaveNotice(null);
     setItems([]);
     setCurrentStep(1);
   };
@@ -133,6 +140,7 @@ export const App: React.FC = () => {
   // 일괄 리사이즈 및 포맷 변환 실행 -> 완료 후 자동으로 Step 3(결과 화면)로 이동!
   const handleStartProcess = async () => {
     if (isProcessing || items.length === 0) return;
+    setSaveNotice(null);
     setIsProcessing(true);
 
     const snapshot = [...items];
@@ -199,22 +207,69 @@ export const App: React.FC = () => {
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 4000);
   };
 
-  // ZIP 압축 없이 변환된 이미지 파일들을 원본 파일 형태 그대로 일괄 저장
+  // 폴더 1개만 선택하여 변환된 이미지 파일 전체 한꺼번에 저장 (미지원 브라우저는 단일 ZIP 폴백)
   const handleDownloadAllFiles = async () => {
-    if (isSavingAll) return;
+    if (isSavingAll || isZipping) return;
     const doneItems = items.filter((it) => it.status === 'done' && it.resizedBlob);
     if (doneItems.length === 0) return;
 
+    if (doneItems.length === 1 && !supportsDirectoryPicker() && doneItems[0]) {
+      handleDownloadSingle(doneItems[0]);
+      return;
+    }
+
     setIsSavingAll(true);
+    setSaveNotice(null);
+    setSaveProgress({ current: 0, total: doneItems.length });
     try {
-      for (let i = 0; i < doneItems.length; i++) {
-        handleDownloadSingle(doneItems[i]);
-        if (i < doneItems.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 200));
-        }
+      const result = await saveAllToSingleDirectory(doneItems, settings, (saved, total) => {
+        setSaveProgress({ current: saved, total });
+      });
+
+      if (result.status === 'saved') {
+        setSaveNotice({
+          type: 'success',
+          text: `선택한 "${result.folderName}" 폴더에 ${result.count}장의 이미지가 한꺼번에 저장되었습니다.`,
+        });
+      } else if (result.status === 'unsupported') {
+        await downloadAllAsSingleZip(doneItems, settings);
+        setSaveNotice({
+          type: 'info',
+          text: `현재 브라우저는 폴더 직접 저장을 지원하지 않아 ${doneItems.length}장을 ZIP 파일 1개로 묶어 저장했습니다.`,
+        });
       }
+    } catch {
+      setSaveNotice({
+        type: 'error',
+        text: '폴더 저장 중 오류가 발생했습니다. 폴더 쓰기 권한을 확인하거나 아래 ZIP 저장을 이용해 주세요.',
+      });
     } finally {
       setIsSavingAll(false);
+      setSaveProgress(null);
+    }
+  };
+
+  // 단일 ZIP 파일(1개)로 묶어 저장
+  const handleDownloadZipAll = async () => {
+    if (isSavingAll || isZipping) return;
+    const doneItems = items.filter((it) => it.status === 'done' && it.resizedBlob);
+    if (doneItems.length === 0) return;
+
+    setIsZipping(true);
+    setSaveNotice(null);
+    try {
+      const count = await downloadAllAsSingleZip(doneItems, settings);
+      setSaveNotice({
+        type: 'info',
+        text: `변환된 이미지 ${count}장이 ZIP 파일 1개로 저장되었습니다.`,
+      });
+    } catch {
+      setSaveNotice({
+        type: 'error',
+        text: 'ZIP 압축 저장 중 오류가 발생했습니다.',
+      });
+    } finally {
+      setIsZipping(false);
     }
   };
 
@@ -400,7 +455,7 @@ export const App: React.FC = () => {
                         이미지 변환이 완료되었습니다!
                       </h2>
                       <p className="text-xs text-stone-500 mt-0.5">
-                        아래 초록색 버튼을 누르면 <strong>압축파일(ZIP)이 아닌 이미지 파일 그대로</strong> 즉시 저장됩니다.
+                        아래 초록색 버튼을 누르고 <strong>저장할 폴더 1개만 선택</strong>하면 변환된 이미지 전체가 한꺼번에 저장됩니다.
                       </p>
                     </div>
 
@@ -419,30 +474,84 @@ export const App: React.FC = () => {
                     )}
                   </div>
 
-                  {/* 최상단 대형 일괄 저장 버튼 (압축 없이 이미지 파일 그대로 저장) */}
+                  {/* 최상단 일괄 저장 액션 (폴더 1회 선택 일괄 저장 + 보조 ZIP 저장 + 결과 배너) */}
                   {doneCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={handleDownloadAllFiles}
-                      disabled={isSavingAll}
-                      className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
-                    >
-                      {isSavingAll ? (
-                        <>
-                          <i className="fas fa-spinner fa-spin"></i>
-                          <span>이미지 파일 저장 중...</span>
-                        </>
-                      ) : (
-                        <>
-                          <i className="fas fa-download"></i>
-                          <span>
-                            {doneCount > 1
-                              ? `변환된 이미지 파일 그대로 모두 저장하기 (${doneCount}장)`
-                              : '변환된 이미지 파일 저장하기'}
-                          </span>
-                        </>
+                    <div className="space-y-2.5">
+                      <button
+                        type="button"
+                        onClick={handleDownloadAllFiles}
+                        disabled={isSavingAll || isZipping}
+                        className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-sm sm:text-base font-black rounded-2xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+                      >
+                        {isSavingAll ? (
+                          <>
+                            <i className="fas fa-spinner fa-spin"></i>
+                            <span>
+                              {saveProgress
+                                ? `저장 중... (${saveProgress.current} / ${saveProgress.total}장)`
+                                : '폴더에 이미지 저장 중...'}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <i className={supportsDirectoryPicker() ? 'fas fa-folder-open' : 'fas fa-file-zipper'}></i>
+                            <span>
+                              {supportsDirectoryPicker()
+                                ? (doneCount > 1
+                                    ? `폴더 1개 선택해서 모두 저장하기 (${doneCount}장)`
+                                    : '폴더 선택해서 저장하기')
+                                : (doneCount > 1
+                                    ? `ZIP 파일로 한꺼번에 저장하기 (${doneCount}장)`
+                                    : '변환된 이미지 파일 저장하기')}
+                            </span>
+                          </>
+                        )}
+                      </button>
+
+                      {doneCount > 1 && supportsDirectoryPicker() && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadZipAll}
+                          disabled={isSavingAll || isZipping}
+                          className="w-full py-2.5 px-4 bg-[#FAF8F5] hover:bg-stone-200/70 text-[#2D2A26] border border-[#EBE6DD] text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                        >
+                          {isZipping ? (
+                            <>
+                              <i className="fas fa-spinner fa-spin text-indigo-600"></i>
+                              <span>ZIP 파일 생성 중...</span>
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-file-zipper text-amber-600"></i>
+                              <span>ZIP 파일 1개로 묶어 저장 ({doneCount}장)</span>
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
+
+                      {saveNotice && (
+                        <div
+                          className={`rounded-2xl px-4 py-3 text-xs font-bold border flex items-center gap-2 ${
+                            saveNotice.type === 'success'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                              : saveNotice.type === 'error'
+                              ? 'bg-rose-50 border-rose-200 text-rose-900'
+                              : 'bg-indigo-50 border-indigo-200 text-indigo-900'
+                          }`}
+                        >
+                          <i
+                            className={`fas ${
+                              saveNotice.type === 'success'
+                                ? 'fa-circle-check text-emerald-600'
+                                : saveNotice.type === 'error'
+                                ? 'fa-circle-exclamation text-rose-600'
+                                : 'fa-circle-info text-indigo-600'
+                            }`}
+                          ></i>
+                          <span>{saveNotice.text}</span>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {/* 변환된 개별 파일 목록 */}

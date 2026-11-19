@@ -275,6 +275,141 @@ export async function createZipArchive(
   );
 }
 
+interface WritableFileStreamLike {
+  write(data: Blob): Promise<void>;
+  close(): Promise<void>;
+}
+
+interface FileHandleLike {
+  createWritable(): Promise<WritableFileStreamLike>;
+}
+
+interface DirectoryHandleLike {
+  name: string;
+  getFileHandle(name: string, options?: { create?: boolean }): Promise<FileHandleLike>;
+}
+
+interface DirectoryPickerWindow extends Window {
+  showDirectoryPicker?: (options?: {
+    id?: string;
+    mode?: 'read' | 'readwrite';
+    startIn?: 'desktop' | 'documents' | 'downloads' | 'pictures';
+  }) => Promise<DirectoryHandleLike>;
+}
+
+export type DirectorySaveResult =
+  | { status: 'saved'; folderName: string; count: number }
+  | { status: 'cancelled' }
+  | { status: 'unsupported' };
+
+/**
+ * File System Access API(폴더 1회 선택 일괄 저장) 지원 여부 확인
+ */
+export function supportsDirectoryPicker(): boolean {
+  if (typeof window === 'undefined') return false;
+  const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
+  return Boolean(window.isSecureContext && typeof picker === 'function');
+}
+
+function makeUniqueFilename(rawName: string, used: Set<string>): string {
+  if (!used.has(rawName)) {
+    used.add(rawName);
+    return rawName;
+  }
+  const dotIdx = rawName.lastIndexOf('.');
+  const base = dotIdx > 0 ? rawName.slice(0, dotIdx) : rawName;
+  const ext = dotIdx > 0 ? rawName.slice(dotIdx) : '';
+  let counter = 2;
+  let candidate = `${base}_${counter}${ext}`;
+  while (used.has(candidate)) {
+    counter += 1;
+    candidate = `${base}_${counter}${ext}`;
+  }
+  used.add(candidate);
+  return candidate;
+}
+
+/**
+ * 사용자가 선택한 폴더 1곳에 변환된 모든 이미지를 한꺼번에 저장
+ */
+export async function saveAllToSingleDirectory(
+  items: ImageFileItem[],
+  settings: ResizeSettings,
+  onProgress?: (saved: number, total: number) => void
+): Promise<DirectorySaveResult> {
+  const validItems = items.filter((item) => item.status === 'done' && item.resizedBlob);
+  if (validItems.length === 0) return { status: 'cancelled' };
+  if (!supportsDirectoryPicker()) return { status: 'unsupported' };
+
+  const picker = (window as DirectoryPickerWindow).showDirectoryPicker;
+  if (!picker) return { status: 'unsupported' };
+
+  let dirHandle: DirectoryHandleLike;
+  try {
+    dirHandle = await picker({
+      id: 'veranex-image-resizer',
+      mode: 'readwrite',
+      startIn: 'pictures',
+    });
+  } catch (err: unknown) {
+    const errName = err && typeof err === 'object' && 'name' in err ? String((err as { name: unknown }).name) : '';
+    if (errName === 'AbortError' || errName === 'NotAllowedError') {
+      return { status: 'cancelled' };
+    }
+    if (errName === 'SecurityError') {
+      return { status: 'unsupported' };
+    }
+    throw err;
+  }
+
+  const usedNames = new Set<string>();
+  for (let i = 0; i < validItems.length; i += 1) {
+    const item = validItems[i];
+    if (!item?.resizedBlob) continue;
+    const rawFilename = getOutputFilename(item.name, settings);
+    const filename = makeUniqueFilename(rawFilename, usedNames);
+    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    try {
+      await writable.write(item.resizedBlob);
+    } finally {
+      await writable.close();
+    }
+    if (onProgress) onProgress(i + 1, validItems.length);
+  }
+
+  return {
+    status: 'saved',
+    folderName: dirHandle.name || '선택한 폴더',
+    count: validItems.length,
+  };
+}
+
+/**
+ * 폴더 선택 미지원 환경 또는 사용자 요청 시 단일 ZIP 파일 1개로 저장
+ */
+export async function downloadAllAsSingleZip(
+  items: ImageFileItem[],
+  settings: ResizeSettings,
+  onProgress?: (percent: number) => void
+): Promise<number> {
+  const validItems = items.filter((item) => item.status === 'done' && item.resizedBlob);
+  if (validItems.length === 0) return 0;
+
+  const zipBlob = await createZipArchive(validItems, settings, onProgress);
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const zipName = `veranex_resized_${dateStr}.zip`;
+  const url = URL.createObjectURL(zipBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = zipName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return validItems.length;
+}
+
 /**
  * 바이트 단위를 사람이 읽기 쉬운 문자열로 변환 (예: 1.25 MB)
  */
