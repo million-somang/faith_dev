@@ -228,7 +228,7 @@ watchdogAdminUi.get('/admin/watchdog', async (c) => {
                 var cls = active
                     ? 'bg-gray-900 text-white border-gray-900'
                     : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100';
-                return '<button type="button" onclick="setFilter(\'' + t.key + '\')" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ' + cls + '">' + esc(t.label) + '</button>';
+                return '<button type="button" data-filter="' + esc(t.key) + '" onclick="setFilter(this.dataset.filter)" class="px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ' + cls + '">' + esc(t.label) + '</button>';
             }).join('');
 
             var filtered = checks.filter(function(c) {
@@ -285,7 +285,7 @@ watchdogAdminUi.get('/admin/watchdog', async (c) => {
                             '<div class="flex items-center gap-0.5">' + barsHtml + '</div>' +
                         '</div>' +
                         '<div class="flex items-center justify-between pt-2 border-t border-gray-100">' +
-                            '<button type="button" onclick="runSingleCheck(\'' + esc(item.key) + '\')" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer">' +
+                            '<button type="button" data-check-key="' + esc(item.key) + '" onclick="runSingleCheck(this.dataset.checkKey)" class="px-2.5 py-1 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold cursor-pointer">' +
                                 '<i class="fas fa-redo mr-1"></i>재점검' +
                             '</button>' +
                             '<a href="' + esc(item.targetUrl) + '" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-blue-600 hover:text-blue-800">' +
@@ -345,7 +345,14 @@ watchdogAdminUi.get('/admin/watchdog', async (c) => {
                     return;
                 }
                 var data = await res.json();
-                if (!data.success) return;
+                if (!data || !data.success) {
+                    var failBadge = document.getElementById('overall-badge');
+                    if (failBadge) {
+                        failBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-red-600 text-white';
+                        failBadge.textContent = '상태 불러오기 실패: ' + ((data && data.message) || '응답 오류');
+                    }
+                    return;
+                }
                 currentData = data;
                 renderBanner(data);
                 renderKpis(data.checks || []);
@@ -353,6 +360,11 @@ watchdogAdminUi.get('/admin/watchdog', async (c) => {
                 renderIncidents(data.incidents || []);
             } catch (e) {
                 console.error(e);
+                var errBadge = document.getElementById('overall-badge');
+                if (errBadge) {
+                    errBadge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-red-600 text-white';
+                    errBadge.textContent = '네트워크 오류: 상태를 불러오지 못했습니다.';
+                }
             }
         }
 
