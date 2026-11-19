@@ -114,7 +114,7 @@ adminRoutes.get('/api/admin/stats', requireAdmin, async (c) => {
         })
     } catch (error: any) {
         console.error('Admin Stats Error:', error);
-        return c.json({ success: false, message: '서버 오류: ' + error.message }, 500)
+        return c.json({ success: false, message: '서버 오류' }, 500)
     }
 })
 
@@ -159,7 +159,7 @@ adminRoutes.put('/api/admin/users/:id', requireAdmin, async (c) => {
         return c.json({ success: true, message: '회원 정보가 수정되었습니다.' })
     } catch (error) {
         console.error('Update User Error:', error);
-        return c.json({ success: false, message: '서버 오류', error: String(error) }, 500)
+        return c.json({ success: false, message: '서버 오류' }, 500)
     }
 })
 

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
-import { optionalAuth } from '../middleware/auth.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 
 export const ddayRoutes = new Hono<{ Variables: { user?: { id: string; email: string } } }>();
 
@@ -25,11 +25,11 @@ ddayRoutes.get('/api/dday/list', optionalAuth, async (c) => {
     }
 });
 
-// D-Day 추가
-ddayRoutes.post('/api/dday/add', optionalAuth, async (c) => {
+// D-Day 추가 (로그인 회원 전용)
+ddayRoutes.post('/api/dday/add', requireAuth, async (c) => {
     const DB = getDB(c);
     const user = c.get('user');
-    const userId = user?.id ?? null;
+    if (!user?.id) return c.json({ success: false, error: '인증이 필요합니다' }, 401);
 
     try {
         const body = await c.req.json() as {
@@ -40,11 +40,20 @@ ddayRoutes.post('/api/dday/add', optionalAuth, async (c) => {
             color: string;
             emoji: string;
         };
-        const { title, targetDate, mode, isAnniversary, color, emoji } = body;
+        const title = typeof body.title === 'string' ? body.title.trim() : '';
+        const targetDate = typeof body.targetDate === 'string' ? body.targetDate.trim() : '';
+        const mode = typeof body.mode === 'string' ? body.mode.trim().slice(0, 20) : 'dday';
+        const isAnniversary = Boolean(body.isAnniversary);
+        const color = typeof body.color === 'string' ? body.color.trim().slice(0, 20) : 'blue';
+        const emoji = typeof body.emoji === 'string' ? body.emoji.trim().slice(0, 16) : '📅';
+
+        if (!title || title.length > 80 || !/^\d{4}-\d{2}-\d{2}/.test(targetDate)) {
+            return c.json({ success: false, error: '유효하지 않은 제목 또는 날짜 형식입니다.' }, 400);
+        }
 
         const result = await DB.prepare(
             'INSERT INTO dday (user_id, title, target_date, mode, is_anniversary, color, emoji) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).bind(userId, title, targetDate, mode, isAnniversary ? 1 : 0, color, emoji).run();
+        ).bind(user.id, title, targetDate, mode, isAnniversary ? 1 : 0, color, emoji).run();
 
         return c.json({ success: true, id: result.lastInsertRowid });
     } catch (error: unknown) {
@@ -54,17 +63,17 @@ ddayRoutes.post('/api/dday/add', optionalAuth, async (c) => {
     }
 });
 
-// D-Day 삭제
-ddayRoutes.delete('/api/dday/:id', optionalAuth, async (c) => {
+// D-Day 삭제 (본인 소유 항목만 허용)
+ddayRoutes.delete('/api/dday/:id', requireAuth, async (c) => {
     const DB = getDB(c);
     const user = c.get('user');
-    const userId = user?.id ?? null;
+    if (!user?.id) return c.json({ success: false, error: '인증이 필요합니다' }, 401);
     const id = c.req.param('id');
 
     try {
         await DB.prepare(
-            'DELETE FROM dday WHERE id = ? AND (user_id = ? OR user_id IS NULL)'
-        ).bind(id, userId).run();
+            'DELETE FROM dday WHERE id = ? AND user_id = ?'
+        ).bind(id, user.id).run();
 
         return c.json({ success: true });
     } catch (error: unknown) {

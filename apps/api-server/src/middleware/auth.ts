@@ -22,7 +22,7 @@ export async function checkSession(c: Context): Promise<SessionUser | null> {
         if (!sessionId) return null
 
         const res = await query(
-            "SELECT u.* FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.session_id = $1 AND s.expires_at > CURRENT_TIMESTAMP",
+            "SELECT u.* FROM sessions s JOIN users u ON s.user_id = u.id WHERE s.session_id = $1 AND s.expires_at > CURRENT_TIMESTAMP AND u.status = 'active'",
             [sessionId]
         )
 
@@ -85,25 +85,32 @@ export async function hashPassword(password: string): Promise<string> {
     return `v2:${salt}:${hash}`
 }
 
+function timingSafeHexEqual(a: string, b: string): boolean {
+    if (!a || !b || a.length !== b.length || a.length % 2 !== 0) return false
+    if (!/^[0-9a-f]+$/i.test(a) || !/^[0-9a-f]+$/i.test(b)) return false
+    const bufA = Buffer.from(a, 'hex')
+    const bufB = Buffer.from(b, 'hex')
+    return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB)
+}
+
 export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-    if (!storedHash) return false
+    if (!storedHash || typeof password !== 'string') return false
 
     // v2 형식: v2:salt:hash (100,000회 반복)
     if (storedHash.startsWith('v2:')) {
         const [, salt, hash] = storedHash.split(':')
+        if (!salt || !hash) return false
         const verifyHash = crypto.pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, 64, 'sha512').toString('hex')
-        return hash === verifyHash
+        return timingSafeHexEqual(hash, verifyHash)
     }
 
     // v1 형식: salt:hash (1,000회 반복)
     if (storedHash.includes(':')) {
         const [salt, hash] = storedHash.split(':')
+        if (!salt || !hash) return false
         const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex')
-        return hash === verifyHash
+        return timingSafeHexEqual(hash, verifyHash)
     }
 
-    // 레거시 호환 (단순 SHA512 또는 평문)
-    if (password === storedHash) return true;
-    const rawSha512 = crypto.createHash('sha512').update(password).digest('hex');
-    return rawSha512 === storedHash;
+    return false
 }

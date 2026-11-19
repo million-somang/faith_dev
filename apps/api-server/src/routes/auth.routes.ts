@@ -18,6 +18,28 @@ const LOGIN_RATE_WINDOW_MS = 5 * 60 * 1000
 const LOGIN_MAX_FAILURES = 10
 const loginFailureMap = new Map<string, { count: number; resetAt: number }>()
 
+// IP 기반 회원가입 레이트 리미터 (1시간 내 5회 초과 차단)
+const SIGNUP_RATE_WINDOW_MS = 60 * 60 * 1000
+const SIGNUP_MAX_PER_HOUR = 5
+const signupRateMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkAndIncrementSignupRate(ip: string): boolean {
+    const now = Date.now()
+    if (signupRateMap.size > 2000) {
+        for (const [k, v] of signupRateMap.entries()) {
+            if (now > v.resetAt) signupRateMap.delete(k)
+        }
+    }
+    const entry = signupRateMap.get(ip)
+    if (!entry || now > entry.resetAt) {
+        signupRateMap.set(ip, { count: 1, resetAt: now + SIGNUP_RATE_WINDOW_MS })
+        return false
+    }
+    if (entry.count >= SIGNUP_MAX_PER_HOUR) return true
+    entry.count += 1
+    return false
+}
+
 function getClientIp(c: Context): string {
     const forwarded = c.req.header('x-forwarded-for')
     if (forwarded) return forwarded.split(',')[0].trim()
@@ -149,6 +171,14 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         // 로그인 성공 시 실패 카운트 초기화
         loginFailureMap.delete(clientIp)
 
+        // v1(1,000회) 계정은 로그인 성공 시 v2(100,000회) 해시로 자동 업그레이드
+        if (typeof user.password === 'string' && !user.password.startsWith('v2:')) {
+            try {
+                const upgradedHash = await hashPassword(password)
+                await query('UPDATE users SET password = $1 WHERE id = $2', [upgradedHash, user.id])
+            } catch { /* non-fatal upgrade */ }
+        }
+
         // 세션 생성
         await createSession(c, user.id as number)
 
@@ -258,36 +288,54 @@ authRoutes.post('/api/auth/logout', async (c: Context) => {
 // 회원가입 API
 authRoutes.post('/api/auth/signup', async (c: Context) => {
     try {
+        const clientIp = getClientIp(c)
+        if (checkAndIncrementSignupRate(clientIp)) {
+            return c.json({
+                success: false,
+                message: '회원가입 요청이 너무 많습니다. 잠시 후 다시 시도해주세요'
+            }, 429)
+        }
+
         const body = await c.req.json()
         const { email, password, name, phone, birth_date, birthDate, birth_time, birthTime, gender, is_solar, isSolar } = body
 
         // 입력 검증
-        if (!email || !password || !name) {
+        if (!email || !password || !name || typeof email !== 'string' || typeof password !== 'string' || typeof name !== 'string') {
             return c.json({
                 success: false,
                 message: '필수 항목을 모두 입력해주세요'
             }, 400)
         }
 
-        // 이메일 형식 검증
+        const normalizedEmail = email.trim()
+        const trimmedName = name.trim()
+
+        // 이메일 형식 및 길이 검증
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email)) {
+        if (normalizedEmail.length > 120 || !emailRegex.test(normalizedEmail)) {
             return c.json({
                 success: false,
                 message: '올바른 이메일 형식이 아닙니다'
             }, 400)
         }
 
-        // 비밀번호 길이 검증
-        if (password.length < 6) {
+        if (trimmedName.length < 1 || trimmedName.length > 40) {
             return c.json({
                 success: false,
-                message: '비밀번호는 최소 6자 이상이어야 합니다'
+                message: '이름은 1자 이상 40자 이하로 입력해주세요'
+            }, 400)
+        }
+
+        // 비밀번호 길이 검증
+        if (password.length < 6 || password.length > 128) {
+            return c.json({
+                success: false,
+                message: '비밀번호는 6자 이상 128자 이하로 입력해주세요'
             }, 400)
         }
 
         // 중복 이메일 확인
-        const existingUserRes = await query('SELECT id FROM users WHERE email = $1', [email])
+        const existingUserRes = await query('SELECT id FROM users WHERE email = $1', [normalizedEmail])
 
         if (existingUserRes.rows.length > 0) {
             return c.json({
@@ -307,7 +355,7 @@ authRoutes.post('/api/auth/signup', async (c: Context) => {
         const result = await query(`
             INSERT INTO users (email, password, name, phone, birth_date, birth_time, gender, is_solar, level, status, role) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1, 'active', 'user')
-        `, [email, hashedPassword, name, phone || null, finalBirthDate, finalBirthTime, finalGender, finalIsSolar])
+        `, [normalizedEmail, hashedPassword, trimmedName, phone || null, finalBirthDate, finalBirthTime, finalGender, finalIsSolar])
 
         const userId = Number(result.lastInsertRowid)
 

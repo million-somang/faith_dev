@@ -4,6 +4,39 @@ import { coupangClient } from '../services/coupangClient.js';
 
 export const shoppingRoutes = new Hono();
 
+const DEEPLINK_RATE_WINDOW_MS = 60 * 1000;
+const DEEPLINK_MAX_PER_MIN = 20;
+const deeplinkRateMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkDeeplinkRateLimit(ip: string): boolean {
+    const now = Date.now();
+    if (deeplinkRateMap.size > 2000) {
+        for (const [k, v] of deeplinkRateMap.entries()) {
+            if (now > v.resetAt) deeplinkRateMap.delete(k);
+        }
+    }
+    const entry = deeplinkRateMap.get(ip);
+    if (!entry || now > entry.resetAt) {
+        deeplinkRateMap.set(ip, { count: 1, resetAt: now + DEEPLINK_RATE_WINDOW_MS });
+        return false;
+    }
+    if (entry.count >= DEEPLINK_MAX_PER_MIN) return true;
+    entry.count += 1;
+    return false;
+}
+
+function isAllowedCoupangUrl(rawUrl: unknown): boolean {
+    if (typeof rawUrl !== 'string' || !rawUrl.trim() || rawUrl.length > 1000) return false;
+    try {
+        const parsed = new URL(rawUrl.trim());
+        if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return false;
+        const host = parsed.hostname.toLowerCase();
+        return host === 'coupang.com' || host.endsWith('.coupang.com');
+    } catch {
+        return false;
+    }
+}
+
 // 1. 카테고리 목록
 shoppingRoutes.get('/api/shopping/categories', (c) => {
     const categories = shoppingService.getCategories();
@@ -80,23 +113,35 @@ shoppingRoutes.get('/api/shopping/best', async (c) => {
             data: products,
         });
     } catch (err: any) {
-        return c.json({ status: 'error', message: err.message || '베스트 상품 조회 실패' }, 500);
+        console.error('[Shopping] 베스트 상품 조회 오류:', err);
+        return c.json({ status: 'error', message: '베스트 상품 조회 실패' }, 500);
     }
 });
 
 // 5. 딥링크 생성 API (사용자가 일반 링크를 전달하면 파트너스 수익 링크로 변환)
 shoppingRoutes.post('/api/shopping/deeplink', async (c) => {
     try {
-        const body = await c.req.json();
-        const urls: string[] = body.urls || [];
-        const subId: string = body.subId || '';
+        const forwarded = c.req.header('x-forwarded-for');
+        const clientIp = forwarded ? forwarded.split(',')[0].trim() : (c.req.header('x-real-ip') || 'unknown');
+        if (checkDeeplinkRateLimit(clientIp)) {
+            return c.json({ status: 'error', message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, 429);
+        }
 
-        if (!urls || urls.length === 0) {
-            return c.json({ status: 'error', message: 'URL 목록이 필요합니다.' }, 400);
+        const body = await c.req.json();
+        const urls: unknown = body?.urls;
+        const subId: string = typeof body?.subId === 'string' ? body.subId.trim().slice(0, 64) : '';
+
+        if (!Array.isArray(urls) || urls.length === 0 || urls.length > 10) {
+            return c.json({ status: 'error', message: 'URL 목록은 1~10개까지 입력 가능합니다.' }, 400);
+        }
+
+        const validUrls = urls.filter((u): u is string => isAllowedCoupangUrl(u)).map((u) => u.trim());
+        if (validUrls.length !== urls.length) {
+            return c.json({ status: 'error', message: '허용된 쿠팡 도메인 URL만 변환할 수 있습니다.' }, 400);
         }
 
         if (coupangClient.isConfigured()) {
-            const deepLinks = await coupangClient.createDeepLink(urls, subId);
+            const deepLinks = await coupangClient.createDeepLink(validUrls, subId);
             return c.json({
                 status: 'success',
                 data: deepLinks,
@@ -104,7 +149,7 @@ shoppingRoutes.post('/api/shopping/deeplink', async (c) => {
         }
 
         // 미설정 시 기본 리다이렉트 포맷 제공
-        const mockDeepLinks = urls.map(url => ({
+        const mockDeepLinks = validUrls.map(url => ({
             originalUrl: url,
             shortenUrl: url,
             landingUrl: url,
@@ -115,7 +160,8 @@ shoppingRoutes.post('/api/shopping/deeplink', async (c) => {
             data: mockDeepLinks,
         });
     } catch (err: any) {
-        return c.json({ status: 'error', message: err.message || '딥링크 생성 실패' }, 500);
+        console.error('[Shopping] 딥링크 생성 오류:', err);
+        return c.json({ status: 'error', message: '딥링크 생성 실패' }, 500);
     }
 });
 

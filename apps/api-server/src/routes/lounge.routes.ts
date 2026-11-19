@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { getDB } from '../db/adapter.js';
-import { optionalAuth } from '../middleware/auth.js';
+import { optionalAuth, requireAuth } from '../middleware/auth.js';
 import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 
 export const loungeRoutes = new Hono<{ Variables: { user?: { id: number; email: string; name?: string; role?: string }; errorLogged?: boolean } }>();
@@ -412,16 +412,19 @@ loungeRoutes.post('/api/lounge/posts/:id/like', optionalAuth, async (c) => {
         return c.json({ success: true, hasLiked, likes: newLikes });
     } catch (error: any) {
         console.error('[Lounge] 좋아요 토글 오류:', error);
-        return c.json({ success: false, message: '좋아요 처리 실패', error: error.message }, 500);
+        return c.json({ success: false, message: '좋아요 처리 실패' }, 500);
     }
 });
 
 // ============================================================================
 // 6. 레거시 로컬스토리지 글 1회성 마이그레이션 (POST /api/lounge/sync-legacy)
 // ============================================================================
-loungeRoutes.post('/api/lounge/sync-legacy', optionalAuth, async (c) => {
+loungeRoutes.post('/api/lounge/sync-legacy', requireAuth, async (c) => {
     const DB = getDB(c);
     const user = c.get('user');
+    if (!user?.id) {
+        return c.json({ success: false, message: '인증이 필요합니다.' }, 401);
+    }
 
     try {
         const body = await c.req.json();
@@ -431,11 +434,19 @@ loungeRoutes.post('/api/lounge/sync-legacy', optionalAuth, async (c) => {
             return c.json({ success: true, syncedCount: 0 });
         }
 
+        const safePosts = posts.slice(0, 20);
         let syncedCount = 0;
-        for (const p of posts) {
-            if (!p.id || !p.content || !p.author) continue;
+        for (const p of safePosts) {
+            if (!p || typeof p.id !== 'string' || typeof p.content !== 'string' || !p.author) continue;
+            const cleanContent = p.content.trim();
+            if (!cleanContent || cleanContent.length > 2000) continue;
+
+            const safeImage = typeof p.image === 'string' && (p.image.startsWith('https://') || p.image.startsWith('http://') || p.image.startsWith('/uploads/'))
+                ? p.image
+                : null;
+
             // 이미 존재하는지 확인
-            const exists = await DB.prepare('SELECT id FROM lounge_posts WHERE id = ?').bind(p.id).first();
+            const exists = await DB.prepare('SELECT id FROM lounge_posts WHERE id = ?').bind(p.id.slice(0, 100)).first();
             if (!exists) {
                 const ladderDataStr = p.ladderData ? JSON.stringify(p.ladderData) : null;
                 await DB.prepare(`
@@ -444,17 +455,17 @@ loungeRoutes.post('/api/lounge/sync-legacy', optionalAuth, async (c) => {
                         content, image, ladder_data, likes, comments_count, created_at, updated_at
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                 `).bind(
-                    p.id,
-                    user?.id || null,
-                    p.author.name || '베라 프렌즈',
-                    p.author.handle || '@user_lounge',
-                    p.author.avatar || '🦊',
-                    p.author.badge || null,
-                    p.content,
-                    p.image || null,
+                    p.id.slice(0, 100),
+                    user.id,
+                    String(user.name || p.author.name || '베라 프렌즈').slice(0, 40),
+                    String(p.author.handle || `@user_${user.id}`).slice(0, 40),
+                    String(p.author.avatar || '🦊').slice(0, 20),
+                    null,
+                    cleanContent,
+                    safeImage,
                     ladderDataStr,
-                    p.likes || 0,
-                    p.commentsCount || 0
+                    0,
+                    0
                 ).run();
                 syncedCount++;
             }
@@ -463,7 +474,7 @@ loungeRoutes.post('/api/lounge/sync-legacy', optionalAuth, async (c) => {
         return c.json({ success: true, syncedCount });
     } catch (error: any) {
         console.error('[Lounge] 레거시 글 동기화 오류:', error);
-        return c.json({ success: false, message: '동기화 실패', error: error.message }, 500);
+        return c.json({ success: false, message: '동기화 실패' }, 500);
     }
 });
 

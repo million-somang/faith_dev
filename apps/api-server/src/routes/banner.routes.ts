@@ -39,10 +39,24 @@ bannerRoutes.get('/api/banners/:slotKey', async (c: Context) => {
 const requireAdmin = async (c: Context, next: Next) => {
     const user = await checkSession(c)
     if (!user) return c.json({ success: false, message: '로그인이 필요합니다' }, 401)
-    if (user.role !== 'admin' && user.level < 6) {
+    if (user.status !== 'active' || (user.role !== 'admin' && Number(user.level || 0) < 6)) {
         return c.json({ success: false, message: '관리자 권한이 필요합니다' }, 403)
     }
     await next()
+}
+
+function isSafeBannerUrl(rawUrl: unknown): boolean {
+    if (rawUrl === undefined || rawUrl === null || rawUrl === '') return true
+    if (typeof rawUrl !== 'string') return false
+    const trimmed = rawUrl.trim()
+    if (!trimmed) return true
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true
+    try {
+        const parsed = new URL(trimmed)
+        return parsed.protocol === 'https:' || parsed.protocol === 'http:'
+    } catch {
+        return false
+    }
 }
 
 bannerRoutes.use('/api/admin/banner-slots/*', requireAdmin)
@@ -140,6 +154,9 @@ bannerRoutes.post('/api/admin/banners', async (c: Context) => {
         if (!slot_key || !title || (!image_url && !ad_code)) {
             return c.json({ success: false, message: 'slot_key, title, (image_url 또는 ad_code)는 필수입니다' }, 400)
         }
+        if (!isSafeBannerUrl(link_url) || !isSafeBannerUrl(image_url)) {
+            return c.json({ success: false, message: '유효하지 않은 URL 형식입니다' }, 400)
+        }
         const slot = await query('SELECT id FROM banner_slots WHERE slot_key = $1', [slot_key])
         if (slot.rows.length === 0) {
             return c.json({ success: false, message: '존재하지 않는 슬롯입니다' }, 404)
@@ -164,6 +181,9 @@ bannerRoutes.put('/api/admin/banners/:id', async (c: Context) => {
     try {
         const id = parseInt(c.req.param('id'))
         const { title, image_url, link_url, open_new_tab, sort_order, start_at, end_at, is_active, ad_code } = await c.req.json()
+        if (!isSafeBannerUrl(link_url) || !isSafeBannerUrl(image_url)) {
+            return c.json({ success: false, message: '유효하지 않은 URL 형식입니다' }, 400)
+        }
         await query(
             `UPDATE banners SET
                 title = COALESCE($1, title),

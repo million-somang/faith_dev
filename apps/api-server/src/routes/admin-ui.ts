@@ -333,14 +333,8 @@ export function getCommonAuthScript(): string {
           const response = await fetch('/api/auth/me');
           const data = await response.json();
           if (data.loggedIn && data.user) {
-            // 구식 'true' 토큰이 남아있는 경우 명시적 제거
-            if (localStorage.getItem('auth_token') === 'true') {
-              localStorage.removeItem('auth_token');
-            }
-            
-            // admin.ts의 requireAdmin 미들웨어는 "userId:any" 형식의 base64 토큰을 기대함
-            const token = btoa(data.user.id + ':faith');
-            localStorage.setItem('auth_token', token);
+            // 구식 로컬 스토리지 토큰 정리 (세션 쿠키 전용 인증 사용)
+            localStorage.removeItem('auth_token');
             localStorage.setItem('user_email', data.user.email);
             localStorage.setItem('user_role', data.user.role);
             localStorage.setItem('user_level', data.user.level.toString());
@@ -842,8 +836,7 @@ adminUi.get('/admin', async (c) => {
                     const data = await res.json();
                     if (data.loggedIn && data.user) {
                         userId = data.user.id;
-                        authToken = btoa(data.user.id + ':faith');
-                        localStorage.setItem('auth_token', authToken);
+                        localStorage.removeItem('auth_token');
                         localStorage.setItem('user_id', String(data.user.id));
                         localStorage.setItem('user_email', data.user.email);
                         localStorage.setItem('user_role', data.user.role || 'user');
@@ -1264,7 +1257,7 @@ adminUi.get('/admin/users', async (c) => {
                     .then(res => res.json())
                     .then(data => {
                         if (data.loggedIn) {
-                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
+                            localStorage.removeItem('auth_token');
                             localStorage.setItem('user_email', data.user.email);
                             localStorage.setItem('user_role', data.user.role || 'user');
                             localStorage.setItem('user_level', String(data.user.level || 0));
@@ -1820,7 +1813,7 @@ adminUi.get('/admin/logs', async (c) => {
                     .then(res => res.json())
                     .then(data => {
                         if (data.loggedIn) {
-                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
+                            localStorage.removeItem('auth_token');
                             localStorage.setItem('user_email', data.user.email);
                             localStorage.setItem('user_role', data.user.role || 'user');
                             localStorage.setItem('user_level', String(data.user.level || 0));
@@ -2022,7 +2015,7 @@ adminUi.get('/admin/notifications', async (c) => {
                     .then(res => res.json())
                     .then(data => {
                         if (data.loggedIn) {
-                            localStorage.setItem('auth_token', btoa(data.user.id + ':faith'));
+                            localStorage.removeItem('auth_token');
                             localStorage.setItem('user_email', data.user.email);
                             localStorage.setItem('user_role', data.user.role || 'user');
                             localStorage.setItem('user_level', String(data.user.level || 0));
@@ -2631,7 +2624,7 @@ adminUi.get('/admin/news', async (c) => {
             const authToken = localStorage.getItem('auth_token');
             if (!authToken || authToken === 'true') {
                 fetch('/api/auth/me', { credentials: 'include' }).then(res => res.json()).then(data => {
-                    if (data.loggedIn) { localStorage.setItem('auth_token', btoa(data.user.id + ':faith')); localStorage.setItem('user_email', data.user.email); localStorage.setItem('user_role', data.user.role || 'user'); localStorage.setItem('user_level', String(data.user.level || 0)); if (document.getElementById('admin-name')) document.getElementById('admin-name').textContent = data.user.email + ' (레벨 ' + data.user.level + ')'; }
+                    if (data.loggedIn) { localStorage.removeItem('auth_token'); localStorage.setItem('user_email', data.user.email); localStorage.setItem('user_role', data.user.role || 'user'); localStorage.setItem('user_level', String(data.user.level || 0)); if (document.getElementById('admin-name')) document.getElementById('admin-name').textContent = data.user.email + ' (레벨 ' + data.user.level + ')'; }
                 }).catch(() => {});
             }
             const userEmail = localStorage.getItem('user_email');
