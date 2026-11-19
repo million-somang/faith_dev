@@ -27,6 +27,129 @@ function cleanTitleAndPublisher(rawTitle: string, fallbackPublisher?: string) {
   };
 }
 
+const RELATED_STOP_WORDS = new Set([
+  '기자', '뉴스', '속보', '단독', '종합', '오늘', '이번', '관련', '대한', '통해',
+  '위해', '에서', '으로', '있는', '하는', '했다', '한다', '있다', '없다', '등',
+]);
+
+function extractTitleBody(rawTitle: string): string {
+  const cleaned = decodeHtmlEntities(rawTitle || '').replace(/\s+/g, ' ').trim();
+  const sepIdx = cleaned.lastIndexOf(' - ');
+  if (sepIdx > 0 && cleaned.length - sepIdx - 3 <= 25) {
+    return cleaned.slice(0, sepIdx).trim();
+  }
+  return cleaned;
+}
+
+function normalizeTitleKey(rawTitle: string): string {
+  return extractTitleBody(rawTitle)
+    .replace(/[^가-힣a-zA-Z0-9]/g, '')
+    .toLowerCase()
+    .slice(0, 24);
+}
+
+function extractKeywords(text: string): Set<string> {
+  const tokens = decodeHtmlEntities(text || '')
+    .replace(/[^가-힣a-zA-Z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .map((t) => t.trim().toLowerCase())
+    .filter((t) => t.length >= 2 && !RELATED_STOP_WORDS.has(t) && !/^\d{1,2}$/.test(t));
+  return new Set(tokens);
+}
+
+async function fetchNewsListServer(query: string): Promise<NewsItem[]> {
+  try {
+    const res = await fetch(`${API_SERVER_URL}/api/news?${query}`, {
+      next: { revalidate: 120 },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (data?.success && Array.isArray(data?.news)) {
+      return data.news as NewsItem[];
+    }
+    return [];
+  } catch (err) {
+    console.error(`[SSR RelatedNewsFetch] Failed (${query}):`, err);
+    return [];
+  }
+}
+
+async function fetchRelatedNewsServer(currentNews: NewsItem): Promise<NewsItem[]> {
+  const currentCategories = (currentNews.category || 'general')
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const primaryCategory = currentCategories[0] || 'general';
+  const currentKeywords = extractKeywords(
+    `${extractTitleBody(currentNews.title || '')} ${currentNews.tags || ''}`
+  );
+
+  const seenIds = new Set<string>([String(currentNews.id)]);
+  const seenTitleKeys = new Set<string>();
+  const currentTitleKey = normalizeTitleKey(currentNews.title || '');
+  if (currentTitleKey) seenTitleKeys.add(currentTitleKey);
+
+  const sameCatPool = await fetchNewsListServer(
+    `category=${encodeURIComponent(primaryCategory)}&limit=24`
+  );
+
+  const scored: Array<{ item: NewsItem; score: number; index: number }> = [];
+  sameCatPool.forEach((item, index) => {
+    if (!item || item.id === undefined || item.id === null) return;
+    const idStr = String(item.id);
+    if (seenIds.has(idStr)) return;
+    const tKey = normalizeTitleKey(item.title || '');
+    if (tKey && seenTitleKeys.has(tKey)) return;
+
+    seenIds.add(idStr);
+    if (tKey) seenTitleKeys.add(tKey);
+
+    let score = 0;
+    const candTitleKw = extractKeywords(extractTitleBody(item.title || ''));
+    for (const kw of candTitleKw) {
+      if (currentKeywords.has(kw)) score += 3;
+    }
+
+    const candMetaKw = extractKeywords(
+      `${item.summary || item.description || ''} ${item.tags || ''}`
+    );
+    for (const kw of candMetaKw) {
+      if (currentKeywords.has(kw)) score += 1;
+    }
+
+    const candCats = (item.category || '')
+      .split(',')
+      .map((c) => c.trim())
+      .filter(Boolean);
+    for (const cat of candCats) {
+      if (currentCategories.includes(cat)) score += 2;
+    }
+
+    scored.push({ item, score, index });
+  });
+
+  scored.sort((a, b) => b.score - a.score || a.index - b.index);
+  const selected = scored.slice(0, 4).map((entry) => entry.item);
+
+  if (selected.length < 4) {
+    const fallbackPool = await fetchNewsListServer('limit=12');
+    for (const item of fallbackPool) {
+      if (selected.length >= 4) break;
+      if (!item || item.id === undefined || item.id === null) continue;
+      const idStr = String(item.id);
+      if (seenIds.has(idStr)) continue;
+      const tKey = normalizeTitleKey(item.title || '');
+      if (tKey && seenTitleKeys.has(tKey)) continue;
+
+      seenIds.add(idStr);
+      if (tKey) seenTitleKeys.add(tKey);
+      selected.push(item);
+    }
+  }
+
+  return selected.slice(0, 4);
+}
+
 async function fetchNewsByIdServer(id: string): Promise<NewsItem | null> {
   try {
     const res = await fetch(`${API_SERVER_URL}/api/news/${encodeURIComponent(id)}`, {
@@ -109,6 +232,8 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
     notFound();
   }
 
+  const relatedNews = await fetchRelatedNewsServer(news);
+
   const { title, publisher } = cleanTitleAndPublisher(news.title, news.publisher || news.source);
   const rawSummary = decodeHtmlEntities(news.summary || news.description || news.content || '')
     .replace(/<[^>]*>/g, '')
@@ -180,7 +305,11 @@ export default async function NewsDetailPage({ params }: NewsDetailPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <NewsDetailClient newsId={params.id} initialNews={news} />
+      <NewsDetailClient
+        newsId={params.id}
+        initialNews={news}
+        initialRelatedNews={relatedNews}
+      />
     </>
   );
 }

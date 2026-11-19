@@ -8,6 +8,7 @@ import { getCategoryName, getCategoryColor, decodeHtmlEntities } from '@faithpor
 import { useAuth } from '@/context/AuthContext';
 import { NewsInsightWidget } from '@/components/news/NewsInsightWidget';
 import { NewsRelatedToolsWidget } from '@/components/news/NewsRelatedToolsWidget';
+import { RelatedNewsSection } from '@/components/news/RelatedNewsSection';
 
 export interface NewsItem {
     id: number;
@@ -16,6 +17,7 @@ export interface NewsItem {
     description?: string;
     content?: string;
     category?: string;
+    tags?: string;
     publisher?: string;
     source?: string;
     link?: string;
@@ -33,9 +35,14 @@ export interface NewsItem {
 interface NewsDetailClientProps {
     newsId: string;
     initialNews: NewsItem | null;
+    initialRelatedNews?: NewsItem[];
 }
 
-export default function NewsDetailClient({ newsId, initialNews }: NewsDetailClientProps) {
+export default function NewsDetailClient({
+    newsId,
+    initialNews,
+    initialRelatedNews = [],
+}: NewsDetailClientProps) {
     const router = useRouter();
     const { user } = useAuth();
 
@@ -467,7 +474,13 @@ export default function NewsDetailClient({ newsId, initialNews }: NewsDetailClie
                     </div>
                 </div>
 
-                {/* 7. 하단 네비게이션 액션 */}
+                {/* 7. 비슷한 유형의 추천 뉴스 (최대 4건) */}
+                <RelatedNewsSection
+                    items={initialRelatedNews}
+                    categoryName={categoryName}
+                />
+
+                {/* 8. 하단 네비게이션 액션 */}
                 <footer className="pt-2 flex justify-between items-center">
                     <Link
                         href="/news"
