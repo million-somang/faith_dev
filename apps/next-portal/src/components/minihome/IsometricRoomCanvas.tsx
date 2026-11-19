@@ -10,6 +10,7 @@ import { MinihomeAvatarActionOverlay } from '@/components/minihome/MinihomeAvata
 import {
     GardenBenchAndWateringCan,
     GardenCourtyardBackdrop,
+    GardenPlotActionBubble,
     GardenPlotIsoNode,
     MinihomeGardenControlPanel,
 } from '@/components/minihome/MinihomeGardenLayer';
@@ -122,7 +123,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     onClearPlot,
 }) => {
     const [activeZone, setActiveZone] = useState<'indoor' | 'garden'>('indoor');
-    const [selectedPlotIndex, setSelectedPlotIndex] = useState<number>(0);
+    const [openBubblePlotIndex, setOpenBubblePlotIndex] = useState<number | null>(null);
     const [forcedGardenAction, setForcedGardenAction] = useState<ForcedGardenActionTrigger | null>(null);
 
     // ─── 무손실 스마트 줌 (100% ~ 200% 안전 배율) & 드래그 팬(Pan) 상태 ───
@@ -161,7 +162,32 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         if (isEditMode && activeZone === 'garden') {
             setActiveZone('indoor');
         }
+        if (isEditMode || activeZone !== 'garden') {
+            setOpenBubblePlotIndex(null);
+        }
     }, [isEditMode, activeZone]);
+
+    useEffect(() => {
+        if (openBubblePlotIndex === null) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setOpenBubblePlotIndex(null);
+            }
+        };
+        const handlePointerDown = (e: PointerEvent) => {
+            const target = e.target;
+            if (!(target instanceof Element)) return;
+            if (target.closest('[data-garden-bubble="true"]')) return;
+            if (target.closest('[data-garden-plot]')) return;
+            setOpenBubblePlotIndex(null);
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('pointerdown', handlePointerDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            document.removeEventListener('pointerdown', handlePointerDown);
+        };
+    }, [openBubblePlotIndex]);
 
     const { weather } = useWeather();
     const avatarSim = useAvatarLifeSim({ layout, isEditMode, activeZone, forcedGardenAction });
@@ -180,6 +206,51 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         const st = getGardenPlotWaterStatus(p, gardenTickMs);
         return st.isPlanted && !st.isHarvestReady && st.canWater;
     }).length;
+    const openBubblePlot =
+        openBubblePlotIndex !== null
+            ? gardenState.plots.find((p) => p.plotIndex === openBubblePlotIndex) || null
+            : null;
+
+    const handleGardenPlantCrop = (plotIdx: number, cropId: GardenCropId) => {
+        if (onPlantCrop) {
+            onPlantCrop(plotIdx, cropId);
+        }
+        setForcedGardenAction({
+            plotIndex: plotIdx,
+            activityType: 'watering',
+            badge: `💧 새로 심은 씨앗에 정성껏 물 주는 중`,
+            timestamp: Date.now(),
+        });
+    };
+
+    const handleGardenWaterPlot = (plotIdx: number): boolean => {
+        let watered = true;
+        if (onWaterPlot) {
+            const res = onWaterPlot(plotIdx);
+            if (res === false) watered = false;
+        }
+        if (watered) {
+            setForcedGardenAction({
+                plotIndex: plotIdx,
+                activityType: 'watering',
+                badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
+                timestamp: Date.now(),
+            });
+        }
+        return watered;
+    };
+
+    const handleGardenHarvestPlot = (plotIdx: number) => {
+        if (onHarvestPlot) {
+            onHarvestPlot(plotIdx);
+        }
+        setForcedGardenAction({
+            plotIndex: plotIdx,
+            activityType: 'harvest-ready',
+            badge: `🧺 ${plotIdx + 1}번 텃밭 수확 완료!`,
+            timestamp: Date.now(),
+        });
+    };
     const defaultRoomTitle = `${ownerName}님의 2.5D 아이소메트릭 아지트`;
     const displayRoomTitle = roomTitle?.trim() || defaultRoomTitle;
 
@@ -870,9 +941,10 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     </div>
                 )}
 
+                <div className="relative w-full max-w-[676px] aspect-[610/505] mx-auto flex items-center justify-center">
                 <svg
                     viewBox={dynamicViewBox}
-                    className="w-full flex-1 object-contain"
+                    className="w-full h-full object-contain"
                     role="img"
                     aria-label={`${ownerName}의 미니룸 캔버스`}
                 >
@@ -1158,8 +1230,11 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                                             key={`garden-plot-${entity.plot.plotIndex}`}
                                             plot={entity.plot}
                                             pos={pos}
-                                            isSelected={selectedPlotIndex === entity.plot.plotIndex}
-                                            onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
+                                            isSelected={openBubblePlotIndex === entity.plot.plotIndex}
+                                            isBubbleOpen={openBubblePlotIndex === entity.plot.plotIndex}
+                                            onSelectPlot={(idx) =>
+                                                setOpenBubblePlotIndex((prev) => (prev === idx ? null : idx))
+                                            }
                                             nowMs={gardenTickMs}
                                         />
                                     );
@@ -1537,53 +1612,30 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                     )}
                 </svg>
 
-                {/* 앞마당 텃밭 모드일 때 하단 야채 심기·물주기·수확하기 컨트롤 패널 */}
+                    {/* 텃밭 이랑 클릭 시 현재 상태 기반 액션 말풍선 */}
+                    {activeZone === 'garden' && !isEditMode && openBubblePlot && (
+                        <GardenPlotActionBubble
+                            plot={openBubblePlot}
+                            gardenState={gardenState}
+                            isOwner={isOwner}
+                            isZoomed={zoomLevel > 1}
+                            nowMs={gardenTickMs}
+                            onClose={() => setOpenBubblePlotIndex(null)}
+                            onPlantCrop={handleGardenPlantCrop}
+                            onWaterPlot={handleGardenWaterPlot}
+                            onHarvestPlot={handleGardenHarvestPlot}
+                            onClearPlot={onClearPlot}
+                            onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
+                        />
+                    )}
+                </div>
+
+                {/* 앞마당 텃밭 모드일 때 하단 안내·알림·창고 현황 패널 */}
                 {activeZone === 'garden' && !isEditMode && (
                     <MinihomeGardenControlPanel
                         gardenState={gardenState}
-                        selectedPlotIndex={selectedPlotIndex}
-                        onSelectPlot={(idx) => setSelectedPlotIndex(idx)}
                         isOwner={isOwner}
                         isRainWeather={isRainWeather}
-                        onPlantCrop={(plotIdx, cropId) => {
-                            if (onPlantCrop) {
-                                onPlantCrop(plotIdx, cropId);
-                            }
-                            setForcedGardenAction({
-                                plotIndex: plotIdx,
-                                activityType: 'watering',
-                                badge: `💧 새로 심은 씨앗에 정성껏 물 주는 중`,
-                                timestamp: Date.now(),
-                            });
-                        }}
-                        onWaterPlot={(plotIdx) => {
-                            let watered = true;
-                            if (onWaterPlot) {
-                                const res = onWaterPlot(plotIdx);
-                                if (res === false) watered = false;
-                            }
-                            if (watered) {
-                                setForcedGardenAction({
-                                    plotIndex: plotIdx,
-                                    activityType: 'watering',
-                                    badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
-                                    timestamp: Date.now(),
-                                });
-                            }
-                            return watered;
-                        }}
-                        onHarvestPlot={(plotIdx) => {
-                            if (onHarvestPlot) {
-                                onHarvestPlot(plotIdx);
-                            }
-                            setForcedGardenAction({
-                                plotIndex: plotIdx,
-                                activityType: 'harvest-ready',
-                                badge: `🧺 ${plotIdx + 1}번 텃밭 수확 완료!`,
-                                timestamp: Date.now(),
-                            });
-                        }}
-                        onClearPlot={onClearPlot}
                         onOpenSeedShop={onOpenSeedShopModal || onOpenShopModal}
                         onOpenWarehouse={onOpenWarehouseModal || onOpenShopModal}
                     />

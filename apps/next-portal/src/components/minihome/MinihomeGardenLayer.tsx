@@ -596,6 +596,7 @@ interface GardenPlotProps {
     plot: GardenPlotItem;
     pos: { x: number; y: number };
     isSelected: boolean;
+    isBubbleOpen?: boolean;
     onSelectPlot: (plotIndex: number) => void;
     nowMs?: number;
 }
@@ -607,6 +608,7 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
     plot,
     pos,
     isSelected,
+    isBubbleOpen = false,
     onSelectPlot,
     nowMs,
 }) => {
@@ -618,6 +620,7 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
     return (
         <g
             transform={`translate(${pos.x}, ${pos.y})`}
+            data-garden-plot={plot.plotIndex}
             className="cursor-pointer"
             onClick={(e) => {
                 e.stopPropagation();
@@ -740,108 +743,365 @@ export const GardenPlotIsoNode: React.FC<GardenPlotProps> = ({
                 </text>
             </g>
 
-            {/* 단계별 직관적 플로팅 배지 (8시간 물주기 알림 & 남은 시간 표시) */}
-            {isReadyToHarvest && cropMeta ? (
-                <g transform="translate(0, -42)">
-                    <rect
-                        x="-46"
-                        y="-12"
-                        width="92"
-                        height="19"
-                        rx="9.5"
-                        fill="#15803d"
-                        stroke="#fde047"
-                        strokeWidth="1.6"
-                    />
-                    <text x="0" y="1" textAnchor="middle" fill="#fef08a" fontSize="9" fontWeight="900">
-                        🧺 {cropMeta.emoji} {cropMeta.shortName} 수확!
-                    </text>
-                </g>
-            ) : needsWater && cropMeta ? (
-                <g transform={`translate(0, ${plot.stage === 2 ? -36 : -30})`}>
-                    <rect
-                        x="-48"
-                        y="-11"
-                        width="96"
-                        height="18"
-                        rx="9"
-                        fill="#0284c7"
-                        stroke="#e0f2fe"
-                        strokeWidth="1.5"
-                    />
-                    <text x="0" y="1" textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="900">
-                        💧 {cropMeta.shortName} 물주기! ({plot.stage}/3)
-                    </text>
-                </g>
-            ) : cropMeta && (plot.stage === 1 || plot.stage === 2) ? (
-                <g transform={`translate(0, ${plot.stage === 2 ? -30 : -24})`}>
-                    <rect
-                        x="-44"
-                        y="-9"
-                        width="88"
-                        height="14"
-                        rx="7"
-                        fill="rgba(15, 23, 42, 0.78)"
-                        stroke={plot.stage === 2 ? 'rgba(253, 224, 71, 0.55)' : 'rgba(134, 239, 172, 0.55)'}
-                        strokeWidth="0.9"
-                    />
-                    <text
-                        x="0"
-                        y="0.5"
-                        textAnchor="middle"
-                        fill={plot.stage === 2 ? '#fde047' : '#86efac'}
-                        fontSize="7.2"
-                        fontWeight="800"
-                    >
-                        {plot.stage === 1 ? '🌱' : '🌼'} {plot.stage}/3 · ⏳{waterStatus.shortRemainingLabel}
-                    </text>
-                </g>
-            ) : !cropMeta && isSelected ? (
-                <g transform="translate(0, -28)">
-                    <rect
-                        x="-36"
-                        y="-10"
-                        width="72"
-                        height="16"
-                        rx="8"
-                        fill="rgba(15, 23, 42, 0.8)"
-                    />
-                    <text x="0" y="1" textAnchor="middle" fill="#fde047" fontSize="8.2" fontWeight="800">
-                        🌱 씨앗 심기
-                    </text>
-                </g>
-            ) : null}
+            {/* 단계별 직관적 플로팅 배지 (말풍선이 열려있는 밭은 가림) */}
+            {!isBubbleOpen &&
+                (isReadyToHarvest && cropMeta ? (
+                    <g transform="translate(0, -42)">
+                        <rect
+                            x="-46"
+                            y="-12"
+                            width="92"
+                            height="19"
+                            rx="9.5"
+                            fill="#15803d"
+                            stroke="#fde047"
+                            strokeWidth="1.6"
+                        />
+                        <text x="0" y="1" textAnchor="middle" fill="#fef08a" fontSize="9" fontWeight="900">
+                            🧺 {cropMeta.emoji} {cropMeta.shortName} 수확!
+                        </text>
+                    </g>
+                ) : needsWater && cropMeta ? (
+                    <g transform={`translate(0, ${plot.stage === 2 ? -36 : -30})`}>
+                        <rect
+                            x="-48"
+                            y="-11"
+                            width="96"
+                            height="18"
+                            rx="9"
+                            fill="#0284c7"
+                            stroke="#e0f2fe"
+                            strokeWidth="1.5"
+                        />
+                        <text x="0" y="1" textAnchor="middle" fill="#ffffff" fontSize="8.5" fontWeight="900">
+                            💧 {cropMeta.shortName} 물주기! ({plot.stage}/3)
+                        </text>
+                    </g>
+                ) : cropMeta && (plot.stage === 1 || plot.stage === 2) ? (
+                    <g transform={`translate(0, ${plot.stage === 2 ? -30 : -24})`}>
+                        <rect
+                            x="-44"
+                            y="-9"
+                            width="88"
+                            height="14"
+                            rx="7"
+                            fill="rgba(15, 23, 42, 0.78)"
+                            stroke={plot.stage === 2 ? 'rgba(253, 224, 71, 0.55)' : 'rgba(134, 239, 172, 0.55)'}
+                            strokeWidth="0.9"
+                        />
+                        <text
+                            x="0"
+                            y="0.5"
+                            textAnchor="middle"
+                            fill={plot.stage === 2 ? '#fde047' : '#86efac'}
+                            fontSize="7.2"
+                            fontWeight="800"
+                        >
+                            {plot.stage === 1 ? '🌱' : '🌼'} {plot.stage}/3 · ⏳{waterStatus.shortRemainingLabel}
+                        </text>
+                    </g>
+                ) : !cropMeta && isSelected ? (
+                    <g transform="translate(0, -28)">
+                        <rect
+                            x="-36"
+                            y="-10"
+                            width="72"
+                            height="16"
+                            rx="8"
+                            fill="rgba(15, 23, 42, 0.8)"
+                        />
+                        <text x="0" y="1" textAnchor="middle" fill="#fde047" fontSize="8.2" fontWeight="800">
+                            🌱 씨앗 심기
+                        </text>
+                    </g>
+                ) : null)}
         </g>
     );
 };
 
-interface GardenControlPanelProps {
+const PLOT_BUBBLE_POS_CLASS: Record<number, string> = {
+    0: 'left-1/2 -translate-x-1/2 bottom-[46%]',
+    1: 'left-[60.8%] -translate-x-1/2 bottom-[39%]',
+    2: 'right-1.5 sm:right-auto sm:left-[71.6%] sm:-translate-x-1/2 bottom-[33%]',
+    3: 'left-1.5 sm:left-[33.8%] sm:-translate-x-1/2 bottom-[36%]',
+    4: 'left-[44.6%] -translate-x-1/2 bottom-[30%]',
+    5: 'left-[55.4%] -translate-x-1/2 bottom-[23%]',
+};
+
+const PLOT_BUBBLE_TAIL_CLASS: Record<number, string> = {
+    0: 'left-1/2 -translate-x-1/2',
+    1: 'left-1/2 -translate-x-1/2',
+    2: 'left-[64%] sm:left-1/2 -translate-x-1/2',
+    3: 'left-[44%] sm:left-1/2 -translate-x-1/2',
+    4: 'left-1/2 -translate-x-1/2',
+    5: 'left-1/2 -translate-x-1/2',
+};
+
+export interface GardenPlotActionBubbleProps {
+    plot: GardenPlotItem;
     gardenState: MinihomeGardenState;
-    selectedPlotIndex: number;
-    onSelectPlot: (idx: number) => void;
     isOwner: boolean;
-    isRainWeather: boolean;
+    isZoomed: boolean;
+    nowMs: number;
+    onClose: () => void;
     onPlantCrop?: (plotIndex: number, cropId: GardenCropId) => void;
     onWaterPlot?: (plotIndex: number) => boolean | void;
     onHarvestPlot?: (plotIndex: number) => void;
     onClearPlot?: (plotIndex: number) => void;
     onOpenSeedShop?: () => void;
-    onOpenWarehouse?: () => void;
 }
 
 /**
- * 캔버스 하단 앞마당 텃밭 컨트롤 바 & 내 아지트 농장 창고(씨앗·수확 작물) 패널
+ * 텃밭 이랑 클릭 시 현재 상태에 맞는 행동만 즉시 실행할 수 있는 컨텍스트 말풍선
  */
-export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
+export const GardenPlotActionBubble: React.FC<GardenPlotActionBubbleProps> = ({
+    plot,
     gardenState,
-    selectedPlotIndex,
-    onSelectPlot,
     isOwner,
-    isRainWeather,
+    isZoomed,
+    nowMs,
+    onClose,
     onPlantCrop,
     onWaterPlot,
     onHarvestPlot,
     onClearPlot,
+    onOpenSeedShop,
+}) => {
+    const [confirmClear, setConfirmClear] = useState<boolean>(false);
+
+    useEffect(() => {
+        setConfirmClear(false);
+    }, [plot.plotIndex, plot.cropId, plot.stage]);
+
+    const cropMeta = getGardenCropById(plot.cropId);
+    const isEmpty = !cropMeta || plot.stage === 0;
+    const isReadyToHarvest = Boolean(cropMeta && plot.stage >= 3);
+    const waterStatus = getGardenPlotWaterStatus(plot, nowMs);
+    const needsWater = Boolean(cropMeta && plot.stage > 0 && plot.stage < 3 && waterStatus.canWater);
+
+    const ownedCrops = GARDEN_CROP_CATALOG.filter(
+        (crop) => (gardenState.seedCounts?.[crop.cropId] || 0) > 0
+    );
+
+    const posClass = isZoomed
+        ? 'top-12 left-1/2 -translate-x-1/2'
+        : PLOT_BUBBLE_POS_CLASS[plot.plotIndex] || PLOT_BUBBLE_POS_CLASS[0];
+    const tailClass = PLOT_BUBBLE_TAIL_CLASS[plot.plotIndex] || PLOT_BUBBLE_TAIL_CLASS[0];
+
+    const widthClass =
+        isOwner && isEmpty && ownedCrops.length > 0
+            ? 'w-[224px] sm:w-[252px]'
+            : 'w-[200px] sm:w-[224px]';
+
+    const borderColorClass = isReadyToHarvest
+        ? 'border-amber-400/90'
+        : needsWater
+          ? 'border-sky-400/90'
+          : isEmpty
+            ? 'border-emerald-400/80'
+            : 'border-slate-500/80';
+
+    return (
+        <div
+            data-garden-bubble="true"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            className={`absolute z-30 ${posClass} ${widthClass} bg-slate-900/95 backdrop-blur-md text-white rounded-2xl border-2 ${borderColorClass} shadow-2xl p-2.5 sm:p-3 space-y-2`}
+        >
+            {/* 상단 상태 헤더 & 닫기 버튼 */}
+            <div className="flex items-center justify-between gap-1.5 pb-1.5 border-b border-slate-700/80">
+                <div className="flex items-center gap-1 text-[11px] font-black truncate">
+                    <span className="px-1.5 py-0.5 rounded-md bg-slate-800 text-amber-300 font-mono text-[10px]">
+                        #{plot.plotIndex + 1}
+                    </span>
+                    {cropMeta && plot.stage > 0 ? (
+                        <span className="truncate text-emerald-200">
+                            {cropMeta.emoji} {cropMeta.shortName} · {plot.stage}/3
+                        </span>
+                    ) : (
+                        <span className="truncate text-emerald-300">🌱 빈 텃밭</span>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="말풍선 닫기"
+                    className="w-5 h-5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-black flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                >
+                    ×
+                </button>
+            </div>
+
+            {/* 방문자 읽기 전용 안내 */}
+            {!isOwner ? (
+                <div className="py-1 px-2 rounded-xl bg-slate-800/80 text-center text-[11px] font-bold text-slate-300">
+                    {isEmpty
+                        ? '비어있는 텃밭 이랑'
+                        : isReadyToHarvest
+                          ? '✨ 수확을 기다리는 중!'
+                          : waterStatus.canWater
+                            ? '💧 물을 줄 수 있는 상태예요'
+                            : `⏳ 다음 물주기까지 ${waterStatus.shortRemainingLabel}`}
+                </div>
+            ) : isEmpty ? (
+                /* 빈 밭: 보유 씨앗 원클릭 심기 (0개일 때는 정직한 안내 + 상점 버튼) */
+                ownedCrops.length > 0 ? (
+                    <div className="space-y-1.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                            {ownedCrops.map((crop) => {
+                                const qty = gardenState.seedCounts?.[crop.cropId] || 0;
+                                return (
+                                    <button
+                                        key={`bubble-seed-${crop.cropId}`}
+                                        type="button"
+                                        data-screenshot-click="action"
+                                        onClick={() => {
+                                            onPlantCrop?.(plot.plotIndex, crop.cropId);
+                                            onClose();
+                                        }}
+                                        className="px-2 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-black transition-all cursor-pointer flex items-center justify-between gap-1 shadow-xs"
+                                    >
+                                        <span className="truncate">
+                                            {crop.emoji} {crop.shortName}
+                                        </span>
+                                        <span className="text-[10px] text-amber-200 font-mono shrink-0">
+                                            ×{qty}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        {onOpenSeedShop && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onClose();
+                                    onOpenSeedShop();
+                                }}
+                                className="w-full py-1 rounded-lg text-[10px] font-bold text-emerald-300 hover:text-emerald-200 hover:bg-slate-800/80 transition-colors cursor-pointer"
+                            >
+                                🎁 다른 씨앗 0원 받기
+                            </button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="space-y-2 text-center">
+                        <p className="text-[11px] font-bold text-slate-300">보유 중인 씨앗이 없어요</p>
+                        {onOpenSeedShop && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onClose();
+                                    onOpenSeedShop();
+                                }}
+                                className="w-full py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black transition-all cursor-pointer shadow-sm"
+                            >
+                                🎁 씨앗 상점 열기 (0원)
+                            </button>
+                        )}
+                    </div>
+                )
+            ) : isReadyToHarvest && cropMeta ? (
+                /* 완숙(3단계): 즉시 수확하기 */
+                <button
+                    type="button"
+                    data-screenshot-click="result"
+                    onClick={() => {
+                        onHarvestPlot?.(plot.plotIndex);
+                        onClose();
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+                >
+                    <span>🧺 {cropMeta.shortName} 수확하기</span>
+                </button>
+            ) : (
+                /* 성장 중(1~2단계): 물주기 가능 또는 쿨타임 카운트다운 + 2단계 확인 이랑 비우기 */
+                <div className="space-y-1.5">
+                    {waterStatus.canWater ? (
+                        <button
+                            type="button"
+                            data-screenshot-click="action"
+                            onClick={() => {
+                                onWaterPlot?.(plot.plotIndex);
+                                onClose();
+                            }}
+                            className="w-full py-2 px-3 rounded-xl bg-sky-400 hover:bg-sky-300 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
+                        >
+                            <span>💧 물주기 ({plot.stage + 1}/3단계)</span>
+                        </button>
+                    ) : (
+                        <div className="px-2.5 py-2 rounded-xl bg-slate-800/90 border border-slate-700 text-center space-y-0.5">
+                            <div className="text-[11px] font-black text-sky-300">⏳ 땅이 촉촉해요</div>
+                            <div className="text-[10px] font-bold text-slate-300">
+                                다음 물주기까지 {waterStatus.shortRemainingLabel}
+                            </div>
+                        </div>
+                    )}
+
+                    {onClearPlot && (
+                        <div className="pt-1 border-t border-slate-700/70">
+                            {!confirmClear ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setConfirmClear(true)}
+                                    className="w-full py-1 rounded-lg text-[10px] font-bold text-slate-400 hover:text-rose-300 hover:bg-slate-800/80 transition-colors cursor-pointer"
+                                >
+                                    🌱 이랑 비우기
+                                </button>
+                            ) : (
+                                <div className="flex items-center justify-between gap-1.5 bg-rose-950/50 border border-rose-500/40 rounded-lg px-2 py-1">
+                                    <span className="text-[10px] font-bold text-rose-200">정말 비울까요?</span>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                onClearPlot(plot.plotIndex);
+                                                onClose();
+                                            }}
+                                            className="px-2 py-0.5 rounded-md bg-rose-500 hover:bg-rose-400 text-white text-[10px] font-black cursor-pointer"
+                                        >
+                                            비우기
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmClear(false)}
+                                            className="px-2 py-0.5 rounded-md bg-slate-700 hover:bg-slate-600 text-slate-200 text-[10px] font-bold cursor-pointer"
+                                        >
+                                            취소
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* 하단 말풍선 꼬리 (줌 미사용 시 해당 밭 방향 가리킴) */}
+            {!isZoomed && (
+                <div
+                    className={`pointer-events-none absolute -bottom-[7px] ${tailClass} w-3 h-3 rotate-45 bg-slate-900 border-r-2 border-b-2 ${borderColorClass}`}
+                />
+            )}
+        </div>
+    );
+};
+
+interface GardenControlPanelProps {
+    gardenState: MinihomeGardenState;
+    isOwner: boolean;
+    isRainWeather: boolean;
+    onOpenSeedShop?: () => void;
+    onOpenWarehouse?: () => void;
+}
+
+/**
+ * 캔버스 하단 앞마당 텃밭 안내·알림·내 아지트 농장 창고(씨앗·수확 작물) 현황 패널
+ */
+export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
+    gardenState,
+    isOwner,
+    isRainWeather,
     onOpenSeedShop,
     onOpenWarehouse,
 }) => {
@@ -979,10 +1239,6 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
         }
     };
 
-    const activePlot =
-        gardenState.plots.find((p) => p.plotIndex === selectedPlotIndex) || gardenState.plots[0];
-    const activeCropMeta = getGardenCropById(activePlot?.cropId);
-    const activeWaterStatus = getGardenPlotWaterStatus(activePlot, nowMs);
     const totalSeeds = Object.values(gardenState.seedCounts || {}).reduce((acc, v) => acc + v, 0);
 
     const waterReadyPlots = gardenState.plots.filter((p) => {
@@ -992,41 +1248,20 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
 
     return (
         <div className="w-full mt-2 bg-gradient-to-r from-emerald-950/95 via-slate-900/95 to-emerald-950/95 text-white px-3.5 sm:px-5 py-3.5 rounded-2xl shadow-lg border border-emerald-700/60 space-y-3 shrink-0">
-            {/* 1행: 선택된 텃밭 이랑 번호 탭 + 모바일 푸시 알림 / 씨앗 상점 / 농장 창고 바로가기 */}
+            {/* 1행: 마당 텃밭 안내 + 모바일 푸시 알림 / 씨앗 상점 / 농장 창고 바로가기 */}
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px]">
                         🌿 마당 텃밭
                     </span>
                     <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/40 text-sky-200 text-[10px] font-extrabold">
-                        💧 하루 3번 (8시간 간격 물주기)
+                        💧 하루 3번 (8시간 간격)
                     </span>
-                    <div className="flex items-center gap-1 flex-wrap">
-                        {gardenState.plots.map((p) => {
-                            const cMeta = getGardenCropById(p.cropId);
-                            const active = p.plotIndex === selectedPlotIndex;
-                            const pWater = getGardenPlotWaterStatus(p, nowMs);
-                            return (
-                                <button
-                                    key={`plot-tab-${p.plotIndex}`}
-                                    type="button"
-                                    onClick={() => onSelectPlot(p.plotIndex)}
-                                    className={`px-2 py-1 rounded-lg text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 ${
-                                        active
-                                            ? 'bg-amber-400 text-slate-950 shadow-xs'
-                                            : pWater.canWater
-                                              ? 'bg-sky-600/90 text-white ring-1 ring-sky-300 animate-pulse'
-                                              : 'bg-slate-800/90 text-slate-300 hover:bg-slate-700'
-                                    }`}
-                                >
-                                    <span>#{p.plotIndex + 1}</span>
-                                    <span>{cMeta ? cMeta.emoji : '🌱'}</span>
-                                    {pWater.isHarvestReady && <span className="text-[10px]">🧺</span>}
-                                    {pWater.canWater && <span className="text-[10px]">💧</span>}
-                                </button>
-                            );
-                        })}
-                    </div>
+                    <span className="text-[11px] font-bold text-slate-300">
+                        {isOwner
+                            ? '👆 위 밭을 클릭해 심기·물주기·수확'
+                            : '👀 이웃의 마당 텃밭을 구경 중입니다'}
+                    </span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-1.5">
@@ -1078,155 +1313,15 @@ export const MinihomeGardenControlPanel: React.FC<GardenControlPanelProps> = ({
                 </div>
             )}
 
-            {/* 8시간 경과 물주기 알림 배너 (물을 줄 수 있는 작물이 있을 때 즉시 노출) */}
+            {/* 8시간 경과 물주기 알림 배너 (중복 버튼 없이 위 밭 클릭 유도 안내) */}
             {isOwner && waterReadyPlots.length > 0 && (
-                <div className="px-3 py-2 rounded-xl bg-sky-500/20 border border-sky-400/60 flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-black text-sky-200">
-                        <span className="animate-bounce">💧</span>
-                        <span>
-                            물주기 알림! 8시간이 지나 지금 물을 줄 수 있는 작물이 {waterReadyPlots.length}개 있습니다!
-                        </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                        {waterReadyPlots.map((wp) => {
-                            const wpMeta = getGardenCropById(wp.cropId);
-                            return (
-                                <button
-                                    key={`quick-water-${wp.plotIndex}`}
-                                    type="button"
-                                    onClick={() => {
-                                        onSelectPlot(wp.plotIndex);
-                                        if (onWaterPlot) onWaterPlot(wp.plotIndex);
-                                    }}
-                                    className="px-2.5 py-1 rounded-lg bg-sky-400 hover:bg-sky-300 text-slate-950 text-[11px] font-black cursor-pointer transition-all shadow-2xs flex items-center gap-1"
-                                >
-                                    <span>
-                                        💧 #{wp.plotIndex + 1} {wpMeta?.emoji} {wpMeta?.shortName} 물주기
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                <div className="px-3 py-2 rounded-xl bg-sky-500/20 border border-sky-400/60 flex items-center gap-1.5 text-xs font-black text-sky-200">
+                    <span className="animate-bounce">💧</span>
+                    <span>
+                        물주기 알림! 지금 물을 줄 수 있는 밭이 {waterReadyPlots.length}곳 있어요 — 위에서 반짝이는 밭을 클릭해 주세요!
+                    </span>
                 </div>
             )}
-
-            {/* 2행: 선택된 이랑 상세 상태 & 씨앗 심기 / 물주기(8시간 간격) / 수확하기 액션 */}
-            <div className="p-3 rounded-xl bg-slate-900/90 border border-slate-700/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <div className="space-y-0.5">
-                    <div className="text-xs sm:text-sm font-black text-emerald-200 flex items-center gap-1.5 flex-wrap">
-                        <span>[{activePlot.plotIndex + 1}번 텃밭 이랑]</span>
-                        {activeCropMeta ? (
-                            <>
-                                <span className="text-white">
-                                    {activeCropMeta.emoji} {activeCropMeta.name}
-                                </span>
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[11px]">
-                                    {activeCropMeta.stageLabels[activePlot.stage]} ({activePlot.stage}/3단계 · 물주기 {activePlot.waterCount}/3회)
-                                </span>
-                                {activePlot.stage < 3 && (
-                                    <span
-                                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${
-                                            activeWaterStatus.canWater
-                                                ? 'bg-sky-500 text-slate-950 animate-pulse'
-                                                : 'bg-slate-800 border border-slate-600 text-sky-300'
-                                        }`}
-                                    >
-                                        {activeWaterStatus.canWater
-                                            ? '💧 지금 물주기 가능!'
-                                            : `⏳ 다음 물주기까지 ${activeWaterStatus.shortRemainingLabel}`}
-                                    </span>
-                                )}
-                            </>
-                        ) : (
-                            <span className="text-amber-300">
-                                비어있는 텃밭 이랑 · 창고에 보관된 씨앗을 꺼내 심어보세요! (보유 씨앗 총 {totalSeeds}개)
-                            </span>
-                        )}
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                        {activeCropMeta
-                            ? `${activeCropMeta.description} (하루 3번, 8시간마다 물을 주면 총 3단계로 자라나 수확할 수 있습니다.)`
-                            : '상점에서 작물 씨앗을 0원에 구매하면 농장 창고에 들어갑니다. 씨앗을 심고 8시간마다 하루 3번 물을 주어 수확해보세요.'}
-                    </p>
-                </div>
-
-                {/* 주인 전용 조작 버튼 */}
-                {isOwner ? (
-                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
-                        {!activeCropMeta ? (
-                            GARDEN_CROP_CATALOG.map((crop) => {
-                                const seedQty = gardenState.seedCounts?.[crop.cropId] || 0;
-                                return (
-                                    <button
-                                        key={crop.cropId}
-                                        type="button"
-                                        onClick={() => onPlantCrop && onPlantCrop(activePlot.plotIndex, crop.cropId)}
-                                        data-screenshot-click="action"
-                                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-extrabold transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                                            seedQty > 0
-                                                ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                                                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-emerald-500/40'
-                                        }`}
-                                    >
-                                        <span>{crop.emoji}</span>
-                                        <span>{crop.shortName}</span>
-                                        <span
-                                            className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                                                seedQty > 0
-                                                    ? 'bg-slate-950/35 text-amber-300'
-                                                    : 'bg-amber-400/20 text-amber-300'
-                                            }`}
-                                        >
-                                            {seedQty > 0 ? `씨앗 ${seedQty}` : '0원구매'}
-                                        </span>
-                                    </button>
-                                );
-                            })
-                        ) : activePlot.stage < 3 ? (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={() => onWaterPlot && onWaterPlot(activePlot.plotIndex)}
-                                    data-screenshot-click="action"
-                                    className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                                        activeWaterStatus.canWater
-                                            ? 'bg-sky-400 hover:bg-sky-300 text-slate-950 ring-2 ring-sky-200 animate-pulse'
-                                            : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600'
-                                    }`}
-                                >
-                                    {activeWaterStatus.canWater ? (
-                                        <span>💧 지금 물주기! ({activePlot.stage + 1}/3단계 성장)</span>
-                                    ) : (
-                                        <span>⏳ 다음 물주기 {activeWaterStatus.shortRemainingLabel}</span>
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => onClearPlot && onClearPlot(activePlot.plotIndex)}
-                                    className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-bold transition-colors cursor-pointer"
-                                >
-                                    🌱 이랑 비우기
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={() => onHarvestPlot && onHarvestPlot(activePlot.plotIndex)}
-                                    data-screenshot-click="result"
-                                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 shadow-md animate-pulse"
-                                >
-                                    <span>🏚️ {activeCropMeta.shortName} 수확해 창고에 넣기!</span>
-                                </button>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <span className="text-[11px] text-slate-400 font-bold">
-                        👀 이웃의 마당 텃밭을 구경 중입니다
-                    </span>
-                )}
-            </div>
 
             {/* 3행: 내 아지트 농장 창고 현황 (보유 씨앗 & 수확 작물) */}
             <div className="pt-1 flex flex-wrap items-center justify-between gap-2 text-[11px]">
