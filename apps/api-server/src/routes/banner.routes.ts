@@ -212,6 +212,15 @@ const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'banners')
 const ALLOWED_EXT = ['.png', '.jpg', '.jpeg', '.gif', '.webp']
 const MAX_SIZE = 5 * 1024 * 1024 // 5MB
 
+function isValidImageBuffer(buf: Buffer): boolean {
+    if (buf.length < 12) return false
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true // JPEG
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true // PNG
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return true // GIF
+    if (buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return true // WebP
+    return false
+}
+
 bannerRoutes.post('/api/admin/banners/upload', async (c: Context) => {
     try {
         const body = await c.req.parseBody()
@@ -226,9 +235,12 @@ bannerRoutes.post('/api/admin/banners/upload', async (c: Context) => {
         if (file.size > MAX_SIZE) {
             return c.json({ success: false, message: '파일 크기는 5MB 이하여야 합니다' }, 400)
         }
+        const buffer = Buffer.from(await file.arrayBuffer())
+        if (buffer.length > MAX_SIZE || !isValidImageBuffer(buffer)) {
+            return c.json({ success: false, message: '유효한 이미지 파일이 아닙니다' }, 400)
+        }
         fs.mkdirSync(UPLOAD_DIR, { recursive: true })
         const filename = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}${ext}`
-        const buffer = Buffer.from(await file.arrayBuffer())
         fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer)
         return c.json({ success: true, url: `/uploads/banners/${filename}` })
     } catch (error) {

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import { optionalAuth } from '../middleware/auth.js';
+import { pool } from '@faithportal/database';
+import { optionalAuth, checkSession } from '../middleware/auth.js';
 import { getActorLabel, logActivity } from '../middleware/activityLogger.js';
 import { MinihomeService, MinihomeMoodType, MinihomeRoomLayout } from '../services/minihome.service.js';
 
@@ -109,6 +110,20 @@ minihomeRoutes.put('/api/minihome/room/:handle', optionalAuth, async (c) => {
                 success: false,
                 error: { code: 400, message: '미니홈피 핸들이 필요합니다.' },
             }, 400);
+        }
+
+        const currentUser = (c.get('user') as any) || await checkSession(c);
+        const normalizedHandle = MinihomeService.normalizeHandle(handle);
+        const ownerRes = await pool.query(
+            'SELECT user_id FROM user_minihomes WHERE handle = $1 AND is_deleted = 0',
+            [normalizedHandle]
+        );
+        const ownerUserId = ownerRes.rows[0]?.user_id;
+        if (ownerUserId != null && (!currentUser || (Number(ownerUserId) !== Number(currentUser.id) && currentUser.role !== 'admin'))) {
+            return c.json({
+                success: false,
+                error: { code: 403, message: '본인의 미니홈피만 수정할 수 있습니다.' },
+            }, 403);
         }
 
         await MinihomeService.updateMinihome({

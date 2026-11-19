@@ -311,12 +311,10 @@ loungeRoutes.put('/api/lounge/posts/:id', optionalAuth, async (c) => {
             return c.json({ success: false, message: '게시글을 찾을 수 없습니다.' }, 404);
         }
 
-        // 권한 확인: 로그인 유저 ID 일치, 핸들 일치, 또는 관리자
-        const isAuthorized = (
-            (user?.id && post.user_id === user.id) ||
-            (handle && post.author_handle === handle) ||
-            (user?.role === 'admin')
-        );
+        // 권한 확인: 회원 글(post.user_id 존재)은 로그인 유저 ID 일치 또는 관리자만 허용 (핸들 스푸핑 차단)
+        const isAuthorized = post.user_id
+            ? ((user?.id && Number(post.user_id) === Number(user.id)) || user?.role === 'admin')
+            : ((handle && post.author_handle === handle) || user?.role === 'admin');
 
         if (!isAuthorized) {
             return c.json({ success: false, message: '게시글 수정 권한이 없습니다.' }, 403);
@@ -350,12 +348,10 @@ loungeRoutes.delete('/api/lounge/posts/:id', optionalAuth, async (c) => {
             return c.json({ success: false, message: '게시글을 찾을 수 없습니다.' }, 404);
         }
 
-        // 권한 확인
-        const isAuthorized = (
-            (user?.id && post.user_id === user.id) ||
-            (handle && post.author_handle === handle) ||
-            (user?.role === 'admin')
-        );
+        // 권한 확인: 회원 글(post.user_id 존재)은 로그인 유저 ID 일치 또는 관리자만 허용 (핸들 스푸핑 차단)
+        const isAuthorized = post.user_id
+            ? ((user?.id && Number(post.user_id) === Number(user.id)) || user?.role === 'admin')
+            : ((handle && post.author_handle === handle) || user?.role === 'admin');
 
         if (!isAuthorized) {
             return c.json({ success: false, message: '게시글 삭제 권한이 없습니다.' }, 403);

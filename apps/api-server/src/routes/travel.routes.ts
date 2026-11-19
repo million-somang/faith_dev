@@ -2,6 +2,15 @@ import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import fs from 'node:fs';
 import path from 'node:path';
+
+function isValidImageBuffer(buf: Buffer): boolean {
+    if (buf.length < 12) return false;
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true; // JPEG
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true; // PNG
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return true; // GIF
+    if (buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return true; // WebP
+    return false;
+}
 import { pool, parseKoreanLocation, STANDARD_PROVINCES } from '@faithportal/database';
 import { optionalAuth, SessionUser } from '../middleware/auth.js';
 import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
@@ -643,6 +652,9 @@ travelRoutes.post('/api/travel/upload-image', bodyLimit({ maxSize: 25 * 1024 * 1
         const secondaryPath = path.join(secondaryDir, fileName);
 
         const buffer = Buffer.from(await file.arrayBuffer());
+        if (!isValidImageBuffer(buffer)) {
+            return c.json({ success: false, message: '유효한 이미지 파일이 아닙니다.' }, 400);
+        }
         fs.writeFileSync(primaryPath, buffer);
         try {
             fs.writeFileSync(secondaryPath, buffer);

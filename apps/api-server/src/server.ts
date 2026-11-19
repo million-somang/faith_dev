@@ -14,9 +14,31 @@ dotenv.config();
 
 const app = new Hono();
 
-// Explicit CORS (updated)
+const ALLOWED_CORS_HOSTS = new Set([
+    'veranex.app',
+    'www.veranex.app',
+    'localhost',
+    '127.0.0.1',
+    '211.188.48.230',
+]);
+
+function isAllowedCorsOrigin(origin: string): boolean {
+    if (!origin) return false;
+    try {
+        const parsed = new URL(origin);
+        if (ALLOWED_CORS_HOSTS.has(parsed.hostname) || parsed.hostname.endsWith('.veranex.app')) {
+            return true;
+        }
+    } catch {
+        return false;
+    }
+    const extraOrigins = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
+    return extraOrigins.includes(origin);
+}
+
+// Explicit CORS (allowlist-enforced)
 app.use('*', cors({
-    origin: (origin) => origin || '*',
+    origin: (origin) => (isAllowedCorsOrigin(origin) ? origin : null),
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization', 'X-API-KEY', 'x-api-key', 'X-Requested-With'],
     exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
@@ -26,6 +48,16 @@ app.use('*', cors({
 
 app.use('*', errorHandler);
 app.use('*', activityLoggerMiddleware);
+
+// Global Security Headers
+app.use('*', async (c, next) => {
+    await next();
+    try {
+        c.header('X-Content-Type-Options', 'nosniff');
+        c.header('X-Frame-Options', 'SAMEORIGIN');
+        c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    } catch { /* ignore immutable upstream proxy headers */ }
+});
 
 // ==================== 공인 검색엔진 외 무단 크롤러 및 스크래퍼 차단 미들웨어 ====================
 const ALLOWED_BOT_PATTERNS = [

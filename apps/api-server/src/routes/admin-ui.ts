@@ -4,6 +4,7 @@ import { getDB } from '../db/adapter.js';
 import { escapeHtml } from '../utils/htmlEscape.js';
 import { getCategoryName, getCategoryColor, getTimeAgo } from '../utils/formatter.js';
 import { checkSession } from '../middleware/auth.js';
+import { requireAdmin } from './admin.routes.js';
 import { toIsoDateTime, backfillGoogleThumbnails, collectPublisherFeeds, insertOrMergeNews } from '../services/newsCollector.js';
 
 export const adminUi = new Hono();
@@ -2174,7 +2175,7 @@ async function parseGoogleNewsRSS(category: string = 'general'): Promise<any[]> 
 }
 
 // 뉴스 가져오기 및 DB 저장
-adminUi.get('/api/news/fetch', async (c) => {
+adminUi.get('/api/news/fetch', requireAdmin, async (c) => {
     const DB = getDB(c)
     const category = c.req.query('category') || 'general'
 

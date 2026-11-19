@@ -5,52 +5,21 @@ import * as path from 'path'
 
 const adminRoutes = new Hono<{ Variables: { adminUserId: string } }>()
 
-// 관리자 권한 미들웨어 (세션 우선 검증 및 안전한 폴백)
+// 관리자 권한 미들웨어 (서버 세션 쿠키 전용 검증 — 위조 가능한 Base64 폴백 제거)
 const requireAdmin = async (c: any, next: any) => {
-    const DB = getDB(c)
-
-    // 1. 서버 세션 쿠키 우선 검증
     try {
         const sessionUser = await checkSession(c)
-        if (sessionUser && (sessionUser.role === 'admin' || sessionUser.level >= 6) && sessionUser.status === 'active') {
-            c.set('adminUserId', String(sessionUser.id))
-            return await next()
-        }
-    } catch (_sessionErr) {
-        // 토큰 폴백으로 진행
-    }
-
-    // 2. Authorization 헤더 검증
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader) return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-
-    try {
-        const token = authHeader.replace('Bearer ', '')
-
-        if (token === 'true' || !token) {
+        if (!sessionUser) {
             return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
         }
-
-        const decoded = Buffer.from(token, 'base64').toString()
-        const parts = decoded.split(':')
-        const userId = parts[0]
-        const secret = parts[1]
-
-        // 올바른 형식인지 검증
-        if (!userId || isNaN(Number(userId)) || !secret) {
-            return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
-        }
-
-        const admin = await DB.prepare('SELECT id, level, status, role FROM users WHERE id = ?').bind(userId).first()
-
-        if (!admin || admin.level < 6 || admin.status !== 'active') {
+        const isAdmin = sessionUser.role === 'admin' || Number(sessionUser.level || 0) >= 6
+        if (!isAdmin || sessionUser.status !== 'active') {
             return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403)
         }
-
-        c.set('adminUserId', String(userId))
-        await next()
-    } catch (e: any) {
-        return c.json({ success: false, message: '인증 오류' }, 401)
+        c.set('adminUserId', String(sessionUser.id))
+        return await next()
+    } catch (_sessionErr) {
+        return c.json({ success: false, message: '인증이 필요합니다.' }, 401)
     }
 }
 

@@ -167,6 +167,18 @@ router.get('/detail', async (c) => {
     return c.json({ success: true, novel, episodes: epRes.results });
 });
 
+const ALLOWED_COVER_EXT = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+const MAX_COVER_SIZE = 5 * 1024 * 1024;
+
+function isValidImageBuffer(buf: Buffer): boolean {
+    if (buf.length < 12) return false;
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true; // JPEG
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true; // PNG
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return true; // GIF
+    if (buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return true; // WebP
+    return false;
+}
+
 // 4. [인증] 작가 소설 등록 표지 이미지 업로드 API
 router.post('/upload-cover', requireAuth, async (c) => {
     try {
@@ -176,18 +188,30 @@ router.post('/upload-cover', requireAuth, async (c) => {
             return c.json({ success: false, message: '업로드할 이미지가 없습니다.' }, 400);
         }
 
+        const ext = path.extname(file.name || '').toLowerCase();
+        if (!ALLOWED_COVER_EXT.includes(ext)) {
+            return c.json({ success: false, message: `허용되지 않는 이미지 형식입니다 (${ALLOWED_COVER_EXT.join(', ')})` }, 400);
+        }
+        if (file.size > MAX_COVER_SIZE) {
+            return c.json({ success: false, message: '표지 이미지 크기는 5MB 이하여야 합니다.' }, 400);
+        }
+
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        if (buffer.length > MAX_COVER_SIZE || !isValidImageBuffer(buffer)) {
+            return c.json({ success: false, message: '유효한 이미지 파일이 아닙니다.' }, 400);
+        }
+
         const uploadDir = path.resolve('./public/uploads/novels');
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
 
-        const ext = path.extname(file.name) || '.png';
         const newFileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}${ext}`;
         const filePath = path.join(uploadDir, newFileName);
 
         // 파일 쓰기
-        const arrayBuffer = await file.arrayBuffer();
-        await fs.promises.writeFile(filePath, Buffer.from(arrayBuffer));
+        await fs.promises.writeFile(filePath, buffer);
 
         return c.json({
             success: true,
@@ -195,7 +219,7 @@ router.post('/upload-cover', requireAuth, async (c) => {
         });
     } catch (e: any) {
         console.error(e);
-        return c.json({ success: false, message: e.message }, 500);
+        return c.json({ success: false, message: '표지 업로드 중 오류가 발생했습니다.' }, 500);
     }
 });
 
@@ -464,7 +488,8 @@ router.post('/charge', requireAuth, async (c) => {
     const user = c.get('user');
     const { amount } = await c.req.json();
 
-    if (!amount || amount <= 0) {
+    const parsedAmount = Number(amount);
+    if (!Number.isInteger(parsedAmount) || parsedAmount <= 0 || parsedAmount > 100000) {
         return c.json({ success: false, message: '올바르지 않은 충전 금액' }, 400);
     }
 
@@ -474,7 +499,7 @@ router.post('/charge', requireAuth, async (c) => {
     // 충전 처리
     await db.prepare(
         'UPDATE novel_user_gold SET gold_balance = gold_balance + ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
-    ).bind(amount, user.id).run();
+    ).bind(parsedAmount, user.id).run();
 
     const wallet = await db.prepare('SELECT gold_balance FROM novel_user_gold WHERE user_id = ?').bind(user.id).first();
 

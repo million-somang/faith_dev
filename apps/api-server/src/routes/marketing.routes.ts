@@ -10,38 +10,22 @@ import { getMiniAppScreenshot, getMiniAppScreenshots } from '../services/marketi
 
 export const marketingRoutes = new Hono<{ Variables: { adminUserId: string } }>();
 
-// 관리자 권한 미들웨어 (브라우저 세션 쿠키 + Authorization 헤더 듀얼 지원)
+// 관리자 권한 미들웨어 (서버 세션 쿠키 전용 검증 — 위조 가능한 Base64 폴백 제거)
 const requireMarketingAdmin = async (c: any, next: any) => {
-    // 1. 브라우저 세션 쿠키 우선 확인
     try {
         const sessionUser = await checkSession(c);
-        if (sessionUser && (sessionUser.role === 'admin' || sessionUser.level >= 6)) {
-            c.set('adminUserId', String(sessionUser.id));
-            return next();
+        if (!sessionUser) {
+            return c.json({ success: false, message: '인증이 필요합니다.' }, 401);
         }
-    } catch (e) {}
-
-    // 2. Authorization Bearer 헤더 확인 (REST 클라이언트 / 로컬스토리지 토큰 호환)
-    const authHeader = c.req.header('Authorization');
-    if (authHeader) {
-        try {
-            const token = authHeader.replace('Bearer ', '').trim();
-            if (token && token !== 'true') {
-                const decoded = Buffer.from(token, 'base64').toString();
-                const userId = decoded.split(':')[0];
-                if (userId) {
-                    const DB = getDB(c);
-                    const admin = await DB.prepare('SELECT id, level, status, role FROM users WHERE id = ?').bind(userId).first();
-                    if (admin && (admin.role === 'admin' || admin.level >= 6) && admin.status === 'active') {
-                        c.set('adminUserId', String(admin.id));
-                        return next();
-                    }
-                }
-            }
-        } catch (e) {}
+        const isAdmin = sessionUser.role === 'admin' || Number(sessionUser.level || 0) >= 6;
+        if (!isAdmin || sessionUser.status !== 'active') {
+            return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 403);
+        }
+        c.set('adminUserId', String(sessionUser.id));
+        return await next();
+    } catch (e) {
+        return c.json({ success: false, message: '인증이 필요합니다.' }, 401);
     }
-
-    return c.json({ success: false, message: '관리자 권한이 필요합니다.' }, 401);
 };
 
 // 헬퍼: 활동 로그 기록

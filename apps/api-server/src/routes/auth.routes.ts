@@ -13,6 +13,43 @@ import { getActorLabel, logActivity, logApiError } from '../middleware/activityL
 
 const authRoutes = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>()
 
+// IP 기반 로그인 실패 레이트 리미터 (5분 내 10회 실패 시 일시 차단)
+const LOGIN_RATE_WINDOW_MS = 5 * 60 * 1000
+const LOGIN_MAX_FAILURES = 10
+const loginFailureMap = new Map<string, { count: number; resetAt: number }>()
+
+function getClientIp(c: Context): string {
+    const forwarded = c.req.header('x-forwarded-for')
+    if (forwarded) return forwarded.split(',')[0].trim()
+    return c.req.header('x-real-ip') || 'unknown'
+}
+
+function isLoginRateLimited(ip: string): boolean {
+    const now = Date.now()
+    const entry = loginFailureMap.get(ip)
+    if (!entry) return false
+    if (now > entry.resetAt) {
+        loginFailureMap.delete(ip)
+        return false
+    }
+    return entry.count >= LOGIN_MAX_FAILURES
+}
+
+function recordLoginFailure(ip: string): void {
+    const now = Date.now()
+    if (loginFailureMap.size > 2000) {
+        for (const [k, v] of loginFailureMap.entries()) {
+            if (now > v.resetAt) loginFailureMap.delete(k)
+        }
+    }
+    const entry = loginFailureMap.get(ip)
+    if (!entry || now > entry.resetAt) {
+        loginFailureMap.set(ip, { count: 1, resetAt: now + LOGIN_RATE_WINDOW_MS })
+    } else {
+        entry.count += 1
+    }
+}
+
 // 사용자 정보 조회 API
 authRoutes.get('/api/auth/me', async (c: Context) => {
     try {
@@ -53,6 +90,14 @@ authRoutes.get('/api/auth/me', async (c: Context) => {
 // 로그인 API
 authRoutes.post('/api/auth/login', async (c: Context) => {
     try {
+        const clientIp = getClientIp(c)
+        if (isLoginRateLimited(clientIp)) {
+            return c.json({
+                success: false,
+                message: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해주세요'
+            }, 429)
+        }
+
         const { email, password } = await c.req.json()
 
         // 입력 검증
@@ -68,6 +113,7 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         const user = res.rows[0]
 
         if (!user) {
+            recordLoginFailure(clientIp)
             c.set('errorLogged', true)
             logApiError(c, 401, `로그인 실패 (존재하지 않는 이메일: ${email})`)
             return c.json({
@@ -78,6 +124,7 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
 
         // 계정 상태 확인
         if (user.status !== 'active') {
+            recordLoginFailure(clientIp)
             c.set('errorLogged', true)
             logApiError(c, 403, `비활성 계정 로그인 시도 (${email})`)
             return c.json({
@@ -90,6 +137,7 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         const isValid = await verifyPassword(password, user.password as string)
 
         if (!isValid) {
+            recordLoginFailure(clientIp)
             c.set('errorLogged', true)
             logApiError(c, 401, `로그인 실패 (비밀번호 불일치: ${email})`)
             return c.json({
@@ -97,6 +145,9 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
                 message: '이메일 또는 비밀번호가 올바르지 않습니다'
             }, 401)
         }
+
+        // 로그인 성공 시 실패 카운트 초기화
+        loginFailureMap.delete(clientIp)
 
         // 세션 생성
         await createSession(c, user.id as number)
@@ -135,7 +186,7 @@ authRoutes.post('/api/auth/login', async (c: Context) => {
         logApiError(c, 500, '로그인 처리 중 서버 오류', undefined, error)
         return c.json({
             success: false,
-            message: '로그인 처리 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : String(error))
+            message: '로그인 처리 중 오류가 발생했습니다'
         }, 500)
     }
 })

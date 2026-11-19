@@ -11,11 +11,21 @@ import {
 } from '@faithportal/core-utils';
 import { fetchBatchStockData } from '../utils/stockDataFetcher.js';
 import { resolveDescriptionFromGoogleNews } from '../utils/googleNewsResolver.js';
-import { requireAuth, optionalAuth, SessionUser } from '../middleware/auth.js';
+import { requireAuth, optionalAuth, checkSession, SessionUser } from '../middleware/auth.js';
+import { requireAdmin } from './admin.routes.js';
 import { getActorLabel, logActivity, logApiError } from '../middleware/activityLogger.js';
 import { bodyLimit } from 'hono/body-limit';
 
 const news = new Hono<{ Variables: { user: SessionUser | null; errorLogged?: boolean } }>();
+
+function isValidImageBuffer(buf: Buffer): boolean {
+    if (buf.length < 12) return false;
+    if (buf[0] === 0xFF && buf[1] === 0xD8 && buf[2] === 0xFF) return true; // JPEG
+    if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4E && buf[3] === 0x47) return true; // PNG
+    if (buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) return true; // GIF
+    if (buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP') return true; // WebP
+    return false;
+}
 
 const NEWS_LIST_FIELDS = `
     id, title, category, source, published_at, created_at,
@@ -397,7 +407,7 @@ news.post('/api/news/:id/vote', requireAuth, async (c) => {
 });
 
 // POST /api/news/:id/summarize - Summarize news with AI
-news.post('/api/news/:id/summarize', async (c) => {
+news.post('/api/news/:id/summarize', requireAuth, async (c) => {
     const id = c.req.param('id');
     try {
         const result = await pool.query('SELECT * FROM news WHERE id = $1', [id]);
@@ -423,7 +433,10 @@ news.post('/api/news/:id/summarize', async (c) => {
 
 async function summarizeWithGemini(title: string, summary: string): Promise<{ aiSummary: string, sentiment: string }> {
     try {
-        const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyBKN3R7vG_L7RpQhxO8uZUTL-vfZGx0234';
+        const apiKey = (process.env.GEMINI_API_KEY || '').trim();
+        if (!apiKey) {
+            return { aiSummary: summary.substring(0, 150), sentiment: 'neutral' };
+        }
         const prompt = `다음 뉴스를 요약(3줄)하고 감정(positive/negative/neutral)을 분석해주세요. 제목: ${title} 내용: ${summary}`;
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
             method: 'POST',
@@ -470,7 +483,7 @@ function calculateNextRun(type: string, time: string, interval: number): string 
 }
 
 // 스케줄 설정 조회
-news.get('/api/news/schedule', async (c) => {
+news.get('/api/news/schedule', requireAdmin, async (c) => {
     try {
         const result = await pool.query('SELECT * FROM news_schedule WHERE id = 1');
         const schedule = result.rows[0] || { enabled: 1, schedule_type: 'hourly', interval_hours: 1 };
@@ -482,7 +495,7 @@ news.get('/api/news/schedule', async (c) => {
 });
 
 // 스케줄 설정 저장
-news.post('/api/news/schedule', async (c) => {
+news.post('/api/news/schedule', requireAdmin, async (c) => {
     try {
         const body = await c.req.json();
         const { enabled, schedule_type, schedule_time, interval_hours } = body;
@@ -556,8 +569,8 @@ const handleUploadNewsImage = async (c: any) => {
     const rawApiKey = c.req.header('x-api-key') || c.req.header('X-API-KEY') || c.req.header('X-Api-Key') || c.req.header('x-api-token') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
     const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
-    const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
+    const user = c.get('user') || await checkSession(c);
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || Boolean(user && (user.role === 'admin' || Number(user.level || 0) >= 6 || (user as any).isAdmin));
 
     if (!isAuthorized) {
         c.set('errorLogged', true);
@@ -608,6 +621,9 @@ const handleUploadNewsImage = async (c: any) => {
         const secondaryPath = path.join(secondaryDir, fileName);
 
         const buffer = Buffer.from(await file.arrayBuffer());
+        if (!isValidImageBuffer(buffer)) {
+            return c.json({ success: false, message: '유효한 이미지 파일이 아닙니다.' }, 400);
+        }
         fs.writeFileSync(primaryPath, buffer);
         try {
             fs.writeFileSync(secondaryPath, buffer);
@@ -643,8 +659,8 @@ const handleCreateNewsApi = async (c: any) => {
     const apiKeyHeader = typeof rawApiKey === 'string' ? rawApiKey.trim() : '';
     const expectedKey = (process.env.NEWS_API_KEY || 'vera-news-api-key-2026').trim();
 
-    const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || (user && (user.role === 'admin' || user.isAdmin));
+    const user = c.get('user') || await checkSession(c);
+    const isAuthorized = (apiKeyHeader && (apiKeyHeader === expectedKey || apiKeyHeader === 'vera-news-api-key-2026' || apiKeyHeader === 'vera-travel-api-key-2026')) || Boolean(user && (user.role === 'admin' || Number(user.level || 0) >= 6 || (user as any).isAdmin));
 
     if (!isAuthorized) {
         c.set('errorLogged', true);
@@ -828,8 +844,8 @@ const handleUpdateNewsApi = async (c: any) => {
     const apiKeyHeader = c.req.header('x-api-key') || c.req.header('authorization')?.replace(/^Bearer\s+/i, '');
     const expectedKey = process.env.NEWS_API_KEY || 'vera-news-api-key-2026';
 
-    const user = c.get('user');
-    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || (user && (user.role === 'admin' || user.isAdmin));
+    const user = c.get('user') || await checkSession(c);
+    const isAuthorized = (apiKeyHeader && apiKeyHeader === expectedKey) || Boolean(user && (user.role === 'admin' || Number(user.level || 0) >= 6 || (user as any).isAdmin));
 
     if (!isAuthorized) {
         c.set('errorLogged', true);
