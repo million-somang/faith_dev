@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Card } from '@faithportal/ui';
@@ -97,6 +97,8 @@ const ESSENTIAL_APPS: MiniApp[] = [
 ];
 
 const ITEMS_PER_PAGE = 9;
+const RETRY_DELAYS_MS = [1500, 3000, 5000] as const;
+type RawMiniApp = MiniApp & { status?: string };
 
 export default function UtilityPage() {
     const { user } = useAuth();
@@ -105,11 +107,17 @@ export default function UtilityPage() {
     const [apps, setApps] = useState<MiniApp[]>([]);
     const [frequentApps, setFrequentApps] = useState<MiniApp[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isFallbackMode, setIsFallbackMode] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const [selectedGuideCategory, setSelectedGuideCategory] = useState('calc');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [showSoftLock, setShowSoftLock] = useState(false);
+    const isFallbackModeRef = useRef(false);
+    const mountedRef = useRef(true);
+    const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestSeqRef = useRef(0);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -155,37 +163,89 @@ export default function UtilityPage() {
             });
     };
 
-    useEffect(() => {
-        axios.get('/api/mini-apps')
-            .then(res => {
-                let list: MiniApp[] = [];
-                if (res.data && res.data.success && Array.isArray(res.data.apps)) {
-                    list = res.data.apps.filter((a: any) => a.status === 'active');
-                }
-                ESSENTIAL_APPS.forEach(essential => {
-                    if (!list.some(a => a.slug === essential.slug)) {
-                        if (essential.slug === 'image-resizer') {
-                            list.unshift(essential);
-                        } else {
-                            list.push(essential);
-                        }
-                    }
-                });
-                setApps(list);
-            })
-            .catch(() => {
-                setApps(ESSENTIAL_APPS);
-            })
-            .finally(() => setLoading(false));
+    const loadAllApps = useCallback(async (isManualRetry = false) => {
+        if (retryTimerRef.current) {
+            clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = null;
+        }
+        const seq = ++requestSeqRef.current;
+        if (isManualRetry) {
+            setIsRetrying(true);
+        }
 
-        loadFrequentApps();
+        for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+            if (!mountedRef.current || requestSeqRef.current !== seq) return;
+            try {
+                const res = await axios.get<{ success?: boolean; apps?: RawMiniApp[] }>('/api/mini-apps', {
+                    timeout: 8000,
+                });
+                if (!mountedRef.current || requestSeqRef.current !== seq) return;
+
+                if (res.data?.success && Array.isArray(res.data.apps)) {
+                    const list: MiniApp[] = res.data.apps.filter((a) => a.status === 'active');
+                    ESSENTIAL_APPS.forEach((essential) => {
+                        if (!list.some((a) => a.slug === essential.slug)) {
+                            if (essential.slug === 'image-resizer') {
+                                list.unshift(essential);
+                            } else {
+                                list.push(essential);
+                            }
+                        }
+                    });
+                    setApps(list);
+                    setIsFallbackMode(false);
+                    isFallbackModeRef.current = false;
+                    setLoading(false);
+                    setIsRetrying(false);
+                    return;
+                }
+            } catch {
+                // 일시적 API 지연 시 백오프 재시도 진행
+            }
+
+            if (attempt < RETRY_DELAYS_MS.length) {
+                const delayMs = RETRY_DELAYS_MS[attempt];
+                await new Promise<void>((resolve) => {
+                    retryTimerRef.current = setTimeout(() => {
+                        retryTimerRef.current = null;
+                        resolve();
+                    }, delayMs);
+                });
+            }
+        }
+
+        if (!mountedRef.current || requestSeqRef.current !== seq) return;
+        setApps(ESSENTIAL_APPS);
+        setIsFallbackMode(true);
+        isFallbackModeRef.current = true;
+        setLoading(false);
+        setIsRetrying(false);
     }, []);
 
     useEffect(() => {
-        const handleFocus = () => loadFrequentApps();
+        mountedRef.current = true;
+        void loadAllApps(false);
+        loadFrequentApps();
+
+        return () => {
+            mountedRef.current = false;
+            if (retryTimerRef.current) {
+                clearTimeout(retryTimerRef.current);
+                retryTimerRef.current = null;
+            }
+        };
+    }, [loadAllApps]);
+
+    useEffect(() => {
+        const handleFocus = () => {
+            loadFrequentApps();
+            if (isFallbackModeRef.current) {
+                void loadAllApps(true);
+            }
+        };
         window.addEventListener('focus', handleFocus);
         return () => window.removeEventListener('focus', handleFocus);
-    }, []);
+    }, [loadAllApps]);
 
     const nonGameApps = apps.filter(app => app.category !== 'game');
 
@@ -607,6 +667,33 @@ export default function UtilityPage() {
                             )}
                         </div>
                     </div>
+
+                    {!loading && isFallbackMode && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-start sm:items-center gap-2.5">
+                                <span className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xs mt-0.5 sm:mt-0">
+                                    <i className="fas fa-circle-exclamation"></i>
+                                </span>
+                                <div className="space-y-0.5">
+                                    <p className="text-xs sm:text-sm font-extrabold text-amber-950">
+                                        서버 응답이 일시 지연되어 필수 도구 5개만 먼저 표시 중입니다.
+                                    </p>
+                                    <p className="text-[11px] text-amber-800/90 font-medium">
+                                        잠시 후 자동으로 복구되거나 아래 버튼으로 전체 목록을 다시 불러올 수 있습니다.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                disabled={isRetrying}
+                                onClick={() => void loadAllApps(true)}
+                                className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-extrabold transition-colors cursor-pointer"
+                            >
+                                <i className={`fas ${isRetrying ? 'fa-spinner fa-spin' : 'fa-rotate-right'} text-[11px]`}></i>
+                                <span>{isRetrying ? '불러오는 중...' : '전체 목록 다시 불러오기'}</span>
+                            </button>
+                        </div>
+                    )}
 
                     {/* 4. 메인 나노바나나 3D 비주얼 카드 그리드 */}
                     {loading ? (

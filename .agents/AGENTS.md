@@ -24,3 +24,11 @@
 - **Process & Service Isolation on Deploy**:
   - When only frontend (`apps/next-portal` or mini-apps) code is modified, NEVER restart `faith-api` (backend API server), preventing any momentary API/news interruption.
   - When backend (`apps/api-server`) changes are explicitly approved and require restarting `faith-api`, ALWAYS restart `faith-api` first and verify `http://127.0.0.1:4200/health` is responding BEFORE restarting `faith-portal`.
+
+## 6. Zero Startup Blocking & Mandatory Post-Restart Multi-Endpoint Verification (기동 블로킹 금지 및 재시작 핵심 API 3종 검증 의무 🔒)
+- **No Top-Level Startup Blocking**: NEVER place synchronous full-table database scans (`UPDATE`/`SELECT` without selective index) or long-blocking tasks at module top-level inside `apps/api-server/src/**` prior to HTTP port `4200` binding (`serve()`). Heavy migrations MUST be run as standalone one-off CLI scripts.
+- **10s Fast-Boot & 3-Endpoint Live Verification Gate**: After restarting `faith-api`, ALWAYS verify port `4200` binds within 10 seconds AND verify all three core endpoints succeed before declaring deployment complete:
+  1. `GET http://127.0.0.1:4200/health` (`200 OK`)
+  2. `GET http://127.0.0.1:4200/api/mini-apps` (`success: true`, active non-game utility tools >= 10)
+  3. `GET http://127.0.0.1:4200/api/news?limit=1` (`success: true`)
+- **No Silent Minimal Fallback in Dynamic Lists**: Frontend catalog pages (such as `/lifestyle`) MUST implement automatic retry with clear temporary-delay recovery UI instead of silently replacing dynamic API results with a minimal hardcoded subset.

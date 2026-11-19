@@ -48,12 +48,7 @@ function toHttpsThumbnail(url?: string | null): string | null {
     return String(url).trim().replace(/^http:\/\//i, 'https://');
 }
 
-// 서버 기동 시 기존 DB에 저장된 http:// 뉴스 썸네일을 https://로 일괄 업그레이드 (Mixed Content 방지)
-pool.query(`
-    UPDATE news
-    SET thumbnail = 'https://' || SUBSTR(thumbnail, 8)
-    WHERE thumbnail LIKE 'http://%'
-`).catch(() => {});
+// 기존 DB 썸네일 일괄 변환은 완료되었으며, 조회·등록·수정 시 toHttpsThumbnail()으로 실시간 정규화해 기동 블로킹을 방지합니다.
 
 // GET /api/news - Get news list (화면에 보이는 개수 ID만 커버링 인덱스에서 먼저 뽑는 Deferred Join)
 news.get('/api/news', async (c) => {
@@ -720,7 +715,7 @@ const handleCreateNewsApi = async (c: any) => {
         }
 
         const normalizedCategory = normalizeNewsCategory(category);
-        const finalThumbnail = (imageUrl || thumbnail || '').trim();
+        const finalThumbnail = toHttpsThumbnail((imageUrl || thumbnail || '').trim()) || '';
         
         let finalLink = (sourceUrl || link || '').trim();
         if (!finalLink) {
@@ -888,7 +883,7 @@ const handleUpdateNewsApi = async (c: any) => {
         const targetContent = content ? content.trim() : curr.content;
         const targetSummary = summary ? summary.trim() : (content ? content.replace(/<[^>]*>/g, '').substring(0, 160).trim() : curr.summary);
         const targetCategory = category ? normalizeNewsCategory(category) : curr.category;
-        const targetThumbnail = imageUrl || thumbnail || curr.thumbnail;
+        const targetThumbnail = toHttpsThumbnail(imageUrl || thumbnail || curr.thumbnail) || '';
         const targetTags = tags ? (Array.isArray(tags) ? tags.join(',') : tags) : curr.tags;
 
         const rawAiSummary = aiSummary !== undefined ? aiSummary : ai_summary;
