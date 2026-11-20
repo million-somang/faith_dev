@@ -227,6 +227,18 @@ export const UTILITY_VISUAL_MAP: Record<string, UtilityVisualMeta> = {
         shortDesc: '웹사이트 URL, 매장 와이파이(Wi-Fi) 자동연결, 전자명함(vCard) QR코드를 커스텀 로고·컬러와 함께 PNG/SVG 벡터로 즉시 생성',
         guideSlug: 'qr-generator',
         highlights: ['Wi-Fi · 명함 QR', 'PNG · SVG 벡터 저장', '평생 유효기간 무제한']
+    },
+    'todo-list': {
+        image: '/images/utility/icon_todo_planner.png',
+        categoryLabel: '일정 · 생산성',
+        badge: 'NEW ✨',
+        badgeStyle: 'bg-emerald-600 text-white border-emerald-500 shadow-xs',
+        visualBg: 'from-indigo-50 via-amber-50/50 to-emerald-50/80',
+        borderHover: 'hover:border-indigo-300',
+        buttonStyle: 'bg-indigo-600 hover:bg-indigo-500 text-white',
+        shortDesc: '우선순위(긴급·중요·보통)·마감 D-Day·서브태스크·25분 집중 타이머까지 한눈에 정리하고 마이페이지와 실시간 연동되는 TO-DO 플래너',
+        guideSlug: 'todo-list',
+        highlights: ['우선순위 · 서브태스크', '포모도로 · 달성률 리포트', '마이페이지 실시간 연동']
     }
 };
 

@@ -1,0 +1,363 @@
+'use client';
+
+import React, { useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useAppLauncher } from '@/hooks/useAppLauncher';
+import {
+  getTodayLocalDateStr,
+  useLocalTodos,
+  type LocalTodoCategory,
+  type LocalTodoPriority,
+} from '@/hooks/useLocalTodos';
+
+interface MypageTodoCardProps {
+  readonly variant?: 'full' | 'compact';
+}
+
+const PRIORITY_BADGE: Record<
+  LocalTodoPriority,
+  { readonly label: string; readonly dot: string; readonly badge: string; readonly chip: string }
+> = {
+  urgent: {
+    label: '긴급',
+    dot: 'bg-rose-500',
+    badge: 'bg-rose-50 text-rose-700 border-rose-200',
+    chip: 'bg-rose-600 text-white border-rose-600',
+  },
+  important: {
+    label: '중요',
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-50 text-amber-800 border-amber-200',
+    chip: 'bg-amber-500 text-white border-amber-500',
+  },
+  normal: {
+    label: '보통',
+    dot: 'bg-indigo-500',
+    badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    chip: 'bg-indigo-600 text-white border-indigo-600',
+  },
+};
+
+const CATEGORY_LABEL: Record<LocalTodoCategory, string> = {
+  work: '업무',
+  personal: '개인',
+  shopping: '쇼핑',
+  health: '건강',
+  study: '공부',
+};
+
+function getCompactDueLabel(dueDate: string | null, completed: boolean, todayStr: string): {
+  text: string;
+  isOverdue: boolean;
+} | null {
+  if (!dueDate) return null;
+  if (completed) {
+    return { text: dueDate.slice(5).replace('-', '/'), isOverdue: false };
+  }
+  const [ty, tm, td] = todayStr.split('-').map(Number);
+  const [dy, dm, dd] = dueDate.split('-').map(Number);
+  const diff = Math.round((Date.UTC(dy, dm - 1, dd) - Date.UTC(ty, tm - 1, td)) / 86_400_000);
+  if (diff < 0) return { text: `${Math.abs(diff)}일 지연`, isOverdue: true };
+  if (diff === 0) return { text: '오늘 마감', isOverdue: false };
+  if (diff === 1) return { text: '내일', isOverdue: false };
+  return { text: `D-${diff}`, isOverdue: false };
+}
+
+export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
+  const { launchApp } = useAppLauncher();
+  const {
+    hydrated,
+    todos,
+    stats,
+    lastDeleted,
+    addQuickTodo,
+    toggleTodo,
+    softDeleteTodo,
+    undoSoftDelete,
+  } = useLocalTodos();
+
+  const [quickTitle, setQuickTitle] = useState<string>('');
+  const [quickPriority, setQuickPriority] = useState<LocalTodoPriority>('important');
+  const [showCompleted, setShowCompleted] = useState<boolean>(false);
+
+  const todayStr = getTodayLocalDateStr();
+  const maxVisible = variant === 'compact' ? 4 : 6;
+
+  const visibleList = todos
+    .filter((item) => (showCompleted ? true : !item.completed))
+    .slice(0, maxVisible);
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmed = quickTitle.trim();
+    if (!trimmed) return;
+    addQuickTodo(trimmed, quickPriority, true);
+    setQuickTitle('');
+  };
+
+  return (
+    <section
+      aria-label="마이페이지 TO-DO 할일 보드"
+      className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-4"
+    >
+      {/* 상단 헤더 */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-emerald-500 text-white flex items-center justify-center shadow-sm shrink-0">
+            <i className="fas fa-list-check text-base"></i>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+                나의 TO-DO (할일 정리)
+              </h2>
+              <span className="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 tabular-nums">
+                완료 {stats.completedCount} / {stats.totalCount}건 · {stats.completionRate}%
+              </span>
+              {stats.overdueCount > 0 && (
+                <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                  지연 {stats.overdueCount}건
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              생활도구 투두 플래너와 실시간 동기화됩니다. 마이페이지에서 바로 추가·완료 체크하세요.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => launchApp('/app/todo-list/', 'todo-list')}
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+          >
+            <i className="fas fa-up-right-from-square text-[10px]"></i>
+            <span>팝업 열기</span>
+          </button>
+          <Link
+            href="/tools/todo-list"
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors"
+          >
+            <span>전체 플래너</span>
+            <i className="fas fa-arrow-right text-[10px]"></i>
+          </Link>
+        </div>
+      </div>
+
+      {/* SVG 달성률 프로그레스 바 */}
+      <div className="space-y-1">
+        <svg
+          viewBox="0 0 100 4"
+          preserveAspectRatio="none"
+          className="w-full h-2 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={stats.completionRate}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="전체 할 일 달성률"
+        >
+          <rect x="0" y="0" width="100" height="4" rx="2" fill="#E2E8F0" />
+          <rect
+            x="0"
+            y="0"
+            width={stats.completionRate}
+            height="4"
+            rx="2"
+            fill={stats.completionRate === 100 && stats.totalCount > 0 ? '#059669' : '#4F46E5'}
+          />
+        </svg>
+      </div>
+
+      {/* 1줄 빠른 추가 폼 */}
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="flex items-center gap-1 shrink-0">
+          {(['urgent', 'important', 'normal'] as const).map((priKey) => {
+            const meta = PRIORITY_BADGE[priKey];
+            const active = quickPriority === priKey;
+            return (
+              <button
+                key={priKey}
+                type="button"
+                onClick={() => setQuickPriority(priKey)}
+                className={`px-2.5 py-2 rounded-xl text-[11px] font-black border transition-all cursor-pointer flex items-center gap-1 ${
+                  active
+                    ? meta.chip
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-white' : meta.dot}`}></span>
+                <span>{meta.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <input
+            type="text"
+            value={quickTitle}
+            onChange={(e) => setQuickTitle(e.target.value)}
+            maxLength={160}
+            placeholder="오늘 할 일을 빠르게 입력하고 Enter..."
+            aria-label="마이페이지 빠른 할 일 입력"
+            className="flex-1 min-w-0 h-[38px] px-3.5 rounded-xl bg-slate-50 border border-slate-200 focus:bg-white focus:border-indigo-500 text-xs font-bold text-slate-900 placeholder-slate-400 outline-none transition-colors"
+          />
+          <button
+            type="submit"
+            className="h-[38px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shrink-0 transition-all cursor-pointer active:scale-95 flex items-center gap-1"
+          >
+            <i className="fas fa-plus text-[10px]"></i>
+            <span>추가</span>
+          </button>
+        </div>
+      </form>
+
+      {/* 할 일 목록 또는 정직한 Empty State */}
+      {!hydrated ? (
+        <div className="py-6 text-center text-xs font-bold text-slate-400">
+          할 일 목록을 불러오는 중입니다...
+        </div>
+      ) : todos.length === 0 ? (
+        <div className="rounded-2xl bg-slate-50/90 border border-dashed border-slate-200 p-5 text-center space-y-2">
+          <div className="w-10 h-10 mx-auto rounded-xl bg-white border border-slate-200 text-slate-400 flex items-center justify-center text-sm">
+            <i className="fas fa-clipboard-list"></i>
+          </div>
+          <p className="text-xs font-extrabold text-slate-700">
+            아직 등록된 할 일이 없습니다.
+          </p>
+          <p className="text-[11px] text-slate-500">
+            위 입력창에 할 일을 바로 추가하거나, 전체 플래너에서 우선순위·집중 타이머와 함께 정리해 보세요.
+          </p>
+        </div>
+      ) : visibleList.length === 0 ? (
+        <div className="rounded-2xl bg-emerald-50/70 border border-emerald-200/80 p-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-extrabold text-emerald-900">
+            <i className="fas fa-circle-check text-emerald-600 text-sm"></i>
+            <span>진행 중인 모든 할 일을 완료했습니다! ({stats.completedCount}건 완료)</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCompleted(true)}
+            className="text-[11px] font-black text-emerald-800 hover:underline cursor-pointer shrink-0"
+          >
+            완료된 항목 보기
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {visibleList.map((item) => {
+              const pri = PRIORITY_BADGE[item.priority];
+              const due = getCompactDueLabel(item.dueDate, item.completed, todayStr);
+              const subDone = item.subtasks.filter((s) => s.completed).length;
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center justify-between gap-2.5 p-3 rounded-2xl border transition-all ${
+                    item.completed
+                      ? 'bg-slate-50 border-slate-200/80 opacity-80'
+                      : 'bg-white border-slate-200 hover:border-indigo-200 shadow-sm'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleTodo(item.id)}
+                      aria-label={item.completed ? `${item.title} 완료 해제` : `${item.title} 완료 처리`}
+                      className={`mt-0.5 w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                        item.completed
+                          ? 'bg-emerald-600 border-emerald-600 text-white'
+                          : 'bg-white border-slate-300 hover:border-indigo-500 text-transparent'
+                      }`}
+                    >
+                      <i className="fas fa-check text-[10px]"></i>
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-xs sm:text-sm font-extrabold truncate ${
+                          item.completed ? 'line-through text-slate-400' : 'text-slate-900'
+                        }`}
+                      >
+                        {item.title}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1 mt-1 text-[10px]">
+                        <span className={`px-1.5 py-0.5 rounded border font-black ${pri.badge}`}>
+                          {pri.label}
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">
+                          {CATEGORY_LABEL[item.category]}
+                        </span>
+                        {due && (
+                          <span
+                            className={`px-1.5 py-0.5 rounded border font-bold ${
+                              due.isOverdue
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            }`}
+                          >
+                            {due.text}
+                          </span>
+                        )}
+                        {item.subtasks.length > 0 && (
+                          <span className="text-slate-500 font-mono font-bold">
+                            단계 {subDone}/{item.subtasks.length}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => softDeleteTodo(item.id)}
+                    title="휴지통으로 이동"
+                    aria-label={`${item.title} 삭제`}
+                    className="w-7 h-7 rounded-xl text-slate-400 hover:bg-rose-50 hover:text-rose-600 flex items-center justify-center text-xs shrink-0 transition-colors cursor-pointer"
+                  >
+                    <i className="fas fa-trash-can"></i>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500">
+            <div className="flex items-center gap-3">
+              {stats.completedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowCompleted((prev) => !prev)}
+                  className="font-bold text-indigo-600 hover:underline cursor-pointer"
+                >
+                  {showCompleted
+                    ? '진행 중인 할 일만 보기'
+                    : `완료된 항목 ${stats.completedCount}건 함께 보기`}
+                </button>
+              )}
+              {todos.length > maxVisible && (
+                <Link href="/tools/todo-list" className="font-bold text-slate-500 hover:text-indigo-600">
+                  +{todos.length - maxVisible}건 더 보기 →
+                </Link>
+              )}
+            </div>
+
+            {lastDeleted && (
+              <div className="flex items-center gap-2 bg-slate-900 text-white px-2.5 py-1 rounded-xl text-[11px] font-bold">
+                <span className="truncate max-w-[140px]">&apos;{lastDeleted.title}&apos; 삭제됨</span>
+                <button
+                  type="button"
+                  onClick={undoSoftDelete}
+                  className="text-emerald-400 font-black hover:underline cursor-pointer shrink-0"
+                >
+                  실행취소
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}

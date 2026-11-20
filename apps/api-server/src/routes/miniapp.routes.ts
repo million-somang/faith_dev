@@ -132,6 +132,30 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
             }
         }
 
+        // 스마트 투두(TO-DO) 할일 플래너(todo-list)가 DB에 없으면 자동 시딩
+        const hasTodoList = apps.results.some((a: any) => a.slug === 'todo-list');
+        if (!hasTodoList) {
+            try {
+                await DB.prepare(`
+                    INSERT INTO mini_apps (name, slug, icon_url, description, app_url, require_auth, sort_order, category, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `).bind(
+                    '스마트 투두(TO-DO) 할일 플래너',
+                    'todo-list',
+                    'fas fa-list-check',
+                    '우선순위·카테고리·마감일·서브태스크·25분 집중 타이머와 달성률 리포트를 브라우저 로컬에서 정리하는 무료 할일 플래너',
+                    '/tools/todo-list',
+                    0,
+                    1,
+                    'calc',
+                    'active'
+                ).run();
+                apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
+            } catch (seedErr) {
+                console.error('Failed to auto-seed todo-list:', seedErr);
+            }
+        }
+
         // ocr 이름이 긴 경우('브라우저 OCR (이미지 글자 추출기)') 간결화('이미지 글자 추출기') 자동 마이그레이션
         const ocrApp = apps.results.find((a: any) => a.slug === 'ocr' && a.name !== '이미지 글자 추출기');
         if (ocrApp) {

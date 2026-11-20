@@ -397,6 +397,14 @@ export default function UtilityPage() {
             iconColor: 'text-indigo-600',
             title: '스마트 QR코드 생성기 & 와이파이·명함 QR 제작',
             desc: '유효기간 없는 평생 무료 고화질 QR코드를 생성합니다. 웹사이트 URL, 매장 와이파이(Wi-Fi) 자동 연결, 스마트 전자명함(vCard 3.0)을 커스텀 도트·컬러·중앙 로고와 함께 PNG 및 인쇄용 SVG 벡터로 즉시 저장하세요.'
+        },
+        {
+            slug: 'todo-list',
+            category: 'calc',
+            icon: 'fas fa-list-check',
+            iconColor: 'text-indigo-600',
+            title: '스마트 투두(TO-DO) 할일 플래너 활용법',
+            desc: '회원가입 없이 1초 만에 할 일을 적고 긴급·중요·보통 우선순위, 카테고리, 마감 D-Day, 하위 서브태스크와 25분 포모도로 집중 타이머까지 정리합니다. VERA 마이페이지와 실시간 연동되며 마크다운(.md)·JSON 백업을 지원합니다.'
         }
     ];
 

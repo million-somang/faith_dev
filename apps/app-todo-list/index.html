@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>스마트 투두(TO-DO) 할일 정리 플래너 - 무료 체크리스트·우선순위·집중 타이머 | VeraNex</title>
+    <meta name="description" content="가입 없이 1초 만에 할 일을 정리하는 무료 온라인 TO-DO 플래너입니다. 긴급·중요·보통 우선순위, 카테고리 분류, 마감 D-Day, 서브태스크, 포모도로 집중 타이머, 일일 달성률 리포트와 마크다운·JSON 백업을 100% 로컬 브라우저 보안으로 제공합니다." />
+    <meta name="keywords" content="투두리스트, TO-DO 정리, 할일 관리, 체크리스트 만들기, 무료 일정 플래너, 우선순위 관리, 포모도로 타이머, 마크다운 할일, 베라넥스, VeraNex" />
+    <link rel="canonical" href="https://veranex.app/app/todo-list/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+
+    <!-- Pretendard 웹폰트 & FontAwesome 6 CDN -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="VeraNex" />
+    <meta property="og:title" content="스마트 투두(TO-DO) 할일 정리 플래너 | VeraNex" />
+    <meta property="og:description" content="우선순위·마감 D-Day·서브태스크·25분 집중 타이머·달성률 리포트까지 한눈에 정리하는 무료 로컬 TO-DO 유틸리티." />
+    <meta property="og:url" content="https://veranex.app/app/todo-list/" />
+    <meta property="og:image" content="https://veranex.app/logo-512.png" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="스마트 투두(TO-DO) 할일 정리 플래너 | VeraNex" />
+    <meta name="twitter:description" content="가입 없이 바로 쓰는 깔끔한 TO-DO 체크리스트, 우선순위 정렬, 포모도로 집중 타이머 및 리포트 내보내기." />
+
+    <!-- Schema.org JSON-LD: WebApplication -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "스마트 투두(TO-DO) 할일 정리 플래너",
+      "alternateName": "VeraNex Smart To-Do Planner",
+      "applicationCategory": "ProductivityApplication, UtilityApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires HTML5 LocalStorage and JavaScript.",
+      "url": "https://veranex.app/app/todo-list/",
+      "featureList": "1초 빠른 할일 등록, 3단계 우선순위(긴급/중요/보통), 5대 생활 카테고리(업무/개인/쇼핑/건강/공부), 마감 D-Day 배지, 하위 서브태스크 체크리스트, 25분 포모도로 집중 타이머, Soft Delete 5초 실행취소 및 휴지통 복구, 마크다운(.md)·텍스트(.txt)·JSON 백업 및 마이페이지 실시간 동기화",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "KRW"
+      },
+      "description": "외부 서버 전송 없이 100% 사용자 브라우저 로컬 메모리에서 안전하게 할 일과 우선순위, 집중 시간, 일일 달성률을 정리하는 무료 생활 유틸리티"
+    }
+    </script>
+
+    <!-- Schema.org JSON-LD: HowTo -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "스마트 투두(TO-DO) 플래너로 오늘의 할 일 체계적으로 정리하는 방법",
+      "description": "우선순위·카테고리·마감일 설정부터 집중 타이머 실행과 리포트 공유까지 3단계 할일 정리 가이드",
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "빠른 할 일 입력 및 우선순위·마감일 지정",
+          "text": "상단 입력창에 해야 할 일을 적고 긴급·중요·보통 우선순위와 카테고리, 오늘·내일·사용자 지정 마감일을 선택한 뒤 Enter 또는 추가 버튼을 누릅니다."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "서브태스크 세분화 및 25분 포모도로 집중 실행",
+          "text": "큰 업무는 하위 서브태스크로 쪼개고, 지금 바로 끝낼 항목에 집중 핀을 꽂아 25분 집중 타이머를 가동합니다."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "실시간 달성률 리포트 확인 및 마크다운·JSON 백업",
+          "text": "완료 체크 후 오늘 리포트 패널에서 달성률과 카테고리별 성과를 확인하고, 클릭 한 번으로 텍스트 복사나 마크다운(.md)·JSON 백업을 저장합니다."
+        }
+      ]
+    }
+    </script>
+
+    <!-- Schema.org JSON-LD: FAQPage -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "입력한 할 일 목록이 외부 서버로 전송되거나 타인에게 노출되나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "아니요. 모든 할 일 데이터는 외부 서버로 전송되지 않고 사용자의 브라우저 로컬 저장소(LocalStorage)에만 100% 저장되어 완벽한 개인정보 프라이버시를 보장합니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "실수로 할 일을 삭제했을 때 복구할 수 있나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "네. 삭제 시 즉시 영구 파기하지 않고 Soft Delete 방식으로 휴지통에 보관되며, 화면 하단에 5초간 실행취소(Undo) 버튼이 표시되고 이후에도 휴지통에서 언제든 1클릭으로 복구할 수 있습니다."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "마이페이지(My Page)에서도 오늘의 할 일을 바로 확인하고 체크할 수 있나요?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "네. 포털 마이페이지의 TO-DO 위젯과 동일한 브라우저 저장소 키를 실시간 공유하므로, 마이페이지에서 할 일을 추가하거나 완료 체크하면 투두 플래너와 즉시 동기화됩니다."
+          }
+        }
+      ]
+    }
+    </script>
+</head>
+<body class="bg-[#FAF8F5] text-[#2D2A26] antialiased min-h-screen">
+    <div id="root">
+        <!-- Thin Content 방어용 사전 렌더링 시맨틱 문서 (React 마운트 시 자동 교체) -->
+        <article class="max-w-3xl mx-auto p-6 space-y-4 text-sm text-[#2D2A26]">
+            <h1 class="text-2xl font-bold">스마트 투두(TO-DO) 할일 정리 플래너 | VeraNex</h1>
+            <p>본 유틸리티는 회원가입이나 복잡한 설치 없이 웹 브라우저에서 곧바로 실행되는 개인 맞춤형 할일 관리(TO-DO) 정리 도구입니다. 모든 기록은 외부 클라우드 서버로 전송되지 않고 사용자 기기의 브라우저 로컬 스토리지에 안전하게 저장되므로 업무 일정, 개인 메모, 쇼핑 리스트, 건강 루틴을 프라이버시 걱정 없이 관리할 수 있습니다.</p>
+
+            <h2 class="text-lg font-semibold">1. 아이젠하워 우선순위 기반 1초 빠른 정리</h2>
+            <p>할 일이 많을수록 무엇부터 시작할지 결정하는 데 에너지를 소모하기 쉽습니다. 스마트 투두 플래너는 모든 항목을 긴급(P1), 중요(P2), 보통(P3) 3단계 우선순위와 업무·개인·쇼핑·건강·공부 5대 생활 카테고리로 분류합니다. 오늘과 내일 원클릭 마감일 설정 및 D-Day 자동 배지를 통해 마감 기한이 임박하거나 지연된 일정을 최우선으로 확인할 수 있습니다.</p>
+
+            <h2 class="text-lg font-semibold">2. 하위 서브태스크와 25분 포모도로 집중 타이머</h2>
+            <p>부담스러운 큰 과제는 카드 내부의 서브태스크(하위 체크리스트) 기능을 이용해 작은 실행 단계로 나누어 관리할 수 있습니다. 지금 몰입할 핵심 할 일에는 집중 핀을 고정하고 내장된 25분 집중 · 5분 휴식 포모도로 타이머를 가동해 실행력을 극대화해 보세요. 오늘의 모든 할 일을 완료하면 달성률 100% 기념 축하 이펙트와 함께 청명한 완료 사운드가 제공됩니다.</p>
+
+            <h2 class="text-lg font-semibold">3. 안전한 휴지통 복구(Soft Delete)와 다중 포맷 백업</h2>
+            <p>실수로 항목을 삭제하더라도 즉시 사라지지 않고 휴지통에 안전하게 보관되며, 5초 실행취소 토스트와 휴지통 복구 창을 통해 원클릭으로 되살릴 수 있습니다. 또한 정리된 할 일 목록은 카카오톡이나 노션에 바로 붙여넣을 수 있는 텍스트 리포트 복사, 마크다운(.md) 문서 다운로드, 다른 기기로 옮길 수 있는 JSON 백업·복원 기능을 기본 내장하고 있습니다. VeraNex 포털 마이페이지와도 실시간으로 동기화되어 포털 어느 화면에서나 오늘의 할 일을 끊김 없이 확인하고 체크할 수 있습니다.</p>
+        </article>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

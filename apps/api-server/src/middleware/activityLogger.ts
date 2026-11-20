@@ -122,6 +122,7 @@ const MINIAPP_NAMES: Record<string, string> = {
     'interest-calc': '예적금·대출 이자 계산기',
     'customs-calc': '해외직구 관부가세 계산기',
     'vacation-planner': '연차·휴가 플래너',
+    'todo-list': '스마트 투두(TO-DO) 플래너',
     'saju': '정통 사주·오늘의 운세',
     'novel': '웹소설 뷰어',
     'news': '실시간 뉴스'

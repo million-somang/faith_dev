@@ -10,6 +10,7 @@ import { PreferenceWizard } from '@/components/homepage/PreferenceWizard';
 import { MobileTabEditor } from '@/components/homepage/MobileTabEditor';
 import { MyLifeSection } from '@/components/mypage/MyLifeSection';
 import { DriveVideoPlayerSection } from '@/components/mypage/DriveVideoPlayerSection';
+import { MypageTodoCard } from '@/components/mypage/MypageTodoCard';
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
@@ -1366,6 +1367,9 @@ export default function MyPage() {
                                         </>
                                     )}
 
+                                    {/* 3.5 나의 TO-DO (할일 정리) 실시간 보드 */}
+                                    <MypageTodoCard variant="full" />
+
                                     {/* 4. 나의 홈 다이어리 & 퍼스널 보드 (기존 '나의 홈'의 모든 위젯을 아지트 하단에 통합) */}
                                     <MinihomePersonalHubSection
                                         userName={user.name}
@@ -1463,7 +1467,9 @@ export default function MyPage() {
 
                                     {/* ─── [신설] 🌟 My Life (사주 주의보, 실시간 날씨, 오늘의 명언, 스마트 일정 달력 통합 뷰) ─── */}
                                     {activeSection === 'schedule' && (
-                                        <MyLifeSection
+                                        <div className="space-y-6">
+                                            <MypageTodoCard variant="compact" />
+                                            <MyLifeSection
                                             user={user}
                                             birthDate={birthDate}
                                             showBirthEditor={showBirthEditor}
@@ -1504,6 +1510,7 @@ export default function MyPage() {
                                             handleRemoveAgenda={handleRemoveAgenda}
                                             SCHEDULE_COLOR_CONFIG={SCHEDULE_COLOR_CONFIG}
                                         />
+                                        </div>
                                     )}
 
                                     {/* ─── [신설] 🎬 구글 드라이브 연동 비디오 플레이어 섹션 ─── */}
@@ -1948,7 +1955,11 @@ export default function MyPage() {
                                                     </h3>
                                                     <Link href="/lifestyle" className="text-xs text-orange-600 font-bold hover:underline">전체 도구 →</Link>
                                                 </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+                                                    <Link href="/tools/todo-list" className="p-3 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                        <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-list-check"></i></span>
+                                                        <span className="text-xs font-bold text-slate-700">TO-DO 플래너</span>
+                                                    </Link>
                                                     <Link href="/lifestyle" className="p-3 bg-white hover:bg-orange-50 rounded-xl border border-orange-100 flex items-center gap-2.5 transition-all group shadow-2xs">
                                                         <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-calculator"></i></span>
                                                         <span className="text-xs font-bold text-slate-700">계산기 모음</span>
@@ -1966,6 +1977,11 @@ export default function MyPage() {
                                                         <span className="text-xs font-bold text-slate-700">개발자 도구</span>
                                                     </Link>
                                                 </div>
+                                            </div>
+
+                                            {/* 나의 TO-DO 실시간 보드 */}
+                                            <div className="mb-8">
+                                                <MypageTodoCard variant="full" />
                                             </div>
 
                                             <div className="mb-10">
