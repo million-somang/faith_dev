@@ -50,6 +50,155 @@ export const MinihomeAvatarActionOverlay: React.FC<MinihomeAvatarActionOverlayPr
         );
     }
 
+    // 1-B. 씨앗 심기 전용 애니메이션 (모종삽 다지기 + 낙하 씨앗 4개 + 흙먼지 퍼프 + 새싹 반짝임)
+    if (activityType === 'planting') {
+        const patWave = (Math.sin(actionPhase * Math.PI * 2.6) + 1) * 0.5;
+        const trowelRotate = -18 + patWave * 38;
+        const sproutPulse = Math.sin(((actionPhase * 1.4) % 1) * Math.PI);
+
+        return (
+            <g transform={`translate(0, ${baseY})`} pointerEvents="none">
+                <g transform={`scale(${dir}, 1)`}>
+                    {/* 손앞 원예 모종삽 */}
+                    <g transform={`translate(16, -24) rotate(${trowelRotate})`}>
+                        <rect x="-2" y="-12" width="4" height="10" rx="1.8" fill="#92400e" stroke="#451a03" strokeWidth="1" />
+                        <path
+                            d="M-3.5,-2 L3.5,-2 L2.5,9 L0,13 L-2.5,9 Z"
+                            fill="#cbd5e1"
+                            stroke="#475569"
+                            strokeWidth="1.2"
+                        />
+                    </g>
+
+                    {/* 손끝에서 흙으로 떨어지는 씨앗 알갱이 4개 */}
+                    {[0, 1, 2, 3].map((idx) => {
+                        const seedP = (actionPhase * 2.1 + idx * 0.25) % 1;
+                        const sx = 18 + seedP * (10 + (idx % 2) * 5);
+                        const sy = -20 + seedP * seedP * 28 + seedP * 14;
+                        return (
+                            <ellipse
+                                key={`plant-seed-${idx}`}
+                                cx={sx}
+                                cy={sy}
+                                rx="2.1"
+                                ry="2.8"
+                                transform={`rotate(${seedP * 90} ${sx} ${sy})`}
+                                fill={idx % 2 === 0 ? '#facc15' : '#a16207'}
+                                opacity={Math.sin(seedP * Math.PI)}
+                            />
+                        );
+                    })}
+
+                    {/* 흙 착지 지점 흙먼지 퍼프 3개 */}
+                    {[0, 1, 2].map((dIdx) => {
+                        const dustP = (actionPhase * 2.3 + dIdx * 0.33) % 1;
+                        const dx = 28 + (dIdx - 1) * (5 + dustP * 7);
+                        const dy = 24 - Math.sin(dustP * Math.PI) * 8;
+                        return (
+                            <circle
+                                key={`plant-dust-${dIdx}`}
+                                cx={dx}
+                                cy={dy}
+                                r={2 + dustP * 2.6}
+                                fill="#a16207"
+                                opacity={(1 - dustP) * 0.65}
+                            />
+                        );
+                    })}
+
+                    {/* 떠오르는 새싹 & 씨앗 아이콘 */}
+                    <g
+                        transform={`translate(30, ${14 - ((actionPhase * 18) % 16)})`}
+                        opacity={sproutPulse}
+                    >
+                        <text x="0" y="0" fontSize="12" textAnchor="middle">
+                            {simState.actionCropEmoji || '🌱'}
+                        </text>
+                    </g>
+                </g>
+            </g>
+        );
+    }
+
+    // 1-C. 수확하기 전용 애니메이션 (짚 바구니 + 뽑혀 튀어 오르는 수확 작물 3개 + 황금 반짝이 + '+수확!')
+    if (activityType === 'harvesting') {
+        const cropEmoji = simState.actionCropEmoji || '🧺';
+        const basketBob = Math.sin(actionPhase * Math.PI * 2.8) * 1.8;
+
+        return (
+            <g transform={`translate(0, ${baseY})`} pointerEvents="none">
+                <g transform={`scale(${dir}, 1)`}>
+                    {/* 손앞 짚 수확 바구니 */}
+                    <g transform={`translate(17, ${-22 + basketBob})`}>
+                        <path
+                            d="M-9,-4 L9,-4 L7,6 C7,7.5 -7,7.5 -7,6 Z"
+                            fill="#d97706"
+                            stroke="#78350f"
+                            strokeWidth="1.2"
+                        />
+                        <ellipse cx="0" cy="-4" rx="9" ry="2.6" fill="#f59e0b" stroke="#78350f" strokeWidth="1.1" />
+                        <path d="M-7,-4 C-7,-12 7,-12 7,-4" fill="none" stroke="#92400e" strokeWidth="1.8" />
+                        <line x1="-6" y1="0" x2="6" y2="0" stroke="#78350f" strokeWidth="1" opacity="0.7" />
+                        <line x1="-5" y1="3" x2="5" y2="3" stroke="#78350f" strokeWidth="1" opacity="0.7" />
+                    </g>
+
+                    {/* 땅에서 뽑혀 바구니 쪽으로 튀어 오르는 수확 작물 3개 */}
+                    {[0, 1, 2].map((idx) => {
+                        const popP = (actionPhase * 1.45 + idx * 0.33) % 1;
+                        const px = 30 - popP * (12 + idx * 2);
+                        const py = 18 - Math.sin(popP * Math.PI) * 34 - popP * 18;
+                        return (
+                            <g
+                                key={`harvest-crop-${idx}`}
+                                transform={`translate(${px}, ${py})`}
+                                opacity={Math.sin(popP * Math.PI)}
+                            >
+                                <text x="0" y="0" fontSize="13" textAnchor="middle">
+                                    {cropEmoji}
+                                </text>
+                            </g>
+                        );
+                    })}
+
+                    {/* 황금 반짝이 */}
+                    {[0, 1].map((sIdx) => {
+                        const sp = (actionPhase * 1.8 + sIdx * 0.5) % 1;
+                        return (
+                            <g
+                                key={`harvest-spark-${sIdx}`}
+                                transform={`translate(${12 + sIdx * 20}, ${-36 - sp * 18})`}
+                                opacity={Math.sin(sp * Math.PI)}
+                            >
+                                <text x="0" y="0" fontSize="11" textAnchor="middle">
+                                    {sIdx === 0 ? '✨' : '🌟'}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+
+                {/* 경쾌한 +수확! 플로팅 텍스트 */}
+                <g
+                    transform={`translate(${dir * 18}, ${-54 - ((actionPhase * 14) % 12)})`}
+                    opacity={Math.sin(((actionPhase * 1.2) % 1) * Math.PI)}
+                >
+                    <text
+                        x="0"
+                        y="0"
+                        fontSize="10"
+                        fontWeight="900"
+                        textAnchor="middle"
+                        fill="#fef08a"
+                        stroke="#78350f"
+                        strokeWidth="0.6"
+                    >
+                        +수확!
+                    </text>
+                </g>
+            </g>
+        );
+    }
+
     // 2. 물주기 애니메이션 (실제 물조리개 기울임 + 쏟아지는 물방울 줄기 + 물보라 파동)
     if (activityType === 'watering') {
         const pourWave = (Math.sin(actionPhase * Math.PI * 1.4) + 1) * 0.5; // 0 ~ 1

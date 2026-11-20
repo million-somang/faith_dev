@@ -16,7 +16,9 @@ export const GARDEN_PLOT_COORDS: Array<{ plotIndex: number; gridX: number; gridY
 export type AvatarActivityType =
     | 'walking'
     | 'idle'
+    | 'planting'
     | 'watering'
+    | 'harvesting'
     | 'drinking-tea'
     | 'looking-window'
     | 'reading-book'
@@ -29,8 +31,10 @@ export type AvatarActivityType =
 
 export interface ForcedGardenActionTrigger {
     plotIndex: number;
-    activityType: 'watering' | 'harvest-ready';
+    activityType: 'planting' | 'watering' | 'harvesting';
     badge: string;
+    cropEmoji?: string;
+    durationMs?: number;
     timestamp: number;
 }
 
@@ -46,6 +50,7 @@ export interface AvatarLifeSimState {
     activityType: AvatarActivityType;
     actionPhase: number; // 초 단위 연속 애니메이션 시간값 (물방울 낙하, 찻잔 홀짝임, 김 상승 등 계산용)
     activityBadge: string | null;
+    actionCropEmoji: string | null;
 }
 
 interface ActivityWaypoint {
@@ -58,6 +63,7 @@ interface ActivityWaypoint {
     sitOffsetY: number;
     activityType: AvatarActivityType;
     badge: string;
+    cropEmoji?: string | null;
     dwellMs: number;
     priority: number;
 }
@@ -75,13 +81,31 @@ function computeActivityMotion(
     elapsedSec: number
 ): { bobOffsetY: number; tiltDeg: number } {
     switch (activityType) {
+        case 'planting': {
+            // 몸을 숙여 흙을 파고 씨앗을 톡톡 심는 모션
+            const patWave = (Math.sin(elapsedSec * Math.PI * 2.6) + 1) * 0.5;
+            return {
+                bobOffsetY: 2.0 + patWave * 3.8,
+                tiltDeg: 7 + patWave * 6.5,
+            };
+        }
         case 'watering': {
             // 물조리개를 기울여 물을 주는 리드미컬한 상체 숙임 모션
             const pourCycle = (Math.sin(elapsedSec * Math.PI * 1.4) + 1) * 0.5; // 0 ~ 1
             return {
-                bobOffsetY: pourCycle * 2.2,
-                tiltDeg: 5 + pourCycle * 6.5, // 앞으로 5~11.5도 기울임
+                bobOffsetY: pourCycle * 2.4,
+                tiltDeg: 6 + pourCycle * 7.0, // 앞으로 6~13도 기울임
             };
+        }
+        case 'harvesting': {
+            // 웅크려 작물을 잡았다가 힘껏 위로 뽑아 올리는 2박자 수확 모션
+            const cycle = (elapsedSec * 1.45) % 1;
+            if (cycle < 0.42) {
+                const crouch = Math.sin((cycle / 0.42) * Math.PI);
+                return { bobOffsetY: crouch * 4.5, tiltDeg: crouch * 10 };
+            }
+            const pull = Math.sin(((cycle - 0.42) / 0.58) * Math.PI);
+            return { bobOffsetY: -pull * 6.8, tiltDeg: -pull * 6.5 };
         }
         case 'drinking-tea': {
             // 주기적으로 찻잔을 입가로 가져가 홀짝이는(Sip) 모션
@@ -410,6 +434,19 @@ export function useAvatarLifeSim(params: {
         return list;
     }, [activeZone, layout.garden, layout.placedItems, layout.minimiX, layout.minimiY]);
 
+    const waypointsRef = useRef<ActivityWaypoint[]>(waypoints);
+    waypointsRef.current = waypoints;
+
+    const currentPosRef = useRef<{ x: number; y: number }>({
+        x: layout.minimiX,
+        y: layout.minimiY,
+    });
+    const initPosRef = useRef<{ x: number; y: number }>({
+        x: layout.minimiX,
+        y: layout.minimiY,
+    });
+    initPosRef.current = { x: layout.minimiX, y: layout.minimiY };
+
     const [simState, setSimState] = useState<AvatarLifeSimState>({
         animX: layout.minimiX,
         animY: layout.minimiY,
@@ -422,6 +459,7 @@ export function useAvatarLifeSim(params: {
         activityType: 'idle',
         actionPhase: 0,
         activityBadge: null,
+        actionCropEmoji: null,
     });
 
     const phaseRef = useRef<{
@@ -434,6 +472,7 @@ export function useAvatarLifeSim(params: {
         phaseStartTime: number;
         phaseDurationMs: number;
         overrideWp: ActivityWaypoint | null;
+        isForcedRun: boolean;
     }>({
         mode: 'dwell',
         wpIndex: 0,
@@ -444,45 +483,15 @@ export function useAvatarLifeSim(params: {
         phaseStartTime: 0,
         phaseDurationMs: 2200,
         overrideWp: null,
+        isForcedRun: false,
     });
 
-    // 유저가 마당에서 물주기/파종/수확 클릭 시 아바타가 즉시 해당 이랑에서 액션 수행
     useEffect(() => {
-        if (!forcedGardenAction || activeZone !== 'garden' || isEditMode) return;
-        const coord = GARDEN_PLOT_COORDS[forcedGardenAction.plotIndex] || GARDEN_PLOT_COORDS[0];
-        const targetX = clampGrid(coord.gridX - 0.55);
-        const targetY = clampGrid(coord.gridY + 0.55);
-
-        phaseRef.current = {
-            mode: 'dwell',
-            wpIndex: 0,
-            startX: targetX,
-            startY: targetY,
-            targetX,
-            targetY,
-            phaseStartTime: performance.now(),
-            phaseDurationMs: 5500,
-            overrideWp: {
-                id: `forced-plot-${forcedGardenAction.plotIndex}`,
-                targetX,
-                targetY,
-                lookAtX: coord.gridX,
-                lookAtY: coord.gridY,
-                isSitting: false,
-                sitOffsetY: 0,
-                activityType: forcedGardenAction.activityType,
-                badge: forcedGardenAction.badge,
-                dwellMs: 5500,
-                priority: 0,
-            },
-        };
-    }, [forcedGardenAction, activeZone, isEditMode]);
-
-    useEffect(() => {
-        if (isEditMode || activeZone === 'kitchen' || activeZone === 'camp' || waypoints.length === 0) {
+        const activeList = waypointsRef.current;
+        if (isEditMode || activeZone === 'kitchen' || activeZone === 'camp' || activeList.length === 0) {
             setSimState({
-                animX: layout.minimiX,
-                animY: layout.minimiY,
+                animX: initPosRef.current.x,
+                animY: initPosRef.current.y,
                 facingLeft: false,
                 bobOffsetY: 0,
                 sitOffsetY: 0,
@@ -492,45 +501,58 @@ export function useAvatarLifeSim(params: {
                 activityType: 'idle',
                 actionPhase: 0,
                 activityBadge: null,
+                actionCropEmoji: null,
             });
             return;
         }
 
         let rafId = 0;
-        const firstWp = waypoints[0];
-        const initDist = Math.hypot(firstWp.targetX - layout.minimiX, firstWp.targetY - layout.minimiY);
+        const firstWp = activeList[0];
+        const startPos = initPosRef.current;
+        currentPosRef.current = { x: startPos.x, y: startPos.y };
+        const initDist = Math.hypot(firstWp.targetX - startPos.x, firstWp.targetY - startPos.y);
 
         phaseRef.current = {
             mode: 'walk',
             wpIndex: 0,
-            startX: layout.minimiX,
-            startY: layout.minimiY,
+            startX: startPos.x,
+            startY: startPos.y,
             targetX: firstWp.targetX,
             targetY: firstWp.targetY,
             phaseStartTime: performance.now(),
             phaseDurationMs: Math.max(3800, Math.min(6800, (initDist / 0.55) * 1000)),
             overrideWp: null,
+            isForcedRun: false,
         };
 
         const tick = (now: number) => {
             const p = phaseRef.current;
-            const currentWp = p.overrideWp || waypoints[p.wpIndex % waypoints.length];
+            const currentWaypoints = waypointsRef.current;
+            const currentWp =
+                p.overrideWp || currentWaypoints[p.wpIndex % Math.max(1, currentWaypoints.length)];
+            if (!currentWp) {
+                rafId = requestAnimationFrame(tick);
+                return;
+            }
             const elapsed = now - p.phaseStartTime;
             const elapsedSec = elapsed / 1000;
 
             if (p.mode === 'walk') {
-                const rawProgress = Math.min(1, elapsed / p.phaseDurationMs);
+                const rawProgress = Math.min(1, elapsed / Math.max(1, p.phaseDurationMs));
                 const eased = rawProgress * rawProgress * (3 - 2 * rawProgress);
                 const curX = p.startX + (p.targetX - p.startX) * eased;
                 const curY = p.startY + (p.targetY - p.startY) * eased;
+                currentPosRef.current = { x: curX, y: curY };
 
                 const dxScreen = screenDeltaX(p.startX, p.startY, p.targetX, p.targetY);
                 const facingLeft = dxScreen < -0.05;
 
-                // 또박또박 걷는 발걸음 바운스 + 귀여운 좌우 스윙 각도
-                const stepSin = Math.sin(elapsedSec * Math.PI * 2.2);
-                const bobOffsetY = -Math.abs(stepSin) * 4.2;
-                const tiltDeg = stepSin * 3.8;
+                // 빠른 달리기 vs 산책 걸음 모션 구분
+                const stepSin = p.isForcedRun
+                    ? Math.sin(elapsedSec * Math.PI * 4.2)
+                    : Math.sin(elapsedSec * Math.PI * 2.2);
+                const bobOffsetY = p.isForcedRun ? -Math.abs(stepSin) * 5.8 : -Math.abs(stepSin) * 4.2;
+                const tiltDeg = p.isForcedRun ? stepSin * 5.2 : stepSin * 3.8;
 
                 setSimState({
                     animX: curX,
@@ -544,16 +566,19 @@ export function useAvatarLifeSim(params: {
                     activityType: 'walking',
                     actionPhase: elapsedSec,
                     activityBadge: null,
+                    actionCropEmoji: null,
                 });
 
                 if (rawProgress >= 1) {
                     p.mode = 'dwell';
+                    p.isForcedRun = false;
                     p.startX = p.targetX;
                     p.startY = p.targetY;
                     p.phaseStartTime = now;
                     p.phaseDurationMs = currentWp.dwellMs;
                 }
             } else {
+                currentPosRef.current = { x: currentWp.targetX, y: currentWp.targetY };
                 const lookDx = screenDeltaX(
                     currentWp.targetX,
                     currentWp.targetY,
@@ -576,25 +601,28 @@ export function useAvatarLifeSim(params: {
                     activityType: currentWp.activityType,
                     actionPhase: elapsedSec,
                     activityBadge: currentWp.badge,
+                    actionCropEmoji: currentWp.cropEmoji ?? null,
                 });
 
                 if (elapsed >= p.phaseDurationMs) {
                     p.overrideWp = null;
-                    const nextIdx = (p.wpIndex + 1) % waypoints.length;
-                    const nextWp = waypoints[nextIdx];
-                    const dist = Math.hypot(
-                        nextWp.targetX - currentWp.targetX,
-                        nextWp.targetY - currentWp.targetY
-                    );
-
-                    p.mode = 'walk';
-                    p.wpIndex = nextIdx;
-                    p.startX = currentWp.targetX;
-                    p.startY = currentWp.targetY;
-                    p.targetX = nextWp.targetX;
-                    p.targetY = nextWp.targetY;
-                    p.phaseStartTime = now;
-                    p.phaseDurationMs = Math.max(3800, Math.min(6800, (dist / 0.55) * 1000));
+                    p.isForcedRun = false;
+                    const nextIdx = (p.wpIndex + 1) % Math.max(1, currentWaypoints.length);
+                    const nextWp = currentWaypoints[nextIdx];
+                    if (nextWp) {
+                        const dist = Math.hypot(
+                            nextWp.targetX - currentWp.targetX,
+                            nextWp.targetY - currentWp.targetY
+                        );
+                        p.mode = 'walk';
+                        p.wpIndex = nextIdx;
+                        p.startX = currentWp.targetX;
+                        p.startY = currentWp.targetY;
+                        p.targetX = nextWp.targetX;
+                        p.targetY = nextWp.targetY;
+                        p.phaseStartTime = now;
+                        p.phaseDurationMs = Math.max(3800, Math.min(6800, (dist / 0.55) * 1000));
+                    }
                 }
             }
 
@@ -603,7 +631,63 @@ export function useAvatarLifeSim(params: {
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isEditMode, waypoints, layout.minimiX, layout.minimiY]);
+    }, [isEditMode, activeZone]);
+
+    // 유저가 마당에서 물주기/파종/수확 클릭 시 현재 위치에서 빠르게 달려가 전용 모션을 1.8~2.0초 유지
+    useEffect(() => {
+        if (!forcedGardenAction || activeZone !== 'garden' || isEditMode) return;
+        const coord = GARDEN_PLOT_COORDS[forcedGardenAction.plotIndex] || GARDEN_PLOT_COORDS[0];
+        const targetX = clampGrid(coord.gridX - 0.55);
+        const targetY = clampGrid(coord.gridY + 0.55);
+        const fromX = currentPosRef.current.x;
+        const fromY = currentPosRef.current.y;
+        const dist = Math.hypot(targetX - fromX, targetY - fromY);
+        const dwellMs = Math.max(1500, forcedGardenAction.durationMs ?? 1900);
+
+        const overrideWp: ActivityWaypoint = {
+            id: `forced-plot-${forcedGardenAction.plotIndex}`,
+            targetX,
+            targetY,
+            lookAtX: coord.gridX,
+            lookAtY: coord.gridY,
+            isSitting: false,
+            sitOffsetY: 0,
+            activityType: forcedGardenAction.activityType,
+            badge: forcedGardenAction.badge,
+            cropEmoji: forcedGardenAction.cropEmoji ?? null,
+            dwellMs,
+            priority: 0,
+        };
+
+        if (dist < 0.22) {
+            phaseRef.current = {
+                mode: 'dwell',
+                wpIndex: phaseRef.current.wpIndex,
+                startX: targetX,
+                startY: targetY,
+                targetX,
+                targetY,
+                phaseStartTime: performance.now(),
+                phaseDurationMs: dwellMs,
+                overrideWp,
+                isForcedRun: false,
+            };
+        } else {
+            const runMs = Math.max(360, Math.min(580, Math.round(dist * 170 + 220)));
+            phaseRef.current = {
+                mode: 'walk',
+                wpIndex: phaseRef.current.wpIndex,
+                startX: fromX,
+                startY: fromY,
+                targetX,
+                targetY,
+                phaseStartTime: performance.now(),
+                phaseDurationMs: runMs,
+                overrideWp,
+                isForcedRun: true,
+            };
+        }
+    }, [forcedGardenAction, activeZone, isEditMode]);
 
     return simState;
 }

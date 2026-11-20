@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type {
     AzitChefCode,
     AzitChefRecord,
@@ -11,6 +11,7 @@ import type {
 } from '@/types/azit-game.types';
 import { formatCountdownLabel, formatDurationCompact } from '@/types/azit-game.types';
 import { getChefSpriteMeta } from '@/data/azitCharacterAssets';
+import { getCatalogItemById } from '@/data/minihomeCatalogData';
 
 const ORIGIN_X = 400;
 const ORIGIN_Y = 236;
@@ -47,6 +48,8 @@ interface AzitKitchenIsoSceneProps {
     nowMs: number;
     selectedSlotIndex: number | null;
     isActing?: boolean;
+    minimiItemId?: string;
+    ownerName?: string;
     onSelectSlot: (slotIndex: number) => void;
     onQuickClaimSlot?: (slotIndex: number) => Promise<boolean>;
     onEnterIndoor: () => void;
@@ -54,11 +57,162 @@ interface AzitKitchenIsoSceneProps {
     onOpenMarketModal: () => void;
 }
 
+type KitchenActorState = 'idle' | 'cooking' | 'celebrate';
+
+type KitchenDepthEntity =
+    | { kind: 'stove'; depth: number; slot: AzitKitchenSlotState; coord: { slotIndex: number; gridX: number; gridY: number } }
+    | {
+          kind: 'chef';
+          depth: number;
+          chef: AzitChefRecord;
+          idx: number;
+          curX: number;
+          curY: number;
+          facingLeft: boolean;
+          isMoving: boolean;
+          actorState: KitchenActorState;
+      }
+    | {
+          kind: 'owner';
+          depth: number;
+          curX: number;
+          curY: number;
+          facingLeft: boolean;
+          isMoving: boolean;
+          actorState: KitchenActorState;
+      };
+
+function renderCookingToolOverlay(
+    actorKey: AzitChefCode | 'owner',
+    animSec: number,
+    actorState: KitchenActorState,
+    isMoving: boolean
+) {
+    if (isMoving) {
+        const puff = (animSec * 3.0) % 1;
+        return (
+            <g pointerEvents="none">
+                <circle cx={-10 - puff * 8} cy={4 - puff * 5} r={2.2 + puff * 2} fill="rgba(255,255,255,0.65)" opacity={1 - puff} />
+                <circle cx={-6 - puff * 11} cy={6 - puff * 3} r={1.8 + puff * 1.8} fill="rgba(254,215,170,0.65)" opacity={1 - puff} />
+            </g>
+        );
+    }
+
+    if (actorState === 'celebrate') {
+        const sparkles = ['✨', '🎉', '⭐'];
+        return (
+            <g pointerEvents="none">
+                {sparkles.map((sp, sIdx) => {
+                    const p = (animSec * 0.9 + sIdx * 0.33) % 1;
+                    const sx = (sIdx - 1) * 18 + Math.sin(animSec * 4 + sIdx) * 4;
+                    const sy = -42 - p * 30;
+                    return (
+                        <text
+                            key={`kitchen-cel-${sIdx}`}
+                            x={sx}
+                            y={sy}
+                            fontSize="12"
+                            textAnchor="middle"
+                            opacity={Math.sin(p * Math.PI)}
+                        >
+                            {sp}
+                        </text>
+                    );
+                })}
+            </g>
+        );
+    }
+
+    if (actorState !== 'cooking') return null;
+
+    const swing = Math.sin(animSec * 8.5);
+    if (actorKey === 'chef-bulta' || actorKey === 'chef-dragon') {
+        const isDragon = actorKey === 'chef-dragon';
+        return (
+            <g pointerEvents="none" transform="translate(19, -27)">
+                <g transform={`rotate(${swing * 22 - 8})`}>
+                    <line x1="-2" y1="2" x2="12" y2="-6" stroke={isDragon ? '#eab308' : '#334155'} strokeWidth="2.8" strokeLinecap="round" />
+                    <ellipse cx="14" cy="-7" rx="7" ry="3.5" fill={isDragon ? '#facc15' : '#1e293b'} stroke={isDragon ? '#a16207' : '#64748b'} strokeWidth="1.2" />
+                </g>
+                {[0, 1, 2].map((fIdx) => {
+                    const fp = (animSec * 1.9 + fIdx * 0.33) % 1;
+                    const fx = 11 + (fIdx - 1) * 5 + Math.sin(animSec * 6 + fIdx) * 2;
+                    const fy = -10 - fp * 20;
+                    return (
+                        <circle
+                            key={`wok-spark-${fIdx}`}
+                            cx={fx}
+                            cy={fy}
+                            r={2.5 - fp * 1.4}
+                            fill={fIdx === 1 ? '#fef08a' : '#f97316'}
+                            opacity={Math.sin(fp * Math.PI)}
+                        />
+                    );
+                })}
+            </g>
+        );
+    }
+
+    if (actorKey === 'chef-claire') {
+        return (
+            <g pointerEvents="none" transform="translate(18, -28)">
+                <g transform={`translate(${Math.cos(animSec * 9) * 3}, ${Math.sin(animSec * 9) * 2}) rotate(${swing * 18})`}>
+                    <rect x="-1.5" y="0" width="3" height="9" rx="1.4" fill="#f472b6" />
+                    <ellipse cx="0" cy="-6" rx="4.2" ry="6.5" fill="none" stroke="#cbd5e1" strokeWidth="1.4" />
+                    <line x1="0" y1="0" x2="0" y2="-12" stroke="#94a3b8" strokeWidth="1.1" />
+                </g>
+                {[0, 1].map((pIdx) => {
+                    const sp = (animSec * 1.5 + pIdx * 0.5) % 1;
+                    return (
+                        <text
+                            key={`claire-sp-${pIdx}`}
+                            x={4 + pIdx * 10}
+                            y={-12 - sp * 18}
+                            fontSize="10"
+                            textAnchor="middle"
+                            opacity={Math.sin(sp * Math.PI)}
+                        >
+                            {pIdx === 0 ? '✨' : '🧁'}
+                        </text>
+                    );
+                })}
+            </g>
+        );
+    }
+
+    // chef-momo 및 수습 조리 내 아바타: 원형 국자 저어주기 + 향기 입자
+    const orbitX = Math.cos(animSec * 6.5) * 4;
+    const orbitY = Math.sin(animSec * 6.5) * 2.2;
+    return (
+        <g pointerEvents="none" transform="translate(18, -28)">
+            <g transform={`translate(${orbitX}, ${orbitY}) rotate(${swing * 16 - 10})`}>
+                <line x1="0" y1="8" x2="4" y2="-8" stroke="#92400e" strokeWidth="2.4" strokeLinecap="round" />
+                <ellipse cx="5" cy="-9" rx="4.2" ry="2.8" fill="#b45309" stroke="#78350f" strokeWidth="1" />
+            </g>
+            {[0, 1].map((aIdx) => {
+                const ap = (animSec * 1.35 + aIdx * 0.5) % 1;
+                return (
+                    <circle
+                        key={`ladle-aroma-${aIdx}`}
+                        cx={5 + Math.sin(animSec * 4 + aIdx) * 4}
+                        cy={-12 - ap * 18}
+                        r={2.2 - ap}
+                        fill={aIdx === 0 ? '#fde047' : '#ffffff'}
+                        opacity={Math.sin(ap * Math.PI) * 0.85}
+                    />
+                );
+            })}
+        </g>
+    );
+}
+
 export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
     gameState,
     nowMs,
     selectedSlotIndex,
     isActing = false,
+    minimiItemId = 'minimi-casual',
+    ownerName = '내 아바타',
     onSelectSlot,
     onQuickClaimSlot,
     onEnterIndoor,
@@ -86,6 +240,169 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
 
     const marketStallPos = getIsoCenter(5.8, 5.6);
     const exitDoorPos = getIsoCenter(0.9, 6.2);
+
+    const [animSec, setAnimSec] = useState<number>(0);
+    const posMapRef = useRef<Record<string, { x: number; y: number }>>({});
+    const targetsRef = useRef<Record<string, { x: number; y: number }>>({});
+
+    // 각 요리사 및 수습 아바타의 목표 좌표·상태 계산
+    const apprenticeSlot = useMemo(() => {
+        const unstaffed = gameState.kitchenSlots.filter((s) => s.status === 'cooking' && !s.chefCode);
+        if (unstaffed.length === 0) return null;
+        return unstaffed.find((s) => s.endsAtMs !== null && s.endsAtMs > nowMs) || unstaffed[0];
+    }, [gameState.kitchenSlots, nowMs]);
+
+    const actorTargets = useMemo(() => {
+        const map: Record<string, { x: number; y: number }> = {};
+        gameState.chefs.forEach((chef, idx) => {
+            const assignedSlot = gameState.kitchenSlots.find(
+                (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
+            );
+            if (assignedSlot) {
+                const stoveCoord = KITCHEN_STOVE_COORDS.find((c) => c.slotIndex === assignedSlot.slotIndex);
+                if (stoveCoord) {
+                    map[chef.chefCode] = { x: stoveCoord.gridX - 0.15, y: stoveCoord.gridY + 1.15 };
+                    return;
+                }
+            }
+            const stCoord = CHEF_STATION_COORDS[idx] || CHEF_STATION_COORDS[0];
+            map[chef.chefCode] = { x: stCoord.gridX, y: stCoord.gridY };
+        });
+
+        if (apprenticeSlot) {
+            const stoveCoord = KITCHEN_STOVE_COORDS.find((c) => c.slotIndex === apprenticeSlot.slotIndex);
+            if (stoveCoord) {
+                map['owner-apprentice'] = { x: stoveCoord.gridX - 0.15, y: stoveCoord.gridY + 1.15 };
+            }
+        }
+        return map;
+    }, [gameState.chefs, gameState.kitchenSlots, apprenticeSlot]);
+
+    targetsRef.current = actorTargets;
+
+    useEffect(() => {
+        let rafId = 0;
+        const startMs = performance.now();
+        let lastFrameMs = startMs;
+        let lastEmitMs = startMs;
+
+        const tick = (now: number) => {
+            const dt = Math.min(0.08, Math.max(0.001, (now - lastFrameMs) / 1000));
+            lastFrameMs = now;
+
+            const targets = targetsRef.current;
+            const curMap = posMapRef.current;
+            const speedTilesPerSec = 3.8;
+
+            for (const key of Object.keys(curMap)) {
+                if (!(key in targets)) {
+                    delete curMap[key];
+                }
+            }
+
+            for (const key of Object.keys(targets)) {
+                const tgt = targets[key];
+                if (!curMap[key]) {
+                    curMap[key] =
+                        key === 'owner-apprentice' ? { x: 1.4, y: 5.5 } : { x: tgt.x, y: tgt.y };
+                    continue;
+                }
+                const cur = curMap[key];
+                const dx = tgt.x - cur.x;
+                const dy = tgt.y - cur.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 0.02) {
+                    const step = Math.min(dist, speedTilesPerSec * dt);
+                    curMap[key] = {
+                        x: cur.x + (dx / dist) * step,
+                        y: cur.y + (dy / dist) * step,
+                    };
+                } else if (dist > 0) {
+                    curMap[key] = { x: tgt.x, y: tgt.y };
+                }
+            }
+
+            if (now - lastEmitMs >= 30) {
+                lastEmitMs = now;
+                setAnimSec((now - startMs) / 1000);
+            }
+
+            rafId = requestAnimationFrame(tick);
+        };
+
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
+    }, []);
+
+    // 화구 + 고용 요리사 + 수습 아바타 통합 Z-depth 정렬
+    const kitchenDepthEntities: KitchenDepthEntity[] = [];
+
+    KITCHEN_STOVE_COORDS.forEach((coord) => {
+        const slot = gameState.kitchenSlots.find((s) => s.slotIndex === coord.slotIndex);
+        if (slot) {
+            kitchenDepthEntities.push({
+                kind: 'stove',
+                depth: coord.gridX + coord.gridY,
+                slot,
+                coord,
+            });
+        }
+    });
+
+    gameState.chefs.forEach((chef, idx) => {
+        const tgt = actorTargets[chef.chefCode] || CHEF_STATION_COORDS[idx] || CHEF_STATION_COORDS[0];
+        const cur = posMapRef.current[chef.chefCode] || tgt;
+        const dx = tgt.x - cur.x;
+        const dy = tgt.y - cur.y;
+        const dist = Math.hypot(dx, dy);
+        const isMoving = dist > 0.06;
+        const assignedSlot = gameState.kitchenSlots.find(
+            (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
+        );
+        const isReady = Boolean(assignedSlot && assignedSlot.endsAtMs !== null && assignedSlot.endsAtMs <= nowMs);
+        const actorState: KitchenActorState = assignedSlot ? (isReady ? 'celebrate' : 'cooking') : 'idle';
+        const facingLeft = isMoving ? (tgt.x - tgt.y) - (cur.x - cur.y) < -0.05 : false;
+
+        kitchenDepthEntities.push({
+            kind: 'chef',
+            depth: cur.x + cur.y + 0.1,
+            chef,
+            idx,
+            curX: cur.x,
+            curY: cur.y,
+            facingLeft,
+            isMoving,
+            actorState,
+        });
+    });
+
+    if (apprenticeSlot && actorTargets['owner-apprentice']) {
+        const tgt = actorTargets['owner-apprentice'];
+        const cur = posMapRef.current['owner-apprentice'] || { x: 1.4, y: 5.5 };
+        const dist = Math.hypot(tgt.x - cur.x, tgt.y - cur.y);
+        const isMoving = dist > 0.06;
+        const isReady = apprenticeSlot.endsAtMs !== null && apprenticeSlot.endsAtMs <= nowMs;
+        const actorState: KitchenActorState = isReady ? 'celebrate' : 'cooking';
+        const facingLeft = isMoving ? (tgt.x - tgt.y) - (cur.x - cur.y) < -0.05 : false;
+
+        kitchenDepthEntities.push({
+            kind: 'owner',
+            depth: cur.x + cur.y + 0.1,
+            curX: cur.x,
+            curY: cur.y,
+            facingLeft,
+            isMoving,
+            actorState,
+        });
+    }
+
+    kitchenDepthEntities.sort((a, b) => a.depth - b.depth);
+
+    const ownerMeta = getCatalogItemById(minimiItemId);
+    const ownerSpriteUrl = ownerMeta?.spriteUrl || `/images/minihome/items/${minimiItemId}.png`;
+    const ownerW = ownerMeta?.spriteWidth || 92;
+    const ownerH = ownerMeta?.spriteHeight || 92;
+    const ownerOffsetY = ownerMeta?.spriteOffsetY ?? 12;
 
     return (
         <g>
@@ -160,255 +477,385 @@ export const AzitKitchenIsoScene: React.FC<AzitKitchenIsoSceneProps> = ({
                 })
             )}
 
-            {/* 3개 아이소메트릭 주방 화구 */}
-            {KITCHEN_STOVE_COORDS.map((coord) => {
-                const slot = gameState.kitchenSlots.find((s) => s.slotIndex === coord.slotIndex);
-                if (!slot) return null;
-                const pos = getIsoCenter(coord.gridX, coord.gridY);
-                const isSelected = selectedSlotIndex === slot.slotIndex;
-                const isCooking = slot.status === 'cooking' && Boolean(slot.recipeId);
-                const isReady = isCooking && slot.endsAtMs !== null && slot.endsAtMs <= nowMs;
-                const recipe = slot.recipeId ? recipeMap.get(slot.recipeId) : undefined;
-                const countdown = formatCountdownLabel(slot.endsAtMs, nowMs);
+            {/* 화구 · 요리사 · 수습 아바타 통합 Z-depth 렌더링 */}
+            {kitchenDepthEntities.map((entity) => {
+                if (entity.kind === 'stove') {
+                    const { slot, coord } = entity;
+                    const pos = getIsoCenter(coord.gridX, coord.gridY);
+                    const isSelected = selectedSlotIndex === slot.slotIndex;
+                    const isCooking = slot.status === 'cooking' && Boolean(slot.recipeId);
+                    const isReady = isCooking && slot.endsAtMs !== null && slot.endsAtMs <= nowMs;
+                    const recipe = slot.recipeId ? recipeMap.get(slot.recipeId) : undefined;
+                    const countdown = formatCountdownLabel(slot.endsAtMs, nowMs);
+                    const flameScale = 1 + Math.sin(animSec * 9 + coord.slotIndex) * 0.14;
+                    const potShakeX = isCooking && !isReady ? Math.sin(animSec * 14 + coord.slotIndex) * 0.9 : 0;
+                    const potBobY = isCooking && !isReady ? -Math.abs(Math.sin(animSec * 9 + coord.slotIndex)) * 1.9 : 0;
+
+                    return (
+                        <g
+                            key={`kitchen-stove-${slot.slotIndex}`}
+                            data-kitchen-stove={slot.slotIndex}
+                            transform={`translate(${pos.x}, ${pos.y})`}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectSlot(slot.slotIndex);
+                            }}
+                            className="cursor-pointer"
+                        >
+                            {isSelected && (
+                                <ellipse
+                                    cx="0"
+                                    cy="4"
+                                    rx="42"
+                                    ry="21"
+                                    fill="rgba(249, 115, 22, 0.22)"
+                                    stroke="#f97316"
+                                    strokeWidth="2.5"
+                                />
+                            )}
+
+                            {/* 화덕 베이스 블록 */}
+                            <polygon
+                                points="0,-24 38,-6 0,12 -38,-6"
+                                fill={!slot.unlocked ? '#94a3b8' : isReady ? '#fef08a' : '#e2e8f0'}
+                                stroke={!slot.unlocked ? '#475569' : '#94a3b8'}
+                                strokeWidth="1.5"
+                            />
+                            <polygon
+                                points="-38,-6 0,12 0,34 -38,16"
+                                fill={!slot.unlocked ? '#64748b' : '#cbd5e1'}
+                            />
+                            <polygon
+                                points="0,12 38,-6 38,16 0,34"
+                                fill={!slot.unlocked ? '#475569' : '#94a3b8'}
+                            />
+
+                            {/* 화구 버너 링 */}
+                            <ellipse
+                                cx="0"
+                                cy="-7"
+                                rx="22"
+                                ry="11"
+                                fill={!slot.unlocked ? '#334155' : '#1e293b'}
+                                stroke="#475569"
+                                strokeWidth="1.5"
+                            />
+
+                            {/* 실시간 2중 불꽃 + 보글보글 들썩이는 솥 + 연속 상승 김 */}
+                            {isCooking && (
+                                <g>
+                                    <g transform={`translate(0, -7) scale(${flameScale}, ${1 + Math.cos(animSec * 11) * 0.15})`}>
+                                        <ellipse
+                                            cx="0"
+                                            cy="0"
+                                            rx="17"
+                                            ry="8.5"
+                                            fill={isReady ? '#facc15' : '#f97316'}
+                                            opacity="0.92"
+                                        />
+                                        <ellipse
+                                            cx="0"
+                                            cy="0"
+                                            rx="11"
+                                            ry="5"
+                                            fill="#fef08a"
+                                            opacity="0.88"
+                                        />
+                                    </g>
+
+                                    {/* 냄비 몸체 */}
+                                    <g transform={`translate(${potShakeX}, ${potBobY})`}>
+                                        <ellipse cx="0" cy="-12" rx="17" ry="9" fill="#9a3412" stroke="#431407" strokeWidth="1.2" />
+                                        <rect x="-17" y="-27" width="34" height="15" rx="4" fill="#c2410c" stroke="#431407" strokeWidth="1.2" />
+                                        <ellipse cx="0" cy="-27" rx="17" ry="8" fill="#fb923c" stroke="#431407" strokeWidth="1.2" />
+                                        <text x="0" y="-22" textAnchor="middle" fontSize="14">
+                                            {recipe?.emoji || '🍲'}
+                                        </text>
+                                    </g>
+
+                                    {/* 연속 상승 김 구름 3개 */}
+                                    {[0, 1, 2].map((sIdx) => {
+                                        const sp = (animSec * 0.85 + sIdx * 0.33 + coord.slotIndex * 0.2) % 1;
+                                        const sx = (sIdx - 1) * 8 + Math.sin(animSec * 3.5 + sIdx) * 3;
+                                        const sy = -34 - sp * 24;
+                                        return (
+                                            <circle
+                                                key={`stove-steam-${slot.slotIndex}-${sIdx}`}
+                                                cx={sx}
+                                                cy={sy}
+                                                r={3.2 + sp * 3.2}
+                                                fill="#ffffff"
+                                                opacity={Math.sin(sp * Math.PI) * 0.78}
+                                            />
+                                        );
+                                    })}
+
+                                    {/* 상승 향기 곡선 2줄 */}
+                                    {[0, 1].map((wIdx) => {
+                                        const wp = (animSec * 0.75 + wIdx * 0.5) % 1;
+                                        const baseX = wIdx === 0 ? -5 : 5;
+                                        const baseY = -36 - wp * 16;
+                                        return (
+                                            <path
+                                                key={`stove-aroma-${slot.slotIndex}-${wIdx}`}
+                                                d={`M${baseX},${baseY} Q${baseX + Math.sin(animSec * 5 + wIdx) * 4},${baseY - 6} ${baseX},${baseY - 12}`}
+                                                fill="none"
+                                                stroke="#ffedd5"
+                                                strokeWidth="1.5"
+                                                strokeLinecap="round"
+                                                opacity={Math.sin(wp * Math.PI) * 0.7}
+                                            />
+                                        );
+                                    })}
+                                </g>
+                            )}
+
+                            {!slot.unlocked && (
+                                <text x="0" y="-12" textAnchor="middle" fontSize="18">
+                                    🔒
+                                </text>
+                            )}
+
+                            {slot.unlocked && !isCooking && (
+                                <text x="0" y="-10" textAnchor="middle" fontSize="15" opacity="0.85">
+                                    🍳
+                                </text>
+                            )}
+
+                            {/* 화구 상태 라벨 뱃지 */}
+                            <g
+                                transform="translate(0, -56)"
+                                onClick={(e) => {
+                                    if (isReady && onQuickClaimSlot && !isActing) {
+                                        e.stopPropagation();
+                                        onQuickClaimSlot(slot.slotIndex).catch(() => {});
+                                    }
+                                }}
+                            >
+                                <rect
+                                    x="-46"
+                                    y="-11"
+                                    width="92"
+                                    height="20"
+                                    rx="10"
+                                    fill={
+                                        !slot.unlocked
+                                            ? 'rgba(51, 65, 85, 0.92)'
+                                            : isReady
+                                              ? '#f59e0b'
+                                              : isCooking
+                                                ? 'rgba(15, 23, 42, 0.88)'
+                                                : 'rgba(16, 185, 129, 0.92)'
+                                    }
+                                    stroke="#ffffff"
+                                    strokeWidth="1.2"
+                                />
+                                <text
+                                    x="0"
+                                    y="2.5"
+                                    textAnchor="middle"
+                                    fill={isReady ? '#0f172a' : '#ffffff'}
+                                    fontSize="9.5"
+                                    fontWeight="900"
+                                >
+                                    {!slot.unlocked
+                                        ? `Lv.${slot.unlockLevel} 해금`
+                                        : isReady
+                                          ? isActing
+                                              ? '수령 중...'
+                                              : '✨ 요리 수령!'
+                                          : isCooking
+                                            ? `⏱ ${countdown}`
+                                            : `#${slot.slotIndex + 1} 조리 시작`}
+                                </text>
+                            </g>
+                        </g>
+                    );
+                }
+
+                if (entity.kind === 'owner') {
+                    const { curX, curY, facingLeft, isMoving, actorState } = entity;
+                    const pos = getIsoCenter(curX, curY);
+                    const stepSin = Math.sin(animSec * 12);
+                    const cookSwing = Math.sin(animSec * 7);
+                    const motionX = isMoving ? 0 : actorState === 'cooking' ? cookSwing * 1.8 : 0;
+                    const motionY = isMoving
+                        ? -Math.abs(stepSin) * 4.5
+                        : actorState === 'celebrate'
+                          ? -Math.abs(Math.sin(animSec * 6.5)) * 6.5
+                          : -Math.abs(cookSwing) * 3.5;
+                    const tiltDeg = isMoving ? stepSin * 4.2 : actorState === 'cooking' ? cookSwing * 6 : 0;
+
+                    return (
+                        <g
+                            key="kitchen-owner-apprentice"
+                            transform={`translate(${pos.x}, ${pos.y})`}
+                            className="pointer-events-none"
+                        >
+                            <ellipse cx="0" cy="5" rx="22" ry="10" fill="rgba(15, 23, 42, 0.25)" />
+                            <ellipse
+                                cx="0"
+                                cy="5"
+                                rx={27 + Math.sin(animSec * 5) * 1.8}
+                                ry={12 + Math.sin(animSec * 5) * 0.8}
+                                fill="rgba(249, 115, 22, 0.16)"
+                                stroke="#fb923c"
+                                strokeWidth="1.6"
+                            />
+                            <g
+                                transform={`translate(${motionX}, ${motionY}) scale(${facingLeft ? -1 : 1}, 1) rotate(${tiltDeg} 0 -18)`}
+                            >
+                                <image
+                                    href={ownerSpriteUrl}
+                                    x={-ownerW / 2}
+                                    y={-ownerH + ownerOffsetY}
+                                    width={ownerW}
+                                    height={ownerH}
+                                    preserveAspectRatio="xMidYMax meet"
+                                />
+                            </g>
+                            {renderCookingToolOverlay('owner', animSec, actorState, isMoving)}
+                            <g transform={`translate(0, ${-ownerH + ownerOffsetY - 8 + motionY})`}>
+                                <rect
+                                    x="-30"
+                                    y="-9"
+                                    width="60"
+                                    height="15"
+                                    rx="7.5"
+                                    fill={actorState === 'celebrate' ? '#f59e0b' : '#ea580c'}
+                                    stroke="#ffffff"
+                                    strokeWidth="1"
+                                />
+                                <text
+                                    x="0"
+                                    y="1.5"
+                                    textAnchor="middle"
+                                    fill={actorState === 'celebrate' ? '#0f172a' : '#ffffff'}
+                                    fontSize="8.2"
+                                    fontWeight="900"
+                                >
+                                    {actorState === 'celebrate' ? '✨ 완성!' : '🍳 수습 조리'}
+                                </text>
+                            </g>
+                            <rect
+                                x="-46"
+                                y="11"
+                                width="92"
+                                height="17"
+                                rx="8.5"
+                                fill="#ea580c"
+                                stroke="rgba(255, 255, 255, 0.35)"
+                                strokeWidth="0.8"
+                            />
+                            <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
+                                {ownerName.slice(0, 7)} (직접조리)
+                            </text>
+                        </g>
+                    );
+                }
+
+                const { chef, idx, curX, curY, facingLeft, isMoving, actorState } = entity;
+                const pos = getIsoCenter(curX, curY);
+                const meta = chefCatalogMap.get(chef.chefCode);
+                const sprite = getChefSpriteMeta(chef.chefCode);
+                const isActive = actorState !== 'idle';
+                const stepSin = Math.sin(animSec * 12 + idx);
+                const cookSwing = Math.sin(animSec * 7 + idx);
+                const motionX = isMoving ? 0 : actorState === 'cooking' ? cookSwing * 1.8 : 0;
+                const motionY = isMoving
+                    ? -Math.abs(stepSin) * 4.5
+                    : actorState === 'celebrate'
+                      ? -Math.abs(Math.sin(animSec * 6.5 + idx)) * 6.5
+                      : actorState === 'cooking'
+                        ? -Math.abs(cookSwing) * 3.5
+                        : Math.sin(animSec * 2.2 + idx * 0.9) * 1.8;
+                const tiltDeg = isMoving ? stepSin * 4.2 : actorState === 'cooking' ? cookSwing * 6 : 0;
 
                 return (
                     <g
-                        key={`kitchen-stove-${slot.slotIndex}`}
-                        data-kitchen-stove={slot.slotIndex}
+                        key={`chef-iso-${chef.chefCode}`}
                         transform={`translate(${pos.x}, ${pos.y})`}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onSelectSlot(slot.slotIndex);
+                            onOpenChefModal();
                         }}
                         className="cursor-pointer"
                     >
-                        {isSelected && (
-                            <ellipse
-                                cx="0"
-                                cy="4"
-                                rx="42"
-                                ry="21"
-                                fill="rgba(249, 115, 22, 0.22)"
-                                stroke="#f97316"
-                                strokeWidth="2.5"
-                            />
-                        )}
-
-                        {/* 화덕 베이스 블록 */}
-                        <polygon
-                            points="0,-24 38,-6 0,12 -38,-6"
-                            fill={!slot.unlocked ? '#94a3b8' : isReady ? '#fef08a' : '#e2e8f0'}
-                            stroke={!slot.unlocked ? '#475569' : '#94a3b8'}
-                            strokeWidth="1.5"
-                        />
-                        <polygon
-                            points="-38,-6 0,12 0,34 -38,16"
-                            fill={!slot.unlocked ? '#64748b' : '#cbd5e1'}
-                        />
-                        <polygon
-                            points="0,12 38,-6 38,16 0,34"
-                            fill={!slot.unlocked ? '#475569' : '#94a3b8'}
-                        />
-
-                        {/* 화구 버너 링 */}
                         <ellipse
                             cx="0"
-                            cy="-7"
-                            rx="22"
-                            ry="11"
-                            fill={!slot.unlocked ? '#334155' : '#1e293b'}
-                            stroke="#475569"
-                            strokeWidth="1.5"
+                            cy="5"
+                            rx={sprite.shadowRx}
+                            ry={sprite.shadowRy}
+                            fill="rgba(15, 23, 42, 0.25)"
                         />
-
-                        {/* 불꽃 및 조리 솥 */}
-                        {isCooking && (
-                            <g>
-                                <ellipse
-                                    cx="0"
-                                    cy="-7"
-                                    rx="16"
-                                    ry="8"
-                                    fill={isReady ? '#facc15' : '#f97316'}
-                                    opacity="0.9"
+                        {isActive && (
+                            <ellipse
+                                cx="0"
+                                cy="5"
+                                rx={sprite.shadowRx + 5 + Math.sin(animSec * 5) * 1.5}
+                                ry={sprite.shadowRy + 2.5 + Math.sin(animSec * 5) * 0.7}
+                                fill="rgba(249, 115, 22, 0.16)"
+                                stroke="#fb923c"
+                                strokeWidth="1.6"
+                            />
+                        )}
+                        <g
+                            transform={`translate(${motionX}, ${motionY}) scale(${facingLeft ? -1 : 1}, 1) rotate(${tiltDeg} 0 -18)`}
+                        >
+                            <image
+                                href={sprite.spriteUrl}
+                                x={-sprite.spriteWidth / 2}
+                                y={-sprite.spriteHeight + sprite.spriteOffsetY}
+                                width={sprite.spriteWidth}
+                                height={sprite.spriteHeight}
+                                preserveAspectRatio="xMidYMax meet"
+                            />
+                        </g>
+                        {renderCookingToolOverlay(chef.chefCode, animSec, actorState, isMoving)}
+                        {isActive && (
+                            <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8 + motionY})`}>
+                                <rect
+                                    x="-26"
+                                    y="-9"
+                                    width="52"
+                                    height="15"
+                                    rx="7.5"
+                                    fill={actorState === 'celebrate' ? '#f59e0b' : '#ea580c'}
+                                    stroke="#ffffff"
+                                    strokeWidth="1"
                                 />
-                                {/* 냄비 몸체 */}
-                                <ellipse cx="0" cy="-12" rx="17" ry="9" fill="#9a3412" stroke="#431407" strokeWidth="1.2" />
-                                <rect x="-17" y="-27" width="34" height="15" rx="4" fill="#c2410c" stroke="#431407" strokeWidth="1.2" />
-                                <ellipse cx="0" cy="-27" rx="17" ry="8" fill="#fb923c" stroke="#431407" strokeWidth="1.2" />
-                                {/* 상승 김 효과 */}
-                                <circle cx="-6" cy="-39" r="4" fill="#ffffff" opacity="0.8" />
-                                <circle cx="5" cy="-44" r="5" fill="#ffffff" opacity="0.7" />
-                                <text x="0" y="-22" textAnchor="middle" fontSize="14">
-                                    {recipe?.emoji || '🍲'}
+                                <text
+                                    x="0"
+                                    y="1.5"
+                                    textAnchor="middle"
+                                    fill={actorState === 'celebrate' ? '#0f172a' : '#ffffff'}
+                                    fontSize="8.2"
+                                    fontWeight="900"
+                                >
+                                    {actorState === 'celebrate' ? '✨ 완성!' : '🔥 조리 중'}
                                 </text>
                             </g>
                         )}
-
-                        {!slot.unlocked && (
-                            <text x="0" y="-12" textAnchor="middle" fontSize="18">
-                                🔒
-                            </text>
-                        )}
-
-                        {slot.unlocked && !isCooking && (
-                            <text x="0" y="-10" textAnchor="middle" fontSize="15" opacity="0.85">
-                                🍳
-                            </text>
-                        )}
-
-                        {/* 화구 상태 라벨 뱃지 (완성 시 클릭하면 즉시 원클릭 수령) */}
-                        <g
-                            transform="translate(0, -56)"
-                            onClick={(e) => {
-                                if (isReady && onQuickClaimSlot && !isActing) {
-                                    e.stopPropagation();
-                                    onQuickClaimSlot(slot.slotIndex).catch(() => {});
-                                }
-                            }}
-                        >
-                            <rect
-                                x="-46"
-                                y="-11"
-                                width="92"
-                                height="20"
-                                rx="10"
-                                fill={
-                                    !slot.unlocked
-                                        ? 'rgba(51, 65, 85, 0.92)'
-                                        : isReady
-                                          ? '#f59e0b'
-                                          : isCooking
-                                            ? 'rgba(15, 23, 42, 0.88)'
-                                            : 'rgba(16, 185, 129, 0.92)'
-                                }
-                                stroke="#ffffff"
-                                strokeWidth="1.2"
-                            />
-                            <text
-                                x="0"
-                                y="2.5"
-                                textAnchor="middle"
-                                fill={isReady ? '#0f172a' : '#ffffff'}
-                                fontSize="9.5"
-                                fontWeight="900"
-                            >
-                                {!slot.unlocked
-                                    ? `Lv.${slot.unlockLevel} 해금`
-                                    : isReady
-                                      ? isActing
-                                          ? '수령 중...'
-                                          : '✨ 요리 수령!'
-                                      : isCooking
-                                        ? `⏱ ${countdown}`
-                                        : `#${slot.slotIndex + 1} 조리 시작`}
-                            </text>
-                        </g>
+                        {/* 상태 배지 */}
+                        <rect
+                            x="-46"
+                            y="11"
+                            width="92"
+                            height="17"
+                            rx="8.5"
+                            fill={isActive ? '#ea580c' : 'rgba(15, 23, 42, 0.84)'}
+                            stroke="rgba(255, 255, 255, 0.35)"
+                            strokeWidth="0.8"
+                        />
+                        <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
+                            {meta?.name || chef.chefCode} Lv.{chef.level}
+                        </text>
                     </g>
                 );
             })}
 
-            {/* 고용된 요리사 3D 미니미 아바타 (미고용 시 모집 표지판 표시) */}
-            {gameState.chefs.length > 0 ? (
-                gameState.chefs
-                    .map((chef, idx) => {
-                        const stCoord = CHEF_STATION_COORDS[idx] || CHEF_STATION_COORDS[0];
-                        return {
-                            chef,
-                            idx,
-                            stCoord,
-                            depth: stCoord.gridX + stCoord.gridY,
-                        };
-                    })
-                    .sort((a, b) => a.depth - b.depth)
-                    .map(({ chef, idx, stCoord }) => {
-                        const pos = getIsoCenter(stCoord.gridX, stCoord.gridY);
-                        const meta = chefCatalogMap.get(chef.chefCode);
-                        const sprite = getChefSpriteMeta(chef.chefCode);
-                        const isBusy = gameState.kitchenSlots.some(
-                            (s) => s.status === 'cooking' && s.chefCode === chef.chefCode
-                        );
-                        return (
-                            <g
-                                key={`chef-iso-${chef.chefCode}`}
-                                transform={`translate(${pos.x}, ${pos.y})`}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onOpenChefModal();
-                                }}
-                                className="cursor-pointer"
-                            >
-                                <ellipse
-                                    cx="0"
-                                    cy="5"
-                                    rx={sprite.shadowRx}
-                                    ry={sprite.shadowRy}
-                                    fill="rgba(15, 23, 42, 0.25)"
-                                />
-                                {isBusy && (
-                                    <ellipse
-                                        cx="0"
-                                        cy="5"
-                                        rx={sprite.shadowRx + 5}
-                                        ry={sprite.shadowRy + 2.5}
-                                        fill="rgba(249, 115, 22, 0.16)"
-                                        stroke="#fb923c"
-                                        strokeWidth="1.6"
-                                    />
-                                )}
-                                <g>
-                                    <animateTransform
-                                        attributeName="transform"
-                                        type="translate"
-                                        values={isBusy ? '0,0; 0,-4; 0,0' : '0,0; 0,-2; 0,0'}
-                                        dur={isBusy ? '1.2s' : '2.8s'}
-                                        begin={`${(idx * 0.45).toFixed(2)}s`}
-                                        repeatCount="indefinite"
-                                    />
-                                    <image
-                                        href={sprite.spriteUrl}
-                                        x={-sprite.spriteWidth / 2}
-                                        y={-sprite.spriteHeight + sprite.spriteOffsetY}
-                                        width={sprite.spriteWidth}
-                                        height={sprite.spriteHeight}
-                                        preserveAspectRatio="xMidYMax meet"
-                                    />
-                                </g>
-                                {isBusy && (
-                                    <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8})`}>
-                                        <rect
-                                            x="-26"
-                                            y="-9"
-                                            width="52"
-                                            height="15"
-                                            rx="7.5"
-                                            fill="#ea580c"
-                                            stroke="#ffffff"
-                                            strokeWidth="1"
-                                        />
-                                        <text x="0" y="1.5" textAnchor="middle" fill="#ffffff" fontSize="8.2" fontWeight="900">
-                                            🔥 조리 중
-                                        </text>
-                                    </g>
-                                )}
-                                {/* 상태 배지 */}
-                                <rect
-                                    x="-46"
-                                    y="11"
-                                    width="92"
-                                    height="17"
-                                    rx="8.5"
-                                    fill={isBusy ? '#ea580c' : 'rgba(15, 23, 42, 0.84)'}
-                                    stroke="rgba(255, 255, 255, 0.35)"
-                                    strokeWidth="0.8"
-                                />
-                                <text x="0" y="22.5" textAnchor="middle" fill="#ffffff" fontSize="9.2" fontWeight="800">
-                                    {meta?.name || chef.chefCode} Lv.{chef.level}
-                                </text>
-                            </g>
-                        );
-                    })
-            ) : (
+            {/* 미고용 상태일 때 모집 표지판 표시 */}
+            {gameState.chefs.length === 0 && (
                 <g
                     transform={`translate(${getIsoCenter(2.4, 4.4).x}, ${getIsoCenter(2.4, 4.4).y})`}
                     onClick={(e) => {

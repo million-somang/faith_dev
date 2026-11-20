@@ -1,7 +1,12 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import type { AzitExpeditionRecord, AzitFullGameState, AzitMercenaryRecord } from '@/types/azit-game.types';
+import React, { useEffect, useMemo, useState } from 'react';
+import type {
+    AzitExpeditionRecord,
+    AzitFullGameState,
+    AzitMercCode,
+    AzitMercenaryRecord,
+} from '@/types/azit-game.types';
 import { formatCountdownLabel } from '@/types/azit-game.types';
 import { getMercSpriteMeta } from '@/data/azitCharacterAssets';
 
@@ -20,7 +25,9 @@ const MERC_CAMP_COORDS: Array<{ gridX: number; gridY: number }> = [
 ];
 
 type CampDepthEntity =
+    | { kind: 'dummy'; depth: number }
     | { kind: 'campfire'; depth: number }
+    | { kind: 'target'; depth: number }
     | {
           kind: 'mercenary';
           depth: number;
@@ -28,6 +35,237 @@ type CampDepthEntity =
           idx: number;
           coord: { gridX: number; gridY: number };
       };
+
+interface MercTrainingAnimState {
+    dx: number;
+    dy: number;
+    tiltDeg: number;
+    isBurst: boolean;
+    burstPhase: number;
+}
+
+function computeMercTrainingAnim(mercCode: AzitMercCode, animSec: number, idx: number): MercTrainingAnimState {
+    const localT = (animSec + idx * 0.85) % 4.2;
+    if (localT >= 2.6) {
+        return {
+            dx: 0,
+            dy: Math.sin(animSec * 2.2 + idx) * 1.6,
+            tiltDeg: 0,
+            isBurst: false,
+            burstPhase: 0,
+        };
+    }
+
+    const p = localT / 2.6;
+    switch (mercCode) {
+        case 'merc-leo': {
+            // 전진 방패 돌진 2연타
+            const strike = Math.abs(Math.sin(p * Math.PI * 2));
+            return {
+                dx: strike * 6,
+                dy: -strike * 2.5,
+                tiltDeg: strike * 8,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+        case 'merc-rina': {
+            // 활 당겼다 발사 반동
+            const draw = Math.sin(p * Math.PI * 2);
+            return {
+                dx: -Math.max(0, draw) * 3.5,
+                dy: -Math.abs(draw) * 1.5,
+                tiltDeg: -draw * 6,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+        case 'merc-kael': {
+            // 화염 마법 부양 영창
+            return {
+                dx: 0,
+                dy: -5 - Math.sin(p * Math.PI * 3) * 2.5,
+                tiltDeg: Math.sin(p * Math.PI * 2) * 3.5,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+        case 'merc-serena': {
+            // 성스러운 치유 부양 스웨이
+            return {
+                dx: 0,
+                dy: -6 - Math.sin(p * Math.PI * 2) * 2.2,
+                tiltDeg: Math.sin(p * Math.PI * 2) * 2.5,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+        case 'merc-garr': {
+            // 좌우 쌍도끼 스윙 + 점프 내려찍기
+            const jump = Math.abs(Math.sin(p * Math.PI * 2));
+            return {
+                dx: Math.sin(p * Math.PI * 2) * 3.5,
+                dy: -jump * 9,
+                tiltDeg: Math.sin(p * Math.PI * 4) * 11,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+        case 'merc-aria': {
+            // 고속 발키리 스텝 검무
+            const dash = Math.sin(p * Math.PI * 3);
+            return {
+                dx: dash * 5.5,
+                dy: -Math.abs(dash) * 4.2,
+                tiltDeg: dash * 7.5,
+                isBurst: true,
+                burstPhase: p,
+            };
+        }
+    }
+}
+
+function renderMercSkillFx(mercCode: AzitMercCode, anim: MercTrainingAnimState, animSec: number) {
+    if (!anim.isBurst) return null;
+    const p = anim.burstPhase;
+
+    switch (mercCode) {
+        case 'merc-leo': {
+            const pulse = (p * 2) % 1;
+            return (
+                <g pointerEvents="none" transform="translate(20, -32)">
+                    <path
+                        d={`M0,-14 L11,-8 L11,6 L0,14 L-6,8`}
+                        fill="none"
+                        stroke="#60a5fa"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        opacity={Math.sin(pulse * Math.PI)}
+                    />
+                    <circle cx={6 + pulse * 12} cy={-2} r={3 + pulse * 8} fill="none" stroke="#38bdf8" strokeWidth="1.6" opacity={1 - pulse} />
+                    <line x1="2" y1="-8" x2="18" y2="-14" stroke="#fef08a" strokeWidth="2.2" strokeLinecap="round" opacity={Math.sin(pulse * Math.PI)} />
+                </g>
+            );
+        }
+        case 'merc-rina': {
+            const arrowP = (p * 2) % 1;
+            const ax = 14 + arrowP * 38;
+            const ay = -34 - arrowP * 14;
+            return (
+                <g pointerEvents="none" opacity={Math.sin(arrowP * Math.PI)}>
+                    <line x1={ax - 14} y1={ay + 5} x2={ax} y2={ay} stroke="#e2e8f0" strokeWidth="1.4" strokeDasharray="3 2" />
+                    <line x1={ax - 6} y1={ay + 2.2} x2={ax + 8} y2={ay - 2.8} stroke="#86efac" strokeWidth="2.2" strokeLinecap="round" />
+                    <polygon points={`${ax + 8},${ay - 2.8} ${ax + 3},${ay - 4.2} ${ax + 5},${ay + 0.5}`} fill="#fde047" />
+                </g>
+            );
+        }
+        case 'merc-kael': {
+            const orbP = (p * 2) % 1;
+            const rot = (animSec * 160) % 360;
+            return (
+                <g pointerEvents="none">
+                    <ellipse
+                        cx="0"
+                        cy="2"
+                        rx={24 + Math.sin(animSec * 6) * 2}
+                        ry={11 + Math.sin(animSec * 6) * 1}
+                        fill="none"
+                        stroke="#f97316"
+                        strokeWidth="1.4"
+                        strokeDasharray="6 4"
+                        transform={`rotate(${rot * 0.08} 0 2)`}
+                        opacity="0.78"
+                    />
+                    <g transform={`translate(${18 + orbP * 24}, ${-36 - Math.sin(orbP * Math.PI) * 8})`} opacity={Math.sin(orbP * Math.PI)}>
+                        <circle cx="0" cy="0" r="6" fill="#f97316" />
+                        <circle cx="0" cy="0" r="3.2" fill="#fef08a" />
+                    </g>
+                </g>
+            );
+        }
+        case 'merc-serena': {
+            const wave1 = (p * 2) % 1;
+            const wave2 = (p * 2 + 0.5) % 1;
+            return (
+                <g pointerEvents="none">
+                    <ellipse cx="0" cy="3" rx={14 + wave1 * 22} ry={6 + wave1 * 10} fill="none" stroke="#fde047" strokeWidth="1.8" opacity={1 - wave1} />
+                    <ellipse cx="0" cy="3" rx={14 + wave2 * 22} ry={6 + wave2 * 10} fill="none" stroke="#7dd3fc" strokeWidth="1.5" opacity={1 - wave2} />
+                    {[0, 1, 2].map((sIdx) => {
+                        const sp = (animSec * 1.1 + sIdx * 0.33) % 1;
+                        return (
+                            <text
+                                key={`serena-heal-${sIdx}`}
+                                x={(sIdx - 1) * 16}
+                                y={-34 - sp * 28}
+                                fontSize="11"
+                                textAnchor="middle"
+                                opacity={Math.sin(sp * Math.PI)}
+                            >
+                                {sIdx === 1 ? '✨' : '✚'}
+                            </text>
+                        );
+                    })}
+                </g>
+            );
+        }
+        case 'merc-garr': {
+            const arcP = (p * 2) % 1;
+            return (
+                <g pointerEvents="none">
+                    <path
+                        d="M-22,-50 Q4,-28 24,-12"
+                        fill="none"
+                        stroke="#ef4444"
+                        strokeWidth="3.2"
+                        strokeLinecap="round"
+                        opacity={Math.sin(arcP * Math.PI)}
+                    />
+                    <path
+                        d="M22,-50 Q-4,-28 -24,-12"
+                        fill="none"
+                        stroke="#fca5a5"
+                        strokeWidth="2.8"
+                        strokeLinecap="round"
+                        opacity={Math.sin(arcP * Math.PI)}
+                    />
+                    <ellipse cx="0" cy="5" rx={16 + arcP * 20} ry={7 + arcP * 9} fill="none" stroke="#fb923c" strokeWidth="1.8" opacity={1 - arcP} />
+                </g>
+            );
+        }
+        case 'merc-aria': {
+            const slashP = (p * 3) % 1;
+            return (
+                <g pointerEvents="none">
+                    <path
+                        d={`M-18,-48 Q16,-36 26,-16`}
+                        fill="none"
+                        stroke="#818cf8"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        opacity={Math.sin(slashP * Math.PI)}
+                    />
+                    <path
+                        d={`M-14,-44 Q14,-34 22,-18`}
+                        fill="none"
+                        stroke="#e0e7ff"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        opacity={Math.sin(slashP * Math.PI)}
+                    />
+                    <text
+                        x={16 + slashP * 12}
+                        y={-46 - slashP * 14}
+                        fontSize="11"
+                        textAnchor="middle"
+                        opacity={Math.sin(slashP * Math.PI)}
+                    >
+                        ✨
+                    </text>
+                </g>
+            );
+        }
+    }
+}
 
 function getIsoCenter(gridX: number, gridY: number): { x: number; y: number } {
     const x = ORIGIN_X + (gridX - gridY) * (TILE_W / 2);
@@ -77,16 +315,56 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
 
     const tentPos = getIsoCenter(1.7, 1.9);
     const portalPos = getIsoCenter(5.6, 1.9);
+    const dummyPos = getIsoCenter(2.3, 2.9);
+    const targetPos = getIsoCenter(4.8, 2.7);
     const firePos = getIsoCenter(3.7, 3.7);
     const exitIndoorPos = getIsoCenter(0.9, 6.2);
     const goKitchenPos = getIsoCenter(6.3, 5.9);
+
+    const [animSec, setAnimSec] = useState<number>(0);
+
+    useEffect(() => {
+        let rafId = 0;
+        const startMs = performance.now();
+        let lastEmitMs = startMs;
+        const tick = (now: number) => {
+            if (now - lastEmitMs >= 30) {
+                lastEmitMs = now;
+                setAnimSec((now - startMs) / 1000);
+            }
+            rafId = requestAnimationFrame(tick);
+        };
+        rafId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(rafId);
+    }, []);
+
+    const hasMeleeTrainee = useMemo(
+        () =>
+            gameState.mercenaries.some(
+                (m) =>
+                    m.status === 'idle' &&
+                    (m.mercCode === 'merc-leo' || m.mercCode === 'merc-garr' || m.mercCode === 'merc-aria')
+            ),
+        [gameState.mercenaries]
+    );
+    const hasRangedTrainee = useMemo(
+        () =>
+            gameState.mercenaries.some(
+                (m) => m.status === 'idle' && (m.mercCode === 'merc-rina' || m.mercCode === 'merc-kael')
+            ),
+        [gameState.mercenaries]
+    );
 
     const completedCount = gameState.activeExpeditions.filter((e) => e.endsAtMs <= nowMs).length;
     const runningCount = gameState.activeExpeditions.length;
     const nextFinishExp = gameState.activeExpeditions[0] || null;
 
     const campDepthEntities = useMemo<CampDepthEntity[]>(() => {
-        const entities: CampDepthEntity[] = [{ kind: 'campfire', depth: 7.4 }];
+        const entities: CampDepthEntity[] = [
+            { kind: 'dummy', depth: 5.2 },
+            { kind: 'campfire', depth: 7.4 },
+            { kind: 'target', depth: 7.5 },
+        ];
         gameState.mercenaries.forEach((merc, idx) => {
             const coord = MERC_CAMP_COORDS[idx] || MERC_CAMP_COORDS[0];
             entities.push({
@@ -275,17 +553,106 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                 </text>
             </g>
 
-            {/* 모닥불 및 고용된 용병들 Z-depth 통합 배치 (미고용 시 모집 안내) */}
+            {/* 훈련장 오브제 · 모닥불 · 고용 용병들 Z-depth 통합 배치 */}
             {campDepthEntities.map((entity) => {
+                if (entity.kind === 'dummy') {
+                    const hitPulse = hasMeleeTrainee ? Math.max(0, Math.sin(animSec * 5.2)) : 0;
+                    const wobble = hasMeleeTrainee ? Math.sin(animSec * 16) * hitPulse * 6.5 : 0;
+                    return (
+                        <g
+                            key="camp-training-dummy"
+                            data-camp-training-dummy="true"
+                            transform={`translate(${dummyPos.x}, ${dummyPos.y})`}
+                        >
+                            <ellipse cx="0" cy="4" rx="16" ry="7.5" fill="rgba(15, 23, 42, 0.22)" />
+                            <g transform={`rotate(${wobble} 0 2)`}>
+                                {/* 나무 지지대 & 가로 팔 */}
+                                <rect x="-3" y="-38" width="6" height="40" rx="2" fill="#78350f" stroke="#451a03" strokeWidth="1" />
+                                <rect x="-15" y="-29" width="30" height="5" rx="2.5" fill="#92400e" stroke="#451a03" strokeWidth="1" />
+                                {/* 짚단 몸통 */}
+                                <rect x="-9" y="-36" width="18" height="22" rx="6" fill="#f59e0b" stroke="#92400e" strokeWidth="1.2" />
+                                <line x1="-8" y1="-26" x2="8" y2="-26" stroke="#78350f" strokeWidth="2" />
+                                {/* 머리 & 훈련 투구 */}
+                                <circle cx="0" cy="-44" r="7.5" fill="#fde68a" stroke="#92400e" strokeWidth="1.2" />
+                                <path d="M-8,-45 A8,7 0 0,1 8,-45 Z" fill="#64748b" stroke="#1e293b" strokeWidth="1.1" />
+                                {/* 나무 방패 장식 */}
+                                <ellipse cx="-10" cy="-24" rx="5.5" ry="7" fill="#b45309" stroke="#451a03" strokeWidth="1.2" />
+                            </g>
+                            {hasMeleeTrainee && hitPulse > 0.72 && (
+                                <g transform="translate(-8, -32)" opacity={(hitPulse - 0.72) * 3.5}>
+                                    <line x1="-6" y1="-6" x2="2" y2="2" stroke="#fde047" strokeWidth="2" strokeLinecap="round" />
+                                    <line x1="-8" y1="2" x2="2" y2="-4" stroke="#fb923c" strokeWidth="2" strokeLinecap="round" />
+                                    <circle cx="-2" cy="-2" r="3" fill="#fef08a" />
+                                </g>
+                            )}
+                        </g>
+                    );
+                }
+
+                if (entity.kind === 'target') {
+                    const hitWave = hasRangedTrainee ? Math.max(0, Math.sin(animSec * 3.8 + 0.8)) : 0;
+                    const shake = hasRangedTrainee && hitWave > 0.8 ? Math.sin(animSec * 32) * 2.5 : 0;
+                    return (
+                        <g
+                            key="camp-archery-target"
+                            data-camp-archery-target="true"
+                            transform={`translate(${targetPos.x + shake}, ${targetPos.y})`}
+                        >
+                            <ellipse cx="0" cy="4" rx="16" ry="7.5" fill="rgba(15, 23, 42, 0.22)" />
+                            {/* 나무 삼각대 */}
+                            <line x1="-10" y1="3" x2="0" y2="-36" stroke="#78350f" strokeWidth="3.2" strokeLinecap="round" />
+                            <line x1="10" y1="3" x2="0" y2="-36" stroke="#92400e" strokeWidth="3.2" strokeLinecap="round" />
+                            {/* 동심원 과녁 */}
+                            <circle cx="0" cy="-26" r="14" fill="#ef4444" stroke="#7f1d1d" strokeWidth="1.4" />
+                            <circle cx="0" cy="-26" r="9.5" fill="#ffffff" />
+                            <circle cx="0" cy="-26" r="5" fill="#ef4444" />
+                            <circle cx="0" cy="-26" r="2.2" fill="#facc15" />
+                            {/* 꽂힌 화살 */}
+                            <line x1="-14" y1="-34" x2="-1" y2="-26" stroke="#fde68a" strokeWidth="1.8" strokeLinecap="round" />
+                            <polygon points="-14,-34 -18,-37 -12,-36" fill="#22c55e" />
+                            {hasRangedTrainee && hitWave > 0.8 && (
+                                <g transform="translate(-2, -26)" opacity={(hitWave - 0.8) * 5}>
+                                    <circle cx="0" cy="0" r="6" fill="none" stroke="#fde047" strokeWidth="1.8" />
+                                    <text x="8" y="-12" fontSize="10" textAnchor="middle">
+                                        🎯
+                                    </text>
+                                </g>
+                            )}
+                        </g>
+                    );
+                }
+
                 if (entity.kind === 'campfire') {
+                    const flameSway = Math.sin(animSec * 7.5);
+                    const flameScaleY = 1 + Math.sin(animSec * 9.5) * 0.14;
+                    const glowR = 32 + Math.sin(animSec * 5) * 3;
                     return (
                         <g key="camp-central-fire" transform={`translate(${firePos.x}, ${firePos.y})`}>
+                            <ellipse cx="0" cy="3" rx={glowR} ry={glowR * 0.45} fill="rgba(251, 146, 60, 0.22)" />
                             <ellipse cx="0" cy="4" rx="28" ry="13" fill="#475569" stroke="#1e293b" strokeWidth="1.5" />
                             <ellipse cx="0" cy="2" rx="20" ry="9" fill="#334155" />
                             <line x1="-14" y1="3" x2="14" y2="-1" stroke="#78350f" strokeWidth="5" strokeLinecap="round" />
                             <line x1="-12" y1="-2" x2="12" y2="5" stroke="#92400e" strokeWidth="5" strokeLinecap="round" />
-                            <path d="M-9,0 C-10,-16 0,-26 0,-30 C6,-18 12,-14 9,0 Z" fill="#f97316" />
-                            <path d="M-5,0 C-5,-11 0,-18 0,-21 C4,-12 6,-9 5,0 Z" fill="#facc15" />
+                            <g transform={`scale(${1 + flameSway * 0.06}, ${flameScaleY}) skewX(${flameSway * 4})`}>
+                                <path d="M-9,0 C-10,-16 0,-26 0,-30 C6,-18 12,-14 9,0 Z" fill="#f97316" />
+                                <path d="M-5,0 C-5,-11 0,-18 0,-21 C4,-12 6,-9 5,0 Z" fill="#facc15" />
+                            </g>
+                            {/* 떠오르는 모닥불 불티 5개 */}
+                            {[0, 1, 2, 3, 4].map((eIdx) => {
+                                const ep = (animSec * 0.85 + eIdx * 0.2) % 1;
+                                const ex = Math.sin(animSec * 4 + eIdx * 1.4) * (5 + ep * 7);
+                                const ey = -16 - ep * 36;
+                                return (
+                                    <circle
+                                        key={`campfire-ember-${eIdx}`}
+                                        cx={ex}
+                                        cy={ey}
+                                        r={2.2 - ep * 1.3}
+                                        fill={eIdx % 2 === 0 ? '#fde047' : '#fb923c'}
+                                        opacity={Math.sin(ep * Math.PI)}
+                                    />
+                                );
+                            })}
                         </g>
                     );
                 }
@@ -295,6 +662,9 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                 const meta = mercCatalogMap.get(merc.mercCode);
                 const sprite = getMercSpriteMeta(merc.mercCode);
                 const isOut = merc.status === 'expedition';
+                const trainAnim = isOut
+                    ? { dx: 0, dy: 0, tiltDeg: 0, isBurst: false, burstPhase: 0 }
+                    : computeMercTrainingAnim(merc.mercCode, animSec, idx);
 
                 return (
                     <g
@@ -314,17 +684,19 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                             ry={sprite.shadowRy}
                             fill="rgba(15, 23, 42, 0.26)"
                         />
-                        <g>
-                            {!isOut && (
-                                <animateTransform
-                                    attributeName="transform"
-                                    type="translate"
-                                    values="0,0; 0,-2; 0,0"
-                                    dur="3.0s"
-                                    begin={`${(idx * 0.4).toFixed(2)}s`}
-                                    repeatCount="indefinite"
-                                />
-                            )}
+                        {trainAnim.isBurst && (
+                            <ellipse
+                                cx="0"
+                                cy="5"
+                                rx={sprite.shadowRx + 4 + Math.sin(animSec * 7) * 1.5}
+                                ry={sprite.shadowRy + 2 + Math.sin(animSec * 7) * 0.6}
+                                fill="none"
+                                stroke={sprite.accentRingColor}
+                                strokeWidth="1.5"
+                                opacity="0.65"
+                            />
+                        )}
+                        <g transform={`translate(${trainAnim.dx}, ${trainAnim.dy}) rotate(${trainAnim.tiltDeg} 0 -18)`}>
                             <image
                                 href={sprite.spriteUrl}
                                 x={-sprite.spriteWidth / 2}
@@ -334,6 +706,7 @@ export const AzitCampIsoScene: React.FC<AzitCampIsoSceneProps> = ({
                                 preserveAspectRatio="xMidYMax meet"
                             />
                         </g>
+                        {!isOut && renderMercSkillFx(merc.mercCode, trainAnim, animSec)}
                         {isOut && (
                             <g transform={`translate(0, ${-sprite.spriteHeight + sprite.spriteOffsetY - 8})`}>
                                 <rect

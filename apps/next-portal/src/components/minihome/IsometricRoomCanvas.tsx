@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { GardenCropId, GardenPlotItem, MinihomeRoomLayout, PlacedRoomItem } from '@/types/minihome.types';
-import { ensureGardenState, getCatalogItemById, getGardenPlotWaterStatus } from '@/data/minihomeCatalogData';
+import { ensureGardenState, getCatalogItemById, getGardenCropById, getGardenPlotWaterStatus } from '@/data/minihomeCatalogData';
 import { useWeather, WeatherSceneType } from '@/hooks/useWeather';
 import { ForcedGardenActionTrigger, GARDEN_PLOT_COORDS, useAvatarLifeSim } from '@/hooks/useAvatarLifeSim';
 import { MinihomeAvatarActionOverlay } from '@/components/minihome/MinihomeAvatarActionOverlay';
@@ -258,10 +258,13 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
         if (onPlantCrop) {
             onPlantCrop(plotIdx, cropId);
         }
+        const cropMeta = getGardenCropById(cropId);
         setForcedGardenAction({
             plotIndex: plotIdx,
-            activityType: 'watering',
-            badge: `💧 새로 심은 씨앗에 정성껏 물 주는 중`,
+            activityType: 'planting',
+            cropEmoji: cropMeta?.emoji || '🌱',
+            durationMs: 1900,
+            badge: `🌱 ${plotIdx + 1}번 텃밭에 ${cropMeta?.shortName || '씨앗'} 심는 중`,
             timestamp: Date.now(),
         });
     };
@@ -276,6 +279,7 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
             setForcedGardenAction({
                 plotIndex: plotIdx,
                 activityType: 'watering',
+                durationMs: 1900,
                 badge: `💧 ${plotIdx + 1}번 텃밭에 시원하게 물 주는 중`,
                 timestamp: Date.now(),
             });
@@ -284,13 +288,17 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
     };
 
     const handleGardenHarvestPlot = (plotIdx: number) => {
+        const existingPlot = gardenState.plots.find((p) => p.plotIndex === plotIdx);
+        const cropMeta = getGardenCropById(existingPlot?.cropId || null);
         if (onHarvestPlot) {
             onHarvestPlot(plotIdx);
         }
         setForcedGardenAction({
             plotIndex: plotIdx,
-            activityType: 'harvest-ready',
-            badge: `🧺 ${plotIdx + 1}번 텃밭 수확 완료!`,
+            activityType: 'harvesting',
+            cropEmoji: cropMeta?.emoji || '🧺',
+            durationMs: 2000,
+            badge: `🧺 ${plotIdx + 1}번 텃밭 ${cropMeta?.shortName || '작물'} 수확 완료!`,
             timestamp: Date.now(),
         });
     };
@@ -1397,6 +1405,8 @@ export const IsometricRoomCanvas: React.FC<IsometricRoomCanvasProps> = ({
                             nowMs={azitGame.nowMs}
                             selectedSlotIndex={openKitchenSlotIndex}
                             isActing={azitGame.isActing}
+                            minimiItemId={layout.minimiItemId}
+                            ownerName={ownerName}
                             onSelectSlot={(slotIdx) =>
                                 setOpenKitchenSlotIndex((prev) => (prev === slotIdx ? null : slotIdx))
                             }
