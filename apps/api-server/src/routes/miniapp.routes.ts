@@ -144,7 +144,7 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                     'todo-list',
                     'fas fa-list-check',
                     '우선순위·카테고리·마감일·서브태스크·25분 집중 타이머와 달성률 리포트를 브라우저 로컬에서 정리하는 무료 할일 플래너',
-                    '/tools/todo-list',
+                    '/app/todo-list/',
                     0,
                     1,
                     'calc',
@@ -153,6 +153,17 @@ miniappRoutes.get('/api/mini-apps', async (c) => {
                 apps = await DB.prepare("SELECT * FROM mini_apps WHERE status = 'active' ORDER BY sort_order ASC").all();
             } catch (seedErr) {
                 console.error('Failed to auto-seed todo-list:', seedErr);
+            }
+        }
+
+        // 기존 todo-list app_url이 '/tools/todo-list'인 경우 450x850 새 창 팝업 경로('/app/todo-list/')로 자동 보정
+        const legacyTodoApp = apps.results.find((a: any) => a.slug === 'todo-list' && a.app_url !== '/app/todo-list/');
+        if (legacyTodoApp) {
+            try {
+                await DB.prepare("UPDATE mini_apps SET app_url = '/app/todo-list/' WHERE slug = 'todo-list'").run();
+                legacyTodoApp.app_url = '/app/todo-list/';
+            } catch (todoUrlErr) {
+                console.error('Failed to migrate todo-list app_url to popup:', todoUrlErr);
             }
         }
 

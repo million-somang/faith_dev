@@ -127,21 +127,21 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/tools/todo-list"
+            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-extrabold flex items-center gap-1.5 transition-colors"
+          >
+            <i className="fas fa-book-open text-[10px]"></i>
+            <span>사용 가이드</span>
+          </Link>
           <button
             type="button"
             onClick={() => launchApp('/app/todo-list/', 'todo-list')}
-            className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
           >
             <i className="fas fa-up-right-from-square text-[10px]"></i>
-            <span>팝업 열기</span>
+            <span>전체 플래너 열기 (새 창)</span>
           </button>
-          <Link
-            href="/tools/todo-list"
-            className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black flex items-center gap-1.5 shadow-sm transition-colors"
-          >
-            <span>전체 플래너</span>
-            <i className="fas fa-arrow-right text-[10px]"></i>
-          </Link>
         </div>
       </div>
 
@@ -337,9 +337,13 @@ export function MypageTodoCard({ variant = 'full' }: MypageTodoCardProps) {
                 </button>
               )}
               {todos.length > maxVisible && (
-                <Link href="/tools/todo-list" className="font-bold text-slate-500 hover:text-indigo-600">
-                  +{todos.length - maxVisible}건 더 보기 →
-                </Link>
+                <button
+                  type="button"
+                  onClick={() => launchApp('/app/todo-list/', 'todo-list')}
+                  className="font-bold text-slate-500 hover:text-indigo-600 cursor-pointer"
+                >
+                  +{todos.length - maxVisible}건 더 보기 (새 창) →
+                </button>
               )}
             </div>
 

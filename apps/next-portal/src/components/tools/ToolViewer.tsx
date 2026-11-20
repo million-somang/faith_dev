@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ToolItem } from '@/data/toolsData';
 import { GameItem } from '@/data/gamesData';
+import { useAppLauncher } from '@/hooks/useAppLauncher';
 
 interface ToolViewerProps {
   item: ToolItem | GameItem;
@@ -11,6 +12,9 @@ interface ToolViewerProps {
 
 export function ToolViewer({ item, isStandalone = false }: ToolViewerProps) {
   const [activeTab, setActiveTab] = useState<'main' | 'howto' | 'faq'>('main');
+  const { launchApp } = useAppLauncher();
+  const isPopupLauncherOnly = 'slug' in item && item.slug === 'todo-list';
+  const targetAppUrl = item.legacyAppUrl || ('appUrl' in item ? item.appUrl : '');
 
   const handleNavClick = (tab: 'main' | 'howto' | 'faq', sectionId: string) => {
     setActiveTab(tab);
@@ -76,22 +80,64 @@ export function ToolViewer({ item, isStandalone = false }: ToolViewerProps) {
             : 'hidden'
         }
       >
-        <div
-          className={`w-full bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 ${
-            isStandalone ? 'max-w-xl h-[680px]' : 'h-[620px]'
-          }`}
-        >
-          <iframe
-            src={item.legacyAppUrl || ('appUrl' in item ? item.appUrl : '')}
-            title={item.name}
-            className="mini-app-modal-iframe w-full h-full border-0"
-            loading="eager"
-            allow="clipboard-write; clipboard-read"
-          />
-        </div>
-        <p className="text-[11px] text-gray-500 mt-2 text-center">
-          * 키보드 입력 및 모바일 터치를 완벽히 지원하며, 모든 연산은 서버 전송 없이 사용자 기기 내에서 안전하게 처리됩니다.
-        </p>
+        {isPopupLauncherOnly ? (
+          <div className="w-full max-w-2xl bg-white rounded-3xl border border-indigo-200/80 shadow-sm p-6 sm:p-8 text-center space-y-5">
+            <div className="flex flex-col items-center gap-3">
+              <img
+                src="/images/utility/icon_todo_planner.png"
+                alt={item.name}
+                className="w-20 h-20 object-contain drop-shadow-md"
+              />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold">
+                <i className="fas fa-up-right-from-square text-[10px]"></i>
+                450×850 새 창 팝업 전용 미니앱
+              </span>
+            </div>
+
+            <div className="space-y-2 max-w-lg mx-auto">
+              <h2 className="text-lg sm:text-xl font-black text-gray-900">
+                {item.name} 바로 실행하기
+              </h2>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                아래 버튼을 누르면 450×850 전용 새 창 팝업에서 투두 플래너가 즉시 열립니다. 작성한 할 일은 브라우저에 안전하게 저장되며 마이페이지와 실시간 동기화됩니다.
+              </p>
+            </div>
+
+            <div className="pt-1 flex flex-col items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => launchApp(targetAppUrl, item.slug)}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 to-emerald-600 hover:from-indigo-700 hover:to-emerald-700 text-white font-black text-sm sm:text-base shadow-lg hover:shadow-xl active:scale-95 transition-all cursor-pointer"
+              >
+                <i className="fas fa-play text-xs"></i>
+                <span>지금 바로 TO-DO 플래너 실행 (새 창 팝업)</span>
+              </button>
+              <p className="text-[11px] text-gray-500 flex items-center gap-1.5">
+                <i className="fas fa-info-circle text-indigo-500"></i>
+                <span>실행 버튼을 누르면 새 팝업 창에서 열립니다. 브라우저 팝업 차단이 되어 있으면 허용해 주세요.</span>
+              </p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div
+              className={`w-full bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200 ${
+                isStandalone ? 'max-w-xl h-[680px]' : 'h-[620px]'
+              }`}
+            >
+              <iframe
+                src={targetAppUrl}
+                title={item.name}
+                className="mini-app-modal-iframe w-full h-full border-0"
+                loading="eager"
+                allow="clipboard-write; clipboard-read"
+              />
+            </div>
+            <p className="text-[11px] text-gray-500 mt-2 text-center">
+              * 키보드 입력 및 모바일 터치를 완벽히 지원하며, 모든 연산은 서버 전송 없이 사용자 기기 내에서 안전하게 처리됩니다.
+            </p>
+          </>
+        )}
       </section>
 
       {/* 2. 핵심 요약(AEO) · 산출 공식 · 실전 사례 · 단계별 사용방법 (원페이지 상시 노출로 구글 SEO 가중치 극대화) */}

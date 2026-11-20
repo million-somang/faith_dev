@@ -5,16 +5,19 @@ export interface ViewModeState {
   readonly isStandalone: boolean;
 }
 
+function detectEmbedMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  const isIframe = window.self !== window.top;
+  const isPopup = Boolean(window.opener && window.opener !== window);
+  return isIframe || isPopup || params.get('embed') === 'true';
+}
+
 export function useViewMode(): ViewModeState {
-  const [isEmbed, setIsEmbed] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    const params = new URLSearchParams(window.location.search);
-    return window.self !== window.top || params.get('embed') === 'true';
-  });
+  const [isEmbed, setIsEmbed] = useState<boolean>(() => detectEmbedMode());
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setIsEmbed(window.self !== window.top || params.get('embed') === 'true');
+    setIsEmbed(detectEmbedMode());
   }, []);
 
   return {

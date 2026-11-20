@@ -11,6 +11,7 @@ import { MobileTabEditor } from '@/components/homepage/MobileTabEditor';
 import { MyLifeSection } from '@/components/mypage/MyLifeSection';
 import { DriveVideoPlayerSection } from '@/components/mypage/DriveVideoPlayerSection';
 import { MypageTodoCard } from '@/components/mypage/MypageTodoCard';
+import { useAppLauncher } from '@/hooks/useAppLauncher';
 import { useUserPreferenceContext } from '@/context/UserPreferenceContext';
 import { HomepageConfig, DEFAULT_HOMEPAGE_CONFIG } from '@/types/homepage.types';
 import { useMinihome } from '@/hooks/useMinihome';
@@ -145,6 +146,7 @@ function urlBase64ToUint8Array(base64String: string) {
 export default function MyPage() {
     const { user, logout, isLoading, updateUser } = useAuth();
     const router = useRouter();
+    const { launchApp } = useAppLauncher();
     const azitRefreshRef = useRef<(() => void) | null>(null);
 
     const {
@@ -1956,10 +1958,14 @@ export default function MyPage() {
                                                     <Link href="/lifestyle" className="text-xs text-orange-600 font-bold hover:underline">전체 도구 →</Link>
                                                 </div>
                                                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
-                                                    <Link href="/tools/todo-list" className="p-3 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 flex items-center gap-2.5 transition-all group shadow-2xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => launchApp('/app/todo-list/', 'todo-list')}
+                                                        className="p-3 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 flex items-center gap-2.5 transition-all group shadow-2xs text-left cursor-pointer"
+                                                    >
                                                         <span className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-list-check"></i></span>
                                                         <span className="text-xs font-bold text-slate-700">TO-DO 플래너</span>
-                                                    </Link>
+                                                    </button>
                                                     <Link href="/lifestyle" className="p-3 bg-white hover:bg-orange-50 rounded-xl border border-orange-100 flex items-center gap-2.5 transition-all group shadow-2xs">
                                                         <span className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform"><i className="fas fa-calculator"></i></span>
                                                         <span className="text-xs font-bold text-slate-700">계산기 모음</span>
